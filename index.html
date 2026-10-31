@@ -380,7 +380,7 @@ nav.tabs .back { color: var(--spice); }
 .gprog i { display: block; height: 100%; background: #b9c3d4; }
 .gprog.big { position: static; flex: 1; height: 10px; }
 .ccenter { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; min-width: 0; }
-.cfig { width: min(128px, 100%); aspect-ratio: 60 / 106; border-radius: 6px; background: radial-gradient(ellipse at 50% 90%, color-mix(in srgb, var(--tc) 55%, transparent) 0, transparent 60%), radial-gradient(circle at 50% 40%, #30231a, transparent 70%); }
+.cfig { width: min(176px, 100%); aspect-ratio: 60 / 106; border-radius: 6px; background: radial-gradient(ellipse at 50% 90%, color-mix(in srgb, var(--tc) 55%, transparent) 0, transparent 60%), radial-gradient(circle at 50% 40%, #30231a, transparent 70%); }
 .cfig svg { width: 100%; height: 100%; filter: drop-shadow(0 6px 8px rgb(0 0 0 / .6)); }
 .ccenter h3 { font-family: var(--f-display); font-weight: 400; font-size: 24px; margin: 4px 0 0; line-height: 1.1; text-wrap: balance; }
 .crole { color: var(--dust); font-size: 12px; } .cmeta { font-size: 11px; color: var(--dust); }
@@ -939,6 +939,18 @@ button .amt[data-info]:hover { text-decoration: none; }
 @media (orientation: landscape) and (max-height: 520px) { .ufig { height: 70vh; } .utext b { font-size: 30px; } .utext p { font-size: 12px; } .cbox { padding: 12px 16px; gap: 4px; } .cport .pt { width: 80px !important; height: 80px !important; } .cbox h3 { font-size: 20px; } }
 @media (orientation: portrait) { .ustage { flex-direction: column; text-align: center; gap: 12px; } .ufig { height: 42vh; } .utags, .utext .acts { justify-content: center; } }
 
+/* ===== spice hourglass & gauges ===== */
+.hglass { position: relative; width: 52px; height: 64px; padding: 2px; border: 0; background: radial-gradient(circle at 50% 50%, rgb(232 145 63 / .2), transparent 70%); display: grid; justify-items: center; color: #ffd8a0; cursor: pointer; align-self: center; }
+.hglass svg { width: 28px; height: 38px; filter: drop-shadow(0 2px 4px #000); } .hglass b { font: 700 12px var(--f-mono); text-shadow: 0 1px 2px #000; }
+.hglass .hgs { animation: hgs .5s linear infinite; } @keyframes hgs { to { stroke-dashoffset: -5; } }
+.hglass.full svg { filter: drop-shadow(0 0 8px #ffb040) drop-shadow(0 0 16px #ff8a20); animation: hgfull 1.2s ease-in-out infinite; } .hglass.full b { color: #ffe08a; }
+@keyframes hgfull { 50% { transform: scale(1.08); } }
+.hud .hb.spm { height: 4px; border-color: #6a3a10; } .hud .hb.spm i { background: linear-gradient(90deg, #a85a20, #ffb05a); }
+.hud .hb.spm.full { box-shadow: 0 0 6px #ffb040, 0 0 12px #ff8a20; } .hud .hb.spm.full i { animation: glbar .7s ease-in-out infinite alternate; }
+button.bgz { cursor: pointer; font: inherit; } button.bgz:hover { border-color: var(--spice); } .bgz.worm.full { box-shadow: 0 0 10px #ff6a3a; }
+.reqh { cursor: pointer; border-radius: 4px; } .reqh:hover { background: rgb(232 145 63 / .1); }
+@media (orientation: landscape) and (max-height: 520px) { .hglass { width: 44px; height: 54px; } .hglass svg { width: 22px; height: 30px; } .hglass b { font-size: 10px; } }
+
 /* ===== legend ultimate cinematic ===== */
 .ultcine { position: fixed; inset: 0; z-index: 42; pointer-events: none; overflow: hidden; animation: ucfade 2.9s ease forwards; }
 @keyframes ucfade { 0% { opacity: 0; } 6% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
@@ -1072,7 +1084,7 @@ button .amt[data-info]:hover { text-decoration: none; }
   .dlg, .dlg.enemy { flex-direction: row !important; align-items: flex-end !important; } .dlg.enemy { flex-direction: row-reverse !important; }
   .dlgfig { width: 90px !important; margin: 0 0 -6px 0 !important; } .dlgbox { padding: 8px 12px; } .dlgbox p { font-size: 13px; margin: 4px 0 6px; } .dlgname { font-size: 16px; }
   .calgrid { grid-template-columns: repeat(10, minmax(0, 1fr)); }
-  .chead { grid-template-columns: 64px minmax(0, 1fr) 64px; } .gslot { width: 52px; height: 52px; } .cfig { width: 64px; }
+  .chead { grid-template-columns: 64px minmax(0, 1fr) 64px; } .gslot { width: 52px; height: 52px; } .cfig { width: 112px; }
   .ccenter h3 { font-size: 19px; }
   /* header: one compact row */
   header.top .wrap { flex-wrap: wrap; }
@@ -1139,7 +1151,7 @@ button .amt[data-info]:hover { text-decoration: none; }
   .cdtitle h3 { font-size: 20px; }
   .chead { grid-template-columns: 60px minmax(0, 1fr) 60px; gap: 8px; }
   .gslot { width: 58px; height: 58px; }
-  .cfig { width: 96px; }
+  .cfig { width: 140px; }
   .ccenter h3 { font-size: 19px; }
   .mid { grid-template-columns: 1fr; }
   .logbox { height: 96px; }
@@ -2526,21 +2538,21 @@ function addParticles3(A, type) {
 
 // ---------- characters (rigged: hips → spine → head/arms, hips → legs) ----------
 const HERO3 = {
-  baron: { fat: 1.55, bald: 1, float: .18 }, rabban: { wide: 1.22, bald: 1 }, feyd: { bald: 1, slim: .9 }, piter: { hair: 'long' },
-  shaddam: { style: 'emperor', hairC: '#b8562e' }, fenring: { style: 'emperor', nohelm: 1 }, mohiam: { old: 1 }, jessica: { hairC: '#7a3a22' },
-  thufir: { hairC: '#c8c0b0', old: 1 }, gurney: { scar: 1, baliset: 1 }, duncan: { hairC: '#151110', curly: 1 }, leto: { hairC: '#2a1c14', beard: 1 },
+  baron: { fat: 2.05, hairC: '#c4502a', float: .18, noStaff: 1, cane: 1, wide: 1.1 }, rabban: { wide: 1.22, bald: 1 }, feyd: { bald: 1, slim: .9 }, piter: { hair: 'long' },
+  shaddam: { style: 'emperor', hairC: '#b8562e' }, fenring: { style: 'emperor', nohelm: 1 }, mohiam: { old: 1 }, jessica: { hairC: '#8a4a26', skin: '#f2d4b8', dagger: 1, look: { cloak: '#d8bf94', dark: '#b8986a', acc: '#6a4a2a', pants: '#8a6a44' } },
+  thufir: { hairC: '#c8c0b0', old: 1, noStaff: 1, scars: 1, fat: 1.28 }, gurney: { scar: 1, baliset: 1, bald: 1 }, duncan: { hairC: '#151110', curly: 1, skin: '#8a5a3a', tall: 1.12, muscle: 1, noShield: 1 }, leto: { hairC: '#2a1c14', beard: 1, mus: 1, skin: '#f4dcc6' }, paul: { skin: '#f0d0b0', hairC: '#2a1c14' },
   stilgar: { beard: 1, tube: 1 }, chani: { tube: 1, hairC: '#3a1a10' }, fedaykin: { mask: 1, tube: 1 }, kynes: { tube: 1 }, liet: { tube: 1 },
   robot: { style: 'robot' }, cymek: { style: 'robot', cymek: 1 },
 };
 function lathe(profile, seg = 18, zs = .74) { const m = MB().CreateLathe('la', { shape: profile.map(([r, y]) => V3(r, y, 0)), tessellation: seg, cap: B3.Mesh.CAP_ALL }, SC); m.scaling.z = zs; return m; }
 function tube3(pts, r, seg = 8) { return MB().CreateTube('tb', { path: pts.map(p => V3(...p)), radius: r, tessellation: seg, cap: B3.Mesh.CAP_ALL }, SC); }
 function makeHuman3(def) {
-  const fac = def.f[0], L = LOOK[fac] || LOOK.atr, h = ghash(def.id), fem = FEM.has(def.id), X = HERO3[def.id] || {};
+  const fac = def.f[0], X = HERO3[def.id] || {}, L = { ...(LOOK[fac] || LOOK.atr), ...(X.look || {}) }, h = ghash(def.id), fem = FEM.has(def.id);
   let style = X.style || (def.legendary || fac === 'frem' ? 'robe' : def.f.includes('bg') ? 'bgrobe' : fac === 'hark' ? 'armor' : fac === 'cor' ? 'cor' : 'tunic');
   if (fac === 'mach') style = 'robot';
   const long = style === 'robe' || style === 'bgrobe', armored = style === 'armor' || style === 'cor' || style === 'robot', robot = style === 'robot';
   const helm = (style === 'armor' && (def.id === 'trooper' || def.role === 'tank')) || (style === 'cor' && !X.nohelm);
-  const skinC = SKINS[h % SKINS.length][0], hairC = X.old ? '#9a9488' : X.hairC || ['#2a1c14', '#5a3a22', '#151110', '#7a5232', '#3a2a20', '#6a4a2a'][(h >> 3) % 6];
+  const skinC = X.skin || SKINS[h % SKINS.length][0], hairC = X.old ? '#9a9488' : X.hairC || ['#2a1c14', '#5a3a22', '#151110', '#7a5232', '#3a2a20', '#6a4a2a'][(h >> 3) % 6];
   const ibad = fac === 'frem' || def.legendary;
   const M = {
     cloth: mat3(L.cloak, { roughness: .9 }), dark: mat3(L.dark, { roughness: .85 }), acc: mat3(L.acc, { roughness: .5, metalness: .2 }), pants: mat3(L.pants, { roughness: .9 }),
@@ -2554,7 +2566,8 @@ function makeHuman3(def) {
   const root = grp(null), body = grp(root), hips = grp(body, 0, .95, 0);
   const A = (parent, mesh, mat, x = 0, y = 0, z = 0) => add(parent, mk(mesh, mat, x, y, z));
   // pelvis + legs
-  A(hips, bSph(.17 * wide * Math.min(fat, 1.3), 14), long ? M.suit : robot ? M.metal : M.pants, 0, -.02, 0).scaling.set(1, .62, .78);
+  if (X.muscle) root._muscle = 1;
+  A(hips, bSph(.17 * wide * Math.min(fat, 1.3) * (X.muscle ? .9 : 1), 14), long ? M.suit : robot ? M.metal : M.pants, 0, -.02, 0).scaling.set(1, .62, .78);
   const leg = s => {
     const hip = grp(hips, s * .1 * wide, -.04, 0);
     A(hip, bCyl(.078 * Math.min(fat, 1.25), .06, .44, 10), long ? M.suit : robot || style === 'armor' ? M.metal : M.pants, 0, -.22, 0);
@@ -2574,10 +2587,11 @@ function makeHuman3(def) {
   // spine + torso
   const spine = grp(hips, 0, .04, 0);
   const torsoM = robot ? M.metal : style === 'armor' ? M.metal : style === 'bgrobe' ? M.dark : M.cloth;
-  const tor = A(spine, lathe([[0, 0], [.17 * wide * fat, 0], [.16 * wide * fat, .1], [.2 * wide * fat, .26], [.23 * wide * Math.min(fat, 1.25), .42], [.21 * wide, .52], [.09, .6], [0, .6]], 20, .7 * Math.max(1, fat * .9)), torsoM);
+  const ch = X.muscle ? 1.22 : 1, wa = X.muscle ? .86 : 1; const tor = A(spine, lathe([[0, 0], [.17 * wide * fat * wa, 0], [.16 * wide * fat * wa, .1], [.2 * wide * fat * (X.muscle ? 1.02 : 1), .26], [.23 * wide * Math.min(fat, 1.25) * ch, .42], [.21 * wide * ch, .52], [.09, .6], [0, .6]], 20, .7 * Math.max(1, fat * .9)), torsoM);
   if (fat > 1) A(spine, bSph(.24 * fat * .8, 16), torsoM, 0, .2, .07).scaling.set(1, .9, .9);
   A(spine, bCyl(.178 * wide * fat, .178 * wide * fat, .06, 20), robot ? M.dark : M.belt, 0, .02, 0).scaling.z = .74;
   A(spine, bBox(.07, .055, .03), M.acc, 0, .02, .135 * fat);
+  if (X.muscle) for (const s of [-1, 1]) A(spine, bSph(.1, 12), torsoM, s * .08, .42, .1).scaling.set(1.1, .8, .6);
   if (style === 'tunic') { A(spine, bBox(.02, .42, .02), M.acc, 0, .3, .155); for (const y of [.16, .26, .36]) A(spine, bSph(.012, 6), M.acc, 0, y, .165); A(spine, bSph(.03, 8), M.acc, -.1, .42, .16); }
   if (style === 'armor' || style === 'cor' || robot) { A(spine, bBox(.3 * wide, .2, .05), M.metal, 0, .35, .12); A(spine, bBox(.26 * wide, .1, .05), M.dark, 0, .18, .12); }
   if (style === 'emperor') { A(spine, bBox(.32, .32, .04), M.acc, 0, .32, .12).scaling.x = .9; A(spine, bBox(.22, .05, .05), M.metal, 0, .46, .13); }
@@ -2605,7 +2619,9 @@ function makeHuman3(def) {
     const nose = H(bCone(.016, .055, 6), M.skin, 0, .085, .115); nose.rotation.x = Math.PI / 2 - .3;
     H(bBox(.046, .009, .012), M.lip, 0, .035, .1);
     if (X.scar) H(bBox(.008, .07, .006), mat3('#8a4a3a'), .05, .07, .095).rotation.z = .3;
-    if (X.beard) H(bSph(.08, 12, 1, .5), M.hair, 0, .03, .04).rotation.x = Math.PI;
+    if (X.beard) { const bd = H(bSph(.085, 14, 1, .5), M.hair, 0, .04, .045); bd.rotation.x = Math.PI; bd.scaling.set(1, 1.15, 1); }
+    if (X.mus) { for (const s of [-1, 1]) { const mu = H(bBox(.045, .016, .02), M.hair, s * .022, .052, .108); mu.rotation.z = s * -.35; } }
+    if (X.scars) { const sm = mat3('#9a5a4a', { roughness: .5 }); H(bBox(.007, .085, .006), sm, -.055, .1, .098).rotation.z = -.35; H(bBox(.006, .06, .006), sm, .045, .07, .1).rotation.z = .5; H(bBox(.05, .006, .006), sm, .03, .02, .103); }
     if (X.tube) H(tube3([[-.02, .07, .11], [-.07, .06, .09], [-.11, .08, .02]], .006), M.dark);
     if (X.mask) H(bBox(.15, .06, .05), M.dark, 0, .04, .08);
     if (!long && !helm && !X.bald && style !== 'cor') {
@@ -2630,7 +2646,7 @@ function makeHuman3(def) {
   const arm = s => {
     const sh = grp(spine, s * .28 * wide, .5, 0);
     const sleeve = robot || style === 'armor' ? M.metal : long ? (style === 'bgrobe' ? M.dark : M.cloth) : M.cloth;
-    A(sh, bCyl(.06 * Math.min(fat, 1.3), .052, .3, 10), sleeve, 0, -.15, 0);
+    A(sh, bCyl(.06 * Math.min(fat, 1.3) * (X.muscle ? 1.35 : 1), .052 * (X.muscle ? 1.25 : 1), .3, 10), sleeve, 0, -.15, 0); if (X.muscle) A(sh, bSph(.075, 10), sleeve, 0, -.1, .01).scaling.set(1, 1.3, 1);
     const el = grp(sh, 0, -.3, 0);
     A(el, bSph(.052, 8), sleeve);
     A(el, bCyl(.05, .042, .27, 10), long ? sleeve : robot ? M.metal : style === 'armor' ? M.dark : M.cloth, 0, -.135, 0);
@@ -2646,6 +2662,7 @@ function makeHuman3(def) {
   if (dt === 'blade') {
     if (fac === 'frem') { W(tube3([[0, 0, 0], [0, .16, .015], [0, .32, .05], [0, .44, .1]], .018, 6), mat3('#f2ead6', { roughness: .3, emissive: '#2a2418' })); W(bCyl(.022, .022, .12, 8), mat3('#6a4a2a'), 0, -.04, 0); }
     else if (robot) { W(bBox(.02, .55, .08), basic3('#ff5a3a'), 0, .3, 0); }
+    else if (X.dagger) { W(bBox(.026, .3, .01), M.steel, 0, .2, 0); W(bCone(.013, .05, 4), M.steel, 0, .375, 0); W(bBox(.09, .02, .03), mat3('#b08a3a', { metalness: .6 }), 0, .04, 0); W(bCyl(.016, .016, .1, 8), mat3('#3a2a1a'), 0, -.03, 0); }
     else { W(bBox(.03, .9, .012), M.steel, 0, .5, 0); W(bBox(.18, .028, .045), mat3('#b08a3a', { metalness: .6, roughness: .3 }), 0, .04, 0); W(bCyl(.02, .02, .14, 8), mat3('#3a2a1a'), 0, -.05, 0); }
     w.rotation.x = 1.6;
   } else if (dt === 'fast') { W(bBox(.05, .075, .26), mat3('#3a3a44', { metalness: .4, roughness: .35 }), 0, 0, .1); W(bBox(.045, .12, .05), mat3('#2a2a32'), 0, -.06, 0); W(bSph(.015, 6), basic3('#ffd27a'), 0, .01, .235); w.rotation.x = 1.25; }
@@ -2653,18 +2670,23 @@ function makeHuman3(def) {
   else if (dt === 'poison') { W(bCyl(.006, .006, .3, 4), M.steel, 0, .15, 0); W(bSph(.026, 8), basic3('#7ad36a'), 0, .3, 0); w.rotation.x = 1.5; }
   else if (dt === 'voice') { W(bSph(.03, 8), basic3('#c8a0ff', { alpha: .7 }), 0, 0, .05); }
   root._muzzle = V3(0, .01, dt === 'laser' ? .7 : .24);
-  if (def.role === 'tank' && !robot) { const shd = grp(Lf.el, 0, -.16, .06); add(shd, mk(bCyl(.27, .27, .035, 24), M.cloth)); add(shd, mk(bCyl(.22, .22, .045, 24), M.acc)); add(shd, mk(bSph(.05, 8), M.metal, 0, .03, 0)); }
-  if (def.role === 'sup' && !robot) { const st = grp(Lf.hand, 0, -.02, .02); add(st, mk(bCyl(.022, .022, 1.85, 6), mat3('#6e5034'), 0, .22, 0)); add(st, mk(bOcta(.075), M.acc, 0, 1.17, 0)); add(st, mk(bSph(.04, 8), basic3(L.acc), 0, 1.17, 0)); }
+  if (def.role === 'tank' && !robot && !X.noShield) { const shd = grp(Lf.el, 0, -.16, .06); add(shd, mk(bCyl(.27, .27, .035, 24), M.cloth)); add(shd, mk(bCyl(.22, .22, .045, 24), M.acc)); add(shd, mk(bSph(.05, 8), M.metal, 0, .03, 0)); }
+  if (def.role === 'sup' && !robot && !X.noStaff) { const st = grp(Lf.hand, 0, -.02, .02); add(st, mk(bCyl(.022, .022, 1.85, 6), mat3('#6e5034'), 0, .22, 0)); add(st, mk(bOcta(.075), M.acc, 0, 1.17, 0)); add(st, mk(bSph(.04, 8), basic3(L.acc), 0, 1.17, 0)); }
   if (def.role === 'heal') add(Lf.hand, mk(bCyl(.045, .045, .14, 10), mat3('#3a8ec6', { roughness: .2, metalness: .2, emissive: '#0a2030' }), 0, -.06, .02));
-  if (X.baliset) { const bl = grp(spine, 0, .3, -.16); add(bl, mk(bSph(.13, 12), mat3('#8a5a2a'), 0, 0, 0)).scaling.set(1, 1.3, .35); add(bl, mk(bBox(.04, .5, .03), mat3('#5a3a1a'), 0, .38, 0)); bl.rotation.z = .5; }
+  if (X.cane) { const cn = grp(Lf.hand, 0, -.02, .02); add(cn, mk(bCyl(.018, .014, .95, 8), mat3('#2a1a10', { roughness: .3, metalness: .2 }), 0, -.46, 0)); add(cn, mk(bSph(.04, 10), mat3('#d4aa50', { metalness: .7, roughness: .25 }), 0, .02, 0)); root._cane = 1; }
+  if (X.baliset) { const wd = mat3('#9a6430', { roughness: .45, metalness: .1 }), dk = mat3('#4a2c14', { roughness: .5 }), bl = grp(spine, 0, .28, -.2);
+    add(bl, mk(bSph(.16, 16), wd)).scaling.set(1, 1.25, .38); add(bl, mk(bCyl(.05, .05, .012, 16), basic3('#1a0e06'), 0, .02, .062)).rotation.x = Math.PI / 2;
+    add(bl, mk(bBox(.05, .58, .035), dk, 0, .44, 0)); add(bl, mk(bBox(.08, .12, .04), dk, 0, .78, -.01));
+    for (const x of [-.014, 0, .014]) add(bl, mk(bBox(.003, .7, .003), basic3('#e8dcc0'), x, .32, .064, false));
+    add(bl, mk(bBox(.03, .7, .01), mat3('#3a2a1a'), .02, .1, .07)).rotation.z = -.9; bl.rotation.z = .55; }
   if (X.float) { root._float = X.float; for (const s of [-1, 1]) { const g = add(root, mk(bTorus(.09, .015, 16), basic3('#8fd8ff', { add: true, alpha: .7 }), s * .1, .02, .03, false)); g.rotation.x = Math.PI / 2; } }
   if (def.legendary) { const lt = new B3.PointLight('lg', V3(0, 1.3, 0), SC); lt.parent = root; lt.diffuse = col3('#ffc860'); lt.intensity = .9; lt.range = 3.5; }
-  const sc = (def.role === 'tank' ? 1.05 : 1) * (def.legendary ? 1.08 : 1) * (X.cymek ? 1.15 : 1); root.scaling.setAll(sc);
+  const sc = (def.role === 'tank' ? 1.05 : 1) * (def.legendary ? 1.08 : 1) * (X.cymek ? 1.15 : 1), tl = X.tall || 1; root.scaling.set(sc * (tl > 1 ? 1.03 : 1), sc * tl, sc * (tl > 1 ? 1.03 : 1));
   const mats = []; for (const m of root.getChildMeshes(false)) if (m.material && m.material._lit && !mats.includes(m.material)) mats.push(m.material);
   for (const m of mats) m._baseEm = m.emissiveColor.clone();
   const melee = dt === 'blade' || robot && dt !== 'fast';
   root._staff = def.role === 'sup' && !robot;
-  return { root, body, hips, spine, head, R, Lf, LL, LR, skirt, wpn: w, mats, h: 1.95 * sc, melee, stance: def.role === 'tank' ? 'shield' : dt === 'blade' ? 'guard' : dt === 'voice' ? 'open' : 'gun', float: X.float || 0 };
+  return { root, body, hips, spine, head, R, Lf, LL, LR, skirt, wpn: w, mats, h: 1.95 * sc * (X.tall || 1), melee, stance: def.role === 'tank' && !X.noShield ? 'shield' : dt === 'blade' ? 'guard' : dt === 'voice' ? 'open' : 'gun', float: X.float || 0 };
 }
 
 const ease = k => k < 0 ? 0 : k > 1 ? 1 : k * k * (3 - 2 * k);
@@ -3871,7 +3893,7 @@ function openItem(cid, k) {
   </div></div>`;
   document.querySelectorAll('#overlay canvas[data-scene]').forEach(sceneThumb);
 }
-function closeOverlay() { $('#overlay').innerHTML = ''; }
+function closeOverlay() { $('#overlay').innerHTML = ''; if (typeof renderNotes === 'function') setTimeout(renderNotes, 0); }
 // ===== info popups =====
 function campRow(i, note) {
   const n = NODES[i], open = nodeOpen(i), three = S.cleared[i] === 3, en = nodeEn(i), c = nodeCost(i);
@@ -3974,7 +3996,7 @@ function openInfo(key, keepScroll) {
   if (keepScroll) $('#overlay2 .sheet').scrollTop = prev;
 }
 function closeInfo(silent) {
-  infoKey = null; $('#overlay2').innerHTML = '';
+  infoKey = null; $('#overlay2').innerHTML = ''; if (typeof renderNotes === 'function') setTimeout(renderNotes, 0);
   if (!silent) { if ($('#overlay .csheet') && detailCid) openDetail(detailCid); else if ($('#overlay .isheet') && itemCtx) openItem(itemCtx.cid, itemCtx.k); }
 }
 function refreshAll() {
@@ -4289,7 +4311,7 @@ function renderLegend() {
     ${mp.stars ? `<button class="btn" data-open="${lk}">Открыть карточку</button>` : ''}
   </div>
   <div class="panel"><h3>Герои пути</h3><div class="req">${JR().req.map(id => { const p = prog(id);
-    return `<div>${glyph(CH[id])}<span>${CH[id].sn}<br><span class="mono ${p.stars ? 'ok' : 'no'}">${p.stars ? p.stars + '★ · ур. ' + p.lvl : 'не открыт'}</span></span></div>`; }).join('')}</div>
+    return `<div class="reqh" data-info="shard:${id}" role="button" tabindex="0" title="Где найти осколки">${portrait(CH[id], 48, p.stars ? TIER_COL[p.gear] : null)}<span>${CH[id].sn}<br><span class="mono ${p.stars ? 'ok' : 'no'}">${p.stars ? p.stars + '★ · ур. ' + p.lvl : 'не открыт'}</span></span></div>`; }).join('')}</div>
     <p class="sub" style="margin:0">В бой идут 5 из 6 героев пути — состав выбирается перед боем.</p>
   </div></div>
   <p class="chap">Ярусы</p><div class="tiers">`;
@@ -4577,6 +4599,7 @@ function unitHtml(u, B, ctx) {
       ${u.maxShield ? `<div class="hb sh"><i style="width:${pct(u.shield, u.maxShield)}%"></i></div>` : ''}
       <div class="hb tm"><i style="width:${Math.min(100, u.tm / 10)}%"></i></div>
       ${u.glOn && !u.glUsed ? `<div class="hb glm ${u.ultM >= 100 ? 'full' : ''}"><i style="width:${u.ultM}%"></i></div>` : ''}
+      ${!u.def.boss && spiceUser(u.def) ? `<div class="hb spm ${B.spice[u.side] >= 100 ? 'full' : ''}" title="Меланж ${B.spice[u.side]}%"><i style="width:${Math.min(100, B.spice[u.side])}%"></i></div>` : ''}
     </div>
     ${intent ? `<div class="intent">${intent}</div>` : ''}
     <div class="fig ${u.side === 'B' ? 'flip' : ''}">${BT.arena ? '' : u.def.boss ? wormSVG() : figureSVG(u.def, true)}${!BT.arena && u.alive && u.shield > 0 ? `<span class="bubble" style="opacity:${(.3 + .7 * u.shield / u.maxShield).toFixed(2)}"></span>` : ''}</div>
@@ -4595,18 +4618,18 @@ function renderBattle() {
   if (w) {
     const sel = w.def[BT.sel];
     bot = `<div class="who"><span class="ptw">${portrait(w.def, 54, TIER_COL[prog(w.def.id).gear])}</span><div class="whotext"><b>${w.def.n}</b><div class="desc"><b>${sel.n}</b> <span class="mono">${BT.sel === 'gl' ? 'ультимативная' : 'ур. ' + ((prog(w.def.id).sk || {})[BT.sel] || 1)}</span>. ${sel.d}</div><div class="hint">${sel.tgt === 'enemy' ? 'Коснитесь врага, чтобы атаковать · удерживайте бойца — сведения' : 'Нажмите способность ещё раз, чтобы применить'}</div></div></div>
-      <div class="abils">${['basic', 'special', 'ult', 'gl'].filter(k => w.def[k] && (k !== 'gl' || (w.glOn && !w.glUsed))).map(k => { const a = w.def[k], ready = abilityReady(B, w, k), cd = w.cd[k] > 0 ? w.cd[k] : '';
+      <div class="abils">${spiceUser(w.def) ? hourglass(B.spice[w.side]) : ''}${['basic', 'special', 'ult', 'gl'].filter(k => w.def[k] && (k !== 'gl' || (w.glOn && !w.glUsed))).map(k => { const a = w.def[k], ready = abilityReady(B, w, k), cd = w.cd[k] > 0 ? w.cd[k] : '';
         if (k === 'gl') return `<button class="abil gl ${ready ? 'full' : ''}" data-ab="gl" aria-pressed="${BT.sel === 'gl'}" ${ready ? '' : 'disabled'} aria-label="${a.n}" title="${a.n}" style="--m:${w.ultM}">${skillSvg(w.def, 'gl')}<span class="glpct">${ready ? 'УЛЬТА' : Math.floor(w.ultM) + '%'}</span></button>`;
         return `<button class="abil ${k}" data-ab="${k}" aria-pressed="${BT.sel === k}" ${ready ? '' : 'disabled'} aria-label="${a.n}" title="${a.n}">${skillSvg(w.def, k)}${cd ? `<span class="cd">${cd}</span>` : ''}${a.spice ? `<span class="cost">${a.spice}</span>` : ''}</button>`; }).join('')}</div>`;
   } else {
     const a = B.active;
     bot = `<div class="who dim">${a && a.side === 'B' ? `<span class="ptw">${a.def.boss ? '' : portrait(a.def, 40)}</span><span>Ходит противник: <b>${a.def.sn}</b></span>` : BT.auto && !B.over ? '<span>Отряд под управлением ИИ</span>' : ''}</div>`;
   }
-  const g = (lab, v, cls) => `<div class="bgz ${cls}"><span>${lab}</span><div class="hb"><i style="width:${Math.min(100, v)}%"></i></div><b>${v}</b></div>`;
+  const g = (lab, v, cls, gz) => `<button class="bgz ${cls} ${v >= 100 ? 'full' : ''}" data-gz="${gz}"><span>${lab}</span><div class="hb"><i style="width:${Math.min(100, v)}%"></i></div><b>${v}</b></button>`;
   $('#bwrap').innerHTML = `
     <div class="btop">
       <div class="btitle"><h3>${BT.cfg.title}${B.raid ? (bb => bb ? ` · фаза ${bb.phase}: ${PHASES[bb.phase]}` : '')(B.units.find(x => x.def.boss)) : ''}</h3><div class="order" aria-label="Порядок ходов">${order.map(u => glyph(u.def, u.side === 'B' ? 'e' : '')).join('')}<button class="blog ${BT.showLog ? 'on' : ''}" data-log="1" aria-pressed="${!!BT.showLog}" aria-label="Журнал боя" title="Журнал">${LOG_SVG}</button></div></div>
-      <div class="bgauges">${g('МЕЛАНЖ', B.spice.A, 'sp')}${g('ВРАГ', B.spice.B, 'spe')}${B.desert ? g(B.raid ? 'БЕШЕНСТВО' : 'РИТМ', Math.min(100, B.rhythm), 'worm') : ''}${B.raid ? `<div class="bgz"><span>УРОН</span><b>${fmt(B.bossStartHp - Math.max(0, B.units.find(x => x.def.boss).hp))}</b></div>` : ''}${ctx.presc ? '<div class="bgz presc">ПРОЗРЕНИЕ</div>' : ''}</div>
+      <div class="bgauges">${B.desert ? g(B.raid ? 'БЕШЕНСТВО' : 'РИТМ', Math.min(100, B.rhythm), 'worm', 'rhythm') : ''}${B.raid ? `<button class="bgz" data-gz="dmg"><span>УРОН</span><b>${fmt(B.bossStartHp - Math.max(0, B.units.find(x => x.def.boss).hp))}</b></button>` : ''}${ctx.presc ? '<button class="bgz presc" data-gz="presc">ПРОЗРЕНИЕ</button>' : ''}</div>
       <div class="bctl"><button class="btn bcb ${BT.auto ? 'on' : ''}" data-auto="1" aria-pressed="${BT.auto}">Авто</button><button class="btn bcb" data-speed="1" aria-label="Скорость">×${BT.speed}</button><button class="btn bci" data-bset="1" aria-label="Настройки боя" title="Настройки">${GEAR_SVG}</button></div>
     </div>
     <div class="ticker">${B.log.slice(-2).map(l => `<div class="${l.kind}">${l.text}</div>`).join('')}</div>
@@ -5230,7 +5253,7 @@ function noteHtml(n) {
 }
 function renderNotes() {
   let box = $('#notes'); if (!box) { box = document.createElement('div'); box.id = 'notes'; box.className = 'notes'; box.setAttribute('aria-live', 'polite'); document.body.appendChild(box); }
-  const hide = !!(BT && BT.B) || !!$('#lvlup'); box.hidden = hide || !NOTES.length; if (box.hidden) return;
+  const hide = !!(BT && BT.B) || !!$('#lvlup') || !!$('#celeb') || !!$('#overlay').innerHTML.trim() || !!$('#overlay2').innerHTML.trim(); box.hidden = hide || !NOTES.length; if (box.hidden) return;
   const vis = NOTES.slice(-3).reverse(), more = NOTES.length - vis.length;
   box.innerHTML = `${NOTES.length > 1 ? `<div class="nt-head"><span>${NOTES.length} уведомл.</span><button class="nt-all" data-ntall="1">Закрыть все</button></div>` : ''}
     ${vis.map(n => `<div class="nt ${n.kind}" data-nt="${n.id}">${noteHtml(n)}<button class="nt-x" data-ntx="${n.id}" aria-label="Закрыть">×</button></div>`).join('')}${more > 0 ? `<div class="nt-more">ещё ${more}</div>` : ''}`;
@@ -5311,6 +5334,12 @@ function meta2Click(d) {
   if (d.bsdlg) { S.skipDlg = !S.skipDlg; persist(); $('#bpop').remove(); BT.pop = false; openBattleSettings(); return true; }
   if (d.bsreplay) { $('#bpop').remove(); BT.pop = false; BT.resume = null; replayBattle(); return true; }
   if (d.bsquit) { $('#bpop').remove(); BT.pop = false; BT.resume = null; clearTimeout(BT.timer); BT.B.over = 'B'; finish(); return true; }
+  if (d.gz && BT && BT.B) { const B = BT.B, T = {
+      spice: ['Меланж', `Общий запас пряности отряда: <b>${B.spice.A}%</b> (у противника ${B.spice.B}%). Растёт на 10% за каждое действие вашего бойца, ульты легенд дают ещё +20–30%. Тратят его особые умения легенд и Пола — например, «Видение пути» и «Наездник червя» стоят по 50%. Когда запас полон, полоска над героем светится.`],
+      rhythm: [B.raid ? 'Бешенство червя' : 'Ритм пустыни', `Сейчас <b>${Math.min(100, B.rhythm)}%</b>. Удары не-фрименов создают ритм: +4% за удар, +10% за лазган, +30% за реакцию Хольцмана. На 100% ${B.raid ? 'червь впадает в бешенство и бьёт весь отряд' : 'приходит Шаи-Хулуд и бьёт по полю боя — фримены неуязвимы для него при лидерстве Муад\'Диба'}.`],
+      presc: ['Прозрение', 'В отряде есть провидец (Пол или Муад\'Диб): над врагами видно, кого и каким умением они ударят следующим ходом.'],
+      dmg: ['Урон по червю', `В этой атаке нанесено <b>${fmt(B.bossStartHp - Math.max(0, (B.units.find(x => x.def.boss) || {}).hp || 0))}</b>. Урон идёт в общий прогресс рейда и в подвиг «Укротитель червя».`],
+    }[d.gz]; if (T) bPop(`<div class="bph"><div><h3>${T[0]}</h3></div></div><p style="margin:0;font-size:14px">${T[1]}</p>`); return true; }
   if (d.toroster) { leaveBattle(); view = 'squad'; render(); return true; }
   return false;
 }
@@ -5385,11 +5414,13 @@ function showCeleb() {
   }
 }
 function celebClick(d) {
-  if (d.celebok) { const el = $('#celeb'); if (el) el.remove(); setTimeout(showCeleb, 50); return true; }
+  if (d.celebok) { const el = $('#celeb'); if (el) el.remove(); setTimeout(() => { showCeleb(); renderNotes(); }, 50); return true; }
   if (d.celebopen) { const el = $('#celeb'); if (el) el.remove(); if (!(BT && BT.B)) { view = 'squad'; render(); openDetail(d.celebopen); } return true; }
   return false;
 }
 
+const spiceUser = d => !!d && !d.boss && (d.legendary || ['special', 'ult'].some(k => d[k] && d[k].spice));
+function hourglass(v) { const p = Math.max(0, Math.min(100, v)), top = 1 - p / 100; return `<button class="hglass ${p >= 100 ? 'full' : ''}" data-gz="spice" aria-label="Меланж ${p}%" title="Меланж"><svg viewBox="0 0 24 32" aria-hidden="true"><defs><clipPath id="hgt"><path d="M5 4h14c0 6-5 8-6 12H11C10 12 5 10 5 4z"/></clipPath><clipPath id="hgb"><path d="M11 16h2c1 4 6 6 6 12H5c0-6 5-8 6-12z"/></clipPath></defs><rect x="3" y="1.5" width="18" height="2.5" rx="1" fill="#c08a50"/><rect x="3" y="28" width="18" height="2.5" rx="1" fill="#c08a50"/><path d="M5 4h14c0 6-5 8-6 12 1 4 6 6 6 12H5c0-6 5-8 6-12C10 12 5 10 5 4z" fill="rgb(255 255 255 / .1)" stroke="#e8d0a0" stroke-width="1"/><rect clip-path="url(#hgt)" x="0" y="${4 + 12 * (1 - top)}" width="24" height="12" fill="#e8913f"/><rect clip-path="url(#hgb)" x="0" y="${28 - 12 * p / 100}" width="24" height="12" fill="#ffb05a"/>${p > 0 && p < 100 ? '<path class="hgs" d="M12 16v12" stroke="#ffb05a" stroke-width=".8" stroke-dasharray="1 1.5"/>' : ''}</svg><b>${p}%</b></button>`; }
 window.claude?.hot?.snapshot?.(() => ({ save: S }));
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 
