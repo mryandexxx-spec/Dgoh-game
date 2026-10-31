@@ -820,6 +820,13 @@ button .amt[data-info]:hover { text-decoration: none; }
 @media (orientation: landscape) and (max-height: 520px) { .bpopbox { width: min(720px, 100%); padding: 10px 12px; } .bph h3 { font-size: 18px; } .fxi { width: 15px; height: 15px; } .fxi svg { width: 10px; height: 10px; } }
 @media (max-width: 520px) { .bkv { grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); } .bst { grid-template-columns: 64px minmax(0, 1fr) 38px; } .bst small { display: none; } }
 
+/* ===== unique ability icons: frame colour by ability kind ===== */
+.skb2[data-sksel$=":basic"] .skico, .bsk:nth-of-type(1) .bski { border-color: #b08a5a; }
+.skb2[data-sksel$=":special"] .skico { border-color: #5aa0e0; background: radial-gradient(circle at 50% 35%, #26445e, #0e1a24); color: #d8ecff; }
+.skb2[data-sksel$=":ult"] .skico { border-color: #e0604f; background: radial-gradient(circle at 50% 35%, #5e2620, #200c0a); color: #ffe0d8; }
+.skb2[data-sksel$=":passive"] .skico { border-color: #6fbf6a; background: radial-gradient(circle at 50% 35%, #2e4a2a, #0e1a0c); color: #e0ffd8; }
+.skb2[data-sksel$=":leader"] .skico { border-color: #ffd27a; background: radial-gradient(circle at 50% 35%, #5e4a1a, #201808); color: #fff2c8; }
+.abil.special { color: #d8ecff; } .abil.ult { color: #ffe0d8; }
 /* ===== legend ultimate cinematic ===== */
 .ultcine { position: fixed; inset: 0; z-index: 42; pointer-events: none; overflow: hidden; animation: ucfade 2.9s ease forwards; }
 @keyframes ucfade { 0% { opacity: 0; } 6% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
@@ -2405,92 +2412,212 @@ function addParticles3(A, type) {
   }
 }
 
-// ---------- characters ----------
+// ---------- characters (rigged: hips → spine → head/arms, hips → legs) ----------
+const HERO3 = {
+  baron: { fat: 1.55, bald: 1, float: .18 }, rabban: { wide: 1.22, bald: 1 }, feyd: { bald: 1, slim: .9 }, piter: { hair: 'long' },
+  shaddam: { style: 'emperor', hairC: '#b8562e' }, fenring: { style: 'emperor', nohelm: 1 }, mohiam: { old: 1 }, jessica: { hairC: '#7a3a22' },
+  thufir: { hairC: '#c8c0b0', old: 1 }, gurney: { scar: 1, baliset: 1 }, duncan: { hairC: '#151110', curly: 1 }, leto: { hairC: '#2a1c14', beard: 1 },
+  stilgar: { beard: 1, tube: 1 }, chani: { tube: 1, hairC: '#3a1a10' }, fedaykin: { mask: 1, tube: 1 }, kynes: { tube: 1 }, liet: { tube: 1 },
+  robot: { style: 'robot' }, cymek: { style: 'robot', cymek: 1 },
+};
+function lathe(profile, seg = 18, zs = .74) { const m = MB().CreateLathe('la', { shape: profile.map(([r, y]) => V3(r, y, 0)), tessellation: seg, cap: B3.Mesh.CAP_ALL }, SC); m.scaling.z = zs; return m; }
+function tube3(pts, r, seg = 8) { return MB().CreateTube('tb', { path: pts.map(p => V3(...p)), radius: r, tessellation: seg, cap: B3.Mesh.CAP_ALL }, SC); }
 function makeHuman3(def) {
-  const fac = def.f[0], L = LOOK[fac] || LOOK.atr, h = ghash(def.id), fem = FEM.has(def.id);
-  const style = def.legendary || fac === 'frem' ? 'robe' : def.f.includes('bg') ? 'bgrobe' : fac === 'hark' || fac === 'mach' ? 'armor' : fac === 'cor' ? 'cor' : 'tunic';
-  const long = style === 'robe' || style === 'bgrobe', armored = style === 'armor' || style === 'cor';
-  const helm = style === 'armor' && (def.id === 'trooper' || def.role === 'tank' || fac === 'mach');
-  const skinC = SKINS[h % SKINS.length][0], hairC = ['#2a1c14', '#5a3a22', '#151110', '#7a5232', '#3a2a20', '#8a8076'][(h >> 3) % 6];
+  const fac = def.f[0], L = LOOK[fac] || LOOK.atr, h = ghash(def.id), fem = FEM.has(def.id), X = HERO3[def.id] || {};
+  let style = X.style || (def.legendary || fac === 'frem' ? 'robe' : def.f.includes('bg') ? 'bgrobe' : fac === 'hark' ? 'armor' : fac === 'cor' ? 'cor' : 'tunic');
+  if (fac === 'mach') style = 'robot';
+  const long = style === 'robe' || style === 'bgrobe', armored = style === 'armor' || style === 'cor' || style === 'robot', robot = style === 'robot';
+  const helm = (style === 'armor' && (def.id === 'trooper' || def.role === 'tank')) || (style === 'cor' && !X.nohelm);
+  const skinC = SKINS[h % SKINS.length][0], hairC = X.old ? '#9a9488' : X.hairC || ['#2a1c14', '#5a3a22', '#151110', '#7a5232', '#3a2a20', '#6a4a2a'][(h >> 3) % 6];
+  const ibad = fac === 'frem' || def.legendary;
   const M = {
-    cloth: mat3(L.cloak), dark: mat3(L.dark), acc: mat3(L.acc, { roughness: .55 }), pants: mat3(L.pants), skin: mat3(skinC, { roughness: .6 }), hair: mat3(hairC, { roughness: .9 }),
-    boot: mat3('#2a1d14', { roughness: .7 }), metal: mat3(style === 'cor' ? '#d8b05a' : '#6a7698', { metalness: .45, roughness: .38 }), steel: mat3('#f0f3f6', { metalness: .5, roughness: .2, emissive: '#20242a' }),
-    eye: basic3('#120a06'), white: mat3('#f2ece0'),
+    cloth: mat3(L.cloak, { roughness: .9 }), dark: mat3(L.dark, { roughness: .85 }), acc: mat3(L.acc, { roughness: .5, metalness: .2 }), pants: mat3(L.pants, { roughness: .9 }),
+    skin: mat3(skinC, { roughness: .55 }), hair: mat3(hairC, { roughness: .8 }), boot: mat3('#2a1d14', { roughness: .6 }), belt: mat3('#4a3420', { roughness: .6 }),
+    metal: mat3(robot ? '#9aa0ac' : style === 'cor' || style === 'emperor' ? '#c8a656' : '#5a6684', { metalness: .55, roughness: .32 }),
+    steel: mat3('#eef2f6', { metalness: .6, roughness: .18, emissive: '#1a1e24' }), suit: mat3(fac === 'frem' ? '#4a4038' : L.pants, { roughness: .7 }),
+    eye: basic3(ibad ? '#2a6aff' : '#140c08'), white: ibad ? basic3('#7aa8ff') : mat3('#f2ece0', { roughness: .3 }), lip: mat3(fem ? '#a04a44' : '#7a4434'), brow: mat3(X.old ? '#cfc8bc' : hairC),
   };
-  if (def.legendary) M.cloth.emissiveColor = col3('#6a4a10').scale(.35);
-  const root = grp(null), body = grp(root);
-  const P = (mesh, mat, x, y, z, parent = body) => add(parent, mk(mesh, mat, x, y, z));
-  const sw = def.role === 'tank' ? 1.25 : 1, sleeve = style === 'armor' ? M.metal : style === 'bgrobe' ? M.dark : M.cloth;
-  if (!long) for (const sx of [-.11, .11]) P(bCyl(.085, .07, .82, 8), style === 'armor' ? M.metal : M.pants, sx, .5, 0);
-  for (const sx of [-.11, .11]) P(bBox(.13, .14, .27), M.boot, sx, .07, .035);
-  if (long) {
-    P(bCyl(.21 * sw, .44, 1.22, 18), style === 'bgrobe' ? M.dark : M.cloth, 0, .74, 0);
-    P(bCyl(.218 * sw, .218 * sw, .07, 18), style === 'bgrobe' ? M.acc : M.dark, 0, 1.0, 0);
-    P(bCyl(.25 * sw, .21 * sw, .52, 16), style === 'bgrobe' ? M.dark : M.cloth, 0, 1.28, 0);
+  if (def.legendary) M.cloth.emissiveColor = col3('#5a3a08').scale(.4);
+  const wide = (X.wide || 1) * (def.role === 'tank' ? 1.12 : 1) * (X.slim || 1), fat = X.fat || 1;
+  const root = grp(null), body = grp(root), hips = grp(body, 0, .95, 0);
+  const A = (parent, mesh, mat, x = 0, y = 0, z = 0) => add(parent, mk(mesh, mat, x, y, z));
+  // pelvis + legs
+  A(hips, bSph(.17 * wide * Math.min(fat, 1.3), 14), long ? M.suit : robot ? M.metal : M.pants, 0, -.02, 0).scaling.set(1, .62, .78);
+  const leg = s => {
+    const hip = grp(hips, s * .1 * wide, -.04, 0);
+    A(hip, bCyl(.078 * Math.min(fat, 1.25), .06, .44, 10), long ? M.suit : robot || style === 'armor' ? M.metal : M.pants, 0, -.22, 0);
+    const knee = grp(hip, 0, -.44, 0);
+    if (armored && !long) A(knee, bSph(.07, 10), M.metal, 0, 0, .03);
+    A(knee, bCyl(.058, .046, .42, 10), long ? M.suit : robot ? M.metal : M.pants, 0, -.21, 0);
+    const ank = grp(knee, 0, -.42, 0);
+    A(ank, bBox(.12, .1, .27), robot ? M.metal : M.boot, 0, -.035, .045);
+    A(ank, bCyl(.064, .07, .16, 10), robot ? M.metal : M.boot, 0, .05, 0);
+    return { hip, knee, ank };
+  };
+  const LL = leg(-1), LR = leg(1);
+  // robe skirt (sways with legs)
+  let skirt = null;
+  if (long) { skirt = grp(hips, 0, .06, 0); A(skirt, lathe([[0, 0], [.2 * wide * fat, 0], [.26 * wide, -.3], [.36, -.62], [.44, -.86], [.43, -.9], [0, -.9]], 22, .8), style === 'bgrobe' ? M.dark : M.cloth); }
+  else if (style === 'tunic' || style === 'emperor') { skirt = grp(hips, 0, .04, 0); A(skirt, lathe([[0, 0], [.19 * wide, 0], [.22 * wide, -.2], [.24 * wide, -.32], [0, -.32]], 18, .78), style === 'emperor' ? M.dark : M.cloth); }
+  // spine + torso
+  const spine = grp(hips, 0, .04, 0);
+  const torsoM = robot ? M.metal : style === 'armor' ? M.metal : style === 'bgrobe' ? M.dark : M.cloth;
+  const tor = A(spine, lathe([[0, 0], [.17 * wide * fat, 0], [.16 * wide * fat, .1], [.2 * wide * fat, .26], [.23 * wide * Math.min(fat, 1.25), .42], [.21 * wide, .52], [.09, .6], [0, .6]], 20, .7 * Math.max(1, fat * .9)), torsoM);
+  if (fat > 1) A(spine, bSph(.24 * fat * .8, 16), torsoM, 0, .2, .07).scaling.set(1, .9, .9);
+  A(spine, bCyl(.178 * wide * fat, .178 * wide * fat, .06, 20), robot ? M.dark : M.belt, 0, .02, 0).scaling.z = .74;
+  A(spine, bBox(.07, .055, .03), M.acc, 0, .02, .135 * fat);
+  if (style === 'tunic') { A(spine, bBox(.02, .42, .02), M.acc, 0, .3, .155); for (const y of [.16, .26, .36]) A(spine, bSph(.012, 6), M.acc, 0, y, .165); A(spine, bSph(.03, 8), M.acc, -.1, .42, .16); }
+  if (style === 'armor' || style === 'cor' || robot) { A(spine, bBox(.3 * wide, .2, .05), M.metal, 0, .35, .12); A(spine, bBox(.26 * wide, .1, .05), M.dark, 0, .18, .12); }
+  if (style === 'emperor') { A(spine, bBox(.32, .32, .04), M.acc, 0, .32, .12).scaling.x = .9; A(spine, bBox(.22, .05, .05), M.metal, 0, .46, .13); }
+  if (long) { A(spine, bCyl(.24 * wide, .18 * wide, .2, 18), style === 'bgrobe' ? M.dark : M.cloth, 0, .42, 0).scaling.z = .78; A(spine, bBox(.08, .45, .02), style === 'bgrobe' ? M.acc : M.dark, 0, .28, .14); }
+  // shoulders
+  for (const s of [-1, 1]) {
+    if (armored) { const pad = A(spine, bSph(.12, 12), M.metal, s * .25 * wide, .52, 0); pad.scaling.set(1.05, .7, 1); if (style === 'armor' && !robot) A(spine, bCone(.035, .12, 6), M.dark, s * .3 * wide, .6, 0).rotation.z = -s * .5; }
+    else A(spine, bSph(.085, 10), style === 'tunic' ? M.acc : torsoM, s * .24 * wide, .52, 0);
+  }
+  if (def.leader || style === 'emperor') { const cm = style === 'emperor' || fac === 'cor' ? mat3('#7a1f1a', { side: 'double', roughness: .7 }) : mat3(L.dark, { side: 'double' }); const cape = grp(spine, 0, .56, -.13); A(cape, bPlane(.6 * wide, 1.3), cm, 0, -.62, 0); cape.rotation.x = .12; A(spine, bTorus(.12, .025, 16), M.acc, 0, .56, .02).rotation.x = Math.PI / 2; root._cape = cape; }
+  // neck + head
+  A(spine, bCyl(.05, .06, .12, 10), robot ? M.dark : M.skin, 0, .64, 0);
+  const head = grp(spine, 0, .68, 0), H = (mesh, mat, x, y, z) => add(head, mk(mesh, mat, x, y, z));
+  if (robot) {
+    H(bBox(.22, .2, .22), M.metal, 0, .1, 0); H(bBox(.19, .04, .02), basic3('#ff3a2a'), 0, .12, .115); H(bCyl(.008, .008, .14, 4), M.dark, .07, .25, 0);
+    if (X.cymek) { H(bSph(.14, 16), basic3('#ffb0c8', { alpha: .55 }), 0, .26, 0); H(bSph(.09, 12), mat3('#d06a8a', { roughness: .4 }), 0, .25, 0); }
   } else {
-    P(bCyl(.25 * sw, .19, .62, 16), style === 'armor' ? M.metal : M.cloth, 0, 1.2, 0);
-    if (style === 'cor') { const ch = P(bCyl(.262 * sw, .205, .38, 16, false, .42), M.metal, 0, 1.3, 0); ch.rotation.y = Math.PI * .29; }
-    P(bCyl(.2, .26, .24, 16), style === 'armor' ? M.metal : M.cloth, 0, .8, 0);
-    P(bCyl(.205, .205, .065, 16), M.boot, 0, .92, 0);
-    P(bBox(.07, .06, .03), M.acc, 0, .92, .205);
-    if (style === 'tunic') P(bCyl(.09, .12, .08, 12), M.dark, 0, 1.53, 0);
+    const skull = H(bSph(.112, 20), M.skin, 0, .1, 0); skull.scaling.set(fem ? .9 : .97, 1.1, 1);
+    H(bSph(.085, 14), M.skin, 0, .045, .03).scaling.set(fem ? .82 : .95, .8, .85);
+    for (const s of [-1, 1]) {
+      H(bSph(.025, 8), M.skin, s * .105, .1, 0).scaling.set(.5, 1, .8);
+      H(bSph(.017, 8), M.white, s * .04, .115, .092); H(bSph(.0105, 8), M.eye, s * .04, .115, .106);
+      if (!helm) { const br = H(bBox(.045, .011, .012), M.brow, s * .042, .142, .1); br.rotation.z = s * -.12; }
+    }
+    const nose = H(bCone(.016, .055, 6), M.skin, 0, .085, .115); nose.rotation.x = Math.PI / 2 - .3;
+    H(bBox(.046, .009, .012), M.lip, 0, .035, .1);
+    if (X.scar) H(bBox(.008, .07, .006), mat3('#8a4a3a'), .05, .07, .095).rotation.z = .3;
+    if (X.beard) H(bSph(.08, 12, 1, .5), M.hair, 0, .03, .04).rotation.x = Math.PI;
+    if (X.tube) H(tube3([[-.02, .07, .11], [-.07, .06, .09], [-.11, .08, .02]], .006), M.dark);
+    if (X.mask) H(bBox(.15, .06, .05), M.dark, 0, .04, .08);
+    if (!long && !helm && !X.bald && style !== 'cor') {
+      if (fem || X.hair === 'long') { H(bSph(.123, 16, 1, .55), M.hair, 0, .12, -.008); H(bCyl(.1, .07, .3, 12), M.hair, 0, .01, -.07); }
+      else if (X.curly || (h >> 12) % 3 === 2) { for (const [x, y, z] of [[-.07, .19, .02], [0, .22, .02], [.07, .19, .02], [-.05, .2, -.06], [.05, .2, -.06], [0, .18, -.1], [-.1, .14, -.04], [.1, .14, -.04]]) H(bSph(.046, 8), M.hair, x, y, z); }
+      else { const cap = H(bSph(.118, 16, 1, .5), M.hair, 0, .12, -.01); cap.scaling.set(1.03, 1.1, 1.06); cap.rotation.x = -.25; }
+    }
+    if (X.bald) H(bSph(.114, 18, 1, .4), mat3(skinC, { roughness: .3, metalness: .1 }), 0, .11, 0);
+    if (long) {
+      const hoodM = style === 'bgrobe' && !def.legendary ? M.dark : M.cloth;
+      const hood = H(bSph(.16, 18, .7, .7), hoodM, 0, .11, -.01); hood.scaling.set(1, 1.12, 1.06); hood.rotation.y = Math.PI * 1.75; root._hood = hood;
+      if (style === 'robe' && !X.mask) H(bBox(.2, .07, .09), M.dark, 0, .0, .07);
+      if (def.legendary) H(bTorus(.14, .008, 24, .55), mat3('#e0b44a', { metalness: .8, roughness: .25, emissive: '#6a4400' }), 0, .12, .07).rotation.z = -.1 * Math.PI;
+    }
+    if (helm) {
+      const hm = H(bSph(.142, 18), M.metal, 0, .12, 0); hm.scaling.set(1, 1.08, 1.06);
+      if (style === 'cor') { H(bBox(.03, .14, .26), mat3('#a3322a'), 0, .27, -.02); for (const s of [-1, 1]) H(bBox(.03, .1, .07), M.metal, s * .12, .05, .05); }
+      else H(bBox(.18, .034, .05), basic3('#8fd8ff'), 0, .12, .125);
+    }
   }
-  for (const sx of [-1, 1]) P(bSph(armored ? .125 : .095, 12), armored ? M.metal : style === 'tunic' ? M.acc : sleeve, sx * .27 * sw, 1.47, 0);
-  if (def.leader) { const cm = fac === 'cor' ? mat3('#7a1f1a', { side: 'double' }) : mat3(L.dark, { side: 'double' }); const cape = P(bPlane(.66 * sw, 1.32), cm, 0, .86, -.22); cape.rotation.x = .1; }
-  P(bCyl(.055, .062, .12, 8), M.skin, 0, 1.57, 0);
-  const head = grp(body, 0, 1.73, 0), H = (mesh, mat, x, y, z) => add(head, mk(mesh, mat, x, y, z));
-  const skull = H(bSph(.12, 20), M.skin, 0, 0, 0); skull.scaling.set(fem ? .92 : 1, 1.12, 1);
-  for (const sx of [-.042, .042]) {
-    H(bSph(.018, 8), M.white, sx, .015, .1); H(bSph(.011, 6), M.eye, sx, .015, .115);
-    if (!helm) H(bBox(.05, .01, .012), M.hair, sx, .047, .108);
-  }
-  const nose = H(bCone(.017, .05, 6), M.skin, 0, -.012, .122); nose.rotation.x = Math.PI / 2;
-  H(bBox(.048, .009, .012), mat3(fem ? '#9a4a42' : '#6a3a2c'), 0, -.06, .107);
-  if (!long && !helm && style !== 'cor') {
-    const hs = (h >> 12) % 3;
-    if (fem) { H(bSph(.132, 16, 1, .5), M.hair, 0, .02, -.01); H(bCyl(.1, .08, .32, 12), M.hair, 0, -.1, -.07); }
-    else if (hs === 2) { for (const [x, y, z] of [[-.07, .09, .02], [0, .12, .02], [.07, .09, .02], [-.05, .1, -.06], [.05, .1, -.06], [0, .08, -.1], [-.1, .04, -.04], [.1, .04, -.04]]) H(bSph(.048, 8), M.hair, x, y, z); }
-    else { const cap = H(bSph(.128, 16, 1, hs ? .52 : .46), M.hair, 0, .022, -.008); cap.scaling.set(1.02, 1.08, 1.04); cap.rotation.x = hs ? -.18 : -.28; }
-  }
-  if (long) {
-    const hoodM = style === 'bgrobe' && !def.legendary ? M.dark : M.cloth;
-    const hood = H(bSph(.168, 18, .68, .68), hoodM, 0, .01, -.01); hood.scaling.set(1, 1.1, 1.05); hood.rotation.y = Math.PI * 1.16;
-    if (style === 'robe') H(bBox(.22, .085, .1), M.dark, 0, -.055, .07);
-    if (def.legendary) { const ci = H(bTorus(.15, .008, 24, .55), mat3('#e0b44a', { metalness: .8, roughness: .3, emissive: '#5a3a00' }), 0, .02, .06); ci.rotation.z = -.1 * Math.PI; }
-  }
-  if (helm) { const hm = H(bSph(.152, 18), M.metal, 0, .01, 0); hm.scaling.set(1, 1.1, 1.05); H(bBox(.19, .036, .05), basic3(fac === 'mach' ? '#ff4030' : '#8fd8ff'), 0, .018, .132); }
-  if (style === 'cor') { H(bSph(.142, 16, 1, .5), M.metal, 0, .02, 0); H(bBox(.035, .16, .3), mat3('#a3322a'), 0, .19, -.02); for (const sx of [-.12, .12]) H(bBox(.03, .1, .07), M.metal, sx, -.04, .05); }
   // arms
-  const arm = side => {
-    const pivot = grp(body, side * .3 * sw, 1.44, 0);
-    add(pivot, mk(bCyl(.058, .052, .34, 8), sleeve, 0, -.17, 0));
-    const elbow = grp(pivot, 0, -.34, 0);
-    add(elbow, mk(bCyl(.05, .045, .3, 8), sleeve, 0, -.15, 0));
-    const hand = grp(elbow, 0, -.31, 0);
-    add(hand, mk(bSph(.055, 8), style === 'armor' ? mat3('#232838') : M.skin));
-    pivot.rotation.z = side * .14; return { pivot, elbow, hand };
+  const arm = s => {
+    const sh = grp(spine, s * .28 * wide, .5, 0);
+    const sleeve = robot || style === 'armor' ? M.metal : long ? (style === 'bgrobe' ? M.dark : M.cloth) : M.cloth;
+    A(sh, bCyl(.06 * Math.min(fat, 1.3), .052, .3, 10), sleeve, 0, -.15, 0);
+    const el = grp(sh, 0, -.3, 0);
+    A(el, bSph(.052, 8), sleeve);
+    A(el, bCyl(.05, .042, .27, 10), long ? sleeve : robot ? M.metal : style === 'armor' ? M.dark : M.cloth, 0, -.135, 0);
+    if (armored) A(el, bCyl(.056, .056, .08, 10), M.metal, 0, -.22, 0);
+    const hand = grp(el, 0, -.29, 0);
+    A(hand, bBox(.06, .08, .045), robot || style === 'armor' ? mat3('#232838') : M.skin, 0, -.02, 0);
+    A(hand, bSph(.022, 6), robot || style === 'armor' ? mat3('#232838') : M.skin, s * -.03, -.01, .02);
+    sh.rotation.z = s * .12; return { sh, el, hand };
   };
   const R = arm(1), Lf = arm(-1);
-  R.pivot.rotation.x = -.45; R.elbow.rotation.x = -.75;
-  Lf.pivot.rotation.x = def.role === 'tank' ? -.7 : -.2; Lf.elbow.rotation.x = def.role === 'tank' ? -.9 : -.5;
-  const dt = def.basic.dt, w = grp(R.hand), W = (mesh, mat, x, y, z) => add(w, mk(mesh, mat, x, y, z));
+  // weapons
+  const dt = def.basic.dt, w = grp(R.hand, 0, -.04, 0), W = (mesh, mat, x, y, z) => add(w, mk(mesh, mat, x, y, z));
   if (dt === 'blade') {
-    const fr = fac === 'frem';
-    W(bBox(.032, fr ? .5 : .95, .012), fr ? mat3('#f4eddc', { roughness: .4 }) : M.steel, 0, fr ? .27 : .5, 0);
-    W(bBox(.16, .03, .04), mat3('#7a5a2e', { metalness: .4 }), 0, .02, 0);
-    w.rotation.x = 1.75;
-  } else if (dt === 'fast') { W(bBox(.05, .07, .24), mat3('#3a3a44', { metalness: .3, roughness: .4 }), 0, 0, .1); W(bBox(.045, .12, .05), mat3('#2a2a32'), 0, -.06, 0); w.rotation.x = 1.25; }
-  else if (dt === 'laser') { W(bBox(.06, .08, .82), mat3('#3a3d48', { metalness: .3, roughness: .35 }), 0, 0, .25); W(bSph(.04, 8), basic3('#7fe0ff'), 0, 0, .67); w.rotation.x = 1.3; }
-  else if (dt === 'poison') { W(bCyl(.006, .006, .3, 4), M.steel, 0, .15, 0); W(bSph(.028, 8), basic3('#7ad36a'), 0, .3, 0); w.rotation.x = 1.5; }
-  if (def.role === 'tank') { const sh = grp(Lf.hand, 0, -.05, .12); add(sh, mk(bBox(.5, .66, .05), M.cloth)); add(sh, mk(bBox(.4, .56, .02), M.acc, 0, 0, .03)); sh.rotation.x = 1.05; }
-  if (def.role === 'sup') { const st = grp(body, -.36 * sw, 1.0, .22); add(st, mk(bCyl(.025, .025, 2.0, 6), mat3('#6e5034'))); add(st, mk(bOcta(.08), M.acc, 0, 1.06, 0)); Lf.pivot.rotation.x = -.35; Lf.elbow.rotation.x = -.4; }
-  if (def.role === 'heal') add(Lf.hand, mk(bCyl(.05, .05, .14, 10), mat3('#3a8ec6', { roughness: .3, metalness: .2 }), 0, -.06, .02));
+    if (fac === 'frem') { W(tube3([[0, 0, 0], [0, .16, .015], [0, .32, .05], [0, .44, .1]], .018, 6), mat3('#f2ead6', { roughness: .3, emissive: '#2a2418' })); W(bCyl(.022, .022, .12, 8), mat3('#6a4a2a'), 0, -.04, 0); }
+    else if (robot) { W(bBox(.02, .55, .08), basic3('#ff5a3a'), 0, .3, 0); }
+    else { W(bBox(.03, .9, .012), M.steel, 0, .5, 0); W(bBox(.18, .028, .045), mat3('#b08a3a', { metalness: .6, roughness: .3 }), 0, .04, 0); W(bCyl(.02, .02, .14, 8), mat3('#3a2a1a'), 0, -.05, 0); }
+    w.rotation.x = 1.6;
+  } else if (dt === 'fast') { W(bBox(.05, .075, .26), mat3('#3a3a44', { metalness: .4, roughness: .35 }), 0, 0, .1); W(bBox(.045, .12, .05), mat3('#2a2a32'), 0, -.06, 0); W(bSph(.015, 6), basic3('#ffd27a'), 0, .01, .235); w.rotation.x = 1.25; }
+  else if (dt === 'laser') { W(bBox(.06, .085, .86), mat3('#3a3d48', { metalness: .4, roughness: .3 }), 0, 0, .26); W(bSph(.04, 8), basic3('#7fe0ff'), 0, 0, .7); W(bBox(.04, .14, .06), mat3('#2a2a32'), 0, -.08, 0); w.rotation.x = 1.3; }
+  else if (dt === 'poison') { W(bCyl(.006, .006, .3, 4), M.steel, 0, .15, 0); W(bSph(.026, 8), basic3('#7ad36a'), 0, .3, 0); w.rotation.x = 1.5; }
+  else if (dt === 'voice') { W(bSph(.03, 8), basic3('#c8a0ff', { alpha: .7 }), 0, 0, .05); }
+  root._muzzle = V3(0, .01, dt === 'laser' ? .7 : .24);
+  if (def.role === 'tank' && !robot) { const shd = grp(Lf.el, 0, -.16, .06); add(shd, mk(bCyl(.27, .27, .035, 24), M.cloth)); add(shd, mk(bCyl(.22, .22, .045, 24), M.acc)); add(shd, mk(bSph(.05, 8), M.metal, 0, .03, 0)); }
+  if (def.role === 'sup' && !robot) { const st = grp(Lf.hand, 0, -.02, .02); add(st, mk(bCyl(.022, .022, 1.85, 6), mat3('#6e5034'), 0, .22, 0)); add(st, mk(bOcta(.075), M.acc, 0, 1.17, 0)); add(st, mk(bSph(.04, 8), basic3(L.acc), 0, 1.17, 0)); }
+  if (def.role === 'heal') add(Lf.hand, mk(bCyl(.045, .045, .14, 10), mat3('#3a8ec6', { roughness: .2, metalness: .2, emissive: '#0a2030' }), 0, -.06, .02));
+  if (X.baliset) { const bl = grp(spine, 0, .3, -.16); add(bl, mk(bSph(.13, 12), mat3('#8a5a2a'), 0, 0, 0)).scaling.set(1, 1.3, .35); add(bl, mk(bBox(.04, .5, .03), mat3('#5a3a1a'), 0, .38, 0)); bl.rotation.z = .5; }
+  if (X.float) { root._float = X.float; for (const s of [-1, 1]) { const g = add(root, mk(bTorus(.09, .015, 16), basic3('#8fd8ff', { add: true, alpha: .7 }), s * .1, .02, .03, false)); g.rotation.x = Math.PI / 2; } }
   if (def.legendary) { const lt = new B3.PointLight('lg', V3(0, 1.3, 0), SC); lt.parent = root; lt.diffuse = col3('#ffc860'); lt.intensity = .9; lt.range = 3.5; }
-  const sc = (def.role === 'tank' ? 1.06 : 1) * (def.legendary ? 1.08 : 1); root.scaling.setAll(sc);
+  const sc = (def.role === 'tank' ? 1.05 : 1) * (def.legendary ? 1.08 : 1) * (X.cymek ? 1.15 : 1); root.scaling.setAll(sc);
   const mats = []; for (const m of root.getChildMeshes(false)) if (m.material && m.material._lit && !mats.includes(m.material)) mats.push(m.material);
   for (const m of mats) m._baseEm = m.emissiveColor.clone();
-  return { root, body, R, Lf, mats, h: 1.95 * sc };
+  const melee = dt === 'blade' || robot && dt !== 'fast';
+  root._staff = def.role === 'sup' && !robot;
+  return { root, body, hips, spine, head, R, Lf, LL, LR, skirt, wpn: w, mats, h: 1.95 * sc, melee, stance: def.role === 'tank' ? 'shield' : dt === 'blade' ? 'guard' : dt === 'voice' ? 'open' : 'gun', float: X.float || 0 };
 }
+
+const ease = k => k < 0 ? 0 : k > 1 ? 1 : k * k * (3 - 2 * k);
+const lerpN = (a, b, k) => a + (b - a) * k;
+const STANCE = { guard: [-.35, -.5, -.25, -.45], gun: [-.28, -.55, -.12, -.35], shield: [-.5, -.8, -.95, -1.15], open: [-.25, -.4, -.25, -.4] };
+function poseHuman(A, o, now, t, sp) {
+  const ph = o.phase, br = Math.sin(t * 2 + ph);
+  let pos = o.base.clone(), yaw = o.face, hipY = br * .008, hipX = Math.sin(t * .6 + ph) * .015, lean = .04 + br * .012, twist = 0, headX = 0, headY = Math.sin(t * .37 + ph) * .14;
+  const st = STANCE[o.stance] || STANCE.gun;
+  let rS = st[0] + Math.sin(t * 1.3 + ph) * .04, rE = st[1], lS = st[2] + Math.sin(t * 1.1 + ph + 1) * .04, lE = st[3], rZ = 0, lZ = 0;
+  let lx = 0, rx = 0, lk = .06, rk = .06, gait = 0;
+  if (o.active && !o.dead) { hipY += -.03 + Math.abs(Math.sin(t * 5)) * .02; lk = rk = .25; lean += .06; }
+  // ---- action ----
+  const a = o.act;
+  if (a && !o.dead) {
+    const k = (now - a.t0) / a.dur;
+    if (k >= 1) o.act = null;
+    else {
+      const face = Math.atan2(a.dir.x, a.dir.z);
+      if (a.kind === 'melee' || a.kind === 'aoe') {
+        if (k < .34) { const e = ease(k / .34); pos = B3.Vector3.Lerp(o.base, a.to, e); gait = B3.Vector3.Distance(o.base, pos) * 3.2; yaw = face; lean += .25 * Math.sin(Math.min(1, k / .34) * Math.PI) + .1; rS = -.4; rE = -.6; }
+        else if (k < .6) {
+          const s = (k - .34) / .26; pos = a.to.clone(); yaw = face;
+          if (a.kind === 'aoe') { yaw = face + ease(s) * Math.PI * 2; rS = -1.5; rE = -.1; rZ = -.6; lean += .15; lk = rk = .35; }
+          else if (s < .38) { const e = ease(s / .38); rS = lerpN(-.4, -2.7, e); rE = lerpN(-.6, -.25, e); twist = -.45 * e; lean -= .08 * e; lk = .3; }
+          else { const e = ease((s - .38) / .3); rS = lerpN(-2.7, .35, e); rE = lerpN(-.25, -.15, e); twist = lerpN(-.45, .5, e); lean += .3 * e; lk = .45; rk = .15; }
+          if (!a.fx && s > .45) { a.fx = 1; A.slashFX(a.to.add(a.dir.scale(.8)), face, a.kind === 'aoe'); }
+        } else { const e = ease((k - .6) / .4); pos = B3.Vector3.Lerp(a.to, o.base, e); gait = -B3.Vector3.Distance(a.to, pos) * 3.2; yaw = e < .7 ? face : lerpN(face, o.face, (e - .7) / .3); rS = lerpN(.35, st[0], e); rE = lerpN(-.15, st[1], e); twist = .5 * (1 - e); lean += .1 * (1 - e); }
+      } else if (a.kind === 'shoot') {
+        yaw = k < .85 ? face : lerpN(face, o.face, (k - .85) / .15);
+        const up = k < .25 ? ease(k / .25) : k < .75 ? 1 : 1 - ease((k - .75) / .25);
+        const lu = o.root._staff ? 0 : up * .8; rS = lerpN(st[0], -1.55, up); rE = lerpN(st[1], -.05, up); lS = lerpN(st[2], -1.3, lu); lE = lerpN(st[3], -.5, lu); lZ = -.35 * lu; headX = .08 * up;
+        const rec = k > .35 && k < .5 ? Math.sin((k - .35) / .15 * Math.PI) : 0; lean -= .12 * rec; rS += .35 * rec; pos.addInPlace(a.dir.scale(-.08 * rec));
+        if (!a.fx && k > .35) { a.fx = 1; A.muzzleFX(o, a); }
+      } else if (a.kind === 'voice') {
+        yaw = face; const up = Math.sin(Math.min(1, k / .8) * Math.PI); lean += .22 * up; headX = .15 * up; rS = lerpN(st[0], -1.3, up); lS = lerpN(st[2], -1.3, up); rZ = .5 * up; lZ = -.5 * up; rE = lE = -.15;
+        if (!a.fx && k > .3) { a.fx = 1; A.voiceFX(o, a); }
+      } else {
+        const up = Math.sin(Math.min(1, k) * Math.PI); rS = lerpN(st[0], -2.85, up); lS = lerpN(st[2], -2.85, up); rE = lE = -.2; rZ = .25 * up; lZ = -.25 * up; headX = -.25 * up; hipY += .08 * Math.sin(Math.min(1, k / .5) * Math.PI); lk = rk = .3 * (1 - up);
+        if (!a.fx && k > .25) { a.fx = 1; A.castFX(o); }
+      }
+    }
+  }
+  // ---- gait ----
+  if (gait) { const p = gait; lx = Math.sin(p) * .65; rx = -lx; lk = Math.max(.05, Math.sin(p + 1.3)) * .95; rk = Math.max(.05, Math.sin(p + 1.3 + Math.PI)) * .95; hipY += Math.abs(Math.cos(p)) * .035 - .02; if (o.act && o.act.kind !== 'aoe') { lS += rx * .5; } }
+  // ---- hit reaction (delayed to the moment of impact) ----
+  if (o.hitT && now >= o.hitT && !o.dead) { const k = (now - o.hitT) / (340 / Math.min(sp, 2)); if (k < 1) { const s = Math.sin(k * Math.PI) * (o.hitCrit ? 1.6 : 1); lean -= .32 * s; headX -= .3 * s; pos.addInPlace((o.hitDir || V3(o.side === 'A' ? -1 : 1, 0, 0)).scale(.18 * s)); lk = rk = Math.max(lk, .35 * s); rS += .3 * s; lS += .3 * s; } }
+  if (o.healT && now >= o.healT) { const k = (now - o.healT) / 600; if (k < 1) { const s = Math.sin(k * Math.PI); lS -= .5 * s; rZ += .2 * s; lZ -= .2 * s; headX -= .15 * s; } }
+  // ---- death ----
+  let fall = 0, fallZ = 0;
+  if (o.dead && now >= o.deathT) { const k = Math.min(1, (now - o.deathT) / 950); const e1 = ease(k / .4), e2 = ease((k - .35) / .65); lk = rk = 1.25 * e1 * (1 - e2 * .6); hipY -= .33 * e1 - .2 * e2; lean += .35 * e1 - .2 * e2; rS = lerpN(rS, -.3, e1); lS = lerpN(lS, -.3, e1); headX += .3 * e1; fall = -e2 * Math.PI / 2 * .95; fallZ = -e2 * .45; }
+  // ---- apply ----
+  o.root.position.copyFrom(pos); if (o.float) o.root.position.y += o.float + Math.sin(t * 1.6 + ph) * .03;
+  o.root.rotation.y = yaw;
+  o.body.rotation.set(fall, 0, 0); o.body.position.set(0, 0, fallZ); o.body.scaling.y = 1;
+  o.hips.position.set(hipX, .95 + hipY, 0); o.hips.rotation.y = twist * .25;
+  o.spine.rotation.set(lean, twist, 0); o.spine.scaling.y = 1 + br * .006;
+  o.head.rotation.set(headX, headY, 0);
+  o.LL.hip.rotation.x = -lx - (o.dead ? 0 : lk * .45); o.LL.knee.rotation.x = lk; o.LL.ank.rotation.x = -lk * .5 + lx * .3;
+  o.LR.hip.rotation.x = -rx - (o.dead ? 0 : rk * .45); o.LR.knee.rotation.x = rk; o.LR.ank.rotation.x = -rk * .5 + rx * .3;
+  o.R.sh.rotation.set(rS, 0, .12 + rZ); o.R.el.rotation.x = rE; o.Lf.sh.rotation.set(lS, 0, -.12 + lZ); o.Lf.el.rotation.x = lE;
+  if (o.skirt) o.skirt.rotation.x = (-(lx + rx) * .3 - (lk + rk) * .12) + lean * -.2;
+  if (o.root._cape) o.root._cape.rotation.x = .12 + Math.abs(gait ? Math.sin(gait) : 0) * .25 + Math.max(0, -lean) * .5;
+}
+
 function makeWorm3() {
   const root = grp(null), body = grp(root);
   const pts = [V3(1.5, -3, 3), V3(1.4, 2.5, 1.5), V3(.4, 6.4, -.5), V3(-1.8, 7.6, -1), V3(-3.6, 6.4, -.8)];
@@ -2538,6 +2665,13 @@ class Arena3D {
     // emissive bloom for windows, eyes, rings, worm glow
     this.glow = new B3.GlowLayer('glow', S, { mainTextureRatio: this.small ? .35 : .5, blurKernelSize: 32 }); this.glow.intensity = .55;
     this.glow.addExcludedMesh(this.sky); if (this.ground) this.glow.addExcludedMesh(this.ground); for (const o of Object.values(this.units)) if (o.bubble) this.glow.addExcludedMesh(o.bubble);
+    const tx = (() => { SC = S; const t = dynTex(glowCanvas(), 0, true); SC = null; return t; })();
+    const sp = this.sparks = new B3.ParticleSystem('sparks', 600, S); sp.particleTexture = tx; sp.emitter = V3(0, -50, 0); sp.minEmitBox = V3(-.15, -.2, -.15); sp.maxEmitBox = V3(.15, .2, .15);
+    sp.direction1 = V3(-2.5, 1, -2.5); sp.direction2 = V3(2.5, 4, 2.5); sp.gravity = V3(0, -9, 0); sp.minLifeTime = .2; sp.maxLifeTime = .45; sp.minSize = .04; sp.maxSize = .1; sp.minEmitPower = 1; sp.maxEmitPower = 2.2;
+    sp.colorDead = new B3.Color4(1, .4, .1, 0); sp.blendMode = B3.ParticleSystem.BLENDMODE_ADD; sp.emitRate = 0; sp.manualEmitCount = 0; sp.start();
+    const hp = this.healP = new B3.ParticleSystem('heal', 300, S); hp.particleTexture = tx; hp.emitter = V3(0, -50, 0); hp.minEmitBox = V3(-.35, 0, -.35); hp.maxEmitBox = V3(.35, 1.6, .35);
+    hp.direction1 = V3(-.1, .8, -.1); hp.direction2 = V3(.1, 1.6, .1); hp.minLifeTime = .6; hp.maxLifeTime = 1; hp.minSize = .06; hp.maxSize = .14; hp.color1 = new B3.Color4(.5, 1, .55, 1); hp.color2 = new B3.Color4(.8, 1, .6, 1); hp.colorDead = new B3.Color4(.3, 1, .4, 0);
+    hp.blendMode = B3.ParticleSystem.BLENDMODE_ADD; hp.emitRate = 0; hp.manualEmitCount = 0; hp.start();
     // cinematic post-processing
     const P = this.pipe = new B3.DefaultRenderingPipeline('dp', true, S, [this.camera]);
     P.fxaaEnabled = true; P.samples = this.engine.webGLVersion >= 2 && !this.small ? 4 : 1;
@@ -2596,17 +2730,35 @@ class Arena3D {
     if (relay || (this.raid && !this.laidOut)) { this.laidOut = true; this.relayout(); }
   }
   sync(B, targets) {
-    const now = performance.now();
+    const now = performance.now(), sp = Math.max(1, this.speed); this.hitDelay = {};
+    const key = B.actor ? B.actor + ':' + B.log.length : null;
+    if (key && key !== this._actKey && this.units[B.actor]) {
+      this._actKey = key;
+      const o = this.units[B.actor], shots = (B.shots || []).filter(s => s.a === B.actor), tg = [...new Set(shots.map(s => s.t))].map(id => this.units[id]).filter(Boolean);
+      o.atkT = now; o.lastAct = B.round;
+      if (o.boss) { const t0 = tg[0]; const d = t0 ? t0.base.subtract(o.base) : V3(-1, 0, 0); d.y = 0; o.atkDir = d.normalize(); for (const t of tg) this.hitDelay[t.uid] = 300 / sp; }
+      else {
+        const dt = shots[0] && shots[0].dt;
+        let kind = !shots.length ? 'cast' : dt === 'voice' ? 'voice' : dt === 'blade' ? 'melee' : 'shoot';
+        if (kind === 'melee' && tg.length > 1) kind = 'aoe';
+        const dur = { melee: 820, aoe: 920, shoot: 640, voice: 760, cast: 760 }[kind] / sp;
+        const center = tg.length ? tg.reduce((acc, t) => acc.add(t.base), V3()).scale(1 / tg.length) : null;
+        const dir = center ? center.subtract(o.base) : V3(o.side === 'A' ? 1 : -1, 0, 0); dir.y = 0; const dl = dir.length(), nd = dl > .001 ? dir.scale(1 / dl) : V3(1, 0, 0);
+        const to = kind === 'melee' ? tg[0].base.subtract(nd.scale(.95)) : kind === 'aoe' ? center.subtract(nd.scale(1.4)) : o.base.clone();
+        to.y = this.heightAt(to.x, to.z);
+        o.act = { kind, t0: now, dur, dir: nd, to, tg, dt };
+        const hitAt = { melee: .52, aoe: .56, shoot: .4, voice: .5, cast: .3 }[kind] * dur;
+        for (const t of tg) { this.hitDelay[t.uid] = hitAt; t.hitDir = nd.clone(); }
+      }
+    }
     for (const u of B.units) {
       const o = this.units[u.uid]; if (!o) continue;
-      if (!u.alive && !o.dead) { o.dead = true; o.deathT = now; }
-      for (const e of B.events) if (e.uid === u.uid) { if (/dmg|crit|raw|shield|poison/.test(e.kind)) o.hitT = now; if (e.kind === 'heal') o.healT = now; if (e.kind === 'crit') this.shakeT = now; }
-      if (B.actor === u.uid && o.lastAct !== B.round) {
-        o.lastAct = B.round; o.atkT = now;
-        const s = (B.shots || []).find(s => s.a === u.uid), t = s && this.units[s.t];
-        const d = t ? t.base.subtract(o.base) : V3(u.side === 'A' ? 1 : -1, 0, 0); d.y = 0; o.atkDir = d.length() > 0 ? d.normalize() : V3(1, 0, 0);
-        o.melee = s && (s.dt === 'blade' || s.dt === 'voice');
-        if (t && !o.melee && !o.boss) this.tracer(o, t, s.dt);
+      const dl = this.hitDelay[u.uid] || 0;
+      if (!u.alive && !o.dead) { o.dead = true; o.deathT = now + dl; }
+      for (const e of B.events) if (e.uid === u.uid) {
+        if (/dmg|crit|raw|shield|poison/.test(e.kind)) { o.hitT = now + dl; o.hitCrit = e.kind === 'crit'; if (!o.boss) this.at(now + dl, () => this.sparkFX(o, e.kind === 'crit' ? 2 : e.kind === 'shield' ? 0 : 1)); }
+        if (e.kind === 'heal') { o.healT = now + dl; this.at(now + dl, () => this.healFX(o)); }
+        if (e.kind === 'crit') this.at(now + dl, () => { this.shakeT = performance.now(); });
       }
       o.active = B.active === u; o.tgt = targets.has(u.uid);
       o.shieldK = u.maxShield ? u.shield / u.maxShield : 0; o.stealth = !!u.fx.stealth; o.phaseN = u.phase || 1;
@@ -2619,14 +2771,46 @@ class Arena3D {
       this.glT = now; if (!this.glLight) { this.glLight = new B3.PointLight('gll', V3(0, 6, 2), this.scene); this.glLight.diffuse = col3('#ffc860'); this.glLight.range = 40; this.glLight.intensity = 0; }
     }
   }
-  // short glowing bolt for ranged shots
-  tracer(o, t, dt) {
-    const S = this.scene; SC = S;
-    const a = o.base.add(V3(0, 1.35, 0)), b = t.base.add(V3(0, 1.1, 0));
-    const ln = MB().CreateTube('tr', { path: [a, b], radius: dt === 'laser' ? .05 : .025, tessellation: 6 }, S); const c = dt === 'laser' ? '#7fe0ff' : dt === 'voice' ? '#c8a0ff' : dt === 'poison' ? '#9ae06a' : '#ffd890';
-    ln.material = basic3(c, { add: true, alpha: .9 }); ln.isPickable = false; SC = null;
-    const t0 = performance.now(), life = 260; const obs = S.onBeforeRenderObservable.add(() => { const k = (performance.now() - t0) / life; if (k >= 1) { S.onBeforeRenderObservable.remove(obs); ln.dispose(); return; } ln.material.alpha = .9 * (1 - k); ln.scaling.setAll(1); });
+  at(t, fn) { (this.fxq ||= []).push({ t, fn }); }
+  fade(mesh, life, upd) { (this.tr ||= []).push({ mesh, t0: performance.now(), life, upd }); }
+  wpos(node, local) { node.computeWorldMatrix(true); return B3.Vector3.TransformCoordinates(local || V3(), node.getWorldMatrix()); }
+  muzzleFX(o, a) {
+    SC = this.scene; const from = this.wpos(o.wpn, o.root._muzzle), c = a.dt === 'laser' ? '#7fe0ff' : a.dt === 'poison' ? '#9ae06a' : '#ffd890';
+    const fl = mk(bSph(.09, 10), basic3(c, { add: true, alpha: 1 }), from.x, from.y, from.z, false); this.fade(fl, 110, (m, k) => { m.scaling.setAll(1 + k * 1.5); m.material.alpha = 1 - k; });
+    for (const t of a.tg) {
+      const b = t.base.add(V3(0, t.boss ? 3 : 1.1, 0)), ln = MB().CreateTube('tr', { path: [from, b], radius: a.dt === 'laser' ? .045 : .022, tessellation: 6 }, SC);
+      ln.material = basic3(c, { add: true, alpha: .95 }); ln.isPickable = false; this.fade(ln, a.dt === 'laser' ? 320 : 200, (m, k) => { m.material.alpha = .95 * (1 - k); });
+    }
+    SC = null;
   }
+  slashFX(p, yaw, aoe) {
+    SC = this.scene; const arc = aoe ? 1 : .42, r = aoe ? 1.6 : .9;
+    const pts = []; for (let i = 0; i <= 24; i++) { const a = -arc * Math.PI + i / 24 * arc * Math.PI * 2; pts.push(V3(Math.sin(a) * r, 1.1 + (aoe ? 0 : (i / 24 - .5) * .9), Math.cos(a) * r)); }
+    const m = MB().CreateTube('sl', { path: pts, radiusFunction: i => .05 * Math.sin(i / 24 * Math.PI) + .005, tessellation: 6 }, SC); m.material = basic3('#e8f4ff', { add: true, alpha: .9 }); m.position.copyFrom(aoe ? p.subtract(V3(0, 0, 0)) : p.subtract(V3(Math.sin(yaw) * .8, 0, Math.cos(yaw) * .8))); m.rotation.y = yaw; m.isPickable = false;
+    this.fade(m, 230, (mm, k) => { mm.material.alpha = .9 * (1 - k); mm.scaling.setAll(1 + k * .25); });
+    SC = null;
+  }
+  voiceFX(o, a) {
+    SC = this.scene; const from = o.base.add(V3(0, 1.62, 0));
+    for (const t of a.tg) for (let n = 0; n < 3; n++) {
+      const ring = mk(bTorus(.22, .02, 24), basic3('#c8a0ff', { add: true, alpha: 0 }), from.x, from.y, from.z, false), to = t.base.add(V3(0, 1.3, 0)), dir = to.subtract(from);
+      const q = new B3.Quaternion(); B3.Quaternion.FromUnitVectorsToRef(V3(0, 0, 1), dir.normalizeToNew(), q); ring.rotationQuaternion = q;
+      const d0 = n * 90; this.fade(ring, 420 + d0, (m, k) => { const kk = Math.max(0, (k * (420 + d0) - d0) / 420); m.position.copyFrom(B3.Vector3.Lerp(from, to, kk)); m.scaling.setAll(1 + kk * 3); m.material.alpha = kk > 0 ? .8 * (1 - kk) : 0; });
+    }
+    SC = null;
+  }
+  castFX(o) {
+    SC = this.scene; const c = o.side === 'A' ? '#ffd27a' : '#ff7a6a', p = o.base;
+    const ring = mk(bTorus(.5, .04, 32), basic3(c, { add: true, alpha: .9 }), p.x, p.y + .06, p.z, false); ring.rotation.x = Math.PI / 2; this.fade(ring, 650, (m, k) => { m.scaling.set(1 + k * 2.2, 1 + k * 2.2, 1); m.material.alpha = .9 * (1 - k); });
+    const col = mk(bCyl(.5, .6, 3, 24, true), basic3(c, { add: true, alpha: .4 }), p.x, p.y + 1.5, p.z, false); this.fade(col, 650, (m, k) => { m.material.alpha = .4 * Math.sin(k * Math.PI); m.scaling.set(1 - k * .4, 1 + k * .3, 1 - k * .4); });
+    SC = null;
+  }
+  sparkFX(o, power) {
+    if (!this.sparks) return; const p = o.root.position;
+    this.sparks.emitter = V3(p.x, p.y + 1.1, p.z); this.sparks.manualEmitCount = power === 2 ? 70 : power === 1 ? 32 : 18;
+    const c = power === 0 ? [.5, .8, 1] : [1, .85, .55]; this.sparks.color1 = new B3.Color4(c[0], c[1], c[2], 1); this.sparks.color2 = new B3.Color4(c[0], c[1] * .8, c[2] * .6, 1);
+  }
+  healFX(o) { if (!this.healP) return; const p = o.root.position; this.healP.emitter = V3(p.x, p.y + .2, p.z); this.healP.manualEmitCount = 40; }
   project(v) { const p = B3.Vector3.Project(v, B3.Matrix.IdentityReadOnly, this.scene.getTransformMatrix(), new B3.Viewport(0, 0, this.w, this.h)); return [p.x, p.y]; }
   placeHud() {
     const field = document.getElementById('field'); if (!field) return;
@@ -2662,16 +2846,8 @@ class Arena3D {
         if (o.dead) { const k = Math.min(1, (now - o.deathT) / 1400); o.body.position.y = -k * 9; }
         for (const m of o.mats) m.emissiveColor.set(o.phaseN >= 4 ? .25 : 0, 0, 0);
       } else {
-        const breathe = Math.sin(t * 2 + o.phase) * .012;
-        o.body.scaling.y = 1 + breathe; o.body.position.set(0, 0, 0); o.body.rotation.set(0, 0, 0);
-        o.R.pivot.rotation.x = -.45 + Math.sin(t * 1.3 + o.phase) * .04;
-        if (o.atkT && !o.dead) {
-          const dur = 520 / sp, k = (now - o.atkT) / dur;
-          if (k < 1) { const s = Math.sin(k * Math.PI), reach = o.melee ? 1.25 : .35; r.position.addInPlace(o.atkDir.scale(s * reach)); o.R.pivot.rotation.x = -.45 - s * (o.melee ? 2.0 : 1.0); o.R.elbow.rotation.x = -.75 + s * .6; }
-        }
-        if (o.hitT && !o.dead) { const k = (now - o.hitT) / (300 / Math.min(sp, 2)); if (k < 1) { if (this.raid) r.position.z += Math.sin(k * Math.PI) * .18; else r.position.x += (o.side === 'A' ? -1 : 1) * Math.sin(k * Math.PI) * .18; } }
-        if (o.dead) { const k = Math.min(1, (now - o.deathT) / 650); const e = k * k * (3 - 2 * k); o.body.rotation.x = -e * Math.PI / 2 * .98; o.body.position.y = e * .12; o.body.position.z = -e * .35; }
-        const hk = o.hitT ? Math.max(0, 1 - (now - o.hitT) / 260) : 0, hl = o.healT ? Math.max(0, 1 - (now - o.healT) / 500) : 0;
+        poseHuman(this, o, now, t, sp);
+        const hk = o.hitT && now >= o.hitT ? Math.max(0, 1 - (now - o.hitT) / 260) : 0, hl = o.healT && now >= o.healT ? Math.max(0, 1 - (now - o.healT) / 500) : 0;
         for (const m of o.mats) { const b0 = m._baseEm; m.emissiveColor.set(b0.r + hk * .9 + hl * .05, b0.g + hk * .35 + hl * .5, b0.b + hk * .2 + hl * .1); m.alpha = o.stealth ? .38 : 1; }
         if (o.bubble) o.bubble.material.alpha = o.dead ? 0 : o.shieldK * (.05 + Math.sin(t * 3 + o.phase) * .015) + (hk && o.shieldK ? .18 * hk : 0);
       }
@@ -2692,6 +2868,8 @@ class Arena3D {
       if (k > 1) { W.g.dispose(false, true); if (W.burst) W.burst.dispose(); W.done = true; }
     }
     this.summons = this.summons.filter(W => !W.done);
+    if (this.fxq && this.fxq.length) { const due = this.fxq.filter(q => now >= q.t); this.fxq = this.fxq.filter(q => now < q.t); for (const q of due) q.fn(); }
+    if (this.tr && this.tr.length) { this.tr = this.tr.filter(T => { const k = (now - T.t0) / T.life; if (k >= 1) { T.mesh.dispose(false, true); return false; } T.upd(T.mesh, k); return true; }); }
     this.scene.render();
     this.placeHud();
   }
@@ -2944,6 +3122,135 @@ function nodeOpen(i) { const n = NODES[i], prev = i - 1; return (prev < 0 || NOD
 const nodeTitle = i => { const n = NODES[i]; return `${CAMP_DEF[n.camp].short} ${ROM7[n.c]}-${n.m + 1}. ${n.n}`; };
 const nodeEn = i => CAMP_DEF[NODES[i].camp].en === 'candle' ? 'candle' : 'water';
 const nodeCost = i => nodeEn(i) === 'candle' ? CANDLE_COST : BATTLE_WATER;
+
+// ===================== unique ability icons =====================
+// 24×24 glyphs; every ability of every hero maps to its own glyph (see SKILL_ICON).
+const GF = 'fill="currentColor"', GS = w => `fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"`;
+const GLYPH = {
+  sword: `<path d="M18.5 3l2.5.5.5 2.5L10 17.5 7.5 15z" ${GF}/><path d="M5 13.5l5.5 5.5M6.5 18.5L4 21" ${GS(2.2)}/>`,
+  slash: `<path d="M4 20C8 12 13 7 21 3c-4 6-9 11-17 17z" ${GF}/><path d="M3 9c3-1 5 0 6 2M15 21c0-3 1-5 3-6" ${GS(1.4)} opacity=".7"/>`,
+  slowblade: `<path d="M17 3l3 .5.5 3-8.5 8.5-3-3z" ${GF}/><path d="M7 14l3 3M8.5 16.5l-3 3" ${GS(2)}/><path d="M3 6h5M2 9.5h4M4 3h3" ${GS(1.5)} opacity=".75"/>`,
+  xblades: `<path d="M4 4l9 9M20 4l-9 9" ${GS(2.6)}/><path d="M8 15l-4 4M16 15l4 4M6 13l5 5M18 13l-5 5" ${GS(2)}/>`,
+  crys: `<path d="M6 21c1-7 5-13 13-18-2 7-6 13-11 17z" ${GF}/><path d="M4 19l3 3" ${GS(2.6)}/>`,
+  crys2: `<path d="M5 20c2-6 6-11 13-15-1 6-5 11-10 14z" ${GF}/><path d="M3 18l3 3" ${GS(2.4)}/><circle cx="18" cy="17" r="3" ${GF} opacity=".7"/>`,
+  crys3: `<path d="M5 20c2-6 6-11 13-15-1 6-5 11-10 14z" ${GF}/><path d="M3 18l3 3" ${GS(2.4)}/><path d="M14 18h7M17.5 14.5v7" ${GS(1.8)}/>`,
+  pdagger: `<path d="M16 3l3 3-9 9-3-3z" ${GF}/><path d="M6 13l5 5M5 19l2-2" ${GS(2)}/><path d="M19 13c1.5 2 2.5 3.3 2.5 4.6a2.5 2.5 0 01-5 0c0-1.3 1-2.6 2.5-4.6z" ${GF}/>`,
+  stiletto: `<path d="M20 3l-11 11 1 1L21 4z" ${GF}/><path d="M7 13l4 4M5.5 19.5l3-3" ${GS(2.2)}/><circle cx="17" cy="17" r="1.5" ${GF}/><circle cx="20" cy="20" r="1" ${GF}/>`,
+  pistol: `<path d="M3 8h15l2 2v2H11l-1 3H7l-1 5H3l1-6 2-2H3z" ${GF}/><path d="M20 9h2" ${GS(2)}/>`,
+  cannon: `<path d="M2 9h14v5H2z" ${GF}/><path d="M16 10h6v3h-6zM5 14l-1 6h4l1-6" ${GF}/><path d="M22 8l1-1M22 15l1 1" ${GS(1.4)}/>`,
+  lasgun: `<path d="M2 12h11" ${GS(3)}/><path d="M13 12h9" ${GS(1.6)}/><circle cx="21" cy="12" r="2.4" ${GF}/><path d="M5 12l-1 6h3l1-6" ${GF}/>`,
+  dart: `<path d="M3 21L16 8" ${GS(2)}/><path d="M14 4l6-1-1 6z" ${GF}/><path d="M3 21l2-5M3 21l5-2" ${GS(1.4)}/>`,
+  needle: `<path d="M4 20L19 5" ${GS(1.4)}/><circle cx="19.5" cy="4.5" r="2" ${GF}/><path d="M6 13c1.4 2 2.2 3.2 2.2 4.3a2.2 2.2 0 01-4.4 0c0-1.1.8-2.3 2.2-4.3z" ${GF}/>`,
+  volley: `<circle cx="18" cy="6" r="2.4" ${GF}/><circle cx="18" cy="12" r="2.4" ${GF}/><circle cx="18" cy="18" r="2.4" ${GF}/><path d="M3 6h11M5 12h9M3 18h11" ${GS(1.8)}/>`,
+  palm: `<path d="M8 21v-7l-3-3 1-1 3 2V4h2v7h1V3h2v8h1V4h2v9h1V7h2v8c0 4-3 6-6 6z" ${GF}/>`,
+  fist: `<path d="M6 10h11a2 2 0 012 2v3a5 5 0 01-5 5H10a4 4 0 01-4-4z" ${GF}/><path d="M7 10V6M10 10V5M13 10V5M16 10V6" ${GS(2.6)}/>`,
+  claw: `<path d="M5 3c4 3 6 8 4 15M11 3c3 3 4 8 2 15M17 3c3 4 3 9 0 15" ${GS(2.2)}/>`,
+  flame: `<path d="M12 2c4 5 7 8 7 13a7 7 0 01-14 0c0-3 2-5 3-7 0 3 1 4 2 5 0-4 0-7 2-11z" ${GF}/>`,
+  plasma: `<circle cx="16" cy="8" r="5" ${GF}/><path d="M3 21l8-8M5 15l4 4M3 17l2 2" ${GS(1.6)}/><circle cx="16" cy="8" r="2" fill="#1a1008"/>`,
+  ring8: Array.from({ length: 8 }, (_, i) => { const a = i / 8 * Math.PI * 2; return `<path d="M${(12 + Math.cos(a) * 3.5).toFixed(1)} ${(12 + Math.sin(a) * 3.5).toFixed(1)}L${(12 + Math.cos(a) * 10).toFixed(1)} ${(12 + Math.sin(a) * 10).toFixed(1)}" ${GS(1.8)}/>`; }).join('') + `<circle cx="12" cy="12" r="2.5" ${GF}/>`,
+  fan: Array.from({ length: 7 }, (_, i) => { const a = Math.PI * (1.1 + i * .13); return `<path d="M12 21L${(12 + Math.cos(a) * 10).toFixed(1)} ${(21 + Math.sin(a) * 10 * 1.6).toFixed(1)}" ${GS(1.6)}/>`; }).join('') + `<circle cx="12" cy="20" r="2" ${GF}/>`,
+  butt: `<path d="M4 6l12 8-2 3L2 9z" ${GF}/><path d="M16 14l5 3-2 4-5-3z" ${GF}/><path d="M19 5l2-2M21 8h2M17 3V1" ${GS(1.5)}/>`,
+  shield: `<path d="M12 2l8 3v6c0 6-4 9-8 11-4-2-8-5-8-11V5z" ${GF}/>`,
+  shieldplus: `<path d="M12 2l8 3v6c0 6-4 9-8 11-4-2-8-5-8-11V5z" ${GF}/><path d="M12 8v8M8 12h8" stroke="#1a1008" stroke-width="2.2" stroke-linecap="round"/>`,
+  wall: `<path d="M2 7l5-2 5 2v5c0 4-3 6-5 7-2-1-5-3-5-7z" ${GF}/><path d="M12 7l5-2 5 2v5c0 4-3 6-5 7-2-1-5-3-5-7z" ${GF} opacity=".75"/>`,
+  guard: `<path d="M12 2v15M8 17h8M12 17v5" ${GS(2.2)}/><path d="M4 9l4-2v5c0 3-2 4-4 5-2-1-2-2-2-5V7z" ${GF} transform="translate(1 1)"/>`,
+  hawk: `<path d="M12 6c2 3 6 4 10 2-1 4-5 6-8 6l2 7-4-3-4 3 2-7c-3 0-7-2-8-6 4 2 8 1 10-2z" ${GF}/>`,
+  griffin: `<path d="M12 3l5 4-2 3 5 4-6-1-2 8-2-8-6 1 5-4-2-3z" ${GF}/>`,
+  lion: Array.from({ length: 10 }, (_, i) => { const a = i / 10 * Math.PI * 2; return `<path d="M12 12L${(12 + Math.cos(a) * 10).toFixed(1)} ${(12 + Math.sin(a) * 10).toFixed(1)}" ${GS(2)}/>`; }).join('') + `<circle cx="12" cy="12" r="5.5" ${GF}/>`,
+  crown: `<path d="M3 18h18l-1.5-10-4.5 4L12 5l-3 7-4.5-4z" ${GF}/><rect x="3" y="19" width="18" height="2.4" rx="1" ${GF}/>`,
+  scroll: `<path d="M6 3h11a2 2 0 012 2v14a2 2 0 01-2 2H7a3 3 0 01-3-3V5" ${GS(2)}/><path d="M8 8h7M8 12h7M8 16h4" ${GS(1.6)}/>`,
+  banner: `<path d="M5 22V2" ${GS(2.2)}/><path d="M6 3h14l-3 4.5L20 12H6z" ${GF}/>`,
+  command: `<path d="M3 10v4h3l7 5V5L6 10z" ${GF}/><path d="M16 8l4-3M16 12h5M16 16l4 3" ${GS(1.8)}/>`,
+  voice: `<path d="M4 9v6h3.5l4.5 4V5L7.5 9z" ${GF}/><path d="M15 9a4 4 0 010 6M17.5 6.5a7.5 7.5 0 010 11" ${GS(1.8)}/>`,
+  howl: `<circle cx="7" cy="12" r="3" ${GF}/><path d="M12 7a7 7 0 010 10M15 4.5a11 11 0 010 15M18 2.5a14 14 0 010 19" ${GS(1.7)}/>`,
+  litany: `<circle cx="12" cy="12" r="9" ${GS(1.8)}/><circle cx="12" cy="12" r="4" ${GS(1.8)}/><circle cx="12" cy="12" r="1.5" ${GF}/>`,
+  box: `<rect x="3" y="7" width="12" height="12" rx="1" ${GF}/><path d="M15 13h4l2-2" ${GS(1.6)}/><circle cx="21" cy="11" r="1.2" ${GF}/><path d="M7 7V4h4v3" ${GS(1.6)}/>`,
+  eye: `<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" ${GF}/><circle cx="12" cy="12" r="3.2" fill="#1a1008"/>`,
+  spiceeye: `<path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z" ${GS(1.8)}/><circle cx="12" cy="12" r="4" ${GF}/><path d="M12 2v2M12 20v2M4 4l1.5 1.5M20 4l-1.5 1.5" ${GS(1.6)}/>`,
+  path: `<path d="M2 9s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5z" ${GF}/><circle cx="10" cy="9" r="2" fill="#1a1008"/><path d="M8 22c2-3 6-3 8-6s2-3 6-4" ${GS(1.8)} stroke-dasharray="2 2.5"/>`,
+  bolt: `<path d="M13 2L4 14h7l-2 8 10-13h-7z" ${GF}/>`,
+  worm: `<path d="M3 19c3 0 3-6 7-6s3 6 7 6 3-11 6-11" ${GS(2.6)}/><circle cx="21" cy="6.5" r="2.4" ${GF}/>`,
+  rider: `<path d="M2 20c3 0 4-5 8-5s4 5 8 5" ${GS(2.4)}/><path d="M13 4l-2 9M11 13l5-5" ${GS(1.8)}/><path d="M12 3a2 2 0 110 .1" ${GS(1.8)}/>`,
+  maw: `<circle cx="12" cy="12" r="9" ${GF}/>` + Array.from({ length: 10 }, (_, i) => { const a = i / 10 * Math.PI * 2; return `<path d="M${(12 + Math.cos(a) * 9).toFixed(1)} ${(12 + Math.sin(a) * 9).toFixed(1)}L${(12 + Math.cos(a + .3) * 4).toFixed(1)} ${(12 + Math.sin(a + .3) * 4).toFixed(1)}L${(12 + Math.cos(a + .6) * 9).toFixed(1)} ${(12 + Math.sin(a + .6) * 9).toFixed(1)}" fill="#1a1008"/>`; }).join(''),
+  storm: `<path d="M20 8a8 8 0 10-3 9" ${GS(2)}/><path d="M16 10a4 4 0 10-2 4" ${GS(2)}/><path d="M17 17l3 1-1-3" ${GF}/>`,
+  coriolis: `<circle cx="12" cy="12" r="3" ${GF}/><path d="M12 3c5 0 8 4 8 8M21 12c0 5-4 8-8 8M12 21c-5 0-8-4-8-8M3 12c0-5 4-8 8-8" ${GS(1.8)}/>`,
+  drop: `<path d="M12 2c4 5.5 7 9 7 12.5a7 7 0 01-14 0C5 11 8 7.5 12 2z" ${GF}/>`,
+  wol: `<path d="M12 3c3.6 5 6 8 6 11a6 6 0 01-12 0c0-3 2.4-6 6-11z" ${GF}/><path d="M12 10v7M8.5 13.5h7" stroke="#1a1008" stroke-width="2" stroke-linecap="round"/><path d="M19 3l.8 1.6L21.5 5l-1.7.4L19 7l-.8-1.6L16.5 5l1.7-.4z" ${GF}/>`,
+  tribe: `<circle cx="6" cy="8" r="2.6" ${GF}/><circle cx="12" cy="6" r="2.8" ${GF}/><circle cx="18" cy="8" r="2.6" ${GF}/><path d="M2 20c0-4 2-7 4-7s3 1 3 2M22 20c0-4-2-7-4-7s-3 1-3 2M8 21c0-5 2-8 4-8s4 3 4 8z" ${GF}/>`,
+  sietch: `<path d="M1 21l7-12 4 5 3-6 8 13z" ${GF}/><path d="M10 21a2 3 0 014 0z" fill="#1a1008"/>`,
+  web: `<path d="M12 2v20M2 12h20M5 5l14 14M19 5L5 19" ${GS(1.2)}/><path d="M12 6l4 2 2 4-2 4-4 2-4-2-2-4 2-4z" ${GS(1.4)}/><circle cx="12" cy="12" r="1.8" ${GF}/>`,
+  trap: `<path d="M3 16h18" ${GS(2)}/><path d="M4 16l2-6 2 6 2-6 2 6 2-6 2 6 2-6 2 6" ${GS(1.6)}/><circle cx="12" cy="20" r="1.6" ${GF}/>`,
+  mind: `<path d="M9 3a4 4 0 00-4 4 3.5 3.5 0 00-1 6 4 4 0 005 5V3zM15 3a4 4 0 014 4 3.5 3.5 0 011 6 4 4 0 01-5 5V3z" ${GF}/><path d="M12 3v18" stroke="#1a1008" stroke-width="1.4"/>`,
+  gear: `<circle cx="12" cy="12" r="3" ${GS(2)}/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" ${GS(2.4)}/>`,
+  skull: `<path d="M12 3a8 8 0 00-8 8c0 3 1.5 5 3 6v3h10v-3c1.5-1 3-3 3-6a8 8 0 00-8-8z" ${GF}/><circle cx="8.5" cy="11" r="2" fill="#1a1008"/><circle cx="15.5" cy="11" r="2" fill="#1a1008"/>`,
+  betray: `<circle cx="9" cy="6" r="3" ${GF}/><path d="M4 21c0-6 2-9 5-9s5 3 5 9z" ${GF}/><path d="M22 8l-8 8" ${GS(2)}/><path d="M13 15l3 3" ${GS(2.4)}/>`,
+  mask: `<path d="M3 5c4 1 6 1 9-1 3 2 5 2 9 1 0 9-4 15-9 15S3 14 3 5z" ${GF}/><path d="M6 10l3 1M18 10l-3 1M9 15c2 1 4 1 6 0" stroke="#1a1008" stroke-width="1.6" stroke-linecap="round"/>`,
+  hidden: `<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" ${GS(1.8)} opacity=".6"/><path d="M3 21L21 3" ${GS(2.2)}/>`,
+  oath: `<path d="M8 21v-7l-2-3 1-1 2 2V5h2v6h1V4h2v7h1V5h2v9c0 4-2 7-5 7z" ${GF}/><path d="M18 2c1.2 1.6 2 2.6 2 3.6a2 2 0 01-4 0c0-1 .8-2 2-3.6z" ${GF}/>`,
+  lute: `<ellipse cx="9" cy="15" rx="6" ry="6.5" ${GF}/><path d="M13 10l8-8" ${GS(2.2)}/><circle cx="9" cy="15" r="2" fill="#1a1008"/>`,
+  note: `<path d="M9 18V5l11-2v13" ${GS(2)}/><circle cx="6.5" cy="18" r="3" ${GF}/><circle cx="17.5" cy="16" r="3" ${GF}/>`,
+  bull: `<path d="M3 5c0 4 3 5 5 5M21 5c0 4-3 5-5 5" ${GS(2)}/><path d="M7 9h10l-1 7-4 5-4-5z" ${GF}/>`,
+  float: `<path d="M8 3h8v9H8z" ${GF}/><ellipse cx="12" cy="17" rx="7" ry="2" ${GS(1.6)}/><ellipse cx="12" cy="21" rx="4.5" ry="1.4" ${GS(1.4)}/>`,
+  beast: `<path d="M3 3l4 6M21 3l-4 6" ${GS(2.2)}/><path d="M6 9h12l-2 9-4 4-4-4z" ${GF}/><path d="M9.5 13l1.5 1M14.5 13L13 14" stroke="#1a1008" stroke-width="1.6"/>`,
+  cleaver: `<path d="M3 4h12v10H5z" ${GF}/><path d="M15 9l7 7-2 2-7-7" ${GF}/>`,
+  chip: `<rect x="6" y="6" width="12" height="12" rx="1.5" ${GF}/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" ${GS(1.6)}/><circle cx="12" cy="12" r="2.4" fill="#1a1008"/>`,
+  brain: `<path d="M12 3a9 8 0 100 16 9 8 0 100-16z" ${GS(1.6)}/><path d="M7 11c1-3 3-3 4-1s3 2 4-1M7 14c2 1 3 0 5 0s3 1 5 0" ${GS(1.6)}/><path d="M9 19v3h6v-3" ${GF}/>`,
+  armor: `<path d="M5 4h14l1 6-3 10H7L4 10z" ${GF}/><path d="M9 8h6M9 12h6" stroke="#1a1008" stroke-width="1.6"/>`,
+  target: `<circle cx="12" cy="12" r="8" ${GS(1.8)}/><circle cx="12" cy="12" r="3" ${GF}/><path d="M12 1v5M12 18v5M1 12h5M18 12h5" ${GS(1.8)}/>`,
+  leaf: `<path d="M20 3C8 3 4 9 4 16v5c2-7 6-11 12-13-5 3-8 7-9 11 9 0 13-7 13-16z" ${GF}/>`,
+  compass: `<circle cx="12" cy="12" r="9" ${GS(1.8)}/><path d="M12 5l3 7-3 7-3-7z" ${GF}/>`,
+  heart: `<path d="M12 21l-8-8a5 5 0 017-7l1 1 1-1a5 5 0 017 7z" ${GF}/><path d="M12 9v6M9 12h6" stroke="#1a1008" stroke-width="2" stroke-linecap="round"/>`,
+  moon: `<path d="M15 3a9 9 0 100 18 7 7 0 010-18z" ${GF}/><circle cx="18" cy="7" r="1" ${GF}/>`,
+  emblem: `<circle cx="12" cy="12" r="9" ${GF}/><path d="M12 6l1.8 3.8 4.2.5-3 2.9.8 4.1L12 15.3l-3.8 2 .8-4.1-3-2.9 4.2-.5z" fill="#1a1008"/>`,
+  march: `<path d="M3 20l4-8 3 4 4-9 3 6 4-8" ${GS(2)}/><path d="M17 5l4 0 0 4" ${GS(2)}/>`,
+  vengeance: `<path d="M12 3l2 6h6l-5 4 2 7-5-4-5 4 2-7-5-4h6z" ${GF}/><path d="M12 9v5" stroke="#1a1008" stroke-width="1.8"/>`,
+  sand: `<path d="M2 18c4-3 7-3 10 0s6 3 10 0" ${GS(2)}/><path d="M2 13c4-3 7-3 10 0s6 3 10 0" ${GS(1.6)} opacity=".7"/><circle cx="16" cy="6" r="3" ${GF}/>`,
+  protect: `<path d="M12 2l9 3v6c0 6-4 9-9 11-5-2-9-5-9-11V5z" ${GS(1.8)}/><circle cx="12" cy="9" r="2.4" ${GF}/><path d="M7.5 17c.5-3 2.3-4.5 4.5-4.5s4 1.5 4.5 4.5z" ${GF}/>`,
+  gladius: `<path d="M12 2l2.5 4v9h-5V6z" ${GF}/><path d="M7 15h10M12 15v5" ${GS(2.2)}/><circle cx="12" cy="21.5" r="1.3" ${GF}/>`,
+  shadow: `<path d="M12 2c3 0 5 2.5 5 5.5 0 2-1 3.5-2 4.5l4 10H5l4-10c-1-1-2-2.5-2-4.5C7 4.5 9 2 12 2z" ${GF}/><path d="M9.5 8l2 .8M14.5 8l-2 .8" stroke="#1a1008" stroke-width="1.4"/>`,
+  pistol2: `<path d="M2 8h14l2 2v2H9l-1 3H5l-1 5H1l1-6 2-2H2z" ${GF}/><path d="M19 7l3-2M19 11h4M19 15l3 2" ${GS(1.5)}/>`,
+  pistol3: `<path d="M3 9h13l2 2v2H10l-1 3H6l-1 5H2l1-6 2-2H3z" ${GF}/><path d="M20 4c1 1.3 1.6 2.2 1.6 3a1.6 1.6 0 01-3.2 0c0-.8.6-1.7 1.6-3z" ${GF}/>`,
+  pistolG: `<path d="M3 11h13l2 2v2H10l-1 3H6l-1 4H2l1-6 2-1H3z" ${GF}/><path d="M6 8l2-3 2 2 2-3 2 3 2-2 2 3z" ${GF}/>`,
+  laserpistol: `<path d="M3 9h11l2 2v2H9l-1 3H5l-1 5H1l1-6 2-2H3z" ${GF}/><path d="M16 12h7" ${GS(1.4)}/><circle cx="17" cy="12" r="1.6" ${GF}/>`,
+  deathmask: `<path d="M5 4h14v9c0 5-3 8-7 8s-7-3-7-8z" ${GF}/><path d="M8 10h3M13 10h3" stroke="#1a1008" stroke-width="2"/><path d="M9 16h6" stroke="#1a1008" stroke-width="1.4" stroke-dasharray="1.5 1"/>`,
+  sandstrike: `<path d="M2 19c4-2 7-2 10 0s6 2 10 0" ${GS(2)}/><path d="M9 17c1-5 4-9 9-13-1 5-4 9-7 12z" ${GF}/>`,
+  gom: `<path d="M12 3v11" ${GS(1.4)}/><circle cx="12" cy="16" r="2.2" ${GF}/><path d="M5 22h14" ${GS(2)}/><path d="M8 6l4-3 4 3" ${GS(1.6)}/>`,
+  kneel: `<circle cx="12" cy="4.5" r="2.5" ${GF}/><path d="M12 8v6l-4 3 1 4M12 14l5 1v6M8 10l4 1 4-2" ${GS(2)}/>`,
+};
+const SKILL_ICON = {
+  'leto:basic': 'sword', 'leto:special': 'protect', 'leto:ult': 'command', 'leto:passive': 'shieldplus', 'leto:leader': 'hawk',
+  'paul:basic': 'slash', 'paul:special': 'path', 'paul:ult': 'bolt', 'paul:passive': 'eye',
+  'jessica:basic': 'palm', 'jessica:special': 'voice', 'jessica:ult': 'litany', 'jessica:passive': 'mask',
+  'gurney:basic': 'slowblade', 'gurney:special': 'fist', 'gurney:ult': 'lute', 'gurney:passive': 'note',
+  'duncan:basic': 'xblades', 'duncan:special': 'guard', 'duncan:ult': 'ring8', 'duncan:passive': 'bull',
+  'thufir:basic': 'pistol', 'thufir:special': 'gear', 'thufir:ult': 'scroll', 'thufir:passive': 'mind',
+  'baron:basic': 'needle', 'baron:special': 'web', 'baron:ult': 'trap', 'baron:passive': 'float', 'baron:leader': 'griffin',
+  'feyd:basic': 'pdagger', 'feyd:special': 'xblades', 'feyd:ult': 'crown', 'feyd:passive': 'vengeance',
+  'rabban:basic': 'cannon', 'rabban:special': 'beast', 'rabban:ult': 'cleaver', 'rabban:passive': 'skull',
+  'piter:basic': 'dart', 'piter:special': 'mind', 'piter:ult': 'betray', 'piter:passive': 'mask',
+  'trooper:basic': 'pistol2', 'trooper:special': 'lasgun', 'trooper:ult': 'volley', 'trooper:passive': 'armor',
+  'stilgar:basic': 'crys', 'stilgar:special': 'march', 'stilgar:ult': 'tribe', 'stilgar:passive': 'kneel', 'stilgar:leader': 'sietch',
+  'chani:basic': 'crys2', 'chani:special': 'sandstrike', 'chani:ult': 'moon', 'chani:passive': 'sand',
+  'kynes:basic': 'pistol3', 'kynes:special': 'wol', 'kynes:ult': 'drop', 'kynes:passive': 'compass',
+  'fedaykin:basic': 'crys3', 'fedaykin:special': 'oath', 'fedaykin:ult': 'deathmask', 'fedaykin:passive': 'hidden',
+  'shaddam:basic': 'pistolG', 'shaddam:special': 'scroll', 'shaddam:ult': 'march', 'shaddam:passive': 'crown', 'shaddam:leader': 'lion',
+  'bashar:basic': 'volley', 'bashar:special': 'banner', 'bashar:ult': 'fan', 'bashar:passive': 'vengeance',
+  'legion:basic': 'gladius', 'legion:special': 'shield', 'legion:ult': 'wall', 'legion:passive': 'armor',
+  'mohiam:basic': 'voice', 'mohiam:special': 'gom', 'mohiam:ult': 'howl', 'mohiam:passive': 'litany',
+  'fenring:basic': 'stiletto', 'fenring:special': 'hidden', 'fenring:ult': 'shadow', 'fenring:passive': 'target',
+  'muaddib:basic': 'crys', 'muaddib:special': 'path', 'muaddib:ult': 'rider', 'muaddib:passive': 'spiceeye', 'muaddib:leader': 'emblem', 'muaddib:gl': 'worm',
+  'liet:basic': 'crys2', 'liet:special': 'tribe', 'liet:ult': 'coriolis', 'liet:passive': 'leaf', 'liet:leader': 'sietch', 'liet:gl': 'maw',
+  'atrguard:basic': 'laserpistol', 'atrguard:special': 'butt', 'atrguard:ult': 'volley', 'atrguard:passive': 'hawk',
+  'robot:basic': 'plasma', 'robot:special': 'claw', 'robot:ult': 'target', 'robot:passive': 'chip',
+  'cymek:basic': 'claw', 'cymek:special': 'armor', 'cymek:ult': 'flame', 'cymek:passive': 'brain',
+};
+// fall back sensibly for anything unmapped (new heroes)
+function skillGlyph(def, key) {
+  const g = SKILL_ICON[def.id + ':' + key]; if (g && GLYPH[g]) return GLYPH[g];
+  if (key === 'leader') return GLYPH.crown; if (key === 'passive') return GLYPH.shieldplus; if (key === 'gl') return GLYPH.worm;
+  const ab = def[key] || {}; return GLYPH[{ blade: 'sword', fast: 'pistol', laser: 'lasgun', voice: 'voice', poison: 'needle' }[ab.dt]] || (ab.heal ? GLYPH.heart : GLYPH.emblem);
+}
+const skillSvg = (def, key) => `<svg viewBox="0 0 24 24" aria-hidden="true">${skillGlyph(def, key)}</svg>`;
 
 </script>
 <script>
@@ -3292,7 +3599,7 @@ function slotBtn(cid, k) {
 let detailCid = null;
 let detailSk = 'basic';
 const SKI = { passive: '<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>', leader: '<path d="M4 18h16l-1.5-9-4 3.5L12 6l-2.5 6.5-4-3.5z" fill="currentColor"/><rect x="4" y="19" width="16" height="2" rx="1" fill="currentColor"/>' };
-function skIcon(d, k) { const ab = k === 'gl' ? d.gl : d[k]; const svg = k === 'gl' ? AB_ICONS.worm : SKI[k] || AB_ICONS[iconFor(ab)] || AB_ICONS.blade; return `<svg viewBox="0 0 24 24" aria-hidden="true">${svg}</svg>`; }
+function skIcon(d, k) { return skillSvg(d, k); }
 function skDetailHtml(id, k) {
   const d = CH[id], p = prog(id), locked = !p.stars;
   if (k === 'gl') return glCardHtml(id).replace(/<p>([\s\S]*?)<\/p>/, (m, t) => `<p>${fxText(t)}</p>`);
@@ -4004,9 +4311,9 @@ function openUnitPop(uid) {
   else {
     const skRow = k => { const a = d[k]; if (!a) return ''; const cd = u.cd[k] || 0, sp = a.spice && B.spice[u.side] < a.spice;
       const st = k === 'basic' ? 'всегда готова' : cd > 0 ? `откат: ${cd} ${cd === 1 ? 'ход' : cd < 5 ? 'хода' : 'ходов'}` : sp ? `нужно ${a.spice} Пряности` : 'готова';
-      return `<div class="bsk ${k !== 'basic' && (cd > 0 || sp) ? 'cd' : 'ready'}"><span class="bski"><svg viewBox="0 0 24 24" aria-hidden="true">${AB_ICONS[iconFor(a)]}</svg></span><div><b>${a.n}</b> <span class="mono">ур. ${skLv(u, k)}${a.cd ? ` · перезарядка ${a.cd}` : ''}</span><p>${a.d}</p></div><span class="bskst mono">${st}</span></div>`.replace(`<p>${a.d}</p>`, `<p>${fxText(a.d)}</p>`); };
+      return `<div class="bsk ${k !== 'basic' && (cd > 0 || sp) ? 'cd' : 'ready'}"><span class="bski">${skillSvg(d, k)}</span><div><b>${a.n}</b> <span class="mono">ур. ${skLv(u, k)}${a.cd ? ` · перезарядка ${a.cd}` : ''}</span><p>${a.d}</p></div><span class="bskst mono">${st}</span></div>`.replace(`<p>${a.d}</p>`, `<p>${fxText(a.d)}</p>`); };
     html += `<p class="chap">Способности</p>${['basic', 'special', 'ult'].map(skRow).join('')}`;
-    if (u.glOn) html += `<div class="bsk gl ${u.glUsed ? 'cd' : u.ultM >= 100 ? 'ready' : 'cd'}"><span class="bski"><svg viewBox="0 0 24 24" aria-hidden="true">${AB_ICONS.worm}</svg></span><div><b>${d.gl.n}</b> <span class="mono">ультимативная</span></div><span class="bskst mono">${u.glUsed ? 'использована' : `заряд ${u.ultM}%`}</span></div>`;
+    if (u.glOn) html += `<div class="bsk gl ${u.glUsed ? 'cd' : u.ultM >= 100 ? 'ready' : 'cd'}"><span class="bski">${skillSvg(d, 'gl')}</span><div><b>${d.gl.n}</b> <span class="mono">ультимативная</span></div><span class="bskst mono">${u.glUsed ? 'использована' : `заряд ${u.ultM}%`}</span></div>`;
     const pas = [];
     if (d.passive) pas.push(`<div class="bps"><b>${d.passive.n}</b> <span class="mono">своя пассивка · ур. ${skLv(u, 'passive')}</span><p>${fxText(d.passive.d)}</p></div>`);
     const L = leaderFor(B, u);
@@ -4112,8 +4419,8 @@ function renderBattle() {
     const sel = w.def[BT.sel];
     bot = `<div class="who"><span class="ptw">${portrait(w.def, 54, TIER_COL[prog(w.def.id).gear])}</span><div class="whotext"><b>${w.def.n}</b><div class="desc"><b>${sel.n}</b> <span class="mono">${BT.sel === 'gl' ? 'ультимативная' : 'ур. ' + ((prog(w.def.id).sk || {})[BT.sel] || 1)}</span>. ${sel.d}</div><div class="hint">${sel.tgt === 'enemy' ? 'Коснитесь врага, чтобы атаковать · удерживайте бойца — сведения' : 'Нажмите способность ещё раз, чтобы применить'}</div></div></div>
       <div class="abils">${['basic', 'special', 'ult', 'gl'].filter(k => w.def[k] && (k !== 'gl' || (w.glOn && !w.glUsed))).map(k => { const a = w.def[k], ready = abilityReady(B, w, k), cd = w.cd[k] > 0 ? w.cd[k] : '';
-        if (k === 'gl') return `<button class="abil gl ${ready ? 'full' : ''}" data-ab="gl" aria-pressed="${BT.sel === 'gl'}" ${ready ? '' : 'disabled'} aria-label="${a.n}" title="${a.n}" style="--m:${w.ultM}"><svg viewBox="0 0 24 24" aria-hidden="true">${AB_ICONS.worm}</svg><span class="glpct">${ready ? 'УЛЬТА' : Math.floor(w.ultM) + '%'}</span></button>`;
-        return `<button class="abil ${k}" data-ab="${k}" aria-pressed="${BT.sel === k}" ${ready ? '' : 'disabled'} aria-label="${a.n}" title="${a.n}"><svg viewBox="0 0 24 24" aria-hidden="true">${AB_ICONS[iconFor(a)]}</svg>${cd ? `<span class="cd">${cd}</span>` : ''}${a.spice ? `<span class="cost">${a.spice}</span>` : ''}</button>`; }).join('')}</div>`;
+        if (k === 'gl') return `<button class="abil gl ${ready ? 'full' : ''}" data-ab="gl" aria-pressed="${BT.sel === 'gl'}" ${ready ? '' : 'disabled'} aria-label="${a.n}" title="${a.n}" style="--m:${w.ultM}">${skillSvg(w.def, 'gl')}<span class="glpct">${ready ? 'УЛЬТА' : Math.floor(w.ultM) + '%'}</span></button>`;
+        return `<button class="abil ${k}" data-ab="${k}" aria-pressed="${BT.sel === k}" ${ready ? '' : 'disabled'} aria-label="${a.n}" title="${a.n}">${skillSvg(w.def, k)}${cd ? `<span class="cd">${cd}</span>` : ''}${a.spice ? `<span class="cost">${a.spice}</span>` : ''}</button>`; }).join('')}</div>`;
   } else {
     const a = B.active;
     bot = `<div class="who dim">${a && a.side === 'B' ? `<span class="ptw">${a.def.boss ? '' : portrait(a.def, 40)}</span><span>Ходит противник: <b>${a.def.sn}</b></span>` : BT.auto && !B.over ? '<span>Отряд под управлением ИИ</span>' : ''}</div>`;
@@ -4139,6 +4446,7 @@ function renderBattle() {
     c.appendChild(f);
   }
   if (BT.arena) { BT.arena.speed = BT.speed; BT.arena.sync(B, targets); BT.arena.placeHud(); }
+  if (BT.arena && BT.arena.hitDelay) for (const [uid, d] of Object.entries(BT.arena.hitDelay)) if (d > 0) document.querySelectorAll(`.unit[data-uid="${uid}"] .float`).forEach(f => { f.style.animationDelay = Math.round(d) + 'ms'; f.style.animationFillMode = 'both'; });
   playFX(B);
   B.events = [];
 }
@@ -4146,7 +4454,7 @@ function playFX(B) {
   if (!BT || !BT.fx || reduceMotion()) { B.shots = []; return; }
   const ctr = uid => { const el = document.querySelector(`.unit[data-uid="${uid}"] .fig`); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height * .45 }; };
   const sp = Math.min(BT.speed, 4);
-  (B.shots || []).forEach((s, i) => {
+  (BT.arena ? [] : B.shots || []).forEach((s, i) => {
     const a = ctr(s.a), b = ctr(s.t); if (!a || !b) return;
     const att = B.units.find(u => u.uid === s.a), type = att && att.def.boss ? 'maw' : s.dt;
     const dur = (type === 'laser' ? 420 : type === 'blade' ? 320 : 380) / sp, delay = i * 70 / sp;
