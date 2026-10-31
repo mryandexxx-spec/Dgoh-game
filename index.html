@@ -827,6 +827,54 @@ button .amt[data-info]:hover { text-decoration: none; }
 .skb2[data-sksel$=":passive"] .skico { border-color: #6fbf6a; background: radial-gradient(circle at 50% 35%, #2e4a2a, #0e1a0c); color: #e0ffd8; }
 .skb2[data-sksel$=":leader"] .skico { border-color: #ffd27a; background: radial-gradient(circle at 50% 35%, #5e4a1a, #201808); color: #fff2c8; }
 .abil.special { color: #d8ecff; } .abil.ult { color: #ffe0d8; }
+/* ===== level-up, notifications, mouse, battle controls ===== */
+.lvlup { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: rgb(8 5 3 / .72); padding: 12px; animation: fadein .2s; }
+.lvbox { position: relative; width: min(460px, 100%); max-height: calc(100dvh - 24px); overflow: hidden auto; text-align: center; padding: 22px 20px 16px; border-radius: 8px; border: 1px solid #c08a2a; background: radial-gradient(120% 80% at 50% 0%, #4a3416, var(--dune) 60%); box-shadow: 0 0 0 1px #ffd27a55, 0 20px 60px #000, 0 0 60px rgb(255 200 100 / .25); animation: lvpop .55s cubic-bezier(.2, 1.4, .4, 1); display: grid; gap: 6px; }
+@keyframes lvpop { from { transform: scale(.6); opacity: 0; } }
+.lvrays { position: absolute; left: 50%; top: 70px; width: 520px; height: 520px; margin: -260px 0 0 -260px; background: repeating-conic-gradient(rgb(255 210 122 / .16) 0 8deg, transparent 8deg 22deg); animation: lvspin 12s linear infinite; pointer-events: none; mask: radial-gradient(circle, #000 20%, transparent 65%); -webkit-mask: radial-gradient(circle, #000 20%, transparent 65%); }
+@keyframes lvspin { to { transform: rotate(360deg); } }
+.lvsp { position: absolute; left: 50%; top: 70px; width: 6px; height: 6px; border-radius: 50%; background: #ffd27a; box-shadow: 0 0 8px #ffb040; transform: rotate(var(--a)) translateY(0); animation: lvburst 1.3s ease-out var(--d) both; pointer-events: none; }
+@keyframes lvburst { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(1.4); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-150px) scale(.4); } }
+.lvbadge { position: relative; justify-self: center; width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 40% 30%, #fff0b0, #c08a2a 70%); box-shadow: 0 0 30px rgb(255 210 122 / .6); font: 700 44px/1 var(--f-mono); color: #2a1a06; }
+.lvold { position: absolute; animation: lvout .9s ease-in .2s both; } .lvnew { animation: lvin .6s cubic-bezier(.2, 1.5, .4, 1) .9s both; }
+@keyframes lvout { to { transform: translateY(-40px); opacity: 0; } } @keyframes lvin { from { transform: translateY(40px) scale(.5); opacity: 0; } }
+.lvbox h3 { position: relative; margin: 6px 0 0; font-family: var(--f-display); font-weight: 400; font-size: 28px; color: #fff2c8; text-shadow: 0 0 18px #ffb040; }
+.lvun { position: relative; display: grid; gap: 4px; margin-top: 6px; text-align: left; } .lvu { display: flex; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 4px; background: rgb(143 224 232 / .08); border: 1px solid rgb(143 224 232 / .4); font-size: 13px; animation: lvrow .4s ease-out both; } .lvu:nth-child(2) { animation-delay: .12s; } .lvu:nth-child(3) { animation-delay: .24s; }
+@keyframes lvrow { from { opacity: 0; transform: translateX(-12px); } }
+.lvrw { position: relative; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 12px; font-size: 13px; } .lvrw small { color: var(--dust); }
+.notes { position: fixed; right: max(10px, env(safe-area-inset-right, 0px)); top: calc(110px + env(safe-area-inset-top, 0px)); z-index: 70; width: min(300px, calc(100vw - 20px)); display: grid; gap: 6px; pointer-events: none; }
+.notes[hidden] { display: none; }
+.nt-head { pointer-events: auto; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--dust); padding: 0 4px; } .nt-all { background: none; border: 0; color: #f0a659; font-size: 11px; text-decoration: underline; cursor: pointer; padding: 2px; }
+.nt { pointer-events: auto; position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px 26px 8px 8px; border-radius: 6px; background: linear-gradient(180deg, rgb(52 38 24 / .97), rgb(26 18 11 / .97)); border: 1px solid #6a4c30; box-shadow: 0 6px 18px rgb(0 0 0 / .5); animation: ntin .35s cubic-bezier(.2, 1.2, .4, 1); transition: transform .18s, opacity .18s; touch-action: pan-y; user-select: none; }
+.nt.quest { border-color: #6fbf6a; } .nt.feat { border-color: #ffd27a; box-shadow: 0 0 14px rgb(255 210 122 / .3), 0 6px 18px rgb(0 0 0 / .5); }
+@keyframes ntin { from { transform: translateX(110%); opacity: 0; } }
+.nt-ic { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 16px; } .nt-ic.q { background: #2e5a2a; color: #b4f0a0; } .nt-ic.f { background: #6a4a10; color: #ffe08a; } .nt-ic.p { background: #2a3a4a; color: #a8d0ff; font: 600 10px var(--f-mono); }
+.nt-tx { display: grid; gap: 2px; min-width: 0; font-size: 12px; } .nt-tx b { font-size: 12px; } .nt-tx span { color: var(--dust); font-size: 11px; overflow: hidden; text-overflow: ellipsis; } .nt-rw { display: flex; flex-wrap: wrap; gap: 2px 8px; font-size: 11px; } .nt-tx .fbar { height: 6px; }
+.nt-x { position: absolute; top: 2px; right: 4px; width: 22px; height: 22px; border: 0; background: none; color: var(--dust); font-size: 16px; cursor: pointer; }
+.nt-more { pointer-events: auto; text-align: center; font-size: 11px; color: var(--dust); }
+@media (orientation: landscape) and (max-height: 520px) { .notes { top: auto; bottom: 10px; width: 260px; } .nt { padding: 6px 24px 6px 6px; grid-template-columns: 28px minmax(0, 1fr) auto; } .nt-ic { width: 28px; height: 28px; } }
+.mousewrap { display: grid; place-items: center; height: 92px; margin: -6px 0 -6px; }
+.mouse { width: 120px; height: 100px; overflow: visible; }
+.mouse.joy .mbody { animation: mhop .7s cubic-bezier(.3, 0, .5, 1) infinite; transform-origin: 60px 92px; }
+@keyframes mhop { 0%, 100% { transform: translateY(0) scale(1.05, .95); } 45% { transform: translateY(-18px) scale(.95, 1.05); } 60% { transform: translateY(-18px) rotate(-4deg); } }
+.mouse.joy .msh { animation: mshad .7s cubic-bezier(.3, 0, .5, 1) infinite; transform-origin: 60px 94px; } @keyframes mshad { 45%, 60% { transform: scale(.6); opacity: .5; } }
+.mouse.joy .marm { animation: mwave .35s ease-in-out infinite alternate; transform-origin: 50px 62px; } .mouse.joy .marm2 { animation: mwave2 .35s ease-in-out infinite alternate; transform-origin: 72px 64px; }
+@keyframes mwave { to { transform: rotate(-30deg); } } @keyframes mwave2 { to { transform: rotate(25deg); } }
+.mouse.joy .mstars { animation: mtw 1.2s ease-in-out infinite; } @keyframes mtw { 50% { opacity: .3; } }
+.mouse.joy .mtail { animation: mtail .35s ease-in-out infinite alternate; transform-origin: 38px 74px; } @keyframes mtail { to { transform: rotate(14deg); } }
+.mouse.sad .mhead { animation: msigh 3s ease-in-out infinite; transform-origin: 76px 66px; } @keyframes msigh { 50% { transform: rotate(6deg) translateY(2px); } }
+.mouse.sad .mtear { animation: mtear 1.8s ease-in infinite; } @keyframes mtear { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(16px); opacity: 0; } }
+.mouse.sad .mdrop { animation: mrain .8s linear infinite; } @keyframes mrain { from { transform: translateY(0); opacity: 1; } to { transform: translateY(14px); opacity: 0; } }
+.mouse.sad .mcloud { animation: mcloud 4s ease-in-out infinite; } @keyframes mcloud { 50% { transform: translateX(-4px); } }
+.result.won .box { box-shadow: 0 0 40px rgb(255 210 122 / .25), 0 20px 60px rgb(0 0 0 / .6); } .result.lost .box { filter: saturate(.85); }
+.btn.danger { border-color: #c0473a; color: #ffb0a4; }
+.bctl { align-items: center; } .bcb { min-width: 64px; min-height: 44px; padding: 8px 16px !important; font-size: 16px !important; font-weight: 600; }
+.bcb.on { border-color: var(--spice); color: #ffd27a; box-shadow: 0 0 0 1px var(--spice), 0 0 12px rgb(232 145 63 / .35); }
+.bci { width: 44px; height: 44px; padding: 0 !important; display: grid; place-items: center; } .bci svg { width: 24px; height: 24px; }
+.blog { width: 30px; height: 30px; margin-left: 6px; border-radius: 4px; border: 1px solid #5a4028; background: rgb(24 16 10 / .8); color: var(--dust); display: grid; place-items: center; padding: 0; flex: none; cursor: pointer; } .blog svg { width: 18px; height: 18px; } .blog.on { color: #ffd27a; border-color: var(--spice); }
+.bset { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 4px 0 8px; } .bsb { display: grid; gap: 2px; text-align: left; padding: 10px 12px; } .bsb small { color: var(--dust); font-size: 11px; }
+@media (orientation: landscape) and (max-height: 520px) { .lvbox { padding: 12px 16px; gap: 4px; width: min(560px, 100%); } .lvbadge { width: 60px; height: 60px; font-size: 28px; } .lvrays, .lvsp { top: 42px; } .lvbox h3 { font-size: 22px; margin: 0; } .lvu { padding: 4px 8px; font-size: 12px; } .lvbox .chap { margin: 4px 0 2px !important; } .bcb { min-height: 38px; min-width: 54px; padding: 6px 12px !important; font-size: 14px !important; } .bci { width: 38px; height: 38px; } .mousewrap { height: 70px; } .mouse { width: 90px; height: 75px; } }
+
 /* ===== legend ultimate cinematic ===== */
 .ultcine { position: fixed; inset: 0; z-index: 42; pointer-events: none; overflow: hidden; animation: ucfade 2.9s ease forwards; }
 @keyframes ucfade { 0% { opacity: 0; } 6% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
@@ -1521,7 +1569,7 @@ function glAct(B, u, tuid) {
   u.tmBonus = 999; B.spice[u.side] = Math.min(100, B.spice[u.side] + 30);
 }
 function act(B, u, key, targetUid) {
-  B.actor = u.uid; B.glCast = null;
+  B.actor = u.uid; B.glCast = null; B.lastKey = key;
   if (u.def.boss) return bossTurn(B, u);
   if (key === 'gl') return glAct(B, u, targetUid);
   glCharge(B, u, 12);
@@ -2685,7 +2733,7 @@ class Arena3D {
   }
   addUnit(u) {
     SC = this.scene; SHG = this.shadows;
-    const o = u.def.boss ? makeWorm3() : makeHuman3(u.def);
+    const o = u.def.boss ? makeWorm3() : makeHuman3(u.def); o.def = u.def;
     o.slot = u.def.boss ? [7.4, -7, true] : (() => { const s = SLOT3[u.idx] || SLOT3[0]; return [u.side === 'A' ? s[0] : -s[0], s[1], false, u.idx]; })();
     const [x, y, z] = this.slotPos(o.slot);
     o.base = V3(x, y, z); o.root.position.copyFrom(o.base);
@@ -2746,7 +2794,9 @@ class Arena3D {
         const dir = center ? center.subtract(o.base) : V3(o.side === 'A' ? 1 : -1, 0, 0); dir.y = 0; const dl = dir.length(), nd = dl > .001 ? dir.scale(1 / dl) : V3(1, 0, 0);
         const to = kind === 'melee' ? tg[0].base.subtract(nd.scale(.95)) : kind === 'aoe' ? center.subtract(nd.scale(1.4)) : o.base.clone();
         to.y = this.heightAt(to.x, to.z);
-        o.act = { kind, t0: now, dur, dir: nd, to, tg, dt };
+        const ab = B.lastKey && B.lastKey !== 'gl' && o.def ? o.def[B.lastKey] : null;
+        o.act = { kind, t0: now, dur, dir: nd, to, tg, dt, ab };
+        if (ab && (ab.fx || ab.heal || ab.tm || ab.shieldSelf || ab.cleanse)) this.at(now + (kind === 'cast' ? .3 : .55) * dur, () => this.buffFX(B, o, ab));
         const hitAt = { melee: .52, aoe: .56, shoot: .4, voice: .5, cast: .3 }[kind] * dur;
         for (const t of tg) { this.hitDelay[t.uid] = hitAt; t.hitDir = nd.clone(); }
       }
@@ -2811,6 +2861,64 @@ class Arena3D {
     const c = power === 0 ? [.5, .8, 1] : [1, .85, .55]; this.sparks.color1 = new B3.Color4(c[0], c[1], c[2], 1); this.sparks.color2 = new B3.Color4(c[0], c[1] * .8, c[2] * .6, 1);
   }
   healFX(o) { if (!this.healP) return; const p = o.root.position; this.healP.emitter = V3(p.x, p.y + .2, p.z); this.healP.manualEmitCount = 40; }
+  // non-damage ability effects: buffs, taunt, stealth, heals, debuffs
+  buffFX(B, o, ab) {
+    const all = Object.values(this.units).filter(x => !x.dead), allies = all.filter(x => x.side === o.side), foes = all.filter(x => x.side !== o.side);
+    const fx = ab.fx || [], want = (k, who) => fx.some(f => f[0] === k && (who ? f[2] === who : true));
+    const on = (list, fn, stagger = 70) => list.forEach((x, i) => this.at(performance.now() + i * stagger, () => fn(x)));
+    const tgSelf = [o], tgAll = allies;
+    if (ab.heal) on(ab.tgt === 'self' ? tgSelf : tgAll, x => this.healFX(x));
+    if (want('defUp')) on(fx.some(f => f[0] === 'defUp' && f[2] === 'allies') ? tgAll : tgSelf, x => this.domeFX(x, '#5aa8ff'));
+    if (ab.shieldSelf) this.domeFX(o, '#8fd8ff', 1.4);
+    if (want('evaUp')) on(fx.some(f => f[0] === 'evaUp' && f[2] === 'allies') ? tgAll : tgSelf, x => this.swirlFX(x, '#c8f0ff'));
+    if (want('counter')) on(tgSelf, x => this.swirlFX(x, '#ffb060'));
+    if (want('taunt')) this.tauntFX(o);
+    if (want('stealth')) this.smokeFX(o);
+    if (ab.tm && (ab.tm.allies > 0 || ab.tm.self > 0)) on(ab.tm.allies ? tgAll : tgSelf, x => this.speedFX(x));
+    if (ab.cleanse) on(tgAll, x => this.ringFX(x, '#e8fff0', .6));
+    const deb = fx.filter(f => f[2] === 't' && FX[f[0]] && FX[f[0]].bad).map(f => f[0]);
+    if (deb.length && !ab.dt) on(ab.tgt === 'enemies' ? foes : foes.slice(0, 1), x => this.miasmaFX(x, deb.includes('poison') ? '#7ad36a' : deb.includes('fear') ? '#b07aff' : '#ff7a5a'));
+    if (ab.tm && ab.tm.enemies < 0) on(foes, x => this.ringFX(x, '#8a7aff', .5));
+  }
+  domeFX(x, c, k = 1) {
+    SC = this.scene; const p = x.root.position, d = mk(bSph(.95 * k, 24, 1, .5), basic3(c, { add: true, alpha: 0 }), p.x, p.y, p.z, false); d.scaling.y = 1.3; d.material.backFaceCulling = false; SC = null;
+    this.fade(d, 1300, (m, kk) => { m.position.copyFrom(x.root.position); m.material.alpha = .75 * Math.sin(Math.min(1, kk * 1.6) * Math.PI * .5) * (1 - kk); m.scaling.set(.6 + kk * .5, (.6 + kk * .5) * 1.3, .6 + kk * .5); });
+    this.ringFX(x, c, .9);
+  }
+  ringFX(x, c, r = .7) {
+    SC = this.scene; const p = x.root.position, m0 = mk(bTorus(r, .06, 32), basic3(c, { add: true, alpha: 1 }), p.x, p.y + .05, p.z, false); SC = null;
+    this.fade(m0, 1000, (m, k) => { m.scaling.set(1 + k * 1.2, 1, 1 + k * 1.2); m.position.y = p.y + .05 + k * 1.6; m.material.alpha = 1 - k; });
+  }
+  swirlFX(x, c) {
+    SC = this.scene; const p = x.root.position;
+    for (let n = 0; n < 3; n++) { const m0 = mk(bTorus(.55, .022, 28, .6), basic3(c, { add: true, alpha: .8 }), p.x, p.y + .3, p.z, false);
+      this.fade(m0, 800, (m, k) => { m.position.copyFrom(x.root.position); m.position.y += .3 + k * 1.5 + n * .25; m.rotation.y = k * 9 + n * 2; m.material.alpha = .8 * Math.sin(k * Math.PI); m.scaling.setAll(1 - k * .4); }); }
+    SC = null;
+  }
+  speedFX(x) {
+    SC = this.scene; const p = x.root.position;
+    for (let n = 0; n < 6; n++) { const a = n / 6 * Math.PI * 2, m0 = mk(bBox(.025, .7, .025), basic3('#ffe08a', { add: true, alpha: .9 }), p.x + Math.cos(a) * .55, p.y, p.z + Math.sin(a) * .55, false);
+      this.fade(m0, 520, (m, k) => { m.position.y = x.root.position.y + k * 2.4; m.material.alpha = .9 * (1 - k); }); }
+    SC = null;
+  }
+  tauntFX(x) {
+    SC = this.scene; const p = x.root.position;
+    for (let n = 0; n < 3; n++) { const m0 = mk(bTorus(.4, .05, 32), basic3('#ff5a3a', { add: true, alpha: 0 }), p.x, p.y + 1.2, p.z, false); m0.rotation.x = Math.PI / 2;
+      const yaw = x.root.rotation.y; m0.rotation.y = yaw; const d0 = n * 140;
+      this.fade(m0, 700 + d0, (m, k) => { const kk = Math.max(0, (k * (700 + d0) - d0) / 700); m.scaling.setAll(1 + kk * 3.2); m.material.alpha = kk > 0 ? .85 * (1 - kk) : 0; }); }
+    const col = mk(bCyl(.45, .55, 2.4, 24, true), basic3('#ff4a2a', { add: true, alpha: 0 }), p.x, p.y + 1.2, p.z, false); SC = null;
+    this.fade(col, 900, (m, k) => { m.material.alpha = .35 * Math.sin(k * Math.PI); m.scaling.set(1 + k * .3, 1, 1 + k * .3); });
+    this.shakeT = performance.now();
+  }
+  smokeFX(x) {
+    if (!this.smoke) { const S = this.scene; SC = S; const t = dynTex(glowCanvas(), 0, true); SC = null; const ps = this.smoke = new B3.ParticleSystem('smoke', 300, S); ps.particleTexture = t; ps.emitter = V3(0, -50, 0); ps.minEmitBox = V3(-.4, 0, -.4); ps.maxEmitBox = V3(.4, 1.6, .4); ps.direction1 = V3(-.4, .3, -.4); ps.direction2 = V3(.4, .9, .4); ps.minLifeTime = .7; ps.maxLifeTime = 1.3; ps.minSize = .4; ps.maxSize = .9; ps.color1 = new B3.Color4(.75, .65, .5, .5); ps.color2 = new B3.Color4(.55, .45, .35, .4); ps.colorDead = new B3.Color4(.4, .3, .2, 0); ps.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD; ps.emitRate = 0; ps.manualEmitCount = 0; ps.start(); }
+    const p = x.root.position; this.smoke.emitter = V3(p.x, p.y, p.z); this.smoke.manualEmitCount = 90;
+  }
+  miasmaFX(x, c) {
+    SC = this.scene; const p = x.root.position, m0 = mk(bSph(.7, 18), basic3(c, { add: true, alpha: 0 }), p.x, p.y + 1, p.z, false); SC = null;
+    this.fade(m0, 800, (m, k) => { m.material.alpha = .4 * Math.sin(k * Math.PI); m.scaling.set(1 + k * .6, 1.4 + k * .4, 1 + k * .6); m.position.y = p.y + 1 + k * .3; });
+    this.ringFX(x, c, .5);
+  }
   project(v) { const p = B3.Vector3.Project(v, B3.Matrix.IdentityReadOnly, this.scene.getTransformMatrix(), new B3.Viewport(0, 0, this.w, this.h)); return [p.x, p.y]; }
   placeHud() {
     const field = document.getElementById('field'); if (!field) return;
@@ -3298,7 +3406,8 @@ const SHARDS_NEXT = [10, 15, 25, 30, 65, 85, 100];   // index = current stars
 const STAR_COST = s => s * s * 500;
 const LVL_COST = l => l * 40;
 const GEAR_COST = g => ({ sol: g * 1000, pl: g * 3 });
-const MAX_LVL = 30, MAX_GEAR = 5, WATER_MAX = 150, WATER_SEC = 20, BATTLE_WATER = 6, CANDLE_MAX = 120, CANDLE_SEC = 30, CANDLE_COST = 8, CANDLE_REFILL = 100;
+const MAX_LVL = 30, MAX_GEAR = 5, WATER_BASE = 150, WATER_SEC = 20, BATTLE_WATER = 6, CANDLE_BASE = 120, CANDLE_SEC = 30, CANDLE_COST = 8, CANDLE_REFILL = 100;
+const enCapStep = () => Math.floor((S && S.acc ? S.acc.lvl : 1) / 10), WMAX = () => WATER_BASE + 15 * enCapStep(), CMAX = () => CANDLE_BASE + 10 * enCapStep();
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
 // ===== gear =====
 const ITEM_KINDS = [['mask', 'Фильтр-маска'], ['boots', 'Сапоги-песчаники'], ['belt', 'Пояс-разгрузка'], ['knife', 'Боевой нож'], ['cloak', 'Пустынный плащ'], ['ring', 'Перстень-печать'],
@@ -3388,10 +3497,10 @@ function newSave() {
   for (const c of CHARS) roster[c.id] = { shards: 0, stars: 0, lvl: 1, gear: 1 };
   Object.assign(roster.leto, { stars: 3 }); Object.assign(roster.paul, { stars: 3 });
   for (const id of ['jessica', 'duncan', 'gurney']) roster[id].stars = 2;
-  return fillSave({ v: 1, water: WATER_MAX, waterTs: Date.now(), solari: 3000, plast: 3, roster, squad: ['leto', 'paul', 'jessica', 'duncan', 'gurney'], cleared: {} });
+  return fillSave({ v: 1, water: WMAX(), waterTs: Date.now(), solari: 3000, plast: 3, roster, squad: ['leto', 'paul', 'jessica', 'duncan', 'gurney'], cleared: {} });
 }
 function fillSave(s) {
-  s.candle ??= CANDLE_MAX; s.candleTs ??= Date.now(); s.rid ??= 0; s.crefills ??= { d: '', n: 0 }; s.buys ??= { d: '', n: {} }; s.campTab ??= 'L'; s.campCh ??= {}; s.shopTab ??= 'post';
+  s.candle ??= CMAX(); s.candleTs ??= Date.now(); s.rid ??= 0; s.crefills ??= { d: '', n: 0 }; s.buys ??= { d: '', n: {} }; s.campTab ??= 'L'; s.campCh ??= {}; s.shopTab ??= 'post';
   for (const c of CHARS) s.roster[c.id] ??= { shards: 0, stars: 0, lvl: 1, gear: 1 };
   if (!s.darkGift) { s.darkGift = 1; for (const id of ['trooper', 'rabban', 'piter']) s.roster[id].stars = Math.max(s.roster[id].stars || 0, 2); }
   s.squadD ??= ['rabban', 'piter', 'trooper']; s.squadC ??= (s.squad || []).slice();
@@ -3407,20 +3516,22 @@ function loadSave() {
   try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && s.v === 1) { for (const c of CHARS) s.roster[c.id] ||= { shards: 0, stars: 0, lvl: 1, gear: 1 }; return fillSave(s); } } catch (e) {}
   return null;
 }
-function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+function persist0() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+let notePend = 0;
+function persist() { persist0(); if (!notePend) notePend = setTimeout(() => { notePend = 0; if (typeof notePoll === 'function') notePoll(); }, 60); }
 
 let S, view = 'lobby', filter = 'all', BT = null;
 function tickWater() {
   const now = Date.now();
-  if (S.candle >= CANDLE_MAX) S.candleTs = now; else { const g = Math.floor((now - S.candleTs) / (CANDLE_SEC * 1000)); if (g > 0) { S.candle = Math.min(CANDLE_MAX, S.candle + g); S.candleTs += g * CANDLE_SEC * 1000; if (S.candle >= CANDLE_MAX) S.candleTs = now; } }
-  if (S.water >= WATER_MAX) { S.waterTs = now; return; }
+  if (S.candle >= CMAX()) S.candleTs = now; else { const g = Math.floor((now - S.candleTs) / (CANDLE_SEC * 1000)); if (g > 0) { S.candle = Math.min(CMAX(), S.candle + g); S.candleTs += g * CANDLE_SEC * 1000; if (S.candle >= CMAX()) S.candleTs = now; } }
+  if (S.water >= WMAX()) { S.waterTs = now; return; }
   const gained = Math.floor((now - S.waterTs) / (WATER_SEC * 1000));
-  if (gained > 0) { S.water = Math.min(WATER_MAX, S.water + gained); S.waterTs += gained * WATER_SEC * 1000; if (S.water >= WATER_MAX) S.waterTs = now; }
+  if (gained > 0) { S.water = Math.min(WMAX(), S.water + gained); S.waterTs += gained * WATER_SEC * 1000; if (S.water >= WMAX()) S.waterTs = now; }
 }
 const $ = s => document.querySelector(s);
 const LAND_MQ = typeof matchMedia !== 'undefined' ? matchMedia('(orientation: landscape) and (max-height: 520px)') : null;
 const isLandPhone = () => !!(LAND_MQ && LAND_MQ.matches);
-const EN_MAX = { water: WATER_MAX, candle: CANDLE_MAX };
+const EN_MAX = { get water() { return WMAX(); }, get candle() { return CMAX(); } };
 const enGet = k => k === 'candle' ? S.candle : S.water;
 function enSpend(k, n) { tickWater(); const key = k === 'candle' ? 'candle' : 'water', ts = key + 'Ts'; if (S[key] >= EN_MAX[key]) S[ts] = Date.now(); S[key] -= n; if (key === 'water') quest('water', n); }
 function enRefund(k, n) { const key = k === 'candle' ? 'candle' : 'water'; S[key] = Math.min(EN_MAX[key], S[key] + n); if (key === 'water') quest('water', -n); }
@@ -3441,10 +3552,10 @@ function toast(t) {
 
 function renderRes() {
   tickWater();
-  const next = S.water < WATER_MAX ? Math.ceil(WATER_SEC - (Date.now() - S.waterTs) / 1000) : null;
+  const next = S.water < WMAX() ? Math.ceil(WATER_SEC - (Date.now() - S.waterTs) / 1000) : null;
   const html = `
-    <div class="pill" data-info="water"><span>Вода${next ? ` · +1 через ${next}с` : ''}</span><b>${ic('water')}${S.water}/${WATER_MAX}</b></div>
-    <div class="pill" data-info="candle"><span>Свечи</span><b>${ic('candle')}${S.candle}/${CANDLE_MAX}</b></div>
+    <div class="pill" data-info="water"><span>Вода${next ? ` · +1 через ${next}с` : ''}</span><b>${ic('water')}${S.water}/${WMAX()}</b></div>
+    <div class="pill" data-info="candle"><span>Свечи</span><b>${ic('candle')}${S.candle}/${CMAX()}</b></div>
     <div class="pill" data-info="sol"><span>Солярии</span><b>${ic('sol')}${fmt(S.solari)}</b></div>
     <div class="pill" data-info="pl"><span>Пласталь</span><b>${ic('pl')}${S.plast}</b></div>
     <div class="pill" data-info="teeth"><span>Зубы червя</span><b>${ic('teeth')}${fmt(S.teeth)}</b></div>
@@ -3459,6 +3570,7 @@ function render() {
   document.body.classList.toggle('lobby-on', view === 'lobby');
   ({ daily: renderDaily, lobby: renderLobby, camp: renderCamp, squad: renderSquad, raid: renderRaid, legend: renderLegend, shop: renderShop, rules: renderRules, trials: renderTrials, feats: renderFeats })[view]();
   document.querySelectorAll('#view canvas[data-scene]').forEach(sceneThumb);
+  if (typeof notePoll === 'function' && S) setTimeout(() => notePoll(), 0);
 }
 
 let campSel = null;
@@ -3650,7 +3762,7 @@ function openDetail(id) {
       </div>
       <div class="gcol">${[3, 4, 5].map(k => slotBtn(id, k)).join('')}</div>
     </div>
-    <div class="gearbar" style="--tc:${TIER_COL[p.gear]}"><span class="gtier">Снаряжение ${ROMAN[p.gear]}</span><span class="mono">${filled}/6 · потолок ${ROMAN[gcap]}</span>${gearBtn}</div>
+    <div class="gearbar" style="--tc:${TIER_COL[p.gear]}"><span class="gtier">Снаряжение ${ROMAN[p.gear]}</span><span class="mono">${filled}/6 · потолок ${ROMAN[gcap]}</span>${(n => locked || full ? '' : `<button class="btn ${n ? 'go' : ''}" data-craftall="${id}" ${n ? '' : 'disabled'}>Собрать и надеть всё<small>${n ? `готово предметов: ${n}` : 'нечего собрать'}</small></button>`)(craftAllPlan(id).length)}${gearBtn}</div>
     </div>
     <div class="cright">
     <div class="statgrid">
@@ -3762,7 +3874,7 @@ function openInfo(key, keepScroll) {
     rows = itemSourceRows(it);
   } else {
     const R = RES_INFO[kind]; if (!R) return;
-    const bal = { water: `${S.water}/${WATER_MAX}`, sol: S.solari, pl: S.plast, teeth: S.teeth, cry: S.cry, folio: S.folio, seal: S.seal, wol: S.wol, candle: `${S.candle}/${CANDLE_MAX}`, rid: S.rid }[kind];
+    const bal = { water: `${S.water}/${WMAX()}`, sol: S.solari, pl: S.plast, teeth: S.teeth, cry: S.cry, folio: S.folio, seal: S.seal, wol: S.wol, candle: `${S.candle}/${CMAX()}`, rid: S.rid }[kind];
     head = `<div class="ihead"><span class="bigico">${ic(kind)}</span><div><h3>${R.n}</h3>${bal !== undefined ? `<div class="mono" style="font-size:15px">У вас: ${typeof bal === 'number' ? fmt(bal) : bal}</div>` : ''}</div></div>`;
     body = `<p class="sub" style="margin:12px 0 0">${R.d}</p>`;
     if (kind === 'candle') {
@@ -3773,8 +3885,8 @@ function openInfo(key, keepScroll) {
     if (kind === 'rid') rows = [navRow(ic('candle'), 'Хроники Дюны', '8–15 за каждую победу и симуляцию.', `<button class="btn mini" data-ctab="C">К хроникам</button>`), navRow(ic('rid'), 'Где тратить', 'Лавка хроник.', `<button class="btn mini" data-shoptab="chron">В лавку хроник</button>`)];
     if (kind === 'water') {
       tickWater();
-      const next = S.water < WATER_MAX ? Math.ceil(WATER_SEC - (Date.now() - S.waterTs) / 1000) : null, c = refillCost();
-      body += `<div class="kv" style="margin-top:10px"><span>Восстановление</span><div>${next ? `+1 через ${next} с, до полной — ${Math.ceil((WATER_MAX - S.water) * WATER_SEC / 60)} мин` : 'запас полон'}</div><span>Пополнений сегодня</span><div>${refillN()}</div></div>
+      const next = S.water < WMAX() ? Math.ceil(WATER_SEC - (Date.now() - S.waterTs) / 1000) : null, c = refillCost();
+      body += `<div class="kv" style="margin-top:10px"><span>Восстановление</span><div>${next ? `+1 через ${next} с, до полной — ${Math.ceil((WMAX() - S.water) * WATER_SEC / 60)} мин` : 'запас полон'}</div><span>Пополнений сегодня</span><div>${refillN()}</div></div>
         <div class="acts" style="margin-top:10px"><button class="btn go" data-refill="1" ${S.cry >= c ? '' : 'disabled'}>Пополнить +${REFILL_AMT}<small>${amt('cry', c)}</small></button>${S.cry < c ? `<span class="lockd">Не хватает ${c - S.cry} кристаллов</span>` : ''}</div>`;
       rows = [navRow(ic('cry'), 'Кристаллы пряности', `У вас ${amt('cry', S.cry)}. Где взять — в описании кристаллов.`, `<button class="btn mini" data-iswitch="cry">Подробнее</button>`), navRow(ic('water'), 'Куда тратить', 'Бои и симуляции кампании.', go('camp', 'К кампании'))];
     }
@@ -3811,7 +3923,7 @@ function crefillCost() { return REFILL_COST[Math.min(crefillN(), REFILL_COST.len
 function doRefill(kind) {
   if (kind === 'candle') { const c = crefillCost(); if (S.cry < c) return; S.cry -= c; S.candle += CANDLE_REFILL; S.crefills = { d: todayKey(), n: crefillN() + 1 }; persist(); toast(`+${amt('candle', CANDLE_REFILL)} Свечей за ${amt('cry', c)}`); return refreshAll(); }
   const c = refillCost(); if (S.cry < c) return;
-  S.cry -= c; const wasFull = S.water >= WATER_MAX; S.water += REFILL_AMT; if (!wasFull && S.water >= WATER_MAX) S.waterTs = Date.now();
+  S.cry -= c; const wasFull = S.water >= WMAX(); S.water += REFILL_AMT; if (!wasFull && S.water >= WMAX()) S.waterTs = Date.now();
   S.refills = { d: todayKey(), n: refillN() + 1 };
   persist(); toast(`+${amt('water', REFILL_AMT)} Воды за ${amt('cry', c)}`); refreshAll();
 }
@@ -4246,6 +4358,7 @@ function launch(cfg) {
   if (!BT.arena) new SceneBG($('#bgc'), cfg.scene || 'desert', .36);
   if (BT.arena && B.raid) $('#battle').classList.add('raid3d');
   BT.fx = new FXLayer($('#fxc'));
+  if (typeof renderNotes === 'function') renderNotes();
   renderBattle();
   if (cfg.dlg) playDialog(cfg.i, () => { S.seenDlg[cfg.i] = 1; persist(); if (BT && !BT.done) later(step, 300); });
   else later(step, 500);
@@ -4428,9 +4541,9 @@ function renderBattle() {
   const g = (lab, v, cls) => `<div class="bgz ${cls}"><span>${lab}</span><div class="hb"><i style="width:${Math.min(100, v)}%"></i></div><b>${v}</b></div>`;
   $('#bwrap').innerHTML = `
     <div class="btop">
-      <div class="btitle"><h3>${BT.cfg.title}${B.raid ? (bb => bb ? ` · фаза ${bb.phase}: ${PHASES[bb.phase]}` : '')(B.units.find(x => x.def.boss)) : ''}</h3><div class="order" aria-label="Порядок ходов">${order.map(u => glyph(u.def, u.side === 'B' ? 'e' : '')).join('')}</div></div>
+      <div class="btitle"><h3>${BT.cfg.title}${B.raid ? (bb => bb ? ` · фаза ${bb.phase}: ${PHASES[bb.phase]}` : '')(B.units.find(x => x.def.boss)) : ''}</h3><div class="order" aria-label="Порядок ходов">${order.map(u => glyph(u.def, u.side === 'B' ? 'e' : '')).join('')}<button class="blog ${BT.showLog ? 'on' : ''}" data-log="1" aria-pressed="${!!BT.showLog}" aria-label="Журнал боя" title="Журнал">${LOG_SVG}</button></div></div>
       <div class="bgauges">${g('МЕЛАНЖ', B.spice.A, 'sp')}${g('ВРАГ', B.spice.B, 'spe')}${B.desert ? g(B.raid ? 'БЕШЕНСТВО' : 'РИТМ', Math.min(100, B.rhythm), 'worm') : ''}${B.raid ? `<div class="bgz"><span>УРОН</span><b>${fmt(B.bossStartHp - Math.max(0, B.units.find(x => x.def.boss).hp))}</b></div>` : ''}${ctx.presc ? '<div class="bgz presc">ПРОЗРЕНИЕ</div>' : ''}</div>
-      <div class="bctl"><button class="btn" data-auto="1" aria-pressed="${BT.auto}">Авто</button><button class="btn" data-speed="1">×${BT.speed}</button><button class="btn" data-log="1" aria-pressed="${!!BT.showLog}">Журнал</button><button class="btn" data-quit="1">Отступить</button></div>
+      <div class="bctl"><button class="btn bcb ${BT.auto ? 'on' : ''}" data-auto="1" aria-pressed="${BT.auto}">Авто</button><button class="btn bcb" data-speed="1" aria-label="Скорость">×${BT.speed}</button><button class="btn bci" data-bset="1" aria-label="Настройки боя" title="Настройки">${GEAR_SVG}</button></div>
     </div>
     <div class="ticker">${B.log.slice(-2).map(l => `<div class="${l.kind}">${l.text}</div>`).join('')}</div>
     <div class="field ${BT.arena ? 'three' : ''}" id="field">
@@ -4518,7 +4631,9 @@ function finish() {
   if (xpG) { const al = accXP(xpG); html = html.replace(/<\/ul>(?![\s\S]*<\/ul>)/, `<li class="xpl">+${xpG} опыта аккаунта · ур. ${S.acc.lvl}</li>${al.map(l => `<li>${l}</li>`).join('')}</ul>`); }
   persist();
   const el = document.createElement('div'); el.className = 'result';
-  el.innerHTML = `<div class="box" role="dialog" aria-modal="true">${html}<div class="acts" style="justify-content:center">${btns}</div></div>`;
+  if (!won) btns += `<button class="btn" data-toroster="1">К персонажам<small>усилить отряд</small></button>`;
+  el.className = 'result ' + (won ? 'won' : 'lost');
+  el.innerHTML = `<div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${MOUSE_SVG(!won)}</div>${html}<div class="acts" style="justify-content:center">${btns}</div></div>`;
   $('#battle').appendChild(el);
 }
 function leaveBattle() { if (BT) clearTimeout(BT.timer); if (BT && BT.arena) BT.arena.dispose(); const pref = BT && { autoPref: BT.autoPref, speedPref: BT.speedPref }; BT = pref; closeOverlay(); render(); }
@@ -4531,11 +4646,11 @@ document.addEventListener('click', e => {
   if (inf && !inf.closest('button') && !(BT && BT.B && !BT.done)) { openInfo(inf.dataset.info); return; }
   if (BT && BT.lpFired) { BT.lpFired = false; e.preventDefault(); e.stopPropagation(); return; }
   if (e.target.closest('#bpop') && (!e.target.closest('.bpopbox') || e.target.closest('[data-bpopx]'))) return bPopClose();
-  if (e.target.closest('#bpop')) return;
+  if (e.target.closest('#bpop')) { const b = e.target.closest('button'); if (b) meta2Click(b.dataset); return; }
   const t = e.target.closest('button, [data-fxu], .unit.tgt, .detail');
   if (!t) return;
   const d = t.dataset;
-  if (metaClick(d)) return;
+  if (metaClick(d) || meta2Click(d)) return;
   if (d.v) { view = d.v; render(); return; }
   if (d.csel !== undefined) { campSel = +d.csel; render(); return; }
   if (d.iclose !== undefined && (t.tagName === 'BUTTON' || e.target === t)) return closeInfo();
@@ -4593,7 +4708,7 @@ document.addEventListener('click', e => {
   if (false) {
     const [i, kk] = d.isim.split(':').map(Number), cost = kk * BATTLE_WATER; tickWater();
     if (S.water < cost || S.cleared[i] !== 3) return;
-    const wasFull = S.water >= WATER_MAX; S.water -= cost; quest('water', cost); if (wasFull) S.waterTs = Date.now();
+    const wasFull = S.water >= WMAX(); S.water -= cost; quest('water', cost); if (wasFull) S.waterTs = Date.now();
     const before = itemCtx ? (S.inv[slotState(itemCtx.cid, itemCtx.k).it.id] || 0) : 0;
     simCore(i, kk); persist(); render();
     if (itemCtx) { const after = S.inv[slotState(itemCtx.cid, itemCtx.k).it.id] || 0; toast(`Симуляция ×${kk}: +${amt('frag', after - before)} нужного предмета`); openItem(itemCtx.cid, itemCtx.k); }
@@ -4669,7 +4784,7 @@ document.addEventListener('keydown', e => {
 
 function start(data) {
   S = (data && data.save) || loadSave() || newSave();
-  metaFill(S);
+  metaFill(S); if (!S.notes) noteSnap(true);
   dly().c.login = 1;
   const rot = () => { let ok = false; try { ok = sessionStorage.getItem('rotok') === '1'; } catch (e) {} const portrait = innerHeight > innerWidth && Math.min(innerWidth, innerHeight) < 700 && matchMedia('(pointer: coarse)').matches; $('#rotate').hidden = !portrait || ok; };
   rot(); addEventListener('resize', rot);
@@ -4960,16 +5075,28 @@ const accNeed = L => 20 + 20 * (L - 1);                 // XP from L to L+1
 const GEAR_CAP_AT = { 2: 5, 3: 12, 4: 20, 5: 28 };     // gear tier -> account level
 const heroCap = () => Math.min(MAX_LVL, S.acc.lvl);
 const gearCap = () => Object.entries(GEAR_CAP_AT).reduce((m, [t, l]) => S.acc.lvl >= l ? Math.max(m, +t) : m, 1);
-const accReward = L => [['cry', 15 + 5 * L], ['water', 60], ...(L % 5 === 0 ? [['folio', 5], ['seal', 1]] : [])];
+const accReward = L => {
+  const r = [['water', 40 + 2 * L], ['candle', 25 + L], ['cry', 15 + 5 * L]];
+  if (L < 10) r.push(['sol', 1500 + 500 * L], ['pl', 2 + Math.floor(L / 3)]);       // ранние уровни: прокачка героев и сборка снаряжения
+  else if (L < 20) r.push(['sol', 4000 + 400 * L], ['folio', 3 + Math.floor(L / 5)]);  // середина: умения
+  else if (L < 30) r.push(['folio', 6], ['rid', 20 + L], ['pl', 6]);                 // хроники и снаряжение IV
+  else r.push(['seal', 1], ['rid', 40 + L], ['sol', 15000]);                         // поздняя игра
+  if (L % 5 === 0) r.push(['seal', 1], ['folio', 5]);
+  if (L % 10 === 0) r.push(['wol', 1]);
+  return r;
+};
+const ACC_UPS = [];
 function accXP(n) {
   if (!n || S.acc.lvl >= ACC_MAX) return [];
   S.acc.xp += Math.round(n); const out = [];
   while (S.acc.lvl < ACC_MAX && S.acc.xp >= accNeed(S.acc.lvl)) {
     S.acc.xp -= accNeed(S.acc.lvl); S.acc.lvl++;
-    const L = S.acc.lvl, got = giveRewards(accReward(L)), un = [];
-    if (L <= MAX_LVL) un.push(`героев можно качать до ур. ${L}`);
-    for (const [t, l] of Object.entries(GEAR_CAP_AT)) if (l === L) un.push(`открыто снаряжение ${ROMAN[t]}`);
-    out.push(`<b class="acclv">Уровень аккаунта ${L}!</b> ${got.join(' ')}${un.length ? ` · ${un.join(', ')}` : ''}`);
+    const L = S.acc.lvl, rw = accReward(L), got = giveRewards(rw), un = [];
+    if (L <= MAX_LVL) un.push(['hero', `Потолок уровня героев: ${L - 1} → ${L}`]);
+    for (const [t, l] of Object.entries(GEAR_CAP_AT)) if (l === L) un.push(['gear', `Открыто снаряжение ${ROMAN[t]}`]);
+    if (L % 10 === 0) un.push(['energy', `Запас Воды ${WATER_BASE + 15 * (L / 10 - 1)} → ${WMAX()}, Свечей ${CANDLE_BASE + 10 * (L / 10 - 1)} → ${CMAX()}`]);
+    ACC_UPS.push({ L, rw, un });
+    out.push(`<b class="acclv">Уровень аккаунта ${L}!</b>`);
   }
   if (S.acc.lvl >= ACC_MAX) S.acc.xp = 0;
   return out;
@@ -4984,7 +5111,7 @@ function accPanel() {
   const L = S.acc.lvl, max = L >= ACC_MAX, need = accNeed(L), pct = max ? 100 : S.acc.xp / need * 100;
   const nextG = Object.entries(GEAR_CAP_AT).find(([t, l]) => l > L);
   return `<div class="accp"><div class="accrow"><span class="acclvl">${L}</span><div style="flex:1;min-width:0"><b>Уровень аккаунта</b><div class="fbar"><i style="width:${pct}%"></i><b class="mono">${max ? 'максимум' : `${fmt(S.acc.xp)} / ${fmt(need)} опыта`}</b></div></div></div>
-    <div class="acckv"><span>Потолок уровня героев</span><b>${heroCap()}</b><span>Потолок снаряжения</span><b>${ROMAN[gearCap()]}</b>${nextG ? `<span>Снаряжение ${ROMAN[nextG[0]]}</span><b>с ур. ${nextG[1]}</b>` : ''}<span>Награда за ур. ${Math.min(ACC_MAX, L + 1)}</span><b>${rewardsHtml(accReward(Math.min(ACC_MAX, L + 1)))}</b></div>
+    <div class="acckv"><span>Потолок уровня героев</span><b>${heroCap()}</b><span>Потолок снаряжения</span><b>${ROMAN[gearCap()]}</b><span>Запас энергии</span><b>${ic('water')} ${WMAX()} · ${ic('candle')} ${CMAX()} <small style="color:var(--dust)">+15/+10 каждые 10 ур.</small></b>${nextG ? `<span>Снаряжение ${ROMAN[nextG[0]]}</span><b>с ур. ${nextG[1]}</b>` : ''}<span>Награда за ур. ${Math.min(ACC_MAX, L + 1)}</span><b>${rewardsHtml(accReward(Math.min(ACC_MAX, L + 1)))}</b></div>
     <p class="sub" style="margin:4px 0 0;font-size:11px">Опыт: 3 за каждую единицу Воды или Свечей в победе и симуляции, 15 за победу в испытании, 40 в путешествии легенды, 30 за атаку в рейде, 10 за дневное задание.</p></div>`;
 }
 
@@ -4992,6 +5119,138 @@ function accPanel() {
 const FX_RX = /(Яд|Страх|Оглушени|Брон[яюи]↓|Голос(?![а-яё])|Провокаци|Скрытност|Защит[аыу]↑|Контратак|Уклонени[еяю]↑)[а-яё]*/g;
 const FX_BAD_RX = /^(Яд|Страх|Оглуш|Брон|Голос)/;
 const fxText = s => String(s).replace(FX_RX, m => `<span class="fxw ${FX_BAD_RX.test(m) ? 'bad' : 'good'}">${m}</span>`);
+
+// ===================== level-up window =====================
+function showLevelUp() {
+  if (!ACC_UPS.length || $('#lvlup') || (BT && BT.B)) return;
+  const ups = ACC_UPS.splice(0), last = ups[ups.length - 1], from = ups[0].L - 1;
+  const agg = {}; for (const u of ups) for (const [k, q] of u.rw) agg[k] = (agg[k] || 0) + q;
+  const un0 = ups.flatMap(u => u.un), hs = un0.filter(x => x[0] === 'hero'), un = [...(hs.length ? [['hero', `Потолок уровня героев: ${from} → ${Math.min(MAX_LVL, last.L)}`]] : []), ...un0.filter(x => x[0] !== 'hero')], ico = { hero: ic('shard'), gear: ic('pl'), energy: ic('water') };
+  const el = document.createElement('div'); el.id = 'lvlup'; el.className = 'lvlup';
+  el.innerHTML = `<div class="lvbox" role="dialog" aria-modal="true" aria-labelledby="lv-h">
+    <div class="lvrays"></div>${Array.from({ length: 22 }, (_, i) => `<i class="lvsp" style="--a:${i * 360 / 22}deg;--d:${(i % 5) * .08}s"></i>`).join('')}
+    <div class="lvbadge"><span class="lvold">${from}</span><span class="lvnew">${last.L}</span></div>
+    <h3 id="lv-h">Уровень аккаунта ${last.L}!</h3><p class="sub" style="margin:0">${ups.length > 1 ? `Сразу +${ups.length} уровня. ` : ''}Ваш Малый Дом набирает силу.</p>
+    ${un.length ? `<div class="lvun">${un.map(([k, t]) => `<div class="lvu">${ico[k] || ''}<span>${t}</span></div>`).join('')}</div>` : ''}
+    <p class="chap" style="margin:10px 0 4px">Награда</p><div class="lvrw">${Object.entries(agg).map(([k, q]) => `<span class="rwi">${amt(k, q)} <small>${RW_NAME[k] || ''}</small></span>`).join('')}</div>
+    <div class="acts" style="justify-content:center"><button class="btn go" data-lvclose="1">Отлично!</button></div></div>`;
+  document.body.appendChild(el); renderRes();
+}
+
+// ===================== corner notifications (daily quests / feats) =====================
+const NOTES = [];
+function noteSnap(init) {
+  S.notes ??= { d: '', q: {}, f: {} };
+  if (S.notes.d !== todayKey()) { S.notes.d = todayKey(); S.notes.q = {}; init = init || false; }
+  const out = [];
+  for (const q of DAILY) { const st = qState(q); if (st !== 'prog' && !S.notes.q[q.k]) { S.notes.q[q.k] = 1; if (!init) out.push({ kind: 'quest', q }); } }
+  for (const F of FEATS) {
+    const s = featStep(F); if (s >= F.at.length) continue;
+    const v = METRIC[F.m](), goal = F.at[s], prev = s ? F.at[s - 1] : 0, pct = Math.min(1, Math.max(0, (v - prev) / (goal - prev)));
+    const band = v >= goal ? 4 : Math.floor(pct * 4), key = s + ':' + band, was = S.notes.f[F.id];
+    if (was !== key) { S.notes.f[F.id] = key; const [ws, wb] = (was || '-1:-1').split(':').map(Number); if (!init && (s > ws || band > wb) && band > 0) out.push({ kind: band >= 4 ? 'feat' : 'featp', F, v, goal, s, pct }); }
+  }
+  return out;
+}
+function notePoll(init) {
+  if (!S) return;
+  const fresh = noteSnap(init);
+  for (const n of fresh) NOTES.push({ id: Math.random().toString(36).slice(2), ...n });
+  if (fresh.length) persist0();
+  showLevelUp(); renderNotes();
+}
+function noteHtml(n) {
+  const fv = v => v >= 1e6 ? (v / 1e6).toFixed(1).replace('.0', '') + ' млн' : v >= 1e4 ? Math.round(v / 1e3) + ' тыс.' : fmt(v);
+  if (n.kind === 'quest') return `<div class="nt-ic q">✓</div><div class="nt-tx"><b>Задание выполнено</b><span>${n.q.n}</span><div class="nt-rw">${rewardsHtml(n.q.rw)}</div></div><button class="btn mini go" data-ntgo="daily" data-ntid="${n.id}">Забрать</button>`;
+  if (n.kind === 'feat') return `<div class="nt-ic f">★</div><div class="nt-tx"><b>Подвиг: ${n.F.n} ${ROMAN[n.s + 1]}</b><span>Ступень выполнена — награда ждёт</span><div class="nt-rw">${rewardsHtml(featRw(n.F, n.s))}</div></div><button class="btn mini go" data-ntgo="feats" data-ntid="${n.id}">Забрать</button>`;
+  return `<div class="nt-ic p">${Math.round(n.pct * 100)}%</div><div class="nt-tx"><b>Подвиг: ${n.F.n} ${ROMAN[n.s + 1]}</b><span>Прогресс ${fv(n.v)} / ${fv(n.goal)}</span><div class="fbar"><i style="width:${n.pct * 100}%"></i></div></div><button class="btn mini" data-ntgo="feats" data-ntid="${n.id}">Открыть</button>`;
+}
+function renderNotes() {
+  let box = $('#notes'); if (!box) { box = document.createElement('div'); box.id = 'notes'; box.className = 'notes'; box.setAttribute('aria-live', 'polite'); document.body.appendChild(box); }
+  const hide = !!(BT && BT.B) || !!$('#lvlup'); box.hidden = hide || !NOTES.length; if (box.hidden) return;
+  const vis = NOTES.slice(-3).reverse(), more = NOTES.length - vis.length;
+  box.innerHTML = `${NOTES.length > 1 ? `<div class="nt-head"><span>${NOTES.length} уведомл.</span><button class="nt-all" data-ntall="1">Закрыть все</button></div>` : ''}
+    ${vis.map(n => `<div class="nt ${n.kind}" data-nt="${n.id}">${noteHtml(n)}<button class="nt-x" data-ntx="${n.id}" aria-label="Закрыть">×</button></div>`).join('')}${more > 0 ? `<div class="nt-more">ещё ${more}</div>` : ''}`;
+}
+const noteDrop = id => { const i = NOTES.findIndex(n => n.id === id); if (i >= 0) NOTES.splice(i, 1); renderNotes(); };
+// swipe to dismiss
+(() => {
+  let el = null, x0 = 0, dx = 0;
+  document.addEventListener('pointerdown', e => { const n = e.target.closest('.nt'); if (!n || e.target.closest('button')) return; el = n; x0 = e.clientX; dx = 0; el.style.transition = 'none'; el.setPointerCapture && el.setPointerCapture(e.pointerId); });
+  document.addEventListener('pointermove', e => { if (!el) return; dx = e.clientX - x0; el.style.transform = `translateX(${dx}px)`; el.style.opacity = String(1 - Math.min(1, Math.abs(dx) / 220)); });
+  const up = () => { if (!el) return; const n = el; el = null; n.style.transition = ''; if (Math.abs(dx) > 80) { n.style.transform = `translateX(${dx > 0 ? 400 : -400}px)`; n.style.opacity = '0'; setTimeout(() => noteDrop(n.dataset.nt), 180); } else { n.style.transform = ''; n.style.opacity = ''; } };
+  document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
+})();
+
+// ===================== desert mouse (muad'dib) for battle results =====================
+const MOUSE_SVG = sad => `<svg class="mouse ${sad ? 'sad' : 'joy'}" viewBox="0 0 120 100" aria-hidden="true">
+  <ellipse class="msh" cx="60" cy="94" rx="${sad ? 26 : 20}" ry="4" fill="rgb(0 0 0 / .35)"/>
+  <g class="mbody">
+    <path class="mtail" d="M38 74c-14 2-24-4-30-14 ${sad ? 'M38 76c-12 4-22 6-30 2' : ''}" fill="none" stroke="#b07a48" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="9" cy="${sad ? 78 : 60}" r="3.5" fill="#f0d8b0"/>
+    <ellipse cx="58" cy="70" rx="22" ry="${sad ? 16 : 19}" fill="#d4a46a"/><ellipse cx="62" cy="75" rx="13" ry="10" fill="#f2dcb4"/>
+    <path d="M44 84l-6 8h10M68 86l2 8h8" fill="none" stroke="#9a6a3a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <g class="mhead">
+      <ellipse class="mear l" cx="64" cy="${sad ? 40 : 26}" rx="9" ry="16" fill="#d4a46a" transform="rotate(${sad ? -60 : -18} 64 ${sad ? 46 : 38})"/><ellipse cx="64" cy="${sad ? 40 : 26}" rx="5" ry="11" fill="#e8a8a0" transform="rotate(${sad ? -60 : -18} 64 ${sad ? 46 : 38})"/>
+      <ellipse class="mear r" cx="84" cy="${sad ? 42 : 26}" rx="9" ry="16" fill="#c89458" transform="rotate(${sad ? 62 : 16} 84 ${sad ? 48 : 38})"/><ellipse cx="84" cy="${sad ? 42 : 26}" rx="5" ry="11" fill="#e8a8a0" transform="rotate(${sad ? 62 : 16} 84 ${sad ? 48 : 38})"/>
+      <ellipse cx="76" cy="${sad ? 56 : 50}" rx="17" ry="14" fill="#d4a46a"/>
+      ${sad ? `<path d="M67 55q3 -3 6 0M80 55q3 -3 6 0" fill="none" stroke="#2a1a10" stroke-width="2" stroke-linecap="round"/><path class="mtear" d="M70 58c1.5 2 2.5 3.4 2.5 4.6a2.5 2.5 0 01-5 0c0-1.2 1-2.6 2.5-4.6z" fill="#7ac0ff"/><path d="M73 65q4-3 8 0" fill="none" stroke="#2a1a10" stroke-width="1.8" stroke-linecap="round"/>`
+        : `<circle cx="70" cy="47" r="3.2" fill="#2a1a10"/><circle cx="83" cy="47" r="3.2" fill="#2a1a10"/><circle cx="71" cy="46" r="1" fill="#fff"/><circle cx="84" cy="46" r="1" fill="#fff"/><path d="M71 55q5 5 10 0" fill="none" stroke="#2a1a10" stroke-width="1.8" stroke-linecap="round"/><ellipse cx="66" cy="53" rx="3" ry="2" fill="#e88a7a" opacity=".6"/><ellipse cx="87" cy="53" rx="3" ry="2" fill="#e88a7a" opacity=".6"/>`}
+      <circle cx="91" cy="${sad ? 59 : 52}" r="2.6" fill="#6a3a2a"/>
+    </g>
+    ${sad ? '' : '<path class="marm" d="M50 62l-10-14" stroke="#c89458" stroke-width="4" stroke-linecap="round"/><path class="marm2" d="M72 64l12-12" stroke="#c89458" stroke-width="4" stroke-linecap="round"/>'}
+  </g>
+  ${sad ? '<g class="mcloud"><ellipse cx="96" cy="16" rx="12" ry="7" fill="#7a7a8a"/><ellipse cx="86" cy="18" rx="8" ry="6" fill="#8a8a9a"/><path class="mdrop" d="M90 26v5M96 26v5M102 26v5" stroke="#7ac0ff" stroke-width="1.6" stroke-linecap="round"/></g>' : '<g class="mstars"><path d="M14 18l2 4 4 .5-3 3 .8 4-3.8-2-3.8 2 .8-4-3-3 4-.5z" fill="#ffd27a"/><path d="M104 10l1.5 3 3 .4-2.2 2 .6 3-2.9-1.5-2.9 1.5.6-3-2.2-2 3-.4z" fill="#ffe8a0"/><circle cx="28" cy="8" r="2" fill="#ffd27a"/><circle cx="110" cy="34" r="1.6" fill="#ffd27a"/></g>'}
+</svg>`;
+
+// ===================== craft & equip everything =====================
+function craftAllPlan(cid) {
+  const p = prog(cid); if (!p.stars) return [];
+  let sol = S.solari, pl = S.plast; const inv = { ...S.inv }, out = [];
+  for (let k = 0; k < 6; k++) { if (p.eq[k]) continue; const s = slotState(cid, k), c = CRAFT(s.it.t); if ((inv[s.it.id] || 0) >= s.need && sol >= c.sol && pl >= c.pl) { inv[s.it.id] -= s.need; sol -= c.sol; pl -= c.pl; out.push({ k, it: s.it, c }); } }
+  return out;
+}
+function craftAll(cid) {
+  const plan = craftAllPlan(cid), p = prog(cid); if (!plan.length) return;
+  for (const { k, it, c } of plan) { S.inv[it.id] -= FRAG_NEED[it.t]; S.solari -= c.sol; S.plast -= c.pl; p.eq[k] = true; quest('craft'); }
+  persist(); toast(`${CH[cid].sn}: надето ${plan.length} — ${plan.map(x => x.it.n).join(', ')}`); render(); openDetail(cid);
+}
+
+// ===================== battle settings (gear) =====================
+function openBattleSettings() {
+  if (!BT || !BT.B || BT.done) return;
+  bPop(`<div class="bph"><span class="bigico">${GEAR_SVG}</span><div><h3>Настройки боя</h3><span class="mono">Бой на паузе</span></div></div>
+    <div class="bset">
+      <button class="btn bsb" data-bsauto="1"><b>Автобой</b><small>${BT.auto ? 'включён' : 'выключен'}</small></button>
+      <button class="btn bsb" data-bsspeed="1"><b>Скорость ×${BT.speed}</b><small>нажмите, чтобы сменить</small></button>
+      <button class="btn bsb" data-bslog="1"><b>Журнал боя</b><small>${BT.showLog ? 'показан' : 'скрыт'}</small></button>
+      <button class="btn bsb" data-bsdlg="1"><b>Диалоги перед боем</b><small>${S.skipDlg ? 'выключены' : 'включены'}</small></button>
+    </div>
+    <div class="acts"><button class="btn" data-bsreplay="1">${GLYPH.march ? '' : ''}Переиграть<small>начать бой заново</small></button><button class="btn danger" data-bsquit="1">Отступить<small>засчитается поражение</small></button><button class="btn go" data-bpopx="1" style="margin-left:auto">Продолжить</button></div>`);
+}
+const GEAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19.4 13a7.6 7.6 0 000-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 00-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 00-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 000 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 001.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 001.7-1l2.4 1 2-3.4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+const LOG_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h10l3 3v15H6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 9h7M9 13h7M9 17h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+function replayBattle() {
+  if (!BT || !BT.B) return; const cfg = { ...BT.cfg, dlg: false };
+  clearTimeout(BT.timer); if (BT.arena) BT.arena.dispose(); const pref = { autoPref: BT.autoPref, speedPref: BT.speedPref }; BT = pref;
+  launch(cfg); toast('Бой начат заново');
+}
+function meta2Click(d) {
+  if (d.lvclose) { const el = $('#lvlup'); if (el) el.remove(); showLevelUp(); renderNotes(); return true; }
+  if (d.ntall) { NOTES.length = 0; renderNotes(); return true; }
+  if (d.ntx) { noteDrop(d.ntx); return true; }
+  if (d.ntgo) { noteDrop(d.ntid); closeInfo(true); if (!(BT && BT.B)) { view = d.ntgo; render(); } return true; }
+  if (d.craftall) { craftAll(d.craftall); return true; }
+  if (d.bset) { openBattleSettings(); return true; }
+  if (d.bsauto) { BT.auto = BT.autoPref = !BT.auto; bPopClose(); if (BT.auto && BT.waiting) { const u = BT.waiting; const p = aiPlan(BT.B, u); doAct(u, p.key, p.target && p.target.uid); } else renderBattle(); return true; }
+  if (d.bsspeed) { BT.speed = BT.speedPref = BT.speed >= 16 ? 1 : BT.speed * 2; $('#bpop').remove(); BT.pop = false; renderBattle(); openBattleSettings(); return true; }
+  if (d.bslog) { BT.showLog = !BT.showLog; $('#bpop').remove(); BT.pop = false; renderBattle(); openBattleSettings(); return true; }
+  if (d.bsdlg) { S.skipDlg = !S.skipDlg; persist(); $('#bpop').remove(); BT.pop = false; openBattleSettings(); return true; }
+  if (d.bsreplay) { $('#bpop').remove(); BT.pop = false; BT.resume = null; replayBattle(); return true; }
+  if (d.bsquit) { $('#bpop').remove(); BT.pop = false; BT.resume = null; clearTimeout(BT.timer); BT.B.over = 'B'; finish(); return true; }
+  if (d.toroster) { leaveBattle(); view = 'squad'; render(); return true; }
+  return false;
+}
 
 window.claude?.hot?.snapshot?.(() => ({ save: S }));
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
