@@ -951,6 +951,17 @@ button.bgz { cursor: pointer; font: inherit; } button.bgz:hover { border-color: 
 .reqh { cursor: pointer; border-radius: 4px; } .reqh:hover { background: rgb(232 145 63 / .1); }
 @media (orientation: landscape) and (max-height: 520px) { .hglass { width: 44px; height: 54px; } .hglass svg { width: 22px; height: 30px; } .hglass b { font-size: 10px; } }
 
+/* ===== 3D stages ===== */
+.stage3d { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+.lobby .camp3d { position: absolute; inset: 0; z-index: 0; }
+.lobby.has3d #lobbybg { display: none; }
+.lobby.has3d .lfig { width: auto; aspect-ratio: .42; transform: translate(-50%, -100%); }
+.lobby.has3d .lfig svg { opacity: 0; height: 100%; width: 100%; }
+.lobby.has3d .lfig span { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); white-space: nowrap; font-size: 11px; color: #f4e7cf; }
+.cfig.has3d { width: min(240px, 100%) !important; aspect-ratio: 3 / 4.4; background: #120c08; border: 1px solid #5a4028; box-shadow: inset 0 0 30px #000; overflow: hidden; border-radius: 8px; cursor: grab; }
+.cfig.has3d > svg { display: none; }
+@media (orientation: landscape) and (max-height: 520px) { .cfig.has3d { width: 150px !important; } }
+
 /* ===== legend ultimate cinematic ===== */
 .ultcine { position: fixed; inset: 0; z-index: 42; pointer-events: none; overflow: hidden; animation: ucfade 2.9s ease forwards; }
 @keyframes ucfade { 0% { opacity: 0; } 6% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
@@ -2349,7 +2360,18 @@ let SC = null, SHG = null;
 const V3 = (x = 0, y = 0, z = 0) => new B3.Vector3(x, y, z);
 const col3 = c => c == null ? B3.Color3.White() : typeof c === 'number' ? B3.Color3.FromHexString('#' + c.toString(16).padStart(6, '0')) : c instanceof B3.Color3 ? c.clone() : B3.Color3.FromHexString(c.length === 4 ? '#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3] : c);
 const lerpC = (a, b, t) => B3.Color3.Lerp(a, b, t);
+let PBR_ON = false;
 function mat3(c, o = {}) {
+  if (PBR_ON) {
+    const p = new B3.PBRMaterial('p', SC), r = o.roughness ?? .85, me = o.metalness || 0;
+    p.albedoColor = col3(c).toLinearSpace(); p.metallic = me; p.roughness = Math.max(.08, r); p.environmentIntensity = .55; p.directIntensity = 1.15;
+    if (o.emissive) p.emissiveColor = col3(o.emissive);
+    if (r >= .78 && !me && !o.noSheen) { p.sheen.isEnabled = true; p.sheen.intensity = .35; p.sheen.color = col3(c).scale(1.4); p.sheen.roughness = .6; }
+    if (r <= .62 && !me) { p.clearCoat.isEnabled = false; }
+    if (o.side === 'double') p.backFaceCulling = false, p.twoSidedLighting = true;
+    p.maxSimultaneousLights = 8; p._flat = !!o.flatShading; p._lit = true; p.usePhysicalLightFalloff = false;
+    return p;
+  }
   const m = new B3.StandardMaterial('m', SC), r = o.roughness ?? .85, me = o.metalness || 0;
   m.diffuseColor = col3(c);
   m.specularColor = B3.Color3.White().scale(Math.min(.9, Math.max(.03, (1 - r) * .45 + me * .5)));
@@ -2546,7 +2568,33 @@ const HERO3 = {
 };
 function lathe(profile, seg = 18, zs = .74) { const m = MB().CreateLathe('la', { shape: profile.map(([r, y]) => V3(r, y, 0)), tessellation: seg, cap: B3.Mesh.CAP_ALL }, SC); m.scaling.z = zs; return m; }
 function tube3(pts, r, seg = 8) { return MB().CreateTube('tb', { path: pts.map(p => V3(...p)), radius: r, tessellation: seg, cap: B3.Mesh.CAP_ALL }, SC); }
+function foldify(mesh, amp, n) {
+  const p = mesh.getVerticesData(B3.VertexBuffer.PositionKind); if (!p) return mesh;
+  let ymin = Infinity, ymax = -Infinity; for (let i = 1; i < p.length; i += 3) { ymin = Math.min(ymin, p[i]); ymax = Math.max(ymax, p[i]); }
+  for (let i = 0; i < p.length; i += 3) { const x = p[i], z = p[i + 2], rr = Math.hypot(x, z); if (rr < 1e-4) continue; const a = Math.atan2(z, x), k = (ymax - p[i + 1]) / (ymax - ymin || 1), f = 1 + amp * k * (Math.sin(a * n) * .7 + Math.sin(a * n * 2.3 + 1) * .3); p[i] = x * f; p[i + 2] = z * f; }
+  mesh.updateVerticesData(B3.VertexBuffer.PositionKind, p, false, true); const nr = []; B3.VertexData.ComputeNormals(p, mesh.getIndices(), nr); mesh.updateVerticesData(B3.VertexBuffer.NormalKind, nr, false, true);
+  return mesh;
+}
+// merge static meshes of each rig node into one mesh (one draw call per bone) — big win on phones
+function mergeRig(root, shg) {
+  const nodes = [root, ...root.getChildTransformNodes(false)], out = [];
+  for (const nd of nodes) {
+    const ms = nd.getChildMeshes(true).filter(m => !m.getChildren().length && m.material && m.isEnabled() && !m._noMerge);
+    const byMat = new Map(); for (const m of ms) { const k = m.material.uniqueId + (m.material.backFaceCulling ? '' : 'd'); if (!byMat.has(k)) byMat.set(k, []); byMat.get(k).push(m); }
+    nd.computeWorldMatrix(true); const inv = nd.getWorldMatrix().clone().invert();
+    for (const grpM of byMat.values()) {
+      if (grpM.length < 2) { out.push(...grpM); continue; }
+      for (const m of grpM) m.computeWorldMatrix(true);
+      const merged = B3.Mesh.MergeMeshes(grpM, true, true);
+      if (!merged) { out.push(...grpM); continue; }
+      merged.bakeTransformIntoVertices(inv); merged.parent = nd; merged.position.set(0, 0, 0); merged.rotation.set(0, 0, 0); merged.scaling.set(1, 1, 1); merged.refreshBoundingInfo();
+      merged.receiveShadows = true; merged.isPickable = false; out.push(merged);
+    }
+  }
+  if (shg) for (const m of out) shg.addShadowCaster(m, false);
+}
 function makeHuman3(def) {
+  const SHG0 = SHG; SHG = null;
   const fac = def.f[0], X = HERO3[def.id] || {}, L = { ...(LOOK[fac] || LOOK.atr), ...(X.look || {}) }, h = ghash(def.id), fem = FEM.has(def.id);
   let style = X.style || (def.legendary || fac === 'frem' ? 'robe' : def.f.includes('bg') ? 'bgrobe' : fac === 'hark' ? 'armor' : fac === 'cor' ? 'cor' : 'tunic');
   if (fac === 'mach') style = 'robot';
@@ -2572,17 +2620,17 @@ function makeHuman3(def) {
     const hip = grp(hips, s * .1 * wide, -.04, 0);
     A(hip, bCyl(.078 * Math.min(fat, 1.25), .06, .44, 10), long ? M.suit : robot || style === 'armor' ? M.metal : M.pants, 0, -.22, 0);
     const knee = grp(hip, 0, -.44, 0);
-    if (armored && !long) A(knee, bSph(.07, 10), M.metal, 0, 0, .03);
+    if (armored && !long) A(knee, bSph(.07, 10), M.metal, 0, 0, .03); else A(knee, bSph(.06, 12), long ? M.suit : M.pants, 0, 0, 0);
     A(knee, bCyl(.058, .046, .42, 10), long ? M.suit : robot ? M.metal : M.pants, 0, -.21, 0);
     const ank = grp(knee, 0, -.42, 0);
-    A(ank, bBox(.12, .1, .27), robot ? M.metal : M.boot, 0, -.035, .045);
+    A(ank, bBox(.12, .1, .27), robot ? M.metal : M.boot, 0, -.035, .045); A(ank, bSph(.062, 10), robot ? M.metal : M.boot, 0, -.03, .16).scaling.set(1, .7, .9);
     A(ank, bCyl(.064, .07, .16, 10), robot ? M.metal : M.boot, 0, .05, 0);
     return { hip, knee, ank };
   };
   const LL = leg(-1), LR = leg(1);
   // robe skirt (sways with legs)
   let skirt = null;
-  if (long) { skirt = grp(hips, 0, .06, 0); A(skirt, lathe([[0, 0], [.2 * wide * fat, 0], [.26 * wide, -.3], [.36, -.62], [.44, -.86], [.43, -.9], [0, -.9]], 22, .8), style === 'bgrobe' ? M.dark : M.cloth); }
+  if (long) { skirt = grp(hips, 0, .06, 0); A(skirt, foldify(lathe([[0, 0], [.2 * wide * fat, 0], [.26 * wide, -.3], [.36, -.62], [.44, -.86], [.43, -.9], [0, -.9]], 44, .8), .07, 9), style === 'bgrobe' ? M.dark : M.cloth); }
   else if (style === 'tunic' || style === 'emperor') { skirt = grp(hips, 0, .04, 0); A(skirt, lathe([[0, 0], [.19 * wide, 0], [.22 * wide, -.2], [.24 * wide, -.32], [0, -.32]], 18, .78), style === 'emperor' ? M.dark : M.cloth); }
   // spine + torso
   const spine = grp(hips, 0, .04, 0);
@@ -2610,7 +2658,9 @@ function makeHuman3(def) {
     if (X.cymek) { H(bSph(.14, 16), basic3('#ffb0c8', { alpha: .55 }), 0, .26, 0); H(bSph(.09, 12), mat3('#d06a8a', { roughness: .4 }), 0, .25, 0); }
   } else {
     const skull = H(bSph(.112, 20), M.skin, 0, .1, 0); skull.scaling.set(fem ? .9 : .97, 1.1, 1);
-    H(bSph(.085, 14), M.skin, 0, .045, .03).scaling.set(fem ? .82 : .95, .8, .85);
+    H(bSph(.085, 18), M.skin, 0, .045, .03).scaling.set(fem ? .82 : .95, .8, .85);
+    for (const s of [-1, 1]) H(bSph(.028, 10), M.skin, s * .055, .075, .07).scaling.set(1, .75, .55);
+    H(bSph(.045, 12), M.skin, 0, .135, .085).scaling.set(1.6, .45, .5);
     for (const s of [-1, 1]) {
       H(bSph(.025, 8), M.skin, s * .105, .1, 0).scaling.set(.5, 1, .8);
       H(bSph(.017, 8), M.white, s * .04, .115, .092); H(bSph(.0105, 8), M.eye, s * .04, .115, .106);
@@ -2683,6 +2733,7 @@ function makeHuman3(def) {
   if (def.legendary) { const lt = new B3.PointLight('lg', V3(0, 1.3, 0), SC); lt.parent = root; lt.diffuse = col3('#ffc860'); lt.intensity = .9; lt.range = 3.5; }
   const sc = (def.role === 'tank' ? 1.05 : 1) * (def.legendary ? 1.08 : 1) * (X.cymek ? 1.15 : 1), tl = X.tall || 1; root.scaling.set(sc * (tl > 1 ? 1.03 : 1), sc * tl, sc * (tl > 1 ? 1.03 : 1));
   const mats = []; for (const m of root.getChildMeshes(false)) if (m.material && m.material._lit && !mats.includes(m.material)) mats.push(m.material);
+  mergeRig(root, SHG0); SHG = SHG0;
   for (const m of mats) m._baseEm = m.emissiveColor.clone();
   const melee = dt === 'blade' || robot && dt !== 'fast';
   root._staff = def.role === 'sup' && !robot;
@@ -2788,6 +2839,7 @@ class Arena3D {
     this.camera = new B3.UniversalCamera('cam', V3(0, 11, 18), S); this.camera.minZ = .1; this.camera.maxZ = 1200; this.camera.inputs.clear();
     this.raid = !!B.raid; this.summons = []; this.nA = B.units.filter(x => x.side === 'A').length;
     buildEnv(this, key);
+    const rp = this.probe = new B3.ReflectionProbe('rp', this.small ? 64 : 128, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
     for (const u of B.units) this.addUnit(u);
     this.setupFX();
     SC = null; SHG = null;
@@ -2816,10 +2868,14 @@ class Arena3D {
     P.chromaticAberrationEnabled = !this.small; if (P.chromaticAberration) P.chromaticAberration.aberrationAmount = 6;
     P.grainEnabled = true; P.grain.intensity = 5; P.grain.animated = true;
     P.sharpenEnabled = !this.small; if (P.sharpen) P.sharpen.edgeAmount = .2;
+    const LOW = SAVE_LOW();
+    P.depthOfFieldEnabled = !LOW; P.depthOfFieldBlurLevel = this.small ? B3.DepthOfFieldEffectBlurLevel.Low : B3.DepthOfFieldEffectBlurLevel.Medium;
+    P.depthOfField.focalLength = 60; P.depthOfField.fStop = 3.2; P.depthOfField.focusDistance = 20000; P.depthOfField.lensSize = 50;
+    try { if (!LOW && this.engine.webGLVersion >= 2 && B3.SSAO2RenderingPipeline.IsSupported) { const ao = this.ssao = new B3.SSAO2RenderingPipeline('ssao', S, { ssaoRatio: this.small ? .5 : .75, blurRatio: .5 }, [this.camera], true); ao.radius = 1.4; ao.totalStrength = 1.15; ao.base = .12; ao.samples = this.small ? 8 : 16; ao.maxZ = 70; ao.minZAspect = .3; ao.expensiveBlur = !this.small; } } catch (e) {}
   }
   addUnit(u) {
     SC = this.scene; SHG = this.shadows;
-    const o = u.def.boss ? makeWorm3() : makeHuman3(u.def); o.def = u.def;
+    PBR_ON = !u.def.boss; const o = u.def.boss ? makeWorm3() : makeHuman3(u.def); PBR_ON = false; o.def = u.def;
     o.slot = u.def.boss ? [7.4, -7, true] : (() => { const s = SLOT3[u.idx] || SLOT3[0]; return [u.side === 'A' ? s[0] : -s[0], s[1], false, u.idx]; })();
     const [x, y, z] = this.slotPos(o.slot);
     o.base = V3(x, y, z); o.root.position.copyFrom(o.base);
@@ -2882,6 +2938,7 @@ class Arena3D {
         to.y = this.heightAt(to.x, to.z);
         const ab = B.lastKey && B.lastKey !== 'gl' && o.def ? o.def[B.lastKey] : null;
         o.act = { kind, t0: now, dur, dir: nd, to, tg, dt, ab };
+        if (['special', 'ult'].includes(B.lastKey) && !this.raid) { const pts = [kind === 'melee' || kind === 'aoe' ? to : o.base, ...tg.map(t => t.base)], c = V3(); for (const q of pts) c.addInPlace(q); c.scaleInPlace(1 / pts.length); this.cine = { t0: now, dur: dur + 700 / sp, p: c, side: o.side, ult: B.lastKey === 'ult' }; }
         if (ab && (ab.fx || ab.heal || ab.tm || ab.shieldSelf || ab.cleanse)) this.at(now + (kind === 'cast' ? .3 : .55) * dur, () => this.buffFX(B, o, ab));
         const hitAt = { melee: .52, aoe: .56, shoot: .4, voice: .5, cast: .3 }[kind] * dur;
         for (const t of tg) { this.hitDelay[t.uid] = hitAt; t.hitDir = nd.clone(); }
@@ -3029,7 +3086,11 @@ class Arena3D {
     if (this.shakeT && now - this.shakeT < 300) { const k = 1 - (now - this.shakeT) / 300; pos.x += (Math.random() - .5) * .25 * k; pos.y += (Math.random() - .5) * .25 * k; }
     if (this.glT && now - this.glT < 1600) { const k = Math.sin(Math.min(1, (now - this.glT) / 1600) * Math.PI); B3.Vector3.LerpToRef(pos, V3(0, this.camH * .7, this.camDist * .72), k * .5, pos); look = V3(LK.x, LK.y + .35, LK.z); if (this.glLight) this.glLight.intensity = 4 * k; }
     else if (this.glLight) this.glLight.intensity = 0;
+    let fd = 0;
+    if (this.cine) { const C = this.cine, k = (now - C.t0) / C.dur; if (k >= 1) this.cine = null; else { const w = Math.sin(Math.min(1, k) * Math.PI) ** .7 * (C.ult ? .62 : .45), sideX = C.side === 'A' ? -3.5 : 3.5;
+      B3.Vector3.LerpToRef(pos, V3(C.p.x * .55 + sideX, this.camH * .55 + 1.2, C.p.z + this.camDist * .55), w, pos); B3.Vector3.LerpToRef(look, V3(C.p.x, 1.1, C.p.z), w * 1.1, look); fd = w; } }
     cam.position.copyFrom(pos); cam.setTarget(look);
+    if (this.pipe && this.pipe.depthOfFieldEnabled) this.pipe.depthOfField.focusDistance = B3.Vector3.Distance(pos, look) * 1000 * (1 + fd * .05);
     // units
     for (const uid in this.units) {
       const o = this.units[uid], r = o.root;
@@ -3096,6 +3157,192 @@ class Arena3D {
     try { this.engine.stopRenderLoop(); this.scene.dispose(); this.engine.dispose(); } catch (e) {}
   }
 }
+
+// ===================== 3D stages outside battle: hero showcase + camp lobby =====================
+// Persistent canvases: the UI re-renders its HTML often, so each stage keeps its <canvas> and is re-inserted into the new layout.
+const SAVE_LOW = () => { try { return !!JSON.parse(localStorage.getItem('dune-gfx-low') || 'false'); } catch (e) { return false; } };
+class Stage3D {
+  constructor(opts = {}) {
+    this.cv = document.createElement('canvas'); this.cv.className = opts.cls || 'stage3d'; this.cv.setAttribute('aria-hidden', 'true');
+    this.small = Math.min(innerWidth, innerHeight) < 600;
+    const E = this.engine = new B3.Engine(this.cv, true, { stencil: true, antialias: true, powerPreference: 'high-performance', alpha: !!opts.alpha, premultipliedAlpha: false }, false);
+    E.setHardwareScalingLevel(1 / Math.min(window.devicePixelRatio || 1, opts.maxDpr || 2)); E.enableOfflineSupport = false;
+    const S = this.scene = new B3.Scene(E); S.useRightHandedSystem = true; S.skipPointerMovePicking = true;
+    this.camera = new B3.UniversalCamera('cam', V3(0, 1.4, 6), S); this.camera.minZ = .05; this.camera.maxZ = 1200; this.camera.inputs.clear();
+    this.parts = []; this.tr = []; this.alive = true; this.running = false;
+  }
+  look(pipeOpts = {}) {
+    const S = this.scene, P = this.pipe = new B3.DefaultRenderingPipeline('dp', true, S, [this.camera]);
+    P.fxaaEnabled = true; P.samples = this.engine.webGLVersion >= 2 && !this.small ? 4 : 1;
+    P.bloomEnabled = true; P.bloomThreshold = pipeOpts.bloomT ?? .78; P.bloomWeight = pipeOpts.bloomW ?? .38; P.bloomKernel = 48; P.bloomScale = .5;
+    P.imageProcessingEnabled = true; const ip = P.imageProcessing; ip.toneMappingEnabled = true; ip.toneMappingType = B3.ImageProcessingConfiguration.TONEMAPPING_ACES; ip.exposure = pipeOpts.exposure ?? 1.15; ip.contrast = 1.15;
+    ip.vignetteEnabled = true; ip.vignetteWeight = pipeOpts.vig ?? 2.2; ip.vignetteColor = new B3.Color4(.06, .03, .015, 0);
+    P.grainEnabled = true; P.grain.intensity = 4; P.grain.animated = true;
+    const LOW = !!(SAVE_LOW()); if (LOW) { pipeOpts.dof = null; pipeOpts.ssao = 0; }
+    if (pipeOpts.dof) { P.depthOfFieldEnabled = true; P.depthOfFieldBlurLevel = this.small ? B3.DepthOfFieldEffectBlurLevel.Low : B3.DepthOfFieldEffectBlurLevel.Medium; P.depthOfField.focalLength = pipeOpts.dof.f || 90; P.depthOfField.fStop = pipeOpts.dof.stop || 1.8; P.depthOfField.focusDistance = pipeOpts.dof.d || 4000; }
+    this.glow = new B3.GlowLayer('glow', S, { mainTextureRatio: this.small ? .35 : .5, blurKernelSize: 32 }); this.glow.intensity = pipeOpts.glow ?? .6;
+    try { if (pipeOpts.ssao && this.engine.webGLVersion >= 2 && B3.SSAO2RenderingPipeline.IsSupported) { const ao = new B3.SSAO2RenderingPipeline('ssao', S, { ssaoRatio: this.small ? .5 : .75, blurRatio: .5 }, [this.camera], true); ao.radius = pipeOpts.ssao; ao.totalStrength = 1.2; ao.base = .1; ao.samples = this.small ? 8 : 16; ao.maxZ = 60; } } catch (e) {}
+  }
+  attach(host) {
+    if (!host) return;
+    if (this.cv.parentNode !== host) host.appendChild(this.cv);
+    this.engine.resize();
+    if (!this.running) { this.running = true; this.engine.runRenderLoop(() => this.frame()); }
+  }
+  frame() {
+    if (!this.cv.isConnected || this.paused()) { this.engine.stopRenderLoop(); this.running = false; this.stopped = performance.now(); return; }
+    if (this.cv.clientWidth !== this.w || this.cv.clientHeight !== this.h) { this.w = this.cv.clientWidth; this.h = this.cv.clientHeight; this.engine.resize(); this.onResize && this.onResize(); }
+    const now = performance.now(); this.tick(now, now / 1000);
+    if (this.tr.length) this.tr = this.tr.filter(T => { const k = (now - T.t0) / T.life; if (k >= 1) { T.mesh.dispose(false, true); return false; } T.upd(T.mesh, k); return true; });
+    this.scene.render(); this.post && this.post(now);
+  }
+  paused() { return !!(BT && BT.B); }
+  fade(mesh, life, upd) { this.tr.push({ mesh, t0: performance.now(), life, upd }); }
+  dispose() { this.alive = false; try { this.engine.stopRenderLoop(); this.scene.dispose(); this.engine.dispose(); } catch (e) {} }
+}
+
+// ---------- hero showcase (character window) ----------
+class HeroStage extends Stage3D {
+  constructor() {
+    super({ cls: 'stage3d hero3d', alpha: false });
+    const S = this.scene; SC = S;
+    S.clearColor = new B3.Color4(.07, .045, .03, 1); S.ambientColor = B3.Color3.Black();
+    // backdrop: soft radial gradient sphere + floor podium
+    const bg = MB().CreateSphere('bg', { diameter: 60, segments: 16, sideOrientation: B3.Mesh.BACKSIDE }, S); bg.material = basic3('#0e0906', { fog: false }); bg.isPickable = false; this.bg = bg;
+    const halo = mk(bPlane(7, 7), null, 0, 1.4, -3, false); const hm = basic3('#3a2210', { fog: false, add: true }); const htx = dynTex(glowCanvas(), 0, true); hm.emissiveTexture = htx; hm.opacityTexture = htx; hm.disableDepthWrite = true; halo.material = hm; this.halo = halo;
+    const hemi = new B3.HemisphericLight('h', V3(0, 1, 0), S); hemi.intensity = .35; hemi.diffuse = col3('#c8b090'); hemi.groundColor = col3('#2a1a10'); hemi.specular = B3.Color3.Black();
+    const key = this.key = new B3.DirectionalLight('key', V3(-.5, -.8, -.6), S); key.position = V3(4, 7, 6); key.intensity = 1.25; key.diffuse = col3('#ffe2b8');
+    key.autoUpdateExtends = false; key.orthoLeft = -2; key.orthoRight = 2; key.orthoTop = 3; key.orthoBottom = -1; key.shadowMinZ = .5; key.shadowMaxZ = 20;
+    const rim = this.rim = new B3.SpotLight('rim', V3(-2.5, 3.2, -2.5), V3(.6, -.5, .6), Math.PI / 3, 2, S); rim.intensity = 1.6; rim.diffuse = col3('#8fc0ff');
+    const rim2 = this.rim2 = new B3.SpotLight('rim2', V3(2.6, 2.6, -2.2), V3(-.6, -.4, .6), Math.PI / 3, 2, S); rim2.intensity = 1.1; rim2.diffuse = col3('#ffa860');
+    SHG = this.shadows = new B3.ShadowGenerator(this.small ? 1024 : 2048, key); SHG.usePercentageCloserFiltering = this.engine.webGLVersion >= 2; SHG.filteringQuality = B3.ShadowGenerator.QUALITY_HIGH; SHG.bias = .0006; SHG.normalBias = .01; SHG.darkness = .2;
+    // podium: sand-stone disc with glowing tier ring
+    const stone = mat3('#5a4030', { roughness: .8 }), top = mat3('#7a5a3e', { roughness: .65 });
+    mk(bCyl(1.05, 1.15, .22, 48), stone, 0, -.11, 0, false); mk(bCyl(.98, .98, .02, 48), top, 0, .005, 0, false);
+    this.ring = mk(MB().CreateTorus('ring', { diameter: 2.04, thickness: .03, tessellation: 64 }, S), basic3('#e8913f'), 0, .01, 0, false);
+    const tx = dynTex(glowCanvas(), 0, true);
+    const dust = new B3.ParticleSystem('motes', 160, S); dust.particleTexture = tx; dust.emitter = V3(0, 0, 0); dust.minEmitBox = V3(-1.6, 0, -1.2); dust.maxEmitBox = V3(1.6, 2.6, 1); dust.direction1 = V3(-.05, .05, -.05); dust.direction2 = V3(.05, .15, .05);
+    dust.minLifeTime = 4; dust.maxLifeTime = 8; dust.minSize = .01; dust.maxSize = .03; dust.color1 = new B3.Color4(1, .85, .6, .7); dust.color2 = new B3.Color4(1, .7, .4, .5); dust.colorDead = new B3.Color4(1, .6, .3, 0); dust.emitRate = 20; dust.blendMode = B3.ParticleSystem.BLENDMODE_ADD; dust.preWarmCycles = 100; dust.start();
+    const burst = this.burst = new B3.ParticleSystem('burst', 500, S); burst.particleTexture = tx; burst.emitter = V3(0, .1, 0); burst.minEmitBox = V3(-.6, 0, -.6); burst.maxEmitBox = V3(.6, .1, .6); burst.direction1 = V3(-.4, 2, -.4); burst.direction2 = V3(.4, 4, .4); burst.gravity = V3(0, -1.5, 0);
+    burst.minLifeTime = .8; burst.maxLifeTime = 1.8; burst.minSize = .02; burst.maxSize = .06; burst.color1 = new B3.Color4(1, .85, .45, 1); burst.color2 = new B3.Color4(1, .65, .25, 1); burst.colorDead = new B3.Color4(1, .4, .1, 0); burst.blendMode = B3.ParticleSystem.BLENDMODE_ADD; burst.emitRate = 0; burst.manualEmitCount = 0; burst.start();
+    const rp = new B3.ReflectionProbe('rp', 64, S); rp.renderList.push(bg); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
+    SC = null; SHG = null;
+    this.look({ dof: { f: 85, stop: 2, d: 4200 }, exposure: 1.05, ssao: .35, bloomW: .35, bloomT: .85 });
+    this.yaw = 0; this.yawV = 0; this.drag = null; this.auto = true;
+    const cv = this.cv;
+    cv.addEventListener('pointerdown', e => { this.drag = { x: e.clientX, y0: this.yaw }; this.auto = false; cv.setPointerCapture && cv.setPointerCapture(e.pointerId); });
+    cv.addEventListener('pointermove', e => { if (!this.drag) return; const nx = this.yaw; this.yaw = this.drag.y0 + (e.clientX - this.drag.x) * .012; this.yawV = (this.yaw - nx) * 60; });
+    const up = () => { if (this.drag) { this.drag = null; this.resumeT = performance.now() + 3000; } }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  }
+  setHero(def, prog0) {
+    if (this.def === def && this.o) return;
+    if (this.o) this.o.root.dispose(false, true);
+    SC = this.scene; SHG = this.shadows; PBR_ON = true; const o = makeHuman3(def); PBR_ON = false; SC = null; SHG = null;
+    o.base = V3(0, 0, 0); o.face = 0; o.side = 'A'; o.phase = 0; o.def = def; this.o = o; this.def = def; this.yaw = -.35; this.auto = true;
+    const tc = col3(TIER_COL[(prog0 || {}).gear || 1] || '#e8913f'); this.ring.material.emissiveColor = tc; this.rim.diffuse = def.side === 'dark' ? col3('#ff6a5a') : col3('#8fc0ff');
+    this.intro = performance.now();
+  }
+  celebrate(kind) { const b = this.burst; b.manualEmitCount = kind === 'star' ? 420 : 220; this.flashT = performance.now(); this.flashKind = kind; }
+  tick(now, t) {
+    const o = this.o; if (!o) return;
+    if (this.auto && !this.drag && (!this.resumeT || now > this.resumeT)) this.yaw += Math.sin(t * .35) * .0025;
+    if (!this.drag) { this.yaw += this.yawV / 60; this.yawV *= .92; }
+    poseHuman(this, o, now, t, 1); o.root.rotation.y = this.yaw;
+    const H = o.h, ik = this.intro ? Math.min(1, (now - this.intro) / 1100) : 1, e = 1 - (1 - ik) ** 3;
+    const asp = (this.cv.clientWidth || 1) / (this.cv.clientHeight || 1), dist = (H * 1.35 + .6) / Math.min(1, asp * 1.9);
+    this.camera.position.set(Math.sin(.25) * dist * (1.25 - .25 * e), H * .62 + .25 * (1 - e), Math.cos(.25) * dist * (1.25 - .25 * e)); this.camera.setTarget(V3(0, H * .52, 0)); this.camera.fov = .75;
+    if (this.pipe.depthOfFieldEnabled) this.pipe.depthOfField.focusDistance = dist * 1000;
+    const fk = this.flashT ? Math.max(0, 1 - (now - this.flashT) / 900) : 0;
+    this.key.intensity = 1.25 + fk * 2; this.ring.scaling.setAll(1 + fk * .15); this.glow.intensity = .6 + fk;
+  }
+  slashFX() {} muzzleFX() {} voiceFX() {} castFX() {}
+}
+let HERO_STAGE = null, HERO_SNAP = null;
+function mountHeroStage(id) {
+  if (!HAS3D) return;
+  const host = document.querySelector('#overlay .cfig'); if (!host) return;
+  try {
+    if (!HERO_STAGE) HERO_STAGE = new HeroStage();
+    const p = prog(id), d = CH[id];
+    host.classList.add('has3d'); HERO_STAGE.setHero(d, p); HERO_STAGE.attach(host);
+    const snap = { id, stars: p.stars, gear: p.gear, eq: p.eq.filter(Boolean).length, lvl: p.lvl, sk: JSON.stringify(p.sk) };
+    if (HERO_SNAP && HERO_SNAP.id === id) { if (snap.stars > HERO_SNAP.stars || snap.gear > HERO_SNAP.gear) HERO_STAGE.celebrate('star'); else if (snap.eq > HERO_SNAP.eq || snap.lvl > HERO_SNAP.lvl || snap.sk !== HERO_SNAP.sk) HERO_STAGE.celebrate('up'); }
+    HERO_SNAP = snap;
+  } catch (e) { console.warn('hero stage', e); }
+}
+
+// ---------- 3D camp lobby ----------
+class CampStage extends Stage3D {
+  constructor() {
+    super({ cls: 'stage3d camp3d', maxDpr: 1.75 });
+    this.raid = false; this.units = {};
+    SC = this.scene; buildEnv(this, 'sietch'); SC = this.scene; SHG = this.shadows;
+    const S = this.scene; S.fogStart = 30; S.fogEnd = 120;
+    const rp = new B3.ReflectionProbe('rp', 64, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
+    // campfire: stones ring, logs, flickering light, flame + sparks particles
+    const fx = 0, fz = 1.2, fy = this.heightAt(fx, fz); this.fire = V3(fx, fy, fz);
+    const stoneM = mat3('#4a3a30', { roughness: .9, flatShading: true });
+    for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2, st = mk(bRock(i + 90, 0), stoneM, fx + Math.cos(a) * .55, fy + .05, fz + Math.sin(a) * .55); st.scaling.setAll(.16 + (i % 3) * .03); }
+    const logM = mat3('#3a2414', { roughness: .9 });
+    for (let i = 0; i < 4; i++) { const lg = mk(bCyl(.06, .07, .9, 8), logM, fx, fy + .12, fz); lg.rotation.z = Math.PI / 2 - .35; lg.rotation.y = i * Math.PI / 4; }
+    mk(bSph(.22, 12), basic3('#ff7a2a'), fx, fy + .12, fz, false).scaling.set(1, .4, 1);
+    const L = this.fireL = new B3.PointLight('fire', V3(fx, fy + .8, fz), S); L.diffuse = col3('#ff9a4a'); L.specular = col3('#ff8a3a'); L.intensity = 2.4; L.range = 14;
+    const fsh = new B3.ShadowGenerator(this.small ? 512 : 1024, L); fsh.usePoissonSampling = true; fsh.darkness = .35; this.fireShadow = fsh;
+    const tx = dynTex(glowCanvas(), 0, true);
+    const fl = new B3.ParticleSystem('flame', 400, S); fl.particleTexture = tx; fl.emitter = V3(fx, fy + .1, fz); fl.minEmitBox = V3(-.18, 0, -.18); fl.maxEmitBox = V3(.18, .05, .18);
+    fl.direction1 = V3(-.15, 1.4, -.15); fl.direction2 = V3(.15, 2.2, .15); fl.minLifeTime = .35; fl.maxLifeTime = .8; fl.minSize = .18; fl.maxSize = .42; fl.addSizeGradient(0, .3); fl.addSizeGradient(1, .05);
+    fl.addColorGradient(0, new B3.Color4(1, .9, .5, 1)); fl.addColorGradient(.4, new B3.Color4(1, .5, .15, .9)); fl.addColorGradient(1, new B3.Color4(.5, .1, .02, 0)); fl.emitRate = 260; fl.blendMode = B3.ParticleSystem.BLENDMODE_ADD; fl.start();
+    const sp = new B3.ParticleSystem('sparks', 120, S); sp.particleTexture = tx; sp.emitter = V3(fx, fy + .3, fz); sp.minEmitBox = V3(-.15, 0, -.15); sp.maxEmitBox = V3(.15, .2, .15); sp.direction1 = V3(-.5, 2, -.5); sp.direction2 = V3(.5, 4, .5);
+    sp.minLifeTime = 1; sp.maxLifeTime = 2.4; sp.minSize = .02; sp.maxSize = .05; sp.color1 = new B3.Color4(1, .7, .3, 1); sp.color2 = new B3.Color4(1, .5, .15, 1); sp.colorDead = new B3.Color4(1, .3, 0, 0); sp.emitRate = 18; sp.blendMode = B3.ParticleSystem.BLENDMODE_ADD; sp.start();
+    const smk = new B3.ParticleSystem('smoke', 120, S); smk.particleTexture = tx; smk.emitter = V3(fx, fy + 1.2, fz); smk.minEmitBox = V3(-.1, 0, -.1); smk.maxEmitBox = V3(.1, .2, .1); smk.direction1 = V3(.1, .8, -.1); smk.direction2 = V3(.4, 1.3, .1);
+    smk.minLifeTime = 3; smk.maxLifeTime = 5; smk.minSize = .4; smk.maxSize = .9; smk.addSizeGradient(0, .3); smk.addSizeGradient(1, 1.6); smk.color1 = new B3.Color4(.25, .2, .18, .25); smk.color2 = new B3.Color4(.2, .17, .15, .2); smk.colorDead = new B3.Color4(.1, .1, .1, 0); smk.emitRate = 14; smk.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD; smk.start();
+    // tents & crates & banners
+    const tentM = mat3('#8a6a4a', { roughness: .95, side: 'double' }), darkM = mat3('#3a2a1c');
+    for (const [x, z, r, s] of [[-6.5, -3.5, .6, 1.3], [6.8, -4.2, -.5, 1.5], [-9, 1, 1.2, 1.1]]) { const t = mk(bCyl(0, 1.6, 2, 4), tentM, x, this.heightAt(x, z) + 1, z); t.rotation.y = r; t.scaling.set(s, s, s * .8); mk(bBox(.5, 1, .05), darkM, x + Math.sin(r) * 1.05 * s, this.heightAt(x, z) + .5, z + Math.cos(r) * 1.05 * s).rotation.y = r; }
+    const crateM = mat3('#6a4a2a', { roughness: .8 });
+    for (const [x, z] of [[4.6, -1.5], [5.2, -1.1], [-4.4, -2.2]]) mk(bBox(.6, .5, .6), crateM, x, this.heightAt(x, z) + .25, z).rotation.y = x;
+    const pole = mat3('#4a3420'), flag = mat3(S_FLAG(), { side: 'double', roughness: .9 });
+    for (const x of [-3.6, 3.6]) { const z = -2.8, y = this.heightAt(x, z); mk(bCyl(.04, .05, 3.6, 8), pole, x, y + 1.8, z); this.flag = this.flag || []; const f = mk(bPlane(.9, 1.3), flag, x + .48, y + 3, z); this.flag.push(f); }
+    SC = null; SHG = null;
+    this.look({ dof: { f: 50, stop: 2.4, d: 9000 }, exposure: 1.25, ssao: .9, bloomT: .7, bloomW: .45, vig: 2.6 });
+    this.slots = [[0, -.7], [-1.45, -.3], [1.45, -.3], [-2.55, .6], [2.55, .6]];
+  }
+  setSquad(ids) {
+    const key = ids.join(','); if (key === this.key0) return; this.key0 = key;
+    for (const o of Object.values(this.units)) o.root.dispose(false, true); this.units = {};
+    SC = this.scene; SHG = this.shadows;
+    ids.forEach((id, k) => { PBR_ON = true; const o = makeHuman3(CH[id]); PBR_ON = false; const [x, z] = this.slots[k] || [0, 0], y = this.heightAt(x, z);
+      o.base = V3(x, y, z); o.face = -x * .16; o.side = 'A'; o.phase = k * 1.7; o.def = CH[id]; o.id = id; this.units[id] = o; for (const m of o.root.getChildMeshes()) this.fireShadow.addShadowCaster(m, false); });
+    SC = null; SHG = null;
+  }
+  tick(now, t) {
+    const f = .85 + Math.sin(t * 9) * .08 + Math.sin(t * 23) * .06 + Math.sin(t * 3.1) * .05; this.fireL.intensity = 2.6 * f; this.fireL.position.x = this.fire.x + Math.sin(t * 7) * .04;
+    for (const o of Object.values(this.units)) poseHuman(this, o, now, t, 1);
+    const a = Math.sin(t * .05) * .28, R = 7, asp = (this.cv.clientWidth || 1) / (this.cv.clientHeight || 1), rr = asp < 1 ? R * 1.5 : R;
+    this.camera.position.set(Math.sin(a) * rr, 2.6 + Math.sin(t * .11) * .15, this.fire.z + Math.cos(a) * rr); this.camera.setTarget(V3(0, 1.1, .3)); this.camera.fov = asp < 1 ? 1.0 : .82;
+    if (this.flag) this.flag.forEach((fl, i) => { fl.rotation.y = Math.sin(t * 1.3 + i) * .25; });
+  }
+  post() {
+    // keep the HTML squad labels over the 3D heroes
+    const view = document.querySelector('.lobby'); if (!view) return; const vr = view.getBoundingClientRect(), cr = this.cv.getBoundingClientRect(), W = this.cv.clientWidth, Hh = this.cv.clientHeight;
+    const M = this.scene.getTransformMatrix(), vp = new B3.Viewport(0, 0, W, Hh);
+    document.querySelectorAll('.lobby .lfig[data-hid]').forEach(el => { const o = this.units[el.dataset.hid]; if (!o) return; const p = o.root.position, a = B3.Vector3.Project(V3(p.x, p.y, p.z), B3.Matrix.IdentityReadOnly, M, vp), b = B3.Vector3.Project(V3(p.x, p.y + o.h, p.z), B3.Matrix.IdentityReadOnly, M, vp);
+      el.style.left = (cr.left - vr.left + a.x) + 'px'; el.style.top = (cr.top - vr.top + a.y) + 'px'; el.style.height = Math.max(20, a.y - b.y) + 'px'; });
+  }
+  paused() { return !!(BT && BT.B) || !!document.querySelector('#overlay .detail, #overlay .sqsel'); }
+  slashFX() {} muzzleFX() {} voiceFX() {} castFX() {}
+}
+const S_FLAG = () => '#4c6b4e';
+const cols4 = (arr, c) => arr.push(c.r, c.g, c.b, 1);
+let CAMP_STAGE = null;
+function mountCampStage() {
+  if (!HAS3D) return false;
+  const host = document.querySelector('.lobby'); if (!host) return false;
+  try { if (!CAMP_STAGE) CAMP_STAGE = new CampStage(); CAMP_STAGE.setSquad(S.squad.slice(0, 5)); host.classList.add('has3d'); host.insertBefore(CAMP_STAGE.cv, host.firstChild); CAMP_STAGE.attach(host); return true; }
+  catch (e) { console.warn('camp stage', e); return false; }
+}
+// resume paused stages when overlays close
+setInterval(() => { for (const st of [CAMP_STAGE, HERO_STAGE]) if (st && !st.running && st.cv.isConnected && !st.paused()) st.attach(st.cv.parentNode); }, 400);
 
 // ===== Campaign story, dialogues, biographies (original retelling, no quotations) =====
 // dlg: [speakerId, line, side] — side 'e' = enemy (right)
@@ -3871,6 +4118,7 @@ function openDetail(id) {
     </div>
   </div></div>`;
   updLvl();
+  mountHeroStage(id);
 }
 let itemCtx = null;
 function openItem(cid, k) {
@@ -4397,9 +4645,9 @@ function renderLobby() {
     <div class="ltop">${profileChip()}<div class="res resbox"></div><div class="topbtns"><button class="topb" data-v="daily"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.5 9l1.5 1.5 3-3M8.5 15l1.5 1.5 3-3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>Задания</span>${dailyReady() ? `<b class="badge">${dailyReady()}</b>` : ''}</button><button class="topb" data-cal="1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2"/></svg><span>Вход</span>${loginCan() ? '<b class="badge">!</b>' : ''}</button></div></div>
     <div class="lhouse"><span>Ваш Малый Дом</span><b class="mono">Мощь отряда ${fmt(sp)}</b></div>
     ${spots.map(s => `<button class="spot ${s.hot ? 'hot' : ''}" data-v="${s.v}" style="--x:${s.x}%;--y:${s.y}%;--mx:${s.mx}%;--my:${s.my}%;--lx:${s.lx}%;--ly:${s.ly}%"><span class="sicon"><svg viewBox="0 0 24 24" aria-hidden="true">${SPOT_ICONS[s.i]}</svg></span><span class="slabel">${s.n}</span>${s.b ? `<span class="sbadge">${s.b}</span>` : ''}</button>`).join('')}
-    ${S.squad.map((id, k) => { const f = LF[k]; return `<button class="lfig" data-v="squad" style="left:${f[0]}%;top:${f[1]}%;--s:${f[2]};z-index:${f[1]}" aria-label="${CH[id].n}">${figureSVG(CH[id], true)}<span>${CH[id].sn}</span></button>`; }).join('')}
+    ${S.squad.map((id, k) => { const f = LF[k]; return `<button class="lfig" data-v="squad" data-hid="${id}" style="left:${f[0]}%;top:${f[1]}%;--s:${f[2]};z-index:${f[1]}" aria-label="${CH[id].n}">${figureSVG(CH[id], true)}<span>${CH[id].sn}</span></button>`; }).join('')}
   </div>`;
-  new SceneBG($('#lobbybg'), 'lobby', 0);
+  if (!mountCampStage()) new SceneBG($('#lobbybg'), 'lobby', 0);
   renderRes();
 }
 
@@ -5310,6 +5558,7 @@ function openBattleSettings() {
       <button class="btn bsb" data-bsauto="1"><b>Автобой</b><small>${BT.auto ? 'включён' : 'выключен'}</small></button>
       <button class="btn bsb" data-bsspeed="1"><b>Скорость ×${BT.speed}</b><small>нажмите, чтобы сменить</small></button>
       <button class="btn bsb" data-bslog="1"><b>Журнал боя</b><small>${BT.showLog ? 'показан' : 'скрыт'}</small></button>
+      <button class="btn bsb" data-bsgfx="1"><b>Графика: ${SAVE_LOW() ? 'экономная' : 'высокая'}</b><small>${SAVE_LOW() ? 'без глубины резкости и SSAO — для слабых телефонов' : 'все эффекты; применится со следующего боя'}</small></button>
       <button class="btn bsb" data-bsdlg="1"><b>Диалоги перед боем</b><small>${S.skipDlg ? 'выключены' : 'включены'}</small></button>
     </div>
     <div class="acts"><button class="btn" data-bsreplay="1">${GLYPH.march ? '' : ''}Переиграть<small>начать бой заново</small></button><button class="btn danger" data-bsquit="1">Отступить<small>засчитается поражение</small></button><button class="btn go" data-bpopx="1" style="margin-left:auto">Продолжить</button></div>`);
@@ -5331,6 +5580,7 @@ function meta2Click(d) {
   if (d.bsauto) { BT.auto = BT.autoPref = !BT.auto; bPopClose(); if (BT.auto && BT.waiting) { const u = BT.waiting; const p = aiPlan(BT.B, u); doAct(u, p.key, p.target && p.target.uid); } else renderBattle(); return true; }
   if (d.bsspeed) { BT.speed = BT.speedPref = BT.speed >= 16 ? 1 : BT.speed * 2; $('#bpop').remove(); BT.pop = false; renderBattle(); openBattleSettings(); return true; }
   if (d.bslog) { BT.showLog = !BT.showLog; $('#bpop').remove(); BT.pop = false; renderBattle(); openBattleSettings(); return true; }
+  if (d.bsgfx) { try { localStorage.setItem('dune-gfx-low', JSON.stringify(!SAVE_LOW())); } catch (e) {} $('#bpop').remove(); BT.pop = false; openBattleSettings(); toast('Применится со следующего боя'); return true; }
   if (d.bsdlg) { S.skipDlg = !S.skipDlg; persist(); $('#bpop').remove(); BT.pop = false; openBattleSettings(); return true; }
   if (d.bsreplay) { $('#bpop').remove(); BT.pop = false; BT.resume = null; replayBattle(); return true; }
   if (d.bsquit) { $('#bpop').remove(); BT.pop = false; BT.resume = null; clearTimeout(BT.timer); BT.B.over = 'B'; finish(); return true; }
