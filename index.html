@@ -1314,6 +1314,18 @@ button.bgz { cursor: pointer; font: inherit; } button.bgz:hover { border-color: 
 .cqdbox h3 { text-align: center; font-size: 28px !important; }
 .cqdcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
 .cqdcols section { display: grid; gap: 6px; align-content: start; }
+.r-c { --rc: #c9bea8; } .r-r { --rc: #62c972; } .r-l { --rc: #f39a32; }
+.cqrar { justify-self: start; font-family: var(--f-mono); font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--rc); border: 1px solid color-mix(in srgb, var(--rc) 60%, transparent); border-radius: 2px; padding: 1px 5px; font-weight: 600; }
+b.cqrar { font-size: 10px; letter-spacing: .06em; border: 0; padding: 0; text-transform: none; }
+.cqdiff.disk[class*=" r-"] { border-color: color-mix(in srgb, var(--rc) 70%, #3a2a1a); }
+.cqdiff.disk[class*=" r-"] > svg, .cqdk[class*=" r-"] > svg, .cqsh .cqshico svg { color: var(--rc); }
+.cqdiff.disk.r-r { background: linear-gradient(180deg, #1d2a17, #120f09); }
+.cqdiff.disk.r-l { background: linear-gradient(180deg, #3a240f, #160f09); box-shadow: 0 0 20px rgb(243 154 50 / .28), inset 0 1px 0 rgb(255 200 120 / .15); }
+.cqdk.r-r { border-color: #2f5a2c; } .cqdk.r-l { border-color: #7a4a1a; box-shadow: inset 0 0 14px rgb(243 154 50 / .12); }
+.cqdk.on.r-l { border-color: #f39a32; } .cqdk.on.r-r { border-color: #62c972; }
+.cqdk .cqrar { display: inline-block; margin-bottom: 2px; } .cqdk div > b { display: block; }
+.cqdk .btn small { display: block; }
+.item.cqsh.r-r { border-color: #2f5a2c; } .item.cqsh.r-l { border-color: #a8641e; box-shadow: 0 0 16px rgb(243 154 50 / .2); }
 .cqdk { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px; border: 1px solid #3e2e1e; border-radius: 5px; background: rgb(0 0 0 / .25); }
 .cqdk.on { border-color: #3a7a90; background: rgb(90 200 255 / .07); }
 .cqdk > svg { width: 28px; height: 28px; color: #9fe8ff; } .cqdk b { font-size: 13px; } .cqdk p { margin: 2px 0 0; font-size: 11px; color: var(--dust); }
@@ -1673,7 +1685,10 @@ function damageRaw(B, u, pct, why) {
 function kill(B, u, by) {
   u.hp = 0; u.alive = false; u.fx = {}; u.shield = 0; ev(B, u, '', 'death');
   if (u.def.id === 'duncan' && !u.revived && skLv(u, 'passive') >= 7) { u.revived = true; u.pendingRevive = true; log(B, `${u.def.sn} падает… но гхола не умирает дважды.`, 'death'); return; }
+  if (u.side === 'A' && B.cqGhola && !u.revived && !u.charmed) { B.cqGhola = 0; u.revived = true; u.pendingRevive = true; u.revHp = .5; log(B, `${u.def.sn} падает… но аксолотлевый чан вернёт его в бой.`, 'death'); return; }
   log(B, `${u.def.sn} выбывает из боя.`, 'death');
+  if (u.side === 'A' && B.cqAvenge) { const al = B.units.filter(a => a.alive && a.side === u.side); for (const a of al) { a.fx.defUp = Math.max(a.fx.defUp || 0, 2); a.fx.counter = Math.max(a.fx.counter || 0, 2); } if (al.length) log(B, `Клятва сиетча: отряд мстит за ${u.def.sn} (Защита↑, Контратака).`); }
+  if (by && by.alive && by.cqChain && by.side !== u.side && !B.over) { if (by === B.active) by.tmBonus = 999; else by.tm = 999; ev(B, by, 'Ещё ход', 'buff'); log(B, `Танец смерти: ${by.def.sn} сразу готов к новому удару.`); }
   if (has(u, 'frem')) for (const a of B.units) if (a.alive && a.side === u.side && a.def.avenge) { a.fx.defUp = 2; a.fx.counter = 2; log(B, `${a.def.sn} клянётся отомстить за ${u.def.sn}.`); }
   if (by && by.alive && by.def.killStealth) { by.fx.stealth = 2; log(B, `${by.def.sn} растворяется в песке (Скрытность).`); }
   checkOver(B);
@@ -1702,6 +1717,8 @@ function hit(B, att, tgt, dt, m, opts = {}) {
   if (opts.fromStealth && att.def.stealthMult) d *= att.def.stealthMult;
   if (tgt.def.boss && has(att, 'frem')) d *= 1.5;
   if (att.def.boss && tgt.shield > 0) d *= 1.3;
+  if (att.cqExec && tgt.hp / tgt.maxHp < .5) d *= 1 + att.cqExec;
+  if (att.cqFury) d *= 1 + att.cqFury * B.units.filter(x => x.side === att.side && !x.alive).length;
   const crit = B.rng() < att.crit; if (crit) d *= 1.5;
 
   if (dt === 'laser' && tgt.shield > 0) {
@@ -1720,11 +1737,13 @@ function hit(B, att, tgt, dt, m, opts = {}) {
   if (dt === 'fast' && tgt.shield > 0) { toShield = Math.min(tgt.shield, Math.round(d * .25)); }
   else if (dt === 'voice' || dt === 'poison') { toHp = d; }
   else { toShield = Math.min(tgt.shield, d); toHp = d - toShield; }
+  if (tgt.cqLast && toHp >= tgt.hp) { toHp = Math.max(0, tgt.hp - 1); tgt.cqLast = 0; tgt.fx.evaUp = Math.max(tgt.fx.evaUp || 0, 2); ev(B, tgt, 'Предзнание', 'buff'); log(B, `${tgt.def.sn} предвидит смертельный удар и уходит от него (1 ОЗ, Уклонение↑).`, 'ctrl'); }
   tgt.shield -= toShield; tgt.hp -= toHp;
   const what = toHp ? `${toHp}${toShield ? ` (+${toShield} по щиту)` : ''}` : `${toShield} по щиту`;
   ev(B, tgt, (toHp ? '−' + toHp : '◇−' + toShield) + (crit ? '!' : ''), toHp ? (crit ? 'crit' : 'dmg') : 'shield');
   log(B, `${att.def.sn} → ${tgt.def.sn}: ${what}${crit ? ', крит' : ''}${dt === 'fast' && toShield && !toHp ? ' — щит остановил пулю' : ''}.`);
   if (toHp && B.leader[tgt.side] === 'leto' && has(tgt, 'atr')) for (const a of living(B, tgt.side)) if (a !== tgt && has(a, 'atr')) a.tm = Math.min(999, a.tm + 50);
+  if (toHp && att.cqLeech && att.alive) { const h = Math.min(att.maxHp - att.hp, Math.round(toHp * att.cqLeech)); if (h > 0) { att.hp += h; ev(B, att, '+' + h, 'heal'); } }
   if (tgt.hp <= 0) { kill(B, tgt, att); return false; }
   return true;
 }
@@ -1852,6 +1871,7 @@ function act(B, u, key, targetUid) {
     } else if (damaging) alive = hit(B, u, t, ab.dt, ab.m * sm, { bonusDebuffed: ab.bonusDebuffed, fromStealth });
     if (alive) for (const [k, n, to, ch] of ab.fx || []) if (to === 't') applyFx(B, u, t, k, n, ch ?? 1);
     if (alive && key === 'basic' && u.def.doubleBasic && t.alive && !B.over && B.rng() < u.def.doubleBasic) { log(B, `${u.def.sn} бьёт повторно!`); hit(B, u, t, ab.dt, ab.m * .6); }
+    if (alive && key === 'basic' && u.cqOnHit && t.alive && !B.over) for (const [k, n, ch] of u.cqOnHit) applyFx(B, u, t, k, n, ch);
     if (alive && key === 'basic' && B.leader[u.side] === 'baron' && has(u, 'hark') && !(ab.fx || []).some(f => f[0] === 'poison')) applyFx(B, u, t, 'poison', 2, .75);
     if (B.over) break;
   }
@@ -1901,7 +1921,7 @@ function wormStrike(B) {
 }
 function endTurn(B, u) {
   u.tm = Math.min(999, u.tmBonus || 0); u.tmBonus = 0;
-  for (const x of B.units) if (x.pendingRevive) { x.pendingRevive = false; x.alive = true; x.hp = x.maxHp; x.shield = x.maxShield; x.tm = 999; x.fx = {}; x.revivedNow = true; ev(B, x, 'ВОЗРОЖДЕНИЕ', 'heal'); log(B, `${x.def.sn} поднимается снова: 100% здоровья, щита и шкалы хода!`, 'worm'); }
+  for (const x of B.units) if (x.pendingRevive) { x.pendingRevive = false; x.alive = true; x.hp = Math.max(1, Math.round(x.maxHp * (x.revHp || 1))); x.shield = x.maxShield; x.tm = 999; x.fx = {}; x.revivedNow = true; ev(B, x, 'ВОЗРОЖДЕНИЕ', 'heal'); log(B, `${x.def.sn} поднимается снова: ${Math.round((x.revHp || 1) * 100)}% здоровья, щит и полная шкала хода!`, 'worm'); x.revHp = 0; }
   B.active = null; B.round++;
   checkOver(B);
   computeIntents(B);
@@ -6444,20 +6464,39 @@ const CQ_MODS = {
   shield: { n: 'Щиты Хольцмана', d: 'Враги: щит +60%.', f: us => us.forEach(u => { if (u.maxShield) { u.maxShield = Math.round(u.maxShield * 1.6); u.shield = u.maxShield; } }) },
   crit:   { n: 'Точность', d: 'Враги: +25% шанса крита.', f: us => us.forEach(u => { u.crit += .25; }) },
 };
+// диски: r — редкость (c обычный: характеристики; r редкий: механика отряда; l легендарный: уникальное умение, меняющее бой)
+// f(us, B) — применяется в cqApply к героям игрока; механики читает боевой движок через флаги u.cq* / B.cq*
+const CQ_RAR = { c: { n: 'Обычный', col: '#c9bea8' }, r: { n: 'Редкий', col: '#62c972' }, l: { n: 'Легендарный', col: '#f39a32' } };
+const CQ_LMAX = 2;               // легендарных дисков надето одновременно не больше
 const CQ_DISKS = {
-  dmg:    { n: 'Перегрузка', d: 'Ваши герои наносят +20% урона.', f: us => us.forEach(u => u.dmgBonus += .2) },
-  hp:     { n: 'Наноброня', d: '+25% максимального здоровья.', f: us => us.forEach(u => { u.maxHp = Math.round(u.maxHp * 1.25); }) },
-  spd:    { n: 'Ускоритель', d: '+12% скорости.', f: us => us.forEach(u => { u.spd = Math.round(u.spd * 1.12); }) },
-  crit:   { n: 'Прицельный модуль', d: '+20% шанса крита.', f: us => us.forEach(u => { u.crit += .2; }) },
-  regen:  { n: 'Ремонтные нанороботы', d: '5% здоровья в начале каждого хода.', f: us => us.forEach(u => { u.regen = Math.max(u.regen || 0, .05); }) },
-  tm:     { n: 'Стартовый импульс', d: '+40% шкалы хода в начале боя.', f: us => us.forEach(u => { u.tm = Math.min(999, u.tm + 400); }) },
-  shield: { n: 'Щит Mk II', d: '+40% щита; герои без щита получают +10% уклонения.', f: us => us.forEach(u => { if (u.maxShield) { u.maxShield = Math.round(u.maxShield * 1.4); u.shield = u.maxShield; } else u.eva += .1; }) },
-  mind:   { n: 'Дисциплина ментата', d: '+25% стойкости и +15% эффективности.', f: us => us.forEach(u => { u.ten += .25; u.pot += .15; }) },
-  mach:   { n: 'Протокол Эразма', d: 'Мыслящие машины и Ментаты: +30% урона и здоровья.', f: us => us.forEach(u => { if (u.def.f.includes('mach') || MENTAT(u)) { u.dmgBonus += .3; u.maxHp = Math.round(u.maxHp * 1.3); } }) },
-  stam:   { n: 'Кровь пряности', d: 'Участники боя теряют вдвое меньше выносливости (−5% вместо −10%).', f: () => {} },
-  arm:    { n: 'Закалённая пласталь', d: '+15% брони.', f: us => us.forEach(u => { u.arm += .15; }) },
-  eva:    { n: 'Маскировочный плащ', d: '+10% уклонения.', f: us => us.forEach(u => { u.eva += .1; }) },
+  dmg:    { r: 'c', n: 'Перегрузка', d: 'Ваши герои наносят +20% урона.', f: us => us.forEach(u => u.dmgBonus += .2) },
+  hp:     { r: 'c', n: 'Наноброня', d: '+25% максимального здоровья.', f: us => us.forEach(u => { u.maxHp = Math.round(u.maxHp * 1.25); }) },
+  spd:    { r: 'c', n: 'Ускоритель', d: '+12% скорости.', f: us => us.forEach(u => { u.spd = Math.round(u.spd * 1.12); }) },
+  crit:   { r: 'c', n: 'Прицельный модуль', d: '+20% шанса крита.', f: us => us.forEach(u => { u.crit += .2; }) },
+  shield: { r: 'c', n: 'Щит Mk II', d: '+40% щита; герои без щита получают +10% уклонения.', f: us => us.forEach(u => { if (u.maxShield) { u.maxShield = Math.round(u.maxShield * 1.4); u.shield = u.maxShield; } else u.eva += .1; }) },
+  mind:   { r: 'c', n: 'Дисциплина ментата', d: '+25% стойкости и +15% эффективности.', f: us => us.forEach(u => { u.ten += .25; u.pot += .15; }) },
+  arm:    { r: 'c', n: 'Закалённая пласталь', d: '+15% брони.', f: us => us.forEach(u => { u.arm += .15; }) },
+  eva:    { r: 'c', n: 'Маскировочный плащ', d: '+10% уклонения.', f: us => us.forEach(u => { u.eva += .1; }) },
+  tm:     { r: 'r', n: 'Стартовый импульс', d: 'Бой начинается с +40% шкалы хода у всех героев.', f: us => us.forEach(u => { u.tm = Math.min(999, u.tm + 400); }) },
+  regen:  { r: 'r', n: 'Ремонтные нанороботы', d: 'Герои восстанавливают 5% здоровья в начале каждого хода.', f: us => us.forEach(u => { u.regen = Math.max(u.regen || 0, .05); }) },
+  mach:   { r: 'r', n: 'Протокол Эразма', d: 'Мыслящие машины и Ментаты: +30% урона и здоровья.', f: us => us.forEach(u => { if (u.def.f.includes('mach') || MENTAT(u)) { u.dmgBonus += .3; u.maxHp = Math.round(u.maxHp * 1.3); } }) },
+  stam:   { r: 'r', n: 'Кровь пряности', d: 'Участники боя теряют вдвое меньше выносливости (−5% вместо −10%).', f: () => {} },
+  leech:  { r: 'r', n: 'Клинки тлейлаксу', d: 'Вампиризм: герои восстанавливают 15% нанесённого урона по здоровью.', f: us => us.forEach(u => { u.cqLeech = (u.cqLeech || 0) + .15; }) },
+  poison: { r: 'r', n: 'Яд семуты', d: 'Базовые атаки с шансом 30% отравляют цель на 2 хода (−8% здоровья за ход).', f: us => us.forEach(u => { (u.cqOnHit ||= []).push(['poison', 2, .3]); }) },
+  avenge: { r: 'r', n: 'Клятва сиетча', d: 'Когда герой падает, остальные получают Защиту↑ и Контратаку на 2 хода.', f: (us, B) => { B.cqAvenge = 1; } },
+  spice:  { r: 'r', n: 'Пряный транс', d: 'Бой начинается с 50 пряности — особые умения доступны сразу.', f: (us, B) => { B.spice.A = Math.min(100, B.spice.A + 50); } },
+  exec:   { r: 'r', n: 'Инстинкт охотника', d: '+35% урона по врагам, у которых меньше 50% здоровья.', f: us => us.forEach(u => { u.cqExec = (u.cqExec || 0) + .35; }) },
+  counter:{ r: 'r', n: 'Школа Гинац', d: 'Герои контратакуют с шансом 30%.', f: us => us.forEach(u => { u.counterChance = Math.max(u.counterChance || 0, .3); }) },
+  ghola:  { r: 'l', n: 'Аксолотлевый чан', d: 'Первый павший герой отряда возрождается с 50% здоровья и полной шкалой хода (раз за бой).', f: (us, B) => { B.cqGhola = 1; } },
+  presc:  { r: 'l', n: 'Предзнание', d: 'Каждый герой раз за бой переживает смертельный удар с 1 ОЗ и получает Уклонение↑ на 2 хода.', f: us => us.forEach(u => { u.cqLast = 1; }) },
+  chain:  { r: 'l', n: 'Танец смерти', d: 'Добив врага, герой сразу получает полную шкалу хода — и может ходить снова.', f: us => us.forEach(u => { u.cqChain = 1; }) },
+  voice:  { r: 'l', n: 'Голос Бене Гессерит', d: 'Базовые атаки с шансом 25% накладывают Голос: враг тратит ход на удар по своему союзнику.', f: us => us.forEach(u => { (u.cqOnHit ||= []).push(['voiced', 1, .25]); }) },
+  fury:   { r: 'l', n: 'Ярость джихада', d: 'Герои невосприимчивы к Страху; за каждого павшего союзника остальные наносят +35% урона.', f: us => us.forEach(u => { u.fearImmune = true; u.cqFury = (u.cqFury || 0) + .35; }) },
 };
+const cqRar = k => CQ_RAR[(CQ_DISKS[k] || {}).r || 'c'];
+const cqRarTag = k => `<span class="cqrar r-${CQ_DISKS[k].r}">${cqRar(k).n}</span>`;
+// карточка диска для выбора/магазина: иконка, редкость, название, описание + произвольная кнопка
+const cqDiskCard = (k, btn) => `<div class="cqdiff disk r-${CQ_DISKS[k].r}">${cqI('disk')}${cqRarTag(k)}<h3>${CQ_DISKS[k].n}</h3><p>${CQ_DISKS[k].d}</p>${btn}</div>`;
 const CQ_ICON = {
   fight: '<path d="M5 19L17 7M17 7V4h3v3zM19 19L7 7M7 7V4H4v3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
   elite: '<path d="M12 3c-4.4 0-7 2.8-7 6.6 0 2.4 1.2 4 2.6 4.9V18h8.8v-3.5c1.4-.9 2.6-2.5 2.6-4.9C19 5.8 16.4 3 12 3z" fill="currentColor"/><circle cx="9.2" cy="10" r="1.7" fill="#140c08"/><circle cx="14.8" cy="10" r="1.7" fill="#140c08"/><path d="M10 18v2.5M12 18v2.5M14 18v2.5" stroke="currentColor" stroke-width="1.6"/>',
@@ -6502,9 +6541,26 @@ const cqStaPen = s => { const x = 1 - s / 100; return { dmg: CQ_STA.dmg * x, spd
 const cqStaCol = s => s >= 70 ? '#7fbb6c' : s >= 40 ? '#e8c04f' : '#d9604f';
 // ---- диски ----
 const cqDiskOn = () => cq().disks.filter(x => x.on).map(x => x.k);
-function cqDiskPick(seed) { const C = cq(), own = new Set(C.disks.map(x => x.k)), pool = Object.keys(CQ_DISKS).filter(k => !own.has(k)), r = sRng(ghash(C.wk + C.diff + 'd' + seed)), out = []; while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(r() * pool.length), 1)[0]); return out; }
-function cqAddDisk(k) { const C = cq(); if (C.disks.some(x => x.k === k)) return; C.disks.push({ k, on: cqDiskOn().length < CQ_DMAX ? 1 : 0 }); cqBump('disk', null, C.disks.length, true); }
-const cqNodeDisks = a => { const C = cq(); return (C.dpick[a.key] ??= cqDiskPick(a.key)); };
+// шансы редкости [обычный, редкий, легендарный]: стартовый выбор, тайники (ранний / поздний в секторе), ящик контрабандиста
+const CQ_DROP = { start: [70, 30, 0], early: [55, 38, 7], late: [30, 50, 20], crate: [40, 45, 15] };
+function cqDropW(kind, s = 0) {
+  const w = CQ_DROP[kind].slice(), C = cq(); if (kind === 'start') return w;
+  const up = 2 * s + (C.diff === 'hard' ? 5 : C.diff === 'normal' ? 2 : 0); w[2] += up; w[0] = Math.max(5, w[0] - up); return w;
+}
+function cqDiskPick(seed, w = CQ_DROP.start, n = 3) {
+  const C = cq(), own = new Set(C.disks.map(x => x.k)), r = sRng(ghash(C.wk + C.diff + 'd' + seed)), out = [], rs = ['c', 'r', 'l'];
+  const left = q => Object.keys(CQ_DISKS).filter(k => !own.has(k) && !out.includes(k) && (!q || CQ_DISKS[k].r === q));
+  while (out.length < n && left().length) {
+    let x = r() * w.reduce((a, b) => a + b, 0), q = 0; while (q < 2 && (x -= w[q]) >= 0) q++;
+    let pool = left(rs[q]); for (const d of [-1, 1, -2, 2]) if (!pool.length && rs[q + d]) pool = left(rs[q + d]);   // нужной редкости нет — берём соседнюю
+    out.push(pool[Math.floor(r() * pool.length)]);
+  }
+  return out;
+}
+const cqLegOn = () => cqDiskOn().filter(k => CQ_DISKS[k].r === 'l').length;
+const cqCanOn = k => cqDiskOn().length < CQ_DMAX && (CQ_DISKS[k].r !== 'l' || cqLegOn() < CQ_LMAX);
+function cqAddDisk(k) { const C = cq(); if (C.disks.some(x => x.k === k) || !CQ_DISKS[k]) return; C.disks.push({ k, on: cqCanOn(k) ? 1 : 0 }); cqBump('disk', null, C.disks.length, true); }
+const cqNodeDisks = a => { const C = cq(); return (C.dpick[a.key] ??= cqDiskPick(a.key, cqDropW(a.L < 6 ? 'early' : 'late', a.s))); };
 // ---- лавка тайника ----
 const CQ_GOODS = [
   { n: 'Водный паёк', d: 'Все герои: +30% выносливости.', ico: 'sta', mk: m => ({ cost: ['cry', 60], use: () => { for (const id of unlockedIds()) cqStaSet(id, cqSta(id) + 30); return 'Выносливость всех героев +30%'; } }) },
@@ -6515,7 +6571,7 @@ const CQ_GOODS = [
   { n: 'Другая память', mk: m => ({ cost: ['sol', 40000 * m], rw: [['core', 3 * m]] }) },
   { n: 'Печать Ландсраада', mk: m => ({ cost: ['cry', 220], rw: [['seal', 1]] }) },
   { n: 'Фолианты ментата', mk: m => ({ cost: ['sol', 20000], rw: [['folio', 4 * m]] }) },
-  { n: 'Ящик контрабандиста', d: 'Случайный диск, которого у вас ещё нет.', ico: 'disk', mk: m => ({ cost: ['cry', 300], use: () => { const k = cqDiskPick('buy' + cq().disks.length)[0]; if (!k) return 'Все диски уже собраны'; cqAddDisk(k); return `Диск «${CQ_DISKS[k].n}»`; } }) },
+  { n: 'Ящик контрабандиста', d: 'Случайный диск, которого у вас ещё нет: 15% — легендарный, 45% — редкий.', ico: 'disk', mk: m => ({ cost: ['cry', 300], use: () => { const k = cqDiskPick('buy' + cq().disks.length, cqDropW('crate', cq().sec || 0), 1)[0]; if (!k) return 'Все диски уже собраны'; cqAddDisk(k); return `${cqRar(k).n} диск «${CQ_DISKS[k].n}»`; } }) },
 ];
 function cqGoods(key) {
   const C = cq(), m = (CQ_DIFF[C.diff] || CQ_DIFF.easy).mult, r = sRng(ghash(C.wk + key + 'g')), rest = CQ_GOODS.slice(2), out = CQ_GOODS.slice(0, 2);
@@ -6593,7 +6649,7 @@ const cqHot = () => { if (!S) return false; const C = cq(); return S.acc.lvl >= 
 // ---- battle hooks ----
 function cqApply(B, cfg) {
   const C = cq(), A = B.units.slice(0, cfg.squad.length), E = B.units.filter(u => u.side === 'B').slice(0, cfg.cq.idx.length), st = C.foe[cfg.cq.key];
-  for (const k of cqDiskOn()) if (CQ_DISKS[k]) CQ_DISKS[k].f(A);
+  for (const k of cqDiskOn()) if (CQ_DISKS[k]) CQ_DISKS[k].f(A, B);
   for (const u of A) { const p = cqStaPen(cqSta(u.def.id)); if (p.dmg > 0) { u.dmgBonus -= p.dmg; u.spd = Math.round(u.spd * (1 - p.spd)); } u.hp = u.maxHp; }   // full HP every node; stamina weakens
   for (const m of cfg.cq.mods) if (cqMod(m)) cqMod(m).f(E, cqK());
   if (st) E.forEach((u, j) => { const r = st[cfg.cq.idx[j]]; if (r) { u.hp = Math.max(1, Math.round(u.maxHp * r.h)); if (u.maxShield) u.shield = Math.round(u.maxShield * r.s); } });
@@ -6655,7 +6711,7 @@ function cqDetail(a) {
   } else if (a.type === 'disk') {
     if (dn) body = '<span class="qok">✓ Диск из этого тайника уже получен</span>';
     else if (!op) body = `<p class="lockd">${C.pick ? 'Сначала выберите стартовый диск' : 'Пройдите соседнюю точку слева'}</p>`;
-    else { const ks = cqNodeDisks(a); body = ks.length ? `<p class="sub" style="margin:0 0 6px">Выберите один диск из трёх. Если надето уже ${CQ_DMAX}, новый ляжет в запас.</p><div class="cqdiffs">${ks.map(k => `<div class="cqdiff disk">${cqI('disk')}<h3>${CQ_DISKS[k].n}</h3><p>${CQ_DISKS[k].d}</p><button class="btn go" data-cqnd="${a.key}:${k}">Взять</button></div>`).join('')}</div>` : `<p class="sub">Все диски уже собраны.</p><button class="btn go" data-cqnd="${a.key}:">Дальше</button>`; }
+    else { const ks = cqNodeDisks(a); body = ks.length ? `<p class="sub" style="margin:0 0 6px">Выберите один диск из трёх. Если надето уже ${CQ_DMAX} (или ${CQ_LMAX} легендарных), новый ляжет в запас.</p><div class="cqdiffs">${ks.map(k => cqDiskCard(k, `<button class="btn go" data-cqnd="${a.key}:${k}">Взять</button>`)).join('')}</div>` : `<p class="sub">Все диски уже собраны.</p><button class="btn go" data-cqnd="${a.key}:">Дальше</button>`; }
   } else {
     const { all, st } = cqLive(a), pw = all.reduce((x, p, k) => x + (st && st[k] && st[k].h <= 0 ? 0 : unitPower(CH[p.id], p)), 0), left = st ? st.filter(x => x.h > 0).length : all.length;
     body = `<div class="cdrow"><span class="lbl">Противник${st ? ` · осталось ${left} из ${all.length}` : ''}</span><div class="cdenemy">${all.map((p, k) => cqFoeCard(p, k, st && st[k], k === 0 && CH[p.id].leader)).join('')}</div></div>
@@ -6682,7 +6738,7 @@ function renderConq() {
     <button class="cqitem" data-cqfw="${s}">${cqI('elite')}<b>${cqFeats(s).filter(F => C.fd[F.key]).length}/6</b><span>Подвиги сектора</span></button>
     <span class="cqitem" title="Аптечки: +${CQ_MED}% выносливости одному герою">${cqI('med')}<b>${S.cqMed || 0}</b><span>Аптечки</span></span>
     <button class="cqitem" data-shoptab="jihad" title="Магазин Джихада">${ic('jt')}<b>${fmt(S.jt || 0)}</b><span>Трофеи · магазин</span></button></div>`;
-  if (C.pick) html += `<div class="panel cqpick"><h3>Выберите стартовый диск</h3><p class="sub" style="margin:0 0 8px">Диск действует на ваших героев до конца недели. Надеть можно до ${CQ_DMAX} дисков; новые диски — в тайниках с дисками после каждых 4 боёв.</p><div class="cqdiffs">${C.pick.map(k => `<div class="cqdiff disk">${cqI('disk')}<h3>${CQ_DISKS[k].n}</h3><p>${CQ_DISKS[k].d}</p><button class="btn go" data-cqdisk="${k}">Взять</button></div>`).join('')}</div></div>`;
+  if (C.pick) html += `<div class="panel cqpick"><h3>Выберите стартовый диск</h3><p class="sub" style="margin:0 0 8px">Диск действует на ваших героев до конца недели. Надеть можно до ${CQ_DMAX} дисков. Редкость: <b class="cqrar r-c">обычные</b> дают характеристики, <b class="cqrar r-r">редкие</b> — новую механику отряду, <b class="cqrar r-l">легендарные</b> — уникальное умение (надеть не больше ${CQ_LMAX}). Новые диски — в тайниках после каждых 4 боёв и в магазине Джихада.</p><div class="cqdiffs">${C.pick.map(k => cqDiskCard(k, `<button class="btn go" data-cqdisk="${k}">Взять</button>`)).join('')}</div></div>`;
   html += `<div class="ctabs">${CQ_SECT.map((x, k) => `<button class="ctab ${k === s ? 'on' : ''}" data-cqsec="${k}" ${k <= C.open ? '' : 'disabled'}>${k + 1}. ${x.n}<small>${C.done[`${k}-${CQ_LAST}-0`] ? 'зачищен' : k <= C.open ? 'открыт' : 'закрыт'}</small></button>`).join('')}</div>
     <p class="sub">${SE.d}</p>`;
   const LS = isLandPhone(), CW = LS ? 72 : 88, H0 = LS ? 210 : 280, W0 = 60 + CQ_LAST * CW + 60, px = a => 46 + a.L * CW, py = a => 22 + a.y * (H0 - 44);
@@ -6705,9 +6761,11 @@ function renderConq() {
 }
 function cqDiskWin() {
   const C = cq(), on = C.disks.filter(x => x.on), off = C.disks.filter(x => !x.on), en = cqEn();
-  const card = (x, eq) => `<div class="cqdk ${eq ? 'on' : ''}">${cqI('disk')}<div><b>${CQ_DISKS[x.k].n}</b><p>${CQ_DISKS[x.k].d}</p></div>${eq ? `<button class="btn mini" data-cqdoff="${x.k}" ${en >= CQ_EN.unequip ? '' : 'disabled'}>Снять<small>−${CQ_EN.unequip} Решимости</small></button>` : `<button class="btn mini ${on.length < CQ_DMAX ? 'go' : ''}" data-cqdon="${x.k}" ${on.length < CQ_DMAX ? '' : 'disabled'}>Надеть</button>`}</div>`;
-  $('#overlay').innerHTML = `<div class="result" data-close="1"><div class="box cqdbox" role="dialog" aria-modal="true" aria-label="Диски"><h3>Диски</h3><p class="sub" style="margin:0">Надетые диски действуют на всех ваших героев во всех боях Джихада. Надеть — бесплатно (до ${CQ_DMAX}), снять — ${CQ_EN.unequip} Решимости (у вас ${en}).</p>
-    <div class="cqdcols"><section><p class="chap">Надетые · ${on.length}/${CQ_DMAX}</p>${on.map(x => card(x, 1)).join('') || '<p class="lockd">Ничего не надето</p>'}</section><section><p class="chap">В запасе · ${off.length}</p>${off.map(x => card(x, 0)).join('') || '<p class="lockd">Запас пуст</p>'}</section></div>
+  const RO = { l: 0, r: 1, c: 2 }, srt = a => a.slice().sort((p, q) => RO[CQ_DISKS[p.k].r] - RO[CQ_DISKS[q.k].r]);
+  const card = (x, eq) => { const ok = cqCanOn(x.k), why = !ok && cqDiskOn().length < CQ_DMAX ? `<small>легендарных уже ${CQ_LMAX}</small>` : '';
+    return `<div class="cqdk r-${CQ_DISKS[x.k].r} ${eq ? 'on' : ''}">${cqI('disk')}<div>${cqRarTag(x.k)}<b>${CQ_DISKS[x.k].n}</b><p>${CQ_DISKS[x.k].d}</p></div>${eq ? `<button class="btn mini" data-cqdoff="${x.k}" ${en >= CQ_EN.unequip ? '' : 'disabled'}>Снять<small>−${CQ_EN.unequip} Решимости</small></button>` : `<button class="btn mini ${ok ? 'go' : ''}" data-cqdon="${x.k}" ${ok ? '' : 'disabled'}>Надеть${why}</button>`}</div>`; };
+  $('#overlay').innerHTML = `<div class="result" data-close="1"><div class="box cqdbox" role="dialog" aria-modal="true" aria-label="Диски"><h3>Диски</h3><p class="sub" style="margin:0">Надетые диски действуют на всех ваших героев во всех боях Джихада. Надеть — бесплатно (до ${CQ_DMAX}, из них легендарных — до ${CQ_LMAX}), снять — ${CQ_EN.unequip} Решимости (у вас ${en}).</p>
+    <div class="cqdcols"><section><p class="chap">Надетые · ${on.length}/${CQ_DMAX}</p>${srt(on).map(x => card(x, 1)).join('') || '<p class="lockd">Ничего не надето</p>'}</section><section><p class="chap">В запасе · ${off.length}</p>${srt(off).map(x => card(x, 0)).join('') || '<p class="lockd">Запас пуст</p>'}</section></div>
     <div class="acts" style="justify-content:center"><button class="btn go" data-close="1">Закрыть</button></div></div></div>`;
 }
 function cqResWin(need) {
@@ -6719,14 +6777,16 @@ function cqResWin(need) {
     <div class="acts" style="justify-content:center">${lim ? '<span class="lockd">Лимит на сегодня исчерпан</span>' : `<button class="btn ${S.cry >= c ? 'go' : 'lack'}" data-cqrf="${need || 0}">Пополнить +${CQ_RF.amt}<small>${amt('cry', c)}</small></button>`}${need && en >= need ? '<span class="qok">✓ Теперь хватает</span>' : ''}<button class="btn" data-close="1">Закрыть</button></div></div></div>`;
 }
 // ---- магазин Джихада (вкладка в Лавках) ----
+const CQ_PRICE = { c: 150, r: 220, l: 480 };    // цена диска в трофеях Джихада
 function cqShopItems() {
   const C = cq(), b = (S.cqShop && S.cqShop.wk === C.wk) ? S.cqShop.b : {}, own = new Set(C.disks.map(x => x.k)), r = sRng(ghash(C.wk + 'jshop'));
-  const pool = Object.keys(CQ_DISKS), disks = []; while (disks.length < 4 && pool.length) disks.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
+  const disks = [];        // ассортимент недели: 3 редких + 2 легендарных
+  for (const [q, n] of [['r', 3], ['l', 2]]) { const pool = Object.keys(CQ_DISKS).filter(k => CQ_DISKS[k].r === q); for (let i = 0; i < n && pool.length; i++) disks.push(pool.splice(Math.floor(r() * pool.length), 1)[0]); }
   const mark = () => { if (!S.cqShop || S.cqShop.wk !== C.wk) S.cqShop = { wk: C.wk, b: {} }; return S.cqShop.b; };
   return [
     { key: 'med', n: 'Аптечка', d: `+${CQ_MED}% выносливости одному герою. Применяется на карте Джихада.`, ico: 'med', price: 30, buy: () => { S.cqMed = (S.cqMed || 0) + 1; return 'Аптечка в запасе'; } },
     { key: 'med3', n: 'Набор из 3 аптечек', d: `Три аптечки по +${CQ_MED}% выносливости.`, ico: 'med', price: 80, buy: () => { S.cqMed = (S.cqMed || 0) + 3; return '+3 аптечки'; } },
-    ...disks.map(k => ({ key: 'd:' + k, n: CQ_DISKS[k].n, d: CQ_DISKS[k].d, ico: 'disk', price: 250, sold: !!b['d:' + k] || own.has(k), lim: 1,
+    ...disks.map(k => ({ key: 'd:' + k, n: CQ_DISKS[k].n, d: CQ_DISKS[k].d, ico: 'disk', rar: CQ_DISKS[k].r, price: CQ_PRICE[CQ_DISKS[k].r], sold: !!b['d:' + k] || own.has(k), lim: 1,
       buy: () => { mark()['d:' + k] = 1; if (!C.diff) { C.diff = 'easy'; } cqAddDisk(k); return `Диск «${CQ_DISKS[k].n}» — ${C.disks.find(x => x.k === k).on ? 'надет' : 'в запасе'}`; } })),
   ];
 }
@@ -6734,9 +6794,9 @@ function cqShopView() {
   const msLeft = (() => { const d = new Date(cq().wk); d.setDate(d.getDate() + 7); return d - Date.now(); })();
   $('#view').innerHTML = `<h2 class="lshide">Лавки</h2>
     <div class="ctabs">${Object.entries(SHOPS).map(([k, v]) => `<button class="ctab" data-shoptab="${k}">${v.n}<small>${{ post: ic('sol') + ic('cry'), sietch: ic('teeth'), chron: ic('rid') }[k] || ''}</small></button>`).join('')}<button class="ctab on" data-shoptab="jihad">Джихад<small>${ic('jt')}</small></button></div>
-    <p class="sub">Трофеи Джихада — за первую победу на каждой точке и на шкале наград. Диски действуют до конца недели Джихада; ассортимент дисков обновится через ${Math.floor(msLeft / 8.64e7)} д ${Math.floor(msLeft % 8.64e7 / 3.6e6)} ч. У вас: ${amt('jt', S.jt || 0)} · аптечек ${S.cqMed || 0}.</p>
+    <p class="sub">Трофеи Джихада — за первую победу на каждой точке и на шкале наград. Здесь продаются редкие и легендарные диски; они действуют до конца недели Джихада, ассортимент обновится через ${Math.floor(msLeft / 8.64e7)} д ${Math.floor(msLeft % 8.64e7 / 3.6e6)} ч. У вас: ${amt('jt', S.jt || 0)} · аптечек ${S.cqMed || 0}.</p>
     <div class="shop">${cqShopItems().map(it => { const can = !it.sold && (S.jt || 0) >= it.price;
-      return `<div class="item ${it.sold ? 'sold' : ''}"><span class="bigico sm cqshico">${cqI(it.ico)}</span><div class="t">${it.n}</div><div class="s">${it.d}${it.lim ? ` · ${it.sold ? 'есть / куплено' : 'один на неделю'}` : ''}</div><button class="btn ${can ? '' : 'dim'}" data-cqjbuy="${it.key}" ${it.sold ? 'disabled' : ''}>${amt('jt', it.price)}</button></div>`; }).join('')}</div>`;
+      return `<div class="item ${it.sold ? 'sold' : ''} ${it.rar ? 'cqsh r-' + it.rar : ''}"><span class="bigico sm cqshico">${cqI(it.ico)}</span>${it.rar ? cqRarTag(it.key.slice(2)) : ''}<div class="t">${it.n}</div><div class="s">${it.d}${it.lim ? ` · ${it.sold ? 'есть / куплено' : 'один на неделю'}` : ''}</div><button class="btn ${can ? '' : 'dim'}" data-cqjbuy="${it.key}" ${it.sold ? 'disabled' : ''}>${amt('jt', it.price)}</button></div>`; }).join('')}</div>`;
 }
 function cqChestWin(i) {
   const C = cq(), rw = cqChest(i), can = cqCanClaim(i), got = C.tk['c' + i], sc = cqScore(), li = l => l.map(r => `<li>${cqRwHtml(r)}</li>`).join('');
@@ -6755,9 +6815,9 @@ function cqFeatWin(s) {
 }
 function cqClick(d) {
   if (d.cqdiff) { const C = cq(); if (C.diff || S.acc.lvl < CQ_DIFF[d.cqdiff].acc) return true; C.diff = d.cqdiff; C.pick = cqDiskPick('start'); persist(); render(); return true; }
-  if (d.cqdisk) { const C = cq(); if (!C.pick || !C.pick.includes(d.cqdisk)) return true; cqAddDisk(d.cqdisk); C.pick = null; persist(); toast(`Диск «${CQ_DISKS[d.cqdisk].n}» установлен`); render(); return true; }
+  if (d.cqdisk) { const C = cq(); if (!C.pick || !C.pick.includes(d.cqdisk)) return true; cqAddDisk(d.cqdisk); C.pick = null; persist(); toast(`${cqRar(d.cqdisk).n} диск «${CQ_DISKS[d.cqdisk].n}» установлен`); render(); return true; }
   if (d.cqnd !== undefined) { const [key, k] = d.cqnd.split(':'), C = cq(), a = cqNode(key); if (!a || a.type !== 'disk' || C.done[key] || !cqOpen(a)) return true;
-    if (k) { if (!cqNodeDisks(a).includes(k)) return true; cqAddDisk(k); toast(`Диск «${CQ_DISKS[k].n}» ${C.disks.find(x => x.k === k).on ? 'надет' : 'отправлен в запас'}`); }
+    if (k) { if (!cqNodeDisks(a).includes(k)) return true; cqAddDisk(k); toast(`${cqRar(k).n} диск «${CQ_DISKS[k].n}» ${C.disks.find(x => x.k === k).on ? 'надет' : 'отправлен в запас'}`); }
     C.done[key] = 1; persist(); render(); return true; }
   if (d.cqsec !== undefined) { const C = cq(); C.sec = Math.min(+d.cqsec, C.open); C.sel = null; persist(); render(); return true; }
   if (d.cqnode) { const C = cq(), a = cqNode(d.cqnode); C.sel = d.cqnode; if (a && a.type === 'cache' && !C.done[a.key] && cqOpen(a)) { C.done[a.key] = 1; persist(); } render(); return true; }
@@ -6766,7 +6826,7 @@ function cqClick(d) {
     const g = cqGoods(key)[+k], [ck, cn] = g.cost; if (getRes(ck) < cn) { openInfo(ck); return true; }
     addRes(ck, -cn); got.push(+k); const out = g.rw ? giveRewards(g.rw) : [g.use()]; persist(); toast(out.join(' · ')); render(); return true; }
   if (d.cqdisks) { cqDiskWin(); return true; }
-  if (d.cqdon) { const C = cq(), x = C.disks.find(y => y.k === d.cqdon); if (!x || x.on || cqDiskOn().length >= CQ_DMAX) return true; x.on = 1; persist(); render(); cqDiskWin(); return true; }
+  if (d.cqdon) { const C = cq(), x = C.disks.find(y => y.k === d.cqdon); if (!x || x.on || !cqCanOn(x.k)) return true; x.on = 1; persist(); render(); cqDiskWin(); return true; }
   if (d.cqdoff) { const C = cq(), x = C.disks.find(y => y.k === d.cqdoff); if (!x || !x.on) return true; if (!cqEnSpend(CQ_EN.unequip)) { toast(`Нужно ${CQ_EN.unequip} Решимости`); return true; } x.on = 0; persist(); render(); cqDiskWin(); return true; }
   if (d.cqmed) { const id = d.cqmed; if (!S.cqMed || cqSta(id) >= 100) return true; S.cqMed--; cqStaSet(id, cqSta(id) + CQ_MED); persist(); toast(`${CH[id].sn}: выносливость ${cqSta(id)}%`); render(); return true; }
   if (d.cqres) { cqResWin(0); return true; }
