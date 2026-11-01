@@ -1311,12 +1311,30 @@ button.bgz { cursor: pointer; font: inherit; } button.bgz:hover { border-color: 
 .cqgood p { margin: 0; color: var(--dust); font-size: 11px; } .cqgood.sold { opacity: .5; border-color: #3e2e1e; }
 .cqgrw { min-height: 26px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; } .cqgrw svg { width: 24px; height: 24px; color: #9ee2b8; }
 .cqdbox { width: min(760px, 100%) !important; text-align: left !important; }
-.cqdbox h3 { text-align: center; }
+.cqdbox h3 { text-align: center; font-size: 28px !important; }
 .cqdcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
 .cqdcols section { display: grid; gap: 6px; align-content: start; }
 .cqdk { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px; border: 1px solid #3e2e1e; border-radius: 5px; background: rgb(0 0 0 / .25); }
 .cqdk.on { border-color: #3a7a90; background: rgb(90 200 255 / .07); }
 .cqdk > svg { width: 28px; height: 28px; color: #9fe8ff; } .cqdk b { font-size: 13px; } .cqdk p { margin: 2px 0 0; font-size: 11px; color: var(--dust); }
+.cqsegs { display: grid; gap: 8px; }
+.cqseg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(84px, 1.3fr); gap: 6px; align-items: stretch; }
+.cqst1 { position: relative; display: grid; justify-items: center; align-content: center; gap: 2px; padding: 6px 2px; border: 1px solid #3e2e1e; border-radius: 4px; font-size: 11px; background: rgb(0 0 0 / .2); }
+.cqst1 .mono { font-size: 9px; color: var(--dust); } .cqst1.got { border-color: #4a7a4a; background: rgb(90 168 119 / .1); } .cqst1 i { position: absolute; top: 2px; right: 4px; font-style: normal; color: var(--hp); font-size: 10px; }
+button.cqchest { background: rgb(0 0 0 / .25); color: var(--bone); cursor: pointer; font: inherit; font-size: 11px; }
+.cqcs { font-size: 10px; color: var(--dust); } .cqchest.ready .cqcs { color: #ffd27a; font-weight: 600; }
+.cqcbox { text-align: left !important; } .cqcbox h3 { text-align: center; font-size: 28px !important; }
+ul.cqrw { display: grid; gap: 4px; } ul.cqrw li { display: flex; align-items: center; gap: 4px; color: var(--bone); } ul.cqrw.any li { color: var(--dust); }
+.cqrwn { color: var(--dust); font-size: 12px; }
+.cqsyn { margin: 0 0 6px; font-size: 12px; color: var(--dust); }
+.cqbm { display: grid; gap: 4px; } .cqbmi { padding: 6px 8px; border: 1px solid #8a3a2e; border-left-width: 3px; border-radius: 3px; background: rgb(192 64 42 / .08); font-size: 12px; } .cqbmi b { color: #ffb4a0; margin-right: 6px; } .cqbmi span { color: var(--bone); }
+.tag.cqok { border-color: var(--hp); color: var(--hp); }
+.cqfts { display: grid; gap: 6px; }
+.cqft { padding: 8px 10px; border: 1px solid #3e2e1e; border-radius: 5px; background: rgb(0 0 0 / .25); } .cqft.ok { border-color: #4a7a4a; background: rgb(90 168 119 / .08); }
+.cqft p { margin: 2px 0 6px; font-size: 12px; color: var(--dust); }
+.cqftn { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; } .cqftp { font-family: var(--f-mono); font-size: 11px; color: #ffd27a; white-space: nowrap; }
+.cqftb { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; font-size: 11px; } .cqftb .fbar { display: block; }
+@media (max-width: 480px) { .cqseg { grid-template-columns: repeat(4, minmax(0, 1fr)); } .cqseg > .cqchest { grid-column: 1 / -1; grid-template-columns: auto auto 1fr auto; display: grid; align-items: center; justify-items: start; } }
 .cqer { display: inline-flex; align-items: center; gap: 2px; font-family: var(--f-mono); font-size: 10px; color: #e0b0ff; }
 @media (orientation: landscape) and (max-height: 520px) { .cqn { width: 36px; height: 36px; margin: -18px 0 0 -18px; } .cqn.t-boss { width: 46px; height: 46px; margin: -23px 0 0 -23px; } .rclv b { font-size: 24px; } }
 </style>
@@ -5029,7 +5047,7 @@ function openSquadSel(mode, i) {
   renderSquadSel();
 }
 function sqEnemy() {
-  if (SQ.mode === 'conq') { const a = cqNode(SQ.i), foes = cqLive(a).foes.map(p => [p.id, p]); return { title: `Джихад · ${CQ_SECT[a.s].n} · ${cqTypeN(a.type)}`, scene: CQ_SECT[a.s].scene, foes, pw: foes.reduce((x, [id, p]) => x + unitPower(CH[id], p), 0), cost: 0, sideNote: [`Решимость −${CQ_EN.fight} (есть ${cqEn()})`, `выносливость −${CQ_STA.loss}%`, ...a.mods.map(m => CQ_MODS[m].n)].join(' · ') }; }
+  if (SQ.mode === 'conq') { const a = cqNode(SQ.i), foes = cqLive(a).foes.map(p => [p.id, p]); return { title: `Джихад · ${CQ_SECT[a.s].n} · ${cqTypeN(a.type)}`, scene: CQ_SECT[a.s].scene, foes, pw: foes.reduce((x, [id, p]) => x + unitPower(CH[id], p), 0), cost: 0, sideNote: [`Решимость −${CQ_EN.fight} (есть ${cqEn()})`, `выносливость −${CQ_STA.loss}%`, ...a.mods.map(m => cqMod(m).n)].join(' · ') }; }
   if (SQ.mode === 'trial') { const { T, t } = trialOfSQ(SQ.i), foes = trialFoes(T, t).map(p => [p.id, p]); return { title: `${T.short} · ур. ${ROMAN[t + 1]}`, scene: T.scene, foes, pw: foes.reduce((a, [id, p]) => a + unitPower(CH[id], p), 0), cost: 0, sideNote: T.req ? T.note : '' }; }
   if (SQ.mode === 'camp') { const n = NODES[SQ.i]; return { title: nodeTitle(SQ.i), scene: NODE_SCENES[SQ.i], foes: n.enemy.map(id => [id, enemyProg(id, n.lvl, n.m === 9)]), pw: nodePower(n), cost: nodeCost(SQ.i), en: nodeEn(SQ.i), sideNote: CAMP_DEF[n.camp].side === 'all' ? '' : CAMP_DEF[n.camp].side === 'light' ? 'Только светлые герои' : 'Только тёмные герои' }; }
   if (SQ.mode === 'journey') { const t = JR().tiers[SQ.i]; const foes = jFoes(JK(), SQ.i).map(p => [p.id, p]); return { title: `Легенда ${SQ.i + 1}. ${t.n}`, scene: JR().scenes[SQ.i], foes, pw: foes.reduce((s, [id, p]) => s + unitPower(CH[id], p), 0), cost: 0 }; }
@@ -5079,7 +5097,7 @@ function sqGo() {
   const a = sqArr(); if (!a.length || !SQ) return;
   const mode = SQ.mode, i = SQ.i;
   if (mode === 'camp') { tickWater(); if (enGet(nodeEn(i)) < nodeCost(i)) return openInfo(`need:${nodeEn(i)}:${nodeCost(i)}`); return startBattle(i); }
-  if (mode === 'conq') { const nd = cqNode(i), SE = CQ_SECT[nd.s], lv = cqLive(nd); if (!lv.foes.length) return; if (!cqEnSpend(CQ_EN.fight)) { toast(`Нужно ${CQ_EN.fight} Решимости. ${cqEnTxt()}`); return; } persist(); return launch({ mode: 'conq', i, scene: SE.scene, desert: !!SE.desert, title: `${SE.n} · ${nd.type === 'boss' ? 'босс' : nd.type === 'elite' ? 'элита' : 'бой'}`, squad: a.slice(), enemy: lv.foes, cq: { key: i, mods: nd.mods, idx: lv.idx } }); }
+  if (mode === 'conq') { const nd = cqNode(i), SE = CQ_SECT[nd.s], lv = cqLive(nd); if (!lv.foes.length) return; if (!cqEnSpend(CQ_EN.fight)) { toast(`Нужно ${CQ_EN.fight} Решимости. ${cqEnTxt()}`); return; } persist(); return launch({ mode: 'conq', i, scene: SE.scene, desert: !!SE.desert, title: `${SE.n} · ${nd.type === 'boss' ? 'босс' : nd.type === 'elite' ? 'элита' : 'бой'}`, squad: a.slice(), enemy: lv.foes, cq: { key: i, mods: nd.mods, idx: lv.idx, fresh: !lv.st } }); }
   if (mode === 'trial') { const { T, t } = trialOfSQ(i); return launch({ mode: 'trial', i, scene: T.scene, desert: !!T.desert, title: `${T.short} · ур. ${ROMAN[t + 1]}`, squad: a.slice(), enemy: trialFoes(T, t) }); }
   if (mode === 'journey') { const t = JR().tiers[i]; return launch({ mode: 'journey', scene: JR().scenes[i], i, title: `Легенда ${i + 1}. ${t.n}`, desert: t.desert, squad: a.slice(), enemy: jFoes(JK(), i) }); }
   const R = S.raid; if (!R) return; return launch({ mode: 'raid', scene: RAID_SCENES[R.tier], title: 'Шаи-Хулуд · ' + RAID_TIERS[R.tier].n.split(' · ')[0], squad: a.slice(), boss: { tier: R.tier, hp: R.hp, maxHp: R.maxHp } });
@@ -6139,6 +6157,8 @@ function notePoll(init) {
 function noteHtml(n) {
   const fv = v => v >= 1e6 ? (v / 1e6).toFixed(1).replace('.0', '') + ' млн' : v >= 1e4 ? Math.round(v / 1e3) + ' тыс.' : fmt(v);
   if (n.kind === 'quest') return `<div class="nt-ic q">✓</div><div class="nt-tx"><b>Задание выполнено</b><span>${n.q.n}</span><div class="nt-rw">${rewardsHtml(n.q.rw)}</div></div><button class="btn mini go" data-ntgo="daily" data-ntid="${n.id}">Забрать</button>`;
+  if (n.kind === 'cqf') { const ok = n.v >= n.F.need, sc = n.F.sc === 'g' ? 'общий' : n.F.sc === 'b' ? `босс · ${CQ_SECT[n.F.s].n}` : CQ_SECT[n.F.s].n;
+    return `<div class="nt-ic ${ok ? 'f' : 'p'}">${ok ? '◆' : Math.round(n.v / n.F.need * 100) + '%'}</div><div class="nt-tx"><b>Подвиг Джихада: ${n.F.n}</b><span>${ok ? `Выполнен (${sc}) — +${n.F.pts} очков шкалы` : `${sc}: ${n.v} / ${n.F.need}`}</span>${ok ? '' : `<div class="fbar"><i style="width:${n.v / n.F.need * 100}%"></i></div>`}</div><button class="btn mini ${ok ? 'go' : ''}" data-ntgo="conq" data-ntid="${n.id}">Открыть</button>`; }
   if (n.kind === 'feat') return `<div class="nt-ic f">★</div><div class="nt-tx"><b>Подвиг: ${n.F.n} ${ROMAN[n.s + 1]}</b><span>Ступень выполнена — награда ждёт</span><div class="nt-rw">${rewardsHtml(featRw(n.F, n.s))}</div></div><button class="btn mini go" data-ntgo="feats" data-ntid="${n.id}">Забрать</button>`;
   return `<div class="nt-ic p">${Math.round(n.pct * 100)}%</div><div class="nt-tx"><b>Подвиг: ${n.F.n} ${ROMAN[n.s + 1]}</b><span>Прогресс ${fv(n.v)} / ${fv(n.goal)}</span><div class="fbar"><i style="width:${n.pct * 100}%"></i></div></div><button class="btn mini" data-ntgo="feats" data-ntid="${n.id}">Открыть</button>`;
 }
@@ -6333,16 +6353,73 @@ const CQ_DIFF = {
   hard:   { n: 'Сложный',    acc: 55, lvl: [65, 85], relic: [2, 7], pow: [1.15, 1.4], mult: 3, er: [20, 24, 28, 32, 36] },
 };
 const CQ_SECT = [
-  { n: 'Гиеди Прайм', scene: 'giedi', pool: ['trooper', 'trooper', 'rabban', 'piter', 'feyd'], boss: ['baron', 'feyd', 'rabban', 'piter', 'trooper'], d: 'Крепость Харконненов: яды, численность и жестокость.' },
-  { n: 'Салуса Секундус', scene: 'saltflat', pool: ['legion', 'legion', 'bashar', 'fenring', 'mohiam'], boss: ['shaddam', 'fenring', 'mohiam', 'bashar', 'legion'], d: 'Мир-тюрьма сардаукаров: броня и дисциплина.' },
-  { n: 'Глубокая пустыня', scene: 'desert', desert: true, pool: ['fedaykin', 'fedaykin', 'chani', 'stilgar', 'kynes'], boss: ['liet', 'stilgar', 'chani', 'fedaykin', 'fedaykin'], d: 'Песок, червь и фримены, которые не признают чужаков.' },
-  { n: 'Каладан', scene: 'caladan', pool: ['atrguard', 'atrguard', 'duncan', 'gurney', 'thufir'], boss: ['leto', 'duncan', 'gurney', 'thufir', 'jessica'], d: 'Родовой мир Атрейдесов защищают лучшие мечи Империума.' },
-  { n: 'Коррин', scene: 'ruins', pool: ['robot', 'robot', 'cymek', 'robot', 'cymek'], boss: ['erasmus', 'cymek', 'cymek', 'robot', 'robot'], d: 'Мир машин. В его сердце ждёт Эразм — и проверяет, достойны ли вы.' },
+  { n: 'Гиеди Прайм', syn: 'Харконнены: Барон, Фейд-Раута, Раббан, Питер де Фриз', scene: 'giedi', pool: ['trooper', 'trooper', 'rabban', 'piter', 'feyd'], boss: ['baron', 'feyd', 'rabban', 'piter', 'trooper'], d: 'Крепость Харконненов: яды, численность и жестокость.' },
+  { n: 'Салуса Секундус', syn: 'Коррино: Шаддам IV, граф Фенринг, Мохиам, башар', scene: 'saltflat', pool: ['legion', 'legion', 'bashar', 'fenring', 'mohiam'], boss: ['shaddam', 'fenring', 'mohiam', 'bashar', 'legion'], d: 'Мир-тюрьма сардаукаров: броня и дисциплина.' },
+  { n: 'Глубокая пустыня', syn: 'Фримены: Лиет-Кайнс, Стилгар, Чани, федайкины', scene: 'desert', desert: true, pool: ['fedaykin', 'fedaykin', 'chani', 'stilgar', 'kynes'], boss: ['liet', 'stilgar', 'chani', 'fedaykin', 'fedaykin'], d: 'Песок, червь и фримены, которые не признают чужаков.' },
+  { n: 'Каладан', syn: 'Атрейдесы: герцог Лето, Дункан, Гурни, Суфир, Джессика', scene: 'caladan', pool: ['atrguard', 'atrguard', 'duncan', 'gurney', 'thufir'], boss: ['leto', 'duncan', 'gurney', 'thufir', 'jessica'], d: 'Родовой мир Атрейдесов защищают лучшие мечи Империума.' },
+  { n: 'Коррин', syn: 'Мыслящие машины: Эразм, кимеки, роботы', scene: 'ruins', pool: ['robot', 'robot', 'cymek', 'robot', 'cymek'], boss: ['erasmus', 'cymek', 'cymek', 'robot', 'robot'], d: 'Мир машин. В его сердце ждёт Эразм — и проверяет, достойны ли вы.' },
 ];
 // path: 4 fights → disk → fight → cache → 3 fights → disk → boss (9 battles per sector)
 const CQ_LAYERS = [1, 2, 3, 2, 1, 2, 1, 3, 2, 2, 1, 1], CQ_LAST = CQ_LAYERS.length - 1;
 const CQ_LTYPE = { 4: 'disk', 6: 'cache', 10: 'disk', [CQ_LAST]: 'boss' };
-const CQ_TRACK = [8, 20, 35, 55, 75, 95, 120, 150, 185, 220];
+const CQ_CHESTS = [25, 60, 100, 150, 210, 280, 350];      // 7 сундуков; между соседними — 4 промежуточные награды
+const CQ_ERI = [1, 3, 4, 5, 6];                          // сундуки с осколками Эразма (по CQ_DIFF.er)
+const cqK = () => ({ easy: 1, normal: 1.25, hard: 1.5 })[cq().diff] || 1;
+const pcs = x => Math.round(x * 100) + '%';
+const cqHpUp = (u, x) => { u.maxHp = Math.round(u.maxHp * (1 + x)); u.hp = u.maxHp; };
+// модификаторы боссов: синергия сектора + бонусные механики, сила растёт со сложностью (k = 1 / 1.25 / 1.5)
+const CQ_BMOD = {
+  b0a: { n: 'Мощь Барона', d: k => `Все враги +${pcs(.2 * k)} здоровья и +${pcs(.15 * k)} урона; лидер — ещё +${pcs(.3 * k)} здоровья.`, f: (us, k) => us.forEach((u, i) => { cqHpUp(u, .2 * k + (i === 0 ? .3 * k : 0)); u.dmgBonus += .15 * k; }) },
+  b0b: { n: 'Жестокость Харконненов', d: k => `Враги контратакуют с шансом ${pcs(.25 * k)} и получают +${pcs(.15 * k)} шанса крита.`, f: (us, k) => us.forEach(u => { u.counterChance = Math.max(u.counterChance || 0, .25 * k); u.crit += .15 * k; }) },
+  b1a: { n: 'Терсиус', d: k => `Враги +${pcs(.25 * k)} брони и начинают бой с Защитой↑ на 3 хода.`, f: (us, k) => us.forEach(u => { u.arm += .25 * k; u.fx.defUp = 3; }) },
+  b1b: { n: 'Фанатизм сардаукаров', d: k => `Враги +${pcs(.4 * k)} стойкости и восстанавливают ${pcs(.04 * k)} здоровья в начале хода.`, f: (us, k) => us.forEach(u => { u.ten += .4 * k; u.regen = Math.max(u.regen || 0, .04 * k); }) },
+  b2a: { n: 'Песчаный танец', d: k => `Враги +${pcs(.12 * k)} уклонения и +${pcs(.15 * k)} скорости.`, f: (us, k) => us.forEach(u => { u.eva += .12 * k; u.spd = Math.round(u.spd * (1 + .15 * k)); }) },
+  b2b: { n: 'Засада фрименов', d: k => `Враги начинают бой с шкалой хода ${Math.min(95, Math.round(60 * k))}% и +${pcs(.15 * k)} здоровья.`, f: (us, k) => us.forEach(u => { u.tm = Math.min(950, Math.round(600 * k)); cqHpUp(u, .15 * k); }) },
+  b3a: { n: 'Мастера клинка', d: k => `Враги +${pcs(.25 * k)} урона и контратакуют с шансом ${pcs(.3 * k)}.`, f: (us, k) => us.forEach(u => { u.dmgBonus += .25 * k; u.counterChance = Math.max(u.counterChance || 0, .3 * k); }) },
+  b3b: { n: 'Щиты Хольцмана', d: k => `Щиты врагов +${pcs(.8 * k)}; враги без щита — +${pcs(.2 * k)} здоровья.`, f: (us, k) => us.forEach(u => { if (u.maxShield) { u.maxShield = Math.round(u.maxShield * (1 + .8 * k)); u.shield = u.maxShield; } else cqHpUp(u, .2 * k); }) },
+  b4a: { n: 'Синхронизация машин', d: k => `Враги +${pcs(.2 * k)} скорости и +${pcs(.2 * k)} урона.`, f: (us, k) => us.forEach(u => { u.spd = Math.round(u.spd * (1 + .2 * k)); u.dmgBonus += .2 * k; }) },
+  b4b: { n: 'Самовосстановление', d: k => `Враги +${pcs(.3 * k)} здоровья и восстанавливают ${pcs(.05 * k)} здоровья в начале хода.`, f: (us, k) => us.forEach(u => { cqHpUp(u, .3 * k); u.regen = Math.max(u.regen || 0, .05 * k); }) },
+};
+const cqMod = m => CQ_MODS[m] || CQ_BMOD[m];
+const cqModD = m => { const x = cqMod(m); return typeof x.d === 'function' ? x.d(cqK()) : x.d; };
+// ---- подвиги ----
+const CQ_GF = [
+  { id: 'win', n: 'Священная война', d: 'Одержите 30 побед в Джихаде.', need: 30, ev: 'win' },
+  { id: 'flaw', n: 'Без потерь', d: 'Одержите 10 побед, не потеряв ни одного героя.', need: 10, ev: 'flaw' },
+  { id: 'atr', n: 'Честь Атрейдесов', d: 'Одержите 5 побед отрядом только из Атрейдесов.', need: 5, ev: 'only:atr' },
+  { id: 'hark', n: 'Кровь Харконненов', d: 'Одержите 5 побед отрядом только из Харконненов.', need: 5, ev: 'only:hark' },
+  { id: 'frem', n: 'Федайкины', d: 'Одержите 5 побед отрядом только из фрименов.', need: 5, ev: 'only:frem' },
+  { id: 'few', n: 'Малый Дом', d: 'Одержите 5 побед отрядом из 3 героев или меньше.', need: 5, ev: 'few' },
+  { id: 'kill', n: 'Жатва', d: 'Повергните 150 врагов в боях Джихада.', need: 150, ev: 'kill' },
+  { id: 'disk', n: 'Архив Икса', d: 'Соберите 8 дисков.', need: 8, ev: 'disk' },
+  { id: 'boss', n: 'Падишах пустыни', d: 'Победите боссов всех пяти секторов.', need: 5, ev: 'boss' },
+];
+const CQ_LFAC = [['atr', 3], ['frem', 3], ['cor', 3], ['hark', 3], ['mach', 2]];   // союзники сектора: фракция, сколько героев
+function cqFeats(s) {      // s = null → глобальные; иначе локальные + подвиги босса сектора s
+  if (s === null) return CQ_GF.map(F => ({ ...F, key: 'g:' + F.id, sc: 'g', pts: 15 }));
+  const lp = s < 3 ? 3 : 5, bp = s < 2 ? 1 : s < 4 ? 2 : 3, [fa, fn] = CQ_LFAC[s], FN = FACTIONS[fa].n;
+  return [
+    { id: 'win', n: 'Зачистка', d: 'Одержите 6 побед в этом секторе.', need: 6, ev: 'win', pts: lp },
+    { id: 'flaw', n: 'Безупречно', d: 'Одержите 3 победы в секторе, не потеряв ни одного героя.', need: 3, ev: 'flaw', pts: lp },
+    { id: 'fac', n: `Союзники: ${FN}`, d: `Одержите 3 победы в секторе, имея в отряде не меньше ${fn} героев фракции «${FN}».`, need: 3, ev: 'fac', pts: lp },
+    { id: 'elite', n: 'Охота на элиту', d: 'Победите элиту сектора, не потеряв ни одного героя.', need: 1, ev: 'eliteflaw', pts: lp },
+    { id: 'b1', n: 'Одним натиском', d: 'Победите босса сектора с первого захода — пока его отряд не изранен прошлыми боями.', need: 1, ev: 'boss1', pts: bp, boss: 1 },
+    { id: 'b2', n: 'Ни шагу назад', d: 'Победите босса сектора, не потеряв ни одного героя.', need: 1, ev: 'bossflaw', pts: bp, boss: 1 },
+  ].map(F => ({ ...F, key: s + ':' + F.id, sc: F.boss ? 'b' : 'l', s }));
+}
+const cqScore = () => { const C = cq(); return C.stars + (C.pts || 0); };
+function cqBump(ev, s, n = 1, abs = false) {      // засчитывает событие подвигам: глобальным и локальным сектора s
+  const C = cq(), out = [];
+  for (const F of [...cqFeats(null), ...(s === null || s === undefined ? [] : cqFeats(s))]) {
+    if (F.ev !== ev || C.fd[F.key]) continue;
+    const was = C.fp[F.key] || 0, v = Math.min(F.need, abs ? Math.max(was, n) : was + n); if (v === was) continue;
+    C.fp[F.key] = v;
+    if (v >= F.need) { C.fd[F.key] = 1; C.pts = (C.pts || 0) + F.pts; }
+    out.push({ F, v });
+  }
+  for (const x of out) NOTES.push({ id: Math.random().toString(36).slice(2), kind: 'cqf', F: x.F, v: x.v });
+  return out;
+}
 const CQ_EN = { max: 100, sec: 180, fight: 10, unequip: 25 };          // Решимость: запас, +1 за N секунд, цена боя, снятие диска
 const CQ_STA = { loss: 10, min: 10, regenMin: 6, dmg: .4, spd: .25 };   // выносливость: −10% за бой, нужно ≥10%, +1% за 6 мин; штраф при 0%: −40% урона, −25% скорости
 const CQ_DMAX = 5;
@@ -6386,12 +6463,13 @@ const cqI = (k, cls = '') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidde
 const cqWeek = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toDateString(); };
 function cq() {
   const wk = cqWeek();
-  if (!S.conq || S.conq.wk !== wk) S.conq = { v: 2, wk, diff: null, open: 0, done: {}, sta: {}, foe: {}, disks: [], pick: null, dpick: {}, buy: {}, stars: 0, got: {}, rest: 0, sel: null, sec: 0, squad: [], en: CQ_EN.max, enTs: Date.now() };
+  if (!S.conq || S.conq.wk !== wk) S.conq = { v: 2, wk, diff: null, open: 0, done: {}, sta: {}, foe: {}, disks: [], pick: null, dpick: {}, buy: {}, stars: 0, got: {}, rest: 0, sel: null, sec: 0, squad: [], en: CQ_EN.max, enTs: Date.now(), v3: 1, pts: 0, fp: {}, fd: {}, tk: {} };
   const C = S.conq;
   if (C.v !== 2) {        // v1 → v2: new map layout, stamina instead of shared HP/fatigue, equipable disks
     Object.assign(C, { v: 2, done: {}, open: 0, sec: 0, sel: null, sta: {}, foe: {}, dpick: {}, buy: {}, rest: 0, en: CQ_EN.max, enTs: Date.now(), disks: (C.disks || []).map(k => typeof k === 'string' ? { k: k === 'leech' ? 'stam' : k, on: 1 } : k) });
     for (const k of ['hp', 'fat', 'med', 'stim', 'regroup']) delete C[k];
   }
+  if (!C.v3) { Object.assign(C, { v3: 1, pts: 0, fp: {}, fd: {}, tk: {} }); delete C.got; CQ_MEMO_CLR(); }     // v3: feats + new reward track, boss modifiers
   return C;
 }
 // ---- Решимость (energy of the mode) ----
@@ -6413,7 +6491,7 @@ const cqStaCol = s => s >= 70 ? '#7fbb6c' : s >= 40 ? '#e8c04f' : '#d9604f';
 // ---- диски ----
 const cqDiskOn = () => cq().disks.filter(x => x.on).map(x => x.k);
 function cqDiskPick(seed) { const C = cq(), own = new Set(C.disks.map(x => x.k)), pool = Object.keys(CQ_DISKS).filter(k => !own.has(k)), r = sRng(ghash(C.wk + C.diff + 'd' + seed)), out = []; while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(r() * pool.length), 1)[0]); return out; }
-function cqAddDisk(k) { const C = cq(); if (C.disks.some(x => x.k === k)) return; C.disks.push({ k, on: cqDiskOn().length < CQ_DMAX ? 1 : 0 }); }
+function cqAddDisk(k) { const C = cq(); if (C.disks.some(x => x.k === k)) return; C.disks.push({ k, on: cqDiskOn().length < CQ_DMAX ? 1 : 0 }); cqBump('disk', null, C.disks.length, true); }
 const cqNodeDisks = a => { const C = cq(); return (C.dpick[a.key] ??= cqDiskPick(a.key)); };
 // ---- лавка тайника ----
 const CQ_GOODS = [
@@ -6433,9 +6511,9 @@ function cqGoods(key) {
   return out.map(g => ({ ...g, ...g.mk(m) }));
 }
 // ---- карта ----
-const CQ_MEMO = {};
+const CQ_MEMO = {}, CQ_MEMO_CLR = () => { for (const k in CQ_MEMO) delete CQ_MEMO[k]; };
 function cqLayout(s) {
-  const C = cq(), mk0 = C.wk + C.diff + ':v2:' + s; if (CQ_MEMO[mk0]) return CQ_MEMO[mk0];
+  const C = cq(), mk0 = C.wk + C.diff + ':v3:' + s; if (CQ_MEMO[mk0]) return CQ_MEMO[mk0];
   const r = sRng(ghash(mk0)), nodes = [];
   CQ_LAYERS.forEach((n, L) => { for (let j = 0; j < n; j++) nodes.push({ key: `${s}-${L}-${j}`, s, L, j, y: (j + .5) / n, next: [] }); });
   const at = L => nodes.filter(x => x.L === L), near = (arr, y) => arr.slice().sort((p, q) => Math.abs(p.y - y) - Math.abs(q.y - y))[0];
@@ -6458,7 +6536,8 @@ function cqLayout(s) {
     else if (elite) a.enemy = SE.boss.slice(1).concat(SE.pool[0]).slice(0, 5);
     else { const sz = a.L >= 5 ? 5 : 4; a.enemy = Array.from({ length: sz }, () => SE.pool[Math.floor(r() * SE.pool.length)]); }
     const li = a.enemy.findIndex(id => CH[id].leader); if (li > 0) a.enemy.unshift(a.enemy.splice(li, 1)[0]);
-    const nm = boss ? { easy: 1, normal: 2, hard: 3 }[C.diff] || 1 : elite ? 1 : 0, mk = modKeys.slice();
+    const nm = boss ? (C.diff === 'hard' ? 1 : 0) : elite ? 1 : 0, mk = modKeys.slice();
+    if (boss) a.mods.push(`b${s}a`, `b${s}b`);
     for (let k = 0; k < nm; k++) a.mods.push(mk.splice(Math.floor(r() * mk.length), 1)[0]);
   }
   return (CQ_MEMO[mk0] = nodes);
@@ -6473,23 +6552,38 @@ function cqOpen(a) {
   return cqLayout(a.s).some(p => p.next.includes(a.key) && C.done[p.key]);
 }
 const cqTypeN = t => ({ boss: 'Босс сектора', elite: 'Элита', cache: 'Тайник контрабандистов', disk: 'Тайник с дисками', fight: 'Бой' })[t];
-function cqCanClaim(i) { const C = cq(); return C.diff && C.stars >= CQ_TRACK[i] && !C.got[i]; }
-function cqChest(i) {
-  const C = cq(), D = CQ_DIFF[C.diff] || CQ_DIFF.easy, m = D.mult, r = [['sol', Math.round(8000 * m * (1 + i * .3))], ['cry', 30 * m + 10 * i]];
-  const ei = [2, 4, 6, 8, 9].indexOf(i); if (ei >= 0) r.push(['shard', D.er[ei], 'erasmus']);
-  if (i === 1 || i === 5) r.push(['shard', 5 * m, 'robot']); if (i === 3 || i === 7) r.push(['shard', 5 * m, 'cymek']);
-  if ([4, 7, 9].includes(i)) r.push(['core', 4 * m]); if (i === 5 || i === 9) r.push(['seal', m]); if (i === 9 && m >= 2) r.push(['wol', m - 1]); if (i % 2 === 0) r.push(['folio', 3 * m]);
-  return r;
+function cqTrack() {       // [{at, kind: 'st'|'chest', i}] — 4 промежуточные награды перед каждым сундуком
+  const out = []; let prev = 0, j = 0;
+  CQ_CHESTS.forEach((at, i) => { for (let q = 1; q <= 4; q++) out.push({ at: Math.round(prev + (at - prev) * q / 5), kind: 'st', i: j++ }); out.push({ at, kind: 'chest', i }); prev = at; });
+  return out;
 }
-const cqBadge = () => { if (!S) return ''; const C = cq(); if (!C.diff) return 'новая неделя'; const ready = CQ_TRACK.filter((t, i) => cqCanClaim(i)).length; return ready ? `сундуков: ${ready}` : `★ ${C.stars}`; };
-const cqHot = () => { if (!S) return false; const C = cq(); return S.acc.lvl >= CQ_DIFF.easy.acc && (!C.diff || !!C.pick || CQ_TRACK.some((t, i) => cqCanClaim(i))); };
+function cqStatic(j) {
+  const m = (CQ_DIFF[cq().diff] || CQ_DIFF.easy).mult, t = j % 4, g = Math.floor(j / 4);
+  return [['sol', Math.round(3000 * m * (1 + g * .3))], ['cry', 10 * m + 3 * g], ['folio', 2 * m], ['shard', 2 * m, g % 2 ? 'cymek' : 'robot']][t];
+}
+function cqChest(i) {        // fix: гарантированно; any: одна случайная награда из списка
+  const C = cq(), D = CQ_DIFF[C.diff] || CQ_DIFF.easy, m = D.mult, fix = [['sol', Math.round(10000 * m * (1 + i * .4))], ['cry', 40 * m + 15 * i]];
+  const ei = CQ_ERI.indexOf(i); if (ei >= 0) fix.push(['shard', D.er[ei], 'erasmus']);
+  if (i >= 3) fix.push(['core', (i - 1) * m]); if (i >= 5) fix.push(['seal', m]); if (i === 6 && m >= 2) fix.push(['wol', m - 1]);
+  const any = [['shard', 6 * m, 'robot'], ['shard', 6 * m, 'cymek'], ['folio', 4 * m + i], ['pl', 10 * m + 3 * i], ['cry', 50 * m]];
+  return { fix, any };
+}
+const cqCanClaim = i => { const C = cq(); return !!C.diff && cqScore() >= CQ_CHESTS[i] && !C.tk['c' + i]; };
+function cqSyncTrack() {      // промежуточные награды выдаются сами при достижении порога
+  const C = cq(), sc = cqScore(), got = [];
+  for (const T of cqTrack()) if (T.kind === 'st' && sc >= T.at && !C.tk['s' + T.i]) { C.tk['s' + T.i] = 1; got.push(...giveRewards([cqStatic(T.i)])); }
+  if (got.length) { persist(); toast('Шкала Джихада: ' + got.join(' · ')); }
+}
+const cqRwHtml = r => amt(r[0], r[1], r[2] ? 'shard:' + r[2] : undefined) + (r[2] ? ` <span class="cqrwn">${CH[r[2]].sn}</span>` : ` <span class="cqrwn">${RW_NAME[r[0]] || ''}</span>`);
+const cqBadge = () => { if (!S) return ''; const C = cq(); if (!C.diff) return 'новая неделя'; const ready = CQ_CHESTS.filter((t, i) => cqCanClaim(i)).length; return ready ? `сундуков: ${ready}` : `очки ${cqScore()}`; };
+const cqHot = () => { if (!S) return false; const C = cq(); return S.acc.lvl >= CQ_DIFF.easy.acc && (!C.diff || !!C.pick || CQ_CHESTS.some((t, i) => cqCanClaim(i))); };
 
 // ---- battle hooks ----
 function cqApply(B, cfg) {
   const C = cq(), A = B.units.slice(0, cfg.squad.length), E = B.units.filter(u => u.side === 'B').slice(0, cfg.cq.idx.length), st = C.foe[cfg.cq.key];
   for (const k of cqDiskOn()) if (CQ_DISKS[k]) CQ_DISKS[k].f(A);
   for (const u of A) { const p = cqStaPen(cqSta(u.def.id)); if (p.dmg > 0) { u.dmgBonus -= p.dmg; u.spd = Math.round(u.spd * (1 - p.spd)); } u.hp = u.maxHp; }   // full HP every node; stamina weakens
-  for (const m of cfg.cq.mods) if (CQ_MODS[m]) CQ_MODS[m].f(E);
+  for (const m of cfg.cq.mods) if (cqMod(m)) cqMod(m).f(E, cqK());
   if (st) E.forEach((u, j) => { const r = st[cfg.cq.idx[j]]; if (r) { u.hp = Math.max(1, Math.round(u.maxHp * r.h)); if (u.maxShield) u.shield = Math.round(u.maxShield * r.s); } });
   computeIntents(B);
 }
@@ -6499,6 +6593,7 @@ function cqFinish(B, cfg, won) {
   for (const u of mine) cqStaSet(u.def.id, cqSta(u.def.id) - loss);
   C.squad = C.squad.filter(id => cqSta(id) >= CQ_STA.min);
   let html, lines = [];
+  { const k = E.filter(u => !u.alive).length; if (k) cqBump('kill', a.s, k); }
   if (won) {
     delete C.foe[a.key];
     const surv = mine.filter(u => u.alive).length, st = surv === mine.length ? 3 : surv >= Math.ceil(mine.length / 2) ? 2 : 1, prev = C.done[a.key] || 0;
@@ -6510,7 +6605,13 @@ function cqFinish(B, cfg, won) {
       if (a.s === 4 && Math.random() < .5) { const id = Math.random() < .5 ? 'robot' : 'cymek', q = m; lines.push(`+${amt('shard', q, 'shard:' + id)} ${CH[id].sn}${grantShards(id, q) ? ' — персонаж открыт!' : ''}`); }
       if (a.type === 'boss') { if (a.s < 4) { C.open = Math.max(C.open, a.s + 1); C.sec = a.s + 1; lines.push(`Открыт сектор ${a.s + 2}: ${CQ_SECT[a.s + 1].n}`); } else lines.push('Джихад завершён! Эразм признаёт силу вашего Дома.'); }
     } else lines.push('Повторная победа: звёзды улучшены, награда за точку уже получена.');
-    lines.push(`Звёзды Джихада: ${C.stars}`);
+    const fac = CQ_LFAC[a.s], few = mine.length <= 3, flaw = surv === mine.length, sq = mine.map(u => u.def);
+    cqBump('win', a.s); if (flaw) cqBump('flaw', a.s); if (few) cqBump('few', a.s);
+    for (const f of ['atr', 'hark', 'frem']) if (sq.every(d => d.f.includes(f))) cqBump('only:' + f, a.s);
+    if (sq.filter(d => d.f.includes(fac[0])).length >= fac[1]) cqBump('fac', a.s);
+    if (a.type === 'elite' && flaw) cqBump('eliteflaw', a.s);
+    if (a.type === 'boss') { if (!prev) cqBump('boss', a.s, Object.keys(C.done).filter(k => k.endsWith(`-${CQ_LAST}-0`)).length, true); if (cfg.cq.fresh) cqBump('boss1', a.s); if (flaw) cqBump('bossflaw', a.s); }
+    lines.push(`Очки Джихада: ${cqScore()} (звёзды ${C.stars} + подвиги ${C.pts || 0})`);
     html = `<h3>Победа</h3><div class="stars">${starStr(st, 3)}</div><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul>`;
   } else {
     const all = cqFoes(a), st = C.foe[a.key] || all.map(() => ({ h: 1, s: 1 }));
@@ -6519,7 +6620,7 @@ function cqFinish(B, cfg, won) {
     const down = st.filter(x => x.h <= 0).length;
     html = `<h3>Поражение</h3><ul><li>Враги точки не восстанавливаются: повержено ${down} из ${st.length}, раны остальных сохранены до следующего захода.</li><li>Участники потеряли ${loss}% выносливости. Она восполняется со временем (+1% каждые ${CQ_STA.regenMin} мин).</li></ul>`;
   }
-  persist();
+  cqSyncTrack(); persist();
   return { html, btns: `<button class="btn go" data-cqback="1">К карте Джихада</button>` };
 }
 
@@ -6545,14 +6646,15 @@ function cqDetail(a) {
   } else {
     const { all, st } = cqLive(a), pw = all.reduce((x, p, k) => x + (st && st[k] && st[k].h <= 0 ? 0 : unitPower(CH[p.id], p)), 0), left = st ? st.filter(x => x.h > 0).length : all.length;
     body = `<div class="cdrow"><span class="lbl">Противник${st ? ` · осталось ${left} из ${all.length}` : ''}</span><div class="cdenemy">${all.map((p, k) => cqFoeCard(p, k, st && st[k], k === 0 && CH[p.id].leader)).join('')}</div></div>
-      <div class="cdrow"><span class="lbl">Условия</span><div class="cdtags"><span class="power">мощь врага ${fmt(pw)}</span>${CQ_SECT[a.s].desert ? '<span class="tag desert">Пустыня · червь</span>' : ''}${a.mods.map(k => `<span class="tag mod" title="${CQ_MODS[k].d}">${CQ_MODS[k].n}: ${CQ_MODS[k].d}</span>`).join('') || '<span class="tag">без модификаторов</span>'}</div></div>
+      <div class="cdrow"><span class="lbl">Условия</span><div class="cdtags"><span class="power">мощь врага ${fmt(pw)}</span>${CQ_SECT[a.s].desert ? '<span class="tag desert">Пустыня · червь</span>' : ''}${a.type === 'boss' ? '' : a.mods.map(k => `<span class="tag mod">${cqMod(k).n}: ${cqModD(k)}</span>`).join('') || '<span class="tag">без модификаторов</span>'}</div></div>
+      ${a.type === 'boss' ? `<div class="cdrow"><span class="lbl">Синергия отряда</span><p class="cqsyn">${CQ_SECT[a.s].syn}. Босс сражается сыгранной командой своей фракции, и Джихад усиливает её:</p><div class="cqbm">${a.mods.map(k => `<div class="cqbmi"><b>${cqMod(k).n}</b><span>${cqModD(k)}</span></div>`).join('')}</div></div><div class="cdrow"><span class="lbl">Подвиги босса</span><div class="cdtags">${cqFeats(a.s).filter(F => F.boss).map(F => `<span class="tag ${C.fd[F.key] ? 'cqok' : ''}">${C.fd[F.key] ? '✓ ' : ''}${F.n} · +${F.pts} оч.</span>`).join('')}</div></div>` : ''}
       <div class="cdrow"><span class="lbl">Награда</span><div class="cdtags">${amt('sol', Math.round((1500 + a.lvl * 40) * m))}${a.type === 'boss' ? ' ' + amt('core', 2 * m) + ' · открывает следующий сектор' : a.type === 'elite' ? ' ' + amt('core', m) : ''} · до 3 звёзд</div></div>`;
     acts = dn === 3 ? '<span class="qok">✓ Пройдено на 3★</span>' : op ? `<button class="btn go" data-cqgo="${a.key}">${dn ? 'Улучшить результат' : st ? 'Продолжить бой' : 'В бой'}<small>−${CQ_EN.fight} Решимости · −${CQ_STA.loss}% выносливости</small></button>` : `<span class="lockd">${C.pick ? 'Сначала выберите диск' : 'Пройдите соседнюю точку слева'}</span>`;
   }
   return `<div class="cdetail cqdet"><div class="cdinfo"><div class="cdrow"><span class="lbl">${cqTypeN(a.type)} · шаг ${a.L + 1}/${CQ_LAYERS.length}</span></div>${body}${acts ? `<div class="acts">${acts}</div>` : ''}</div></div>`;
 }
 function renderConq() {
-  const C = cq(), L = S.acc.lvl, msLeft = (() => { const d = new Date(C.wk); d.setDate(d.getDate() + 7); return d - Date.now(); })(), dd = Math.floor(msLeft / 8.64e7), hh = Math.floor(msLeft % 8.64e7 / 3.6e6);
+  cqSyncTrack(); const C = cq(), L = S.acc.lvl, msLeft = (() => { const d = new Date(C.wk); d.setDate(d.getDate() + 7); return d - Date.now(); })(), dd = Math.floor(msLeft / 8.64e7), hh = Math.floor(msLeft % 8.64e7 / 3.6e6);
   let html = `<h2 class="lshide">Джихад</h2><p class="sub">Еженедельная священная война: пять секторов с ветвящимися картами. Бои идут за <b>Решимость</b>; каждый бой отнимает у участников 10% <b>выносливости</b> — уставшие бьют слабее и медленнее, но восстанавливаются со временем. Здоровье героев полное на каждой новой точке, а раненые враги не лечатся между заходами. Звёзды двигают шкалу наград; главный приз — <b>Эразм</b>, чьи осколки есть только здесь. Сброс через ${dd} д ${hh} ч.</p>`;
   if (L < CQ_DIFF.easy.acc) { $('#view').innerHTML = html + `<div class="panel"><p class="lockd">Джихад откроется с ${CQ_DIFF.easy.acc} уровня аккаунта.</p></div>`; return; }
   if (!C.diff) {
@@ -6560,9 +6662,11 @@ function renderConq() {
     $('#view').innerHTML = html; return;
   }
   const s = Math.min(C.sec ?? 0, C.open), nodes = cqLayout(s), SE = CQ_SECT[s], en = cqEn(), nOn = cqDiskOn().length;
-  html += `<div class="cqbar"><span class="tag">${CQ_DIFF[C.diff].n}</span><span class="cqst mono">★ ${C.stars}</span>
+  html += `<div class="cqbar"><span class="tag">${CQ_DIFF[C.diff].n}</span><span class="cqst mono" title="Очки Джихада: звёзды за бои + подвиги">◆ ${cqScore()}</span>
     <span class="cqitem cqres" title="Решимость: бой стоит ${CQ_EN.fight}, снятие диска ${CQ_EN.unequip}. +1 каждые ${CQ_EN.sec / 60} мин">${cqI('res')}<b>${en}/${CQ_EN.max}</b><span>Решимость · ${cqEnTxt()}</span></span>
     <button class="cqitem" data-cqdisks="1" title="Управление дисками">${cqI('disk')}<b>${nOn}/${CQ_DMAX}</b><span>Диски${C.disks.length > nOn ? ` · в запасе ${C.disks.length - nOn}` : ''}</span></button>
+    <button class="cqitem" data-cqfw="g">${cqI('boss')}<b>${cqFeats(null).filter(F => C.fd[F.key]).length}/9</b><span>Общие подвиги</span></button>
+    <button class="cqitem" data-cqfw="${s}">${cqI('elite')}<b>${cqFeats(s).filter(F => C.fd[F.key]).length}/6</b><span>Подвиги сектора</span></button>
     <button class="cqitem" data-cqrest="1" ${C.rest < 3 ? '' : 'disabled'} title="Привал: полная выносливость всем героям">${cqI('rest')}<b>${3 - C.rest}</b><span>Привал · ${amt('cry', 150)}</span></button></div>`;
   if (C.pick) html += `<div class="panel cqpick"><h3>Выберите стартовый диск</h3><p class="sub" style="margin:0 0 8px">Диск действует на ваших героев до конца недели. Надеть можно до ${CQ_DMAX} дисков; новые диски — в тайниках с дисками после каждых 4 боёв.</p><div class="cqdiffs">${C.pick.map(k => `<div class="cqdiff disk">${cqI('disk')}<h3>${CQ_DISKS[k].n}</h3><p>${CQ_DISKS[k].d}</p><button class="btn go" data-cqdisk="${k}">Взять</button></div>`).join('')}</div></div>`;
   html += `<div class="ctabs">${CQ_SECT.map((x, k) => `<button class="ctab ${k === s ? 'on' : ''}" data-cqsec="${k}" ${k <= C.open ? '' : 'disabled'}>${k + 1}. ${x.n}<small>${C.done[`${k}-${CQ_LAST}-0`] ? 'зачищен' : k <= C.open ? 'открыт' : 'закрыт'}</small></button>`).join('')}</div>
@@ -6577,8 +6681,11 @@ function renderConq() {
   html += cqDetail(a);
   const tired = unlockedIds().map(id => [id, cqSta(id)]).filter(x => x[1] < 100).sort((x, y) => x[1] - y[1]);
   html += `<p class="chap">Выносливость героев</p>${tired.length ? `<div class="cqheroes">${tired.map(([id, v]) => { const p = cqStaPen(v); return `<div class="cqh ${v < CQ_STA.min ? 'dead' : ''}">${portrait(CH[id], 40, ringCol(prog(id)))}<span class="cqhn">${CH[id].sn}</span><span class="cqhp"><i style="width:${v}%;background:${cqStaCol(v)}"></i></span><span class="mono">${v}%${p.dmg > 0 ? ` · урон −${Math.round(p.dmg * 100)}%, скор. −${Math.round(p.spd * 100)}%` : ''}</span></div>`; }).join('')}</div><p class="sub" style="margin-top:6px">+1% каждые ${CQ_STA.regenMin} мин. Герои с выносливостью ниже ${CQ_STA.min}% в бой не идут.</p>` : '<p class="sub">Все герои полны сил.</p>'}`;
-  html += `<p class="chap">Шкала наград · ★ ${C.stars}</p><div class="cqtrk"><div class="cqtbar"><i style="width:${Math.min(100, C.stars / CQ_TRACK[CQ_TRACK.length - 1] * 100)}%"></i></div><div class="cqchests">${CQ_TRACK.map((t, i) => { const rw = cqChest(i), er = rw.find(r => r[2] === 'erasmus'), can = cqCanClaim(i);
-    return `<div class="cqchest ${C.got[i] ? 'got' : can ? 'ready' : ''} ${er ? 'big' : ''}"><span class="mono">★${t}</span><svg viewBox="0 0 24 24"><path d="M3 10h18v10H3z" fill="${er ? '#6a2a8a' : '#7a4a22'}"/><path d="M3 10c0-4 4-6 9-6s9 2 9 6z" fill="${er ? '#9a4ac0' : '#a8642a'}"/><rect x="10" y="9" width="4" height="5" rx="1" fill="#f0c860"/></svg>${er ? `<span class="cqer">${portrait(CH.erasmus, 26)}×${er[1]}</span>` : ''}${C.got[i] ? '<span class="qok">✓</span>' : `<button class="btn mini ${can ? 'go' : ''}" data-cqchest="${i}" ${can ? '' : 'disabled'}>Открыть</button>`}</div>`; }).join('')}</div></div>`;
+  { const sc = cqScore(), T = cqTrack(), segs = CQ_CHESTS.map((at, i) => T.filter(x => (x.kind === 'st' ? Math.floor(x.i / 4) : x.i) === i));
+    html += `<p class="chap">Шкала наград · очки ${sc} / ${CQ_CHESTS[6]}</p><p class="sub" style="margin:0 0 8px">Очки = звёзды за бои + награды за подвиги. Промежуточные награды выдаются сразу, сундуки открываются вручную — нажмите на сундук, чтобы посмотреть, что в нём.</p><div class="cqtrk"><div class="cqtbar"><i style="width:${Math.min(100, sc / CQ_CHESTS[6] * 100)}%"></i></div><div class="cqsegs">${segs.map(seg => `<div class="cqseg">${seg.map(x => {
+      if (x.kind === 'st') { const r = cqStatic(x.i), ok = !!C.tk['s' + x.i]; return `<div class="cqst1 ${ok ? 'got' : ''}"><span class="mono">${x.at}</span>${amt(r[0], r[1], r[2] ? 'shard:' + r[2] : undefined)}${ok ? '<i>✓</i>' : ''}</div>`; }
+      const rw = cqChest(x.i), er = rw.fix.find(r => r[2] === 'erasmus'), can = cqCanClaim(x.i), got = C.tk['c' + x.i];
+      return `<button class="cqchest ${got ? 'got' : can ? 'ready' : ''} ${er ? 'big' : ''}" data-cqchest="${x.i}"><span class="mono">◆${x.at}</span><svg viewBox="0 0 24 24"><path d="M3 10h18v10H3z" fill="${er ? '#6a2a8a' : '#7a4a22'}"/><path d="M3 10c0-4 4-6 9-6s9 2 9 6z" fill="${er ? '#9a4ac0' : '#a8642a'}"/><rect x="10" y="9" width="4" height="5" rx="1" fill="#f0c860"/></svg>${er ? `<span class="cqer">${portrait(CH.erasmus, 22)}×${er[1]}</span>` : ''}<span class="cqcs">${got ? '✓ открыт' : can ? 'открыть!' : 'состав'}</span></button>`; }).join('')}</div>`).join('')}</div></div>`; }
   $('#view').innerHTML = html;
   const mp = $('#cqmap'); if (mp) mp.scrollLeft = Math.max(0, px(a) - mp.clientWidth / 2);
 }
@@ -6587,6 +6694,21 @@ function cqDiskWin() {
   const card = (x, eq) => `<div class="cqdk ${eq ? 'on' : ''}">${cqI('disk')}<div><b>${CQ_DISKS[x.k].n}</b><p>${CQ_DISKS[x.k].d}</p></div>${eq ? `<button class="btn mini" data-cqdoff="${x.k}" ${en >= CQ_EN.unequip ? '' : 'disabled'}>Снять<small>−${CQ_EN.unequip} Решимости</small></button>` : `<button class="btn mini ${on.length < CQ_DMAX ? 'go' : ''}" data-cqdon="${x.k}" ${on.length < CQ_DMAX ? '' : 'disabled'}>Надеть</button>`}</div>`;
   $('#overlay').innerHTML = `<div class="result" data-close="1"><div class="box cqdbox" role="dialog" aria-modal="true" aria-label="Диски"><h3>Диски</h3><p class="sub" style="margin:0">Надетые диски действуют на всех ваших героев во всех боях Джихада. Надеть — бесплатно (до ${CQ_DMAX}), снять — ${CQ_EN.unequip} Решимости (у вас ${en}).</p>
     <div class="cqdcols"><section><p class="chap">Надетые · ${on.length}/${CQ_DMAX}</p>${on.map(x => card(x, 1)).join('') || '<p class="lockd">Ничего не надето</p>'}</section><section><p class="chap">В запасе · ${off.length}</p>${off.map(x => card(x, 0)).join('') || '<p class="lockd">Запас пуст</p>'}</section></div>
+    <div class="acts" style="justify-content:center"><button class="btn go" data-close="1">Закрыть</button></div></div></div>`;
+}
+function cqChestWin(i) {
+  const C = cq(), rw = cqChest(i), can = cqCanClaim(i), got = C.tk['c' + i], sc = cqScore(), li = l => l.map(r => `<li>${cqRwHtml(r)}</li>`).join('');
+  $('#overlay').innerHTML = `<div class="result" data-close="1"><div class="box cqcbox" role="dialog" aria-modal="true" aria-label="Сундук"><h3>Сундук ${i + 1} · ◆${CQ_CHESTS[i]}</h3>
+    <p class="chap">Гарантированно</p><ul class="cqrw">${li(rw.fix)}</ul><p class="chap">И одна награда на выбор судьбы</p><ul class="cqrw any">${li(rw.any)}</ul>
+    <p class="sub" style="margin:0">${got ? 'Сундук уже открыт.' : can ? 'Порог достигнут — сундук можно открыть.' : `Нужно ещё ${CQ_CHESTS[i] - sc} очков Джихада.`}</p>
+    <div class="acts" style="justify-content:center">${can ? `<button class="btn go" data-cqopen="${i}">Открыть</button>` : ''}<button class="btn" data-close="1">Закрыть</button></div></div></div>`;
+}
+function cqFeatWin(s) {
+  const C = cq(), L = cqFeats(s), row = F => { const v = C.fp[F.key] || 0, ok = !!C.fd[F.key];
+    return `<div class="cqft ${ok ? 'ok' : ''}"><div class="cqftn"><b>${F.n}</b><span class="cqftp">+${F.pts} оч.</span></div><p>${F.d}</p><div class="cqftb"><span class="fbar"><i style="width:${v / F.need * 100}%"></i></span><span class="mono">${ok ? '✓ выполнен' : `${v} / ${F.need}`}</span></div></div>`; };
+  const title = s === null ? 'Общие подвиги' : `Подвиги сектора: ${CQ_SECT[s].n}`, sub = s === null ? 'Засчитываются в любом секторе Джихада. Каждый даёт 15 очков шкалы наград.' : `Засчитываются только в этом секторе. Обычные — ${s < 3 ? 3 : 5} очков, подвиги босса — ${s < 2 ? 1 : s < 4 ? 2 : 3}.`;
+  $('#overlay').innerHTML = `<div class="result" data-close="1"><div class="box cqdbox" role="dialog" aria-modal="true" aria-label="${title}"><h3>${title}</h3><p class="sub" style="margin:0">${sub}</p>
+    ${s === null ? `<div class="cqfts">${L.map(row).join('')}</div>` : `<p class="chap">Сектор</p><div class="cqfts">${L.filter(F => !F.boss).map(row).join('')}</div><p class="chap">Босс сектора</p><div class="cqfts">${L.filter(F => F.boss).map(row).join('')}</div>`}
     <div class="acts" style="justify-content:center"><button class="btn go" data-close="1">Закрыть</button></div></div></div>`;
 }
 function cqClick(d) {
@@ -6605,8 +6727,10 @@ function cqClick(d) {
   if (d.cqdon) { const C = cq(), x = C.disks.find(y => y.k === d.cqdon); if (!x || x.on || cqDiskOn().length >= CQ_DMAX) return true; x.on = 1; persist(); render(); cqDiskWin(); return true; }
   if (d.cqdoff) { const C = cq(), x = C.disks.find(y => y.k === d.cqdoff); if (!x || !x.on) return true; if (!cqEnSpend(CQ_EN.unequip)) { toast(`Нужно ${CQ_EN.unequip} Решимости`); return true; } x.on = 0; persist(); render(); cqDiskWin(); return true; }
   if (d.cqrest) { const C = cq(); if (C.rest >= 3) return true; if (S.cry < 150) { openInfo('cry'); return true; } S.cry -= 150; C.rest++; C.sta = {}; persist(); toast('Привал: выносливость всех героев восстановлена'); render(); return true; }
-  if (d.cqchest !== undefined) { const i = +d.cqchest; if (!cqCanClaim(i)) return true; const C = cq(); C.got[i] = 1; const rw = cqChest(i), lines = giveRewards(rw); persist(); render();
-    $('#overlay').innerHTML = `<div class="result won"><div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${MOUSE_SVG(false)}</div><h3>Сундук Джихада · ★${CQ_TRACK[i]}</h3><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><div class="acts" style="justify-content:center"><button class="btn go" data-close="1">Забрать</button></div></div></div>`; return true; }
+  if (d.cqchest !== undefined) { cqChestWin(+d.cqchest); return true; }
+  if (d.cqopen !== undefined) { const i = +d.cqopen; if (!cqCanClaim(i)) return true; const C = cq(), rw = cqChest(i), pick = rw.any[Math.floor(Math.random() * rw.any.length)]; C.tk['c' + i] = 1; const lines = giveRewards([...rw.fix, pick]); persist(); render();
+    $('#overlay').innerHTML = `<div class="result won"><div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${MOUSE_SVG(false)}</div><h3>Сундук Джихада · ◆${CQ_CHESTS[i]}</h3><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><div class="acts" style="justify-content:center"><button class="btn go" data-close="1">Забрать</button></div></div></div>`; return true; }
+  if (d.cqfw !== undefined) { cqFeatWin(d.cqfw === 'g' ? null : +d.cqfw); return true; }
   if (d.cqback) { leaveBattle(); view = 'conq'; render(); return true; }
   return false;
 }
