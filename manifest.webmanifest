@@ -1,7 +1,7 @@
 {
- "name": "Dune: Galaxy of Houses",
- "short_name": "Dune GoH",
- "description": "Пошаговые бои отрядов во вселенной Дюны",
+ "name": "Дюна: Герои великих домов",
+ "short_name": "Дюна: Герои",
+ "description": "Dune: Heroes of Great Houses — пошаговые бои отрядов во вселенной Дюны",
  "lang": "ru",
  "start_url": "./",
  "scope": "./",

@@ -2,12 +2,12 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<title>Dune: Galaxy of Houses</title>
+<title>Дюна: Герои великих домов</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Dune GoH">
+<meta name="apple-mobile-web-app-title" content="Дюна: Герои">
 <meta name="theme-color" content="#170f09">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -1352,11 +1352,22 @@ ul.cqrw { display: grid; gap: 4px; } ul.cqrw li { display: flex; align-items: ce
 .cqh .btn.mini { grid-column: 2; justify-self: start; margin-top: 3px; }
 .cqer { display: inline-flex; align-items: center; gap: 2px; font-family: var(--f-mono); font-size: 10px; color: #e0b0ff; }
 @media (orientation: landscape) and (max-height: 520px) { .cqn { width: 36px; height: 36px; margin: -18px 0 0 -18px; } .cqn.t-boss { width: 46px; height: 46px; margin: -23px 0 0 -23px; } .rclv b { font-size: 24px; } }
+
+/* ===== release A ===== */
+.cden .cdst, .cden .cdpw { color: var(--dust); font-size: 9px; white-space: nowrap; }
+.cden .cdpw { color: #e8c98e; }
+.reqtag { border-color: var(--spice) !important; color: var(--spice) !important; }
+.lackc { color: var(--foe); } .okc { color: var(--hp); }
+.btn .lackc, .btn .okc { color: inherit; }
+.sqcard, .sqslot { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.csheet .dback { position: sticky; top: 0; z-index: 4; margin: -6px 0 8px; }
+.ccenter .lvlrow { width: 100%; justify-content: center; text-align: center; margin-top: 8px; padding: 6px 8px; font-size: 12px; }
+.ccenter .lvlrow input[type=range] { flex: 1 1 100%; min-width: 0; }
 </style>
 
 <header class="top">
   <div class="wrap">
-    <div class="brand">DUNE<small>GALAXY OF HOUSES</small></div>
+    <div class="brand">ДЮНА<small>ГЕРОИ ВЕЛИКИХ ДОМОВ</small></div>
     <div class="res resbox" id="res"></div>
     <nav class="tabs" role="tablist">
       <button id="tab-lobby" data-v="lobby" class="back">← Лагерь</button>
@@ -1380,7 +1391,7 @@ ul.cqrw { display: grid; gap: 4px; } ul.cqrw li { display: flex; align-items: ce
 
 <script src="babylon.min.js"></script>
 <script>
-// ===== Dune: Galaxy of Houses — battle engine (pure logic, no DOM) =====
+// ===== Dune: Heroes of Great Houses — battle engine (pure logic, no DOM) =====
 const FACTIONS = {
   atr:  { n: 'Атрейдес',     c: 'atr' },
   hark: { n: 'Харконнен',    c: 'hark' },
@@ -1775,7 +1786,7 @@ function validTargets(B, u, ab) {
   return vis.length ? vis : ts;
 }
 function abilityReady(B, u, key) {
-  if (key === 'gl') return !!(u.glOn && !u.glUsed && u.ultM >= 100);
+  if (key === 'gl') return !!(u.glOn && !u.glUsed && glMeter(B, u) >= 100);
   const ab = u.def[key];
   if (key === 'basic') return true;
   if (u.cd[key] > 0) return false;
@@ -1810,6 +1821,7 @@ function startTurn(B, u) {
 }
 function decFx(u) { for (const k in u.fx) { if (k === 'voiced' || k === 'fear' || k === 'stun') continue; if (--u.fx[k] <= 0) delete u.fx[k]; } }
 
+const glMeter = (B, u) => Math.max(u.ultM || 0, u.def && !u.def.boss && u.def.legendary && B.spice ? (B.spice[u.side] || 0) : 0);
 function glCharge(B, src, n) { for (const x of B.units) if (x.alive && x.glOn && !x.glUsed && x.side === src.side) x.ultM = Math.min(100, x.ultM + (x === src ? n : 4)); }
 function glAct(B, u, tuid) {
   u.glUsed = true; u.ultM = 0; B.flash = 'gl'; B.glCast = u.uid; B.glKind = u.def.gl.kind || 'prophecy'; B.glTarget = null;
@@ -2632,8 +2644,9 @@ function glowSprite(color, size, x, y, z, add = true) {
 }
 
 // ---------- environment ----------
-function buildEnv(A, key) {
-  const E = ENV3[key] || ENV3.desert, S = SCN[key] || SCN.desert;
+function buildEnv(A, key, day) {
+  let E = ENV3[key] || ENV3.desert, S = SCN[key] || SCN.desert;
+  if (day && E.night) { E = { ...E, night: 0, sand: '#b88a5e', sand2: '#6a4632' }; S = SCN.canyon; }
   A.env = E;
   const fogC = col3(S.fog || S.sky[2]);
   SC.fogMode = B3.Scene.FOGMODE_LINEAR; SC.fogColor = fogC; SC.fogStart = E.fogNear || 34; SC.fogEnd = E.fogFar || 150;
@@ -3139,7 +3152,7 @@ class Arena3D {
     const S = this.scene = SC = new B3.Scene(E); S.useRightHandedSystem = true; S.skipPointerMovePicking = true; S.autoClear = true;
     this.camera = new B3.UniversalCamera('cam', V3(0, 11, 18), S); this.camera.minZ = .1; this.camera.maxZ = 1200; this.camera.inputs.clear();
     this.raid = !!B.raid; this.summons = []; this.nA = B.units.filter(x => x.side === 'A').length;
-    buildEnv(this, key);
+    buildEnv(this, key, true);
     const rp = this.probe = new B3.ReflectionProbe('rp', this.small ? 64 : 128, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
     for (const u of B.units) this.addUnit(u);
     this.setupFX();
@@ -4142,6 +4155,7 @@ for (const ck of CAMP_KEYS) CAMP_DEF[ck].chapters.forEach((ch, c) => ch.m.forEac
   NODES.push({ camp: ck, c, m, ch: `${ROM7[c]} · ${ch.t}`, n: mm[0], story: mm[1] || '', dlg: mm[2] || null, enemy, lvl, desert: DESERT_SCENES.has(scene), scene,
     drops: [d[m % d.length], d[(m + 2) % d.length] === d[m % d.length] ? d[(m + 1) % d.length] : d[(m + 2) % d.length]] });
 }));
+{ const n = NODES.find(x => x.camp === 'C' && x.c === 1 && x.m === 1); if (n && !n.enemy.includes('rabban')) { if (n.enemy.length < 5) n.enemy.push('rabban'); else n.enemy[n.enemy.length - 1] = 'rabban'; const li = n.enemy.findIndex(id => CH[id] && CH[id].leader); if (li > 0) n.enemy.unshift(n.enemy.splice(li, 1)[0]); } }
 const NODE_SCENES = NODES.map(n => n.scene);
 const campNodes = ck => NODES.map((n, i) => i).filter(i => NODES[i].camp === ck);
 const chapNodes = (ck, c) => NODES.map((n, i) => i).filter(i => NODES[i].camp === ck && NODES[i].c === c);
@@ -4477,6 +4491,13 @@ function enSpend(k, n) { tickWater(); const key = k === 'candle' ? 'candle' : 'w
 function enRefund(k, n) { const key = k === 'candle' ? 'candle' : 'water'; S[key] = Math.min(EN_MAX[key], S[key] + n); if (key === 'water') quest('water', -n); }
 const campSquad = i => { const c = NODES[i].camp; return c === 'D' ? S.squadD : c === 'C' ? S.squadC : S.squad; };
 const sideOk = (ck, id) => { const s = CAMP_DEF[ck].side; return s === 'all' || CH[id].side === s; };
+const NODE_REQ = n => { if (!n || n.camp !== 'C') return null; const m = n.m + 1;
+  if (n.c === 1) { if ([1, 2, 3, 4, 7].includes(m)) return { need: ['gurney'] }; if (m === 5) return { need: ['piter'], f: 'hark' }; if (m === 9) return { need: ['gurney'], f: 'atr' }; }
+  if (n.c === 2) return { f: 'cor' }; return null; };
+const REQ_FN = { atr: 'Атрейдесы', hark: 'Харконнены', cor: 'Коррино' };
+const reqFacOk = (i, id) => { const r = NODE_REQ(NODES[i]); return !r || !r.f || CH[id].f.includes(r.f); };
+const reqMissing = (i, a) => { const r = NODE_REQ(NODES[i]); return r && r.need ? r.need.filter(id => !a.includes(id)) : []; };
+const reqText = i => { const r = NODE_REQ(NODES[i]); if (!r) return ''; const p = []; if (r.need) p.push('Обязательно: ' + r.need.map(id => CH[id].sn).join(', ')); if (r.f) p.push('Только ' + REQ_FN[r.f]); return p.join(' · '); };
 const getRes = k => k === 'sol' ? S.solari : k === 'pl' ? S.plast : k === 'water' ? S.water : (S[k] || 0);
 const prog = id => S.roster[id];
 const squadPower = () => S.squad.reduce((a, id) => a + unitPower(CH[id], prog(id)), 0);
@@ -4542,8 +4563,8 @@ function renderCamp() {
     <div class="cdimg"><canvas data-scene="${n.scene}" width="640" height="300"></canvas><div class="cdtitle"><span>${CD.n} · ${n.ch}</span><h3>${n.m + 1}. ${n.n}</h3><span class="stars">${starStr(best, 3)}</span></div></div>
     <div class="cdinfo">
       <div class="cdrow"><span class="lbl">Хроника</span><p class="story">${n.story}</p><div class="cdtags">${n.dlg ? `<button class="btn mini" data-dlgview="${i}">Диалог миссии</button>` : ''}<label class="chk"><input type="checkbox" id="dlgchk" data-dlgtoggle="1" ${S.skipDlg ? '' : 'checked'}> Диалоги перед первым боем</label></div></div>
-      <div class="cdrow"><span class="lbl">Противник</span><div class="cdenemy">${n.enemy.map((id, k) => { const ep = enemyProg(id, n.lvl); return `<div class="cden">${portrait(CH[id], 46, TIER_COL[ep.gear])}<span>${CH[id].sn}${k === 0 && CH[id].leader ? ' · лидер' : ''}</span><span class="mono">${'★'.repeat(ep.stars)}</span></div>`; }).join('')}</div></div>
-      <div class="cdrow"><span class="lbl">Условия</span><div class="cdtags"><span class="tag">ур. ${n.lvl}</span>${CD.side !== 'all' ? `<span class="tag sidetag ${CD.side}">${CD.side === 'light' ? 'Только светлые герои' : 'Только тёмные герои'}</span>` : '<span class="tag">Любые герои</span>'}${n.desert ? '<span class="tag desert">Пустыня · червь</span>' : ''}<span class="power ${np > sp * 1.1 ? 'bad' : 'ok'}">мощь врага ${fmt(np)}</span><span class="power">ваш отряд ${fmt(sp)}</span></div></div>
+      <div class="cdrow"><span class="lbl">Противник</span><div class="cdenemy">${n.enemy.map((id, k) => { const ep = enemyProg(id, n.lvl, n.m === 9); return `<div class="cden">${portrait(CH[id], 46, TIER_COL[ep.gear])}<span>${CH[id].sn}${k === 0 && CH[id].leader ? ' · лидер' : ''}</span><span class="mono">${'★'.repeat(ep.stars)}</span><span class="mono cdst">ур. ${ep.lvl} · сн. ${ROMAN[ep.gear]}</span><span class="mono cdpw">мощь ${fmt(unitPower(CH[id], ep))}</span></div>`; }).join('')}</div></div>
+      <div class="cdrow"><span class="lbl">Условия</span><div class="cdtags"><span class="tag">ур. ${n.lvl}</span>${CD.side !== 'all' ? `<span class="tag sidetag ${CD.side}">${CD.side === 'light' ? 'Только светлые герои' : 'Только тёмные герои'}</span>` : '<span class="tag">Любые герои</span>'}${reqText(i) ? `<span class="tag sidetag reqtag">${reqText(i)}</span>` : ''}${n.desert ? '<span class="tag desert">Пустыня · червь</span>' : ''}<span class="power ${np > sp * 1.1 ? 'bad' : 'ok'}">мощь врага ${fmt(np)}</span><span class="power">ваш отряд ${fmt(sp)}</span></div></div>
       <div class="cdrow"><span class="lbl">Награда</span><div class="cdrew">
         ${n.drops.map((id, k) => `<span class="rewch">${portrait(CH[id], 34)}<span>${amt('shard', k === 0 ? '0–2' : '0–1', 'shard:' + id)}<br><small>${CH[id].sn} · ${k === 0 ? (ck === 'C' ? '60' : '50') : '30'}%</small></span></span>`).join('')}
         <span class="rewit">${NODE_ITEMS[i].map(id => itemIcon(ITEMS[id], 24)).join('')}</span>
@@ -4607,7 +4628,8 @@ function skBonus(k, l) {
   if (k === 'leader') return `+${(leadBonus(l) * 100).toFixed(1).replace('.0', '').replace('.', ',')}% здоровья и урона союзникам фракции`;
   return `+${Math.round((skMult(l) - 1) * 100)}% силы${l >= 7 && k !== 'basic' ? ', −1 к перезарядке' : ''}`;
 }
-const costHtml = c => [c.folio && amt('folio', c.folio), c.seal && amt('seal', c.seal), c.wol && amt('wol', c.wol), amt('sol', c.sol)].filter(Boolean).join(' ');
+const costHtml = (c, hv) => { const f = (k, need, have) => hv ? `<span class="${have < need ? 'lackc' : 'okc'}">${amt(k, fmt(have) + '/' + fmt(need))}</span>` : amt(k, need);
+  return [c.folio && f('folio', c.folio, S.folio), c.seal && f('seal', c.seal, S.seal), c.wol && f('wol', c.wol, S.wol), f('sol', c.sol, S.solari)].filter(Boolean).join(' '); };
 const hasCost = c => S.solari >= c.sol && S.folio >= (c.folio || 0) && S.seal >= (c.seal || 0) && S.wol >= (c.wol || 0);
 const lackKey = c => S.wol < (c.wol || 0) ? 'wol' : S.seal < (c.seal || 0) ? 'seal' : S.folio < (c.folio || 0) ? 'folio' : S.solari < c.sol ? 'sol' : null;
 function glCardHtml(id) {
@@ -4653,6 +4675,7 @@ function slotBtn(cid, k) {
   </button>`;
 }
 let detailCid = null;
+let DETAIL_BACK = null, SQ_LP = 0;
 let detailSk = 'basic';
 const SKI = { passive: '<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>', leader: '<path d="M4 18h16l-1.5-9-4 3.5L12 6l-2.5 6.5-4-3.5z" fill="currentColor"/><rect x="4" y="19" width="16" height="2" rx="1" fill="currentColor"/>' };
 function skIcon(d, k) { return skillSvg(d, k); }
@@ -4662,9 +4685,9 @@ function skDetailHtml(id, k) {
   const ab = d[k], max = skMax(d, k), lv = p.sk[k] || 1, meta = [SK_NAME[k]];
   if (ab.cd) meta.push(`перезарядка ${ab.cd - (lv >= 7 ? 1 : 0)}`); if (ab.spice) meta.push(`${ab.spice} Пряности`); if (ab.dt) meta.push(DT[ab.dt]);
   const steps = Array.from({ length: max }, (_, j) => { const L = j + 1, c = L > 1 ? skCost(L) : null;
-    return `<div class="skst ${L <= lv ? 'on' : ''} ${L === lv + 1 ? 'next' : ''} ${L === 6 ? 'p6' : L === 7 ? 'p7' : ''}"><span class="skn">${L}</span><span class="skbn">${L === 1 ? 'база' : skBonus(k, L).replace(/^\+/, '+')}</span>${c && L > lv ? `<span class="skc">${costHtml(c)}</span>` : ''}</div>`; }).join('');
+    return `<div class="skst ${L <= lv ? 'on' : ''} ${L === lv + 1 ? 'next' : ''} ${L === 6 ? 'p6' : L === 7 ? 'p7' : ''}"><span class="skn">${L}</span><span class="skbn">${L === 1 ? 'база' : skBonus(k, L).replace(/^\+/, '+')}</span>${c && L > lv ? `<span class="skc">${costHtml(c, L === lv + 1)}</span>` : ''}</div>`; }).join('');
   let btn = '';
-  if (!locked && lv < max) { const c = skCost(lv + 1), ok = hasCost(c); btn = `<button class="btn skup ${ok ? 'go' : 'dim lack'}" data-skup="${id}:${k}">Повысить до ${lv + 1}${lv + 1 === 7 ? ' ★' : ''}<small>${costHtml(c)}</small></button>`; }
+  if (!locked && lv < max) { const c = skCost(lv + 1), ok = hasCost(c); btn = `<button class="btn skup ${ok ? 'go' : 'dim lack'}" data-skup="${id}:${k}">Повысить до ${lv + 1}${lv + 1 === 7 ? ' ★' : ''}<small>${costHtml(c, true)}</small></button>`; }
   else if (lv >= max) btn = `<span class="skmax">${max === 7 ? 'Высший уровень' : 'Максимум'}</span>`;
   return `<div class="skd"><div class="skdh"><span class="skico big">${skIcon(d, k)}</span><div><h4>${ab.n}</h4><span class="tag">${meta.join(' · ')}</span></div><b class="skdl mono">${lv}/${max}</b></div>
     <p class="skdesc">${fxText(ab.d)}</p>
@@ -4693,6 +4716,7 @@ function openDetail(id) {
   const lvlRow = locked ? '' : p.lvl >= MAX_LVL ? `<div class="lvlrow"><span>Уровень героя <b>${p.lvl}</b> — максимум</span></div>` : p.lvl >= hcap ? `<div class="lvlrow"><span>Уровень героя <b>${p.lvl}</b> / ${hcap}</span><span class="lockd">Потолок — уровень аккаунта ${S.acc.lvl}. Поднимайте аккаунт в боях.</span></div>` :
     `<div class="lvlrow"><span>Уровень героя <b>${p.lvl}</b> / ${hcap}</span><input type="range" id="lvlr" min="${p.lvl + 1}" max="${hcap}" value="${Math.max(p.lvl + 1, am)}" aria-label="Целевой уровень"><span id="lvlv" class="mono"></span><button class="btn" id="lvlgo" data-lvlto="${id}">Поднять</button></div>`;
   $('#overlay').innerHTML = `<div class="detail" data-close="1"><div class="sheet csheet cs2" role="dialog" aria-modal="true" aria-labelledby="dt-name">
+    <button class="btn mini dback" data-dback="1" aria-label="Назад">← Назад</button>
     <div class="cgrid">
     <div class="cleft">
     <div class="chead">
@@ -4706,6 +4730,7 @@ function openDetail(id) {
         ${locked ? `<div class="mono" style="font-size:12px">${amt('shard', p.shards + '/' + uNeed, 'shard:' + id)} — ${uNeed > 10 ? 'откроется сразу на 7★' : 'персонаж не открыт'}</div>`
           : `<div class="stars">${starStr(p.stars)}</div><div class="mono cmeta">ур. ${p.lvl}${rl ? ` · <b class="relt">${MEM(rl)}</b>` : ''} · мощь ${fmt(unitPower(d, p))}${need ? ` · ${amt('shard', p.shards + '/' + need, 'shard:' + id)}` : ''}</div>`}
         ${need || locked ? `<button class="btn mini shfind" data-shfind="${id}">${ic('shard')} Найти осколки</button>` : ''}
+        ${lvlRow}
       </div>
       <div class="gcol">${[3, 4, 5].map(k => slotBtn(id, k)).join('')}</div>
     </div>
@@ -4723,7 +4748,6 @@ function openDetail(id) {
     <div class="skhead"><p class="chap" style="margin:4px 0 6px">Умения</p><span class="skmats">${amt('folio', S.folio)} ${amt('seal', S.seal)} ${amt('wol', S.wol)}</span></div>
     <div class="skbar">${keys.map(k => { const ab = k === 'gl' ? d.gl : d[k]; return `<button class="skb2 ${k === detailSk ? 'on' : ''} ${k === 'gl' ? 'gl' : ''}" data-sksel="${id}:${k}" aria-pressed="${k === detailSk}" title="${ab.n}"><span class="skico">${skIcon(d, k)}${k === 'gl' ? '' : `<b>${lvMax(k)}</b>`}</span><span class="sknm">${ab.n}</span></button>`; }).join('')}</div>
     ${skDetailHtml(id, detailSk)}
-    ${lvlRow}
     </div></div>
     <div class="acts">
       ${locked ? '' : `
@@ -4757,7 +4781,7 @@ function openItem(cid, k) {
   </div></div>`;
   document.querySelectorAll('#overlay canvas[data-scene]').forEach(sceneThumb);
 }
-function closeOverlay() { $('#overlay').innerHTML = ''; if (typeof renderNotes === 'function') setTimeout(renderNotes, 0); }
+function closeOverlay() { DETAIL_BACK = null; $('#overlay').innerHTML = ''; if (typeof renderNotes === 'function') setTimeout(renderNotes, 0); }
 // ===== info popups =====
 function campRow(i, note) {
   const n = NODES[i], open = nodeOpen(i), three = S.cleared[i] === 3, en = nodeEn(i), c = nodeCost(i);
@@ -5060,7 +5084,7 @@ function sqArr() { if (SQ.mode === 'conq') return cq().squad; if (SQ.mode === 't
 function sqPool() {
   if (SQ.mode === 'conq') return unlockedIds().filter(id => cqSta(id) >= CQ_STA.min);
   if (SQ.mode === 'journey') return JR().req.filter(id => prog(id).stars);
-  if (SQ.mode === 'camp') return unlockedIds().filter(id => sideOk(NODES[SQ.i].camp, id));
+  if (SQ.mode === 'camp') return unlockedIds().filter(id => sideOk(NODES[SQ.i].camp, id) && reqFacOk(SQ.i, id));
   if (SQ.mode === 'trial') { const T = TRIALS[Math.floor(SQ.i / 10)]; return unlockedIds().filter(id => trialOk(T, id)); }
   return unlockedIds();
 }
@@ -5074,7 +5098,7 @@ function openSquadSel(mode, i) {
 function sqEnemy() {
   if (SQ.mode === 'conq') { const a = cqNode(SQ.i), foes = cqLive(a).foes.map(p => [p.id, p]); return { title: `Джихад · ${CQ_SECT[a.s].n} · ${cqTypeN(a.type)}`, scene: CQ_SECT[a.s].scene, foes, pw: foes.reduce((x, [id, p]) => x + unitPower(CH[id], p), 0), cost: 0, sideNote: [`Решимость −${CQ_EN.fight} (есть ${cqEn()})`, `выносливость −${CQ_STA.loss}%`, ...a.mods.map(m => cqMod(m).n)].join(' · ') }; }
   if (SQ.mode === 'trial') { const { T, t } = trialOfSQ(SQ.i), foes = trialFoes(T, t).map(p => [p.id, p]); return { title: `${T.short} · ур. ${ROMAN[t + 1]}`, scene: T.scene, foes, pw: foes.reduce((a, [id, p]) => a + unitPower(CH[id], p), 0), cost: 0, sideNote: T.req ? T.note : '' }; }
-  if (SQ.mode === 'camp') { const n = NODES[SQ.i]; return { title: nodeTitle(SQ.i), scene: NODE_SCENES[SQ.i], foes: n.enemy.map(id => [id, enemyProg(id, n.lvl, n.m === 9)]), pw: nodePower(n), cost: nodeCost(SQ.i), en: nodeEn(SQ.i), sideNote: CAMP_DEF[n.camp].side === 'all' ? '' : CAMP_DEF[n.camp].side === 'light' ? 'Только светлые герои' : 'Только тёмные герои' }; }
+  if (SQ.mode === 'camp') { const n = NODES[SQ.i]; return { title: nodeTitle(SQ.i), scene: NODE_SCENES[SQ.i], foes: n.enemy.map(id => [id, enemyProg(id, n.lvl, n.m === 9)]), pw: nodePower(n), cost: nodeCost(SQ.i), en: nodeEn(SQ.i), sideNote: [CAMP_DEF[n.camp].side === 'all' ? '' : CAMP_DEF[n.camp].side === 'light' ? 'Только светлые герои' : 'Только тёмные герои', reqText(SQ.i)].filter(Boolean).join(' · ') }; }
   if (SQ.mode === 'journey') { const t = JR().tiers[SQ.i]; const foes = jFoes(JK(), SQ.i).map(p => [p.id, p]); return { title: `Легенда ${SQ.i + 1}. ${t.n}`, scene: JR().scenes[SQ.i], foes, pw: foes.reduce((s, [id, p]) => s + unitPower(CH[id], p), 0), cost: 0 }; }
   const R = S.raid; return { title: `Шаи-Хулуд · ${RAID_TIERS[R.tier].n}`, scene: RAID_SCENES[R.tier], foes: [], pw: 0, cost: 0, raid: R };
 }
@@ -5086,6 +5110,7 @@ function renderSquadSel() {
   let warn = '';
   if (!a.length) warn = 'Отряд пуст: выберите до 5 героев';
   else if (!lead.leader) warn = `${lead.sn} стоит лидером, но лидерской способности нет${leadersIn.length ? ` — сделайте лидером ${leadersIn.map(id => CH[id].sn).join(' или ')}` : ''}`;
+  if (SQ.mode === 'camp') { const miss = reqMissing(SQ.i, a); if (miss.length) warn = 'В отряде обязательно: ' + miss.map(id => CH[id].sn + (prog(id).stars ? '' : ' (не открыт)')).join(', '); }
   const facs = ['all', 'light', 'dark', ...Object.keys(FACTIONS)].filter(f => f === 'all' || pool.some(id => f === 'light' || f === 'dark' ? CH[id].side === f : CH[id].f.includes(f)));
   const facN = f => f === 'all' ? 'Все' : f === 'light' ? 'Светлые' : f === 'dark' ? 'Тёмные' : FACTIONS[f].n;
   const list = pool.filter(id => SQ.f === 'all' || (SQ.f === 'light' || SQ.f === 'dark' ? CH[id].side === SQ.f : CH[id].f.includes(SQ.f))).sort((x, y) => used.has(x) - used.has(y) || unitPower(CH[y], prog(y)) - unitPower(CH[x], prog(x)));
@@ -5099,7 +5124,7 @@ function renderSquadSel() {
   $('#overlay').innerHTML = `<div class="sqsel" role="dialog" aria-modal="true" aria-labelledby="sq-h">
     <canvas class="sqbg" data-scene="${E.scene}" width="640" height="320"></canvas>
     <div class="sqwrap">
-      <div class="sqhd"><button class="btn sqback" data-sqback="1" aria-label="Назад">←</button><div><h3 id="sq-h">Выбор отряда: ${E.title}</h3><span class="sub" style="margin:0">Касание героя — добавить или убрать · касание ячейки — убрать</span></div><div class="res resbox sqres"></div></div>
+      <div class="sqhd"><button class="btn sqback" data-sqback="1" aria-label="Назад">←</button><div><h3 id="sq-h">Выбор отряда: ${E.title}</h3><span class="sub" style="margin:0">Касание героя — добавить или убрать · долгое касание — карточка героя</span></div><div class="res resbox sqres"></div></div>
       <div class="sqbody">
         <div class="sqleft">
           <div class="sqpow"><span>Мощь отряда${E.sideNote ? ` · <span class="sidenote">${E.sideNote}</span>` : ''}</span><b class="mono">${fmt(pw)}</b></div>
@@ -5114,13 +5139,14 @@ function renderSquadSel() {
 
         </div>
       </div>
-      <div class="sqfoot"><div class="sqbtns"><button class="btn" data-sqclear="1" ${a.length ? '' : 'disabled'}>Распустить отряд</button><button class="btn go sqgo" data-sqgo="1" ${a.length ? '' : 'disabled'}>${SQ.mode === 'raid' ? 'Атаковать' : 'Бой'}${E.cost ? ` <span class="sqcost">${amt(E.en || 'water', E.cost)}</span>` : ''}</button></div></div>
+      <div class="sqfoot"><div class="sqbtns"><button class="btn" data-sqclear="1" ${a.length ? '' : 'disabled'}>Распустить отряд</button><button class="btn go sqgo" data-sqgo="1" ${a.length && !(SQ.mode === 'camp' && reqMissing(SQ.i, a).length) ? '' : 'disabled'}>${SQ.mode === 'raid' ? 'Атаковать' : 'Бой'}${E.cost ? ` <span class="sqcost">${amt(E.en || 'water', E.cost)}</span>` : ''}</button></div></div>
     </div></div>`;
   sceneThumb($('#overlay .sqbg')); renderRes();
 }
 function sqGo() {
   const a = sqArr(); if (!a.length || !SQ) return;
   const mode = SQ.mode, i = SQ.i;
+  if (mode === 'camp' && reqMissing(i, a).length) return toast('В отряде обязательно: ' + reqMissing(i, a).map(id => CH[id].sn).join(', '));
   if (mode === 'camp') { tickWater(); if (enGet(nodeEn(i)) < nodeCost(i)) return openInfo(`need:${nodeEn(i)}:${nodeCost(i)}`); return startBattle(i); }
   if (mode === 'conq') { const nd = cqNode(i), SE = CQ_SECT[nd.s], lv = cqLive(nd); if (!lv.foes.length) return; if (!cqEnSpend(CQ_EN.fight)) { toast(`Нужно ${CQ_EN.fight} Решимости. ${cqEnTxt()}`); return; } persist(); return launch({ mode: 'conq', i, scene: SE.scene, desert: !!SE.desert, title: `${SE.n} · ${nd.type === 'boss' ? 'босс' : nd.type === 'elite' ? 'элита' : 'бой'}`, squad: a.slice(), enemy: lv.foes, cq: { key: i, mods: nd.mods, idx: lv.idx, fresh: !lv.st } }); }
   if (mode === 'trial') { const { T, t } = trialOfSQ(i); return launch({ mode: 'trial', i, scene: T.scene, desert: !!T.desert, title: `${T.short} · ур. ${ROMAN[t + 1]}`, squad: a.slice(), enemy: trialFoes(T, t) }); }
@@ -5307,7 +5333,7 @@ function renderRules() {
     <p><b>Эффекты.</b> Яд — −8% здоровья в начале хода. Страх — пропуск хода. Провокация — враги обязаны бить этого бойца. Скрытность — бойца нельзя выбрать целью, пока есть видимые союзники. Защита↑ — −30% входящего урона. Броня↓ — броня вдвое меньше.</p>
     <p><b>Умения.</b> У каждого героя три активных умения: базовая атака без перезарядки, особая способность и мощная способность с долгой перезарядкой (в начале боя она ещё заряжается). Плюс пассивное умение, а у лидеров — лидерка.</p>
     <p><b>Ход игрока.</b> Готовые способности подсвечены. Выберите способность, затем цель (подсвечена красным). «Авто» отдаёт отряд под управление ИИ.</p>
-    <p>Полный дизайн-документ: <a href="https://claude.ai/artifact/8Viit7nhfWtE8iVTfzsTWz" target="_blank" rel="noopener">Dune: Galaxy of Houses — диздок</a>.</p>
+    <p>Полный дизайн-документ: <a href="https://claude.ai/artifact/8Viit7nhfWtE8iVTfzsTWz" target="_blank" rel="noopener">Дюна: Герои великих домов — диздок</a>.</p>
   </div>`;
 }
 
@@ -5328,7 +5354,7 @@ function launch(cfg) {
   freeStages();
   const B = createBattle(cfg.squad.map(id => ({ id, ...prog(id) })), cfg.enemy || [], { desert: cfg.desert, seed: Date.now() & 0xffffff, boss: cfg.boss });
   if (cfg.mode === 'conq' && typeof cqApply === 'function') cqApply(B, cfg);
-  BT = { B, cfg, i: cfg.i, auto: BT?.autoPref ?? false, autoPref: BT?.autoPref ?? false, speed: BT?.speedPref ?? 1, speedPref: BT?.speedPref ?? 1, timer: null, waiting: null, sel: 'basic', done: false };
+  BT = { B, cfg, i: cfg.i, auto: BT?.autoPref ?? false, autoPref: BT?.autoPref ?? false, speed: Math.min(4, BT?.speedPref ?? 1), speedPref: Math.min(4, BT?.speedPref ?? 1), timer: null, waiting: null, sel: 'basic', done: false };
   $('#overlay').innerHTML = `<div class="battle ${B.desert ? 'desert' : ''}" id="battle"><canvas class="bgc" id="bgc"></canvas><div class="bwrap" id="bwrap"></div><canvas class="fxc" id="fxc"></canvas><div class="flash" id="flash"></div></div>`;
   BT.arena = null;
   if (HAS3D) { try { BT.arena = new Arena3D($('#bgc'), cfg.scene || 'desert', B); } catch (e) { console.warn('3D недоступно', e); BT.arena = null; const nc = document.createElement('canvas'); nc.className = 'bgc'; nc.id = 'bgc'; $('#bgc').replaceWith(nc); } }
@@ -5403,7 +5429,7 @@ function openUnitPop(uid) {
       const st = k === 'basic' ? 'всегда готова' : cd > 0 ? `откат: ${cd} ${cd === 1 ? 'ход' : cd < 5 ? 'хода' : 'ходов'}` : sp ? `нужно ${a.spice} Пряности` : 'готова';
       return `<div class="bsk ${k !== 'basic' && (cd > 0 || sp) ? 'cd' : 'ready'}"><span class="bski">${skillSvg(d, k)}</span><div><b>${a.n}</b> <span class="mono">ур. ${skLv(u, k)}${a.cd ? ` · перезарядка ${a.cd}` : ''}</span><p>${a.d}</p></div><span class="bskst mono">${st}</span></div>`.replace(`<p>${a.d}</p>`, `<p>${fxText(a.d)}</p>`); };
     html += `<p class="chap">Способности</p>${['basic', 'special', 'ult'].map(skRow).join('')}`;
-    if (u.glOn) html += `<div class="bsk gl ${u.glUsed ? 'cd' : u.ultM >= 100 ? 'ready' : 'cd'}"><span class="bski">${skillSvg(d, 'gl')}</span><div><b>${d.gl.n}</b> <span class="mono">ультимативная</span></div><span class="bskst mono">${u.glUsed ? 'использована' : `заряд ${u.ultM}%`}</span></div>`;
+    if (u.glOn) html += `<div class="bsk gl ${u.glUsed ? 'cd' : glMeter(B, u) >= 100 ? 'ready' : 'cd'}"><span class="bski">${skillSvg(d, 'gl')}</span><div><b>${d.gl.n}</b> <span class="mono">ультимативная</span></div><span class="bskst mono">${u.glUsed ? 'использована' : `заряд ${u.ultM}%`}</span></div>`;
     const pas = [];
     if (d.passive) pas.push(`<div class="bps"><b>${d.passive.n}</b> <span class="mono">своя пассивка · ур. ${skLv(u, 'passive')}</span><p>${fxText(d.passive.d)}</p></div>`);
     const L = leaderFor(B, u);
@@ -5490,7 +5516,7 @@ function unitHtml(u, B, ctx) {
       <div class="hb hp"><i style="width:${pct(u.hp, u.maxHp)}%"></i></div>
       ${u.maxShield ? `<div class="hb sh"><i style="width:${pct(u.shield, u.maxShield)}%"></i></div>` : ''}
       <div class="hb tm"><i style="width:${Math.min(100, u.tm / 10)}%"></i></div>
-      ${u.glOn && !u.glUsed ? `<div class="hb glm ${u.ultM >= 100 ? 'full' : ''}"><i style="width:${u.ultM}%"></i></div>` : ''}
+      ${u.glOn && !u.glUsed ? `<div class="hb glm ${glMeter(BT.B, u) >= 100 ? 'full' : ''}"><i style="width:${glMeter(BT.B, u)}%"></i></div>` : ''}
       ${!u.def.boss && spiceUser(u.def) && u.glOn ? `<div class="hb spm ${B.spice[u.side] >= 100 ? 'full' : ''}" title="Меланж ${B.spice[u.side]}%"><i style="width:${Math.min(100, B.spice[u.side])}%"></i></div>` : ''}
     </div>
     ${intent ? `<div class="intent">${intent}</div>` : ''}
@@ -5511,7 +5537,7 @@ function renderBattle() {
     const sel = w.def[BT.sel];
     bot = `<div class="who"><span class="ptw">${portrait(w.def, 54, TIER_COL[prog(w.def.id).gear])}</span><div class="whotext"><b>${w.def.n}</b><div class="desc"><b>${sel.n}</b> <span class="mono">${BT.sel === 'gl' ? 'ультимативная' : 'ур. ' + ((prog(w.def.id).sk || {})[BT.sel] || 1)}</span>. ${sel.d}</div><div class="hint">${sel.tgt === 'enemy' ? 'Коснитесь врага, чтобы атаковать · удерживайте бойца — сведения' : 'Нажмите способность ещё раз, чтобы применить'}</div></div></div>
       <div class="abils">${spiceUser(w.def) && w.glOn ? hourglass(B.spice[w.side]) : ''}${['basic', 'special', 'ult', 'gl'].filter(k => w.def[k] && (k !== 'gl' || (w.glOn && !w.glUsed))).map(k => { const a = w.def[k], ready = abilityReady(B, w, k), cd = w.cd[k] > 0 ? w.cd[k] : '';
-        if (k === 'gl') return `<button class="abil gl ${ready ? 'full' : ''}" data-ab="gl" aria-pressed="${BT.sel === 'gl'}" ${ready ? '' : 'disabled'} aria-label="${a.n}" title="${a.n}" style="--m:${w.ultM}">${skillSvg(w.def, 'gl')}<span class="glpct">${ready ? 'УЛЬТА' : Math.floor(w.ultM) + '%'}</span></button>`;
+        if (k === 'gl') return `<button class="abil gl ${ready ? 'full' : ''}" data-ab="gl" aria-pressed="${BT.sel === 'gl'}" ${ready ? '' : 'disabled'} aria-label="${a.n}" title="${a.n}" style="--m:${glMeter(B, w)}">${skillSvg(w.def, 'gl')}<span class="glpct">${ready ? 'УЛЬТА' : Math.floor(glMeter(B, w)) + '%'}</span></button>`;
         return `<button class="abil ${k}" data-ab="${k}" aria-pressed="${BT.sel === k}" ${ready ? '' : 'disabled'} aria-label="${a.n}" title="${a.n}">${skillSvg(w.def, k)}${cd ? `<span class="cd">${cd}</span>` : ''}${a.spice ? `<span class="cost">${a.spice}</span>` : ''}</button>`; }).join('')}</div>`;
   } else {
     const a = B.active;
@@ -5702,6 +5728,7 @@ document.addEventListener('click', e => {
     if (S.teeth >= cost) { S.teeth -= cost; S.inv[id] = (S.inv[id] || 0) + +q; quest('shop'); persist(); toast(`+${amt('frag', +q)} ${ITEMS[id].n}`); }
     refreshAll(); return;
   }
+  if (d.dback || (d.close && (t.tagName === 'BUTTON' || e.target === t) && DETAIL_BACK && $('#overlay .csheet'))) { const f = DETAIL_BACK; DETAIL_BACK = null; return f ? f() : closeOverlay(); }
   if (d.close && (t.tagName === 'BUTTON' || e.target === t)) return closeOverlay();
   if (d.sq) { const id = d.sq; if (S.squad.includes(id)) S.squad = S.squad.filter(x => x !== id); else if (isLegend(id) && S.squad.some(isLegend)) { toast('В отряде может быть только одна легенда'); return; } else if (S.squad.length < 5) S.squad.push(id); persist(); render(); return openDetail(id); }
   if (d.lead) { S.squad = [d.lead, ...S.squad.filter(x => x !== d.lead)]; persist(); render(); return openDetail(d.lead); }
@@ -5734,7 +5761,7 @@ document.addEventListener('click', e => {
   if (!BT) return;
   if (d.auto) { BT.auto = BT.autoPref = !BT.auto; if (BT.auto && BT.waiting) { const u = BT.waiting; const p = aiPlan(BT.B, u); doAct(u, p.key, p.target && p.target.uid); } else renderBattle(); return; }
   if (d.log) { BT.showLog = !BT.showLog; renderBattle(); return; }
-  if (d.speed) { BT.speed = BT.speedPref = BT.speed >= 16 ? 1 : BT.speed * 2; renderBattle(); return; }
+  if (d.speed) { BT.speed = BT.speedPref = BT.speed >= 4 ? 1 : BT.speed * 2; renderBattle(); return; }
   if (d.quit) { clearTimeout(BT.timer); BT.B.over = 'B'; return finish(); }
   if (d.again) { leaveBattle(); return startBattle(+d.again); }
   if (d.leave === 'lobby') { leaveBattle(); view = 'lobby'; return render(); }
@@ -5800,7 +5827,7 @@ function detailNav(dir) {
     if (!BT || !BT.B || BT.done) return; const b = e.target.closest && e.target.closest('#battle .bctl [data-auto], #battle .bctl [data-speed], #battle .bctl [data-bset]'); if (!b) return;
     e.preventDefault(); last = performance.now(); BT.ctlT = last; const d = b.dataset;
     if (d.auto) { BT.auto = BT.autoPref = !BT.auto; if (BT.auto && BT.waiting) { const u = BT.waiting; const p = aiPlan(BT.B, u); doAct(u, p.key, p.target && p.target.uid); } else renderBattle(); }
-    else if (d.speed) { BT.speed = BT.speedPref = BT.speed >= 16 ? 1 : BT.speed * 2; renderBattle(); }
+    else if (d.speed) { BT.speed = BT.speedPref = BT.speed >= 4 ? 1 : BT.speed * 2; renderBattle(); }
     else if (d.bset && typeof openBattleSettings === 'function') openBattleSettings();
   }, true);
   document.addEventListener('click', e => { if (BT && BT.ctlT && performance.now() - BT.ctlT < 900 && e.target.closest && e.target.closest('#battle .bctl')) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
@@ -6268,7 +6295,7 @@ function meta2Click(d) {
   if (d.craftall) { craftAll(d.craftall); return true; }
   if (d.bset) { openBattleSettings(); return true; }
   if (d.bsauto) { BT.auto = BT.autoPref = !BT.auto; bPopClose(); if (BT.auto && BT.waiting) { const u = BT.waiting; const p = aiPlan(BT.B, u); doAct(u, p.key, p.target && p.target.uid); } else renderBattle(); return true; }
-  if (d.bsspeed) { BT.speed = BT.speedPref = BT.speed >= 16 ? 1 : BT.speed * 2; $('#bpop').remove(); BT.pop = false; renderBattle(); openBattleSettings(); return true; }
+  if (d.bsspeed) { BT.speed = BT.speedPref = BT.speed >= 4 ? 1 : BT.speed * 2; $('#bpop').remove(); BT.pop = false; renderBattle(); openBattleSettings(); return true; }
   if (d.bslog) { BT.showLog = !BT.showLog; $('#bpop').remove(); BT.pop = false; renderBattle(); openBattleSettings(); return true; }
   if (d.bsgfx) { try { localStorage.setItem('dune-gfx-low', JSON.stringify(!SAVE_LOW())); } catch (e) {} $('#bpop').remove(); BT.pop = false; openBattleSettings(); toast('Применится со следующего боя'); return true; }
   if (d.bscine) { try { localStorage.setItem('dune-cine-off', JSON.stringify(!CINE_OFF())); } catch (e) {} $('#bpop').remove(); BT.pop = false; openBattleSettings(); return true; }
@@ -6696,7 +6723,7 @@ function cqFinish(B, cfg, won) {
 // ---- view ----
 function cqFoeCard(p, k, r, lead) {
   const dead = r && r.h <= 0, d = CH[p.id];
-  return `<div class="cden ${dead ? 'dead' : ''}">${portrait(d, 46, p.relic ? RELIC_COL : TIER_COL[p.gear])}<span>${d.sn}${lead ? ' · лидер' : ''}</span><span class="mono">ур. ${p.lvl}${p.relic ? ' · ' + MEM(p.relic) : ''}</span>${dead ? '<span class="cqdead">повержен</span>' : r ? `<span class="cqfb"><i style="width:${Math.round(r.h * 100)}%"></i></span>${CH[p.id] && r.s < 1 ? `<span class="cqfb sh"><i style="width:${Math.round(r.s * 100)}%"></i></span>` : ''}<span class="mono cqfp">${Math.round(r.h * 100)}% ОЗ</span>` : ''}</div>`;
+  return `<div class="cden ${dead ? 'dead' : ''}">${portrait(d, 46, p.relic ? RELIC_COL : TIER_COL[p.gear])}<span>${d.sn}${lead ? ' · лидер' : ''}</span><span class="mono cdst">ур. ${p.lvl} · сн. ${ROMAN[p.gear]}${p.relic ? ' · ' + MEM(p.relic) : ''}</span><span class="mono cdpw">мощь ${fmt(unitPower(d, p))}</span>${dead ? '<span class="cqdead">повержен</span>' : r ? `<span class="cqfb"><i style="width:${Math.round(r.h * 100)}%"></i></span>${CH[p.id] && r.s < 1 ? `<span class="cqfb sh"><i style="width:${Math.round(r.s * 100)}%"></i></span>` : ''}<span class="mono cqfp">${Math.round(r.h * 100)}% ОЗ</span>` : ''}</div>`;
 }
 function cqDetail(a) {
   const C = cq(), op = cqOpen(a), dn = C.done[a.key] || 0, m = CQ_DIFF[C.diff].mult;
@@ -6846,6 +6873,19 @@ function hourglass(v) { const p = Math.max(0, Math.min(100, v)), top = 1 - p / 1
 window.claude?.hot?.snapshot?.(() => ({ save: S }));
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 
+// long press on a hero in squad select → hero card (Back returns to squad select)
+(() => {
+  let tm = null, sx = 0, sy = 0, id = null;
+  const cancel = () => { clearTimeout(tm); tm = null; };
+  document.addEventListener('pointerdown', e => { if (!SQ) return; const c = e.target.closest('#overlay .sqcard[data-sqadd], #overlay .sqslot[data-sqrm]'); if (!c || e.target.closest('.sqmk')) return;
+    sx = e.clientX; sy = e.clientY; id = c.dataset.sqadd || sqArr()[+c.dataset.sqrm]; cancel(); if (!id) return;
+    tm = setTimeout(() => { tm = null; SQ_LP = performance.now(); if (navigator.vibrate) try { navigator.vibrate(15); } catch (er) {} DETAIL_BACK = () => renderSquadSel(); openDetail(id); }, 480); });
+  document.addEventListener('pointermove', e => { if (tm && Math.hypot(e.clientX - sx, e.clientY - sy) > 10) cancel(); });
+  document.addEventListener('pointerup', cancel); document.addEventListener('pointercancel', cancel);
+  document.addEventListener('click', e => { if (performance.now() - SQ_LP < 650) { e.stopPropagation(); e.preventDefault(); } }, true);
+  document.addEventListener('contextmenu', e => { if (e.target.closest('#overlay .sqcard, #overlay .sqslot')) e.preventDefault(); });
+})();
+
 // long press on a unit in battle → unit sheet
 (() => {
   let tm = null, sx = 0, sy = 0, t0 = 0, uidLP = null;
@@ -6861,6 +6901,9 @@ window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude
   document.addEventListener('contextmenu', e => { const un = BT && e.target.closest('#battle .unit'); if (!un) return; e.preventDefault(); cancel(); if (!$('#bpop')) openUnitPop(un.dataset.uid); });
 })();
 </script>
+
+
+</body></html>
 <style>html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}</style>
 <script>
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
