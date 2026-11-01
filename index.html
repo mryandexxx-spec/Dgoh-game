@@ -1363,6 +1363,10 @@ ul.cqrw { display: grid; gap: 4px; } ul.cqrw li { display: flex; align-items: ce
 .csheet .dback { position: sticky; top: 0; z-index: 4; margin: -6px 0 8px; }
 .ccenter .lvlrow { width: 100%; justify-content: center; text-align: center; margin-top: 8px; padding: 6px 8px; font-size: 12px; }
 .ccenter .lvlrow input[type=range] { flex: 1 1 100%; min-width: 0; }
+
+/* ===== release B ===== */
+.result.rwwin { z-index: 70; }
+.rwconv { margin: 2px 0 6px; text-align: center; font-size: 12px; }
 </style>
 
 <header class="top">
@@ -4427,6 +4431,7 @@ function itemIcon(it, size = 40, extra = '') {
 const SAVE_KEY = 'dune-goh-v1';
 const fmt = n => n.toLocaleString('ru-RU');
 const ICONS_RES = {
+  wring: '<circle cx="8" cy="9.2" r="5" fill="none" stroke="#9fd8e8" stroke-width="2.2"/><circle cx="8" cy="9.2" r="5" fill="none" stroke="#3a7a92" stroke-width=".7"/><path d="M8 .8c1.2 1.6 1.9 2.6 1.9 3.4a1.9 1.9 0 01-3.8 0c0-.8.7-1.8 1.9-3.4z" fill="#5fc0e0"/>',
   jt: '<path d="M8 1.2l1.7 3.4 3.8.6-2.7 2.7.6 3.8L8 10l-3.4 1.7.6-3.8L2.5 5.2l3.8-.6z" fill="#d8b45a"/><path d="M8 4.2l.9 1.9 2 .3-1.5 1.4.4 2L8 8.9l-1.8.9.4-2-1.5-1.4 2-.3z" fill="#7a3a1a"/><path d="M5 12.5h6l-.6 2.3H5.6z" fill="#a8742a"/>',
   water: '<path d="M8 1.5C10.2 5 12.5 7.4 12.5 10a4.5 4.5 0 01-9 0C3.5 7.4 5.8 5 8 1.5z" fill="#6fb3ea"/><path d="M6 10.5a2 2 0 002 2" stroke="#d6ecff" stroke-width="1.1" fill="none" stroke-linecap="round"/>',
   sol: '<circle cx="8" cy="8" r="6.3" fill="#d4ab4c"/><circle cx="8" cy="8" r="4.2" fill="none" stroke="#8a6a1e" stroke-width="1.2"/><path d="M8 5.5v5" stroke="#8a6a1e" stroke-width="1.3"/>',
@@ -4804,6 +4809,7 @@ function itemSourceRows(it) {
 }
 let infoKey = null;
 const RES_INFO = {
+  wring: { n: 'Водяные кольца', n2: 'водяных колец', d: 'Фрименская мера воды: кольца отмечают, сколько воды племени принадлежит владельцу. Каждый осколок героя, уже поднятого до 7★, превращается в 10 колец. Валюта Водохранилища в Лавках: осколки героев, Печати, Вода жизни, Другая память.' },
   jt: { n: 'Трофеи Джихада', n2: 'трофеев Джихада', d: 'Знаки побед в Джихаде: даются за первую победу на каждой точке (10 / 20 / 40 за бой, элиту и босса, × множитель сложности) и на шкале наград. Тратятся в магазине Джихада (Лавки) на аптечки и редкие диски.' },
   candle: { n: 'Свечи хроник', n2: 'Свечей хроник', d: 'Энергия для Хроник Дюны: бой стоит 8 Свечей. Восстанавливается сама: +1 каждые 30 секунд до 120. Пополнение за кристаллы добавляет 100 Свечей; цена удваивается после каждого третьего пополнения, не больше 15 в день.' },
   rid: { n: 'Ридулианские кристаллы', n2: 'ридулианских кристаллов', d: 'Кристаллы-летописи, на которых в империи хранят записи. Валюта Лавки хроник: осколки любых героев, фолианты, Печати и даже Вода жизни.' },
@@ -4834,7 +4840,7 @@ function openInfo(key, keepScroll) {
   } else if (kind === 'shard' && id && CH[id]) {
     const d = CH[id], p = prog(id), need = p.stars ? nextShards(p) : unlockNeed(d);
     head = `<div class="ihead">${portrait(d, 72, p.stars ? TIER_COL[p.gear] : null)}<div><h3>Осколки: ${d.n}</h3><div class="crole">${p.stars ? starStr(p.stars) : 'Персонаж не открыт'}</div></div></div>`;
-    body = `<div class="fbar"><span>${p.stars ? (need ? `До ${p.stars + 1}★` : 'Максимум звёзд') : 'До открытия'}</span><div class="gprog big"><i style="width:${need ? Math.min(100, p.shards / need * 100) : 100}%"></i></div><b class="mono">${amt('shard', need ? p.shards + '/' + need : p.shards)}</b></div>
+    body = `<div class="fbar"><span>${p.stars ? (need ? `До ${p.stars + 1}★` : `Максимум звёзд · новые осколки → ${amt('wring', RING_RATE)} за штуку`) : 'До открытия'}</span><div class="gprog big"><i style="width:${need ? Math.min(100, p.shards / need * 100) : 100}%"></i></div><b class="mono">${amt('shard', need ? p.shards + '/' + need : p.shards)}</b></div>
       <div class="acts" style="margin-top:8px">${p.stars && need ? `<button class="btn ${p.shards >= need ? 'go' : ''}" data-star="${id}" ${p.shards >= need ? '' : 'disabled'}>Повысить до ${p.stars + 1}★<small>${amt('shard', need)} ${amt('sol', STAR_COST(p.stars))}</small></button>` : ''}${p.stars ? `<button class="btn" data-ishow="${id}">Карточка героя</button>` : ''}</div>`;
     pickSrc(NODES.map((n, i) => n.drops.includes(id) ? i : -1).filter(i => i >= 0)).forEach(i => { const k = NODES[i].drops.indexOf(id), ch = NODES[i].camp === 'C'; rows.push(campRow(i, k === 0 ? `шанс ${ch ? 60 : 50}% · до 2 осколков` : 'шанс 30% · 1 осколок')); });
     for (const sk of Object.keys(SHOPS)) for (const it of shopItems(sk)) if (it.kind === 'sh' && it.id === id) { const left = shopLeft(it);
@@ -4925,7 +4931,10 @@ function doXSim(spec) {
   if (kind === 'shard' && id) focus = ` · ${CH[id].sn}: +${amt('shard', r.sh[id] || 0)}`;
   else if (kind === 'frag' && id) focus = ` · +${amt('frag', r.fr[id] || 0)} ${ITEMS[id].n}`;
   else if (!infoKey && itemCtx && $('#overlay .isheet')) { const it = slotState(itemCtx.cid, itemCtx.k).it; focus = ` · +${amt('frag', r.fr[it.id] || 0)} ${it.n}`; }
-  toast(`Симуляция ×${kk}${focus}`); refreshAll();
+  refreshAll();
+  const more = enGet(en) >= cost;
+  rewardWin(`Симуляция ×${kk}`, r.lines, { sub: `${nodeTitle(i)} · потрачено ${amt(en, cost)}${focus}`, ok: 'Готово',
+    btns: `<button class="btn go ${more ? '' : 'lack'}" data-isim="${spec}" ${more ? '' : 'disabled'}>Ещё ×${kk}<small>${amt(en, cost)}</small></button>` });
 }
 
 function rollShards(n, ch) {   // never more than 2 shards per attempt
@@ -4972,7 +4981,7 @@ function runSim() {
   enSpend(en, cost);
   const { lines } = simCore(i, k);
   persist(); render();
-  $('#overlay').innerHTML = `<div class="result"><div class="box" role="dialog" aria-modal="true"><h3>Симуляция ×${k}</h3><div style="color:var(--dust)">${nodeTitle(i)} · потрачено ${amt(en, cost)}</div><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><div class="acts" style="justify-content:center"><button class="btn go ${enGet(en) >= nodeCost(i) ? '' : 'lack'}" data-sim="${i}">Ещё симуляции</button><button class="btn" data-close="1">Готово</button></div></div></div>`;
+  $('#overlay').innerHTML = `<div class="result won"><div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${MOUSE_SVG(false)}</div><h3>Симуляция ×${k}</h3><div style="color:var(--dust)">${nodeTitle(i)} · потрачено ${amt(en, cost)}</div><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><div class="acts" style="justify-content:center"><button class="btn go ${enGet(en) >= nodeCost(i) ? '' : 'lack'}" data-sim="${i}">Ещё симуляции</button><button class="btn" data-close="1">Готово</button></div></div></div>`;
 }
 function simCore(i, k) {
   quest('camp', k); if (NODES[i].camp === 'C') quest('chron', k); statInc('wins', k); const accL = accXP(k * nodeCost(i) * 3);
@@ -4990,8 +4999,14 @@ function simCore(i, k) {
   return { lines, sh, fr };
 }
 // ===== rewards helper =====
+function rewardWin(title, lines, o = {}) {
+  const old = $('#rwwin'); if (old) old.remove();
+  const el = document.createElement('div'); el.id = 'rwwin'; el.className = 'result won rwwin' + (o.cls ? ' ' + o.cls : '');
+  el.innerHTML = `<div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${MOUSE_SVG(false)}</div><h3>${title}</h3>${o.sub ? `<div style="color:var(--dust)">${o.sub}</div>` : ''}<ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><div class="acts" style="justify-content:center">${o.btns || ''}<button class="btn ${o.btns ? '' : 'go'}" data-rwok="1">${o.ok || 'Забрать'}</button></div></div>`;
+  document.body.appendChild(el);
+}
 function addRes(k, q) { if (k === 'sol') S.solari += q; else if (k === 'pl') S.plast += q; else if (k === 'water') S.water += q; else S[k] = (S[k] || 0) + q; }
-const RW_NAME = { jt: 'трофеев Джихада', core: 'Другой памяти', rid: 'ридулианских кристаллов', candle: 'Свечей хроник', sol: 'соляриев', cry: 'кристаллов', folio: 'фолиантов', seal: 'Печать Ландсраада', wol: 'Вода жизни', pl: 'пластали', teeth: 'зубов червя', water: 'Воды' };
+const RW_NAME = { wring: 'водяных колец', jt: 'трофеев Джихада', core: 'Другой памяти', rid: 'ридулианских кристаллов', candle: 'Свечей хроник', sol: 'соляриев', cry: 'кристаллов', folio: 'фолиантов', seal: 'Печать Ландсраада', wol: 'Вода жизни', pl: 'пластали', teeth: 'зубов червя', water: 'Воды' };
 function giveRewards(list) {
   const out = [];
   for (const [k, q, id] of list) {
@@ -5014,7 +5029,7 @@ const DAILY = [
   { k: 'craft', n: 'Собрать предмет снаряжения', need: 1, rw: [['pl', 3]], go: 'squad' },
   { k: 'lvl', n: 'Повысить уровень героев 3 раза', need: 3, rw: [['sol', 1500]], go: 'squad' },
 ];
-const CHEST_NEED = 7, CHEST_RW = [['seal', 1], ['cry', 50], ['sol', 5000]];
+const CHEST_NEED = 7, CHEST_RW = [['seal', 1], ['cry', '50–300'], ['sol', 5000]], CHEST_CRY = [50, 300];
 function dly() { if (S.daily.d !== todayKey()) S.daily = { d: todayKey(), c: {}, got: {}, chest: false }; return S.daily; }
 function quest(k, n = 1) { if (!S) return; const D = dly(); D.c[k] = Math.max(0, (D.c[k] || 0) + n); }
 function qState(q) { const D = dly(); return D.got[q.k] ? 'got' : (D.c[q.k] || 0) >= q.need ? 'done' : 'prog'; }
@@ -5023,16 +5038,19 @@ const dailyReady = () => DAILY.filter(q => qState(q) === 'done').length + (daily
 function claimQuest(k, silent) {
   const q = DAILY.find(x => x.k === k); if (!q || qState(q) !== 'done') return;
   dly().got[k] = true; const lines = giveRewards(q.rw); lines.push(...accXP(10)); persist();
-  if (!silent) { toast(lines.join(' ')); refreshAll(); }
+  if (!silent) { refreshAll(); rewardWin(q.n, lines); }
+  return lines;
 }
 function claimChest() {
   const D = dly(); if (D.chest || dailyGot() < CHEST_NEED) return;
-  D.chest = true; const lines = giveRewards(CHEST_RW); persist(); toast('Сундук дня: ' + lines.join(' ')); refreshAll();
+  D.chest = true; const cry = CHEST_CRY[0] + Math.round(Math.random() * (CHEST_CRY[1] - CHEST_CRY[0]) / 10) * 10;
+  const lines = giveRewards(CHEST_RW.map(r => r[0] === 'cry' ? ['cry', cry] : r)); persist(); refreshAll();
+  rewardWin('Сундук дня', lines, { sub: `Выполнено ${CHEST_NEED} заданий · кристаллы: ${cry} из 50–300` });
 }
 function renderDaily() {
   const D = dly(), got = dailyGot(), ready = DAILY.filter(q => qState(q) === 'done').length;
   const msLeft = new Date(new Date().setHours(24, 0, 0, 0)) - Date.now(), hh = Math.floor(msLeft / 3.6e6), mm = Math.floor(msLeft % 3.6e6 / 6e4);
-  $('#view').innerHTML = `<h2>Ежедневные задания</h2><p class="sub">Задания обновляются в полночь — осталось ${hh} ч ${mm} мин. Получите награды за ${CHEST_NEED} заданий, чтобы открыть Сундук дня с Печатью Ландсраада.</p>
+  $('#view').innerHTML = `<h2>Ежедневные задания</h2><p class="sub">Задания обновляются в полночь — осталось ${hh} ч ${mm} мин. Получите награды за ${CHEST_NEED} заданий, чтобы открыть Сундук дня: Печать Ландсраада и случайно от 50 до 300 кристаллов.</p>
     <div class="chest ${D.chest ? 'opened' : got >= CHEST_NEED ? 'ready' : ''}">
       <div class="chico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18v10H3z" fill="#7a4a22"/><path d="M3 10c0-4 4-6 9-6s9 2 9 6z" fill="#a8642a"/><rect x="10" y="9" width="4" height="5" rx="1" fill="#f0c860"/><path d="M3 14h18" stroke="#3a2210" stroke-width="1.4"/></svg></div>
       <div class="chtx"><b>Сундук дня</b><div class="chbar"><i style="width:${Math.min(100, got / CHEST_NEED * 100)}%"></i></div><span class="mono">${Math.min(got, CHEST_NEED)}/${CHEST_NEED} заданий · ${rewardsHtml(CHEST_RW)}</span></div>
@@ -5153,8 +5171,13 @@ function sqGo() {
   if (mode === 'journey') { const t = JR().tiers[i]; return launch({ mode: 'journey', scene: JR().scenes[i], i, title: `Легенда ${i + 1}. ${t.n}`, desert: t.desert, squad: a.slice(), enemy: jFoes(JK(), i) }); }
   const R = S.raid; if (!R) return; return launch({ mode: 'raid', scene: RAID_SCENES[R.tier], title: 'Шаи-Хулуд · ' + RAID_TIERS[R.tier].n.split(' · ')[0], squad: a.slice(), boss: { tier: R.tier, hp: R.hp, maxHp: R.maxHp } });
 }
+const RING_RATE = 10;   // 1 осколок героя на 7★ = 10 водяных колец
+let SHCONV = 0, SHCONV_T = 0;
+function convFlush() { if (SHCONV > 0) { const n = SHCONV; SHCONV = 0; toast(`Осколки героев 7★ обменены: +${amt('wring', n)} водяных колец`); } }
 function grantShards(id, k) {
-  const p = prog(id); p.shards += k;
+  const p = prog(id);
+  if (p.stars >= 7) { const n = k * RING_RATE; S.wring = (S.wring || 0) + n; SHCONV += n; clearTimeout(SHCONV_T); SHCONV_T = setTimeout(convFlush, 700); return false; }
+  p.shards += k;
   const un = unlockNeed(CH[id]);
   if (p.stars === 0 && p.shards >= un) { p.shards -= un; p.stars = un > 10 ? 7 : 1; celebQueue({ type: 'unlock', id }); return true; }
   return false;
@@ -5237,6 +5260,7 @@ const SHOPS = {
   post: { n: 'Торговый пост', d: 'Обычный магазин Империума: солярии и кристаллы. Ассортимент осколков обновляется каждый день.' },
   sietch: { n: 'Лавка сиетча', d: 'Магазин рейда: зубы Шаи-Хулуда меняют на осколки, материалы и фрагменты редкого снаряжения.' },
   chron: { n: 'Лавка хроник', d: 'Магазин Хроник Дюны: ридулианские кристаллы меняют на осколки любых героев, материалы прокачки, Печати и Воду жизни.' },
+  ring: { n: 'Водохранилище', d: 'Хранители воды племени: лишние осколки героев на 7★ становятся водяными кольцами, а кольца — осколками тех, кому ещё расти.' },
 };
 function buysToday() { if (S.buys.d !== todayKey()) S.buys = { d: todayKey(), n: {} }; return S.buys.n; }
 const shopLeft = it => it.lim ? Math.max(0, it.lim - (buysToday()[it.key] || 0)) : -1;
@@ -5251,6 +5275,11 @@ function shopItems(sk) {
     ...['paul', 'jessica', 'gurney', 'stilgar', 'chani', 'kynes', 'leto', 'duncan', 'thufir', 'fedaykin'].map(id => ({ key: 'sietch:sh:' + id, kind: 'sh', id, qty: 5, cur: 'teeth', price: 60, lim: 0 })),
     { key: 'sietch:pl', kind: 'pl', qty: 5, cur: 'teeth', price: 80, lim: 0 }, { key: 'sietch:sol', kind: 'sol', qty: 5000, cur: 'teeth', price: 50, lim: 0 },
     { key: 'sietch:folio', kind: 'folio', qty: 5, cur: 'teeth', price: 40, lim: 0 }, { key: 'sietch:seal', kind: 'seal', qty: 1, cur: 'teeth', price: 300, lim: 1 }, { key: 'sietch:core', kind: 'core', qty: 1, cur: 'teeth', price: 150, lim: 2 }];
+  if (sk === 'ring') { const r = sRng(ghash(todayKey() + 'ring')), pool = ROSTER_IDS.filter(id => !CH[id].legendary && !CH[id].conquest && prog(id).stars < 7), hs = [];
+    while (hs.length < 6 && pool.length) hs.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
+    return [...hs.map(id => ({ key: 'ring:sh:' + id, kind: 'sh', id, qty: 5, cur: 'wring', price: 120, lim: 3 })),
+      { key: 'ring:folio', kind: 'folio', qty: 5, cur: 'wring', price: 60, lim: 5 }, { key: 'ring:pl', kind: 'pl', qty: 10, cur: 'wring', price: 80, lim: 5 },
+      { key: 'ring:core', kind: 'core', qty: 1, cur: 'wring', price: 150, lim: 3 }, { key: 'ring:seal', kind: 'seal', qty: 1, cur: 'wring', price: 400, lim: 1 }, { key: 'ring:wol', kind: 'wol', qty: 1, cur: 'wring', price: 2000, lim: 1 }]; }
   return [
     ...dailyHeroes('chron', 6).map(id => ({ key: 'chron:sh:' + id, kind: 'sh', id, qty: 5, cur: 'rid', price: 60, lim: 2 })),
     { key: 'chron:folio', kind: 'folio', qty: 5, cur: 'rid', price: 40, lim: 5 }, { key: 'chron:sol', kind: 'sol', qty: 10000, cur: 'rid', price: 50, lim: 3 },
@@ -5267,10 +5296,10 @@ function shopFragsHtml() {
 }
 function renderShop() {
   if (S.shopTab === 'jihad') return cqShopView();
-  const sk = SHOPS[S.shopTab] ? S.shopTab : 'post', cur = { post: ['sol', 'cry'], sietch: ['teeth'], chron: ['rid'] }[sk];
+  const sk = SHOPS[S.shopTab] ? S.shopTab : 'post', cur = { post: ['sol', 'cry'], sietch: ['teeth'], chron: ['rid'], ring: ['wring'] }[sk];
   const msLeft = new Date(new Date().setHours(24, 0, 0, 0)) - Date.now();
   $('#view').innerHTML = `<h2 class="lshide">Лавки</h2>
-    <div class="ctabs">${Object.entries(SHOPS).map(([k, v]) => `<button class="ctab ${k === sk ? 'on' : ''}" data-shoptab="${k}">${v.n}<small>${{ post: ic('sol') + ic('cry'), sietch: ic('teeth'), chron: ic('rid') }[k]}</small></button>`).join('')}<button class="ctab" data-shoptab="jihad">Джихад<small>${ic('jt')}</small></button></div>
+    <div class="ctabs">${Object.entries(SHOPS).map(([k, v]) => `<button class="ctab ${k === sk ? 'on' : ''}" data-shoptab="${k}">${v.n}<small>${{ post: ic('sol') + ic('cry'), sietch: ic('teeth'), chron: ic('rid'), ring: ic('wring') }[k]}</small></button>`).join('')}<button class="ctab" data-shoptab="jihad">Джихад<small>${ic('jt')}</small></button></div>
     <p class="sub">${SHOPS[sk].d} У вас: ${cur.map(c => amt(c, getRes(c))).join(' ')}. Лимиты обновятся через ${Math.floor(msLeft / 3.6e6)} ч ${Math.floor(msLeft % 3.6e6 / 6e4)} мин.</p>
     <div class="shop">${shopItems(sk).map(it => { const left = shopLeft(it), sold = left === 0, can = getRes(it.cur) >= it.price && !sold;
       const t = it.kind === 'sh' ? `${amt('shard', it.qty, 'shard:' + it.id)} ${CH[it.id].sn}` : `${amt(it.kind, it.qty)} ${RW_NAME[it.kind]}`;
@@ -5657,6 +5686,7 @@ document.addEventListener('click', e => {
   const t = e.target.closest('button, [data-fxu], .unit.tgt, .detail');
   if (!t) return;
   const d = t.dataset;
+  if (d.rwok) { const w = $('#rwwin'); if (w) w.remove(); setTimeout(() => { showCeleb(); renderNotes(); }, 50); return; }
   if (metaClick(d) || meta2Click(d) || celebClick(d) || cqClick(d)) return;
   if (d.v) { view = d.v; render(); return; }
   if (d.csel !== undefined) { campSel = +d.csel; render(); return; }
@@ -5671,7 +5701,7 @@ document.addEventListener('click', e => {
   if (d.cal) return openCalendar();
   if (d.calclaim) return claimLogin();
   if (d.qclaim) return claimQuest(d.qclaim);
-  if (d.qall) { for (const q of DAILY) if (qState(q) === 'done') claimQuest(q.k, true); refreshAll(); return; }
+  if (d.qall) { const L = []; for (const q of DAILY) if (qState(q) === 'done') L.push(...(claimQuest(q.k, true) || [])); refreshAll(); if (L.length) rewardWin('Задания дня', L); return; }
   if (d.qchest) return claimChest();
   if (d.sqgo) return sqGo();
   if (d.sqback) { SQ = null; closeOverlay(); render(); return; }
@@ -5797,6 +5827,11 @@ document.addEventListener('keydown', e => {
 function start(data) {
   S = (data && data.save) || loadSave() || newSave();
   metaFill(S); if (!S.notes) noteSnap(true);
+  if (!S.migB) { S.migB = 1; S.stats = S.stats || {}; let n = 0;
+    for (const id of ROSTER_IDS) { const p = prog(id); if (p.stars >= 7 && p.shards > 0) { n += p.shards * RING_RATE; p.shards = 0; } }
+    if (n) { S.wring = (S.wring || 0) + n; setTimeout(() => toast(`Лишние осколки героев 7★ обменены: +${amt('wring', n)} водяных колец (Лавки → Водохранилище)`), 1500); }
+    if (S.conq && S.conq.tk) { if (S.conq.tk.c6 && !S.stats.cqMax) S.stats.cqMax = 1; if (!S.stats.cqLeg) S.stats.cqLeg = (S.conq.disks || []).filter(x => CQ_DISKS[x.k] && CQ_DISKS[x.k].r === 'l').length; }
+    persist(); }
   dly().c.login = 1;
   const rot = () => { let ok = false; try { ok = sessionStorage.getItem('rotok') === '1'; } catch (e) {} const portrait = innerHeight > innerWidth && Math.min(innerWidth, innerHeight) < 700 && matchMedia('(pointer: coarse)').matches; $('#rotate').hidden = !portrait || ok; };
   rot(); addEventListener('resize', rot);
@@ -5975,6 +6010,8 @@ const METRIC = {
   gl: () => S.stats.gl || 0, devour: () => S.stats.devour || 0,
   skill7: () => ROSTER_IDS.reduce((a, id) => a + Object.values(prog(id).sk || {}).filter(v => v >= 7).length, 0),
   days: () => S.stats.days || 0,
+  cqMax: () => S.stats.cqMax || 0, cqLeg: () => S.stats.cqLeg || 0,
+  cqHero: () => ROSTER_IDS.filter(id => (CH[id].conquest || ['robot', 'cymek'].includes(id)) && prog(id).stars).length,
 };
 
 // ===================== cosmetics =====================
@@ -5996,7 +6033,7 @@ const FRAMES = {
 const TITLES = {
   novice: 'Странник пустыни', atr: 'Друг Дома Атрейдес', hark: 'Наследник Барона', chron: 'Хранитель хроник', worm: 'Укротитель Шаи-Хулуда', rider: 'Наездник червя',
   blade: 'Мастер клинка', kh: 'Квисац Хадерах', house: 'Великий Дом', trial: 'Испытанный пустыней', prophet: 'Голос пророчества', judge: 'Судья Перехода', mentat: 'Великий ментат', loyal: 'Верный Дому',
-  raid3: 'Победитель Старика пустыни', legend: 'Свидетель легенды',
+  raid3: 'Победитель Старика пустыни', legend: 'Свидетель легенды', jihad: 'Покоритель Джихада', thinker: 'Повелитель машин', ix: 'Хранитель архива Икса',
 };
 const FREE = { title: ['novice'], frame: ['basic', 'bronze'], ava: [] };
 const unlocked = (kind, id) => FREE[kind].includes(id) || !!S.unlocks[kind][id] || (kind === 'ava' && id.startsWith('hero:') && CH[id.slice(5)] && prog(id.slice(5)).stars > 0);
@@ -6022,6 +6059,9 @@ const FEATS = [
   { id: 'devour', n: 'Зов Шаи-Хулуда', d: 'Враги, поглощённые червём Лиет-Кайнс', m: 'devour', at: [1, 10, 40], cos: { 2: { title: 'judge' } } },
   { id: 'skill', n: 'Великий ментат', d: 'Способности на 7-м уровне', m: 'skill7', at: [1, 5, 12, 25], cos: { 3: { title: 'mentat' } } },
   { id: 'days', n: 'Верность Дому', d: 'Дни в игре', m: 'days', at: [7, 30, 100, 365], cos: { 3: { title: 'loyal' } } },
+  { id: 'cqmax', n: 'Покоритель Джихада', d: 'Недели Джихада, в которых открыт последний сундук шкалы (◆350)', m: 'cqMax', at: [1, 3, 6, 10, 20], cos: { 4: { title: 'jihad' } } },
+  { id: 'cqhero', n: 'Наследие машин', d: 'Открытые герои Джихада: Эразм, робот-воин, кимек', m: 'cqHero', at: [1, 2, 3], cos: { 2: { title: 'thinker' } } },
+  { id: 'cqleg', n: 'Архив Икса', d: 'Полученные легендарные диски Джихада', m: 'cqLeg', at: [1, 5, 15, 30], cos: { 3: { title: 'ix' } } },
 ];
 const FEAT_RW = [[['cry', 50]], [['cry', 100], ['folio', 10]], [['seal', 1], ['cry', 150]], [['seal', 2], ['rid', 100]], [['wol', 1], ['seal', 2], ['cry', 300]]];
 const featRw = (F, s) => FEAT_RW[Math.min(4, s + (5 - F.at.length))];
@@ -6035,7 +6075,7 @@ function featClaim(id) {
   const s = featStep(F), lines = giveRewards(featRw(F, s)), c = F.cos[s];
   if (c) { if (c.title) { S.unlocks.title[c.title] = 1; lines.push(`Титул «${TITLES[c.title]}»`); } if (c.ava) { S.unlocks.ava['emb:' + c.ava] = 1; lines.push(`Аватар «${EMBLEMS[c.ava].n}»`); } if (c.frame) { S.unlocks.frame[c.frame] = 1; lines.push(`Рамка «${FRAMES[c.frame].n}»`); } }
   S.feats[F.id] = s + 1; persist(); render();
-  toast(`${F.n} ${ROMAN[s + 1]}: ` + lines.join(' · '));
+  rewardWin(`Подвиг: ${F.n} ${ROMAN[s + 1]}`, lines);
 }
 function renderFeats() {
   const fv = v => v >= 1e6 ? (v / 1e6).toFixed(v >= 1e7 ? 0 : 1).replace('.0', '') + ' млн' : v >= 1e4 ? Math.round(v / 1e3) + ' тыс.' : fmt(v);
@@ -6217,7 +6257,7 @@ function noteHtml(n) {
 }
 function renderNotes() {
   let box = $('#notes'); if (!box) { box = document.createElement('div'); box.id = 'notes'; box.className = 'notes'; box.setAttribute('aria-live', 'polite'); document.body.appendChild(box); }
-  const hide = !!(BT && BT.B) || !!$('#lvlup') || !!$('#celeb') || !!$('#overlay').innerHTML.trim() || !!$('#overlay2').innerHTML.trim(); box.hidden = hide || !NOTES.length; if (box.hidden) return;
+  const hide = !!(BT && BT.B) || !!$('#lvlup') || !!$('#celeb') || !!$('#rwwin') || !!$('#overlay').innerHTML.trim() || !!$('#overlay2').innerHTML.trim(); box.hidden = hide || !NOTES.length; if (box.hidden) return;
   const vis = NOTES.slice(-3).reverse(), more = NOTES.length - vis.length;
   box.innerHTML = `${NOTES.length > 1 ? `<div class="nt-head"><span>${NOTES.length} уведомл.</span><button class="nt-all" data-ntall="1">Закрыть все</button></div>` : ''}
     ${vis.map(n => `<div class="nt ${n.kind}" data-nt="${n.id}">${noteHtml(n)}<button class="nt-x" data-ntx="${n.id}" aria-label="Закрыть">×</button></div>`).join('')}${more > 0 ? `<div class="nt-more">ещё ${more}</div>` : ''}`;
@@ -6313,8 +6353,8 @@ function meta2Click(d) {
 }
 
 // ===================== reward tiles (one look everywhere) =====================
-const RW_TITLE = { core: 'Др. память', sol: 'Солярии', pl: 'Пласталь', cry: 'Кристаллы', folio: 'Фолианты', seal: 'Печать', wol: 'Вода жизни', teeth: 'Зубы червя', water: 'Вода', candle: 'Свечи', rid: 'Ридулиан' };
-const RW_RARE = { core: 'epic', seal: 'epic', wol: 'leg', rid: 'rare', folio: 'rare', cry: 'rare' };
+const RW_TITLE = { wring: 'Вод. кольца', core: 'Др. память', sol: 'Солярии', pl: 'Пласталь', cry: 'Кристаллы', folio: 'Фолианты', seal: 'Печать', wol: 'Вода жизни', teeth: 'Зубы червя', water: 'Вода', candle: 'Свечи', rid: 'Ридулиан' };
+const RW_RARE = { wring: 'rare', core: 'epic', seal: 'epic', wol: 'leg', rid: 'rare', folio: 'rare', cry: 'rare' };
 function rwTile(k, q, id, o = {}) {
   const qs = typeof q === 'number' ? fmt(q) : q, sm = o.sm ? ' sm' : '';
   if (k === 'shard' && CH[id]) { const d = CH[id], p = prog(id);
@@ -6341,6 +6381,10 @@ function tileize(root) {
     g.innerHTML = tiles.map(([k, q, id, u], i) => rwTile(k, q, id, { i, unlock: u })).join('');
     ul.parentNode.insertBefore(g, ul); if (!ul.children.length) ul.remove();
   }
+  if (SHCONV > 0 && (root.matches && root.matches('.result') || root.querySelector && root.querySelector('.result .box'))) {
+    const g = root.querySelector('.rwgrid'); if (g) { const n = SHCONV; SHCONV = 0; clearTimeout(SHCONV_T);
+      g.insertAdjacentHTML('beforeend', rwTile('wring', n, null, { i: g.children.length }));
+      g.insertAdjacentHTML('afterend', '<p class="sub rwconv">Осколки героев на 7★ обменены на водяные кольца</p>'); } }
 }
 new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) { const r = n.matches && n.matches('.result, .detail') ? n : n.querySelector && n.querySelector('.result .box, .mgrid'); if (r) tileize(n); } }).observe(document.body, { childList: true, subtree: true });
 
@@ -6586,7 +6630,7 @@ function cqDiskPick(seed, w = CQ_DROP.start, n = 3) {
 }
 const cqLegOn = () => cqDiskOn().filter(k => CQ_DISKS[k].r === 'l').length;
 const cqCanOn = k => cqDiskOn().length < CQ_DMAX && (CQ_DISKS[k].r !== 'l' || cqLegOn() < CQ_LMAX);
-function cqAddDisk(k) { const C = cq(); if (C.disks.some(x => x.k === k) || !CQ_DISKS[k]) return; C.disks.push({ k, on: cqCanOn(k) ? 1 : 0 }); cqBump('disk', null, C.disks.length, true); }
+function cqAddDisk(k) { const C = cq(); if (C.disks.some(x => x.k === k) || !CQ_DISKS[k]) return; C.disks.push({ k, on: cqCanOn(k) ? 1 : 0 }); if (CQ_DISKS[k].r === 'l') statInc('cqLeg'); cqBump('disk', null, C.disks.length, true); }
 const cqNodeDisks = a => { const C = cq(); return (C.dpick[a.key] ??= cqDiskPick(a.key, cqDropW(a.L < 6 ? 'early' : 'late', a.s))); };
 // ---- лавка тайника ----
 const CQ_GOODS = [
@@ -6820,7 +6864,7 @@ function cqShopItems() {
 function cqShopView() {
   const msLeft = (() => { const d = new Date(cq().wk); d.setDate(d.getDate() + 7); return d - Date.now(); })();
   $('#view').innerHTML = `<h2 class="lshide">Лавки</h2>
-    <div class="ctabs">${Object.entries(SHOPS).map(([k, v]) => `<button class="ctab" data-shoptab="${k}">${v.n}<small>${{ post: ic('sol') + ic('cry'), sietch: ic('teeth'), chron: ic('rid') }[k] || ''}</small></button>`).join('')}<button class="ctab on" data-shoptab="jihad">Джихад<small>${ic('jt')}</small></button></div>
+    <div class="ctabs">${Object.entries(SHOPS).map(([k, v]) => `<button class="ctab" data-shoptab="${k}">${v.n}<small>${{ post: ic('sol') + ic('cry'), sietch: ic('teeth'), chron: ic('rid'), ring: ic('wring') }[k] || ''}</small></button>`).join('')}<button class="ctab on" data-shoptab="jihad">Джихад<small>${ic('jt')}</small></button></div>
     <p class="sub">Трофеи Джихада — за первую победу на каждой точке и на шкале наград. Здесь продаются редкие и легендарные диски; они действуют до конца недели Джихада, ассортимент обновится через ${Math.floor(msLeft / 8.64e7)} д ${Math.floor(msLeft % 8.64e7 / 3.6e6)} ч. У вас: ${amt('jt', S.jt || 0)} · аптечек ${S.cqMed || 0}.</p>
     <div class="shop">${cqShopItems().map(it => { const can = !it.sold && (S.jt || 0) >= it.price;
       return `<div class="item ${it.sold ? 'sold' : ''} ${it.rar ? 'cqsh r-' + it.rar : ''}"><span class="bigico sm cqshico">${cqI(it.ico)}</span>${it.rar ? cqRarTag(it.key.slice(2)) : ''}<div class="t">${it.n}</div><div class="s">${it.d}${it.lim ? ` · ${it.sold ? 'есть / куплено' : 'один на неделю'}` : ''}</div><button class="btn ${can ? '' : 'dim'}" data-cqjbuy="${it.key}" ${it.sold ? 'disabled' : ''}>${amt('jt', it.price)}</button></div>`; }).join('')}</div>`;
@@ -6861,7 +6905,7 @@ function cqClick(d) {
   if (d.cqjbuy) { const it = cqShopItems().find(x => x.key === d.cqjbuy); if (!it || it.sold) return true; if ((S.jt || 0) < it.price) { toast('Не хватает трофеев Джихада'); return true; }
     S.jt -= it.price; const msg = it.buy(); persist(); toast(msg); render(); return true; }
   if (d.cqchest !== undefined) { cqChestWin(+d.cqchest); return true; }
-  if (d.cqopen !== undefined) { const i = +d.cqopen; if (!cqCanClaim(i)) return true; const C = cq(), rw = cqChest(i), pick = rw.any[Math.floor(Math.random() * rw.any.length)]; C.tk['c' + i] = 1; const lines = giveRewards([...rw.fix, pick]); persist(); render();
+  if (d.cqopen !== undefined) { const i = +d.cqopen; if (!cqCanClaim(i)) return true; const C = cq(), rw = cqChest(i), pick = rw.any[Math.floor(Math.random() * rw.any.length)]; C.tk['c' + i] = 1; if (i === CQ_CHESTS.length - 1) statInc('cqMax'); const lines = giveRewards([...rw.fix, pick]); persist(); render();
     $('#overlay').innerHTML = `<div class="result won"><div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${MOUSE_SVG(false)}</div><h3>Сундук Джихада · ◆${CQ_CHESTS[i]}</h3><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><div class="acts" style="justify-content:center"><button class="btn go" data-close="1">Забрать</button></div></div></div>`; return true; }
   if (d.cqfw !== undefined) { cqFeatWin(d.cqfw === 'g' ? null : +d.cqfw); return true; }
   if (d.cqback) { leaveBattle(); view = 'conq'; render(); return true; }
