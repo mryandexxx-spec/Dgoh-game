@@ -2,7 +2,7 @@
 // Значение параметра — скаляр или пара [desktop, phone]; phone = «small» (меньшая сторона окна < 600 px), как и раньше в сценах.
 // Хранение: localStorage 'dune-gfx' = { p: 'auto'|'high'|'med'|'low', auto: <ступеней понижения от базы auto> }.
 // auto: база desktop — high, phone — med; адаптивное понижение (шаг 6) двигает её вниз на auto ступеней.
-// Шаг 3: HIGH = вид v59, LOW = прежний dune-gfx-low (без DoF и SSAO, лагерь в покое 20 fps).
+// Шаг 3: HIGH = вид v59. Шаг 5: LOW от MED вниз (см. PROFILES.low).
 // Шаг 4: MED — без SSAO, grain, хроматики и резкости, MSAA 1, DoF только у героя, тени 1024 только по персонажам (тени и контактный AO
 // статичных пропсов запечены в карту освещения земли, build-env bakeStatic), glow только по светящимся мешам без неба (glowOnly), ниже dpr.
 import './base.js'; // порядок исполнения
@@ -22,13 +22,19 @@ const HIGH = {
   fps: { active: 60, idle: 30, idleLow: 20, static: 0 }, campIdle: 'idle',
   bake: false,                      // запечь тени/AO статичных пропсов в землю и убрать их из карты теней
   glowSel: false,                   // glow только по светящимся мешам (без неба и фона)
+  glowKernel: 32,                   // blurKernelSize GlowLayer
+  shadowQ: 'medium',                // качество PCF теней (WebGL2): 'medium' | 'low'
 };
 const PROFILES = {
   high: HIGH,
   med: { ...HIGH, dpr: { arena: [1.5, 1.25], hero: [1.75, 1.5], camp: [1.5, 1.25] }, msaa: 1,
     grain: false, chromatic: false, sharpen: false, dof: 'hero', ssao: false, shadowSize: 1024, bake: true, glowSel: true },
-  low: { ...HIGH, dof: false, ssao: false, campIdle: 'idleLow' },
 };
+// шаг 5: LOW — от MED вниз: без DoF и bloom, glow дешевле, тени 512 (PCF low, обновление реже), ниже dpr, пробники, сетка земли, частицы, кадр в покое
+PROFILES.low = { ...PROFILES.med, dpr: { arena: [1.25, 1], hero: [1.5, 1.25], camp: [1.25, 1] }, dof: false, bloom: false,
+  glowRatio: [.35, .25], glowKernel: 16, shadowSize: 512, shadowRefresh: 3, shadowQ: 'low',
+  probe: { arena: 32, hero: 32, camp: 32 }, groundSeg: [100, 80], particles: .5,
+  fps: { active: 60, idle: 20, idleLow: 15, static: 0 }, campIdle: 'idleLow' };
 const ORDER = ['high', 'med', 'low'];
 const KEY = 'dune-gfx';
 let STORE = null; // прочитанное значение; пишется только через setGfx

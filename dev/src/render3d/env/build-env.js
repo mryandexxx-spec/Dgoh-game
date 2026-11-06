@@ -31,7 +31,7 @@ function buildEnv(A, key, day, ctx) { return withCtx(ctx, () => {
   sun.diffuse = S.sun ? lerpC(col3(S.sun[3]), col3('#ffd8a0'), .35) : col3('#9aa6d8'); sun.intensity = E.night ? .6 : E.dark ? .3 : 1.35;
   sun.autoUpdateExtends = false; sun.autoCalcShadowZBounds = false; sun.orthoLeft = -17; sun.orthoRight = 17; sun.orthoTop = 13; sun.orthoBottom = -13; sun.shadowMinZ = 1; sun.shadowMaxZ = 120;
   CTX.shadows = new B3.ShadowGenerator(gfx(A.small).shadowSize, sun, undefined, undefined, true);
-  if (A.engine.webGLVersion >= 2) { CTX.shadows.usePercentageCloserFiltering = true; CTX.shadows.filteringQuality = B3.ShadowGenerator.QUALITY_MEDIUM; } else CTX.shadows.usePoissonSampling = true;
+  if (A.engine.webGLVersion >= 2) { CTX.shadows.usePercentageCloserFiltering = true; CTX.shadows.filteringQuality = gfx(A.small).shadowQ === 'low' ? B3.ShadowGenerator.QUALITY_LOW : B3.ShadowGenerator.QUALITY_MEDIUM; } else CTX.shadows.usePoissonSampling = true;
   CTX.shadows.bias = .0008; CTX.shadows.normalBias = .02; CTX.shadows.darkness = .25; A.sun = sun; A.shadows = CTX.shadows;
   if (S.sun) glowSprite(S.sun[3], 90, sunDir.x * 380, sunDir.y * 380, sunDir.z * 380);
   if (E.night) {

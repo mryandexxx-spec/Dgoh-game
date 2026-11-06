@@ -28,7 +28,7 @@ class HeroStage extends Stage3D {
     const rim2 = this.rim2 = new B3.SpotLight('rim2', V3(2.6, 2.6, -2.2), V3(-.6, -.4, .6), Math.PI / 3, 2, S); rim2.intensity = 1.1; rim2.diffuse = col3('#ffa860');
     CTX.shadows = this.shadows = new B3.ShadowGenerator(gfx(this.small).shadowSize, key, undefined, undefined, true); CTX.shadows.bias = .0006; CTX.shadows.normalBias = .01; CTX.shadows.darkness = .2;
     CTX.shadows.usePercentageCloserFiltering = this.engine.webGLVersion >= 2; // perf step 5: PCF instead of PCSS (contact hardening)
-    CTX.shadows.filteringQuality = B3.ShadowGenerator.QUALITY_MEDIUM;
+    CTX.shadows.filteringQuality = gfx(this.small).shadowQ === 'low' ? B3.ShadowGenerator.QUALITY_LOW : B3.ShadowGenerator.QUALITY_MEDIUM;
     // podium: sand-stone disc with glowing tier ring
     const stone = mat3('#5a4030', { roughness: .8 }), top = mat3('#7a5a3e', { roughness: .65 });
     mk(bCyl(1.05, 1.15, .22, 48), stone, 0, -.11, 0, false); mk(bCyl(.98, .98, .02, 48), top, 0, .005, 0, false);

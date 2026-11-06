@@ -32,7 +32,7 @@ class Stage3D extends GameScene {
     P.grainEnabled = Q.grain; P.grain.intensity = 4; P.grain.animated = true;
     if (!dofOn(Q, this.kind)) pipeOpts.dof = null; if (!Q.ssao) pipeOpts.ssao = 0;
     if (pipeOpts.dof) { P.depthOfFieldEnabled = true; P.depthOfFieldBlurLevel = Q.dofBlur === 'low' ? B3.DepthOfFieldEffectBlurLevel.Low : B3.DepthOfFieldEffectBlurLevel.Medium; P.depthOfField.focalLength = pipeOpts.dof.f || 90; P.depthOfField.fStop = pipeOpts.dof.stop || 1.8; P.depthOfField.focusDistance = pipeOpts.dof.d || 4000; }
-    if (Q.glow) { this.glow = new B3.GlowLayer('glow', S, { mainTextureRatio: Q.glowRatio, blurKernelSize: 32 }); this.glow.intensity = pipeOpts.glow ?? .6; if (Q.glowSel) glowOnly(this.glow, [this.sky, this.bg, this.ground]); }
+    if (Q.glow) { this.glow = new B3.GlowLayer('glow', S, { mainTextureRatio: Q.glowRatio, blurKernelSize: Q.glowKernel }); this.glow.intensity = pipeOpts.glow ?? .6; if (Q.glowSel) glowOnly(this.glow, [this.sky, this.bg, this.ground]); }
     try { if (pipeOpts.ssao && this.engine.webGLVersion >= 2 && B3.SSAO2RenderingPipeline.IsSupported) { const ao = this.ssao = new B3.SSAO2RenderingPipeline('ssao', S, { ssaoRatio: Q.ssaoRatio, blurRatio: .5 }, [this.camera], true); ao.radius = pipeOpts.ssao; ao.totalStrength = 1.2; ao.base = .1; ao.samples = Q.ssaoSamples; ao.maxZ = 60; } } catch (e) {}
   }
   // phase 3b, step 4: light sleep on phones (before a battle, sleepStages) — screen-size targets (post pipeline MSAA, SSAO, glow) are freed while the stage
