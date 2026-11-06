@@ -78,7 +78,9 @@ if (C) {   // 4. B → C: изменён один ассет
   const added = [...listC].filter(f => !listB.has(f)), hits = assetHits().map(x => x[0]);
   cName = added.find(f => f.startsWith('assets/'));
   check(added.length >= 1 && hits.length === 1 && hits[0] === cName, `B→C: скачан ровно изменённый ассет (${hits.join(', ')}), новых в кэше ${added.length}`);
-  check([...listB].filter(f => f.startsWith('assets/')).every(f => listC.has(f)), 'B→C: прежние версии ассетов остались (предыдущее поколение)');
+  // фаза 5, шаг 7: сравнивать с SW-списком B — ассеты A, удалённые в B (desert.hdr в v57), активация C законно вычищает
+  const prevB = [...listB].filter(f => f.startsWith('assets/') && swList(B, 'ASSETS').includes(f)), lostB = prevB.filter(f => !listC.has(f));
+  check(prevB.length > 0 && !lostB.length, `B→C: прежние версии ассетов остались (предыдущее поколение, ${prevB.length - lostB.length} из ${prevB.length}${lostB.length ? '; нет: ' + lostB.join(', ') : ''})`);
   check(Object.keys(stC).includes('dune-goh-' + vC) && !LOG.some(([, c]) => c === 404), `B→C: оболочка dune-goh-${vC}, без 404`);
 }
 
