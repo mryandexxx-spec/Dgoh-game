@@ -1,5 +1,5 @@
 // 3D-смоук (фаза 3b, шаг 1): реальный WebGL (SwiftShader), цикл лагерь → окно героя → бой → выход ×N.
-//   node tests/smoke/3d.mjs <game.html> [--cycles 5] [--phone] [--shots dir] [--out file.json] [--chrome path] [--strict] [--gfx high|med|low]
+//   node tests/smoke/3d.mjs <game.html> [--cycles 5] [--phone] [--shots dir] [--out file.json] [--chrome path] [--strict] [--gfx high|med|low] [--scene canyon|court|ruins…]
 //   node tests/smoke/3d.mjs <game.html> --tti 5 [--phone] [--net wifi|4g|none] [--cpu 3] — время до интерактивного лобби (фаза 4, шаг 5):
 //     папка страницы отдаётся по HTTP с gzip, каждый прогон — новый контекст без кэша; медиана: lobby (появилось лобби), tti (setTimeout(0) после него),
 //     b3 (готов Babylon), camp3d (смонтирован 3D-лагерь), load; плюс размер страницы и чанка
@@ -121,7 +121,7 @@ await page.goto(SRV.url(path.basename(html)), { waitUntil: 'load' });
 await sleep(3000);
 if (!await has3d()) { console.error('HAS3D = false — WebGL недоступен в Chrome'); await browser.close(); process.exit(2); }
 const LOBBY = `closeInfo(true); closeOverlay(); view = 'lobby'; render();`;
-const BATTLE = `{ const i = 0, n = NODES[i]; S.skipDlg = true; launch({ mode: 'camp', dlg: false, scene: NODE_SCENES[i], i, title: nodeTitle(i), desert: n.desert, squad: campSquad(i).filter(id => sideOk(n.camp, id) && prog(id).stars), enemy: n.enemy.map(id => enemyProg(id, n.lvl, n.m === 9)) }); BT.auto = true; BT.speed = 4; }`;
+const BATTLE = `{ const i = 0, n = NODES[i]; S.skipDlg = true; launch({ mode: 'camp', dlg: false, scene: ${JSON.stringify(opt('--scene', '') || null)} || NODE_SCENES[i], i, title: nodeTitle(i), desert: n.desert, squad: campSquad(i).filter(id => sideOk(n.camp, id) && prog(id).stars), enemy: n.enemy.map(id => enemyProg(id, n.lvl, n.m === 9)) }); BT.auto = true; BT.speed = 4; }`;
 
 const cycles = [];
 await run(LOBBY); await sleep(1500);
@@ -137,6 +137,7 @@ for (let c = 0; c < CYCLES; c++) {
   await run(BATTLE);
   C.enterSyncMs = await page.evaluate(() => Math.round(performance.now() - window.__t0));
   C.enterMs = await until(frameOf('BT.arena') + ' > 0') + C.enterSyncMs;
+  C.bakeMs = await page.evaluate(() => (BT.arena && BT.arena.bakeMs) ?? null);
   await sleep(500); // «wake» + первый кадр с эффектами
   const l0 = (await probe()).link, fx0 = await effKeys();
   // снимок посреди боя при реальных часах (тени персонажей на арене): через 2,5 с после wake
