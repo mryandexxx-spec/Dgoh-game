@@ -1,7 +1,8 @@
 // render3d/characters/rig.js — строки 1418–1453 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import '../env/particles.js'; // порядок исполнения
 import { MB } from '../geometry.js';
-import { SC, V3 } from '../materials.js';
+import { V3 } from '../materials.js';
+import { CTX } from '../ctx.js';
 import { B3 } from '../base.js';
 
 // ---------- characters (rigged: hips → spine → head/arms, hips → legs) ----------
@@ -13,8 +14,8 @@ const HERO3 = {
   robot: { style: 'robot' }, cymek: { style: 'robot', cymek: 1 },
   erasmus: { style: 'robe', erasmus: 1, dagger: 1, noStaff: 1, tall: 1.06, skin: '#c9ced8', look: { cloak: '#7a1626', dark: '#2a0c12', acc: '#d8b050', pants: '#24242c' } },
 };
-function lathe(profile, seg = 18, zs = .74) { const m = MB().CreateLathe('la', { shape: profile.map(([r, y]) => V3(r, y, 0)), tessellation: seg, cap: B3.Mesh.CAP_ALL }, SC); m.scaling.z = zs; return m; }
-function tube3(pts, r, seg = 8) { return MB().CreateTube('tb', { path: pts.map(p => V3(...p)), radius: r, tessellation: seg, cap: B3.Mesh.CAP_ALL }, SC); }
+function lathe(profile, seg = 18, zs = .74) { const m = MB().CreateLathe('la', { shape: profile.map(([r, y]) => V3(r, y, 0)), tessellation: seg, cap: B3.Mesh.CAP_ALL }, CTX.scene); m.scaling.z = zs; return m; }
+function tube3(pts, r, seg = 8) { return MB().CreateTube('tb', { path: pts.map(p => V3(...p)), radius: r, tessellation: seg, cap: B3.Mesh.CAP_ALL }, CTX.scene); }
 function foldify(mesh, amp, n) {
   const p = mesh.getVerticesData(B3.VertexBuffer.PositionKind); if (!p) return mesh;
   let ymin = Infinity, ymax = -Infinity; for (let i = 1; i < p.length; i += 3) { ymin = Math.min(ymin, p[i]); ymax = Math.max(ymax, p[i]); }

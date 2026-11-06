@@ -3,13 +3,14 @@ import { ANIM3 } from './pose-duncan.js';
 import { makeModel3, modelData } from './authored.js';
 import { HERO3, foldify, lathe, mergeRig, tube3 } from './rig.js';
 import { add, bBox, bCone, bCyl, bOcta, bPlane, bSph, bTorus, grp } from '../geometry.js';
-import { SC, SHG, V3, basic3, col3, mat3, mk, set_SHG } from '../materials.js';
+import { V3, basic3, col3, mat3, mk } from '../materials.js';
+import { CTX, withCtx } from '../ctx.js';
 import { B3 } from '../base.js';
 import { FEM, LOOK, SKINS, ghash } from '../../data/looks.js';
 
-function makeHuman3(def) {
+function makeHuman3(def, ctx) { return withCtx(ctx, () => {
   { const D = modelData(def.id); if (D) { try { return makeModel3(def, D); } catch (e) { console.warn('model', def.id, e); } } }
-  const SHG0 = SHG; set_SHG(null);
+  const SHG0 = CTX.shadows; CTX.shadows = null;
   const fac = def.f[0], X = HERO3[def.id] || {}, L = { ...(LOOK[fac] || LOOK.atr), ...(X.look || {}) }, h = ghash(def.id), fem = FEM.has(def.id);
   let style = X.style || (def.legendary || fac === 'frem' ? 'robe' : def.f.includes('bg') ? 'bgrobe' : fac === 'hark' ? 'armor' : fac === 'cor' ? 'cor' : 'tunic');
   if (fac === 'mach' && !X.erasmus) style = 'robot';
@@ -150,16 +151,16 @@ function makeHuman3(def) {
     for (const x of [-.014, 0, .014]) add(bl, mk(bBox(.003, .7, .003), basic3('#e8dcc0'), x, .32, .064, false));
     add(bl, mk(bBox(.03, .7, .01), mat3('#3a2a1a'), .02, .1, .07)).rotation.z = -.9; bl.rotation.z = .55; }
   if (X.float) { root._float = X.float; for (const s of [-1, 1]) { const g = add(root, mk(bTorus(.09, .015, 16), basic3('#8fd8ff', { add: true, alpha: .7 }), s * .1, .02, .03, false)); g.rotation.x = Math.PI / 2; } }
-  let legL = null; if (def.legendary) { const lt = legL = new B3.PointLight('lg', V3(0, 1.3, 0), SC); lt.parent = root; lt.diffuse = col3(X.erasmus ? '#9fe8ff' : '#ffc860'); lt.intensity = .9; lt.range = 3.5; }
+  let legL = null; if (def.legendary) { const lt = legL = new B3.PointLight('lg', V3(0, 1.3, 0), CTX.scene); lt.parent = root; lt.diffuse = col3(X.erasmus ? '#9fe8ff' : '#ffc860'); lt.intensity = .9; lt.range = 3.5; }
   const sc = (def.role === 'tank' ? 1.05 : 1) * (def.legendary ? 1.08 : 1) * (X.cymek ? 1.15 : 1), tl = X.tall || 1; root.scaling.set(sc * (tl > 1 ? 1.03 : 1), sc * tl, sc * (tl > 1 ? 1.03 : 1));
   const mats = []; for (const m of root.getChildMeshes(false)) if (m.material && m.material._lit && !mats.includes(m.material)) mats.push(m.material);
-  mergeRig(root, SHG0); set_SHG(SHG0);
+  mergeRig(root, SHG0); CTX.shadows = SHG0;
   if (legL) legL.includedOnlyMeshes = root.getChildMeshes(false); // perf step 6: aura light is evaluated only in the hero's own shaders
   for (const m of mats) m._baseEm = m.emissiveColor.clone();
   const melee = dt === 'blade' || robot && dt !== 'fast';
   root._staff = def.role === 'sup' && !robot;
   return { root, body, hips, spine, head, R, Lf, LL, LR, skirt, wpn: w, mats, h: 1.95 * sc * (X.tall || 1), melee, hipY0: .95, anim: ANIM3[def.id] || null, stance: def.role === 'tank' && !X.noShield ? 'shield' : dt === 'blade' ? 'guard' : dt === 'voice' ? 'open' : 'gun', float: X.float || 0 };
-}
+}); }
 
 
 export { makeHuman3 };

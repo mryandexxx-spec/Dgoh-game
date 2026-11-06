@@ -3,7 +3,8 @@ import { MODEL_DATA } from '../assets/models.js';
 import './characters/pose-generic.js'; // порядок исполнения
 import { b64bytes } from './characters/authored.js';
 import { MB, add, bCone, bDisc, bRock, bSph, bTorus, grp } from './geometry.js';
-import { PBR_ON, SC, V3, basic3, col3, lerpC, mat3, mk } from './materials.js';
+import { V3, basic3, col3, lerpC, mat3, mk } from './materials.js';
+import { CTX, withCtx } from './ctx.js';
 import { B3 } from './base.js';
 
 // ---------- Shai-Hulud built in Blender (raid boss body, summon column, shared mouth) ----------
@@ -21,17 +22,17 @@ function wormData() {
   return (WORM_CACHE = { raid: dec(R.raid), col: dec(R.col), mouth: dec(R.mouth), head: R.head, alb: R.alb, nrm: R.nrm });
 }
 function wormMesh(P) {
-  const me = new B3.Mesh('worm', SC), vd = new B3.VertexData(); vd.positions = P.pos; vd.normals = P.nor; if (P.uv) vd.uvs = P.uv; vd.indices = P.idx;
-  if (P.col) { let c = P.col; if (PBR_ON) { c = c.slice(); for (let i = 0; i < c.length; i++) if (i % 4 !== 3) c[i] = Math.pow(c[i], 2.2); } vd.colors = c; }
+  const me = new B3.Mesh('worm', CTX.scene), vd = new B3.VertexData(); vd.positions = P.pos; vd.normals = P.nor; if (P.uv) vd.uvs = P.uv; vd.indices = P.idx;
+  if (P.col) { let c = P.col; if (CTX.pbr) { c = c.slice(); for (let i = 0; i < c.length; i++) if (i % 4 !== 3) c[i] = Math.pow(c[i], 2.2); } vd.colors = c; }
   vd.applyToMesh(me, false); me.isPickable = false; return me;
 }
 function wormMats(WD) {
   const skin = mat3('#ffffff', { roughness: .82, noSheen: 1 }), mouth = mat3('#ffffff', { roughness: .45, side: 'double', noSheen: 1 });
-  const ta = new B3.Texture(WD.alb, SC, false, true), tn = new B3.Texture(WD.nrm, SC, false, true);
+  const ta = new B3.Texture(WD.alb, CTX.scene, false, true), tn = new B3.Texture(WD.nrm, CTX.scene, false, true);
   if (skin instanceof B3.PBRMaterial) skin.albedoTexture = ta; else skin.diffuseTexture = ta; skin.bumpTexture = tn; tn.level = 1.2; skin.invertNormalMapY = true;
   return { skin, mouth };
 }
-function makeWorm3() {
+function makeWorm3(ctx) { return withCtx(ctx, () => {
   const WD = wormData();
   if (WD) {
     const root = grp(null), body = grp(root), M = wormMats(WD);
@@ -47,7 +48,7 @@ function makeWorm3() {
   const root = grp(null), body = grp(root);
   const pts = [V3(1.5, -3, 3), V3(1.4, 2.5, 1.5), V3(.4, 6.4, -.5), V3(-1.8, 7.6, -1), V3(-3.6, 6.4, -.8)];
   const path = B3.Curve3.CreateCatmullRomSpline(pts, 18, false).getPoints(), n = path.length, tess = 20;
-  const tube = MB().CreateTube('worm', { path, tessellation: tess, radiusFunction: i => 1.25 * (.75 + i / (n - 1) * .4), cap: B3.Mesh.CAP_START, updatable: false }, SC);
+  const tube = MB().CreateTube('worm', { path, tessellation: tess, radiusFunction: i => 1.25 * (.75 + i / (n - 1) * .4), cap: B3.Mesh.CAP_START, updatable: false }, CTX.scene);
   const cnt = tube.getTotalVertices(), cols = [], ca = col3('#a88058'), cb = col3('#5a3e26');
   for (let v = 0; v < cnt; v++) { const i = Math.min(n - 1, Math.floor(v / (tess + 1))), k = i / (n - 1), ring = i % 5 < 1 ? .55 : 1, c = lerpC(ca, cb, k * .3).scale(ring); cols.push(c.r, c.g, c.b, 1); }
   tube.setVerticesData(B3.VertexBuffer.ColorKind, cols);
@@ -65,7 +66,7 @@ function makeWorm3() {
   root.scaling.setAll(.95);
   for (const m of [skin, lipM]) m._baseEm = m.emissiveColor.clone();
   return { root, body, mats: [skin, lipM], h: 5.6, boss: true };
-}
+}); }
 
 
 export { WORM_CACHE, wormData, wormMesh, wormMats, makeWorm3 };

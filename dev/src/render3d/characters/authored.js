@@ -3,7 +3,8 @@ import { MODEL_DATA } from '../../assets/models.js';
 import { ANIM3 } from './pose-duncan.js';
 import { HERO3 } from './rig.js';
 import { add, bBox, bCyl, bSph, grp } from '../geometry.js';
-import { PBR_ON, SC, SHG, col3, mat3, mk, set_SHG } from '../materials.js';
+import { col3, mat3, mk } from '../materials.js';
+import { CTX, withCtx } from '../ctx.js';
 import { B3 } from '../base.js';
 
 // ---------- authored models (built in Blender, skinned to the same rig the procedural heroes use) ----------
@@ -25,24 +26,24 @@ function modelData(id) {
   return (MODEL_CACHE[id] = { joints: R.joints, parts, grip: R.grip || null, v: R.v || 1 });
 }
 const MODEL_MAT = { skin: { roughness: .5 }, cloth: { roughness: .92 }, plate: { roughness: .42, metalness: .3, noSheen: 1 }, cape: { roughness: .95, side: 'double' }, leather: { roughness: .58 }, metal: { roughness: .28, metalness: .75 }, hair: { roughness: .7, noSheen: 1 }, eye: { roughness: .15, noSheen: 1 } };
-function makeModel3(def, D) {
-  const SHG0 = SHG; set_SHG(null);
+function makeModel3(def, D) { return withCtx(null, () => {
+  const SHG0 = CTX.shadows; CTX.shadows = null;
   const X = HERO3[def.id] || {}, root = grp(null), body = grp(root), N = {}, abs = {};
   for (const [nm, p, par] of D.joints) { abs[nm] = p; const pp = par ? abs[par] : [0, 0, 0]; N[nm] = grp(par ? N[par] : body, p[0] - pp[0], p[1] - pp[1], p[2] - pp[2]); N[nm].name = nm; }
-  const skel = new B3.Skeleton('sk_' + def.id, 'sk_' + def.id, SC), BN = {};
+  const skel = new B3.Skeleton('sk_' + def.id, 'sk_' + def.id, CTX.scene), BN = {};
   for (const [nm, p, par] of D.joints) { const n = N[nm]; BN[nm] = new B3.Bone(nm, skel, par ? BN[par] : null, B3.Matrix.Translation(n.position.x, n.position.y, n.position.z)); BN[nm].linkTransformNode(n); }
   const mats = [];
   for (const [k, P] of Object.entries(D.parts)) {
-    const me = new B3.Mesh(def.id + '_' + k, SC), vd = new B3.VertexData();
-    let col = P.col; if (PBR_ON) { col = col.slice(); for (let i = 0; i < col.length; i++) if (i % 4 !== 3) col[i] = Math.pow(col[i], 2.2); }
+    const me = new B3.Mesh(def.id + '_' + k, CTX.scene), vd = new B3.VertexData();
+    let col = P.col; if (CTX.pbr) { col = col.slice(); for (let i = 0; i < col.length; i++) if (i % 4 !== 3) col[i] = Math.pow(col[i], 2.2); }
     vd.positions = P.pos; vd.normals = P.nor; if (!P.alb) vd.colors = col; if (P.uv) vd.uvs = P.uv; vd.indices = P.idx; vd.applyToMesh(me, false);
     me.setVerticesData(B3.VertexBuffer.MatricesIndicesKind, P.jj, false); me.setVerticesData(B3.VertexBuffer.MatricesWeightsKind, P.ww, false);
     me.numBoneInfluencers = 4; me.skeleton = skel; me.parent = body; me.receiveShadows = true; me.isPickable = false; me.alwaysSelectAsActiveMesh = true;
     const m = mat3('#ffffff', MODEL_MAT[k] || {}); me.material = m; if (m._lit) mats.push(m);
-    if (P.alb) { const t = new B3.Texture(P.alb, SC, false, true); if (m.albedoTexture !== undefined && m instanceof B3.PBRMaterial) m.albedoTexture = t; else m.diffuseTexture = t; }
-    if (P.nrm) { const t = new B3.Texture(P.nrm, SC, false, true); m.bumpTexture = t; t.level = k === 'skin' ? .7 : 1; m.invertNormalMapY = true; }
+    if (P.alb) { const t = new B3.Texture(P.alb, CTX.scene, false, true); if (m.albedoTexture !== undefined && m instanceof B3.PBRMaterial) m.albedoTexture = t; else m.diffuseTexture = t; }
+    if (P.nrm) { const t = new B3.Texture(P.nrm, CTX.scene, false, true); m.bumpTexture = t; t.level = k === 'skin' ? .7 : 1; m.invertNormalMapY = true; }
     if (P.orm && m instanceof B3.PBRMaterial) {          // R: ambient occlusion, G: roughness, B: metallic (baked in Blender)
-      const t = new B3.Texture(P.orm, SC, false, true); m.metallicTexture = t; m.useAmbientOcclusionFromMetallicTextureRed = true; m.useRoughnessFromMetallicTextureGreen = true; m.useMetallnessFromMetallicTextureBlue = true;
+      const t = new B3.Texture(P.orm, CTX.scene, false, true); m.metallicTexture = t; m.useAmbientOcclusionFromMetallicTextureRed = true; m.useRoughnessFromMetallicTextureGreen = true; m.useMetallnessFromMetallicTextureBlue = true;
       m.metallic = 1; m.roughness = 1; m.sheen.isEnabled = false; m.environmentIntensity = .75;
     }
     if (m instanceof B3.PBRMaterial && (k === 'skin' || k === 'cape')) {    // light bleeding through ears / thin cloth when back-lit
@@ -60,9 +61,9 @@ function makeModel3(def, D) {
   for (const m of w.getChildMeshes()) if (SHG0) SHG0.addShadowCaster(m, false);
   const sc = (def.role === 'tank' ? 1.05 : 1) * (def.legendary ? 1.08 : 1), tl = X.tall || 1; root.scaling.set(sc * (tl > 1 ? 1.03 : 1), sc * tl, sc * (tl > 1 ? 1.03 : 1));
   for (const m of mats) m._baseEm = m.emissiveColor.clone();
-  set_SHG(SHG0); root._authored = 1;
+  CTX.shadows = SHG0; root._authored = 1;
   if (N.capeA) root._capeB = [N.capeA, N.capeB, N.capeC];
   return { root, body, hips: N.hips, spine: N.spine, head: N.head, R, Lf, LL, LR, skirt: null, wpn: w, mats, h: 1.95 * sc * tl, melee: true, hipY0: N.hips.position.y, anim: ANIM3[def.id] || null, capeB: root._capeB || null, stance: def.role === 'tank' && !X.noShield ? 'shield' : 'guard', float: 0 };
-}
+}); }
 
 export { MODEL_CACHE, b64bytes, modelData, MODEL_MAT, makeModel3 };

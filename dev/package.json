@@ -10,6 +10,7 @@
     "acorn": "^8.14.0",
     "acorn-walk": "^8.3.4",
     "esbuild": "^0.24.2",
-    "fflate": "^0.8.2"
+    "fflate": "^0.8.2",
+    "puppeteer-core": "^25.16.0"
   }
 }

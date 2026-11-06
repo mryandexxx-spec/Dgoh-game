@@ -2430,8 +2430,27 @@ var ENV3 = {
 };
 var SLOT3 = [[-3.6, 0.4], [-6.6, -3.4], [-2.6, -4.4], [-7.4, 3.6], [-2.2, 4.6]];
 
+// src/render3d/ctx.js
+var CTX = { scene: null, shadows: null, pbr: false };
+function withCtx(c, fn) {
+  const s = CTX.scene, h = CTX.shadows, p = CTX.pbr;
+  if (c) {
+    if (c.scene !== void 0) CTX.scene = c.scene;
+    if (c.shadows !== void 0) CTX.shadows = c.shadows;
+    if (c.pbr !== void 0) CTX.pbr = !!c.pbr;
+  }
+  try {
+    const r = fn(CTX);
+    if (r && typeof r.then === "function") throw new Error("withCtx: async внутри запрещён");
+    return r;
+  } finally {
+    CTX.scene = s;
+    CTX.shadows = h;
+    CTX.pbr = p;
+  }
+}
+
 // src/render3d/materials.js
-var SC = null, SHG = null;
 var V3 = (x = 0, y = 0, z = 0) => new B3.Vector3(x, y, z);
 function addScaled(v, d, k) {
   v.x += d.x * k;
@@ -2470,10 +2489,9 @@ function runDue(q, now) {
 var col3 = (c) => c == null ? B3.Color3.White() : typeof c === "number" ? B3.Color3.FromHexString("#" + c.toString(16).padStart(6, "0")) : c instanceof B3.Color3 ? c.clone() : B3.Color3.FromHexString(c.length === 4 ? "#" + c[1] + c[1] + c[2] + c[2] + c[3] + c[3] : c);
 var C3_CHARM = B3 && col3("#9fe8ff"), C3_SPICE = B3 && col3("#e8913f"), C3_TGT = B3 && col3("#d9604f");
 var lerpC = (a, b, t) => B3.Color3.Lerp(a, b, t);
-var PBR_ON = false;
 function mat3(c, o = {}) {
-  if (PBR_ON) {
-    const p = new B3.PBRMaterial("p", SC), r2 = o.roughness ?? 0.85, me2 = o.metalness || 0;
+  if (CTX.pbr) {
+    const p = new B3.PBRMaterial("p", CTX.scene), r2 = o.roughness ?? 0.85, me2 = o.metalness || 0;
     p.albedoColor = col3(c).toLinearSpace();
     p.metallic = me2;
     p.roughness = Math.max(0.08, r2);
@@ -2490,25 +2508,25 @@ function mat3(c, o = {}) {
       p.clearCoat.isEnabled = false;
     }
     if (o.side === "double") p.backFaceCulling = false, p.twoSidedLighting = true;
-    p.maxSimultaneousLights = SC && SC._maxL || 4;
+    p.maxSimultaneousLights = CTX.scene && CTX.scene._maxL || 4;
     p._flat = !!o.flatShading;
     p._lit = true;
     p.usePhysicalLightFalloff = false;
     return p;
   }
-  const m = new B3.StandardMaterial("m", SC), r = o.roughness ?? 0.85, me = o.metalness || 0;
+  const m = new B3.StandardMaterial("m", CTX.scene), r = o.roughness ?? 0.85, me = o.metalness || 0;
   m.diffuseColor = col3(c);
   m.specularColor = B3.Color3.White().scale(Math.min(0.9, Math.max(0.03, (1 - r) * 0.45 + me * 0.5)));
   m.specularPower = 6 + (1 - r) * 90;
   if (o.emissive) m.emissiveColor = col3(o.emissive);
   if (o.side === "double") m.backFaceCulling = false;
-  m.maxSimultaneousLights = SC && SC._maxL || 4;
+  m.maxSimultaneousLights = CTX.scene && CTX.scene._maxL || 4;
   m._flat = !!o.flatShading;
   m._lit = true;
   return m;
 }
 function basic3(c, o = {}) {
-  const m = new B3.StandardMaterial("b", SC);
+  const m = new B3.StandardMaterial("b", CTX.scene);
   m.disableLighting = true;
   m.emissiveColor = col3(c);
   m.diffuseColor = B3.Color3.Black();
@@ -2527,22 +2545,13 @@ function mk(mesh, mat, x = 0, y = 0, z = 0, cast = true) {
   mesh.position.set(x, y, z);
   mesh.receiveShadows = true;
   mesh.isPickable = false;
-  if (cast && SHG && mat && mat._lit) SHG.addShadowCaster(mesh, false);
+  if (cast && CTX.shadows && mat && mat._lit) CTX.shadows.addShadowCaster(mesh, false);
   return mesh;
-}
-function set_SHG(v) {
-  return SHG = v;
-}
-function set_SC(v) {
-  return SC = v;
-}
-function set_PBR_ON(v) {
-  return PBR_ON = v;
 }
 
 // src/render3d/geometry.js
 var grp = (parent, x = 0, y = 0, z = 0) => {
-  const g = new B3.TransformNode("g", SC);
+  const g = new B3.TransformNode("g", CTX.scene);
   if (parent) g.parent = parent;
   g.position.set(x, y, z);
   return g;
@@ -2552,13 +2561,13 @@ var add = (p, c) => {
   return c;
 };
 var MB = () => B3.MeshBuilder;
-var bBox = (w, h, d) => MB().CreateBox("bx", { width: w, height: h, depth: d }, SC);
-var bCyl = (rt, rb, h, seg2 = 16, open = false, arc = 1) => MB().CreateCylinder("cy", { diameterTop: 2 * rt, diameterBottom: 2 * rb, height: h, tessellation: seg2, cap: open ? B3.Mesh.NO_CAP : B3.Mesh.CAP_ALL, arc, enclose: arc < 1, sideOrientation: open ? B3.Mesh.DOUBLESIDE : B3.Mesh.DEFAULTSIDE }, SC);
-var bSph = (r, seg2 = 16, arc = 1, slice = 1) => MB().CreateSphere("sp", { diameter: 2 * r, segments: Math.max(4, seg2 >> 1), arc, slice, sideOrientation: arc < 1 || slice < 1 ? B3.Mesh.DOUBLESIDE : B3.Mesh.DEFAULTSIDE }, SC);
-var bCone = (r, h, seg2 = 8) => MB().CreateCylinder("co", { diameterTop: 0, diameterBottom: 2 * r, height: h, tessellation: seg2 }, SC);
+var bBox = (w, h, d) => MB().CreateBox("bx", { width: w, height: h, depth: d }, CTX.scene);
+var bCyl = (rt, rb, h, seg2 = 16, open = false, arc = 1) => MB().CreateCylinder("cy", { diameterTop: 2 * rt, diameterBottom: 2 * rb, height: h, tessellation: seg2, cap: open ? B3.Mesh.NO_CAP : B3.Mesh.CAP_ALL, arc, enclose: arc < 1, sideOrientation: open ? B3.Mesh.DOUBLESIDE : B3.Mesh.DEFAULTSIDE }, CTX.scene);
+var bSph = (r, seg2 = 16, arc = 1, slice = 1) => MB().CreateSphere("sp", { diameter: 2 * r, segments: Math.max(4, seg2 >> 1), arc, slice, sideOrientation: arc < 1 || slice < 1 ? B3.Mesh.DOUBLESIDE : B3.Mesh.DEFAULTSIDE }, CTX.scene);
+var bCone = (r, h, seg2 = 8) => MB().CreateCylinder("co", { diameterTop: 0, diameterBottom: 2 * r, height: h, tessellation: seg2 }, CTX.scene);
 function bTorus(r, tube, seg2 = 24, arc = 1) {
   if (arc >= 1) {
-    const t = MB().CreateTorus("to", { diameter: 2 * r, thickness: 2 * tube, tessellation: seg2 }, SC);
+    const t = MB().CreateTorus("to", { diameter: 2 * r, thickness: 2 * tube, tessellation: seg2 }, CTX.scene);
     t.bakeTransformIntoVertices(B3.Matrix.RotationX(Math.PI / 2));
     return t;
   }
@@ -2567,13 +2576,13 @@ function bTorus(r, tube, seg2 = 24, arc = 1) {
     const a = i / seg2 * arc * Math.PI * 2;
     path.push(V3(Math.cos(a) * r, Math.sin(a) * r, 0));
   }
-  return MB().CreateTube("tt", { path, radius: tube, tessellation: 10, cap: B3.Mesh.CAP_ALL }, SC);
+  return MB().CreateTube("tt", { path, radius: tube, tessellation: 10, cap: B3.Mesh.CAP_ALL }, CTX.scene);
 }
-var bDisc = (r, seg2 = 24, arc = 1) => MB().CreateDisc("di", { radius: r, tessellation: seg2, arc, sideOrientation: B3.Mesh.DOUBLESIDE }, SC);
-var bPlane = (w, h) => MB().CreatePlane("pl", { width: w, height: h, sideOrientation: B3.Mesh.DOUBLESIDE }, SC);
-var bOcta = (r) => MB().CreatePolyhedron("oc", { type: 1, size: r }, SC);
+var bDisc = (r, seg2 = 24, arc = 1) => MB().CreateDisc("di", { radius: r, tessellation: seg2, arc, sideOrientation: B3.Mesh.DOUBLESIDE }, CTX.scene);
+var bPlane = (w, h) => MB().CreatePlane("pl", { width: w, height: h, sideOrientation: B3.Mesh.DOUBLESIDE }, CTX.scene);
+var bOcta = (r) => MB().CreatePolyhedron("oc", { type: 1, size: r }, CTX.scene);
 function bRock(seed, detail = 2) {
-  const m = MB().CreateIcoSphere("rk", { radius: 1, subdivisions: [1, 2, 3, 4][detail] || 2, updatable: true }, SC);
+  const m = MB().CreateIcoSphere("rk", { radius: 1, subdivisions: [1, 2, 3, 4][detail] || 2, updatable: true }, CTX.scene);
   const p = m.getVerticesData(B3.VertexBuffer.PositionKind);
   for (let i = 0; i < p.length; i += 3) {
     const x = p[i], y = p[i + 1], z = p[i + 2], n = 0.75 + NZ(x * 1.7 + seed, y * 1.7 + z * 1.3, 3) * 0.55;
@@ -2593,8 +2602,8 @@ function canvasEl(size, fn) {
   fn(c.getContext("2d"), size);
   return c;
 }
-function dynTex(canvas, rep, alpha) {
-  const t = new B3.DynamicTexture("dt", canvas, SC, true, B3.Texture.TRILINEAR_SAMPLINGMODE);
+function dynTex(canvas, rep, alpha, ctx) {
+  const t = new B3.DynamicTexture("dt", canvas, ctx && ctx.scene !== void 0 ? ctx.scene : CTX.scene, true, B3.Texture.TRILINEAR_SAMPLINGMODE);
   t.update(true);
   if (rep) {
     t.uScale = t.vScale = rep;
@@ -2668,110 +2677,112 @@ function staticNoCast(A) {
   } catch (e) {
   }
 }
-function buildEnv(A, key, day) {
-  let E = ENV3[key] || ENV3.desert, S2 = SCN[key] || SCN.desert;
-  if (day && E.night) {
-    E = { ...E, night: 0, sand: "#b88a5e", sand2: "#6a4632" };
-    S2 = SCN.canyon;
-  }
-  A.env = E;
-  if ((E.props || []).includes("cave")) SC._maxL = 8;
-  const fogC = col3(S2.fog || S2.sky[2]);
-  SC.fogMode = B3.Scene.FOGMODE_LINEAR;
-  SC.fogColor = fogC;
-  SC.fogStart = E.fogNear || 34;
-  SC.fogEnd = E.fogFar || 150;
-  SC.clearColor = new B3.Color4(fogC.r, fogC.g, fogC.b, 1);
-  SC.ambientColor = B3.Color3.Black();
-  const sky = MB().CreateSphere("sky", { diameter: 840, segments: 24, sideOrientation: B3.Mesh.BACKSIDE }, SC), sp = sky.getVerticesData(B3.VertexBuffer.PositionKind), cols = [];
-  const s0 = col3(S2.sky[0]), s1 = col3(S2.sky[1]), s2 = col3(S2.sky[2]);
-  for (let i = 0; i < sp.length; i += 3) {
-    const t = Math.min(1, 1 - Math.max(0, sp[i + 1] / 420)) ** 1.6;
-    const c = t < 0.55 ? lerpC(s0, s1, t / 0.55) : lerpC(s1, s2, (t - 0.55) / 0.45);
-    cols.push(c.r, c.g, c.b, 1);
-  }
-  sky.setVerticesData(B3.VertexBuffer.ColorKind, cols);
-  const skm = basic3("#ffffff", { fog: false });
-  skm.disableDepthWrite = true;
-  sky.material = skm;
-  sky.infiniteDistance = true;
-  sky.isPickable = false;
-  A.sky = sky;
-  const sunDir = S2.sun ? V3((S2.sun[0] - 0.5) * 2.2, Math.max(0.18, (0.75 - S2.sun[1]) * 1.9), -1).normalize() : V3(-0.6, 0.7, -0.4).normalize();
-  const hemi = new B3.HemisphericLight("hemi", V3(0, 1, 0), SC);
-  hemi.diffuse = E.night || E.dark ? col3("#6a6a9a") : s2.clone();
-  hemi.groundColor = col3(E.sand2);
-  hemi.intensity = E.night ? 0.5 : E.dark ? 0.4 : 0.8;
-  hemi.specular = B3.Color3.Black();
-  const sun = new B3.DirectionalLight("sun", sunDir.scale(-1), SC);
-  sun.position = sunDir.scale(40);
-  sun.diffuse = S2.sun ? lerpC(col3(S2.sun[3]), col3("#ffd8a0"), 0.35) : col3("#9aa6d8");
-  sun.intensity = E.night ? 0.6 : E.dark ? 0.3 : 1.35;
-  sun.autoUpdateExtends = false;
-  sun.autoCalcShadowZBounds = false;
-  sun.orthoLeft = -17;
-  sun.orthoRight = 17;
-  sun.orthoTop = 13;
-  sun.orthoBottom = -13;
-  sun.shadowMinZ = 1;
-  sun.shadowMaxZ = 120;
-  set_SHG(new B3.ShadowGenerator(A.small ? 1024 : 2048, sun));
-  if (A.engine.webGLVersion >= 2) {
-    SHG.usePercentageCloserFiltering = true;
-    SHG.filteringQuality = B3.ShadowGenerator.QUALITY_MEDIUM;
-  } else SHG.usePoissonSampling = true;
-  SHG.bias = 8e-4;
-  SHG.normalBias = 0.02;
-  SHG.darkness = 0.25;
-  A.sun = sun;
-  A.shadows = SHG;
-  if (S2.sun) glowSprite(S2.sun[3], 90, sunDir.x * 380, sunDir.y * 380, sunDir.z * 380);
-  if (E.night) {
-    const n = 900, pos = [], r = sRng(3);
-    for (let i = 0; i < n; i++) {
-      const th = r() * Math.PI * 2, ph = Math.acos(r() * 0.95);
-      pos.push(Math.sin(ph) * Math.cos(th) * 400, Math.cos(ph) * 400, Math.sin(ph) * Math.sin(th) * 400);
+function buildEnv(A, key, day, ctx) {
+  return withCtx(ctx, () => {
+    let E = ENV3[key] || ENV3.desert, S2 = SCN[key] || SCN.desert;
+    if (day && E.night) {
+      E = { ...E, night: 0, sand: "#b88a5e", sand2: "#6a4632" };
+      S2 = SCN.canyon;
     }
-    const stars = new B3.Mesh("stars", SC), vd = new B3.VertexData();
-    vd.positions = pos;
-    vd.indices = Array.from({ length: n }, (_, i) => i);
-    vd.applyToMesh(stars);
-    const sm = basic3("#ffffff", { fog: false });
-    sm.pointsCloud = true;
-    sm.pointSize = 2;
-    stars.material = sm;
-    stars.infiniteDistance = true;
-    for (const [x, y, s] of [[-140, 170, 46], [-80, 210, 22]]) glowSprite("#f2ecd8", s, x, y, -330, false);
-  }
-  const gk = E.ground, size = 160, seg2 = A.small ? 120 : 170;
-  const ground = MB().CreateGround("ground", { width: size, height: size, subdivisions: seg2, updatable: true }, SC);
-  const p = ground.getVerticesData(B3.VertexBuffer.PositionKind), vc = [], c1 = col3(E.sand), c2 = col3(E.sand2), spice = E.spice ? col3(E.spice) : null;
-  for (let i = 0; i < p.length; i += 3) {
-    const x = p[i], z = p[i + 2], y = heightAt(gk, x, z);
-    p[i + 1] = y;
-    const n = NZ(x * 0.06 + 9, z * 0.06 + 4, 3);
-    let c = lerpC(c1, c2, Math.min(1, Math.max(0, (n - 0.35) * 1.4 - y * 0.04)));
-    if (spice) {
-      const sn = NZ(x * 0.05 + 31, z * 0.05 + 7, 3);
-      if (sn > 0.55) c = lerpC(c, spice, Math.min(0.8, (sn - 0.55) * 3));
+    A.env = E;
+    if ((E.props || []).includes("cave")) CTX.scene._maxL = 8;
+    const fogC = col3(S2.fog || S2.sky[2]);
+    CTX.scene.fogMode = B3.Scene.FOGMODE_LINEAR;
+    CTX.scene.fogColor = fogC;
+    CTX.scene.fogStart = E.fogNear || 34;
+    CTX.scene.fogEnd = E.fogFar || 150;
+    CTX.scene.clearColor = new B3.Color4(fogC.r, fogC.g, fogC.b, 1);
+    CTX.scene.ambientColor = B3.Color3.Black();
+    const sky = MB().CreateSphere("sky", { diameter: 840, segments: 24, sideOrientation: B3.Mesh.BACKSIDE }, CTX.scene), sp = sky.getVerticesData(B3.VertexBuffer.PositionKind), cols = [];
+    const s0 = col3(S2.sky[0]), s1 = col3(S2.sky[1]), s2 = col3(S2.sky[2]);
+    for (let i = 0; i < sp.length; i += 3) {
+      const t = Math.min(1, 1 - Math.max(0, sp[i + 1] / 420)) ** 1.6;
+      const c = t < 0.55 ? lerpC(s0, s1, t / 0.55) : lerpC(s1, s2, (t - 0.55) / 0.45);
+      cols.push(c.r, c.g, c.b, 1);
     }
-    vc.push(c.r, c.g, c.b, 1);
-  }
-  ground.updateVerticesData(B3.VertexBuffer.PositionKind, p);
-  ground.setVerticesData(B3.VertexBuffer.ColorKind, vc);
-  const nr = [];
-  B3.VertexData.ComputeNormals(p, ground.getIndices(), nr);
-  ground.updateVerticesData(B3.VertexBuffer.NormalKind, nr);
-  const gm = mat3("#ffffff", { roughness: gk === "floor" ? 0.35 : 0.95, metalness: gk === "floor" ? 0.15 : 0 });
-  gm.diffuseTexture = dynTex(groundCanvas(E.tex || "sand"), (E.tex || "sand") === "tile" ? 10 : 22);
-  ground.material = gm;
-  ground.receiveShadows = true;
-  ground.isPickable = false;
-  A.ground = ground;
-  A.heightAt = (x, z) => heightAt(gk, x, z);
-  for (const pr of E.props || []) PROPS3[pr] && PROPS3[pr](A, E, S2);
-  staticNoCast(A);
-  if (E.parts) addParticles3(A, E.parts, E);
+    sky.setVerticesData(B3.VertexBuffer.ColorKind, cols);
+    const skm = basic3("#ffffff", { fog: false });
+    skm.disableDepthWrite = true;
+    sky.material = skm;
+    sky.infiniteDistance = true;
+    sky.isPickable = false;
+    A.sky = sky;
+    const sunDir = S2.sun ? V3((S2.sun[0] - 0.5) * 2.2, Math.max(0.18, (0.75 - S2.sun[1]) * 1.9), -1).normalize() : V3(-0.6, 0.7, -0.4).normalize();
+    const hemi = new B3.HemisphericLight("hemi", V3(0, 1, 0), CTX.scene);
+    hemi.diffuse = E.night || E.dark ? col3("#6a6a9a") : s2.clone();
+    hemi.groundColor = col3(E.sand2);
+    hemi.intensity = E.night ? 0.5 : E.dark ? 0.4 : 0.8;
+    hemi.specular = B3.Color3.Black();
+    const sun = new B3.DirectionalLight("sun", sunDir.scale(-1), CTX.scene);
+    sun.position = sunDir.scale(40);
+    sun.diffuse = S2.sun ? lerpC(col3(S2.sun[3]), col3("#ffd8a0"), 0.35) : col3("#9aa6d8");
+    sun.intensity = E.night ? 0.6 : E.dark ? 0.3 : 1.35;
+    sun.autoUpdateExtends = false;
+    sun.autoCalcShadowZBounds = false;
+    sun.orthoLeft = -17;
+    sun.orthoRight = 17;
+    sun.orthoTop = 13;
+    sun.orthoBottom = -13;
+    sun.shadowMinZ = 1;
+    sun.shadowMaxZ = 120;
+    CTX.shadows = new B3.ShadowGenerator(A.small ? 1024 : 2048, sun);
+    if (A.engine.webGLVersion >= 2) {
+      CTX.shadows.usePercentageCloserFiltering = true;
+      CTX.shadows.filteringQuality = B3.ShadowGenerator.QUALITY_MEDIUM;
+    } else CTX.shadows.usePoissonSampling = true;
+    CTX.shadows.bias = 8e-4;
+    CTX.shadows.normalBias = 0.02;
+    CTX.shadows.darkness = 0.25;
+    A.sun = sun;
+    A.shadows = CTX.shadows;
+    if (S2.sun) glowSprite(S2.sun[3], 90, sunDir.x * 380, sunDir.y * 380, sunDir.z * 380);
+    if (E.night) {
+      const n = 900, pos = [], r = sRng(3);
+      for (let i = 0; i < n; i++) {
+        const th = r() * Math.PI * 2, ph = Math.acos(r() * 0.95);
+        pos.push(Math.sin(ph) * Math.cos(th) * 400, Math.cos(ph) * 400, Math.sin(ph) * Math.sin(th) * 400);
+      }
+      const stars = new B3.Mesh("stars", CTX.scene), vd = new B3.VertexData();
+      vd.positions = pos;
+      vd.indices = Array.from({ length: n }, (_, i) => i);
+      vd.applyToMesh(stars);
+      const sm = basic3("#ffffff", { fog: false });
+      sm.pointsCloud = true;
+      sm.pointSize = 2;
+      stars.material = sm;
+      stars.infiniteDistance = true;
+      for (const [x, y, s] of [[-140, 170, 46], [-80, 210, 22]]) glowSprite("#f2ecd8", s, x, y, -330, false);
+    }
+    const gk = E.ground, size = 160, seg2 = A.small ? 120 : 170;
+    const ground = MB().CreateGround("ground", { width: size, height: size, subdivisions: seg2, updatable: true }, CTX.scene);
+    const p = ground.getVerticesData(B3.VertexBuffer.PositionKind), vc = [], c1 = col3(E.sand), c2 = col3(E.sand2), spice = E.spice ? col3(E.spice) : null;
+    for (let i = 0; i < p.length; i += 3) {
+      const x = p[i], z = p[i + 2], y = heightAt(gk, x, z);
+      p[i + 1] = y;
+      const n = NZ(x * 0.06 + 9, z * 0.06 + 4, 3);
+      let c = lerpC(c1, c2, Math.min(1, Math.max(0, (n - 0.35) * 1.4 - y * 0.04)));
+      if (spice) {
+        const sn = NZ(x * 0.05 + 31, z * 0.05 + 7, 3);
+        if (sn > 0.55) c = lerpC(c, spice, Math.min(0.8, (sn - 0.55) * 3));
+      }
+      vc.push(c.r, c.g, c.b, 1);
+    }
+    ground.updateVerticesData(B3.VertexBuffer.PositionKind, p);
+    ground.setVerticesData(B3.VertexBuffer.ColorKind, vc);
+    const nr = [];
+    B3.VertexData.ComputeNormals(p, ground.getIndices(), nr);
+    ground.updateVerticesData(B3.VertexBuffer.NormalKind, nr);
+    const gm = mat3("#ffffff", { roughness: gk === "floor" ? 0.35 : 0.95, metalness: gk === "floor" ? 0.15 : 0 });
+    gm.diffuseTexture = dynTex(groundCanvas(E.tex || "sand"), (E.tex || "sand") === "tile" ? 10 : 22);
+    ground.material = gm;
+    ground.receiveShadows = true;
+    ground.isPickable = false;
+    A.ground = ground;
+    A.heightAt = (x, z) => heightAt(gk, x, z);
+    for (const pr of E.props || []) PROPS3[pr] && PROPS3[pr](A, E, S2);
+    staticNoCast(A);
+    if (E.parts) addParticles3(A, E.parts, E);
+  });
 }
 function heightAt(kind, x, z) {
   const r = Math.hypot(x, z * 1.25), far = sstep(13, 44, r);
@@ -2817,7 +2828,7 @@ var PROPS3 = {
     dome.scaling.set(46, 22, 38);
     const op = mk(bDisc(3.2, 24, 0.5), basic3("#e8b878", { fog: false }), 0, -0.5, -52, false);
     for (const [x, y, z] of [[-12, 4, -10], [12, 4.5, -12], [-7, 3, 6], [8, 3, 5]]) {
-      const L = new B3.PointLight("pl", V3(x, y, z), SC);
+      const L = new B3.PointLight("pl", V3(x, y, z), CTX.scene);
       L.diffuse = col3("#ffa860");
       L.intensity = 1.4;
       L.range = 26;
@@ -2832,7 +2843,7 @@ var PROPS3 = {
     }
   },
   sea(A) {
-    const sea = mk(MB().CreateGround("sea", { width: 600, height: 600 }, SC), mat3("#2a4c58", { roughness: 0.2, metalness: 0.5 }), 0, -4.5, 0, false);
+    const sea = mk(MB().CreateGround("sea", { width: 600, height: 600 }, CTX.scene), mat3("#2a4c58", { roughness: 0.2, metalness: 0.5 }), 0, -4.5, 0, false);
     A.sea = sea;
   },
   castle(A) {
@@ -2900,7 +2911,7 @@ function addParticles3(A, type) {
     dust: { n: 260, box: [[-35, 0, -26], [35, 4, 14]], dir: [[-0.15, -0.05, -0.15], [0.15, 0.08, 0.15]], life: [8, 16], size: [0.06, 0.14], col: "#ffd9a0", a: 0.5, add: true }
   }[type];
   if (cfg) {
-    const ps = new B3.ParticleSystem(type, cfg.n, SC);
+    const ps = new B3.ParticleSystem(type, cfg.n, CTX.scene);
     ps.particleTexture = tex;
     ps.emitter = V3(0, 0, 0);
     ps.minEmitBox = V3(...cfg.box[0]);
@@ -2925,7 +2936,7 @@ function addParticles3(A, type) {
     A.parts.push(ps);
   }
   for (const pl of A.plumes || []) {
-    const ps = new B3.ParticleSystem("plume", 140, SC);
+    const ps = new B3.ParticleSystem("plume", 140, CTX.scene);
     ps.particleTexture = tex;
     ps.emitter = V3(pl.x, pl.y, pl.z);
     ps.minEmitBox = V3(-1.5, 0, -1.5);
@@ -2975,12 +2986,12 @@ var HERO3 = {
   erasmus: { style: "robe", erasmus: 1, dagger: 1, noStaff: 1, tall: 1.06, skin: "#c9ced8", look: { cloak: "#7a1626", dark: "#2a0c12", acc: "#d8b050", pants: "#24242c" } }
 };
 function lathe(profile, seg2 = 18, zs = 0.74) {
-  const m = MB().CreateLathe("la", { shape: profile.map(([r, y]) => V3(r, y, 0)), tessellation: seg2, cap: B3.Mesh.CAP_ALL }, SC);
+  const m = MB().CreateLathe("la", { shape: profile.map(([r, y]) => V3(r, y, 0)), tessellation: seg2, cap: B3.Mesh.CAP_ALL }, CTX.scene);
   m.scaling.z = zs;
   return m;
 }
 function tube3(pts, r, seg2 = 8) {
-  return MB().CreateTube("tb", { path: pts.map((p) => V3(...p)), radius: r, tessellation: seg2, cap: B3.Mesh.CAP_ALL }, SC);
+  return MB().CreateTube("tb", { path: pts.map((p) => V3(...p)), radius: r, tessellation: seg2, cap: B3.Mesh.CAP_ALL }, CTX.scene);
 }
 function foldify(mesh, amp, n) {
   const p = mesh.getVerticesData(B3.VertexBuffer.PositionKind);
@@ -3081,401 +3092,405 @@ function modelData(id) {
 }
 var MODEL_MAT = { skin: { roughness: 0.5 }, cloth: { roughness: 0.92 }, plate: { roughness: 0.42, metalness: 0.3, noSheen: 1 }, cape: { roughness: 0.95, side: "double" }, leather: { roughness: 0.58 }, metal: { roughness: 0.28, metalness: 0.75 }, hair: { roughness: 0.7, noSheen: 1 }, eye: { roughness: 0.15, noSheen: 1 } };
 function makeModel3(def, D) {
-  const SHG0 = SHG;
-  set_SHG(null);
-  const X = HERO3[def.id] || {}, root = grp(null), body = grp(root), N = {}, abs = {};
-  for (const [nm, p, par] of D.joints) {
-    abs[nm] = p;
-    const pp = par ? abs[par] : [0, 0, 0];
-    N[nm] = grp(par ? N[par] : body, p[0] - pp[0], p[1] - pp[1], p[2] - pp[2]);
-    N[nm].name = nm;
-  }
-  const skel = new B3.Skeleton("sk_" + def.id, "sk_" + def.id, SC), BN = {};
-  for (const [nm, p, par] of D.joints) {
-    const n = N[nm];
-    BN[nm] = new B3.Bone(nm, skel, par ? BN[par] : null, B3.Matrix.Translation(n.position.x, n.position.y, n.position.z));
-    BN[nm].linkTransformNode(n);
-  }
-  const mats = [];
-  for (const [k, P] of Object.entries(D.parts)) {
-    const me = new B3.Mesh(def.id + "_" + k, SC), vd = new B3.VertexData();
-    let col = P.col;
-    if (PBR_ON) {
-      col = col.slice();
-      for (let i = 0; i < col.length; i++) if (i % 4 !== 3) col[i] = Math.pow(col[i], 2.2);
+  return withCtx(null, () => {
+    const SHG0 = CTX.shadows;
+    CTX.shadows = null;
+    const X = HERO3[def.id] || {}, root = grp(null), body = grp(root), N = {}, abs = {};
+    for (const [nm, p, par] of D.joints) {
+      abs[nm] = p;
+      const pp = par ? abs[par] : [0, 0, 0];
+      N[nm] = grp(par ? N[par] : body, p[0] - pp[0], p[1] - pp[1], p[2] - pp[2]);
+      N[nm].name = nm;
     }
-    vd.positions = P.pos;
-    vd.normals = P.nor;
-    if (!P.alb) vd.colors = col;
-    if (P.uv) vd.uvs = P.uv;
-    vd.indices = P.idx;
-    vd.applyToMesh(me, false);
-    me.setVerticesData(B3.VertexBuffer.MatricesIndicesKind, P.jj, false);
-    me.setVerticesData(B3.VertexBuffer.MatricesWeightsKind, P.ww, false);
-    me.numBoneInfluencers = 4;
-    me.skeleton = skel;
-    me.parent = body;
-    me.receiveShadows = true;
-    me.isPickable = false;
-    me.alwaysSelectAsActiveMesh = true;
-    const m = mat3("#ffffff", MODEL_MAT[k] || {});
-    me.material = m;
-    if (m._lit) mats.push(m);
-    if (P.alb) {
-      const t = new B3.Texture(P.alb, SC, false, true);
-      if (m.albedoTexture !== void 0 && m instanceof B3.PBRMaterial) m.albedoTexture = t;
-      else m.diffuseTexture = t;
+    const skel = new B3.Skeleton("sk_" + def.id, "sk_" + def.id, CTX.scene), BN = {};
+    for (const [nm, p, par] of D.joints) {
+      const n = N[nm];
+      BN[nm] = new B3.Bone(nm, skel, par ? BN[par] : null, B3.Matrix.Translation(n.position.x, n.position.y, n.position.z));
+      BN[nm].linkTransformNode(n);
     }
-    if (P.nrm) {
-      const t = new B3.Texture(P.nrm, SC, false, true);
-      m.bumpTexture = t;
-      t.level = k === "skin" ? 0.7 : 1;
-      m.invertNormalMapY = true;
+    const mats = [];
+    for (const [k, P] of Object.entries(D.parts)) {
+      const me = new B3.Mesh(def.id + "_" + k, CTX.scene), vd = new B3.VertexData();
+      let col = P.col;
+      if (CTX.pbr) {
+        col = col.slice();
+        for (let i = 0; i < col.length; i++) if (i % 4 !== 3) col[i] = Math.pow(col[i], 2.2);
+      }
+      vd.positions = P.pos;
+      vd.normals = P.nor;
+      if (!P.alb) vd.colors = col;
+      if (P.uv) vd.uvs = P.uv;
+      vd.indices = P.idx;
+      vd.applyToMesh(me, false);
+      me.setVerticesData(B3.VertexBuffer.MatricesIndicesKind, P.jj, false);
+      me.setVerticesData(B3.VertexBuffer.MatricesWeightsKind, P.ww, false);
+      me.numBoneInfluencers = 4;
+      me.skeleton = skel;
+      me.parent = body;
+      me.receiveShadows = true;
+      me.isPickable = false;
+      me.alwaysSelectAsActiveMesh = true;
+      const m = mat3("#ffffff", MODEL_MAT[k] || {});
+      me.material = m;
+      if (m._lit) mats.push(m);
+      if (P.alb) {
+        const t = new B3.Texture(P.alb, CTX.scene, false, true);
+        if (m.albedoTexture !== void 0 && m instanceof B3.PBRMaterial) m.albedoTexture = t;
+        else m.diffuseTexture = t;
+      }
+      if (P.nrm) {
+        const t = new B3.Texture(P.nrm, CTX.scene, false, true);
+        m.bumpTexture = t;
+        t.level = k === "skin" ? 0.7 : 1;
+        m.invertNormalMapY = true;
+      }
+      if (P.orm && m instanceof B3.PBRMaterial) {
+        const t = new B3.Texture(P.orm, CTX.scene, false, true);
+        m.metallicTexture = t;
+        m.useAmbientOcclusionFromMetallicTextureRed = true;
+        m.useRoughnessFromMetallicTextureGreen = true;
+        m.useMetallnessFromMetallicTextureBlue = true;
+        m.metallic = 1;
+        m.roughness = 1;
+        m.sheen.isEnabled = false;
+        m.environmentIntensity = 0.75;
+      }
+      if (m instanceof B3.PBRMaterial && (k === "skin" || k === "cape")) {
+        m.subSurface.isTranslucencyEnabled = true;
+        m.subSurface.translucencyIntensity = k === "skin" ? 0.12 : 0.25;
+        m.subSurface.tintColor = col3(k === "skin" ? "#d0583c" : "#8a6a48");
+        m.subSurface.maximumThickness = k === "skin" ? 1 : 0.05;
+        m.subSurface.tintColorAtDistance = k === "skin" ? 0.08 : 0.05;
+      }
+      if (m instanceof B3.PBRMaterial && k === "eye") {
+        m.clearCoat.isEnabled = true;
+        m.clearCoat.intensity = 1;
+        m.clearCoat.roughness = 0.04;
+      }
+      if (SHG0 && k !== "eye") SHG0.addShadowCaster(me, false);
     }
-    if (P.orm && m instanceof B3.PBRMaterial) {
-      const t = new B3.Texture(P.orm, SC, false, true);
-      m.metallicTexture = t;
-      m.useAmbientOcclusionFromMetallicTextureRed = true;
-      m.useRoughnessFromMetallicTextureGreen = true;
-      m.useMetallnessFromMetallicTextureBlue = true;
-      m.metallic = 1;
-      m.roughness = 1;
-      m.sheen.isEnabled = false;
-      m.environmentIntensity = 0.75;
-    }
-    if (m instanceof B3.PBRMaterial && (k === "skin" || k === "cape")) {
-      m.subSurface.isTranslucencyEnabled = true;
-      m.subSurface.translucencyIntensity = k === "skin" ? 0.12 : 0.25;
-      m.subSurface.tintColor = col3(k === "skin" ? "#d0583c" : "#8a6a48");
-      m.subSurface.maximumThickness = k === "skin" ? 1 : 0.05;
-      m.subSurface.tintColorAtDistance = k === "skin" ? 0.08 : 0.05;
-    }
-    if (m instanceof B3.PBRMaterial && k === "eye") {
-      m.clearCoat.isEnabled = true;
-      m.clearCoat.intensity = 1;
-      m.clearCoat.roughness = 0.04;
-    }
-    if (SHG0 && k !== "eye") SHG0.addShadowCaster(me, false);
-  }
-  const R = { sh: N.shR, el: N.elR, hand: N.handR }, Lf = { sh: N.shL, el: N.elL, hand: N.handL }, LL = { hip: N.hipL, knee: N.kneeL, ank: N.ankL }, LR = { hip: N.hipR, knee: N.kneeR, ank: N.ankR };
-  const gp = D.grip ? D.grip.p : [0, -0.04, 0.01], w = grp(R.hand, gp[0], gp[1], gp[2]), steel = mat3("#eef2f6", { metalness: 0.6, roughness: 0.18, emissive: "#1a1e24" }), gold = mat3("#b08a3a", { metalness: 0.6, roughness: 0.3 });
-  add(w, mk(bBox(0.03, 0.9, 0.012), steel, 0, 0.5, 0));
-  add(w, mk(bBox(0.18, 0.028, 0.045), gold, 0, 0.04, 0));
-  add(w, mk(bCyl(0.02, 0.02, 0.14, 8), mat3("#3a2a1a"), 0, -0.05, 0));
-  add(w, mk(bSph(0.03, 8), gold, 0, -0.13, 0));
-  w.rotation.x = 1.6;
-  mats.push(steel, gold);
-  for (const m of w.getChildMeshes()) if (SHG0) SHG0.addShadowCaster(m, false);
-  const sc = (def.role === "tank" ? 1.05 : 1) * (def.legendary ? 1.08 : 1), tl = X.tall || 1;
-  root.scaling.set(sc * (tl > 1 ? 1.03 : 1), sc * tl, sc * (tl > 1 ? 1.03 : 1));
-  for (const m of mats) m._baseEm = m.emissiveColor.clone();
-  set_SHG(SHG0);
-  root._authored = 1;
-  if (N.capeA) root._capeB = [N.capeA, N.capeB, N.capeC];
-  return { root, body, hips: N.hips, spine: N.spine, head: N.head, R, Lf, LL, LR, skirt: null, wpn: w, mats, h: 1.95 * sc * tl, melee: true, hipY0: N.hips.position.y, anim: ANIM3[def.id] || null, capeB: root._capeB || null, stance: def.role === "tank" && !X.noShield ? "shield" : "guard", float: 0 };
+    const R = { sh: N.shR, el: N.elR, hand: N.handR }, Lf = { sh: N.shL, el: N.elL, hand: N.handL }, LL = { hip: N.hipL, knee: N.kneeL, ank: N.ankL }, LR = { hip: N.hipR, knee: N.kneeR, ank: N.ankR };
+    const gp = D.grip ? D.grip.p : [0, -0.04, 0.01], w = grp(R.hand, gp[0], gp[1], gp[2]), steel = mat3("#eef2f6", { metalness: 0.6, roughness: 0.18, emissive: "#1a1e24" }), gold = mat3("#b08a3a", { metalness: 0.6, roughness: 0.3 });
+    add(w, mk(bBox(0.03, 0.9, 0.012), steel, 0, 0.5, 0));
+    add(w, mk(bBox(0.18, 0.028, 0.045), gold, 0, 0.04, 0));
+    add(w, mk(bCyl(0.02, 0.02, 0.14, 8), mat3("#3a2a1a"), 0, -0.05, 0));
+    add(w, mk(bSph(0.03, 8), gold, 0, -0.13, 0));
+    w.rotation.x = 1.6;
+    mats.push(steel, gold);
+    for (const m of w.getChildMeshes()) if (SHG0) SHG0.addShadowCaster(m, false);
+    const sc = (def.role === "tank" ? 1.05 : 1) * (def.legendary ? 1.08 : 1), tl = X.tall || 1;
+    root.scaling.set(sc * (tl > 1 ? 1.03 : 1), sc * tl, sc * (tl > 1 ? 1.03 : 1));
+    for (const m of mats) m._baseEm = m.emissiveColor.clone();
+    CTX.shadows = SHG0;
+    root._authored = 1;
+    if (N.capeA) root._capeB = [N.capeA, N.capeB, N.capeC];
+    return { root, body, hips: N.hips, spine: N.spine, head: N.head, R, Lf, LL, LR, skirt: null, wpn: w, mats, h: 1.95 * sc * tl, melee: true, hipY0: N.hips.position.y, anim: ANIM3[def.id] || null, capeB: root._capeB || null, stance: def.role === "tank" && !X.noShield ? "shield" : "guard", float: 0 };
+  });
 }
 
 // src/render3d/characters/procedural.js
-function makeHuman3(def) {
-  {
-    const D = modelData(def.id);
-    if (D) {
-      try {
-        return makeModel3(def, D);
-      } catch (e) {
-        console.warn("model", def.id, e);
+function makeHuman3(def, ctx) {
+  return withCtx(ctx, () => {
+    {
+      const D = modelData(def.id);
+      if (D) {
+        try {
+          return makeModel3(def, D);
+        } catch (e) {
+          console.warn("model", def.id, e);
+        }
       }
     }
-  }
-  const SHG0 = SHG;
-  set_SHG(null);
-  const fac = def.f[0], X = HERO3[def.id] || {}, L = { ...LOOK[fac] || LOOK.atr, ...X.look || {} }, h = ghash(def.id), fem = FEM.has(def.id);
-  let style = X.style || (def.legendary || fac === "frem" ? "robe" : def.f.includes("bg") ? "bgrobe" : fac === "hark" ? "armor" : fac === "cor" ? "cor" : "tunic");
-  if (fac === "mach" && !X.erasmus) style = "robot";
-  const long = style === "robe" || style === "bgrobe", armored = style === "armor" || style === "cor" || style === "robot", robot = style === "robot";
-  const helm = style === "armor" && (def.id === "trooper" || def.role === "tank") || style === "cor" && !X.nohelm;
-  const skinC = X.skin || SKINS[h % SKINS.length][0], hairC = X.old ? "#9a9488" : X.hairC || ["#2a1c14", "#5a3a22", "#151110", "#7a5232", "#3a2a20", "#6a4a2a"][(h >> 3) % 6];
-  const ibad = fac === "frem" || def.legendary;
-  const M = {
-    cloth: mat3(L.cloak, { roughness: 0.9 }),
-    dark: mat3(L.dark, { roughness: 0.85 }),
-    acc: mat3(L.acc, { roughness: 0.5, metalness: 0.2 }),
-    pants: mat3(L.pants, { roughness: 0.9 }),
-    skin: mat3(skinC, { roughness: 0.55 }),
-    hair: mat3(hairC, { roughness: 0.8 }),
-    boot: mat3("#2a1d14", { roughness: 0.6 }),
-    belt: mat3("#4a3420", { roughness: 0.6 }),
-    metal: mat3(robot ? "#9aa0ac" : style === "cor" || style === "emperor" ? "#c8a656" : "#5a6684", { metalness: 0.55, roughness: 0.32 }),
-    steel: mat3("#eef2f6", { metalness: 0.6, roughness: 0.18, emissive: "#1a1e24" }),
-    suit: mat3(fac === "frem" ? "#4a4038" : L.pants, { roughness: 0.7 }),
-    eye: basic3(ibad ? "#2a6aff" : "#140c08"),
-    white: ibad ? basic3("#7aa8ff") : mat3("#f2ece0", { roughness: 0.3 }),
-    lip: mat3(fem ? "#a04a44" : "#7a4434"),
-    brow: mat3(X.old ? "#cfc8bc" : hairC)
-  };
-  if (def.legendary) M.cloth.emissiveColor = col3("#5a3a08").scale(0.4);
-  if (X.erasmus) {
-    M.skin = mat3("#d4d9e2", { metalness: 0.9, roughness: 0.1, emissive: "#1a2028" });
-    M.cloth.emissiveColor = col3("#3a0810").scale(0.5);
-  }
-  const wide = (X.wide || 1) * (def.role === "tank" ? 1.12 : 1) * (X.slim || 1), fat = X.fat || 1;
-  const root = grp(null), body = grp(root), hips = grp(body, 0, 0.95, 0);
-  const A = (parent, mesh, mat, x = 0, y = 0, z = 0) => add(parent, mk(mesh, mat, x, y, z));
-  if (X.muscle) root._muscle = 1;
-  A(hips, bSph(0.17 * wide * Math.min(fat, 1.3) * (X.muscle ? 0.9 : 1), 14), long ? M.suit : robot ? M.metal : M.pants, 0, -0.02, 0).scaling.set(1, 0.62, 0.78);
-  const leg = (s) => {
-    const hip = grp(hips, s * 0.1 * wide, -0.04, 0);
-    A(hip, bCyl(0.078 * Math.min(fat, 1.25), 0.06, 0.44, 10), long ? M.suit : robot || style === "armor" ? M.metal : M.pants, 0, -0.22, 0);
-    const knee = grp(hip, 0, -0.44, 0);
-    if (armored && !long) A(knee, bSph(0.07, 10), M.metal, 0, 0, 0.03);
-    else A(knee, bSph(0.06, 12), long ? M.suit : M.pants, 0, 0, 0);
-    A(knee, bCyl(0.058, 0.046, 0.42, 10), long ? M.suit : robot ? M.metal : M.pants, 0, -0.21, 0);
-    const ank = grp(knee, 0, -0.42, 0);
-    A(ank, bBox(0.12, 0.1, 0.27), robot ? M.metal : M.boot, 0, -0.035, 0.045);
-    A(ank, bSph(0.062, 10), robot ? M.metal : M.boot, 0, -0.03, 0.16).scaling.set(1, 0.7, 0.9);
-    A(ank, bCyl(0.064, 0.07, 0.16, 10), robot ? M.metal : M.boot, 0, 0.05, 0);
-    return { hip, knee, ank };
-  };
-  const LL = leg(-1), LR = leg(1);
-  let skirt = null;
-  if (long) {
-    skirt = grp(hips, 0, 0.06, 0);
-    A(skirt, foldify(lathe([[0, 0], [0.2 * wide * fat, 0], [0.26 * wide, -0.3], [0.36, -0.62], [0.44, -0.86], [0.43, -0.9], [0, -0.9]], 44, 0.8), 0.07, 9), style === "bgrobe" ? M.dark : M.cloth);
-  } else if (style === "tunic" || style === "emperor") {
-    skirt = grp(hips, 0, 0.04, 0);
-    A(skirt, lathe([[0, 0], [0.19 * wide, 0], [0.22 * wide, -0.2], [0.24 * wide, -0.32], [0, -0.32]], 18, 0.78), style === "emperor" ? M.dark : M.cloth);
-  }
-  const spine = grp(hips, 0, 0.04, 0);
-  const torsoM = robot ? M.metal : style === "armor" ? M.metal : style === "bgrobe" ? M.dark : M.cloth;
-  const ch = X.muscle ? 1.22 : 1, wa = X.muscle ? 0.86 : 1;
-  const tor = A(spine, lathe([[0, 0], [0.17 * wide * fat * wa, 0], [0.16 * wide * fat * wa, 0.1], [0.2 * wide * fat * (X.muscle ? 1.02 : 1), 0.26], [0.23 * wide * Math.min(fat, 1.25) * ch, 0.42], [0.21 * wide * ch, 0.52], [0.09, 0.6], [0, 0.6]], 20, 0.7 * Math.max(1, fat * 0.9)), torsoM);
-  if (fat > 1) A(spine, bSph(0.24 * fat * 0.8, 16), torsoM, 0, 0.2, 0.07).scaling.set(1, 0.9, 0.9);
-  A(spine, bCyl(0.178 * wide * fat, 0.178 * wide * fat, 0.06, 20), robot ? M.dark : M.belt, 0, 0.02, 0).scaling.z = 0.74;
-  A(spine, bBox(0.07, 0.055, 0.03), M.acc, 0, 0.02, 0.135 * fat);
-  if (X.muscle) for (const s of [-1, 1]) A(spine, bSph(0.1, 12), torsoM, s * 0.08, 0.42, 0.1).scaling.set(1.1, 0.8, 0.6);
-  if (style === "tunic") {
-    A(spine, bBox(0.02, 0.42, 0.02), M.acc, 0, 0.3, 0.155);
-    for (const y of [0.16, 0.26, 0.36]) A(spine, bSph(0.012, 6), M.acc, 0, y, 0.165);
-    A(spine, bSph(0.03, 8), M.acc, -0.1, 0.42, 0.16);
-  }
-  if (style === "armor" || style === "cor" || robot) {
-    A(spine, bBox(0.3 * wide, 0.2, 0.05), M.metal, 0, 0.35, 0.12);
-    A(spine, bBox(0.26 * wide, 0.1, 0.05), M.dark, 0, 0.18, 0.12);
-  }
-  if (style === "emperor") {
-    A(spine, bBox(0.32, 0.32, 0.04), M.acc, 0, 0.32, 0.12).scaling.x = 0.9;
-    A(spine, bBox(0.22, 0.05, 0.05), M.metal, 0, 0.46, 0.13);
-  }
-  if (long) {
-    A(spine, bCyl(0.24 * wide, 0.18 * wide, 0.2, 18), style === "bgrobe" ? M.dark : M.cloth, 0, 0.42, 0).scaling.z = 0.78;
-    A(spine, bBox(0.08, 0.45, 0.02), style === "bgrobe" ? M.acc : M.dark, 0, 0.28, 0.14);
-  }
-  for (const s of [-1, 1]) {
-    if (armored) {
-      const pad = A(spine, bSph(0.12, 12), M.metal, s * 0.25 * wide, 0.52, 0);
-      pad.scaling.set(1.05, 0.7, 1);
-      if (style === "armor" && !robot) A(spine, bCone(0.035, 0.12, 6), M.dark, s * 0.3 * wide, 0.6, 0).rotation.z = -s * 0.5;
-    } else A(spine, bSph(0.085, 10), style === "tunic" ? M.acc : torsoM, s * 0.24 * wide, 0.52, 0);
-  }
-  if (def.leader || style === "emperor") {
-    const cm = style === "emperor" || fac === "cor" ? mat3("#7a1f1a", { side: "double", roughness: 0.7 }) : mat3(L.dark, { side: "double" });
-    const cape = grp(spine, 0, 0.56, -0.13);
-    A(cape, bPlane(0.6 * wide, 1.3), cm, 0, -0.62, 0);
-    cape.rotation.x = 0.12;
-    A(spine, bTorus(0.12, 0.025, 16), M.acc, 0, 0.56, 0.02).rotation.x = Math.PI / 2;
-    root._cape = cape;
-  }
-  A(spine, bCyl(0.05, 0.06, 0.12, 10), robot ? M.dark : M.skin, 0, 0.64, 0);
-  const head = grp(spine, 0, 0.68, 0), H = (mesh, mat, x, y, z) => add(head, mk(mesh, mat, x, y, z));
-  if (X.erasmus) {
-    const face = H(bSph(0.118, 28), mat3("#e8ecf4", { metalness: 1, roughness: 0.04, emissive: "#2a3440" }), 0, 0.1, 0.01);
-    face.scaling.set(0.86, 1.16, 0.92);
-    for (const s of [-1, 1]) H(bSph(0.012, 8), basic3("#9fe8ff"), s * 0.036, 0.12, 0.1);
-    H(bTorus(0.13, 8e-3, 24), mat3("#d8b050", { metalness: 0.8, roughness: 0.2, emissive: "#5a3a00" }), 0, 0.02, 0).rotation.x = Math.PI / 2;
-  } else if (robot) {
-    H(bBox(0.22, 0.2, 0.22), M.metal, 0, 0.1, 0);
-    H(bBox(0.19, 0.04, 0.02), basic3("#ff3a2a"), 0, 0.12, 0.115);
-    H(bCyl(8e-3, 8e-3, 0.14, 4), M.dark, 0.07, 0.25, 0);
-    if (X.cymek) {
-      H(bSph(0.14, 16), basic3("#ffb0c8", { alpha: 0.55 }), 0, 0.26, 0);
-      H(bSph(0.09, 12), mat3("#d06a8a", { roughness: 0.4 }), 0, 0.25, 0);
+    const SHG0 = CTX.shadows;
+    CTX.shadows = null;
+    const fac = def.f[0], X = HERO3[def.id] || {}, L = { ...LOOK[fac] || LOOK.atr, ...X.look || {} }, h = ghash(def.id), fem = FEM.has(def.id);
+    let style = X.style || (def.legendary || fac === "frem" ? "robe" : def.f.includes("bg") ? "bgrobe" : fac === "hark" ? "armor" : fac === "cor" ? "cor" : "tunic");
+    if (fac === "mach" && !X.erasmus) style = "robot";
+    const long = style === "robe" || style === "bgrobe", armored = style === "armor" || style === "cor" || style === "robot", robot = style === "robot";
+    const helm = style === "armor" && (def.id === "trooper" || def.role === "tank") || style === "cor" && !X.nohelm;
+    const skinC = X.skin || SKINS[h % SKINS.length][0], hairC = X.old ? "#9a9488" : X.hairC || ["#2a1c14", "#5a3a22", "#151110", "#7a5232", "#3a2a20", "#6a4a2a"][(h >> 3) % 6];
+    const ibad = fac === "frem" || def.legendary;
+    const M = {
+      cloth: mat3(L.cloak, { roughness: 0.9 }),
+      dark: mat3(L.dark, { roughness: 0.85 }),
+      acc: mat3(L.acc, { roughness: 0.5, metalness: 0.2 }),
+      pants: mat3(L.pants, { roughness: 0.9 }),
+      skin: mat3(skinC, { roughness: 0.55 }),
+      hair: mat3(hairC, { roughness: 0.8 }),
+      boot: mat3("#2a1d14", { roughness: 0.6 }),
+      belt: mat3("#4a3420", { roughness: 0.6 }),
+      metal: mat3(robot ? "#9aa0ac" : style === "cor" || style === "emperor" ? "#c8a656" : "#5a6684", { metalness: 0.55, roughness: 0.32 }),
+      steel: mat3("#eef2f6", { metalness: 0.6, roughness: 0.18, emissive: "#1a1e24" }),
+      suit: mat3(fac === "frem" ? "#4a4038" : L.pants, { roughness: 0.7 }),
+      eye: basic3(ibad ? "#2a6aff" : "#140c08"),
+      white: ibad ? basic3("#7aa8ff") : mat3("#f2ece0", { roughness: 0.3 }),
+      lip: mat3(fem ? "#a04a44" : "#7a4434"),
+      brow: mat3(X.old ? "#cfc8bc" : hairC)
+    };
+    if (def.legendary) M.cloth.emissiveColor = col3("#5a3a08").scale(0.4);
+    if (X.erasmus) {
+      M.skin = mat3("#d4d9e2", { metalness: 0.9, roughness: 0.1, emissive: "#1a2028" });
+      M.cloth.emissiveColor = col3("#3a0810").scale(0.5);
     }
-  } else {
-    const skull = H(bSph(0.112, 20), M.skin, 0, 0.1, 0);
-    skull.scaling.set(fem ? 0.9 : 0.97, 1.1, 1);
-    H(bSph(0.085, 18), M.skin, 0, 0.045, 0.03).scaling.set(fem ? 0.82 : 0.95, 0.8, 0.85);
-    for (const s of [-1, 1]) H(bSph(0.028, 10), M.skin, s * 0.055, 0.075, 0.07).scaling.set(1, 0.75, 0.55);
-    H(bSph(0.045, 12), M.skin, 0, 0.135, 0.085).scaling.set(1.6, 0.45, 0.5);
-    for (const s of [-1, 1]) {
-      H(bSph(0.025, 8), M.skin, s * 0.105, 0.1, 0).scaling.set(0.5, 1, 0.8);
-      H(bSph(0.017, 8), M.white, s * 0.04, 0.115, 0.092);
-      H(bSph(0.0105, 8), M.eye, s * 0.04, 0.115, 0.106);
-      if (!helm) {
-        const br = H(bBox(0.045, 0.011, 0.012), M.brow, s * 0.042, 0.142, 0.1);
-        br.rotation.z = s * -0.12;
-      }
-    }
-    const nose = H(bCone(0.016, 0.055, 6), M.skin, 0, 0.085, 0.115);
-    nose.rotation.x = Math.PI / 2 - 0.3;
-    H(bBox(0.046, 9e-3, 0.012), M.lip, 0, 0.035, 0.1);
-    if (X.scar) H(bBox(8e-3, 0.07, 6e-3), mat3("#8a4a3a"), 0.05, 0.07, 0.095).rotation.z = 0.3;
-    if (X.beard) {
-      const bd = H(bSph(0.085, 14, 1, 0.5), M.hair, 0, 0.04, 0.045);
-      bd.rotation.x = Math.PI;
-      bd.scaling.set(1, 1.15, 1);
-    }
-    if (X.mus) {
-      for (const s of [-1, 1]) {
-        const mu = H(bBox(0.045, 0.016, 0.02), M.hair, s * 0.022, 0.052, 0.108);
-        mu.rotation.z = s * -0.35;
-      }
-    }
-    if (X.scars) {
-      const sm = mat3("#9a5a4a", { roughness: 0.5 });
-      H(bBox(7e-3, 0.085, 6e-3), sm, -0.055, 0.1, 0.098).rotation.z = -0.35;
-      H(bBox(6e-3, 0.06, 6e-3), sm, 0.045, 0.07, 0.1).rotation.z = 0.5;
-      H(bBox(0.05, 6e-3, 6e-3), sm, 0.03, 0.02, 0.103);
-    }
-    if (X.tube) H(tube3([[-0.02, 0.07, 0.11], [-0.07, 0.06, 0.09], [-0.11, 0.08, 0.02]], 6e-3), M.dark);
-    if (X.mask) H(bBox(0.15, 0.06, 0.05), M.dark, 0, 0.04, 0.08);
-    if (!long && !helm && !X.bald && style !== "cor") {
-      if (fem || X.hair === "long") {
-        H(bSph(0.123, 16, 1, 0.55), M.hair, 0, 0.12, -8e-3);
-        H(bCyl(0.1, 0.07, 0.3, 12), M.hair, 0, 0.01, -0.07);
-      } else if (X.curly || (h >> 12) % 3 === 2) {
-        for (const [x, y, z] of [[-0.07, 0.19, 0.02], [0, 0.22, 0.02], [0.07, 0.19, 0.02], [-0.05, 0.2, -0.06], [0.05, 0.2, -0.06], [0, 0.18, -0.1], [-0.1, 0.14, -0.04], [0.1, 0.14, -0.04]]) H(bSph(0.046, 8), M.hair, x, y, z);
-      } else {
-        const cap = H(bSph(0.118, 16, 1, 0.5), M.hair, 0, 0.12, -0.01);
-        cap.scaling.set(1.03, 1.1, 1.06);
-        cap.rotation.x = -0.25;
-      }
-    }
-    if (X.bald) H(bSph(0.114, 18, 1, 0.4), mat3(skinC, { roughness: 0.3, metalness: 0.1 }), 0, 0.11, 0);
+    const wide = (X.wide || 1) * (def.role === "tank" ? 1.12 : 1) * (X.slim || 1), fat = X.fat || 1;
+    const root = grp(null), body = grp(root), hips = grp(body, 0, 0.95, 0);
+    const A = (parent, mesh, mat, x = 0, y = 0, z = 0) => add(parent, mk(mesh, mat, x, y, z));
+    if (X.muscle) root._muscle = 1;
+    A(hips, bSph(0.17 * wide * Math.min(fat, 1.3) * (X.muscle ? 0.9 : 1), 14), long ? M.suit : robot ? M.metal : M.pants, 0, -0.02, 0).scaling.set(1, 0.62, 0.78);
+    const leg = (s) => {
+      const hip = grp(hips, s * 0.1 * wide, -0.04, 0);
+      A(hip, bCyl(0.078 * Math.min(fat, 1.25), 0.06, 0.44, 10), long ? M.suit : robot || style === "armor" ? M.metal : M.pants, 0, -0.22, 0);
+      const knee = grp(hip, 0, -0.44, 0);
+      if (armored && !long) A(knee, bSph(0.07, 10), M.metal, 0, 0, 0.03);
+      else A(knee, bSph(0.06, 12), long ? M.suit : M.pants, 0, 0, 0);
+      A(knee, bCyl(0.058, 0.046, 0.42, 10), long ? M.suit : robot ? M.metal : M.pants, 0, -0.21, 0);
+      const ank = grp(knee, 0, -0.42, 0);
+      A(ank, bBox(0.12, 0.1, 0.27), robot ? M.metal : M.boot, 0, -0.035, 0.045);
+      A(ank, bSph(0.062, 10), robot ? M.metal : M.boot, 0, -0.03, 0.16).scaling.set(1, 0.7, 0.9);
+      A(ank, bCyl(0.064, 0.07, 0.16, 10), robot ? M.metal : M.boot, 0, 0.05, 0);
+      return { hip, knee, ank };
+    };
+    const LL = leg(-1), LR = leg(1);
+    let skirt = null;
     if (long) {
-      const hoodM = style === "bgrobe" && !def.legendary ? M.dark : M.cloth;
-      const hood = H(bSph(0.16, 18, 0.7, 0.7), hoodM, 0, 0.11, -0.01);
-      hood.scaling.set(1, 1.12, 1.06);
-      hood.rotation.y = Math.PI * 1.75;
-      root._hood = hood;
-      if (style === "robe" && !X.mask) H(bBox(0.2, 0.07, 0.09), M.dark, 0, 0, 0.07);
-      if (def.legendary) H(bTorus(0.14, 8e-3, 24, 0.55), mat3("#e0b44a", { metalness: 0.8, roughness: 0.25, emissive: "#6a4400" }), 0, 0.12, 0.07).rotation.z = -0.1 * Math.PI;
+      skirt = grp(hips, 0, 0.06, 0);
+      A(skirt, foldify(lathe([[0, 0], [0.2 * wide * fat, 0], [0.26 * wide, -0.3], [0.36, -0.62], [0.44, -0.86], [0.43, -0.9], [0, -0.9]], 44, 0.8), 0.07, 9), style === "bgrobe" ? M.dark : M.cloth);
+    } else if (style === "tunic" || style === "emperor") {
+      skirt = grp(hips, 0, 0.04, 0);
+      A(skirt, lathe([[0, 0], [0.19 * wide, 0], [0.22 * wide, -0.2], [0.24 * wide, -0.32], [0, -0.32]], 18, 0.78), style === "emperor" ? M.dark : M.cloth);
     }
-    if (helm) {
-      const hm = H(bSph(0.142, 18), M.metal, 0, 0.12, 0);
-      hm.scaling.set(1, 1.08, 1.06);
-      if (style === "cor") {
-        H(bBox(0.03, 0.14, 0.26), mat3("#a3322a"), 0, 0.27, -0.02);
-        for (const s of [-1, 1]) H(bBox(0.03, 0.1, 0.07), M.metal, s * 0.12, 0.05, 0.05);
-      } else H(bBox(0.18, 0.034, 0.05), basic3("#8fd8ff"), 0, 0.12, 0.125);
+    const spine = grp(hips, 0, 0.04, 0);
+    const torsoM = robot ? M.metal : style === "armor" ? M.metal : style === "bgrobe" ? M.dark : M.cloth;
+    const ch = X.muscle ? 1.22 : 1, wa = X.muscle ? 0.86 : 1;
+    const tor = A(spine, lathe([[0, 0], [0.17 * wide * fat * wa, 0], [0.16 * wide * fat * wa, 0.1], [0.2 * wide * fat * (X.muscle ? 1.02 : 1), 0.26], [0.23 * wide * Math.min(fat, 1.25) * ch, 0.42], [0.21 * wide * ch, 0.52], [0.09, 0.6], [0, 0.6]], 20, 0.7 * Math.max(1, fat * 0.9)), torsoM);
+    if (fat > 1) A(spine, bSph(0.24 * fat * 0.8, 16), torsoM, 0, 0.2, 0.07).scaling.set(1, 0.9, 0.9);
+    A(spine, bCyl(0.178 * wide * fat, 0.178 * wide * fat, 0.06, 20), robot ? M.dark : M.belt, 0, 0.02, 0).scaling.z = 0.74;
+    A(spine, bBox(0.07, 0.055, 0.03), M.acc, 0, 0.02, 0.135 * fat);
+    if (X.muscle) for (const s of [-1, 1]) A(spine, bSph(0.1, 12), torsoM, s * 0.08, 0.42, 0.1).scaling.set(1.1, 0.8, 0.6);
+    if (style === "tunic") {
+      A(spine, bBox(0.02, 0.42, 0.02), M.acc, 0, 0.3, 0.155);
+      for (const y of [0.16, 0.26, 0.36]) A(spine, bSph(0.012, 6), M.acc, 0, y, 0.165);
+      A(spine, bSph(0.03, 8), M.acc, -0.1, 0.42, 0.16);
     }
-  }
-  const arm = (s) => {
-    const sh = grp(spine, s * 0.28 * wide, 0.5, 0);
-    const sleeve = robot || style === "armor" ? M.metal : long ? style === "bgrobe" ? M.dark : M.cloth : M.cloth;
-    A(sh, bCyl(0.06 * Math.min(fat, 1.3) * (X.muscle ? 1.35 : 1), 0.052 * (X.muscle ? 1.25 : 1), 0.3, 10), sleeve, 0, -0.15, 0);
-    if (X.muscle) A(sh, bSph(0.075, 10), sleeve, 0, -0.1, 0.01).scaling.set(1, 1.3, 1);
-    const el = grp(sh, 0, -0.3, 0);
-    A(el, bSph(0.052, 8), sleeve);
-    A(el, bCyl(0.05, 0.042, 0.27, 10), long ? sleeve : robot ? M.metal : style === "armor" ? M.dark : M.cloth, 0, -0.135, 0);
-    if (armored) A(el, bCyl(0.056, 0.056, 0.08, 10), M.metal, 0, -0.22, 0);
-    const hand = grp(el, 0, -0.29, 0);
-    A(hand, bBox(0.06, 0.08, 0.045), robot || style === "armor" ? mat3("#232838") : M.skin, 0, -0.02, 0);
-    A(hand, bSph(0.022, 6), robot || style === "armor" ? mat3("#232838") : M.skin, s * -0.03, -0.01, 0.02);
-    sh.rotation.z = s * 0.12;
-    return { sh, el, hand };
-  };
-  const R = arm(1), Lf = arm(-1);
-  const dt = def.basic.dt, w = grp(R.hand, 0, -0.04, 0), W = (mesh, mat, x, y, z) => add(w, mk(mesh, mat, x, y, z));
-  if (dt === "blade") {
-    if (fac === "frem") {
-      W(tube3([[0, 0, 0], [0, 0.16, 0.015], [0, 0.32, 0.05], [0, 0.44, 0.1]], 0.018, 6), mat3("#f2ead6", { roughness: 0.3, emissive: "#2a2418" }));
-      W(bCyl(0.022, 0.022, 0.12, 8), mat3("#6a4a2a"), 0, -0.04, 0);
-    } else if (robot) {
-      W(bBox(0.02, 0.55, 0.08), basic3("#ff5a3a"), 0, 0.3, 0);
-    } else if (X.dagger) {
-      W(bBox(0.026, 0.3, 0.01), M.steel, 0, 0.2, 0);
-      W(bCone(0.013, 0.05, 4), M.steel, 0, 0.375, 0);
-      W(bBox(0.09, 0.02, 0.03), mat3("#b08a3a", { metalness: 0.6 }), 0, 0.04, 0);
-      W(bCyl(0.016, 0.016, 0.1, 8), mat3("#3a2a1a"), 0, -0.03, 0);
-    } else {
-      W(bBox(0.03, 0.9, 0.012), M.steel, 0, 0.5, 0);
-      W(bBox(0.18, 0.028, 0.045), mat3("#b08a3a", { metalness: 0.6, roughness: 0.3 }), 0, 0.04, 0);
-      W(bCyl(0.02, 0.02, 0.14, 8), mat3("#3a2a1a"), 0, -0.05, 0);
+    if (style === "armor" || style === "cor" || robot) {
+      A(spine, bBox(0.3 * wide, 0.2, 0.05), M.metal, 0, 0.35, 0.12);
+      A(spine, bBox(0.26 * wide, 0.1, 0.05), M.dark, 0, 0.18, 0.12);
     }
-    w.rotation.x = 1.6;
-  } else if (dt === "fast") {
-    W(bBox(0.05, 0.075, 0.26), mat3("#3a3a44", { metalness: 0.4, roughness: 0.35 }), 0, 0, 0.1);
-    W(bBox(0.045, 0.12, 0.05), mat3("#2a2a32"), 0, -0.06, 0);
-    W(bSph(0.015, 6), basic3("#ffd27a"), 0, 0.01, 0.235);
-    w.rotation.x = 1.25;
-  } else if (dt === "laser") {
-    W(bBox(0.06, 0.085, 0.86), mat3("#3a3d48", { metalness: 0.4, roughness: 0.3 }), 0, 0, 0.26);
-    W(bSph(0.04, 8), basic3("#7fe0ff"), 0, 0, 0.7);
-    W(bBox(0.04, 0.14, 0.06), mat3("#2a2a32"), 0, -0.08, 0);
-    w.rotation.x = 1.3;
-  } else if (dt === "poison") {
-    W(bCyl(6e-3, 6e-3, 0.3, 4), M.steel, 0, 0.15, 0);
-    W(bSph(0.026, 8), basic3("#7ad36a"), 0, 0.3, 0);
-    w.rotation.x = 1.5;
-  } else if (dt === "voice") {
-    W(bSph(0.03, 8), basic3("#c8a0ff", { alpha: 0.7 }), 0, 0, 0.05);
-  }
-  root._muzzle = V3(0, 0.01, dt === "laser" ? 0.7 : 0.24);
-  if (def.role === "tank" && !robot && !X.noShield) {
-    const shd = grp(Lf.el, 0, -0.16, 0.06);
-    add(shd, mk(bCyl(0.27, 0.27, 0.035, 24), M.cloth));
-    add(shd, mk(bCyl(0.22, 0.22, 0.045, 24), M.acc));
-    add(shd, mk(bSph(0.05, 8), M.metal, 0, 0.03, 0));
-  }
-  if (def.role === "sup" && !robot && !X.noStaff) {
-    const st = grp(Lf.hand, 0, -0.02, 0.02);
-    add(st, mk(bCyl(0.022, 0.022, 1.85, 6), mat3("#6e5034"), 0, 0.22, 0));
-    add(st, mk(bOcta(0.075), M.acc, 0, 1.17, 0));
-    add(st, mk(bSph(0.04, 8), basic3(L.acc), 0, 1.17, 0));
-  }
-  if (def.role === "heal") add(Lf.hand, mk(bCyl(0.045, 0.045, 0.14, 10), mat3("#3a8ec6", { roughness: 0.2, metalness: 0.2, emissive: "#0a2030" }), 0, -0.06, 0.02));
-  if (X.cane) {
-    const cn = grp(Lf.hand, 0, -0.02, 0.02);
-    add(cn, mk(bCyl(0.018, 0.014, 0.95, 8), mat3("#2a1a10", { roughness: 0.3, metalness: 0.2 }), 0, -0.46, 0));
-    add(cn, mk(bSph(0.04, 10), mat3("#d4aa50", { metalness: 0.7, roughness: 0.25 }), 0, 0.02, 0));
-    root._cane = 1;
-  }
-  if (X.baliset) {
-    const wd = mat3("#9a6430", { roughness: 0.45, metalness: 0.1 }), dk = mat3("#4a2c14", { roughness: 0.5 }), bl = grp(spine, 0, 0.28, -0.2);
-    add(bl, mk(bSph(0.16, 16), wd)).scaling.set(1, 1.25, 0.38);
-    add(bl, mk(bCyl(0.05, 0.05, 0.012, 16), basic3("#1a0e06"), 0, 0.02, 0.062)).rotation.x = Math.PI / 2;
-    add(bl, mk(bBox(0.05, 0.58, 0.035), dk, 0, 0.44, 0));
-    add(bl, mk(bBox(0.08, 0.12, 0.04), dk, 0, 0.78, -0.01));
-    for (const x of [-0.014, 0, 0.014]) add(bl, mk(bBox(3e-3, 0.7, 3e-3), basic3("#e8dcc0"), x, 0.32, 0.064, false));
-    add(bl, mk(bBox(0.03, 0.7, 0.01), mat3("#3a2a1a"), 0.02, 0.1, 0.07)).rotation.z = -0.9;
-    bl.rotation.z = 0.55;
-  }
-  if (X.float) {
-    root._float = X.float;
+    if (style === "emperor") {
+      A(spine, bBox(0.32, 0.32, 0.04), M.acc, 0, 0.32, 0.12).scaling.x = 0.9;
+      A(spine, bBox(0.22, 0.05, 0.05), M.metal, 0, 0.46, 0.13);
+    }
+    if (long) {
+      A(spine, bCyl(0.24 * wide, 0.18 * wide, 0.2, 18), style === "bgrobe" ? M.dark : M.cloth, 0, 0.42, 0).scaling.z = 0.78;
+      A(spine, bBox(0.08, 0.45, 0.02), style === "bgrobe" ? M.acc : M.dark, 0, 0.28, 0.14);
+    }
     for (const s of [-1, 1]) {
-      const g = add(root, mk(bTorus(0.09, 0.015, 16), basic3("#8fd8ff", { add: true, alpha: 0.7 }), s * 0.1, 0.02, 0.03, false));
-      g.rotation.x = Math.PI / 2;
+      if (armored) {
+        const pad = A(spine, bSph(0.12, 12), M.metal, s * 0.25 * wide, 0.52, 0);
+        pad.scaling.set(1.05, 0.7, 1);
+        if (style === "armor" && !robot) A(spine, bCone(0.035, 0.12, 6), M.dark, s * 0.3 * wide, 0.6, 0).rotation.z = -s * 0.5;
+      } else A(spine, bSph(0.085, 10), style === "tunic" ? M.acc : torsoM, s * 0.24 * wide, 0.52, 0);
     }
-  }
-  let legL = null;
-  if (def.legendary) {
-    const lt = legL = new B3.PointLight("lg", V3(0, 1.3, 0), SC);
-    lt.parent = root;
-    lt.diffuse = col3(X.erasmus ? "#9fe8ff" : "#ffc860");
-    lt.intensity = 0.9;
-    lt.range = 3.5;
-  }
-  const sc = (def.role === "tank" ? 1.05 : 1) * (def.legendary ? 1.08 : 1) * (X.cymek ? 1.15 : 1), tl = X.tall || 1;
-  root.scaling.set(sc * (tl > 1 ? 1.03 : 1), sc * tl, sc * (tl > 1 ? 1.03 : 1));
-  const mats = [];
-  for (const m of root.getChildMeshes(false)) if (m.material && m.material._lit && !mats.includes(m.material)) mats.push(m.material);
-  mergeRig(root, SHG0);
-  set_SHG(SHG0);
-  if (legL) legL.includedOnlyMeshes = root.getChildMeshes(false);
-  for (const m of mats) m._baseEm = m.emissiveColor.clone();
-  const melee = dt === "blade" || robot && dt !== "fast";
-  root._staff = def.role === "sup" && !robot;
-  return { root, body, hips, spine, head, R, Lf, LL, LR, skirt, wpn: w, mats, h: 1.95 * sc * (X.tall || 1), melee, hipY0: 0.95, anim: ANIM3[def.id] || null, stance: def.role === "tank" && !X.noShield ? "shield" : dt === "blade" ? "guard" : dt === "voice" ? "open" : "gun", float: X.float || 0 };
+    if (def.leader || style === "emperor") {
+      const cm = style === "emperor" || fac === "cor" ? mat3("#7a1f1a", { side: "double", roughness: 0.7 }) : mat3(L.dark, { side: "double" });
+      const cape = grp(spine, 0, 0.56, -0.13);
+      A(cape, bPlane(0.6 * wide, 1.3), cm, 0, -0.62, 0);
+      cape.rotation.x = 0.12;
+      A(spine, bTorus(0.12, 0.025, 16), M.acc, 0, 0.56, 0.02).rotation.x = Math.PI / 2;
+      root._cape = cape;
+    }
+    A(spine, bCyl(0.05, 0.06, 0.12, 10), robot ? M.dark : M.skin, 0, 0.64, 0);
+    const head = grp(spine, 0, 0.68, 0), H = (mesh, mat, x, y, z) => add(head, mk(mesh, mat, x, y, z));
+    if (X.erasmus) {
+      const face = H(bSph(0.118, 28), mat3("#e8ecf4", { metalness: 1, roughness: 0.04, emissive: "#2a3440" }), 0, 0.1, 0.01);
+      face.scaling.set(0.86, 1.16, 0.92);
+      for (const s of [-1, 1]) H(bSph(0.012, 8), basic3("#9fe8ff"), s * 0.036, 0.12, 0.1);
+      H(bTorus(0.13, 8e-3, 24), mat3("#d8b050", { metalness: 0.8, roughness: 0.2, emissive: "#5a3a00" }), 0, 0.02, 0).rotation.x = Math.PI / 2;
+    } else if (robot) {
+      H(bBox(0.22, 0.2, 0.22), M.metal, 0, 0.1, 0);
+      H(bBox(0.19, 0.04, 0.02), basic3("#ff3a2a"), 0, 0.12, 0.115);
+      H(bCyl(8e-3, 8e-3, 0.14, 4), M.dark, 0.07, 0.25, 0);
+      if (X.cymek) {
+        H(bSph(0.14, 16), basic3("#ffb0c8", { alpha: 0.55 }), 0, 0.26, 0);
+        H(bSph(0.09, 12), mat3("#d06a8a", { roughness: 0.4 }), 0, 0.25, 0);
+      }
+    } else {
+      const skull = H(bSph(0.112, 20), M.skin, 0, 0.1, 0);
+      skull.scaling.set(fem ? 0.9 : 0.97, 1.1, 1);
+      H(bSph(0.085, 18), M.skin, 0, 0.045, 0.03).scaling.set(fem ? 0.82 : 0.95, 0.8, 0.85);
+      for (const s of [-1, 1]) H(bSph(0.028, 10), M.skin, s * 0.055, 0.075, 0.07).scaling.set(1, 0.75, 0.55);
+      H(bSph(0.045, 12), M.skin, 0, 0.135, 0.085).scaling.set(1.6, 0.45, 0.5);
+      for (const s of [-1, 1]) {
+        H(bSph(0.025, 8), M.skin, s * 0.105, 0.1, 0).scaling.set(0.5, 1, 0.8);
+        H(bSph(0.017, 8), M.white, s * 0.04, 0.115, 0.092);
+        H(bSph(0.0105, 8), M.eye, s * 0.04, 0.115, 0.106);
+        if (!helm) {
+          const br = H(bBox(0.045, 0.011, 0.012), M.brow, s * 0.042, 0.142, 0.1);
+          br.rotation.z = s * -0.12;
+        }
+      }
+      const nose = H(bCone(0.016, 0.055, 6), M.skin, 0, 0.085, 0.115);
+      nose.rotation.x = Math.PI / 2 - 0.3;
+      H(bBox(0.046, 9e-3, 0.012), M.lip, 0, 0.035, 0.1);
+      if (X.scar) H(bBox(8e-3, 0.07, 6e-3), mat3("#8a4a3a"), 0.05, 0.07, 0.095).rotation.z = 0.3;
+      if (X.beard) {
+        const bd = H(bSph(0.085, 14, 1, 0.5), M.hair, 0, 0.04, 0.045);
+        bd.rotation.x = Math.PI;
+        bd.scaling.set(1, 1.15, 1);
+      }
+      if (X.mus) {
+        for (const s of [-1, 1]) {
+          const mu = H(bBox(0.045, 0.016, 0.02), M.hair, s * 0.022, 0.052, 0.108);
+          mu.rotation.z = s * -0.35;
+        }
+      }
+      if (X.scars) {
+        const sm = mat3("#9a5a4a", { roughness: 0.5 });
+        H(bBox(7e-3, 0.085, 6e-3), sm, -0.055, 0.1, 0.098).rotation.z = -0.35;
+        H(bBox(6e-3, 0.06, 6e-3), sm, 0.045, 0.07, 0.1).rotation.z = 0.5;
+        H(bBox(0.05, 6e-3, 6e-3), sm, 0.03, 0.02, 0.103);
+      }
+      if (X.tube) H(tube3([[-0.02, 0.07, 0.11], [-0.07, 0.06, 0.09], [-0.11, 0.08, 0.02]], 6e-3), M.dark);
+      if (X.mask) H(bBox(0.15, 0.06, 0.05), M.dark, 0, 0.04, 0.08);
+      if (!long && !helm && !X.bald && style !== "cor") {
+        if (fem || X.hair === "long") {
+          H(bSph(0.123, 16, 1, 0.55), M.hair, 0, 0.12, -8e-3);
+          H(bCyl(0.1, 0.07, 0.3, 12), M.hair, 0, 0.01, -0.07);
+        } else if (X.curly || (h >> 12) % 3 === 2) {
+          for (const [x, y, z] of [[-0.07, 0.19, 0.02], [0, 0.22, 0.02], [0.07, 0.19, 0.02], [-0.05, 0.2, -0.06], [0.05, 0.2, -0.06], [0, 0.18, -0.1], [-0.1, 0.14, -0.04], [0.1, 0.14, -0.04]]) H(bSph(0.046, 8), M.hair, x, y, z);
+        } else {
+          const cap = H(bSph(0.118, 16, 1, 0.5), M.hair, 0, 0.12, -0.01);
+          cap.scaling.set(1.03, 1.1, 1.06);
+          cap.rotation.x = -0.25;
+        }
+      }
+      if (X.bald) H(bSph(0.114, 18, 1, 0.4), mat3(skinC, { roughness: 0.3, metalness: 0.1 }), 0, 0.11, 0);
+      if (long) {
+        const hoodM = style === "bgrobe" && !def.legendary ? M.dark : M.cloth;
+        const hood = H(bSph(0.16, 18, 0.7, 0.7), hoodM, 0, 0.11, -0.01);
+        hood.scaling.set(1, 1.12, 1.06);
+        hood.rotation.y = Math.PI * 1.75;
+        root._hood = hood;
+        if (style === "robe" && !X.mask) H(bBox(0.2, 0.07, 0.09), M.dark, 0, 0, 0.07);
+        if (def.legendary) H(bTorus(0.14, 8e-3, 24, 0.55), mat3("#e0b44a", { metalness: 0.8, roughness: 0.25, emissive: "#6a4400" }), 0, 0.12, 0.07).rotation.z = -0.1 * Math.PI;
+      }
+      if (helm) {
+        const hm = H(bSph(0.142, 18), M.metal, 0, 0.12, 0);
+        hm.scaling.set(1, 1.08, 1.06);
+        if (style === "cor") {
+          H(bBox(0.03, 0.14, 0.26), mat3("#a3322a"), 0, 0.27, -0.02);
+          for (const s of [-1, 1]) H(bBox(0.03, 0.1, 0.07), M.metal, s * 0.12, 0.05, 0.05);
+        } else H(bBox(0.18, 0.034, 0.05), basic3("#8fd8ff"), 0, 0.12, 0.125);
+      }
+    }
+    const arm = (s) => {
+      const sh = grp(spine, s * 0.28 * wide, 0.5, 0);
+      const sleeve = robot || style === "armor" ? M.metal : long ? style === "bgrobe" ? M.dark : M.cloth : M.cloth;
+      A(sh, bCyl(0.06 * Math.min(fat, 1.3) * (X.muscle ? 1.35 : 1), 0.052 * (X.muscle ? 1.25 : 1), 0.3, 10), sleeve, 0, -0.15, 0);
+      if (X.muscle) A(sh, bSph(0.075, 10), sleeve, 0, -0.1, 0.01).scaling.set(1, 1.3, 1);
+      const el = grp(sh, 0, -0.3, 0);
+      A(el, bSph(0.052, 8), sleeve);
+      A(el, bCyl(0.05, 0.042, 0.27, 10), long ? sleeve : robot ? M.metal : style === "armor" ? M.dark : M.cloth, 0, -0.135, 0);
+      if (armored) A(el, bCyl(0.056, 0.056, 0.08, 10), M.metal, 0, -0.22, 0);
+      const hand = grp(el, 0, -0.29, 0);
+      A(hand, bBox(0.06, 0.08, 0.045), robot || style === "armor" ? mat3("#232838") : M.skin, 0, -0.02, 0);
+      A(hand, bSph(0.022, 6), robot || style === "armor" ? mat3("#232838") : M.skin, s * -0.03, -0.01, 0.02);
+      sh.rotation.z = s * 0.12;
+      return { sh, el, hand };
+    };
+    const R = arm(1), Lf = arm(-1);
+    const dt = def.basic.dt, w = grp(R.hand, 0, -0.04, 0), W = (mesh, mat, x, y, z) => add(w, mk(mesh, mat, x, y, z));
+    if (dt === "blade") {
+      if (fac === "frem") {
+        W(tube3([[0, 0, 0], [0, 0.16, 0.015], [0, 0.32, 0.05], [0, 0.44, 0.1]], 0.018, 6), mat3("#f2ead6", { roughness: 0.3, emissive: "#2a2418" }));
+        W(bCyl(0.022, 0.022, 0.12, 8), mat3("#6a4a2a"), 0, -0.04, 0);
+      } else if (robot) {
+        W(bBox(0.02, 0.55, 0.08), basic3("#ff5a3a"), 0, 0.3, 0);
+      } else if (X.dagger) {
+        W(bBox(0.026, 0.3, 0.01), M.steel, 0, 0.2, 0);
+        W(bCone(0.013, 0.05, 4), M.steel, 0, 0.375, 0);
+        W(bBox(0.09, 0.02, 0.03), mat3("#b08a3a", { metalness: 0.6 }), 0, 0.04, 0);
+        W(bCyl(0.016, 0.016, 0.1, 8), mat3("#3a2a1a"), 0, -0.03, 0);
+      } else {
+        W(bBox(0.03, 0.9, 0.012), M.steel, 0, 0.5, 0);
+        W(bBox(0.18, 0.028, 0.045), mat3("#b08a3a", { metalness: 0.6, roughness: 0.3 }), 0, 0.04, 0);
+        W(bCyl(0.02, 0.02, 0.14, 8), mat3("#3a2a1a"), 0, -0.05, 0);
+      }
+      w.rotation.x = 1.6;
+    } else if (dt === "fast") {
+      W(bBox(0.05, 0.075, 0.26), mat3("#3a3a44", { metalness: 0.4, roughness: 0.35 }), 0, 0, 0.1);
+      W(bBox(0.045, 0.12, 0.05), mat3("#2a2a32"), 0, -0.06, 0);
+      W(bSph(0.015, 6), basic3("#ffd27a"), 0, 0.01, 0.235);
+      w.rotation.x = 1.25;
+    } else if (dt === "laser") {
+      W(bBox(0.06, 0.085, 0.86), mat3("#3a3d48", { metalness: 0.4, roughness: 0.3 }), 0, 0, 0.26);
+      W(bSph(0.04, 8), basic3("#7fe0ff"), 0, 0, 0.7);
+      W(bBox(0.04, 0.14, 0.06), mat3("#2a2a32"), 0, -0.08, 0);
+      w.rotation.x = 1.3;
+    } else if (dt === "poison") {
+      W(bCyl(6e-3, 6e-3, 0.3, 4), M.steel, 0, 0.15, 0);
+      W(bSph(0.026, 8), basic3("#7ad36a"), 0, 0.3, 0);
+      w.rotation.x = 1.5;
+    } else if (dt === "voice") {
+      W(bSph(0.03, 8), basic3("#c8a0ff", { alpha: 0.7 }), 0, 0, 0.05);
+    }
+    root._muzzle = V3(0, 0.01, dt === "laser" ? 0.7 : 0.24);
+    if (def.role === "tank" && !robot && !X.noShield) {
+      const shd = grp(Lf.el, 0, -0.16, 0.06);
+      add(shd, mk(bCyl(0.27, 0.27, 0.035, 24), M.cloth));
+      add(shd, mk(bCyl(0.22, 0.22, 0.045, 24), M.acc));
+      add(shd, mk(bSph(0.05, 8), M.metal, 0, 0.03, 0));
+    }
+    if (def.role === "sup" && !robot && !X.noStaff) {
+      const st = grp(Lf.hand, 0, -0.02, 0.02);
+      add(st, mk(bCyl(0.022, 0.022, 1.85, 6), mat3("#6e5034"), 0, 0.22, 0));
+      add(st, mk(bOcta(0.075), M.acc, 0, 1.17, 0));
+      add(st, mk(bSph(0.04, 8), basic3(L.acc), 0, 1.17, 0));
+    }
+    if (def.role === "heal") add(Lf.hand, mk(bCyl(0.045, 0.045, 0.14, 10), mat3("#3a8ec6", { roughness: 0.2, metalness: 0.2, emissive: "#0a2030" }), 0, -0.06, 0.02));
+    if (X.cane) {
+      const cn = grp(Lf.hand, 0, -0.02, 0.02);
+      add(cn, mk(bCyl(0.018, 0.014, 0.95, 8), mat3("#2a1a10", { roughness: 0.3, metalness: 0.2 }), 0, -0.46, 0));
+      add(cn, mk(bSph(0.04, 10), mat3("#d4aa50", { metalness: 0.7, roughness: 0.25 }), 0, 0.02, 0));
+      root._cane = 1;
+    }
+    if (X.baliset) {
+      const wd = mat3("#9a6430", { roughness: 0.45, metalness: 0.1 }), dk = mat3("#4a2c14", { roughness: 0.5 }), bl = grp(spine, 0, 0.28, -0.2);
+      add(bl, mk(bSph(0.16, 16), wd)).scaling.set(1, 1.25, 0.38);
+      add(bl, mk(bCyl(0.05, 0.05, 0.012, 16), basic3("#1a0e06"), 0, 0.02, 0.062)).rotation.x = Math.PI / 2;
+      add(bl, mk(bBox(0.05, 0.58, 0.035), dk, 0, 0.44, 0));
+      add(bl, mk(bBox(0.08, 0.12, 0.04), dk, 0, 0.78, -0.01));
+      for (const x of [-0.014, 0, 0.014]) add(bl, mk(bBox(3e-3, 0.7, 3e-3), basic3("#e8dcc0"), x, 0.32, 0.064, false));
+      add(bl, mk(bBox(0.03, 0.7, 0.01), mat3("#3a2a1a"), 0.02, 0.1, 0.07)).rotation.z = -0.9;
+      bl.rotation.z = 0.55;
+    }
+    if (X.float) {
+      root._float = X.float;
+      for (const s of [-1, 1]) {
+        const g = add(root, mk(bTorus(0.09, 0.015, 16), basic3("#8fd8ff", { add: true, alpha: 0.7 }), s * 0.1, 0.02, 0.03, false));
+        g.rotation.x = Math.PI / 2;
+      }
+    }
+    let legL = null;
+    if (def.legendary) {
+      const lt = legL = new B3.PointLight("lg", V3(0, 1.3, 0), CTX.scene);
+      lt.parent = root;
+      lt.diffuse = col3(X.erasmus ? "#9fe8ff" : "#ffc860");
+      lt.intensity = 0.9;
+      lt.range = 3.5;
+    }
+    const sc = (def.role === "tank" ? 1.05 : 1) * (def.legendary ? 1.08 : 1) * (X.cymek ? 1.15 : 1), tl = X.tall || 1;
+    root.scaling.set(sc * (tl > 1 ? 1.03 : 1), sc * tl, sc * (tl > 1 ? 1.03 : 1));
+    const mats = [];
+    for (const m of root.getChildMeshes(false)) if (m.material && m.material._lit && !mats.includes(m.material)) mats.push(m.material);
+    mergeRig(root, SHG0);
+    CTX.shadows = SHG0;
+    if (legL) legL.includedOnlyMeshes = root.getChildMeshes(false);
+    for (const m of mats) m._baseEm = m.emissiveColor.clone();
+    const melee = dt === "blade" || robot && dt !== "fast";
+    root._staff = def.role === "sup" && !robot;
+    return { root, body, hips, spine, head, R, Lf, LL, LR, skirt, wpn: w, mats, h: 1.95 * sc * (X.tall || 1), melee, hipY0: 0.95, anim: ANIM3[def.id] || null, stance: def.role === "tank" && !X.noShield ? "shield" : dt === "blade" ? "guard" : dt === "voice" ? "open" : "gun", float: X.float || 0 };
+  });
 }
 
 // src/render3d/characters/pose-generic.js
@@ -3710,14 +3725,14 @@ function wormData() {
   return WORM_CACHE = { raid: dec(R.raid), col: dec(R.col), mouth: dec(R.mouth), head: R.head, alb: R.alb, nrm: R.nrm };
 }
 function wormMesh(P) {
-  const me = new B3.Mesh("worm", SC), vd = new B3.VertexData();
+  const me = new B3.Mesh("worm", CTX.scene), vd = new B3.VertexData();
   vd.positions = P.pos;
   vd.normals = P.nor;
   if (P.uv) vd.uvs = P.uv;
   vd.indices = P.idx;
   if (P.col) {
     let c = P.col;
-    if (PBR_ON) {
+    if (CTX.pbr) {
       c = c.slice();
       for (let i = 0; i < c.length; i++) if (i % 4 !== 3) c[i] = Math.pow(c[i], 2.2);
     }
@@ -3729,7 +3744,7 @@ function wormMesh(P) {
 }
 function wormMats(WD) {
   const skin = mat3("#ffffff", { roughness: 0.82, noSheen: 1 }), mouth = mat3("#ffffff", { roughness: 0.45, side: "double", noSheen: 1 });
-  const ta = new B3.Texture(WD.alb, SC, false, true), tn = new B3.Texture(WD.nrm, SC, false, true);
+  const ta = new B3.Texture(WD.alb, CTX.scene, false, true), tn = new B3.Texture(WD.nrm, CTX.scene, false, true);
   if (skin instanceof B3.PBRMaterial) skin.albedoTexture = ta;
   else skin.diffuseTexture = ta;
   skin.bumpTexture = tn;
@@ -3737,65 +3752,68 @@ function wormMats(WD) {
   skin.invertNormalMapY = true;
   return { skin, mouth };
 }
-function makeWorm3() {
-  const WD = wormData();
-  if (WD) {
-    const root2 = grp(null), body2 = grp(root2), M = wormMats(WD);
-    add(body2, mk(wormMesh(WD.raid), M.skin));
-    const h = WD.head, mouth2 = grp(body2, h.p[0], h.p[1], h.p[2]);
-    mouth2.rotationQuaternion = new B3.Quaternion();
-    B3.Quaternion.FromUnitVectorsToRef(V3(0, 1, 0), V3(h.t[0], h.t[1], h.t[2]).normalize(), mouth2.rotationQuaternion);
-    mouth2.scaling.setAll(h.r / 1.25);
-    add(mouth2, mk(wormMesh(WD.mouth), M.mouth, 0, 0, 0, false));
-    const sand2 = mat3("#c89058", { flatShading: true });
-    for (let i = 0; i < 14; i++) {
-      const a = i / 14 * Math.PI * 2, r = add(body2, mk(bRock(i + 40, 0), sand2, 0.2 + Math.cos(a) * 3.2, -0.25, 1.4 + Math.sin(a) * 2.4));
-      r.scaling.set(0.8, 0.4, 0.8);
+function makeWorm3(ctx) {
+  return withCtx(ctx, () => {
+    const WD = wormData();
+    if (WD) {
+      const root2 = grp(null), body2 = grp(root2), M = wormMats(WD);
+      add(body2, mk(wormMesh(WD.raid), M.skin));
+      const h = WD.head, mouth2 = grp(body2, h.p[0], h.p[1], h.p[2]);
+      mouth2.rotationQuaternion = new B3.Quaternion();
+      B3.Quaternion.FromUnitVectorsToRef(V3(0, 1, 0), V3(h.t[0], h.t[1], h.t[2]).normalize(), mouth2.rotationQuaternion);
+      mouth2.scaling.setAll(h.r / 1.25);
+      add(mouth2, mk(wormMesh(WD.mouth), M.mouth, 0, 0, 0, false));
+      const sand2 = mat3("#c89058", { flatShading: true });
+      for (let i = 0; i < 14; i++) {
+        const a = i / 14 * Math.PI * 2, r = add(body2, mk(bRock(i + 40, 0), sand2, 0.2 + Math.cos(a) * 3.2, -0.25, 1.4 + Math.sin(a) * 2.4));
+        r.scaling.set(0.8, 0.4, 0.8);
+      }
+      root2.scaling.setAll(0.95);
+      for (const m of [M.skin, M.mouth]) m._baseEm = m.emissiveColor.clone();
+      return { root: root2, body: body2, mats: [M.skin, M.mouth], h: 7.4, boss: true };
     }
-    root2.scaling.setAll(0.95);
-    for (const m of [M.skin, M.mouth]) m._baseEm = m.emissiveColor.clone();
-    return { root: root2, body: body2, mats: [M.skin, M.mouth], h: 7.4, boss: true };
-  }
-  const root = grp(null), body = grp(root);
-  const pts = [V3(1.5, -3, 3), V3(1.4, 2.5, 1.5), V3(0.4, 6.4, -0.5), V3(-1.8, 7.6, -1), V3(-3.6, 6.4, -0.8)];
-  const path = B3.Curve3.CreateCatmullRomSpline(pts, 18, false).getPoints(), n = path.length, tess = 20;
-  const tube = MB().CreateTube("worm", { path, tessellation: tess, radiusFunction: (i) => 1.25 * (0.75 + i / (n - 1) * 0.4), cap: B3.Mesh.CAP_START, updatable: false }, SC);
-  const cnt = tube.getTotalVertices(), cols = [], ca = col3("#a88058"), cb = col3("#5a3e26");
-  for (let v = 0; v < cnt; v++) {
-    const i = Math.min(n - 1, Math.floor(v / (tess + 1))), k = i / (n - 1), ring = i % 5 < 1 ? 0.55 : 1, c = lerpC(ca, cb, k * 0.3).scale(ring);
-    cols.push(c.r, c.g, c.b, 1);
-  }
-  tube.setVerticesData(B3.VertexBuffer.ColorKind, cols);
-  const skin = mat3("#ffffff", { roughness: 0.9 });
-  add(body, mk(tube, skin));
-  const end = path[n - 1], tan = end.subtract(path[n - 2]).normalize();
-  const mouth = grp(body, end.x, end.y, end.z);
-  mouth.rotationQuaternion = new B3.Quaternion();
-  B3.Quaternion.FromUnitVectorsToRef(V3(0, 0, 1), tan, mouth.rotationQuaternion);
-  const lipM = mat3("#a88058", { roughness: 0.9 });
-  add(mouth, mk(bTorus(1.45, 0.32, 28), lipM));
-  add(mouth, mk(bDisc(1.3, 28), basic3("#1a0c08", { double: true }), 0, 0, -0.25, false));
-  const tm = mat3("#efe3c8", { roughness: 0.45 });
-  for (let i = 0; i < 18; i++) {
-    const a = i / 18 * Math.PI * 2, t = add(mouth, mk(bCone(0.12, 0.5, 6), tm, Math.cos(a) * 1.1, Math.sin(a) * 1.1, 0.05));
-    t.rotation.z = a + Math.PI / 2;
-    t.rotation.x = 0.5;
-  }
-  add(mouth, mk(bSph(0.35, 10), basic3("#ff7a30"), 0, 0, -0.6, false));
-  const sand = mat3("#c89058", { flatShading: true });
-  for (let i = 0; i < 12; i++) {
-    const a = i / 12 * Math.PI * 2, r = add(body, mk(bRock(i + 40, 0), sand, 1.5 + Math.cos(a) * 2, -0.3, 3 + Math.sin(a) * 1.6));
-    r.scaling.set(0.7, 0.45, 0.7);
-  }
-  root.scaling.setAll(0.95);
-  for (const m of [skin, lipM]) m._baseEm = m.emissiveColor.clone();
-  return { root, body, mats: [skin, lipM], h: 5.6, boss: true };
+    const root = grp(null), body = grp(root);
+    const pts = [V3(1.5, -3, 3), V3(1.4, 2.5, 1.5), V3(0.4, 6.4, -0.5), V3(-1.8, 7.6, -1), V3(-3.6, 6.4, -0.8)];
+    const path = B3.Curve3.CreateCatmullRomSpline(pts, 18, false).getPoints(), n = path.length, tess = 20;
+    const tube = MB().CreateTube("worm", { path, tessellation: tess, radiusFunction: (i) => 1.25 * (0.75 + i / (n - 1) * 0.4), cap: B3.Mesh.CAP_START, updatable: false }, CTX.scene);
+    const cnt = tube.getTotalVertices(), cols = [], ca = col3("#a88058"), cb = col3("#5a3e26");
+    for (let v = 0; v < cnt; v++) {
+      const i = Math.min(n - 1, Math.floor(v / (tess + 1))), k = i / (n - 1), ring = i % 5 < 1 ? 0.55 : 1, c = lerpC(ca, cb, k * 0.3).scale(ring);
+      cols.push(c.r, c.g, c.b, 1);
+    }
+    tube.setVerticesData(B3.VertexBuffer.ColorKind, cols);
+    const skin = mat3("#ffffff", { roughness: 0.9 });
+    add(body, mk(tube, skin));
+    const end = path[n - 1], tan = end.subtract(path[n - 2]).normalize();
+    const mouth = grp(body, end.x, end.y, end.z);
+    mouth.rotationQuaternion = new B3.Quaternion();
+    B3.Quaternion.FromUnitVectorsToRef(V3(0, 0, 1), tan, mouth.rotationQuaternion);
+    const lipM = mat3("#a88058", { roughness: 0.9 });
+    add(mouth, mk(bTorus(1.45, 0.32, 28), lipM));
+    add(mouth, mk(bDisc(1.3, 28), basic3("#1a0c08", { double: true }), 0, 0, -0.25, false));
+    const tm = mat3("#efe3c8", { roughness: 0.45 });
+    for (let i = 0; i < 18; i++) {
+      const a = i / 18 * Math.PI * 2, t = add(mouth, mk(bCone(0.12, 0.5, 6), tm, Math.cos(a) * 1.1, Math.sin(a) * 1.1, 0.05));
+      t.rotation.z = a + Math.PI / 2;
+      t.rotation.x = 0.5;
+    }
+    add(mouth, mk(bSph(0.35, 10), basic3("#ff7a30"), 0, 0, -0.6, false));
+    const sand = mat3("#c89058", { flatShading: true });
+    for (let i = 0; i < 12; i++) {
+      const a = i / 12 * Math.PI * 2, r = add(body, mk(bRock(i + 40, 0), sand, 1.5 + Math.cos(a) * 2, -0.3, 3 + Math.sin(a) * 1.6));
+      r.scaling.set(0.7, 0.45, 0.7);
+    }
+    root.scaling.setAll(0.95);
+    for (const m of [skin, lipM]) m._baseEm = m.emissiveColor.clone();
+    return { root, body, mats: [skin, lipM], h: 5.6, boss: true };
+  });
 }
 
 // src/render3d/scenes/arena.js
 var Arena3D = class {
   constructor(canvas, key, B) {
-    this.cv = canvas;
+    const H = this.host = engineHost().adopt(this);
+    this.cv = H.cv;
     this.key = key;
     this.units = {};
     this.parts = [];
@@ -3803,18 +3821,9 @@ var Arena3D = class {
     this.alive = true;
     const small = Math.min(innerWidth, innerHeight) < 600;
     this.small = small;
-    const E = this.engine = new B3.Engine(canvas, true, { preserveDrawingBuffer: false, stencil: true, powerPreference: "high-performance", antialias: true, loseContextOnDispose: true }, false);
-    E.setHardwareScalingLevel(1 / Math.min(window.devicePixelRatio || 1, small ? 1.5 : 2));
-    E.enableOfflineSupport = false;
-    E.disableManifestCheck = true;
-    canvas.addEventListener("webglcontextlost", (ev2) => {
-      if (!this.alive) return;
-      ev2.preventDefault();
-      this.lost = true;
-      errLog("webgl", "context lost");
-      if (this.onLost) setTimeout(() => this.onLost && this.onLost(), 0);
-    }, false);
-    const S2 = this.scene = set_SC(new B3.Scene(E));
+    const E = this.engine = H.engine;
+    H.mount(this, canvas.parentNode, { replace: canvas, cls: canvas.className || "bgc", id: canvas.id || "bgc", dpr: small ? 1.5 : 2 });
+    const S2 = this.scene = new B3.Scene(E);
     S2.useRightHandedSystem = true;
     S2.skipPointerMovePicking = true;
     S2.autoClear = true;
@@ -3825,29 +3834,40 @@ var Arena3D = class {
     this.raid = !!B.raid;
     this.summons = [];
     this.nA = B.units.filter((x) => x.side === "A").length;
-    buildEnv(this, key, true);
-    const rp = this.probe = new B3.ReflectionProbe("rp", this.small ? 64 : 128, S2);
-    rp.renderList.push(this.sky, this.ground);
-    rp.position = V3(0, 2, 0);
-    rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
-    S2.environmentTexture = rp.cubeTexture;
-    for (const u of B.units) this.addUnit(u);
-    this.setupFX();
-    if (B.units.some((u) => u.def && u.def.gl)) {
-      this.glLight = new B3.PointLight("gll", V3(0, 6, 2), S2);
-      this.glLight.diffuse = col3("#ffc860");
-      this.glLight.range = 40;
-      this.glLight.intensity = 0;
-    }
-    set_SC(null);
-    set_SHG(null);
+    withCtx({ scene: S2, shadows: null }, () => {
+      buildEnv(this, key, true);
+      CTX.shadows = this.shadows;
+      const rp = this.probe = new B3.ReflectionProbe("rp", this.small ? 64 : 128, S2);
+      rp.renderList.push(this.sky, this.ground);
+      rp.position = V3(0, 2, 0);
+      rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
+      S2.environmentTexture = rp.cubeTexture;
+      for (const u of B.units) this.addUnit(u);
+      this.setupFX();
+      if (B.units.some((u) => u.def && u.def.gl)) {
+        this.glLight = new B3.PointLight("gll", V3(0, 6, 2), S2);
+        this.glLight.diffuse = col3("#ffc860");
+        this.glLight.range = 40;
+        this.glLight.intensity = 0;
+      }
+    });
     if (B.units.some((u) => u.def && u.def.gl)) try {
       this.wormKit(true);
     } catch (e) {
       errLog("wormkit", e);
     }
     this.resize();
-    E.runRenderLoop(() => this.loop());
+  }
+  frame() {
+    this.loop();
+  }
+  onDetach() {
+    this.dispose();
+  }
+  contextLost() {
+    if (!this.alive) return;
+    this.lost = true;
+    if (this.onLost) setTimeout(() => this.onLost && this.onLost(), 0);
   }
   setupFX() {
     const S2 = this.scene;
@@ -3856,12 +3876,7 @@ var Arena3D = class {
     this.glow.addExcludedMesh(this.sky);
     if (this.ground) this.glow.addExcludedMesh(this.ground);
     for (const o of Object.values(this.units)) if (o.bubble) this.glow.addExcludedMesh(o.bubble);
-    const tx = (() => {
-      set_SC(S2);
-      const t = dynTex(glowCanvas(), 0, true);
-      set_SC(null);
-      return t;
-    })();
+    const tx = dynTex(glowCanvas(), 0, true, { scene: S2 });
     const sp = this.sparks = new B3.ParticleSystem("sparks", 600, S2);
     sp.particleTexture = tx;
     sp.emitter = V3(0, -50, 0);
@@ -3946,58 +3961,54 @@ var Arena3D = class {
     }
   }
   addUnit(u) {
-    set_SC(this.scene);
-    set_SHG(this.shadows);
-    set_PBR_ON(!u.def.boss);
-    const o = u.def.boss ? makeWorm3() : makeHuman3(u.def);
-    set_PBR_ON(false);
-    o.def = u.def;
-    o.slot = u.def.boss ? [7.4, -7, true] : (() => {
-      const s = SLOT3[u.idx] || SLOT3[0];
-      return [u.side === "A" ? s[0] : -s[0], s[1], false, u.idx];
-    })();
-    const [x, y, z] = this.slotPos(o.slot);
-    o.base = V3(x, y, z);
-    o.root.position.copyFrom(o.base);
-    o.face = this.raid ? u.def.boss ? Math.PI / 2 : Math.PI : u.def.boss ? 0 : u.side === "A" ? Math.PI / 2 : -Math.PI / 2;
-    o.root.rotation.y = o.face;
-    if (this.raid && u.def.boss) {
-      o.root.scaling.setAll(1.6);
-      o.h *= 1.7;
-    }
-    o.legend = !!u.def.legendary && !u.def.boss;
-    if (o.legend) {
-      o.root.scaling.scaleInPlace(1.5 / 1.08);
-      o.h *= 1.5 / 1.08;
-    }
-    o.tierC = col3(u.relic ? RELIC_COL : TIER_COL[u.gear || 1] || "#e8913f");
-    o.side = u.side;
-    o.uid = u.uid;
-    o.phase = Math.random() * 6;
-    if (!o.boss) {
-      o.bubble = add(o.root, mk(bSph(1, 24), basic3("#3f8ee0", { add: true, alpha: 0 }), 0, 0.98, 0, false));
-      o.bubble.scaling.set(0.55, 1.08, 0.55);
-      o.bubble.material.disableDepthWrite = true;
-    }
-    const r0 = o.boss ? 2.8 : o.legend ? 0.78 : 0.52, th = o.boss ? 0.4 : o.legend ? 0.2 : 0.15;
-    o.ring = mk(MB().CreateTorus("ring", { diameter: 2 * r0, thickness: th, tessellation: 48 }, SC), basic3("#e8913f", { alpha: 0 }), x, y + 0.05, z, false);
-    o.ring.scaling.y = 0.08;
-    o.ring.material.disableDepthWrite = true;
-    if (this.raid && u.def.boss) o.ring.scaling.set(1.9, 0.08, 1.9);
-    if (!o.boss) {
-      o.pool = mk(bDisc(o.legend ? 1.15 : 0.72, 40), basic3("#ffffff", { add: true, alpha: 0 }), x, y + 0.04, z, false);
-      o.pool.rotation.x = Math.PI / 2;
-      o.pool.material.disableDepthWrite = true;
-      const gtx = (() => {
-        const t = dynTex(glowCanvas(), 0, true);
-        return t;
+    withCtx({ scene: this.scene, shadows: this.shadows }, () => {
+      const o = u.def.boss ? makeWorm3({ pbr: false }) : makeHuman3(u.def, { pbr: true });
+      o.def = u.def;
+      o.slot = u.def.boss ? [7.4, -7, true] : (() => {
+        const s = SLOT3[u.idx] || SLOT3[0];
+        return [u.side === "A" ? s[0] : -s[0], s[1], false, u.idx];
       })();
-      o.pool.material.emissiveTexture = gtx;
-      o.pool.material.opacityTexture = gtx;
-    }
-    this.units[u.uid] = o;
-    set_SC(null);
-    set_SHG(null);
+      const [x, y, z] = this.slotPos(o.slot);
+      o.base = V3(x, y, z);
+      o.root.position.copyFrom(o.base);
+      o.face = this.raid ? u.def.boss ? Math.PI / 2 : Math.PI : u.def.boss ? 0 : u.side === "A" ? Math.PI / 2 : -Math.PI / 2;
+      o.root.rotation.y = o.face;
+      if (this.raid && u.def.boss) {
+        o.root.scaling.setAll(1.6);
+        o.h *= 1.7;
+      }
+      o.legend = !!u.def.legendary && !u.def.boss;
+      if (o.legend) {
+        o.root.scaling.scaleInPlace(1.5 / 1.08);
+        o.h *= 1.5 / 1.08;
+      }
+      o.tierC = col3(u.relic ? RELIC_COL : TIER_COL[u.gear || 1] || "#e8913f");
+      o.side = u.side;
+      o.uid = u.uid;
+      o.phase = Math.random() * 6;
+      if (!o.boss) {
+        o.bubble = add(o.root, mk(bSph(1, 24), basic3("#3f8ee0", { add: true, alpha: 0 }), 0, 0.98, 0, false));
+        o.bubble.scaling.set(0.55, 1.08, 0.55);
+        o.bubble.material.disableDepthWrite = true;
+      }
+      const r0 = o.boss ? 2.8 : o.legend ? 0.78 : 0.52, th = o.boss ? 0.4 : o.legend ? 0.2 : 0.15;
+      o.ring = mk(MB().CreateTorus("ring", { diameter: 2 * r0, thickness: th, tessellation: 48 }, CTX.scene), basic3("#e8913f", { alpha: 0 }), x, y + 0.05, z, false);
+      o.ring.scaling.y = 0.08;
+      o.ring.material.disableDepthWrite = true;
+      if (this.raid && u.def.boss) o.ring.scaling.set(1.9, 0.08, 1.9);
+      if (!o.boss) {
+        o.pool = mk(bDisc(o.legend ? 1.15 : 0.72, 40), basic3("#ffffff", { add: true, alpha: 0 }), x, y + 0.04, z, false);
+        o.pool.rotation.x = Math.PI / 2;
+        o.pool.material.disableDepthWrite = true;
+        const gtx = (() => {
+          const t = dynTex(glowCanvas(), 0, true);
+          return t;
+        })();
+        o.pool.material.emissiveTexture = gtx;
+        o.pool.material.opacityTexture = gtx;
+      }
+      this.units[u.uid] = o;
+    });
   }
   slotPos([sx, sz, boss, idx]) {
     if (this.raid) {
@@ -4191,75 +4202,75 @@ var Arena3D = class {
     return B3.Vector3.TransformCoordinates(local || V3(), node.getWorldMatrix());
   }
   muzzleFX(o, a) {
-    set_SC(this.scene);
-    const from = this.wpos(o.wpn, o.root._muzzle), c = a.dt === "laser" ? "#7fe0ff" : a.dt === "poison" ? "#9ae06a" : "#ffd890";
-    const fl = mk(bSph(0.09, 10), basic3(c, { add: true, alpha: 1 }), from.x, from.y, from.z, false);
-    this.fade(fl, 110, (m, k) => {
-      m.scaling.setAll(1 + k * 1.5);
-      m.material.alpha = 1 - k;
-    });
-    for (const t of a.tg) {
-      const b = t.base.add(V3(0, t.boss ? 3 : 1.1, 0)), ln = MB().CreateTube("tr", { path: [from, b], radius: a.dt === "laser" ? 0.045 : 0.022, tessellation: 6 }, SC);
-      ln.material = basic3(c, { add: true, alpha: 0.95 });
-      ln.isPickable = false;
-      this.fade(ln, a.dt === "laser" ? 320 : 200, (m, k) => {
-        m.material.alpha = 0.95 * (1 - k);
+    withCtx({ scene: this.scene }, () => {
+      const from = this.wpos(o.wpn, o.root._muzzle), c = a.dt === "laser" ? "#7fe0ff" : a.dt === "poison" ? "#9ae06a" : "#ffd890";
+      const fl = mk(bSph(0.09, 10), basic3(c, { add: true, alpha: 1 }), from.x, from.y, from.z, false);
+      this.fade(fl, 110, (m, k) => {
+        m.scaling.setAll(1 + k * 1.5);
+        m.material.alpha = 1 - k;
       });
-    }
-    set_SC(null);
+      for (const t of a.tg) {
+        const b = t.base.add(V3(0, t.boss ? 3 : 1.1, 0)), ln = MB().CreateTube("tr", { path: [from, b], radius: a.dt === "laser" ? 0.045 : 0.022, tessellation: 6 }, CTX.scene);
+        ln.material = basic3(c, { add: true, alpha: 0.95 });
+        ln.isPickable = false;
+        this.fade(ln, a.dt === "laser" ? 320 : 200, (m, k) => {
+          m.material.alpha = 0.95 * (1 - k);
+        });
+      }
+    });
   }
   slashFX(p, yaw, aoe) {
-    set_SC(this.scene);
-    const arc = aoe ? 1 : 0.42, r = aoe ? 1.6 : 0.9;
-    const pts = [];
-    for (let i = 0; i <= 24; i++) {
-      const a = -arc * Math.PI + i / 24 * arc * Math.PI * 2;
-      pts.push(V3(Math.sin(a) * r, 1.1 + (aoe ? 0 : (i / 24 - 0.5) * 0.9), Math.cos(a) * r));
-    }
-    const m = MB().CreateTube("sl", { path: pts, radiusFunction: (i) => 0.05 * Math.sin(i / 24 * Math.PI) + 5e-3, tessellation: 6 }, SC);
-    m.material = basic3("#e8f4ff", { add: true, alpha: 0.9 });
-    m.position.copyFrom(aoe ? p.subtract(V3(0, 0, 0)) : p.subtract(V3(Math.sin(yaw) * 0.8, 0, Math.cos(yaw) * 0.8)));
-    m.rotation.y = yaw;
-    m.isPickable = false;
-    this.fade(m, 230, (mm, k) => {
-      mm.material.alpha = 0.9 * (1 - k);
-      mm.scaling.setAll(1 + k * 0.25);
+    withCtx({ scene: this.scene }, () => {
+      const arc = aoe ? 1 : 0.42, r = aoe ? 1.6 : 0.9;
+      const pts = [];
+      for (let i = 0; i <= 24; i++) {
+        const a = -arc * Math.PI + i / 24 * arc * Math.PI * 2;
+        pts.push(V3(Math.sin(a) * r, 1.1 + (aoe ? 0 : (i / 24 - 0.5) * 0.9), Math.cos(a) * r));
+      }
+      const m = MB().CreateTube("sl", { path: pts, radiusFunction: (i) => 0.05 * Math.sin(i / 24 * Math.PI) + 5e-3, tessellation: 6 }, CTX.scene);
+      m.material = basic3("#e8f4ff", { add: true, alpha: 0.9 });
+      m.position.copyFrom(aoe ? p.subtract(V3(0, 0, 0)) : p.subtract(V3(Math.sin(yaw) * 0.8, 0, Math.cos(yaw) * 0.8)));
+      m.rotation.y = yaw;
+      m.isPickable = false;
+      this.fade(m, 230, (mm, k) => {
+        mm.material.alpha = 0.9 * (1 - k);
+        mm.scaling.setAll(1 + k * 0.25);
+      });
     });
-    set_SC(null);
   }
   voiceFX(o, a) {
-    set_SC(this.scene);
-    const from = o.base.add(V3(0, 1.62, 0));
-    for (const t of a.tg) for (let n = 0; n < 3; n++) {
-      const ring = mk(bTorus(0.22, 0.02, 24), basic3("#c8a0ff", { add: true, alpha: 0 }), from.x, from.y, from.z, false), to = t.base.add(V3(0, 1.3, 0)), dir = to.subtract(from);
-      const q = new B3.Quaternion();
-      B3.Quaternion.FromUnitVectorsToRef(V3(0, 0, 1), dir.normalizeToNew(), q);
-      ring.rotationQuaternion = q;
-      const d0 = n * 90;
-      this.fade(ring, 420 + d0, (m, k) => {
-        const kk = Math.max(0, (k * (420 + d0) - d0) / 420);
-        m.position.copyFrom(B3.Vector3.Lerp(from, to, kk));
-        m.scaling.setAll(1 + kk * 3);
-        m.material.alpha = kk > 0 ? 0.8 * (1 - kk) : 0;
-      });
-    }
-    set_SC(null);
+    withCtx({ scene: this.scene }, () => {
+      const from = o.base.add(V3(0, 1.62, 0));
+      for (const t of a.tg) for (let n = 0; n < 3; n++) {
+        const ring = mk(bTorus(0.22, 0.02, 24), basic3("#c8a0ff", { add: true, alpha: 0 }), from.x, from.y, from.z, false), to = t.base.add(V3(0, 1.3, 0)), dir = to.subtract(from);
+        const q = new B3.Quaternion();
+        B3.Quaternion.FromUnitVectorsToRef(V3(0, 0, 1), dir.normalizeToNew(), q);
+        ring.rotationQuaternion = q;
+        const d0 = n * 90;
+        this.fade(ring, 420 + d0, (m, k) => {
+          const kk = Math.max(0, (k * (420 + d0) - d0) / 420);
+          m.position.copyFrom(B3.Vector3.Lerp(from, to, kk));
+          m.scaling.setAll(1 + kk * 3);
+          m.material.alpha = kk > 0 ? 0.8 * (1 - kk) : 0;
+        });
+      }
+    });
   }
   castFX(o) {
-    set_SC(this.scene);
-    const c = o.side === "A" ? "#ffd27a" : "#ff7a6a", p = o.base;
-    const ring = mk(bTorus(0.5, 0.04, 32), basic3(c, { add: true, alpha: 0.9 }), p.x, p.y + 0.06, p.z, false);
-    ring.rotation.x = Math.PI / 2;
-    this.fade(ring, 650, (m, k) => {
-      m.scaling.set(1 + k * 2.2, 1 + k * 2.2, 1);
-      m.material.alpha = 0.9 * (1 - k);
+    withCtx({ scene: this.scene }, () => {
+      const c = o.side === "A" ? "#ffd27a" : "#ff7a6a", p = o.base;
+      const ring = mk(bTorus(0.5, 0.04, 32), basic3(c, { add: true, alpha: 0.9 }), p.x, p.y + 0.06, p.z, false);
+      ring.rotation.x = Math.PI / 2;
+      this.fade(ring, 650, (m, k) => {
+        m.scaling.set(1 + k * 2.2, 1 + k * 2.2, 1);
+        m.material.alpha = 0.9 * (1 - k);
+      });
+      const col = mk(bCyl(0.5, 0.6, 3, 24, true), basic3(c, { add: true, alpha: 0.4 }), p.x, p.y + 1.5, p.z, false);
+      this.fade(col, 650, (m, k) => {
+        m.material.alpha = 0.4 * Math.sin(k * Math.PI);
+        m.scaling.set(1 - k * 0.4, 1 + k * 0.3, 1 - k * 0.4);
+      });
     });
-    const col = mk(bCyl(0.5, 0.6, 3, 24, true), basic3(c, { add: true, alpha: 0.4 }), p.x, p.y + 1.5, p.z, false);
-    this.fade(col, 650, (m, k) => {
-      m.material.alpha = 0.4 * Math.sin(k * Math.PI);
-      m.scaling.set(1 - k * 0.4, 1 + k * 0.3, 1 - k * 0.4);
-    });
-    set_SC(null);
   }
   sparkFX(o, power) {
     if (!this.sparks) return;
@@ -4296,84 +4307,82 @@ var Arena3D = class {
     if (ab.tm && ab.tm.enemies < 0) on(foes, (x) => this.ringFX(x, "#8a7aff", 0.5));
   }
   domeFX(x, c, k = 1) {
-    set_SC(this.scene);
-    const p = x.root.position, d = mk(bSph(0.95 * k, 24, 1, 0.5), basic3(c, { add: true, alpha: 0 }), p.x, p.y, p.z, false);
-    d.scaling.y = 1.3;
-    d.material.backFaceCulling = false;
-    set_SC(null);
-    this.fade(d, 1300, (m, kk) => {
-      m.position.copyFrom(x.root.position);
-      m.material.alpha = 0.75 * Math.sin(Math.min(1, kk * 1.6) * Math.PI * 0.5) * (1 - kk);
-      m.scaling.set(0.6 + kk * 0.5, (0.6 + kk * 0.5) * 1.3, 0.6 + kk * 0.5);
+    withCtx({ scene: this.scene }, () => {
+      const p = x.root.position, d = mk(bSph(0.95 * k, 24, 1, 0.5), basic3(c, { add: true, alpha: 0 }), p.x, p.y, p.z, false);
+      d.scaling.y = 1.3;
+      d.material.backFaceCulling = false;
+      this.fade(d, 1300, (m, kk) => {
+        m.position.copyFrom(x.root.position);
+        m.material.alpha = 0.75 * Math.sin(Math.min(1, kk * 1.6) * Math.PI * 0.5) * (1 - kk);
+        m.scaling.set(0.6 + kk * 0.5, (0.6 + kk * 0.5) * 1.3, 0.6 + kk * 0.5);
+      });
+      this.ringFX(x, c, 0.9);
     });
-    this.ringFX(x, c, 0.9);
   }
   ringFX(x, c, r = 0.7) {
-    set_SC(this.scene);
-    const p = x.root.position, m0 = mk(bTorus(r, 0.06, 32), basic3(c, { add: true, alpha: 1 }), p.x, p.y + 0.05, p.z, false);
-    set_SC(null);
-    this.fade(m0, 1e3, (m, k) => {
-      m.scaling.set(1 + k * 1.2, 1, 1 + k * 1.2);
-      m.position.y = p.y + 0.05 + k * 1.6;
-      m.material.alpha = 1 - k;
+    withCtx({ scene: this.scene }, () => {
+      const p = x.root.position, m0 = mk(bTorus(r, 0.06, 32), basic3(c, { add: true, alpha: 1 }), p.x, p.y + 0.05, p.z, false);
+      this.fade(m0, 1e3, (m, k) => {
+        m.scaling.set(1 + k * 1.2, 1, 1 + k * 1.2);
+        m.position.y = p.y + 0.05 + k * 1.6;
+        m.material.alpha = 1 - k;
+      });
     });
   }
   swirlFX(x, c) {
-    set_SC(this.scene);
-    const p = x.root.position;
-    for (let n = 0; n < 3; n++) {
-      const m0 = mk(bTorus(0.55, 0.022, 28, 0.6), basic3(c, { add: true, alpha: 0.8 }), p.x, p.y + 0.3, p.z, false);
-      this.fade(m0, 800, (m, k) => {
-        m.position.copyFrom(x.root.position);
-        m.position.y += 0.3 + k * 1.5 + n * 0.25;
-        m.rotation.y = k * 9 + n * 2;
-        m.material.alpha = 0.8 * Math.sin(k * Math.PI);
-        m.scaling.setAll(1 - k * 0.4);
-      });
-    }
-    set_SC(null);
+    withCtx({ scene: this.scene }, () => {
+      const p = x.root.position;
+      for (let n = 0; n < 3; n++) {
+        const m0 = mk(bTorus(0.55, 0.022, 28, 0.6), basic3(c, { add: true, alpha: 0.8 }), p.x, p.y + 0.3, p.z, false);
+        this.fade(m0, 800, (m, k) => {
+          m.position.copyFrom(x.root.position);
+          m.position.y += 0.3 + k * 1.5 + n * 0.25;
+          m.rotation.y = k * 9 + n * 2;
+          m.material.alpha = 0.8 * Math.sin(k * Math.PI);
+          m.scaling.setAll(1 - k * 0.4);
+        });
+      }
+    });
   }
   speedFX(x) {
-    set_SC(this.scene);
-    const p = x.root.position;
-    for (let n = 0; n < 6; n++) {
-      const a = n / 6 * Math.PI * 2, m0 = mk(bBox(0.025, 0.7, 0.025), basic3("#ffe08a", { add: true, alpha: 0.9 }), p.x + Math.cos(a) * 0.55, p.y, p.z + Math.sin(a) * 0.55, false);
-      this.fade(m0, 520, (m, k) => {
-        m.position.y = x.root.position.y + k * 2.4;
-        m.material.alpha = 0.9 * (1 - k);
-      });
-    }
-    set_SC(null);
+    withCtx({ scene: this.scene }, () => {
+      const p = x.root.position;
+      for (let n = 0; n < 6; n++) {
+        const a = n / 6 * Math.PI * 2, m0 = mk(bBox(0.025, 0.7, 0.025), basic3("#ffe08a", { add: true, alpha: 0.9 }), p.x + Math.cos(a) * 0.55, p.y, p.z + Math.sin(a) * 0.55, false);
+        this.fade(m0, 520, (m, k) => {
+          m.position.y = x.root.position.y + k * 2.4;
+          m.material.alpha = 0.9 * (1 - k);
+        });
+      }
+    });
   }
   tauntFX(x) {
-    set_SC(this.scene);
-    const p = x.root.position;
-    for (let n = 0; n < 3; n++) {
-      const m0 = mk(bTorus(0.4, 0.05, 32), basic3("#ff5a3a", { add: true, alpha: 0 }), p.x, p.y + 1.2, p.z, false);
-      m0.rotation.x = Math.PI / 2;
-      const yaw = x.root.rotation.y;
-      m0.rotation.y = yaw;
-      const d0 = n * 140;
-      this.fade(m0, 700 + d0, (m, k) => {
-        const kk = Math.max(0, (k * (700 + d0) - d0) / 700);
-        m.scaling.setAll(1 + kk * 3.2);
-        m.material.alpha = kk > 0 ? 0.85 * (1 - kk) : 0;
+    withCtx({ scene: this.scene }, () => {
+      const p = x.root.position;
+      for (let n = 0; n < 3; n++) {
+        const m0 = mk(bTorus(0.4, 0.05, 32), basic3("#ff5a3a", { add: true, alpha: 0 }), p.x, p.y + 1.2, p.z, false);
+        m0.rotation.x = Math.PI / 2;
+        const yaw = x.root.rotation.y;
+        m0.rotation.y = yaw;
+        const d0 = n * 140;
+        this.fade(m0, 700 + d0, (m, k) => {
+          const kk = Math.max(0, (k * (700 + d0) - d0) / 700);
+          m.scaling.setAll(1 + kk * 3.2);
+          m.material.alpha = kk > 0 ? 0.85 * (1 - kk) : 0;
+        });
+      }
+      const col = mk(bCyl(0.45, 0.55, 2.4, 24, true), basic3("#ff4a2a", { add: true, alpha: 0 }), p.x, p.y + 1.2, p.z, false);
+      this.fade(col, 900, (m, k) => {
+        m.material.alpha = 0.35 * Math.sin(k * Math.PI);
+        m.scaling.set(1 + k * 0.3, 1, 1 + k * 0.3);
       });
-    }
-    const col = mk(bCyl(0.45, 0.55, 2.4, 24, true), basic3("#ff4a2a", { add: true, alpha: 0 }), p.x, p.y + 1.2, p.z, false);
-    set_SC(null);
-    this.fade(col, 900, (m, k) => {
-      m.material.alpha = 0.35 * Math.sin(k * Math.PI);
-      m.scaling.set(1 + k * 0.3, 1, 1 + k * 0.3);
+      this.shakeT = performance.now();
     });
-    this.shakeT = performance.now();
   }
   smokeFX(x) {
     if (!this.smoke) {
       const S2 = this.scene;
-      set_SC(S2);
-      const t = dynTex(glowCanvas(), 0, true);
-      set_SC(null);
+      const t = dynTex(glowCanvas(), 0, true, { scene: S2 });
       const ps = this.smoke = new B3.ParticleSystem("smoke", 300, S2);
       ps.particleTexture = t;
       ps.emitter = V3(0, -50, 0);
@@ -4398,15 +4407,15 @@ var Arena3D = class {
     this.smoke.manualEmitCount = 90;
   }
   miasmaFX(x, c) {
-    set_SC(this.scene);
-    const p = x.root.position, m0 = mk(bSph(0.7, 18), basic3(c, { add: true, alpha: 0 }), p.x, p.y + 1, p.z, false);
-    set_SC(null);
-    this.fade(m0, 800, (m, k) => {
-      m.material.alpha = 0.4 * Math.sin(k * Math.PI);
-      m.scaling.set(1 + k * 0.6, 1.4 + k * 0.4, 1 + k * 0.6);
-      m.position.y = p.y + 1 + k * 0.3;
+    withCtx({ scene: this.scene }, () => {
+      const p = x.root.position, m0 = mk(bSph(0.7, 18), basic3(c, { add: true, alpha: 0 }), p.x, p.y + 1, p.z, false);
+      this.fade(m0, 800, (m, k) => {
+        m.material.alpha = 0.4 * Math.sin(k * Math.PI);
+        m.scaling.set(1 + k * 0.6, 1.4 + k * 0.4, 1 + k * 0.6);
+        m.position.y = p.y + 1 + k * 0.3;
+      });
+      this.ringFX(x, c, 0.5);
     });
-    this.ringFX(x, c, 0.5);
   }
   project(v) {
     const p = B3.Vector3.Project(v, B3.Matrix.IdentityReadOnly, this.scene.getTransformMatrix(), new B3.Viewport(0, 0, this.w, this.h));
@@ -4648,111 +4657,105 @@ var Arena3D = class {
   }
   wormKit(warm) {
     if (this._wk) return this._wk;
-    set_SC(this.scene);
-    set_SHG(this.shadows);
-    const WD = wormData(), K = { WD };
-    K.skin = mat3("#a88058", { roughness: 0.9 });
-    K.band = mat3("#6a4a2e", { roughness: 1 });
-    K.sand = mat3("#c89058", { flatShading: true });
-    if (WD) {
-      K.WM = wormMats(WD);
-      K.colT = wormMesh(WD.col);
-      K.colT.material = K.WM.skin;
-      K.colT.setEnabled(false);
-      K.mouthT = wormMesh(WD.mouth);
-      K.mouthT.material = K.WM.mouth;
-      K.mouthT.setEnabled(false);
-    }
-    K.tx = dynTex(glowCanvas(), 0, true);
-    K.dm = basic3("#d8a868", { alpha: 0 });
-    K.dm.emissiveTexture = K.tx;
-    K.dm.opacityTexture = K.tx;
-    K.dm.disableDepthWrite = true;
-    const b = K.burst = new B3.ParticleSystem("burst", 400, SC);
-    b.particleTexture = K.tx;
-    b.emitter = V3(0, -50, 0);
-    b.direction1 = V3(-3, 6, -3);
-    b.direction2 = V3(3, 10, 3);
-    b.gravity = V3(0, -9, 0);
-    b.minLifeTime = 0.8;
-    b.maxLifeTime = 1.8;
-    b.minSize = 0.15;
-    b.maxSize = 0.5;
-    b.color1 = new B3.Color4(0.9, 0.7, 0.45, 0.9);
-    b.color2 = new B3.Color4(0.75, 0.55, 0.35, 0.8);
-    b.colorDead = new B3.Color4(0.6, 0.45, 0.3, 0);
-    b.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD;
-    if (warm && K.WM) {
-      try {
-        K.WM.skin.forceCompilation(K.colT);
-        K.WM.mouth.forceCompilation(K.mouthT);
-      } catch (e) {
+    return withCtx({ scene: this.scene, shadows: this.shadows }, () => {
+      const WD = wormData(), K = { WD };
+      K.skin = mat3("#a88058", { roughness: 0.9 });
+      K.band = mat3("#6a4a2e", { roughness: 1 });
+      K.sand = mat3("#c89058", { flatShading: true });
+      if (WD) {
+        K.WM = wormMats(WD);
+        K.colT = wormMesh(WD.col);
+        K.colT.material = K.WM.skin;
+        K.colT.setEnabled(false);
+        K.mouthT = wormMesh(WD.mouth);
+        K.mouthT.material = K.WM.mouth;
+        K.mouthT.setEnabled(false);
       }
-    }
-    set_SC(null);
-    set_SHG(null);
-    return this._wk = K;
+      K.tx = dynTex(glowCanvas(), 0, true);
+      K.dm = basic3("#d8a868", { alpha: 0 });
+      K.dm.emissiveTexture = K.tx;
+      K.dm.opacityTexture = K.tx;
+      K.dm.disableDepthWrite = true;
+      const b = K.burst = new B3.ParticleSystem("burst", 400, CTX.scene);
+      b.particleTexture = K.tx;
+      b.emitter = V3(0, -50, 0);
+      b.direction1 = V3(-3, 6, -3);
+      b.direction2 = V3(3, 10, 3);
+      b.gravity = V3(0, -9, 0);
+      b.minLifeTime = 0.8;
+      b.maxLifeTime = 1.8;
+      b.minSize = 0.15;
+      b.maxSize = 0.5;
+      b.color1 = new B3.Color4(0.9, 0.7, 0.45, 0.9);
+      b.color2 = new B3.Color4(0.75, 0.55, 0.35, 0.8);
+      b.colorDead = new B3.Color4(0.6, 0.45, 0.3, 0);
+      b.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD;
+      if (warm && K.WM) {
+        try {
+          K.WM.skin.forceCompilation(K.colT);
+          K.WM.mouth.forceCompilation(K.mouthT);
+        } catch (e) {
+        }
+      }
+      return this._wk = K;
+    });
   }
   summon(x, z, s, t0, victim) {
     const K = this.wormKit();
-    set_SC(this.scene);
-    set_SHG(this.shadows);
-    const y = this.heightAt(x, z), g = grp(null, x, y, z);
-    g.setEnabled(false);
-    const col = grp(g), WD = K.WD;
-    if (WD) {
-      const m = K.colT.clone("wc", col);
-      m.setEnabled(true);
-      m.receiveShadows = true;
-      if (SHG && K.WM.skin._lit) SHG.addShadowCaster(m, false);
-    } else for (let i = 0; i < 7; i++) {
-      const r = 1.25 - i * 0.03;
-      add(col, mk(bCyl(r, r + 0.05, 1.5, 24, true), i % 2 ? K.skin : K.band, 0, -i * 1.5, 0));
-    }
-    const mouth = grp(col, 0, 0.8, 0);
-    if (WD) {
-      const m = K.mouthT.clone("wm", mouth);
-      m.setEnabled(true);
-    } else {
-      add(mouth, mk(bTorus(1.25, 0.3, 28), K.skin)).rotation.x = Math.PI / 2;
-      add(mouth, mk(bDisc(1.15, 28), K.mdark ||= basic3("#1a0a06", { double: true }), 0, -0.3, 0, false)).rotation.x = -Math.PI / 2;
-      add(mouth, mk(bSph(0.4, 12), K.mglow ||= basic3("#ff8a40"), 0, -0.9, 0, false));
-      const tm = K.tooth ||= mat3("#efe3c8", { roughness: 0.45 });
-      for (let i = 0; i < 20; i++) {
-        const a = i / 20 * Math.PI * 2, tt = add(mouth, mk(bCone(0.1, 0.55, 6), tm, Math.cos(a) * 1.05, 0.1, Math.sin(a) * 1.05));
-        tt.rotation.z = Math.cos(a) * 0.9;
-        tt.rotation.x = -Math.sin(a) * 0.9;
+    withCtx({ scene: this.scene, shadows: this.shadows }, () => {
+      const y = this.heightAt(x, z), g = grp(null, x, y, z);
+      g.setEnabled(false);
+      const col = grp(g), WD = K.WD;
+      if (WD) {
+        const m = K.colT.clone("wc", col);
+        m.setEnabled(true);
+        m.receiveShadows = true;
+        if (CTX.shadows && K.WM.skin._lit) CTX.shadows.addShadowCaster(m, false);
+      } else for (let i = 0; i < 7; i++) {
+        const r = 1.25 - i * 0.03;
+        add(col, mk(bCyl(r, r + 0.05, 1.5, 24, true), i % 2 ? K.skin : K.band, 0, -i * 1.5, 0));
       }
-    }
-    col.scaling.setAll(s);
-    const rocks = [];
-    for (let i = 0; i < 14; i++) {
-      const a = i / 14 * Math.PI * 2, m = add(g, mk(bRock(i + 60, 0), K.sand));
-      m.scaling.setAll(0.45 + i % 3 * 0.15);
-      rocks.push([m, a]);
-    }
-    const dust = add(g, mk(bDisc(3, 32), K.dm, 0, 0.1, 0, false));
-    dust.rotation.x = -Math.PI / 2;
-    if (this.glow) this.glow.addExcludedMesh(dust);
-    const burst = K.burst;
-    burst.emitter = V3(x, y + 0.3, z);
-    burst.minEmitBox = V3(-1.2 * s, 0, -1.2 * s);
-    burst.maxEmitBox = V3(1.2 * s, 0.5, 1.2 * s);
-    burst.manualEmitCount = 380;
-    set_SC(null);
-    set_SHG(null);
-    this.summons.push({ g, col, mouth, rocks, dust, s, t0, dur: 2600, victim, burst });
+      const mouth = grp(col, 0, 0.8, 0);
+      if (WD) {
+        const m = K.mouthT.clone("wm", mouth);
+        m.setEnabled(true);
+      } else {
+        add(mouth, mk(bTorus(1.25, 0.3, 28), K.skin)).rotation.x = Math.PI / 2;
+        add(mouth, mk(bDisc(1.15, 28), K.mdark ||= basic3("#1a0a06", { double: true }), 0, -0.3, 0, false)).rotation.x = -Math.PI / 2;
+        add(mouth, mk(bSph(0.4, 12), K.mglow ||= basic3("#ff8a40"), 0, -0.9, 0, false));
+        const tm = K.tooth ||= mat3("#efe3c8", { roughness: 0.45 });
+        for (let i = 0; i < 20; i++) {
+          const a = i / 20 * Math.PI * 2, tt = add(mouth, mk(bCone(0.1, 0.55, 6), tm, Math.cos(a) * 1.05, 0.1, Math.sin(a) * 1.05));
+          tt.rotation.z = Math.cos(a) * 0.9;
+          tt.rotation.x = -Math.sin(a) * 0.9;
+        }
+      }
+      col.scaling.setAll(s);
+      const rocks = [];
+      for (let i = 0; i < 14; i++) {
+        const a = i / 14 * Math.PI * 2, m = add(g, mk(bRock(i + 60, 0), K.sand));
+        m.scaling.setAll(0.45 + i % 3 * 0.15);
+        rocks.push([m, a]);
+      }
+      const dust = add(g, mk(bDisc(3, 32), K.dm, 0, 0.1, 0, false));
+      dust.rotation.x = -Math.PI / 2;
+      if (this.glow) this.glow.addExcludedMesh(dust);
+      const burst = K.burst;
+      burst.emitter = V3(x, y + 0.3, z);
+      burst.minEmitBox = V3(-1.2 * s, 0, -1.2 * s);
+      burst.maxEmitBox = V3(1.2 * s, 0.5, 1.2 * s);
+      burst.manualEmitCount = 380;
+      this.summons.push({ g, col, mouth, rocks, dust, s, t0, dur: 2600, victim, burst });
+    });
   }
   dispose() {
     if (!this.alive) return;
     this.alive = false;
     try {
-      this.engine.stopRenderLoop();
       this.scene.dispose();
-      this.engine.dispose();
     } catch (e) {
     }
-    freeCanvas(this.cv, true);
+    this.host.forget(this);
   }
 };
 
@@ -5126,6 +5129,149 @@ for (const c of CHARS) if (!c.boss && c.basic && c.basic.dt === "blade" && c.bas
 // src/assets/env-hdr.js
 var ENV_HDR = "data:application/octet-stream;base64,Iz9SQURJQU5DRQpGT1JNQVQ9MzItYml0X3JsZV9yZ2JlCgotWSAxMjggK1ggMjU2ClNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAU26jgFNuo4BTbqOAU26jgFNuo4BTbqOAU26jgFNuo4BTbqOAU26jgFNuo4BTbqOAU26igFNuooBTbqKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbqKAU26igFNuooBTbqKAU26jgFNuo4BTbqOAU26jgFNuo4BTbqOAU26jgFNuo4BTbqOAU26jgFNuo4BUbqOAVG6jgFRuo4BUbqOAVG6kgFRupIBUbqSAVG6kgFRupIBUbqSAVG6kgFRupIBUbqSAVG6kgFRupIBUbqSAVG6kgFRupIBUbqSAVG6kgFRupIBUbqSAVG6kgFRupIBUbqSAVG6kgFRupIBUbqSAVG6kgFRupIBUbqSAVG6kgFRupIBUbqSAVG6kgFRupIBUbqSAVG6kgFRupIBUbqSAVG6kgFRupIBUbqSAVG6kgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuooBUbqKAVG6igFRuooBUbqKAVG6igFRuooBUbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFNtooBTbaKAU22igFRtooBUbqKAVG6igFRuooBUbqKAVG6igFRuooBUbqKAVG6igFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BVb6SAVW+kgFVvpIBVb6SAVW+kgFVvpIBVb6SAVW+kgFVvpIBVb6SAVW+lgFVvpYBVb6WAVW+lgFVvpYBVb6WAVW+lgFVvpYBVb6WAVW+lgFVvpYBVb6WAVW+lgFVvpYBVb6WAVW+lgFVvpYBVb6WAVW+lgFVvpYBVb6WAVW+lgFVvpYBVb6WAVW+kgFVvpIBVb6SAVW+kgFVvpIBVb6SAVW+kgFVvpIBVb6SAVW+kgFVvpIBVb6SAVW+kgFVvpIBVb6SAVG+kgFRvpIBUb6SAVG6kgFRupIBUbqSAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6igFRuooBUbqKAVG6igFRuooBUbqKAVG6igFRuooBUbqKAVG6igFRuooBUbaKAVG2igFRtooBUbaKAVG2igFRtooBUbaGAVG2hgFRtoYBUbaGAVG2hgFRtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22ggFNtoIBTbaCAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAU22hgFNtoYBTbaGAVG2hgFRtoYBUbaGAVG2hgFRtoYBUbaGAVG2hgFRtoYBUbaGAVG2hgFRtooBUbaKAVG2igFRtooBUbaKAVG2igFRuooBUbqKAVG6igFRuooBUbqKAVG6igFRuooBUbqKAVG6igFRuooBUbqKAVG6igFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRuo4BUbqOAVG6jgFRupIBUbqSAVG6kgFRvpIBUb6SAVG+kgFVvpIBVb6SAVW+kgFVvpIBVb6SAVW+lgFVvpYBVb6WAVXClgFVwpYBVcKWAVXClgFVwpYBWcKWAVnClgFZwpYBWcKWAVnClgFZwpoBWcKaAVnCmgFZwpoBWcKaAVnCmgFZwpoBWcKaAVnCmgFZwpoBWcKaAVnCmgFZwpoBWcKaAVnCmgFZwpoBWcKaAVnCmgFZwpYBWcKWAVnClgFZwpYBWcKWAVXClgFVwpYBVcKWAVXClgFVwpYBVb6WAVW+lgFVvpYBVb6WAVW+lgFVvpYBVb6WAVW+lgFVvpIBVb6SAVW+kgFVvpIBVb6SAVW+kgFVvpIBVb6SAVW+kgFVvpIBVb6SAVW+kgFVvo4BVb6OAVW+jgFVuo4BVbqOAVW6jgFVuo4BVbqOAVW6jgFRuo4BUbqOAVG6jgFRuooBUbqKAVG6igFRuooBUbqKAVG6igFRuooBUbqKAVG6igFRuooBUbqKAVG6igFRuooBUbqKAVG6hgFRtoYBUbaGAVG2hgFRtoYBUbaGAVG2hgFRtoYBUbaGAVG2hgFRtoYBUbaGAVG2hgFRtoYBUbaGAVG2hgFRtoYBUbaGAVG2hgFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2hgFRtoYBUbaGAVG2hgFRtoYBUbaGAVG2hgFRtoYBUbaGAVG2hgFRtoYBUbaGAVG2hgFRtoYBUbaGAVG2hgFRtoYBUbaGAVG2hgFRuoYBUbqGAVG6igFRuooBUbqKAVG6igFRuooBUbqKAVG6igFRuooBUbqKAVG6igFRuooBUbqKAVG6igFRuooBUbqOAVG6jgFVuo4BVbqOAVW6jgFVuo4BVbqOAVW6jgFVuo4BVb6OAVW+jgFVvo4BVb6SAVW+kgFVvpIBVb6SAVW+kgFVvpIBVb6SAVW+kgFVvpIBVb6SAVW+kgFVvpIBVb6WAVW+lgFVvpYBVb6WAVW+lgFZwpoBWcKaAVnCmgFZwpoBWcKaAVnCmgFZwpoBWcKaAVnCmgFZxpoBWcaaAVnGmgFdxp4BXcaeAV3GngFdxp4BXcaeAV3GngFdxp4BXcaeAV3GngFdxp4BXcaeAV3GngFdxp4BXcaeAV3GngFdxp4BXcaeAV3GngFdxp4BXcaeAVnGmgFZxpoBWcaaAVnCmgFZwpoBWcKaAVnCmgFZwpoBWcKaAVnCmgFZwpoBWcKaAVnCmgFZwpoBWcKWAVnClgFZwpYBWcKWAVnClgFZwpYBWcKWAVnClgFZwpYBWb6WAVm+kgFZvpIBWb6SAVm+kgFZvpIBVb6SAVW+kgFVvpIBVb6SAVW+jgFVvo4BVb6OAVW+jgFVvo4BVb6OAVW+jgFVuo4BVbqOAVW6jgFVuooBVbqKAVW6igFVuooBVbqKAVW6igFVuooBVbqKAVW6igFVuooBVbqKAVW6hgFVuoYBVbqGAVG6hgFRuoYBUbqGAVG6hgFRuoYBUbaGAVG2hgFRtoYBUbaGAVG2hgFRtoYBUbaGAVG2hgFRtoYBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaCAVG2ggFRtoIBUbaGAVG2hgFRtoYBUbaGAVG2hgFRtoYBUbaGAVG6hgFRuoYBUbqGAVG6hgFVuoYBVbqGAVW6hgFVuoYBVbqGAVW6hgFVuooBVbqKAVW6igFVuooBVbqKAVW6igFVuooBVbqKAVW6igFVuooBVbqKAVW6igFVuo4BVbqOAVW6jgFVvo4BVb6OAVW+jgFVvo4BVb6OAVW+jgFVvo4BVb6SAVW+kgFVvpIBVb6SAVm+kgFZvpIBWb6SAVm+kgFZvpIBWb6WAVnClgFZwpYBWcKWAVnClgFZwpYBWcKWAVnClgFZwpYBWcKWAVnCmgFZwpoBXcaeAV3GngFdxp4BXcaeAV3GngFdxp4BXcaeAV3GngFdxp4BYcaiAWHGogFhyqIBYcqiAWHKogFhyqIBYcqiAWHKogFhyqIBYcqiAWHKogFhyqIBYcqiAWHKogFhyqIBYcqiAWHKogFhyqIBYcqiAWHKogFhyqIBYcqiAWHKogFhyqIBYcaiAWHGogFdxp4BXcaeAV3GngFdxp4BXcaeAV3GngFdxp4BXcaeAV3GngFdxp4BXcaaAV3GmgFdxpoBXcaaAV3GmgFdwpoBXcKaAV3CmgFdwpYBXcKWAV3ClgFdwpYBWcKWAVnClgFZwpYBWcKSAVnCkgFZwpIBWcKSAVm+kgFZvpIBWb6SAVm+kgFZvo4BWb6OAVm+jgFZvo4BWb6OAVm+jgFZvo4BWb6OAVm+igFVvooBVb6KAVW6igFVuooBVbqKAVW6igFVuooBVbqKAVW6igFVuoYBVbqGAVW6hgFVuoYBVbqGAVW6hgFVuoYBVbqGAVW6hgFVuoYBVbqGAVW6hgFVuoYBVbqGAVW6ggFVuoIBVbqCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbZ+AVW2fgFVtn4BVbZ+AVW2fgFVtn4BVbZ+AVW2fgFVtn4BVbZ+AVW2fgFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtoIBVbqCAVW6ggFVuoIBVbqCAVW6ggFVuoIBVbqCAVW6ggFVuoIBVbqCAVW6hgFVuoYBVbqGAVW6hgFVuoYBVbqGAVW6hgFVuoYBVbqGAVW6hgFVuoYBVbqGAVW6hgFVuoYBVbqGAVW6igFVuooBVbqKAVW6igFVuooBVbqKAVW6igFZvooBWb6KAVm+igFZvo4BWb6OAVm+jgFZvo4BWb6OAVm+jgFZvo4BWb6OAVm+kgFZvpIBWb6SAVm+kgFZwpIBWcKSAVnCkgFZwpIBWcKWAVnClgFZwpYBXcKWAV3ClgFdwpYBXcKWAV3CmgFdwpoBXcKaAV3GmgFdxpoBXcaaAV3GmgFdxpoBXcaeAWHKogFhyqIBYcqiAWHKogFhyqIBZcqiAWXKogFlyqYBZcqmAWXOpgFlzqYBZc6mAWXOpgFlzqYBZc6mAWXOpgFlzqYBZc6mAWXOpgFlzqYBZc6mAWXOpgFlzqYBZc6mAWXOpgFlzqYBZc6mAWXOpgFlzqYBZc6mAWXOpgFlzqYBZc6mAWXOpgFlzqYBZcqmAWXKpgFlyqIBZcqiAWHKogFhyqIBYcqiAWHKogFhyqIBYcqiAWHKngFhyp4BYcqeAWHGngFhxp4BYcaeAWHGmgFhxpoBYcaaAWHGmgFhxpoBXcaaAV3GlgFdxpYBXcKWAV3ClgFdwpYBXcKWAV3CkgFdwpIBXcKSAV3CkgFdwpIBXcKSAV3CkgFdwo4BXb6OAVm+jgFZvo4BWb6OAVm+jgFZvo4BWb6KAVm+igFZvooBWb6KAVm+igFZvooBWb6KAVm+igFZuooBWbqGAVm6hgFZuoYBWbqGAVm6hgFZuoYBWbqGAVm6hgFZuoYBWbqGAVm6hgFZuoYBVbqCAVW6ggFVuoIBVbqCAVW6ggFVuoIBVbqCAVW6ggFVuoIBVbqCAVW6ggFVuoIBVbqCAVW6ggFVuoIBVbqCAVW6ggFVuoIBVbqCAVW6ggFVtoIBVbaCAVW2ggFVtoIBVbaCAVW2ggFVtn4BVbZ+AVW2fgFVtn4BVbZ+AVW2fgFVtn4BVbZ+AVW2fgFVtn4BVbZ+AVW2fgFVtn4BVbZ+AVW2fgFVtn4BVbp+AVW6fgFVun4BVbp+AVW6fgFVun4BVbp+AVm6fgFZun4BWbp+AVm6fgFZun4BWbp+AVm6fgFZun4BWbp+AVm6fgFZun4BWbp+AVm6fgFZun4BWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6hgFZuoYBWbqGAVm6hgFZuoYBWbqGAVm6hgFZuoYBWbqGAVm6hgFZuoYBWbqGAVm+hgFZvooBWb6KAVm+igFZvooBWb6KAVm+igFZvooBWb6KAVm+igFZvo4BWb6OAVm+jgFZvo4BXb6OAV2+jgFdwo4BXcKSAV3CkgFdwpIBXcKSAV3CkgFdwpIBXcKSAV3ClgFdwpYBXcKWAV3ClgFdxpYBXcaWAV3GmgFhxpoBYcaaAWHGmgFhxpoBYcaaAWHGngFhxp4BYcaeAWHKngFhyp4BYcqeAWHKogFpzqYBac6mAWnOpgFpzqYBac6qAWnOqgFp0qoBadKqAWnSqgFp0qoBadKqAWnSqgFp0q4BadKuAWnSrgFp0q4BadKuAWnSrgFp0q4BadKuAWnSrgFp0q4BadKuAWnSrgFp0q4BadKuAWnSrgFp0q4BadKuAWnSrgFp0q4BadKuAWnSqgFp0qoBadKqAWnSqgFp0qoBadKqAWnOqgFpzqoBac6mAWnOpgFpzqYBac6mAWXOpgFlzqIBZc6iAWXOogFlyqIBZcqiAWXKngFlyp4BZcqeAWXKngFlyp4BZcqaAWXKmgFhxpoBYcaaAWHGmgFhxpYBYcaWAWHGlgFhxpYBYcaWAWHGkgFhwpIBYcKSAWHCkgFhwpIBXcKSAV3CjgFdwo4BXcKOAV3CjgFdwo4BXcKOAV2+jgFdvooBXb6KAV2+igFdvooBXb6KAV2+igFdvooBXb6GAV2+hgFdvoYBXb6GAVm+hgFZvoYBWb6GAVm+hgFZuoYBWbqGAVm6hgFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbp+AVm6fgFZun4BWbp+AVm6fgFZun4BWbp+AVm6fgFZun4BWbp+AVm6fgFZun4BWbp+AVm6fgFZun4BWbp+AVm6fgFZun4BWbp+AVm6fgFZun4BWbp+AVm6fgFZun4BWbp+AVm6fgFZun4BWbp+AVm6fgFZun4BWbp+AVm6fgFZun4BWbp+AV26fgFdun4BXbp+AV26fgFdun4BXbp+AV26fgFdun4BXbp+AV26fgFdun4BXbp+AV26fgFduoIBXbqCAV26ggFduoIBXbqCAV26ggFduoIBXbqCAV26ggFduoIBXbqCAV26ggFduoIBXbqCAV26ggFduoIBXbqCAV26ggFduoIBXbqCAV26ggFduoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqCAVm6ggFZuoIBWbqGAV26hgFdvoYBXb6GAV2+hgFdvoYBXb6GAV2+hgFdvoYBXb6GAV2+hgFdvoYBXb6KAV2+igFdvooBXb6KAV2+igFdvooBXb6KAV2+igFdvo4BXcKOAV3CjgFdwo4BXcKOAV3CjgFdwo4BXcKSAWHCkgFhwpIBYcKSAWHCkgFhxpIBYcaWAWHGlgFhxpYBYcaWAWHGlgFhxpoBYcaaAWHGmgFlypoBZcqaAWXKngFlyp4BZcqeAWXKngFlyp4BZcqiAWXKogFlzqIBZc6iAWXOogFlzqYBbdKqAW3SqgFt0q4BbdKuAW3WrgFt1q4BbdauAW3WsgFt1rIBcdayAXHWsgFx1rIBcdayAXHWsgFx1rIBcda2AXHatgFx2rYBcdq2AXHatgFx2rYBcdq2AXHatgFx2rYBcdq2AXHatgFx2rYBcdq2AXHWtgFx1rIBcdayAXHWsgFx1rIBcdayAXHWsgFt1rIBbdayAW3WrgFt1q4BbdauAW3SrgFt0q4BbdKqAW3SqgFt0qoBbdKqAW3SpgFt0qYBac6mAWnOpgFpzqIBac6iAWnOogFpzqIBac6eAWnOngFpyp4BacqeAWXKmgFlypoBZcqaAWXKmgFlypoBZcaWAWXGlgFlxpYBZcaWAWXGkgFlxpIBZcaSAWHGkgFhxpIBYcKOAWHCjgFhwo4BYcKOAWHCjgFhwo4BYcKKAWHCigFhwooBYcKKAWHCigFhvooBYb6KAWG+hgFdvoYBXb6GAV2+hgFdvoYBXb6GAV2+hgFdvoYBXb6GAV2+hgFdvoIBXb6CAV2+ggFdvoIBXb6CAV2+ggFdvoIBXb6CAV26ggFduoIBXbqCAV26ggFduoIBXbqCAV26ggFduoIBXbqCAV26ggFdun4BXbp+AV26fgFdun4BXbp+AV26fgFdun4BXbp+AV26fgFdun4BXbp+AV26fgFdun4BXbp+AV26fgFdun4BXbp+AV26fgFdun4BXbp+AV26fgFdun4BXbp+AV26fgFdun4BXbp+AV26fgFdun4BXbp+AV26fgFdun4BXbp+AV2+fgFdvn4BXb5+AV2+fgFhvn4BYb5+AWG+fgFhvn4BYb5+AWG+fgFhvn4BYb5+AWG+fgFhvn4BYb5+AWG+fgFhvn4BYb5+AWG+fgFhvoIBYb6CAWG+ggFhvoIBYb6CAWG+ggFhvoIBYb6CAWG+ggFhvoIBYb6CAWG+ggFhvoIBYb6CAWG+ggFhvoIBYb6CAWG+ggFhvoIBYb6CAWG+ggFhvoIBXb6CAV2+ggFdvoIBXb6CAV2+ggFdvoIBXb6CAV2+ggFdvoIBXb6CAV2+ggFdvoIBXb6CAV2+ggFdvoIBXb6CAV2+ggFdvoIBXb6GAV2+hgFdvoYBXb6GAV2+hgFdvoYBYb6GAWG+hgFhvoYBYb6GAWG+igFhvooBYcKKAWHCigFhwooBYcKKAWHCigFhwooBYcKOAWHCjgFhwo4BYcKOAWHCjgFhwo4BYcaSAWHGkgFlxpIBZcaSAWXGkgFlxpYBZcaWAWXGlgFlxpYBZcqaAWXKmgFlypoBZcqaAWXKmgFpyp4BacqeAWnKngFpzp4Bac6iAWnOogFpzqIBac6iAWnOpgFpzqYBbdKmAW3SpgFt0qoBbdKqAXHWrgFx2rIBddqyAXXasgF12rYBddq2AXXatgF12rYBddq2AXXeugF13roBdd66AXXeugF13roBed66AXnevgF53r4Bed6+AXnevgF53r4Bed6+AXnevgF53r4Bed6+AXnevgF53r4Bed6+AXnevgF53r4Bed66AXXeugF13roBdd66AXXeugF13roBddq2AXXatgF12rYBddq2AXXatgF12rIBddqyAXHasgFx1rIBcdauAXHWrgFx1q4BcdaqAXHWqgFx0qoBcdKqAW3SpgFt0qYBbdKmAW3SogFtzqIBbc6iAW3OngFtzp4Bbc6eAWnOngFpypoBacqaAWnKmgFpypoBacqWAWnKlgFpypYBacqWAWnGkgFlxpIBZcaSAWXGkgFlxo4BZcaOAWXGjgFlxo4BZcKOAWXCigFlwooBZcKKAWXCigFlwooBZcKKAWXCigFhwoYBYcKGAWHChgFhwoYBYcKGAWG+hgFhvoYBYb6GAWG+hgFhvoIBYb6CAWG+ggFhvoIBYb6CAWG+ggFhvoIBYb6CAWG+ggFhvoIBYb6CAWG+ggFhvoIBYb6CAWG+ggFhvoIBYb5+AWG+fgFhvn4BYb5+AWG+fgFhvn4BYb5+AWG+fgFhvn4BYb5+AWG+fgFhvn4BYb5+AWG+fgFhvn4BYb5+AWG+fgFhvn4BYb5+AWG+fgFhvn4BYb5+AWG+fgFhvn4BYb5+AWG+fgFhvn4BYb5+AWG+fgFhvn4BYb5+AWG+fgFhvn4BYb5+AWW+fgFlvn4BZb5+AWW+fgFlvn4BZb5+AWW+fgFlvn4BZb5+AWW+fgFlvn4BZb5+AWW+fgFlvn4BZb6CAWW+ggFlvoIBZcKCAWXCggFlwoIBZcKCAWXCggFlwoIBZcKCAWXCggFlwoIBZcKCAWXCggFlwoIBZb6CAWW+ggFlvoIBZb6CAWW+ggFlvoIBZb6CAWW+ggFlvoIBZb6CAWW+ggFlvoIBZb6CAWW+ggFlvoIBZb6CAWW+ggFlvoIBYb6CAWG+ggFhvoIBYb6CAWG+ggFhvoIBYb6CAWG+ggFhvoIBYb6CAWG+ggFhvoIBYb6CAWG+ggFhvoYBYb6GAWHChgFhwoYBYcKGAWHChgFlwoYBZcKGAWXChgFlwoYBZcKKAWXCigFlwooBZcKKAWXCigFlwooBZcKOAWXGjgFlxo4BZcaOAWXGjgFlxo4BZcaSAWXGkgFpxpIBacaSAWnKlgFpypYBacqWAWnKlgFpypYBacqaAWnKmgFpypoBac6eAW3OngFtzp4Bbc6eAW3OogFtzqIBbdKiAW3SpgFt0qYBbdKmAXHSpgFx0qoBcdaqAXHWqgFx1q4BcdauAXHWrgF53rYBed62AXneugF53roBfd66AX3ivgF94r4BfeK+AX3ivgF94sIBfeLCAX3iwgF95sIBfebCAX3mxgF95sYBgebGAYHmxgGB5sYBgebGAYHmxgGB5sYBgebGAYHmxgGB5sYBgebGAYHmxgGB5sYBfebGAX3mxgF95sIBfebCAX3iwgF94sIBfeLCAX3ivgF94r4BfeK+AX3ivgF93roBed66AXneugF53rYBed62AXnetgF52rIBedqyAXnasgF12q4BddquAXXWrgF11qoBddaqAXXWqgF11qYBcdKmAXHSpgFx0qIBcdKiAXHSogFx0p4Bcc6eAXHOngFtzpoBbc6aAW3OmgFtzpYBbcqWAW3KlgFtypYBbcqSAW3KkgFpypIBacqSAWnGjgFpxo4BacaOAWnGjgFpxo4BacaKAWnGigFpxooBacaKAWnCigFpwooBacKGAWXChgFlwoYBZcKGAWXChgFlwoYBZcKGAWXChgFlwoIBZcKCAWXCggFlwoIBZcKCAWXCggFlwoIBZb6CAWW+ggFlvoIBZb6CAWW+ggFlvoIBZb6CAWW+ggFlvn4BZb5+AWW+fgFlvn4BZb5+AWW+fgFlvn4BZb5+AWW+fgFlvn4BZb5+AWW+fgFlvn4BZb5+AWW+fgFlvn4BZb5+AWW+fgFlvn4BZb5+AWW+fgFlvn4BZb5+AWW+fgFlvn4BZb5+AWW+fgFlvn4BZb5+AWXCfgFlwn4BacJ+AWnCfgFpwn4BacJ+AWnCfgFpwn4BacJ+AWnCfgFpwn4BacJ+AWnCfgFpwn4BacJ+AWnCfgFpwoIBacKCAWnCggFpwoIBacKCAW3CggFtwoIBbcKCAW3CggFtwoIBbcKCAW3CggFtwoIBbcKCAW3CggFtwoIBbcKCAW3CggFtwoIBbcKCAWnCggFpwoIBacKCAWnCggFpwoIBacKCAWnCggFpwoIBacKCAWnCggFpwoIBacKCAWnCggFpwoIBacKCAWnCggFpwoIBacKCAWnCggFpwoIBacKCAWnCggFpwoIBacKCAWXCggFlwoIBZcKCAWXCggFlwoIBZcKCAWXCggFlwoIBZcKCAWXChgFlwoYBZcKGAWXChgFpwoYBacKGAWnChgFpwoYBacKGAWnCigFpxooBacaKAWnGigFpxooBacaKAWnGjgFpxo4BacaOAWnGjgFpxo4BacqSAWnKkgFtypIBbcqSAW3KlgFtypYBbcqWAW3OlgFtzpoBbc6aAW3OmgFxzp4Bcc6eAXHSngFx0p4BcdKiAXHSogFx0qIBcdKmAXXWpgF11qoBddaqAXXWqgF11q4BddquAXXargF12rIBedqyAXnasgF53rYBgeK+AYHivgGB5r4BgebCAYHmwgGF5sYBherGAYXqxgGF6soBherKAYXqygGF6soBherOAYXuzgGF7s4Bie7OAYnuzgGJ7s4Bie7SAYnu0gGJ7tIBie7SAYnu0gGJ7tIBie7SAYnu0gGJ7s4Bie7OAYnuzgGJ7s4Bhe7OAYXqzgGF6soBherKAYXqygGF6soBherGAYXqxgGF5sYBgebCAYHmwgGB5sIBgea+AYHivgGB4roBgeK6AX3iugF93rYBfd62AX3esgF93rIBfdquAXnargF52q4BedqqAXnaqgF51qYBedamAXXWpgF11qIBddKiAXXSngF10p4BddKeAXXSmgFxzpoBcc6aAXHOlgFxzpYBcc6WAXHOlgFxypIBccqSAXHKkgFtyo4BbcqOAW3KjgFtyo4BbcqOAW3GigFtxooBbcaKAW3GigFtxooBbcaKAW3GhgFtxoYBbcaGAWnGhgFpxoYBacaGAWnChgFpwoIBacKCAWnCggFpwoIBacKCAWnCggFpwoIBacKCAWnCggFpwoIBacKCAWnCggFpwoIBacJ+AWnCfgFpwn4BacJ+AWnCfgFpwn4BacJ+AWnCfgFpwn4BacJ+AWnCfgFpwn4BacJ+AWnCfgFpwn4BacJ+AWnCfgFpwn4BacJ+AWnCfgFpwn4BacJ+AWnCfgFpwn4BacJ+AWnCfgFpwn4BacJ+AWnCfgFtwn4BbcJ+AW3CfgFtwn4BbcJ+AW3CfgFtwn4BbcJ+AW3CfgFtxn4BbcZ+AW3GfgFtxn4BbcZ+AXHGggFxxoIBccaCAXHGggFxxoIBccaCAXHGggFxxoIBccaCAXHGggFxxoIBccaCAXHGggFxxoIBccaCAXHGggFxxoIBccaCAXHGggFxxoIBccaCAXHGggFxxoIBccaCAXHGggFxxoIBccaCAXHGggFxxoIBccaCAXHGggFxxoIBccaCAXHGggFxxoIBccaCAW3GggFtxoIBbcaCAW3GggFtxoIBbcaCAW3GggFtxoIBbcaCAW3GggFtwoIBbcKCAW3CggFtwoIBbcKCAW3CggFtwoIBbcKCAW3CggFtwoIBbcaCAW3GggFtxoYBbcaGAW3GhgFtxoYBbcaGAW3GhgFtxoYBbcaGAW3GhgFtxooBbcaKAW3GigFtxooBbcaKAW3KigFtyo4BbcqOAW3KjgFtyo4BccqOAXHKkgFxypIBccqSAXHOlgFxzpYBcc6WAXHOlgFxzpoBcc6aAXXSmgF10p4BddKeAXXSngF10qIBddaiAXXWpgF51qYBedamAXnaqgF52qoBedquAXnargF92q4Bfd6yAX3esgF93rYBfd62AX3itgF94roBgeK6AYnqxgGJ6sYBierGAYnuygGJ7soBje7OAY3uzgGN8tIBjfLSAY3y0gGN8tYBjfLWAZH21gGR9tYBkfbaAZH22gGR9toBkfbaAZH22gGR9toBkfbeAZH23gGR9t4BkfbeAZH22gGR9toBkfbaAZH22gGR9toBkfbaAZH22gGR9tYBjfLWAY3y1gGN8tIBjfLSAY3y0gGN7s4Bje7OAYnuygGJ7soBierGAYnqxgGJ6sYBierCAYXmwgGF5r4Bhea+AYXmugGF4roBgeK2AYHitgGB4rIBgd6yAYHergGB3q4BfdqqAX3aqgF92qYBfdqmAX3WogF51qIBedaiAXnWngF51p4BedKaAXnSmgF50poBddKWAXXSlgF1zpYBdc6SAXXOkgF1zpIBdc6SAXXOjgF1yo4BccqOAXHKjgFxyooBccqKAXHKigFxyooBccqKAXHKhgFxxoYBccaGAXHGhgFxxoYBccaGAXHGhgFxxoYBbcaCAW3GggFtxoIBbcaCAW3GggFtxoIBbcaCAW3GggFtxoIBbcaCAW3GggFtxoIBbcJ+AW3CfgFtwn4BbcJ+AW3CfgFtwn4BbcJ+AW3CfgFtwn4BbcJ+AW3CfgFtwn4BbcJ+AW3CfgFtwn4BbcJ+AW3CfgFtwn4BbcJ+AW3CfgFtwn4BbcJ+AW3CfgFtwn4BccZ+AXHGfgFxxn4BccZ+AXHGfgFxxn4BccZ+AXHGfgFxxn4BccZ+AXHGfgFxxn4BccZ+AXXGfgF1xn4BdcZ+AXXGfgF1yoIBdcqCAXXKggF1yoIBdcqCAXnKggF5yoIBecqCAXnKggF5yoIBecqCAXnKggF5yoIBecqCAXnKggF5yoIBec6CAXnOggF5zoIBec6CAXnOggF5zoIBec6CAXnOggF5zoIBecqCAXnKggF5yoIBecqCAXnKggF5yoIBecqCAXnKggF5yoIBecqCAXXKggF1yoIBdcqCAXXKggF1yoIBdcqCAXXKggF1yoIBdcaCAXXGggF1xoIBccaCAXHGggFxxoIBccaCAXHGggFxxoIBccaCAXHGggFxxoIBccaCAXHGggFxxoIBccaCAXHGggFxxoIBccaCAXHGhgFxxoYBccaGAXHGhgFxxoYBccaGAXHKhgFxyoYBccqKAXHKigFxyooBccqKAXHKigFxyooBccqOAXXKjgF1zo4Bdc6OAXXOkgF1zpIBdc6SAXXOkgF1zpYBddKWAXXSlgF50poBedKaAXnSmgF51p4BedaeAXnWogF51qIBfdaiAX3apgF92qYBfdqqAX3aqgF93q4Bgd6uAYHesgGB3rIBgeK2AYHitgGF4roBhea6AYXmvgGF5r4BhebCAYnqwgGR8soBkfLOAZHy0gGR9tIBlfbWAZX21gGV9toBlfraAZX63gGZ+t4BmfreAZn+4gGZ/uIBmf7iAZn+5gGZ/uYBmf7mAZ4C5gGeAuYBngLqAZ4C6gGeAuoBngLqAZ4C6gGeAuoBngLqAZ4C5gGZ/uYBmf7mAZn+5gGZ/uIBmf7iAZn+4gGZ+t4BmfreAZX63gGV+toBlfbaAZX21gGV9tYBlfbSAZHy0gGR8s4BkfLOAZHuygGN7sYBje7GAY3qwgGN6sIBjeq+AYnqvgGJ5roBiea2AYnmtgGF4rIBheKyAYXirgGF3q4Bhd6qAYHeqgGB3qYBgdqmAYHaogGB2qIBgdqeAX3WngF91p4BfdaaAX3WmgF90pYBfdKWAXnSlgF50pIBedKSAXnSkgF5zo4Bec6OAXnOjgF5zo4Bec6KAXnOigF1zooBdcqKAXXKigF1yoYBdcqGAXXKhgF1yoYBdcqGAXXKhgF1yoYBdcqCAXXKggF1yoIBdcaCAXXGggF1xoIBdcaCAXXGggF1xoIBdcaCAXXGggFxxn4BccZ+AXHGfgFxxn4BccZ+AXHGfgFxxn4BccZ+AXHGfgFxxn4BccZ+AXHGfgFxxn4BccZ+AXHGfgFxxn4BccZ+AXXGfgF1xn4BdcZ+AXXGfgF1xn4BdcZ+AXXGfgF1xn4BdcZ+AXXGfgF1xn4BdcZ+AXXGfgF1xn4Bdcp+AXXKfgF5yn4Becp+AXnKfgF5yn4Becp+AXnKfgF5yn4BecqCAX3KggF9yoIBfc6CAX3OggF9zoIBfc6CAX3OggGBzoIBgc6CAYHOggGBzoIBgc6CAYHSggGB0oIBgdKCAYHSggGF0oIBhdKCAYXShgGF0oYBhdKGAYXShgGF0oYBhdKGAYXShgGF0oYBhdKGAYXShgGB0oYBgdKCAYHSggGB0oIBgdKCAYHOggGBzoIBgc6CAYHOggF9zoIBfc6CAX3OggF9zoIBfc6CAX3OggF9zoIBecqCAXnKggF5yoIBecqCAXnKggF5yoIBecqCAXnKggF5yoIBecqCAXXKggF1yoIBdcqCAXXKggF1yoIBdcqCAXXKggF1yoIBdcqCAXXKggF1yoIBdcqGAXXKhgF1yoYBdcqGAXXKhgF1yoYBdcqGAXXKhgF1yooBdc6KAXnOigF5zooBec6KAXnOjgF5zo4Bec6OAXnOjgF50pIBedKSAXnSkgF50pYBfdKWAX3SlgF91poBfdaaAX3WmgF91p4BgdaeAYHaogGB2qIBgdqmAYHepgGB3qoBhd6qAYXergGF4q4BheKyAYXisgGJ5rYBiea2AYnmugGJ5roBjeq+AY3qwgGN6sIBje7GAY3uxgGR7soBmfrWAZn61gGd+toBnf7eAZ3+3gGd/uIBogLiAaIC5gGiAuYBogbqAaIG6gGmBu4BpgbuAaYK8gGmCvIBpgryAaYK9gGmCvYBpgr2AaYK9gGmCvYBpgr2AaYK9gGmCvYBpgr2AaYK9gGmCvYBpgr2AaYK8gGmCvIBpgryAaYG7gGmBu4BogbqAaIG6gGiAuYBogLmAaIC4gGd/uIBnf7eAZ3+3gGd+toBmfrWAZn61gGZ9tIBmfbOAZX2zgGV8soBlfLGAZXuxgGR7sIBke6+AZHqvgGR6roBjeq2AY3mtgGN5rIBjeayAYnirgGJ4qoBieKqAYnepgGF3qYBhd6iAYXeogGF2p4BhdqeAYXamgGB2poBgdaaAYHWlgGB1pYBgdaWAYHSkgGB0pIBfdKSAX3SjgF90o4BfdKOAX3SigF9zooBfc6KAX3OigF9zooBfc6GAX3OhgF5zoYBec6GAXnOhgF5zoYBecqCAXnKggF5yoIBecqCAXnKggF5yoIBecqCAXnKggF5yoIBecqCAXnKggF5yn4Becp+AXnKfgF5yn4Becp+AXnKfgF5yn4Becp+AXnKfgF5yn4Becp+AXnKfgF5yn4Becp+AXnKfgF5yn4Becp+AXnKfgF5yn4Becp+AXnKfgF5yn4Becp+AXnKfgF5yn4Becp+AXnKfgF5yn4Bfcp+AX3KfgF9yn4Bfcp+AX3KfgF9yn4Bfc5+AX3OfgF9zn4Bgc5+AYHOfgGBzoIBgc6CAYHOggGBzoIBhdKCAYXSggGF0oIBhdKCAYXSggGJ0oIBidKCAYnWggGJ1oYBidaGAY3WhgGN1oYBjdaGAY3WhgGN1oYBjdaGAY3WhgGN1oYBjdqGAY3ahgGN2oYBjdqGAY3ahgGN2oYBjdaGAY3WhgGN1oYBjdaGAY3WhgGN1oYBjdaGAYnWhgGJ1oYBidaGAYnWhgGJ0oYBidKCAYXSggGF0oIBhdKCAYXSggGF0oIBhdKCAYHOggGBzoIBgc6CAYHOggGBzoIBgc6CAX3OggF9zoIBfc6CAX3OggF9zoIBfc6CAX3OggF9zoIBfc6CAX3OggF9zoIBfc6CAX3OggF9zoIBfc6CAX3OhgF9zoYBfc6GAX3OhgF9zoYBfc6GAX3OhgF9zoYBfc6KAX3OigF9zooBfc6KAX3SigF90o4BfdKOAX3SjgF90pIBgdKSAYHSkgGB1pYBgdaWAYHWlgGB1poBgdqaAYXamgGF2p4BhdqeAYXaogGF3qIBhd6mAYnepgGJ4qoBieKqAYnirgGN5rIBjeayAY3mtgGN6rYBkeq6AZHqvgGR7r4Bke7CAZXuxgGV8sYBlfLKAZX2zgGZ9s4BmfbSAaIC3gGmAuIBpgbiAaYG5gGqBuoBqgruAaoK7gGqCvIBrg72Aa4O9gGuDvoBrhL6AbIS/gGyEv4BshMCAbIXAgGyFwIBshcGAbIXBgGyFwYBshcGAbIXBgGyFwYBshcGAbIXBgGyFwYBshcGAbIXAgGyFwIBshcCAbIS/gGyEv4BrhL6Aa4O+gGuDvYBrg72AaoO8gGqCu4BqgruAaoG6gGmBuYBpgbmAaYC4gGmAt4Bof7aAaH+2gGh+tYBnfrSAZ36zgGd9soBmfbKAZnyxgGZ8sIBme6+AZXuvgGV7roBleq2AZHqtgGR6rIBkeauAZHmrgGN5qoBjeKmAY3ipgGN4qIBjd6iAYnengGJ3p4BidqaAYnamgGJ2pYBidqWAYXalgGF1pIBhdaSAYXWkgGF1o4BhdaOAYXSjgGF0ooBgdKKAYHSigGB0ooBgdKKAYHShgGB0oYBgc6GAYHOhgGBzoYBgc6GAYHOggGBzoIBgc6CAYHOggGBzoIBgc6CAX3OggF9zoIBfc6CAX3OggF9zn4Bfc5+AX3OfgF9zn4Bfc5+AX3KfgF9yn4Bfcp+AX3KfgF9yn4Bfcp+AX3KfgF9yn4Bfcp+AX3KfgF9yn4Bfcp+AX3KfgF9yn4Bfcp+AX3KfgGBzn4Bgc5+AYHOfgGBzn4Bgc5+AYHOfgGBzn4Bgc5+AYHOfgGBzn4Bgc5+AYXOfgGFzn4Bhc5+AYXSfgGF0n4BhdJ+AYnSggGJ0oIBidKCAYnSggGJ1oIBjdaCAY3WggGN1oIBjdaCAZHWggGR2oYBkdqGAZHahgGV2oYBldqGAZXahgGV3oYBmd6GAZnehgGZ3oYBmd6GAZneigGZ3ooBmd6KAZneigGZ3ooBmd6KAZneigGZ3ooBmd6KAZneigGZ3ooBmd6KAZneigGZ3oYBmd6GAZXehgGV3oYBldqGAZXahgGV2oYBkdqGAZHahgGR2oYBkdaGAY3WhgGN1oIBjdaCAY3WggGJ1oIBidKCAYnSggGJ0oIBidKCAYXSggGF0oIBhdKCAYXSggGF0oIBhdKCAYXOggGFzoIBgc6CAYHOggGBzoIBgc6CAYHOggGBzoIBgc6CAYHOggGBzoIBgc6GAYHOhgGB0oYBgdKGAYHShgGB0oYBgdKGAYHSigGB0ooBgdKKAYXSigGF0o4BhdaOAYXWjgGF1o4BhdaSAYXWkgGF1pIBhdqWAYnalgGJ2pYBidqaAYnamgGJ3p4Bid6eAY3eogGN4qIBjeKmAY3ipgGN4qoBkeauAZHmrgGR6rIBkeqyAZXqtgGV7roBle6+AZnuvgGZ8sIBmfLGAZn2ygGd9soBnfrOAZ360gGh+tYBof7WAaH+2gGuCuYBrgrqAbIO7gGyDvIBshL2AbYS+gG2Fv4Bthb+AbobAgG6GwYBuhsGAbofCgG+Hw4Bvh8OAb4jEgG+IxIBviMSAb4jFgHCIxYBwiMWAcIjFgHCIxYBwiMWAcIjFgHCIxYBwiMWAb4jFgG+IxIBviMSAb4jEgG+Hw4Bvh8OAbofCgG6GwYBuhsGAbobAgG2Fv4Bthb+AbYS+gGyEvYBsg7yAbIO7gGuCuoBrgrqAa4G5gGqBuIBqgLeAaoC2gGl/tYBpf7SAaX6zgGh+soBofrKAaH2xgGd9sIBnfK+AZ3yugGZ7roBme62AZnqsgGZ6q4BlequAZXmqgGV5qYBleamAZHiogGR4qIBkeKeAZHengGR3poBjd6aAY3elgGN2pYBjdqSAY3akgGN2pIBidqOAYnWjgGJ1o4BidaOAYnWigGJ1ooBidaKAYnWigGJ0oYBidKGAYnShgGF0oYBhdKGAYXSggGF0oIBhdKCAYXSggGF0oIBhdKCAYXSggGF0oIBhdKCAYXOggGFzn4Bhc5+AYXOfgGFzn4Bhc5+AYXOfgGFzn4Bhc5+AYXOfgGFzn4Bhc5+AYXOfgGFzn4Bhc5+AYXOfgGFzn4Bhc5+AYXOfgGFzn4Bhc5+AYXOfgGFzn4Bhc5+AYXOfgGFzn4Bhc5+AYXSfgGJ0n4BidJ+AYnSfgGJ0n4BidJ+AYnSfgGJ0n4BjdJ+AY3SfgGN1n4BjdaCAY3WggGR1oIBkdaCAZHWggGR2oIBldqCAZXaggGV2oIBmd6GAZnehgGZ3oYBnd6GAZ3ehgGd4oYBoeKGAaHiigGh4ooBpeaKAaXmigGl5ooBpeaKAaXmigGp5ooBqeaKAanqigGp6ooBqeqOAanqjgGp6o4BqeqOAanqigGp6ooBqeaKAanmigGl5ooBpeaKAaXmigGl5ooBoeKKAaHiigGh4ooBneKKAZ3ihgGd3oYBnd6GAZnehgGZ3oYBmd6GAZXahgGV2oYBldqCAZHaggGR2oIBkdaCAZHWggGN1oIBjdaCAY3WggGN1oIBjdaCAYnSggGJ0oIBidKCAYnSggGJ0oIBidKCAYnSggGJ0oIBidKCAYnSggGJ0oIBidKCAYnSggGJ0oYBidKGAYnShgGJ0oYBidaGAYnWhgGJ1ooBidaKAYnWigGJ1ooBidaOAYnWjgGJ1o4BjdqOAY3akgGN2pIBjdqSAY3algGN3pYBjd6aAZHemgGR3p4BkeKeAZHiogGR4qIBleamAZXmpgGV5qoBlequAZnqrgGZ6rIBme62AZnutgGd8roBnfK+AZ32wgGh9sYBofbGAaH6ygGl+s4Bpf7SAaX+1gGqAtoBqgLeAaoG4gGuBuYBuhLyAboW9gG+FvoBvhr+Ab4bAgHCHwYBwiMKAcIjDgHGIxIBxicWAcYnFgHKKxoByiseAcorHgHKLyIBzi8iAc4vJgHOLyYBzjMmAc4zKgHOMyoBzjMqAc4zKgHOMyoBzjMqAc4zJgHOMyYBzi8mAc4vIgHKLyIByi8eAcorHgHKKxoBxicWAcYnFgHGJxIBwiMOAcIjCgHCHwYBvh8CAb4a/gG+FvoBuhb2AboS8gG2Eu4Btg7qAbYO5gGyCuIBsgbeAa4G2gGuAtYBrgLSAan+zgGp/soBqfrGAaX6wgGl9r4Bpfa+AaHyugGh8rYBoe6yAZ3urgGd7q4BneqqAZnqpgGZ5qYBmeaiAZnmogGZ4p4BleKaAZXimgGV4pYBld6WAZXelgGR3pIBkd6SAZHejgGR2o4BkdqOAZHajgGR2ooBkdqKAZHaigGN1ooBjdaGAY3WhgGN1oYBjdaGAY3WhgGN1oIBjdaCAY3WggGN1oIBjdaCAY3WggGN0oIBjdKCAY3SggGN0n4BjdJ+AY3SfgGN0n4BjdJ+AY3SfgGN0n4BjdJ+AY3SfgGJ0n4BidJ+AYnSfgGN0n4BjdJ+AY3SfgGN0n4BjdJ+AY3SfgGN0n4BjdJ+AY3SfgGN0n4BjdJ+AY3SfgGN0n4BjdJ+AY3SfgGN0n4BjdZ+AY3WfgGR1n4BkdZ+AZHWfgGR1n4BkdZ+AZHWfgGV2n4BldqCAZXaggGZ2oIBmdqCAZneggGd3oIBnd6CAZ3ehgGh4oYBoeKGAaHihgGl4oYBpeaGAanmigGp5ooBreqKAa3qigGt6ooBse6KAbHujgGx7o4Bte6OAbXujgG18o4BufKOAbnyjgG58o4BufKOAbnykgG58pIBufKSAbnykgG58o4BufKOAbnyjgG18o4BtfKOAbXujgG17o4Bse6OAbHujgGx6o4BreqKAa3qigGp6ooBqeaKAanmigGl5ooBpeKGAaHihgGh4oYBneKGAZ3ehgGd3oYBmd6GAZneggGZ2oIBmdqCAZXaggGV2oIBldqCAZXaggGR1oIBkdaCAZHWggGR1oIBkdaCAZHWggGR1oIBkdaCAZHWggGN1oIBjdaCAY3WggGN1oIBjdaGAY3WhgGN1oYBjdaGAY3WhgGR1oYBkdqKAZHaigGR2ooBkdqKAZHajgGR2o4BkdqOAZHejgGR3pIBld6SAZXelgGV3pYBleKWAZXimgGV4poBmeKeAZnmngGZ5qIBmeamAZnqpgGd6qoBne6uAZ3urgGh7rIBofK2AaHyugGh9roBpfa+AaX6wgGp+sYBqf7KAan+zgGuAtIBrgLWAa4G2gGyBt4BsgriAbYO5gG2DuoBthLuAcYe/gHGHwIByiMGAconCgHKJxIBzisWAc4vGgHSLx4B0jMiAdIzJgHWNyoB1jcqAdY7LgHaOzIB2js2Ado/NgHaPzoB3j86Ad4/OgHePz4B3kM+Ad5DPgHeQz4B3kM+Ad4/PgHePzoB3j86Ado/OgHaPzYB2js2Ado7MgHWOy4B1jcuAdY3KgHWMyYB0jMiAdIvHgHOLxoBzisWAc4nEgHKJw4ByiMKAcYjAgHGHv4Bwhr6AcIa9gG+FvIBvhLqAboS5gG6DuIBugreAbYK2gG2BtYBsgLSAbICzgGt/soBrf7GAa36wgGp+r4Bqfa6Aan2tgGl8rIBpfKuAaXurgGh7qoBoe6mAaHqogGh6qIBneqeAZ3mngGd5poBneaaAZ3ilgGZ4pYBmeKSAZnikgGZ3pIBmd6OAZnejgGZ3o4Bld6KAZXeigGV2ooBldqGAZXahgGV2oYBldqGAZXahgGV2oIBldqCAZXaggGV2oIBldqCAZXWggGV1oIBkdaCAZHWggGR1n4BkdZ+AZHWfgGR1n4BkdZ+AZHWfgGR1n4BkdZ+AZHWfgGR1n4BkdZ+AZHWfgGR1n4BkdZ+AZHWfgGR1n4BkdZ+AZHWfgGR1n4BkdZ+AZHWfgGR1n4BldZ+AZXWfgGV1n4BldZ+AZXWfgGV1n4BldZ+AZXafgGV2n4Bldp+AZnafgGZ2n4Bmdp+AZnafgGd3oIBnd6CAZ3eggGh3oIBod6CAaHiggGl4oIBpeKGAanmhgGp5oYBqeaGAa3qhgGx6ooBseqKAbXuigG17ooBufKOAbnyjgG98o4BvfaOAcH2jgHB9pIBxfqSAcX6kgHF+pIByf6SAcn+kgHJ/pYBzf6WAc3+lgHN/pYBzf6WAc3+lgHN/pYBzf6WAcn+lgHJ/pYByf6SAcn6kgHF+pIBxfqSAcH6kgHB9pIBvfaOAb32jgG58o4BufKOAbXujgG17ooBse6KAbHqigGt6ooBreqGAanmhgGp5oYBpeaGAaXihgGl4oYBoeKGAaHeggGd3oIBnd6CAZ3eggGd3oIBmd6CAZnaggGZ2oIBmdqCAZnaggGZ2oIBldqCAZXaggGV2oIBldqCAZXaggGV2oIBldqCAZXaggGV2oYBldqGAZXahgGV2oYBldqGAZXaigGV3ooBld6KAZneigGZ3o4Bmd6OAZnejgGZ4o4BmeKSAZnikgGZ4pYBneKWAZ3mmgGd5poBneaeAZ3qngGh6qIBoeqiAaHupgGh7qoBpe6qAaXyrgGl8rIBqfa2Aan2ugGp+r4BrfrCAa3+xgGt/sYBsgLOAbIC0gG2BtYBtgraAboK3gG6DuIBug7mAb4S6gG+Fu4Bwhb2AcIa+gHSJwoB0isOAdYvFgHWMxoB2jMeAdo3JgHeOyoB3jsuAeI/MgHiQzYB4kM6AeZHPgHmR0IB6ktGAepLSgHqS0oB6k9OAepPTgHuT1IB7k9SAe5TUgHuU1IB7lNSAe5TUgHuT1IB7k9SAe5PTgHqT04B6k9KAepLSgHqS0YB5kdCAeZHPgHmQzoB4kM2AeI/MgHeOy4B3jsqAdo3JgHaMyIB1jMaAdYvFgHSKxIB0isKAc4nBgHOIwIByh76Acoe9gHGGvIBxhbqAcIS5gHCEuIBvg7aAb4K1gG6CtIBugbOAbYCygG2AsYBtf7CAbH+vgGx+roBrfq2Aa32sgGt9q4BrfKqAanyqgGp7qYBqe6iAaXuogGl6p4BpeqaAaXqmgGl5pYBoeaWAaHmkgGh5pIBoeKSAaHijgGh4o4BneKOAZ3iigGd4ooBnd6KAZ3ehgGd3oYBnd6GAZ3ehgGd3oYBnd6CAZ3eggGd3oIBmdqCAZnaggGZ2oIBmdqCAZnaggGZ2n4Bmdp+AZnafgGZ2n4Bmdp+AZnafgGZ2n4Bmdp+AZnafgGZ2n4Bmdp+AZnafgGZ2n4Bmdp+AZnafgGZ2n4Bmdp+AZnafgGZ2n4Bmdp+AZnafgGZ2n4Bmdp+AZnafgGZ2n4Bndp+AZ3afgGd2n4Bndp+AZ3afgGd3n4Bnd5+AaHefgGh3n4Bod5+AaHefgGl3oIBpeKCAaXiggGp4oIBqeaCAanmggGt5oYBreqGAbHqhgGx6oYBte6GAbnuigG58ooBvfKKAcH2jgHB9o4BxfaOAcn6jgHJ+pIBzf6SAdH+kgHSApYB1gKWAdYGlgHaBpYB3gaaAd4KmgHeCpoB4gqaAeIOmgHiDpoB4g6aAeIOmgHiDpoB4g6aAeIOmgHiCpoB3gqaAd4KmgHeCpoB2gaWAdoGlgHWBpYB1gKWAdICkgHN/pIBzf6SAcn6kgHF+o4BxfaOAcH2jgG98o4BvfKKAbnuigG17ooBte6KAbHqhgGx6oYBreaGAa3mhgGp5oYBqeaCAaXiggGl4oIBpeKCAaXiggGh4oIBod6CAaHeggGh3oIBod6CAZ3eggGd3oIBnd6CAZ3eggGd3oIBnd6CAZ3eggGd3oIBnd6GAZ3ehgGd3oYBnd6GAZ3ehgGd3oYBneKKAZ3iigGd4ooBoeKOAaHijgGh4o4BoeKSAaHmkgGh5pIBoeaWAaXmlgGl6poBpeqaAaXqngGl7p4Bqe6iAanupgGp8qoBqfKqAa32rgGt9rIBrfq2AbH6ugGx/r4Btf7CAbYCxgG2AsoBugbOAboK0gG+CtYBvg7aAcIS4gHCEuYBxhbqAcYa7gHKGvYByh76Ac4i/gHOJwYB3jMWAeI3HgHiOyIB5j8qAeZDLgHqQzYB6kc6Ae5LQgHuT0YB8k9KAfJTTgH2V1IB9ldWAfpbWgH6W14B+l9iAfpfZgH+X2YB/mNqAf5jagH+Y2oB/mNqAf5jagH+Y2oB/mNqAf5jagH+X2YB/l9mAfpfYgH6W14B+ltaAfZXWgH2V1YB8lNOAfJPSgHyT0YB7ktCAepHOgHqQzYB5kMyAeY/KgHiOyYB4jceAd4zGgHaMxIB2i8KAdYrBgHWJv4B0iL6AdIe8gHOHu4ByhrqAcoW4gHGEt4Bxg7aAcIO0gHCCs4BvgbKAb4GxgG+AsIBugK+Abn+ugG1/rYBtfqyAbX6rgGx9qoBsfamAbHypgGt8qIBre6eAa3ungGt7poBre6WAanqlgGp6pIBqeqSAanmkgGp5o4BqeaOAaXmjgGl5ooBpeaKAaXiigGl4oYBpeKGAaXihgGl4oYBpeKGAaXiggGl4oIBoeKCAaHeggGh3oIBod6CAaHeggGh3n4Bod5+AaHefgGh3n4Bod5+AaHefgGh3n4Bod5+AaHefgGh3n4Bod5+AaHefgGh3n4Bod5+AaHefgGh3n4Bod5+AaHefgGh3n4Bod5+AaHefgGh3n4Bod5+AaHefgGh3n4Bod5+AaXefgGl3n4Bpd5+AaXefgGl3n4BpeJ+AaXifgGp4n4BqeJ+AanifgGp5oIBreaCAa3mggGx5oIBseqCAbXqggG16oYBue6GAbnuhgG98oYBwfKKAcH2igHF9ooByfqOAc36jgHN/o4B0gKSAdYCkgHaBpIB3gaWAeIKlgHmDpoB5g6aAeoSmgHuEp4B8haeAfIWngH2Gp4B9hqiAfoaogH6GqIB+h6iAfoeogH+HqIB+h6iAfoeogH6HqIB+hqiAfYaogH2Gp4B8haeAfIWngHuEp4B6hKaAeoOmgHmDpoB4gqWAd4KlgHaBpYB2gKSAdYCkgHR/pIBzf6OAcn6jgHF9o4BxfaKAcHyigG98ooBvfKKAbnuhgG17oYBteqGAbHqhgGx6oYBseaCAa3mggGt5oIBreaCAanmggGp4oIBqeKCAaniggGl4oIBpeKCAaXiggGl4oIBpeKCAaXiggGl4oIBpeKCAaXihgGl4oYBpeKGAaXihgGl4oYBpeKGAaXiigGl5ooBpeaKAanmjgGp5o4BqeaOAanqkgGp6pIBqeqSAanqlgGt7pYBre6aAa3ungGt7p4BrfKiAbHyogGx9qYBsfaqAbX2rgG1+rIBtfq2Abn+tgG6AroBugLCAb4GxgG+BsoBwgrOAcIO0gHGDtYBxhLeAcoW4gHKGuYBzhruAc4e8gHSIvoB1ib+AdYrBgHaLwoB2i8SAeo/JgHuQyoB8kcyAfJLOgH2T0IB+lNGAfpXTgH+W1IB/ltaAgJfXgIGY2YCBmdqAgZnbgIKa3ICCm92Ag5vegIOb34CDnN+Ag5zggISc4ICEnOGAhJ3hgISd4YCEnOGAhJzggIOc4ICDnOCAg5vfgIOb3oCCm92AgprcgIKZ24CBmdqAgZjZgICX14CAl9aAf5bVgH6V04B+lNGAfZPQgHySzoB8kcyAe5DLgHqPyYB6jseAeY3GgHiMxIB4jMKAd4vAgHaKv4B2ib2AdYi8gHWHuoB0hrmAc4W3gHOFtoByhLSAcoOzgHGCsoBxgrGAcYGvgHCBroBwgK2Ab3+sgG9/q4BvfquAbn6qgG59qYBufaiAbX2ngG18p4BtfKaAbXymgGx7pYBse6WAbHukgGx7pIBseqOAbHqjgGt6ooBreqKAa3qigGt5ooBreaGAa3mhgGt5oYBreaGAa3mggGt5oIBreaCAa3mggGp4oIBqeKCAaniggGp4oIBqeJ+AanifgGp4n4BqeJ+AanifgGp4n4BqeJ+AanifgGp4n4BqeJ+AanifgGp4n4BqeJ+AanifgGp4n4BqeJ+AanifgGp4n4BqeJ+AanifgGp4n4BqeJ+AanifgGp4n4BqeJ+Aa3ifgGt4n4BreJ+Aa3ifgGt4n4BreZ+Aa3mfgGx5n4BseZ+AbHmfgG16n4BteqCAbXqggG56oIBue6CAb3uggG98oYBwfKGAcXyhgHF9ooByfqKAc36igHR/o4B1f6OAdoCjgHeBpIB4gqSAeYKlgHqDpYB7hKaAfIWmgH2Fp4B+hqeAf4engICIqICBiKiAgompgIOJqYCDiqmAhIqqgIWLqoCFi6qAhYuqgIaLqoCGi6qAhouqgIWLqoCFi6qAhYuqgISLqoCEiqmAg4qpgIKJqYCBiKiAgIiogICHqIB/hqeAfYangHyFpoB7hKaAeoOlgHmDpYB4gqWAd4GkgHaApIB1gKOAdH+jgHN+o4BzfqKAcn2igHF9ooBwfKGAcHyhgG97oYBve6GAbnuhgG56oIBteqCAbXqggG16oIBseqCAbHmggGx5oIBseaCAa3mggGt5oIBreaCAa3mggGt5oIBreaCAa3mggGt5oIBreaGAa3mhgGt5oYBreaGAa3mhgGt6ooBreqKAa3qigGx6ooBseqOAbHqjgGx7pIBse6SAbHukgGx7pYBtfKaAbXymgG18p4BtfaeAbn2ogG59qYBufqqAb36qgG9/q4Bvf6yAcICtgHCAroBwga+AcYKwgHGCsoByg7OAcoS0gHOFtoBzhbeAdIa4gHWHuoB1iLuAdom9gHaKv4B3isCAeIvCgHiMxIB5jcWAeo7HgH6SzIB/k86Af5TQgICW0oCBl9SAgpjWgIKZ2ICDmtmAhJvbgISb3YCFnN6AhZ3ggIae4YCGn+KAh5/jgIeg5ICIoOWAiKHmgIih54CIoeeAiKHngImh6ICJoeiAiKHngIih54CIoeeAiKHmgIig5YCHoOWAh5/kgIef44CGnuGAhp3ggIWc34CEnN2AhJvbgIOa2oCCmdiAgpjWgIGX1ICAltKAgJXQgH+Uz4B+ks2AfZHLgHyQyYB8j8eAe47FgHqNw4B6jMGAeYu/gHiKvoB4ibyAd4i6gHaHuYB2h7eAdYa2gHWFtIB0hLOAc4OygHODsIBzgq+AcoGugHKBrYBxgKyAcYCrgHF/qoBwf6mAcH6ogHB+qIBvfqeAb32mgG99poBvfaWAbnylgG58pIBufKSAbnujgG57o4Bue6KAbXuigG17ooBte6KAbXqhgG16oYBteqGAbXqhgG16oIBteqCAbXqggG16oIBteqCAbXmggGx5oIBseZ+AbHmfgGx5n4BseZ+AbHmfgGx5n4BseZ+AbHmfgGx5n4BseZ+AbHmfgGx5n4BseZ+AbHmfgGx5n4BseZ+AbHmfgGx5n4BseZ+AbHmfgGx5n4BseZ+AbHmfgGx5n4BteZ+AbXmfgG15n4BteZ+AbXmfgG16n4Btep+AbXqfgG56n4Buep+AbnqfgG97n4Bve6CAb3uggHB7oIBwfKCAcXyggHJ9oYByfaGAc36hgHR+ooB1f6KAdoCigHeAo4B4gaOAeYKkgHqDpIB7hKWAfISlgH6FpoB/hqaAgIengIKIqICDiaiAhIqpgIaLqYCHjKqAiI2qgImOq4CKjquAi4+sgIyPrICMkKyAjZCsgI2RrYCOka2AjpGtgI6RrYCNka2AjZCtgI2QrICMkKyAi4+sgIqOq4CJjquAiI2rgIeMqoCGi6qAhYqpgISKqICCiaiAgYingICHp4B+hqaAfYWmgHyEpYB6g6WAeYKkgHiBpIB3gaOAdoCjgHV/ooB0f6KAc36igHN+oYByfaGAcX2hgHF8oYBwfKGAcHyggG97oIBve6CAb3uggG57oIBueqCAbnqggG56oIBueqCAbXqggG16oIBteqCAbXqggG16oIBteqCAbXqhgG16oYBteqGAbXqhgG16oYBte6KAbXuigG57ooBue6KAbnujgG57o4BufKSAbnykgG58pYBvfKWAb32mgG99poBvfaeAcH6ogHB+qIBwf6mAcX+qgHGAq4BxgKyAcoGtgHKBroBygq+Ac4OwgHODsYB0hLOAdIW0gHWGtYB2hreAdoe4gHeIuoB3ibyAeIq9gHmLv4B5jMGAeo3DgHuOxYB8j8eAfJDIgH2RyoCCltCAgpfSgIOY1ICEmdeAhZrZgIac24CHnd2Ah57fgIif4YCJoOOAiaHkgIqi5oCLo+iAi6PpgIyk6oCMpeuAjaXsgI2m7YCNpu6AjabugI6n74COp++AjqfvgI6n74CNpu6AjabugI2m7YCNpe2AjKXsgIyk6oCLo+mAi6PogIqi5oCKoeWAiaDjgIif4YCHnt+Ah53dgIac24CFm9mAhJnXgIOY1YCDl9OAgpbQgIGVzoCAk8yAf5LKgH6RyIB+kMaAfY/EgHyOwoB7jMCAe4u+gHqKvIB5ibqAeIi5gHiIt4B3h7WAd4a0gHaFs4B2hLGAdYSwgHWDr4B0gq2AdIKsgHOBq4BzgaqAc4CqgHKAqYByf6iAcn+ngHF+poBxfqaAcX6lgHF9pYBxfaSAcH2kgHB9o4BwfKOAcHyigHB8ooBwfKKAb3yhgG97oYBve6GAb3uhgG97oYBve6CAb3uggG97oIBve6CAb3uggG97oIBve5+Ab3qfgG96n4Bvep+Ab3qfgG96n4Bvep+AbnqfgG56n4Buep+AbnqfgG56n4Buep+AbnqfgG56n4Buep+AbnqfgG56n4Buep+AbnqfgG96n4Bvep+Ab3qfgG96n4Bvep+Ab3qfgG96n4Bvep+Ab3ufgG97n4Bve5+AcHufgHB7n4Bwe5+AcHufgHF8n4BxfKCAcnyggHJ9oIBzfaCAc32ggHR+oYB1fqGAdX+hgHaAooB3gKKAeIGjgHmCo4B7g6SAfISkgH2FpYB/hqWAgIemgIKIp4CDiaeAhYqogIaLqYCIjKmAio2qgIuPq4CNkKuAjpGsgJCSrYCRk62AkpSugJSVroCVla+AlZavgJaWr4CXl7CAl5ewgJeXsICXl7CAl5ewgJaWr4CWlq+AlZWvgJSVroCTlK6AkpOugJCSrYCPkayAjZCsgIyPq4CKjqqAiY2qgIeMqYCFiqiAhImogIKIp4CBh6aAf4amgH6FpYB8hKSAe4OkgHqCo4B5gaOAeIGjgHeAooB2f6KAdX+hgHR+oYBzfqGAc32hgHJ9oIByfaCAcXyggHF8oIBxfKCAcHyggHB8oIBwe6CAcHuggHB7oIBwe6CAcHuggG97oIBve6CAb3uggG97oIBve6GAb3uhgG98oYBwfKGAcHyigHB8ooBwfKKAcHyigHB8o4BwfaOAcH2kgHF9pIBxfaWAcX6lgHF+poBxfqaAcn+ngHJ/qIBygKmAc4CpgHOBqoBzgauAdIKsgHSCrYB1g66AdYSwgHWEsYB2hbKAd4a0gHeHtYB4h7eAeIi4gHmJuoB6iryAeou+gHuMwIB8jcGAfY/DgH2QxYB+kciAf5LKgICTzICBlM6AhZnUgIaa14CHnNmAiJ3bgIme3oCKoOCAi6HigIyi5YCNo+eAjqTpgI6m64CPp+2AkKjugJCo8ICRqfGAkarzgJKr9ICSq/WAk6z2gJOs9oCTrPeAk6z3gJOs94CTrPeAk6z2gJOs9oCSq/WAkqv0gJGq84CRqfKAkKnwgJCo74CPp+2AjqbrgI6l6YCNpOeAjKLlgIuh44CKoOCAiZ/egIid3ICInNmAh5rXgIaZ1ICFmNKAhJbQgIOVzYCClMuAgZPJgICRxoB/kMSAfo/CgH6OwIB9jb6AfIy8gHuLuoB7iriAeom3gHmItYB5h7OAeIaygHiFsYB3ha+Ad4SugHaDrYB2g6yAdYKrgHWBqoB1gamAdIGogHSAp4B0gKeAdH+mgHN/pYBzf6WAc36kgHN+pIByfqOAcn6jgHJ9ooByfaKAcn2igHJ9oYByfaGAcn2hgHJ8oYBxfKCAcXyggHF8oIBxfKCAcXyggHF8oIBxfKCAcXyfgHF8n4BxfJ+AcXyfgHF8n4Bxe5+AcXufgHF7n4Bxe5+AcXufgHF7n4Bxe5+AcXufgHF7n4Bxe5+AcXufgHF7n4Bxe5+AcXufgHF7n4Bxe5+AcXufgHF7n4Bxe5+AcXufgHF8n4BxfJ+AcXyfgHF8n4ByfJ+AcnyfgHJ8n4ByfJ+Ac32fgHN9n4BzfZ+AdH2ggHR+oIB1fqCAdX6ggHZ/oYB3gKGAeIChgHmBooB6gqKAe4KjgHyDo4B9hKSAf4WkgICGpYCCh6aAhImmgIWKp4CHi6iAiY2pgIuOqoCNj6qAj5GrgJGSrICTlK2AlZWugJeWr4CZmK+AmpmwgJyasYCdm7GAnpyygJ+csoCgnbOAoZ6zgKGes4ChnrOAoZ6zgKGes4CgnbOAoJ2ygJ+csoCem7KAnJqxgJuZsICZmLCAl5evgJaWroCUlK2AkpOtgJCRrICOkKuAjI6qgIqNqYCIjKiAhoqogISJp4CCiKaAgYelgH+GpYB+haSAfISkgHuDo4B6gqOAeYGigHiBooB3gKGAdn+hgHZ/oYB1fqGAdX6ggHR+oIB0faCAc32ggHN9oIBzfaCAcn2ggHJ9oIByfKCAcnyggHJ8oIByfKCAcnyggHJ8oIByfKCAcn2hgHJ9oYByfaGAcn2hgHJ9oYByfaKAcn2igHJ9ooByfqOAc36jgHN+pIBzfqSAc3+lgHN/pYB0f6aAdICmgHSAp4B0gKiAdYGpgHWBqoB1gquAdoOsgHaDrYB3hK6Ad4SvgHiFsIB4hrKAeYezgHmItYB6iLaAe4m4gHuKuoB8i7yAfYy+gH6OwIB+j8KAf5DEgICRxoCBksiAgpTLgIOVzYCEls+AhZjSgIqd2ICLntuAjKDegI2h4ICOouOAj6TmgJCl6ICRp+uAkqjtgJOp74CTq/KAlKz0gJWt9oCWrveAlq/5gJew+oCXsPyAmLH9gJix/oCYsv6AmbL/gJmy/4CZsv+AmbL/gJiy/oCYsf6AmLH9gJew/ICXsPuAlq/5gJau+ICVrfaAlKz0gJSr8oCTqvCAkqjtgJGn64CQpuiAj6TmgI6j44CNoeGAjKDegIue24CKndmAiZvWgIia04CHmNGAhpfOgIWVy4CElMmAg5PHgIKRxICBkMKAgI/AgH+OvoB+jbyAfoy6gH2LuIB8iraAfIm0gHuIs4B6h7GAeoawgHmFr4B5ha2AeISsgHiDq4B4g6qAd4KpgHeCqIB3gaeAdoGngHaBpoB2gKWAdoClgHWApIB1f6SAdX+jgHV/o4B1f6KAdH6igHR+ooB0fqGAdH6hgHR+oYB0fqGAdH6ggHR9oIB0faCAdH2ggHR9oIB0faCAc32fgHN9n4BzfZ+Ac32fgHN9n4BzfZ+Ac32fgHN9n4BzfZ+Ac32fgHN9n4BzfZ+Ac32fgHN9n4BzfZ+Ac32fgHN9n4BzfZ+Ac32fgHN9n4BzfZ+Ac32fgHN9n4BzfZ+Ac32fgHN9n4B0fZ+AdH2fgHR9n4B0fZ+AdH2fgHR9n4B1fZ+AdX6fgHV+n4B1fp+Adn6ggHZ/oIB3f6CAeICggHiAoYB5gaGAeoGhgHuCooB8g6KAfYSjgH6Fo4CAhqSAgYekgIOIpYCFiaaAh4qngImMqICLjamAjY+pgI+RqoCSkquAlJStgJeWroCZmK+Am5mwgJ6bsYCgnbKAop6zgKSgs4CmobSAqKK1gKmjtoCrpLaArKW3gKylt4CtpreAraa3gK2mt4CtpbeArKW3gKuktoCqo7aAqKK1gKehtICloLSAo5+zgKGdsoCfm7GAnJqwgJqYr4CXlq6AlZWtgJOTrICQkauAjpCqgIyOqYCKjaiAiIungIaKpoCEiKaAgoelgIGGpIB/haSAfoSjgHyDo4B7gqKAeoKigHmBoYB5gKGAeIChgHeAoYB3f6CAdn+ggHZ/oIB2fqCAdX6ggHV+oIB1fqCAdX6ggHR+oIB0fqCAdH6ggHR+oIB0fqCAdH6ggHR+oYB0fqGAdH6hgHR+oYB0fqGAdH6igHV+ooB1f6KAdX+jgHV/o4B1f6SAdYCkgHaApYB2gKWAdoGmgHaBp4B3gaeAd4KogHeCqYB4g6qAeIOrgHiErIB5ha2AeYWugHqGsIB6h7GAe4izgHyItIB8ibaAfYq4gH6LuYB+jLuAf469gICPv4CBkMKAgpHEgIOTxoCDlMmAhJXLgIWXzoCGmNCAh5rTgIib1oCOoNyAj6LfgJCj4oCRpeWAkqfogJOo64CVqu6AlqzxgJet9ICYrvaAmbD5gJqx+4Casv2Am7P/gE5agIFOWoGBTluCgU9bgoFPW4OBT1yDgU9chIFPXISBT1yEgU9chIFPXIOBT1uDgU9bgoFOW4KBTluBgU5agIGbtP+Am7P9gJqx+4CZsPmAmK/3gJet9ICWrPGAlarvgJSp7ICTp+mAkaXmgJCk44CPouCAjqDdgI2f2oCMndeAipvUgIma0YCImM6Ah5fMgIaVyYCFlMaAhJPEgIORwoCCkL+Ago+9gIGOu4CAjLmAf4u3gH+KtYB+ibSAfYmygH2IsYB8h6+AfIaugHuGrYB7hauAeoSqgHqEqYB5g6iAeYOogHmCp4B5gqaAeIKlgHiBpYB4gaSAeIGkgHeAo4B3gKOAd4CigHeAooB3f6KAd3+hgHd/oYB3f6GAdn+hgHZ/oIB2f6CAdn+ggHZ+oIB2fqCAdn6ggHZ+n4B2fp+Adn6fgHZ+n4B2fp+Adn6fgHZ+n4B2fp+Adn6fgHZ+n4B2fp+Adn6fgHZ+n4B2fp+Adn6fgHZ+n4B2fp+Adn6fgHZ+n4B2fp+Adn6fgHZ+n4B2fp+Adn6fgHZ+n4B2fp+Adn6fgHZ+n4B2fp+Ad36fgHd+n4B3f5+Ad3+fgHd/n4B4f5+AeICfgHmAoIB5gKCAeoGggHuBoIB7gqGAfIKhgH2DooB+hKKAgIWjgIGGo4CCh6SAhIilgIaJpYCIi6aAioyngIyOqICPkKmAkZGqgJSTq4CWlayAmZeugJyZr4Cfm7CAop2xgKWfs4CoobSAqqO1gK2ltoCvp7eAsqm4gLSquYC2q7qAt6y6gLitu4C5rruAuq68gLquvIC6rryAua67gLmuu4C3rbuAtqy6gLSruYCyqbiAsKi3gK6mtoCrpLWAqaK0gKags4CjnrKAoJyxgJ2ar4CamK6Al5atgJWUrICSkquAj5CpgI2OqICLjaeAiYungIeKpoCFiaWAg4ekgIKGpICAhaOAf4SigH6EooB9g6KAfIKhgHuCoYB6gaGAeoGggHmAoIB5gKCAeICggHh/oIB4f6CAd3+ggHd/oIB3f6CAd3+ggHd/oIB3f6CAd3+ggHd/oIB3f6CAd3+hgHd/oYB3f6GAd3+hgHeAooB3gKKAd4CigHeAo4B3gKOAeIGkgHiBpIB4gaWAeIKlgHmCpoB5gqeAeYOngHmDqIB6hKmAeoSqgHuFq4B7hayAfIaugHyHr4B9iLCAfYiygH6Js4B+irWAf4u3gICMuYCBjbuAgY+9gIKQv4CDkcGAhJLEgIWUxoCGlcmAh5fLgIiYzoCJmtGAipvUgIud14CNn9mAkqThgJOm5ICVqOeAlqnrgJer7oCYrfGAmq/0gJux94CcsvqAnbT9gE9agIFPW4GBUFyCgVBcg4FRXYSBUV2FgVFehoFSXoeBUl+HgVJfiIFSX4iBUl+IgVJfiIFSX4iBUl+IgVJfh4FSXoeBUV6GgVFehYFRXYWBUF2EgVBcgoFPW4GBT1uAgZ20/oCcsvuAm7H4gJqv9YCZrfKAl6vugJaq64CVqOiAlKblgJKk4YCRot6AkKHbgI6f2ICNndSAjJvRgIuazoCKmMyAiZfJgIiVxoCHlMOAhpLBgIWRv4CEkLyAg4+6gIKNuICCjLaAgYu0gICKs4CAibGAf4mwgH6IroB+h62AfYasgH2Gq4B9haqAfIWpgHyEqIB8hKeAe4OmgHuDpYB7g6WAeoKkgHqCpIB6gqOAeoGjgHqBooB6gaKAeYGigHmBoYB5gKGAeYChgHmAoIB5gKCAeYCggHmAoIB5gKCAeYCggHmAn4B5gJ+AeYCfgHl/n4B4f5+AeH+fgHh/n4B4f5+AeH+fgHh/n4B4f5+AeH+fgHh/n4B4f5+AeH+fgHh/n4B4f5+AeH+fgHh/n4B4f56AeH+egHh/noB4f56AeH+egHl/n4B5f5+AeX+fgHl/n4B5f5+AeYCfgHmAn4B5gJ+AeoCfgHqAn4B6gJ+Ae4GfgHuBoIB8gaCAfIKggH2CoIB+g6GAfoOhgH+EoYCBhaKAgoaigIOHo4CFiKSAh4mkgIiLpYCLjKaAjY6ngI+PqICSkamAlZOqgJiVrICbmK2AnpqugKGcsICln7GAqKGzgKuktICvpraAsqi3gLaruYC5rbqAvK+7gL6xvIDBs72Aw7S+gMW2v4DGt8CAx7jAgMi4wYDIuMGAyLjBgMi4wIDHt8CAxba/gMS1v4DCs76Av7K9gL2wvIC6rrqAt6y5gLOpuICwp7aAraS1gKmis4CmoLKAop2wgJ+br4CcmK6AmZasgJaUq4CTkqqAkJCpgI6OqICLjaeAiYumgIeKpYCFiaSAhIejgIKGo4CBhaKAgIWigH+EoYB+g6GAfYOhgH2CoYB8gqCAe4GggHuBoIB7gaCAeoGggHqBoIB6gKCAeoCggHqAoIB5gKCAeYCggHmAoIB5gKCAeYCggHmAoYB5gKGAeYGhgHmBoYB6gaKAeoGigHqBooB6gaOAeoKjgHqCpIB6gqSAe4OlgHuDpYB7g6aAe4SngHyEqIB8haiAfYWpgH2GqoB9hqyAfoetgH6IroB/ia+Af4mxgICKs4CBi7SAgYy2gIKNuICDjrqAhJC8gIWRvoCGksGAh5PDgIiVxoCJlsiAipjLgIuazoCMm9GAjZ3UgI6f14CQoNqAkaLegJeo5YCYqumAmaztgJuu8ICcsPSAnrL3gJ+0+4Cgtv6AUVyBgVFcgoFSXYSBUl6FgVNfhoFTX4iBVGCJgVRhioFUYYuBVWKLgVVijIFVYoyBVWKNgVVijYFVYo2BVWKNgVVijYFVYoyBVWKMgVRhi4FUYYqBVGCJgVNgiIFTX4eBUl6FgVJdhIFRXYKBUVyBgaC2/4CftPuAnrL4gJyw9ICbrvGAmqztgJiq6YCXqOaAlabigJSk34CTotuAkaDYgJCe1ICPndGAjZvOgIyZy4CLmMiAipbFgImVw4CIk8CAh5K+gIaRu4CFj7mAhY63gISNtYCDjLOAgouygIKKsICBiq+AgYmtgICIrICAh6uAf4eqgH+GqYB/hqiAfoWngH6FpoB+hKWAfYSlgH2EpIB9g6SAfYOjgH2Do4B8g6KAfIKigHyCooB8gqGAfIKhgHyCoYB8gqCAfIGggHyBoIB8gaCAe4GggHuBoIB7gZ+Ae4GfgHuBn4B7gZ+Ae4GfgHuBn4B7gZ+Ae4GfgHuBn4B7gZ+Ae4GfgHuBn4B7gZ+Ae4GfgHuBn4B7gZ+Ae4GfgHuBnoB7gZ6Ae4GegHuBnoB7gZ6Ae4GegHuBnoB7gZ6Ae4GfgHuBn4B7gZ+AfIGfgHyBn4B8gZ+AfIGfgHyBn4B9gp+AfYKfgH2Cn4B+g6CAfoOggH+DoICAhKCAgYWhgIKFoYCDhqKAhIeigIaIo4CHiaSAiYqkgIuMpYCNjaaAj4+ngJKRqICVk6mAmJWrgJuXrICfmq6AopyvgKafsYCqorKArqW0gLKotoC2qriAuq25gL6wu4DCs72Axba+gMm4wIDMusGAz73CgNK+w4DUwMSA1sHFgNfCxoDYw8aA2MPGgNjDxoDXwsaA1sLFgNXAxYDTv8SA0L3DgM27woDKucCAx7e/gMO0vYC/sbyAu666gLeruICzqbaAr6a1gKujs4CnoLGAo52wgKCbroCcmK2AmZargJaUqoCTkqmAkJCogI6Op4CMjKaAioulgIiKpICGiKOAhYejgIOHooCChqKAgYWhgICEoYCAhKGAf4OggH6DoIB+g6CAfYKggH2CoIB9gqCAfYKggHyCoIB8gqCAfIKggHyCoIB8gqCAfIKggHyCoIB8gqGAfIKhgHyCoYB8gqGAfIKigHyCooB9g6KAfYOjgH2Do4B9g6SAfYSkgH2EpYB+hKWAfoWmgH6Fp4B/hqiAf4apgH+HqoCAh6uAgIisgIGJrYCBia6AgoqwgIKLsoCDjLOAhI21gISOt4CFj7mAhpC7gIeSvYCIk8CAiZTCgIqWxYCLl8iAjJnLgI2bzoCPnNGAkJ7UgJGg14CSotuAlKTegJWm4oCbrOqAna7ugJ6w8oCgsvaAobX6gKO3/oBSXICBU12CgVNehIFUX4aBVWCIgVVhiYFWYouBVmOMgVdjjYFXZI6BWGWPgVhlkIFYZZGBWGaRgVlmkoFZZpKBWWaSgVlmkoFZZpGBWGWRgVhlkIFYZY+BV2SPgVdjjYFWY4yBVmKLgVVhiYFVYIiBVF+GgVNehIFTXYOBUlyBgaO3/oChtfqAoLP2gJ6x8oCdru6Am6zqgJqq5oCYqOOAl6bfgJWk24CUoteAk6DUgJGe0YCQnM2Aj5rKgI6Zx4CNl8SAi5XCgIqUv4CKk72AiZG6gIiQuICHj7aAho60gIaNsoCFjLGAhIuvgISKroCDiqyAg4mrgIKIqoCCiKmAgYeogIGHp4CBhqaAgYalgICFpYCAhaSAgIWkgICFo4B/hKOAf4SigH+EooB/hKGAf4OhgH+DoYB/g6GAf4OggH6DoIB+g6CAfoOggH6DoIB+g6CAfoKfgH6Cn4B+gp+AfoKfgH6Cn4B+gp+AfoKfgH6Cn4B+gp+AfoKfgH6Cn4B+gp+AfoKfgH6Cn4B+gp+AfoKfgH6CnoB+gp6AfoKegH6CnoB+gp6AfoKegH6CnoB+gp6AfoKegH6Cn4B+gp+AfoKfgH6Cn4B/gp+Af4OfgH+Dn4B/g5+AgIOfgICDn4CAhJ+AgYSggIKFoICChaCAg4ahgISGoYCFh6GAhoiigIiJo4CJiqOAi4ukgI2NpYCPjqaAkpCngJWSqICYlKmAm5ergJ6ZrICinK6App6vgKqhsYCupbOAs6i1gLert4C8rrmAwbK7gMa1vYDKub+Az7zBgNO/w4DXwsWA28XGgN/HyIDiycmA5MvKgObNy4DozsyA6c7MgOnPzIDpz8yA6M7MgOfNy4DlzMuA48rKgODIyIDcxceA2cPFgNXAxIDQvcKAzLrAgMe2voDDs7yAvrC6gLmsuIC0qbaAsKa0gKujsoCnoLCAo52ugJ+arYCcl6uAmZWqgJaTqYCTkaeAkI+mgI6NpYCMjKSAioukgIiJo4CHiKKAhoiigISHoYCDhqGAg4WhgIKFoICBhaCAgYSggICEoICAhKCAgIOggH+DoIB/g6CAf4OggH+DoIB/g6CAf4OggH+DoIB/g6CAf4OggH+DoYB/g6GAf4ShgH+EoYB/hKKAf4SigH+Eo4CAhaOAgIWkgICFpICAhaWAgYalgIGGpoCBh6eAgYeogIKIqYCCiKqAg4mrgIOKrICEiq2AhIuvgIWMsICFjbKAho60gIePtoCIkLiAiZG6gImSvICKlL+Ai5XBgIyXxICOmMeAj5rKgJCczYCRntCAkp/UgJSh14CVo9uAl6XegJio4oCaquaAoLDugKKy84CjtfeApbf7gFNcgIFUXoKBVV+EgVVghoFWYYiBV2KKgVhjjIFYZI2BWWWPgVpmkYFaZ5KBW2eTgVtolIFbaJWBXGmWgVxploFcaZeBXGqXgVxql4FcaZeBXGmXgVxploFbaZWBW2iUgVtnk4FaZ5KBWmaRgVllj4FYZI6BWGOMgVdiioFWYYiBVmCGgVVfhIFUXoKBU12AgaW3/ICjtfiAorPzgKCw74CeruuAnazngJup4oCap96AmKXbgJej14CVodOAlJ/QgJOdzICRm8mAkJnGgI+Yw4COlsCAjZW+gIyTu4CLkrmAipG3gImQtYCJj7OAiI6xgIeNr4CHjK6AhoutgIaLq4CFiqqAhYmpgISJqICEiKeAhIimgIOHpYCDh6WAg4ekgIOGpICDhqOAgoajgIKGooCChaKAgoWhgIKFoYCChaGAgoWhgIGEoICBhKCAgYSggIGEoICBhKCAgYSfgIGEn4CBhJ+AgYSfgIGEn4CBhJ+AgYSfgIGEn4CBhJ+AgYSfgIGEn4CBhJ+AgYSfgIGEn4CBhJ+AgYSfgIGDnoCBg56AgYOegIGDnoCBhJ6AgYSegIGEnoCBhJ6AgYSegIGEnoCBhJ6AgYSfgIGEn4CBhJ+AgoSfgIKEn4CChJ+AgoSfgIOFn4CDhZ+Ag4WfgISGoICFhqCAhYeggIaHoYCHiKGAiYmigIqKooCLi6OAjYykgI+OpICRj6WAlJGngJeTqICalamAnZiqgKGarIClna6AqaCwgK2jsYCyp7OAt6q2gLyuuIDCsrqAx7a8gM26v4DSvsGA2MLEgN3FxoDiyciA58zKgOvQzIDv0s6A89XPgPbX0YD42dKA+trSgPvb04D829OA/NvTgPvb04D52dKA99jRgPTW0IDx086A7dHNgOjNy4DkysmA38fHgNrDxIDUv8KAz7vAgMm3vYDEs7uAvq+5gLmstoC0qLSAr6WygKuhsICmnq6AoputgJ6Zq4CblqqAmJSogJWSp4CSkKaAkI6lgI6NpICMjKOAi4qjgImJooCIiaKAh4ihgIaHoYCFh6GAhIaggISGoICDhaCAg4WggIOFoICChaCAgoWggIKFoICChaCAgoWggIKFoICChaCAgoWggIKFoICChaGAgoWhgIKFoYCChaGAgoWigIKGooCChqOAg4ajgIOGpICDh6SAg4elgIOHpYCEiKaAhIingISJqICFiamAhYqqgIaKq4CGi6yAh4yugIeNr4CIjrGAiY+zgImQtICKkbaAi5K5gIyTu4CNlb2AjpbAgI+Yw4CQmcaAkZvJgJKdzICUn8+AlaDTgJai1oCYpdqAmafegJup4oCdq+aAnq7qgKW084Cnt/iAqLn8gFVegIFWX4OBV2CFgVhih4FYY4qBWWSMgVpljoFbZpCBXGeSgVxok4FdaZWBXmqXgV5rmIFfa5mBX2yagV9sm4FfbZyBYG2cgWBtnIFgbZyBYG2cgV9tnIFfbZuBX2yagV9smYFea5iBXmqXgV1plYFcaJSBXGeSgVtmkIFaZY6BWWSMgVljioFYYoiBV2CFgVZfg4FVXoGBqbr9gKe3+ICltPSAo7LvgKGv64CgreaAnqrigJyo3oCbptqAmaTWgJii0oCWoM6AlZ7LgJScyICTmsSAkZnCgJCXv4CPlryAjpS6gI6Tt4CNkrWAjJGzgIuQsYCLj7CAio6ugImNrYCJjKuAiIyqgIiLqYCIiqiAh4qngIeJpoCHiaWAhomlgIaIpICGiKSAhoijgIWHo4CFh6KAhYeigIWHoYCFhqGAhYahgIWGoICFhqCAhIaggISGoICEhqCAhIaggISGn4CEhZ+AhIWfgISFn4CEhZ+AhIWfgISFn4CEhZ+AhIWfgISFn4CEhZ+AhIWfgISFn4CEhZ+AhIWfgISFnoCEhZ6AhIWegISFnoCEhZ6AhIWegISFnoCEhZ6AhIWegISFnoCEhZ6AhIWegISFn4CEhZ+AhIWfgIWGn4CFhp+AhYafgIWGn4CGhp+AhoefgIeHoICHh6CAiIiggImIoICKiaGAi4qhgIyLooCOjKKAj42jgJGPpICTkKWAlpKmgJmUp4CclqmAn5mqgKObrICnnq2ArKGvgLClsYC1qLSAu6y2gMGwuIDGtbuAzbm9gNO9wIDZwsOA4MbGgObLyIDsz8uA8tTNgPfY0ID929KAgG9qgYJxa4GEcmuBhnNsgYd0bIGHdG2BiHRtgYd0bYGHdG2BhnNsgYVybIGDcWuBgXBqgf7c04D52dGA9NXOgO7RzIDozMmA4sjHgNvExIDVv8GAz7q+gMm2vIDDsrmAva63gLeqtICyprKAraOwgKmfroCknKyAoZqrgJ2XqYCalaiAl5OngJSRpoCSj6WAkI6kgI6Mo4CNi6KAi4qigIqKoYCJiaGAiIihgIiIoICHh6CAhoeggIaHoICGh6CAhYaggIWGoICFhqCAhYaggIWGoICFhqCAhYaggIWGoICFhqCAhYahgIWGoYCFh6GAhYehgIWHooCFh6KAhYeigIaIo4CGiKOAhoikgIaIpYCHiaWAh4mmgIeKp4CHiqiAiIupgIiLqoCJjKuAiY2tgIqOroCKj7CAi4+xgIyQs4CNkrWAjZO3gI6UuYCPlbyAkJe+gJGYwYCSmsSAlJzHgJWdyoCWn86AmKHRgJmj1YCbptmAnKjdgJ6q4YCfreaAoa/qgKOx7oCquPiArLv9gFdfgYFYYIOBWWGGgVljiIFaZIuBW2aNgVxnkIFdaJKBXmmUgV9rloFgbJiBYG2agWFum4Fibp2BYm+egWJwn4FjcKCBY3GhgWNxoYFjcaKBY3GigWNxoYFjcaGBY3CggWNwn4Fib56BYm6dgWFunIFgbZqBYGyYgV9rloFeapSBXWiSgVxnkIFcZo2BW2SLgVpjiYFZYoaBWGCEgVdfgYGsu/2Aqrn4gKi284Cms++ApLDqgKKu5YChq+GAn6ncgJ2n2ICcpNSAmqLQgJmgzYCYnsmAlp3GgJWbw4CUmcCAk5i9gJKWuoCRlbiAkJS2gI+TtICPkbKAjpCwgI2QroCNj62AjI6sgIyNqoCLjamAi4yogIqLp4CKi6aAioulgImKpYCJiqSAiYmjgImJo4CJiaKAiImigIiIooCIiKGAiIihgIiIoYCIiKCAiIiggIiIoICHh6CAh4eggIeHn4CHh5+Ah4efgIeHn4CHh5+Ah4efgIeHn4CHh5+Ah4efgIeHn4CHh5+Ah4efgIeHn4CHh5+Ah4efgIeHnoCHh56Ah4eegIeHnoCHh56Ah4eegIeHnoCHh56Ah4eegIeHnoCHh56Ah4eegIeHnoCHh56Ah4efgIiHn4CIh5+AiIefgIiIn4CJiJ+AiYifgImIn4CKiaCAiomggIuKoICMiqCAjYuhgI6MoYCQjaKAkY6jgJOPpICVkaSAmJOlgJqVp4Cel6iAoZmpgKWcq4Cpn62ArqKvgLOmsYC4qrOAvq62gMSyuIDKt7uA0bu+gNjAwYDfxcSA5svHgO3QyoD11c2A/NrQgIFvaYGEcWuBh3RsgYp1bYGMd26BjnlvgZB6cIGRe3CBkntxgZJ7cYGSe3GBkXtwgZB6cIGPeW+BjXhugYt2bYGIdGyBhXJrgYJwaoH+3NGA99fOgPDSy4DpzMiA4cfFgNrCwoDTvb+AzLi8gMa0uYDAr7eAuqu0gLSnsoCvo7CAqqCugKadrICimqqAn5ipgJyVp4CZk6aAlpKlgJSQpICSj6OAkI2jgI+MooCOi6GAjYuhgIyKoYCLiqCAiomggIqJoICJiKCAiYiggImIoICIiKCAiIiggIiIoICIiKCAiIiggIiIoICIiKCAiIiggIiIoICIiKGAiIihgIiIoYCIiKKAiImigImJooCJiaOAiYmjgImKpICJiqWAioqlgIqLpoCKi6eAi4yogIuNqYCMjaqAjI6rgI2PrYCNj66AjpCwgI6RsoCPkrSAkJS2gJGVuICSlrqAk5e9gJSZv4CVm8KAlpzFgJeeyYCZoMyAmqLQgJyk1ICdptiAn6ncgKCr4ICiruWApLDpgKaz7oCotfOAr7z8gFhfgYFZYYOBWmOGgVtkiYFcZoyBXWeOgV5okYFfapOBYGuWgWFtmIFibpqBY2+dgWRwn4FlcaCBZXKigWZzo4Fmc6WBZ3SlgWd0poFndaeBZ3WngWd1p4FndaeBZ3SmgWd0poFmdKWBZnOkgWVyooFlcaGBZHCfgWNvnYFibpuBYW2ZgWFrloFgapSBX2mRgV5nj4FdZoyBW2SJgVpjhoFZYYSBWGCBga+9/YCtuviAq7fygKm07YCnseiApa/kgKOs34CiqtuAoKfWgJ6l0oCdo86Am6HLgJqfx4CZncSAmJvBgJaavoCVmLuAlJe5gJSWtoCTlLSAkpOygJGSsICRka+AkJCtgI+QrICPj6qAjo6pgI6OqICOjaeAjY2mgI2MpYCNjKWAjIukgIyLo4CMi6OAjIuigIyKooCLiqKAi4qhgIuKoYCLiqGAi4mggIuJoICLiaCAi4mggIuJoICLiZ+Ai4mfgIuJn4CKiZ+AiomfgIqJn4CKiZ+AiomfgIqIn4CKiJ+AioifgIqIn4CKiJ+AioifgIqInoCKiJ6AioiegIqInoCKiJ6AioiegIqInoCKiJ6AioiegIqInoCKiJ6AioiegIqInoCLiZ6Ai4megIuJn4CLiZ+Ai4mfgIuJn4CMiZ+AjImfgIyKn4CNip+AjYqggI6LoICPi6CAkIyhgJGNoYCSjqKAk4+igJWQo4CXkqSAmZOlgJyVpoCfl6eAopqpgKacqoCqn6yAr6OugLSmsIC6qrOAwK61gMazuIDNuLuA1L2+gNzCwYDjyMSA687IgPTUy4D82c+Agm9pgYZya4GJdWyBjXdugZB6b4GUfHGBln5ygZmAc4GagXSBnIJ0gZ2DdYGdg3WBnYN1gZyCdIGbgXSBmYBzgZd/coGVfXGBkntwgY54boGLdm2Bh3NrgYNwaoH/29CA9tbNgO7QyYDmysaA3sTCgNe/v4DPuryAyLW5gMKwtoC8rLSAtqixgLGkr4CsoK2AqJ2rgKSbqYCgmKiAnZangJqUpYCYkqSAlpGjgJSPo4CTjqKAkY2igJCNoYCPjKGAjouggI6LoICNiqCAjYqggIyKoICMiqCAjIqggIuJoICLiaCAi4mggIuJoICLiaCAi4mggIuJoICLiqCAi4qhgIuKoYCLiqGAi4qigIyKooCMi6KAjIujgIyLo4CMi6SAjYylgI2MpYCNjaaAjo2ngI6OqICOjqmAj4+qgI+QrICQkK2AkJGugJGSsICSk7KAk5S0gJOVtoCUl7iAlZi7gJaavoCXm8CAmZ3DgJqfx4CbocqAnaPOgJ6l0oCgp9aAoanagKOs3oClruOAp7HogKm07YCrt/KArbr3gFpggIFbYoOBXGOGgV1liYFeZ4yBX2iPgWBqkoFia5SBY22XgWRumoFlcJyBZnGfgWdyoYFndKOBaHWlgWl2p4FpdqiBaneqgWp4q4FreKyBa3msgWt5rIFreayBa3msgWt4rIFqeKuBaneqgWl3qYFpdqeBaHWlgWd0pIFnc6GBZnGfgWVwnYFkb5qBY22YgWJslYFhapKBX2iPgV5njIFdZYmBXGSGgVtig4FaYIGBsr78gLC79oCuuPGArLXsgKqy5oCor+KApq3dgKSq2ICiqNSAoabQgJ+jzICeociAnZ/FgJuewoCanL+AmZq8gJiZuYCXmLeAlpa1gJWVs4CVlLGAlJOvgJOSrYCTkayAkpGqgJKQqYCRj6iAkY+ngJGOpoCQjqWAkI6lgJCNpICQjaOAj4yjgI+MooCPjKKAj4yhgI+MoYCPi6GAjouhgI6LoICOi6CAjouggI6LoICOi6CAjoufgI6Ln4COip+AjoqfgI6Kn4COip+AjoqfgI6Kn4COip+AjoqfgI6Kn4COip+AjoqfgI6Kn4COip6AjoqegI6KnoCOip6AjoqegI6KnoCOip6AjoqegI6KnoCOip6AjoqegI6KnoCOip6AjoqegI6KnoCOip+AjoqfgI6Ln4CPi5+Aj4ufgI+Ln4CQi5+AkIyfgJGMoICRjaCAko2ggJOOoYCUj6GAlpCigJeRooCZkqOAm5SkgJ6WpYChmKaApJqogKecqYCsn6uAsKOtgLWmr4C7qrKAwa+0gMezt4DPuLqA1r69gN7DwYDmycSA79DIgPjWzICAbmiBhXFqgYp1bIGOeG6BkntvgZZ+cYGagXOBnoN0gaGFdoGjh3eBpYl4gaeKeIGoinmBqIt5gaiLeYGniniBpol4gaSId4GihnaBn4R1gZuBc4GYf3KBlHxwgY95boGLdmyBh3JqgYJvaIH72M2A8tLJgOnMxoDhxsKA2cC/gNG6u4DKtbiAw7C1gL2ss4C3qLCAsqSugK2hrICpnaqApZuogKKYp4CflqaAnJSlgJqTpICYkaOAlpCigJWPooCUjqGAk46hgJKNoICRjaCAkIyggJCMoICQjKCAj4uggI+LoICPi6CAj4uggI+LoICOi6CAjouggI6LoICOi6CAjouggI+LoYCPi6GAj4yhgI+MoYCPjKKAj4yigI+Mo4CQjaOAkI2kgJCNpYCQjqWAkY6mgJGPp4CRj6iAkpCpgJKRqoCTkayAk5KtgJSTr4CVlLCAlZWygJaWtICXl7eAmJm5gJmavICanL6Am53BgJyfxYCeociAn6PMgKGlz4CiqNOApKrYgKas3ICnr+GAqbLmgKu164Ctt/CAr7r2gLK++4BcYoKBXWSFgV9miYFgZ4yBYWmPgWJrkoFkbZWBZW6YgWZwm4Fncp6BaHOhgWl1o4FqdqaBa3eogWx4qoFseayBbXqugW57r4FufLCBbnyxgW98soFvfbKBb32ygW98soFufLGBbnywgW57r4Fteq6BbXmsgWx4qoFrd6iBanamgWl1pIFoc6GBZ3KegWZwm4Flb5iBZG2VgWNrkoFhaY+BYGiMgV9miYFeZIaBXGKDgVthgIG1v/qAsrz0gLC474CutemArLPkgKqw34CordqAp6vWgKWo0YCjps2AoqTKgKCixoCfoMOAnp6/gJ2dvYCcm7qAm5q3gJqYtYCZl7OAmJaxgJiVr4CXlK2AlpOsgJaTq4CVkqmAlZGogJSRp4CUkKaAlJClgJOPpYCTj6SAk4+jgJOOo4CTjqKAko6igJKOoYCSjaGAko2hgJKNoICSjaCAko2ggJKNoICSjaCAkYyfgJGMn4CRjJ+AkYyfgJGMn4CRjJ+AkYyfgJGMn4CRjJ+AkYyfgJGMn4CRjJ+AkYyfgJGMn4CRjJ6AkYyegJGMnoCRjJ6AkYyegJGMnoCRjJ6AkYyegJGMnoCRjJ6AkYyegJGMnoCRjJ6AkYyegJGMnoCRjJ6AkoyfgJKMn4CSjJ+Ako2fgJKNn4CTjZ+Ak42fgJSOn4CUjqCAlY+ggJaPoICXkKGAmJGhgJmSooCbk6OAnZSjgJ+WpICimKaApZqngKidqICsn6qAsaKsgLamroC7qrCAwa6zgMiztoDPuLmA1768gN/EwIDoysSA8dHIgPvYzICCb2iBh3NqgYx2bIGRem6Bln1wgZuBcoGghHSBpId2gaiKeIGrjHmBro97gbGQfIGykXyBtJJ9gbSTfYG0kn2Bs5J9gbGRfIGvj3uBrI16gamLeIGliHeBoYV1gZ2Cc4GYf3GBk3tvgY54bYGJdGuBhHBogf7azYD108mA68zFgOLGwYDawL2A0rq6gMq1t4DEsLSAvauxgLinr4CypK2ArqCrgKqdqYCmm6eAo5mmgKCXpYCelaSAnJSjgJqSooCZkaKAl5ChgJaQoYCVj6CAlY6ggJSOoICTjqCAk42ggJONoICSjaCAko2fgJKNoICSjaCAko2ggJKNoICSjaCAko2ggJKNoICSjaGAko2hgJKNoYCSjqGAko6igJOOooCTjqOAk4+jgJOPpICTj6SAlJClgJSQpoCUkaeAlZGogJWSqYCWkqqAlpOsgJeUrYCXla+AmJaxgJmXs4CamLWAm5m3gJybuYCdnLyAnp6/gJ+gwoCgosWAoqTJgKOmzYClqNGApqrVgKit2oCqr96ArLLjgK616YCwuO6Asrv0gLS++YC3wv+AX2SFgWBmiIFhaIuBY2qOgWRskoFlbpWBZ2+YgWhxnIFpc5+BanWigWt2pYFteKiBbnmqgW97rYFvfK+BcH2xgXF+s4Fxf7SBcn+1gXKAtoFzgLeBc4G3gXOBt4FzgLeBcoC2gXKAtYFxf7SBcX6zgXB9sYFwfK+Bb3utgW55q4FteKiBbHalgWp1ooFpc5+BaHGcgWdwmYFmbpaBZGySgWNqj4FiaIyBYGaIgV9lhYFeY4KBusP+gLe/+IC1vPKAs7nsgLG25oCvs+GArbDcgKut14Cpq9OAp6nPgKamy4CkpMeAo6LDgKKgwIChn72AoJ26gJ+cuICemrWAnZmzgJyYsYCbl6+Am5atgJqVrICZlKuAmZSpgJiTqICYk6eAmJKmgJeSpYCXkaWAl5GkgJeQo4CWkKOAlpCigJaQooCWj6GAlo+hgJaPoYCVj6CAlY+ggJWPoICVjqCAlY6ggJWOn4CVjp+AlY6fgJWOn4CVjp+AlY6fgJWOn4CVjp+AlY6fgJWOn4CVjp+AlY6fgJWOn4CVjp6AlY6egJWOnoCVjp6AlY6egJWOnoCVjp6AlY6egJWOnoCVjp6AlY6egJWOnoCVjp6AlY6egJWOnoCVjp6AlY6egJWOn4CVjp+AlY6fgJaOn4CWj5+Alo+fgJePn4CXj5+AmJCggJmQoICZkaCAm5KhgJyToYCdlKKAn5WjgKGXpICkmKWAppqmgKqdp4Ctn6mAsaKrgLamrYC7qa+Awa6xgMiytIDPt7eA1727gN/DvoDpysKA8tDGgPzYy4CDb2eBiXNqgY53bIGUe26BmX9xgZ+Dc4Gkh3aBqYt4ga6OeoGykXyBtpR9gbmWf4G8mICBvpmBgb+agYHAm4GBv5qBgb6agYG9mICBupd/gbeVfoG0knyBsI96gauMeIGmiHaBoYR0gZuBcoGWfW+BkHltgYt1a4GFcWiBgG1mgfbTyIDszMSA48XAgNq/vIDSubiAyrS1gMSvsoC9q7CAuKetgLOjq4CvoKmAq52ogKebpoCkmaWAopekgKCWo4CelKKAnJOigJuSoYCakaGAmZGggJiQoICYkKCAl4+ggJePoICWj6CAlo+fgJaPn4CWj5+Alo+ggJaPoICVj6CAlY+ggJWPoICWj6CAlo+ggJaPoYCWj6GAlo+hgJaQooCWkKKAlpCjgJeQo4CXkaSAl5GkgJeRpYCYkqaAmJKngJiTqICZlKmAmZSqgJqVrICalq2Am5evgJyYsYCdmbOAnZq1gJ6ct4CfnbqAoJ+9gKKgwICjosOApKTGgKamyoCnqM6AqavSgKut14CssNyArrLhgLC15oCzuOuAtbzxgLe/94C5wv2AXmOBgWJmh4FjaIqBZGqOgWZskYFnbpWBaHCYgWpynIFrdJ+BbHaigW54poFveamBcHusgXF9r4FyfrGBc3+0gXSBtoF1griBdYO5gXaDuoF2hLuBdoS8gXeEvIF3hLyBdoS8gXaEvIF2g7uBdYO5gXWCuIF0gbaBc4C0gXJ+soFxfa+BcHusgW96qYFueKaBbXajgWt0oIFqcpyBaXCZgWdvlYFmbZKBZGuOgWNpioFiZ4eBYGWEgV9jgIG8w/uAur/0gLi87oC1uemAs7bjgLGz3oCvsNmAra7UgKyr0ICqqcyAqKfIgKelxICmo8GApaG+gKOfu4CinriAoZy2gKGbs4CgmrGAn5mvgJ6YroCel6yAnZargJ2WqYCclaiAnJSngJuUpoCbk6WAm5OkgJqTpICakqOAmpKjgJqSooCakaKAmpGhgJmRoYCZkaGAmZGggJmRoICZkKCAmZCggJmQoICZkJ+AmZCfgJmQn4CZkJ+AmZCfgJmQn4CZkJ+AmZCfgJmQn4CYkJ+AmJCfgJiQn4CYkJ+AmJCegJiQnoCYkJ6AmJCegJiQnoCYkJ6AmJCegJiQnoCYkJ6AmJCegJiQnoCYkJ6AmZCegJmQnoCZkJ6AmZCegJmQnoCZkJ6AmZCfgJmQn4CZkJ+AmpCfgJqRn4CakZ+Am5GfgJySoICckqCAnZOggJ6UoYCglaGAoZaigKOXo4ClmaSAqJulgKudpoCun6iAsqKpgLalq4C7qa2Awa2wgMexsoDPtrWA1ry5gN/CvIDoyMCA8s/EgPzXyYCDb2eBiXNpgY93bIGVfG6Bm4BxgaGEc4GniXaBrY15gbORe4G4lX2BvZh/gcGbgYHEnoKBx6CEgcmhhYHLooWBy6KFgcuihYHKooWByKCEgcWeg4HCnIGBvpmAgbqWfoG0knyBr455gamKd4GjhnSBnYJygZd9b4GReWyBi3VqgYVwZ4GAbGWB9dLGgOvLwoDixL6A2b66gNG4t4DKs7OAw66xgL2qroC4pqyAs6OqgK+gqICsnaeAqZulgKaZpICkmKOAopaigKCVooCflKGAnpOhgJ2ToICckqCAm5KggJuRoICakaCAmpGfgJqRn4CakZ+AmZGfgJmQn4CZkKCAmZCggJmRoICZkaCAmZGggJmRoICZkaGAmZGhgJqRoYCakaKAmpKigJqSo4CakqOAmpOkgJuTpICbk6WAm5SmgJyUp4CclaiAnZapgJ2WqoCel6yAnpitgJ+Zr4CgmrGAoJuzgKGctYCinriAo5+6gKShvYCmosCAp6TEgKimx4CqqMuAq6vPgK2t1ICvsNiAsbPdgLO14oC1uOiAt7zugLq/9IC8wvqAX2OAgWBlg4FkaYmBZmuMgWdtkIFpb5SBanGXgWtzm4FtdZ+BbneigXB5poFxe6mBcn2tgXR+sIF1gLOBdoK2gXeDuIF4hLqBeIW8gXmGvoF6h7+BeojAgXqIwYF6iMKBeojCgXqIwYF6iMGBeofAgXmGvoF5hb2BeIS7gXeDuIF2graBdYCzgXR/sIFzfa2BcXuqgXB5poFvd6OBbXWfgWxznIFqcZiBaW+UgWdtkIFma42BZGmJgWNnhYFiZYKBwcf+gL/D94C8v/GAurzrgLi55YC2tuCAtLPagLKw1YCwrtGArqvNgK2pyYCrp8WAqqXBgKmjvoCnobuApqC4gKWftoCknbOApJyxgKObr4Cimq6AopmsgKGYq4CgmKmAoJeogKCWp4CflqaAn5WlgJ+VpICelaSAnpSjgJ6Uo4CelKKAnpOigJ2ToYCdk6GAnZOhgJ2ToICdk6CAnZKggJ2SoICdkp+AnZKfgJ2Sn4Cdkp+AnJKfgJySn4Cckp+AnJKfgJySn4Cckp+AnJKfgJySn4Cckp+AnJKegJySnoCckp6AnJKegJySnoCckp6AnJKegJySnoCckp6AnJKegJySnoCckp6AnJKegJySnoCckp6AnJKegJ2SnoCdkp6AnZKegJ2Sn4Cdkp+AnZKfgJ6Sn4Cek5+AnpOfgJ+Tn4CflKCAoJSggKGVoICilqGApJehgKWYooCnmaOAqZukgKydpYCvn6aAs6KogLekqoC7qKyAwayugMewsIDNtbOA1bq3gN3AuoDmxr6A8M3CgPrVx4CDbmWBiHJogY93a4GVe22BnIBwgaKFc4GpinaBr455gbaTe4G8l36BwZuAgcefg4HLooWBz6WGgdKniIHVqYmB1qqJgdeqiYHWqomB1amJgdOoiIHQpoeBzaOFgcigg4HDnIGBvph/gbiUfIGykHqBq4t3gaWGdIGegnGBl31ugZF4bIGLdGmBhXBmgf7XyIDz0MSA6cm/gODCu4DYvLiA0La0gMmxsYDDra+AvamsgLimqoC0o6mAsKCngK2epoCqnKSAqJqjgKaYo4Ckl6KAo5ahgKKVoYChlaCAoJSggJ+UoICfk6CAnpOggJ6Tn4Cek5+AnZOfgJ2Sn4Cdkp+AnZKggJ2SoICdkqCAnZOggJ2ToICdk6CAnZOhgJ2ToYCdk6GAnpOigJ6UooCelKKAnpSjgJ6UpICflaSAn5WlgJ+WpoCglqeAoJeogKCYqYChmKqAoZmsgKKarYCjm6+Ao5yxgKSds4ClnrWApqC4gKehu4Coo76AqqXBgKunxICsqciArqvMgLCt0ICxsNWAs7PagLW134C3uOSAurzqgLy/8IC+wvaAwcb9gGJlgoFjZ4WBZ2uKgWhtjoFqb5KBa3GWgW1zmoFvdZ6BcHiigXJ6poFzfKmBdH6tgXaAsIF3grSBeIO3gXmFuoF6hryBe4i/gXyJwYF9isKBfYrCgX2KwoF9isKBfYrCgX2KwoF9isKBfYrCgX2KwoF9isKBfInBgXyIv4F7h72BeoW6gXiEt4F3grSBdoCxgXV+rYFzfKqBcnqmgXB4ooFvdp6BbXOagWxxloFqb5OBaW2PgWdri4FmaYeBZGeDgWNlgIHExvqAwcPzgL+/7YC8vOeAurnhgLi23IC2s9eAtLDSgLOuzYCxq8mAr6nFgK6nwoCtpb6Aq6S7gKqiuICpobaAqJ+zgKiesYCnna+AppyugKabrIClmqqApJqpgKSZqICkmKeAo5imgKOXpYCjl6SAopekgKKWo4CilqKAopaigKGVooChlaGAoZWhgKGVoIChlaCAoZWggKGUoIChlKCAoZSfgKGUn4ChlJ+AoZSfgKCUn4CglJ+AoJSfgKCUn4CglJ+AoJSfgKCUn4CglJ+AoJSegKCUnoCglJ6AoJSegKCUnoCglJ6AoJSegKCUnoCglJ6AoJSegKCUnoCglJ6AoJSegKCUnoCglJ6AoJSegKCUnoChlJ6AoZSegKGUnoChlJ+AoZSfgKGUn4ChlJ+AopWfgKKVn4CjlZ+Ao5aggKSWoICll6CAppihgKiZoYCpmqKAq5ujgK6dpICwn6WAs6GmgLekqIC7p6qAwKqsgMauroDMs7GA07i0gNu+t4DkxLuA7cu/gPjSxICBbWSBh3FngY12aYGUemyBm39vgaKEcoGpiXWBsI54gbeTe4G+mH6BxZ2Bgcuhg4HQpYaB1amIgdmsioHdrouB37CMgeGxjYHiso2B4bGNgeCwjYHer4yB262KgdeqiYHSpoeBzaOEgceegoHAmn+BupV8gbOQeYGri3aBpIZzgZ2BcIGWfG2BkHdqgYlzZ4GDbmWB+9XFgPHNwYDnxr2A3sC5gNa6tYDOtbKAyLCvgMKsrYC9qKuAuaWpgLWip4CxoKaArp6kgKyco4Cqm6OAqJmigKeYoYCml6GApZeggKSWoICjlqCAo5WggKKVn4CilZ+AopWfgKGVn4ChlJ+AoZSfgKGUn4ChlKCAoZSggKGVoIChlaCAoZWggKGVoIChlaGAoZWhgKGVoYCilqKAopaigKKWo4CilqSAo5ekgKOXpYCjmKaAo5ingKSZqICkmqmApZqqgKWbrICmnK2Ap52vgKiesYCon7OAqaC2gKqiuICro7uAraW+gK6nwYCvqcWAsavJgLKtzYC0sNGAtrLWgLi124C6uOCAvLvmgL6/7IDBwvKAw8b5gMbK/4BkZoOBZmmHgWptjIFrb5CBbXGUgW5zmIFwdpyBcniggXN6pIF1fKiBdn+sgXiBsIF5g7SBe4W3gXyHu4F9iL6BforBgX+LwoF/i8KBf4vCgX+LwoF/i8KBf4vCgX+LwoF/i8KBf4vCgX+LwoF/i8KBf4vCgX+LwoF/i8KBforBgX2IvoF8h7uBe4W4gXmDtIF4gbGBdn+tgXV9qYFzeqWBcnihgXB2nYFvdJmBbXGVgWtvkYFqbY2BaGuJgWdphYFlZ4GBycr8gMbG9YDEwu6Awb/ogL+84oC9uN2Au7bYgLmz04C3sM6Ata7KgLSsxoCyqsKAsai/gLCmu4CvpLmArqO2gK2itICsoLGAq5+vgKqeroCqnayAqZyqgKmcqYCom6iAqJqngKeapoCnmaWAp5mkgKaZo4CmmKOAppiigKaYooCml6GApZehgKWXoYCll6CApZeggKWXoICll6CApZaggKWWn4Cllp+ApZafgKWWn4Cllp+ApZafgKWWn4Cklp+ApJafgKSWn4Cklp+ApJafgKSWnoCklp6ApJaegKSWnoCklp6ApJaegKSWnoCklp6ApJaegKSWnoCklp6ApJaegKSWnoCklp6ApJaegKSWnoCllp6ApZaegKWWnoCllp6ApZafgKWWn4Cllp+AppefgKaXn4Cml5+Ap5efgKeYoIComKCAqZmggKqaoYCsm6GArZyigK+eo4Cyn6SAtaGlgLikp4C8pqiAwKmqgMWtrIDLsa+A0baygNm7tYDhwbiA6si8gPTPwID/18WAhW9lgYt0aIGSeGqBmX1tgaCDcYGoiHSBr413gbeTeoG/mH2Bxp2Bgc2ihIHTp4aB2auJgd6vi4Hjso2B57WPgem3kIHruJGB7LiRgeu4kYHqt5CB6LaPgeSzjoHgsIyB262KgdWoh4HPpISByJ+CgcGafoG6lXuBso94gaqKdYGjhHKBnH9ugZV6a4GOdWmBh3FmgYFsY4H40cKA7cq+gOTDuoDcvbaA1LizgM2zsIDHrq2AwqurgL2nqYC5paeAtqKmgLOgpYCwnqOArp2jgKybooCrmqGAqpqhgKmZoIComKCAp5iggKeXoICml5+AppefgKaXn4Cll5+ApZefgKWXn4Cll5+ApZefgKWXoICll6CApZeggKWXoICll6CApZehgKWXoYCml6GAppiigKaYooCmmKOAppmjgKeZpICnmaWAp5qmgKiap4Com6iAqJypgKmcqoCqnayAqp6tgKufr4CsoLGArKGzgK2jtoCupLiAsKa7gLGnvoCyqcKAs6vFgLWuyYC3sM2AuLLSgLq114C8uNyAv7vigMG+54DDwu6AxsX0gMjJ+4BlZoGBZ2iEgWhqiIFsb46BbnGSgXBzloFxdpqBc3iegXV6o4F2faeBeH+rgXqBr4F7hLOBfYa3gX6Iu4F/ir6BgYvCgYGMwoGBjMKBgYzCgYGMwoGBjMKBgYzCgYGMwoGBjMKBgYzCgYGMwoGBjMKBgYzCgYGMwoGBjMKBgYzCgYGMwoGBjMKBgIq/gX6Iu4F9hriBe4S0gXqCsIF4f6yBd32ogXV7o4FzeJ+BcnabgXBzloFucZKBbW+OgWttioFqaoaBaGiCgc7N/oDLyfeAyMXwgMbC6oDEvuSAwbvegL+42IC9tdOAu7PPgLqwyoC4rsaAt6zCgLWqv4C0qLyAs6e5gLKltoCxpLSAsKKxgK+hr4CuoK2Arp+sgK2fqoCtnqmArJ2ogKydp4CrnKaAq5ylgKubpICrm6OAqpqjgKqaooCqmqKAqpqhgKqZoYCpmaGAqZmggKmZoICpmaCAqZmggKmZn4CpmJ+AqZifgKmYn4CpmJ+AqZifgKmYn4CpmJ+AqZifgKmYn4CpmJ+AqZifgKmYnoCpmJ6AqZiegKmYnoCpmJ6AqZiegKmYnoCpmJ6AqZiegKmYnoCpmJ6AqZiegKmYnoCpmJ6AqZiegKmYnoCpmJ6AqZiegKmYnoCpmJ6AqZiegKmYnoCpmJ+AqpmfgKqZn4CqmZ+Aq5mfgKuan4CsmqCArJuggK2boICvnKGAsJ2hgLKeooC0oKOAtqKkgLmkpYC8pqeAwKmogMWsqoDKsK2A0LSvgNe5soDevrWA58S5gPDLvYD708GAg21jgYlxZoGQdmiBl3trgZ6Ab4GmhnKBrYx1gbWReYG9l3yBxZ1/gc2ig4HUp4aB26yJgeKxi4HntY6B7LiQgfC7koHzvZOB9L6UgfW/lIH1v5SB872TgfG8koHtuZGB6baPgeOyjIHdroqB16mHgdCkhIHInoGBwJl9gbiTeoGwjXaBqIhzgaCCcIGZfWyBknhpgYtzZoGFb2SB/tXDgPTOvoDqx7qA4cC2gNm7s4DStrCAzLGtgMatq4DCqqmAvqengLqkpoC3oqWAtKCjgLKfo4CxnqKAr52hgK6coYCtm6CArJqggKuaoICrmqCAqpmfgKqZn4CqmZ+AqpmfgKmZn4CpmZ+AqZmfgKmZn4CpmaCAqZmggKmZoICpmaCAqZmggKqZoYCqmaGAqpqhgKqaooCqmqKAqpqjgKubo4Crm6SAq5ulgKucpoCsnKeArJ2ogK2eqYCtnqqArp+sgK6grYCvoa+AsKKxgLGks4CypbaAs6a4gLSou4C1qr6AtqzCgLiuxoC5sMqAu7LOgL2104C/uNiAwbvdgMO+44DGwemAyMXvgMvJ9oDNzP2AaGiCgWlqhoFrbIqBb3CPgXFzk4FzdZiBdHicgXZ6oIF4faWBeX+pgXuCroF9hLKBfoa2gYCIuoGBi76Bg43CgYONwoGDjcKBg43CgYONwoGDjcKBg43CgYONwoGDjcKBg43CgYONwoGDjcKBg43CgYONwoGDjcKBg43CgYONwoGDjcKBg43CgYONwoGCi7+BgIm7gX+Ht4F9hLOBe4KugXp/qoF4faWBdnqhgXR4nYFzdpiBcXOUgW9xkIFubouBbGyHgWtqg4FpaICB0Mz4gM3I8YDLxeuAyMHkgMa+34DEu9mAwrjUgMC1z4C+s8uAvbDGgLuuwoC6rL+AuKq8gLepuYC2p7aAtaazgLSlsYC0pK+As6OtgLKirICyoaqAsaCpgLGfqICwn6eAsJ6mgK+epYCvnaSAr52jgK+do4CunKKArpyigK6coYCunKGArpuhgK6boICum6CArpuggK6boICtm5+ArZufgK2bn4Ctm5+ArZufgK2an4Ctmp+ArZqfgK2an4Ctmp+ArZqfgK2an4Ctmp6ArZqegK2anoCtmp6ArZqegK2anoCtmp6ArZqegK2anoCtmp6ArZqegK2anoCtmp6ArZqegK2anoCtmp6ArZqegK2anoCtmp6ArZqegK2anoCum56ArpufgK6bn4Cum5+ArpufgK+bn4CvnJ+AsJyggLGdoICynqCAs56hgLSfoYC2oaKAuKKjgLqkpIC9pqWAwaingMWrqIDJrqqAz7KtgNW2r4Dcu7KA48G2gOzHuYD2zr6AgGthgYZvY4GMc2aBk3hpgZt+bIGig2+BqolzgbKPdoG7lXqBw5t9gcuggYHTpoSB26yIgeKxi4Hpto6B77qQgfS9koH4wJSB+8KVgf3EloH+xJeB/cSWgfzDloH5wZWB9b6TgfG7kYHrt4+B5bOMgd6uiYHWqIaBzqKCgcadf4G+l3uBtZF4ga2LdIGlhXGBnX9tgZZ6aoGPdWeBiHBkgYJsYoH60b+A78q7gObDt4DevbOA17iwgNG0roDLsKuAxqypgMKpp4C+p6aAu6SkgLmjo4C3oaOAtaCigLOfoYCynqGAsZ2ggLCdoICwnKCAr5yfgK+cn4Cum5+ArpufgK6bn4Cum5+ArpufgK6bn4Cum5+ArpuggK6boICum6CArpuggK6boICum6GArpyhgK6coYCunKKArpyigK+do4CvnaOAr52kgK+epYCwnqWAsJ+mgLGfp4CxoKmAsqGqgLKhq4Czoq2As6OvgLSlsYC1prOAtqe2gLepuIC4qruAuqy+gLuuwoC8sMaAvrLKgMC1zoDCuNOAxLrYgMa93oDIweSAysTqgM3I8IDQzPeA0tD/gGpqg4FsbIeBbm6LgXJykIF0dZWBdXeZgXd6noF5fKKBe3+ngXyBq4F+hLCBgIa0gYKJuYGDi72BhY3BgYWOwoGFjsKBhY7CgYWOwoGFjsKBhY7CgYWOwoGFjsKBhY7CgYWOwoGFjsKBhY7CgYWOwoGFjsKBhY7CgYWOwoGFjsKBhY7CgYWOwoGFjsKBhY7BgYSLvYGCibmBgIe1gX6EsYF9gqyBe3+ngXl9o4F3ep6BdniagXR1lYFyc5GBcHCMgW9uiIFtbISBbGmAgdXP+oDSy/KA0MfsgM3E5YDLwd+Ayb3agMe61IDFuM+Aw7XLgMGzxoDAscOAvq+/gL2tvIC8q7mAu6q2gLqos4C5p7GAuKavgLelrYC3pKyAtqOqgLaiqYC1oqiAtaGmgLSgpYC0oKWAtKCkgLOfo4Czn6OAs5+igLOeooCznqGAs56hgLKeoICynqCAsp2ggLKdoICynaCAsp2fgLKdn4CynZ+Asp2fgLKdn4CynZ+Asp2fgLKdn4CynZ+Asp2fgLKdn4CynZ6Asp2egLKdnoCynZ6Asp2egLKdnoCynZ6Asp2egLKdnoCynZ6Asp2egLKdnoCynZ6Asp2egLKdnoCynZ6Asp2egLKdnoCynZ6Asp2egLKdnoCynZ6Asp2egLKdn4CynZ+As52fgLOen4Cznp+AtJ6fgLSfn4C1n6CAtqCggLehoYC5oqGAuqOigLyko4C/pqSAwqilgMWqp4DJraiAzrGqgNO0rYDZua+A4L6ygOjEtoDxyrqA+9G+gINsYYGJcWSBkHVmgZd6aYGegG2BpoVwga6LdIG3kXeBv5d7gcief4HRpIKB2aqGgeGviYHotY2B77qQgfa+koH7wpSB/8WWgYFjTIKCZEyCgmRMgoJkTIKBZEyCgGNLgvzDlYH3v5OB8ruQgeu3joHksYqB3KyHgdOmhIHLoICBwpp8gbqTeIGxjXWBqYdxgaGCboGZfGuBkndngYtyZYGFbmKB/9S/gPXMu4DrxreA48CzgNy7sIDVtq6A0LKrgMuuqYDGq6eAw6mmgMCnpIC9paOAu6OigLmiooC4oaGAt6ChgLafoIC1n6CAtJ6ggLSen4Cznp+As56fgLOdn4CynZ+Asp2fgLKdn4CynZ+Asp2fgLKdn4CynaCAsp2ggLKdoICynqCAsp6ggLOeoYCznqGAs56igLOfooCzn6OAs5+jgLSgpIC0oKWAtKClgLWhpoC1oqeAtqKpgLajqoC3pKuAt6WtgLimr4C5p7GAuqizgLuptoC8q7iAva27gL6uv4C/sMKAwbPGgMO1yoDEt8+AxrrUgMi92YDKwN6AzcPkgM/H64DSy/GA1c/5gGxpgIFta4SBb26IgXBwjIF1dJGBdneWgXh5moF6fJ+BfH6kgX6BqIGAhK2BgYaygYOJtoGFi7uBh46/gYiPwoGIj8KBiI/CgYiPwoGIj8KBiI/CgYiPwoGIj8KBiI/CgYiPwoGIj8KBiI/CgYiPwoGIj8KBiI/CgYiPwoGIj8KBiI/CgYiPwoGIj8KBiI/CgYiPwoGHjsCBhYy7gYOJt4GCh7KBgISugX6BqYF8f6SBenyggXh5m4F3d5aBdXSSgXNyjYFxb4mBcG2FgW5rgYHa0vuA187zgNXK7IDSx+aA0MPggM3A2oDLvdWAybrPgMi4y4DGtceAxLPDgMOxv4DCr7yAwK65gL+stoC+q7OAvqmxgL2or4C8p62Au6argLulqoC6pamAuqSngLmjpoC5o6WAuaKkgLiipIC4oqOAuKGigLihooC4oaGAt6ChgLegoYC3oKCAt6CggLegoIC3oKCAt6CggLegn4C3n5+At5+fgLefn4C2n5+Atp+fgLafn4C2n5+Atp+fgLafn4C2n5+Atp+egLafnoC2n56Atp+egLafnoC2n56Atp+egLafnoC2n56Atp+egLafnoC2n56Atp+egLafnoC2n56Atp+egLafnoC2n56Atp+egLafnoC3n56At5+egLefnoC3n5+At6CfgLegn4C4oJ+AuKCfgLihn4C5oZ+AuqGggLuioIC8o6GAvaShgL+looDBp6OAw6ikgMaqpYDKraeAzrCogNKzqoDYt62A3ruvgOXAsoDtxraA9s26gIBqX4GFbmGBjHJkgZJ3Z4GafGqBoYFtgamHcIGyjXSBupN4gcOafIHMoH+B1aaDgd6th4HmsoqB7riOgfW9kYH7wpSBgGJLgoJkTIKEZUyChWZNgoVmTYKFZk2ChGZMgoNkTIKBY0uC/cOUgfe/koHwuo+B6bSMgeCviIHYqYSBz6KBgcacfYG9lnmBtY91gayJcoGkg26BnH5rgZV5aIGOdGWBiG9igYJrYIH5z7uA8Mi3gOjCs4DgvbCA2ritgNS0q4DPsamAy66ngMerpoDEqaSAwqejgMCmooC+pKKAvKOhgLuioYC6oqCAuaGggLmhoIC4oJ+AuKCfgLign4C3oJ+At6CfgLegn4C3oJ+At6CfgLegn4C3oJ+At6CggLegoIC3oKCAt6CggLegoIC3oKGAt6ChgLihoYC4oaKAuKGigLiio4C4oqSAuaKkgLmjpYC5o6aAuqSngLqlqIC7paqAu6argLynrYC9qK+AvamxgL6qs4C/rLWAwK24gMKvu4DDsb6AxLPCgMa1xoDHt8qAybrPgMu91IDNwNmAz8PfgNLG5YDUyuuA187ygNrS+oBua4CBcG2EgXFviIFzco2Bd3aSgXl4l4F7e5uBfX6ggX+ApYGBg6qBg4avgYSIs4GGi7iBiI69gYqQwYGKkMKBipDCgYqQwoGKkMKBipDCgYqQwoGKkMKBipDCgYqQwoGKkMKBipDCgYqQwoGKkMKBipDCgYqQwoGKkMKBipDCgYqQwoGKkMKBipDCgYqQwoGKkMKBipDCgYiOvYGHi7mBhYm0gYOGr4GBg6qBf4GmgX1+oYF7e5yBeXmXgXh2k4F2dI6BdHGKgXJvhYFxbIGB39X7gNzR9IDaze2A18nmgNXG4IDSw9qA0MDVgM690IDMusuAy7jGgMm2w4DItL+Ax7K7gMWwuIDErraAw62zgMKssYDCq6+AwaqtgMCpq4DAqKqAv6eogL+mp4C+pqaAvqWlgL6lpIC9pKSAvaSjgL2kooC9o6KAvKOhgLyjoYC8o6GAvKOggLyioIC8oqCAvKKggLyin4C8op+Au6KfgLuin4C7op+Au6KfgLuin4C7op+Au6KfgLuin4C7op+Au6KfgLuinoC7op6Au6KegLuinoC7oZ6Au6GegLuhnoC7oZ6Au6GegLuhnoC7oZ6Au6GegLuhnoC7oZ6Au6GegLuhnoC7oZ6Au6KegLuinoC7op6Au6KegLuinoC8op6AvKKfgLyin4C8op+AvKKfgL2jn4C9o5+AvqOfgL+koIC/paCAwaWhgMKmoYDEp6KAxqmjgMirpIDLraWAzq+mgNKyqIDXtaqA3LmsgOK9r4Dpw7KA8si2gPvPuYCCa1+BiG9hgY5zZIGVeGeBnH1qgaSDbYGsiXGBtY90gb2VeIHGnHyB0KKAgdmohIHhr4eB6rWLgfK6joH5wJKB/8SUgYJkS4KEZUyChmdNgqB4UYWheVGFoHlRhYdnTYKFZkyCg2RLgoBjSoL7wZOB9LyQgey3jIHksYmB3KuFgdOkgYHKnn2BwJd5gbiRdoGvi3KBp4VugZ9/a4GXemiBkHVlgYpwYoGEbF+B/tG7gPXKt4DsxLOA5b+wgN66rYDYtquA1LOpgM+wp4DMraWAyaukgMapo4DEqKKAwqehgMGmoYDApaCAv6SggL6koIC+o6CAvaOfgL2jn4C8op+AvKKfgLyin4C8op+AvKKfgLyin4C8op+AvKKfgLyin4C8oqCAvKKggLyioIC8o6CAvKOhgLyjoYC8o6GAvaOigL2kooC9pKOAvaSkgL2lpIC+paWAvqamgL+mp4C/p6iAwKiqgMCpq4DBqa2AwaqugMKssYDDrbOAxK61gMWwuIDGsbuAyLO+gMm1woDLt8aAzLrKgM68z4DQv9SA0sLZgNTF34DXyeWA2c3sgNzQ84Df1fqAcWyBgXJuhYF0cYmBdnONgXp3koF8epeBfn2cgYB/oYGCgqaBhIWrgYaIsIGHirWBiY26gYuQvoGNksKBjZLCgY2SwoGNksKBjZLCgY2SwoGNksKBjZLCgY2SwoGNksKBjZLCgY2SwoGNksKBjZLCgY2SwoGNksKBjZLCgY2SwoGNksKBjZLCgY2SwoGNksKBjZLCgY2SwoGLkL+Bio26gYiLtYGGiLCBhIWsgYKCp4GAgKKBfn2dgXx6mIF6eJOBeXWOgXdzioF1cIaBdG6CgeXY/IDi1PSA39DtgNzM5oDayeCA18XagNXC1YDTv8+A0b3LgNC6xoDOuMKAzba/gMu0u4DKsriAybG1gMivs4DHrrGAx62vgMasrYDFq6uAxaqqgMSqqIDEqaeAw6imgMOopYDDp6SAwqejgMKno4DCpqKAwqaigMGmoYDBpqGAwaWhgMGloIDBpaCAwaWggMGloIDBpZ+AwaWfgMGln4DApJ+AwKSfgMCkn4DApJ+AwKSfgMCkn4DApJ+AwKSfgMCknoDApJ6AwKSegMCknoDApJ6AwKSegMCknoDApJ6AwKSegMCknoDApJ6AwKSegMCknoDApJ6AwKSegMCknoDApJ6AwKSegMCknoDApJ6AwKSegMCknoDBpJ6AwaSegMGknoDBpZ+AwaWfgMGln4DCpZ+AwqWfgMOmn4DEpqCAxKeggMWooIDHqaGAyKqigMqro4DNraSAz6+lgNOxpoDXtKiA27eqgOG7rIDnwK+A7sWygPbKtYD/0bmAhGxegYpwYYGQdGSBl3lmgZ5+aoGmhG2BropwgbeQdIHAlniByZ18gdKjgIHbqoSB5LCIge22i4H1vI+B/MGSgYFjSoKEZUuChmZMgohoTYKheVGFoXlRhaF5UYWheVGFh2dMgoVlTIKCY0qC/sOTgfe+kIHvuIyB57KJgd6shYHVpoGBzJ99gcOYeYG6knWBsYxygamGboGhgGuBmXtngZJ2ZYGMcWKBhm1fgYFpXYH5zLeA8MazgOnBsIDjva2A3bmrgNi1qYDUsqeA0LClgM6upIDLrKOAyaqigMepoYDGqKGAxaeggMSnoIDDpqCAw6afgMKln4DCpZ+AwaWfgMGln4DBpZ+AwaWfgMGln4DBpZ+AwaWfgMGln4DBpZ+AwaWggMGloIDBpaCAwaWggMGloYDBpqGAwaahgMKmooDCpqKAwqejgMKno4DCp6SAw6ilgMOopoDEqaeAxKmogMWqqYDFq6uAxqysgMatroDHrrCAyK+zgMmxtYDKsriAy7S7gM22voDOuMKA0LrGgNG8yoDTv8+A1cLUgNfF2YDZyN+A3MzlgN7P7IDh0/OA5Nf7gHNugYF1cIWBd3KJgXh1joF9eZOBf3yYgYF+nYGDgaKBhYSngYeHrIGJibGBioy2gYyPu4GOkr+Bj5PCgY+TwoGPk8KBj5PCgY+TwoGPk8KBj5PCgY+TwoGPk8KBj5PCgY+TwoGPk8KBj5PCgY+TwoGPk8KBj5PCgY+TwoGPk8KBj5PCgY+TwoGPk8KBj5PCgY+TwoGPk8KBjpLAgY2Pu4GLjbaBiYqxgYeHrIGFhKeBg4GigYF/nYF/fJiBfXmTgXt3j4F6dIqBeHKGgXZvgoHq2/yA59b0gOTS7YDhz+aA38vggN3I2oDbxdSA2cLPgNe/yoDVvcaA07vCgNK5voDRt7uAz7W4gM6ztYDNsrOAzLGwgMywroDLr6yAyq6rgMqtqYDJrKiAyayngMirpoDIqqWAyKqkgMeqo4DHqaOAx6migMepooDHqKGAxqihgMaooIDGqKCAxqiggMaooIDGp6CAxqefgMann4DGp5+AxqefgMann4DGp5+AxqefgMann4DGp5+AxqefgMann4DGp56AxqeegMannoDGp56AxqeegMannoDFp56AxaeegMWnnoDFp56AxaeegMWnnoDFp56AxaeegMannoDGp56AxqeegMannoDGp56AxqeegMannoDGp56AxqeegMannoDGp56AxqefgMann4DHqJ+Ax6ifgMeon4DIqZ+AyamggMmqoIDKqqCAzKuhgM2sooDPrqKA0a+jgNSxpYDXtKaA27aogOC5qYDlvayA68KugPLHsYD6zLWAgWlcgYZtXoGMcWGBknVjgZl6ZoGgf2mBqIVtgbCKcIG5kXSBwZd4gcude4HUpH+B3aqDgeaxh4Hut4uB9r2Ogf7CkYGCY0qChWVLgodnTIKJaE2CoXlRhaF5UYWheVGFiWhNgohnTIKGZkuCg2RKgoBiSYL5v4+B8bmMgemziIHgrYWB16aBgc6gfYHEmXmBvJN1gbOMcYGqh26Bo4FqgZt8Z4GUd2SBjnJhgYhuX4GDal2B/c62gPXIsoDtw6+A57+tgOG7qoDdt6iA2bSmgNWypYDSsKSA0K6jgM6tooDMrKGAy6uhgMqqoIDJqaCAyKmggMion4DHqJ+Ax6ifgMeon4DGqJ+AxqefgMann4DGp5+AxqefgMann4DGp5+AxqefgMaooIDGqKCAxqiggMaooIDGqKCAxqihgMeooYDHqaKAx6migMepo4DHqqOAyKqkgMiqpYDIq6aAyaungMmsqIDKramAyq6rgMuvrIDMsK6AzLGwgM2ysoDOs7WAz7W4gNC2u4DSuL6A07rCgNW9xoDWv8qA2MLPgNrE1IDcx9mA38vfgOHO5YDk0uyA59bzgOna+4B2b4GBeHGFgXl0ioF7do6BgHqTgYJ9mIGEgJ2BhYOigYeFp4GJiKyBi4uxgY2OtoGPkbuBkZPAgZKVwoGSlcKBkpXCgZKVwoGSlcKBkpXCgZKVwoGSlcKBkpXCgZKVwoGSlcKBkpXCgZKVwoGSlcKBkpXCgZKVwoGSlcKBkpXCgZKVwoGSlcKBkpXCgZKVwoGSlcKBkpXCgZGUwYGQkbyBjo63gYyMsoGKia2BiIaogYaDooGEgJ2Bgn2YgYB7lIF+eI+BfHaKgXtzhoF5cYKB7938gOzZ9IDp1e2A59HmgOTO4IDiy9qA4MfUgN7Fz4DcwsqA2r/GgNm9woDXu76A1rm7gNW4uIDUtrWA07WygNKzsIDRsq6A0LGsgNCwq4DPsKmAz6+ogM6up4DOrqaAza2lgM2tpIDNrKOAzayjgMysooDMq6KAzKuhgMyroYDMq6CAzKuggMyqoIDLqqCAy6qfgMuqn4DLqp+Ay6qfgMuqn4DLqp+Ay6qfgMuqn4DLqp+Ay6qfgMuqn4DLqp6Ay6qegMuqnoDLqp6Ay6qegMuqnoDLqp6Ay6qegMuqnoDLqp6Ay6qegMuqnoDLqp6Ay6qegMuqnoDLqp6Ay6qegMuqnoDLqp6Ay6qegMuqnoDLqp6Ay6qegMuqnoDLqp6Ay6qegMyqn4DMqp+AzKqfgMyrn4DNq5+AzaufgM6soIDPrKCA0K2ggNGuoYDSr6GA1LCigNayo4DZtKSA3LamgOC5p4DkvKmA6b+rgO/DroD2yLGA/s60gINqXIGIbV6BjXFggZR2Y4GaemaBoX9pgamFbIGxi2+BupFzgcKXd4HLnnuB1aR/gd6rgoHmsYaB77eKgfe9jYH+wpCBgmNJgoVlS4KHZ0yCiWhMgoppTYKKaU2CimlNgoloTIKIZ0yChmZLgoNkSoKAYkiC+r6OgfK5i4Hps4iB4a2EgdimgIHPoHyBxpl4gb2TdIG0jXGBrIdtgaSBaoGdfGeBlndkgY9zYYGKb1+BhWtcgYBoWoH5yrKA8cWvgOvBrIDmvaqA4bqogN23poDatKWA17KkgNWxo4DTr6KA0a6hgNCtoYDPraCAzqyggM6roIDNq5+AzaufgMyrn4DMqp+AzKqfgMyqn4DMqp+Ay6qfgMuqn4DLqp+Ay6qfgMuqn4DLqp+AzKqggMyqoIDMq6CAzKuggMyroYDMq6GAzKuhgMysooDNrKOAzayjgM2tpIDNraWAzq6lgM6up4DPr6iAz6+pgNCwqoDQsayA0bKugNKzsIDTtbKA1La0gNW3t4DWubqA17u+gNm9wYDav8WA3MLKgN7EzoDgx9OA4srZgOTN34Dm0eWA6dXsgOzZ84Dv3fuAeXCBgXpzhYF8dYqBfniOgYJ8k4GEfpiBhoGdgYiEooGKh6eBjIqsgY6NsYGQkLaBkpK7gZSVwIGVlsKBlZbCgZWWwoGVlsKBlZbCgZWWwoGVlsKBlZbCgZWWwoGVlsKBlZbCgZWWwoGVlsKBlZbCgZWWwoGVlsKBlZbCgZWWwoGVlsKBlZbCgZWWwoGVlsKBlZbCgZWWwoGUlcGBk5O8gZGQt4GPjbKBjYqtgYuHqIGJhKKBh4KdgYV/mIGDfJOBgXmPgX93ioF9dIaBfHKBgfXg+4Dy3PSA79jsgOzU5YDq0d+A6M3ZgOXK1IDjx86A4sXKgODCxYDewMGA3b6+gNy8uoDaureA2bm0gNi3soDXtrCA17WugNa0rIDVs6qA1bKpgNSyqIDUsaaA07ClgNOwpYDTsKSA0q+jgNKvooDSr6KA0q6hgNKuoYDSrqGA0a6ggNGtoIDRraCA0a2ggNGtn4DRrZ+A0a2fgNGtn4DRrZ+A0a2fgNGtn4DRrZ+A0a2fgNGtn4DRrZ+A0a2egNGtnoDRrZ6A0a2egNGtnoDRrZ6A0a2egNGtnoDRrZ6A0a2egNGtnoDRrZ6A0a2egNGtnoDRrZ6A0a2egNGtnoDRrZ6A0a2egNGtnoDRrZ6A0a2egNGtnoDRrZ6A0a2egNGtnoDRrZ6A0a2fgNKtn4DSrZ+A0q6fgNOun4DTrp+A1K+ggNWwoIDWsaGA2LKhgNmzooDctKOA3rakgOG4pYDlu6eA6b6pgO7Bq4D0xa2A+sqwgIFoWYGFa1uBim5dgY9yYIGVdmKBm3tlgaKAaIGqhWuBsotvgbqRcoHDl3aBzJ16gdWkfYHeqoGB5rCFge+2iYH3vIyB/sGPgYJjSYKFZUqCh2ZLgolnTIKKaEyCimhMgopoTIKJaEyCiGdLgoVlSoKDY0mCgGFIgvm+jYHxuIqB6bKGgeGsg4HYpn+Bz597gcaZd4G9k3OBtY1wga2HbIGlgWmBnnxmgZd4Y4GRc2CBi29egYZsXIGCaVqB/cyxgPbHroDww6yA6r+pgOa8p4DiuaaA37ekgNy1o4Das6KA2LKigNexoYDWsKCA1a+ggNSvoIDTrp+A066fgNKun4DSrZ+A0q2fgNGtn4DRrZ+A0a2fgNGtn4DRrZ+A0a2fgNGtn4DRrZ+A0a2fgNGtoIDRraCA0a6ggNGuoIDSrqGA0q6hgNKuoYDSrqKA0q+igNKvo4DTr6SA07CkgNOwpYDUsaaA1LKngNWyqYDVs6qA1rSsgNe1rYDXtq+A2LeygNm5tIDaureA27y6gN2+vYDewMGA4MLFgOHEyYDjx86A5crTgOfN2IDq0N6A7NTlgO/X64Dx2/OA9OD6gHxygYF9dIWBf3eKgYF5joGFfZOBh4CXgYmDnIGLhaKBjYingY+LrIGRjrGBk5G2gZWUu4GXl8CBmJjCgZiYwoGYmMKBmJjCgZiYwoGYmMKBmJjCgZiYwoGYmMKBmJjCgZiYwoGYmMKBmJjCgZiYwoGYmMKBmJjCgZiYwoGYmMKBmJjCgZiYwoGYmMKBmJjCgZiYwoGYmMKBl5fBgZWUvIGUkbeBko6ygY+MrYGNiaeBi4aigYmDnYGIgJiBhn2TgYR7joGCeIqBgHaFgX9zgYH64/uA99/zgPXb7IDy1+WA8NPegO3Q2IDrzdOA6crOgOfHyYDmxcWA5MPBgOPBvYDhv7qA4L23gN+8tIDeurKA3bmvgNy4rYDct6yA27aqgNu1qYDataeA2rSmgNmzpYDZs6SA2bOkgNiyo4DYsqKA2LKigNixoYDYsaGA17GhgNexoIDXsaCA17CggNewoIDXsJ+A17CfgNewn4DXsJ+A17CfgNewn4DXsJ+A17CfgNewn4DXsJ+A17CfgNewnoDXsJ6A17CegNewnoDXsJ6A17CegNewnoDXsJ6A17CegNewnoDXsJ6A17CegNewnoDXsJ6A17CegNewnoDXsJ6A17CegNewnoDXsJ6A17CegNewnoDXsJ6A17CegNewnoDXsJ6A17CegNewn4DYsJ+A2LCfgNixn4DZsZ+A2bGfgNqyoIDbs6CA3LOhgN20oYDftaKA4bejgOO5pIDmu6WA6r2mgO7AqIDyw6qA+MetgP7Mr4CDaFmBh2tbgYtvXYGQcl+BlnZhgZx7ZIGjgGeBq4VqgbKKbYG6kHGBw5Z0gcuceIHUo3yB3amAgeWvg4HutYeB9bqKgfy/jYGBYkiChGRJgoZlSoKIZkqCiWdLgolnS4KJZ0uCiGdLgodmSoKFZEmCgmJIgv/BjoH4vIuB8LeIgeixhYHgq4GB16V9gc6feYHGmHaBvZJygbWMb4Gth2uBpoFogZ98ZYGYeGKBknRggY1wXYGIbFuBhGlagYBnWIH6ya2A9MWrgO/BqYDrvqeA57ylgOS5pIDiuKOA4LaigN61oYDctKGA27OggNqyoIDZsqCA2bGfgNixn4DYsZ+A2LCfgNewn4DXsJ+A17CfgNewn4DXsJ+A17CfgNewn4DXsJ+A17CfgNewn4DXsKCA17CggNexoIDXsaCA17GhgNixoYDYsaGA2LGigNiyooDYsqOA2bKkgNmzpIDZs6WA2rSmgNq1p4DbtaiA27aqgNy3q4DcuK2A3bmvgN66sYDfu7SA4L22gOG/uYDiwL2A5MLAgOXFxIDnx8iA6crNgOvM0oDtz9iA79PegPLW5ID02uuA997ygPri+oB+c4GBgHWFgYJ4iYGDeo6BiH6SgYqBl4GMhJyBjoehgZCKpoGSjauBlI+xgZaStoGYlbuBmpjAgZuZwoGbmcKBm5nCgZuZwoGbmcKBm5nCgZuZwoGbmcKBm5nCgZuZwoGbmcKBm5nCgZuZwoGbmcKBm5nCgZuZwoGbmcKBm5nCgZuZwoGbmcKBm5nCgZuZwoGbmcKBm5nCgZqYwIGYlbuBlpO2gZSQsYGSjayBkIqngY6HooGMhJ2BioGYgYh/k4GHfI6BhXqJgYN3hYGBdYGBgHJ9gf3h8oD73euA+NnkgPXW3oDz09iA8dDSgO/NzYDtysiA7MjEgOrGwIDpxL2A58K5gObAtoDlv7SA5L2xgOO8r4Dju62A4rqrgOG5qoDhuKiA4LingOC3poDft6WA37akgN+2o4DftaOA3rWigN61ooDetKGA3rShgN60oIDetKCA3bSggN20oIDds6CA3bOfgN2zn4Dds5+A3bOfgN2zn4Dds5+A3bOfgN2zn4Dds5+A3bOfgN2znoDds56A3bOegN2znoDds56A3bOegN2znoDds56A3bOegN2znoDds56A3bOegN2znoDds56A3bOegN2znoDds56A3bOegN2znoDds56A3bOegN2znoDds56A3bOegN2znoDds56A3bOegN2znoDds5+A3rOfgN60n4DetJ+A37SfgN+0n4DgtaCA4baggOK2oIDjt6GA5biigOe6ooDpu6OA7L2lgO/ApoDzwqiA98aqgPzJrICBZ1eBhGlYgYhsWoGNb1yBknNegZd3YYGde2OBpH9mgauFaYGyimyBuo9vgcKVc4HLm3eB06F6gdunfoHkrYGB7LOFgfO4iIH6vYuBgGBGgoJiSIKFZEiChmVJgodmSoKIZkqCh2ZKgodlSYKFZEmCg2NIgoFhR4L8v4yB9bqJge61hoHmr4KB3ql/gdaje4HOnXiBxZd0gb2RcYG1jG2BrYZqgaaBZ4GgfGSBmXhhgZR0X4GOcF2Bim1bgYZqWYGCZ1eB/sutgPnHqoD0w6iA8MCngO2+pYDqvKSA57qjgOW5ooDkuKGA4rehgOG2oIDgtaCA4LWggN+0n4DetJ+A3rSfgN60n4Des5+A3bOfgN2zn4Dds5+A3bOfgN2zn4Dds5+A3bOfgN2zn4Dds5+A3bOggN20oIDdtKCA3rSggN60oIDetKGA3rShgN61ooDetaKA37WjgN+2o4DftqSA37algOC3poDguKeA4biogOG5qoDiuquA4rutgOO8r4DkvbGA5b6zgObAtoDnwrmA6MO8gOrFwIDrx8SA7crIgO/MzIDxz9GA89LXgPXV3YD42eOA+t3qgP3h8YCAcnyBgXSAgYN3hIGFeYmBhnyNgYuAkYGNgpaBj4WbgZGIoIGTi6WBlY6rgZeRsIGZk7WBm5a6gZ2Zv4Gem8KBnpvCgZ6bwoGem8KBnpvCgZ6bwoGem8KBnpvCgZ6bwoGem8KBnpvCgZ6bwoGem8KBnpvCgZ6bwoGem8KBnpvCgZ6bwoGem8KBnpvCgZ6bwoGem8KBnpvCgZ6bwoGdmcCBm5e7gZmUtoGXkbCBlY6rgZOLpoGRiKGBj4acgY2Dl4GLgJKBin2NgYh7iYGGeISBhHaAgYN0fIGBcniBgHB1gf7c44D82d2A+dXXgPfS0YD10MyA883IgPLLw4Dwyb+A78e8gO7FuYDsw7aA68KzgOvAsYDqv6+A6b6tgOi9q4DovKmA57yogOe7p4DmuqaA5rqlgOa5pIDluaOA5bmjgOW4ooDluKKA5LihgOS3oYDkt6CA5LeggOS3oIDkt6CA5LefgOS3n4Dkt5+A5LefgOS2n4Dktp+A5LafgOO2n4Djtp+A47afgOO2n4Djtp6A47aegOO2noDjtp6A47aegOO2noDjtp6A47aegOO2noDjtp6A47aegOO2noDjtp6A47aegOO2noDjtp6A47aegOO2noDjtp6A47aegOO2noDjtp6A47aegOO2noDktp6A5LaegOS2noDktp6A5LeegOS3n4Dkt5+A5befgOW3n4DmuJ+A5rifgOe5oIDouaCA6bqhgOu7oYDsvaKA776jgPHApID0wqWA+MWngPzIqYCAZVWBg2dWgYZqWIGKbVmBjnBbgZNzXYGYd2CBnntigaR/ZYGrhGiBsolrgbqOboHBlHGByZp1gdKfeIHapXuB4at/gemwgoHwtYWB97qIgf2+i4GBYUaCg2JHgoRjSIKFZEiChmRIgoVkSIKFY0iCg2NHgoFhRoL+wIuB+byJgfK3hoHssoOB5K2AgdynfYHUoXmBzJx2gcSWcoG8kG+BtYtsga2GaYGngWaBoHxjgZp4YIGVdF6BkHFcgYxuWoGIa1iBhGhXgYFmVoH+yaqA+caogPXDpoDywaWA77+jgO29ooDrvKKA6ruhgOi6oIDnuaCA57iggOa4n4DluJ+A5befgOW3n4Dkt5+A5LefgOS3n4Dkt5+A5LefgOS3n4Dkt5+A5LefgOS3n4Dkt5+A5LefgOS3n4Dkt6CA5LeggOS3oIDkt6CA5LehgOS4oYDluKKA5biigOW4o4DluaOA5rmkgOa6pYDmuqaA57ungOe7qIDovKmA6L2rgOm+rIDqv66A6sCwgOvCs4Dsw7WA7cW4gO/Gu4DwyL+A8srDgPPNx4D1z8yA99LRgPnV1oD72NyA/tzigIBvdIGBcXiBg3R7gYR2f4GGeISBiHuIgYl9jIGOgZCBkISVgZKGmoGUiZ+BloykgZiPqYGakq6BnJW0gZ6XuYGgmr6Bop3CgaKdwoGincKBop3CgaKdwoGincKBop3CgaKdwoGincKBop3CgaKdwoGincKBop3CgaKdwoGincKBop3CgaKdwoGincKBop3CgaKdwoGincKBop3CgaKdwoGincKBoJq+gZ6YuYGclbSBmpKvgZiPqoGWjKWBlIqggZKHm4GQhJaBj4GRgY1/jIGLfIiBiXqDgYh3f4GGdXuBhXN3gYNxdIGCb3GBgW5tgYBsa4H+1dCA/NPLgPrQx4D4zsOA98y/gPXKu4D0yLiA88a1gPLFs4DxxLCA8MOugPDBrIDvwauA7sCpgO6/qIDtvqeA7b6mgO29pYDsvaSA7LyjgOy8ooDsvKKA67uhgOu7oYDru6GA67uggOu7oIDru6CA67qggOu6n4Drup+A67qfgOq6n4Dqup+A6rqfgOq6n4Dqup+A6rqfgOq6n4Dqup+A6rqegOq6noDqup6A6rqegOq6noDqup6A6rqegOq6noDqup6A6rqegOq6noDqup6A6rqegOq6noDqup6A6rqegOq6noDqup6A6rqegOq6noDqup6A6rqegOq6noDqup6A6rqegOq6noDrup6A67qegOu6noDrup+A67qfgOu7n4Dsu5+A7LufgO28n4DuvKCA7r2ggPC9oYDxvqGA88CigPXBo4D3w6SA+sWlgP3HpoCAZVSBg2dVgYVoVoGJa1eBjG1ZgZBwW4GVc1yBmXdfgZ97YYGlf2OBq4NmgbKIaYG5jWyBwJNvgciYcoHQnXaB16N5gd+ofIHmrX+B7bKCgfO3hYH5u4eB/b6JgYBgRYKCYUaCg2JGgoNiRoKDYkaCgmJGgoFhRoL/v4qB+ryIgfW4hoHvtIOB6K+AgeGqfYHapXqB0p93gcuadIHDlHCBu49tgbSKaoGthWeBp4BkgaF8YoGbeF+BlnRdgZJxW4GNblmBimtYgYZpVoGEZ1WBgWVUgf/Ip4D7xqWA+MOkgPXCo4DzwKKA8r+hgPC+oYDvvaCA7ryggO28oIDtu5+A7LufgOy7n4Dru5+A67qfgOu6n4Drup+A67qfgOu6n4Drup+A67qfgOu6n4Drup+A67qfgOu6n4Drup+A67qggOu7oIDru6CA67uggOu7oYDru6GA67uhgOy8ooDsvKKA7LyjgOy9pIDtvaWA7b6lgO2+poDuv6iA7sCpgO/AqoDwwayA8MKugPHEsIDyxbKA88a1gPTIuID1yruA98u+gPjOwoD60MaA+9LLgP3V0ID/2NWAgW1tgYJvcIGDcXOBhHN3gYZ1e4GHd3+BiXmDgYt8h4GMfoyBkYKPgZOFlIGVh5mBl4qegZmNo4GbkKiBnZOtgZ+WsoGhmLeBo5u8gaWewYGlnsKBpZ7CgaWewoGlnsKBpZ7CgaWewoGlnsKBpZ7CgaWewoGlnsKBpZ7CgaWewoGlnsKBpZ7CgaWewoGlnsKBpZ7CgaWewoGlnsKBpZ7CgaWewoGlnsKBpZ7BgaObvYGhmbiBn5azgZ2TroGbkKmBmY2jgZeLnoGViJmBlIWVgZKCkIGQgIuBjn2HgYx7goGLeX6BiXd6gYh1d4GHc3OBhXFwgYRvbYGDbWqBgmxngYFrZYGAaWOB/9HCgP7PvoD8zbuA+8u3gPrKtYD5yLKA+MewgPjGroD3xayA9sSqgPbDqYD1w6iA9cKmgPTBpYD0waSA9MCkgPPAo4DzwKKA87+igPO/oYDzv6GA8r+hgPK/oIDyvqCA8r6ggPK+oIDyvp+A8r6fgPK+n4Dyvp+A8r6fgPK+n4Dyvp+A8r6fgPK+n4Dyvp+A8r6egPK+noDyvZ6A8r2egPK9noDyvZ6A8r2egPK9noDyvZ6A8r2egPK9noDxvZ6A8b2egPG9noDxvZ6A8b2egPG9noDxvZ6A8r2egPK9noDyvZ6A8r2egPK9noDyvZ6A8r2egPK+noDyvp6A8r6egPK+noDyvp6A8r6fgPK+n4Dzvp+A876fgPO/n4D0v5+A9cCggPXAoID2waCA+MKhgPnDooD7xKKA/cajgIBkUoGBZVOBg2ZTgYVoVIGIaVWBi2xXgY5uWIGScVqBlnRcgZt3XoGgemCBpX5igauDZYGyh2eBuIxqgb+RbYHGlnCBzptzgdWgdoHcpXmB46p8gemvf4Hvs4KB9LeEgfm6hoH8vYeB/7+JgYBgRIKBYEWCgGBEgoBfRIL9vYiB+ruGgfa4hYHxtIKB67CAgeWsfYHep3qB16J3gdCddIHJmHGBwpNugbuOa4G0iWiBrYRmgaeAY4GifGCBnHhegZh1XIGTclqBj29ZgYxsV4GJalaBhmhVgYRnVIGCZVOBgGRSgf7HpID8xaOA+sOigPjCoYD3waGA9sCggPXAoID0v5+A9L+fgPO/n4Dzvp+A876fgPK+n4Dyvp+A8r6fgPK+n4Dyvp+A8r6fgPK+n4Dyvp+A8r6fgPK+n4Dyvp+A8r6fgPK+oIDyvqCA8r6ggPK+oIDyv6GA87+hgPO/oYDzv6KA88CigPPAo4D0wKSA9MGkgPTBpYD1wqaA9cKngPbDqYD2xKqA98WsgPfGrYD4x7CA+ciygPrKtID7y7eA/M26gP7PvYD/0cGAgGligYFrZYGCbGeBg21qgYRvbIGFcW+BhnJzgYh0doGJdnqBi3h+gYx7goGOfYaBkICKgZWDjoGXhpKBmYmXgZqLnIGcjqGBnpGmgaCUq4GilrCBpJm1gaacuoGonr6BqaDCgamgwoGpoMKBqaDCgamgwoGpoMKBqaDCgamgwoGpoMKBqaDCgamgwoGpoMKBqaDCgamgwoGpoMKBqaDCgamgwoGpoMKBqaDCgamgwoGpoMKBqaDCgaifv4GmnLqBpJq2gaKXsYGhlKyBn5GngZ2PooGbjJ2BmYmYgZeGk4GVhI6Bk4GKgZJ/hYGQfIGBjnp9gY14eYGLdnaBinRygYlyb4GIcWyBh29pgYZuZ4GFbGSBhGtigYNqYIGCaV6BgmhdgYFnW4GBZlqBgGZZgYBlV4H/yq2A/smsgP7IqoD9x6iA/cangPzGpoD8xaWA/MWkgPvEo4D7xKOA+8SigPvDooD6w6GA+sOhgPrDoID6wqCA+sKggPrCoID6wp+A+sKfgPrCn4D6wp+A+sKfgPnCn4D5wp+A+cKfgPnCn4D5wp+A+cKfgPnCnoD5wZ6A+cGegPnBnoD5wZ6A+cGegPnBnoD5wZ6A+cGegPnBnoD5wZ6A+cGegPnBnoD5wZ6A+cGegPnBnoD5wZ6A+cGegPnBnoD5wZ6A+cGegPnBnoD5wZ6A+cGegPnBnoD5wZ6A+cKegPrCnoD6wp6A+sKegPrCnoD6wp+A+sKfgPvCn4D7w5+A+8OfgPzDn4D9xKCA/sWggP/FoYCAY1CBgWRRgYJkUYGDZVKBhWZSgYZoU4GIaVSBi2tVgY1tVoGQb1eBlHFZgZh0W4Gcd1yBoXpegaZ+YYGrgmOBsYZmgbiLaIG+j2uBxZRugcuZcYHSnnSB2aJ2gd+neYHlq3yB669+gfCzgIH0toKB97iEgfq6hYH7u4WB/LyGgfy7hYH6uoWB+LmEgfW3g4HxtIGB7LB/geetfYHhqHqB26R3gdSfdYHOm3KBx5ZvgcCRbIG6jGmBs4hmga2DZIGof2GBonxfgZ54XYGZdVuBlXJZgZJwWIGObVeBi2tVgYlpVIGHaFOBhWdTgYRmUoGCZVGBgWRRgYBjUYH/xqGA/sWggP3EoID8xKCA/MOfgPvDn4D7w5+A+sKfgPrCn4D6wp+A+sKfgPrCn4D6wp+A+sKfgPrCn4D6wp+A+sKfgPrCn4D6wp+A+sKfgPrCn4D6wp+A+sKggPrCoID6wqCA+sOggPrDoYD6w6GA+8OigPvEooD7xKOA+8SjgPzFpID8xaWA/MamgP3Gp4D9x6iA/siqgP7Jq4D/yq2AgGVXgYBmWIGBZlqBgWdbgYJoXIGCaV6Bg2pggYRrYoGFbGSBhm5mgYdvaYGIcGyBiXJvgYp0coGLdnWBjXh5gY56fYGQfIGBkX6FgZOBiYGYhYyBmoeRgZyKloGejZqBoI+fgaKSpIGklamBppeugaeas4GpnbeBq5+8ga2iwIGto8KBraPCga2jwoGto8KBraPCga2jwoGto8KBraPCga2jwoGto8KBraPCga2jwoGto8KBraPCga2jwoGto8KBraPCga2jwoGto8KBraPCga2iwYGroL2BqZ24gaias4GmmK+BpJWqgaKSpYGgkKCBno2bgZyKloGaiJGBmYWNgZeDiIGVgISBlH6AgZJ8fIGReniBj3h1gY52cYGNdG6BjHJrgYtxaYGKb2aBiW5kgYhtYoGHbGCBhmtegYZqXIGFaVuBhWhZgYRoWIGEZ1eBg2dWgYNmVYGDZlWBgmVUgYJlU4GCZVOBgmRSgYJkUoGCZFGBgWRRgYFkUYGBZFGBgWNQgYFjUIGBY1CBgWNQgYFjUIGBY1CBgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYJjT4GCZE+BgmRQgYNkUIGDZFCBhGVQgYVlUYGGZlGBh2dRgYhoUoGKaVOBi2pUgY5sVIGQblaBk3BXgZZyWIGadVqBnndbgaJ6XYGnfl+BrIJhgbGFZIG3imaBvY5pgcOSa4HJl26B0Jtxgdafc4HcpHaB4ah4geareoHrr3yB77F+gfK0f4H0tYGB9raBgfe3gYH2t4GB9baBgfO0gIHwsn+B7LB9geise4HjqXmB3qV3gdihdIHSnXKBzJhvgcWUbIG/j2qBuYtngbOHZYGug2KBqH9ggaR8XoGfeFyBm3VagZdzWYGUcFeBkW5WgY5sVYGMa1SBimlTgYloUoGHZ1KBhmZRgYVmUYGEZVCBg2VQgYNkUIGCZFCBgmRQgYJjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjT4GBY0+BgWNPgYFjUIGBY1CBgWNQgYFjUIGBY1CBgWNQgYFjUIGBZFGBgWRRgYJkUYGCZFKBgmRSgYJlU4GCZVOBgmVUgYNmVIGDZlWBg2dWgYRnV4GEaFiBhWhZgYVpW4GGalyBhmtegYdsX4GIbWGBiW5jgYlvZoGKcWiBi3JrgY10boGOdnGBj3d0gZB5eIGSe3uBk35/gZWAhIGXgoiBnIaLgZ6Jj4Ggi5SBoo6YgaSQnYGlk6KBp5angamYq4Grm7CBrZ61ga6guYGwor2BsqXCgbKlwoGypcKBsqXCgbKlwoGypcKBsqXCgbKlwoGypcKBsqXCgbKlwoGypcKBsqXCgbKlwoGypcKBsqXCgbKlwoGypcKBsqXCgbKlwoGwo76Br6C6ga2etYGrm7GBqZmsgaiWp4Gmk6OBpJGegaKOmYGgi5SBnomQgZ2Gi4GbhIeBmYKDgZh/f4GWfXuBlXt3gZN5dIGSeHCBkXZtgZB0aoGPc2iBjnFlgY1wY4GMb2GBi25fgYttXYGKbFyBimtagYlrWYGJaliBiGlXgYhpVoGIaFWBh2hUgYdoVIGHZ1OBh2dTgYZnUoGGZlKBhmZRgYZmUYGGZlGBhmZQgYZmUIGGZlCBhmZQgYVlUIGFZVCBhWVQgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GGZU+BhmVPgYZlT4GGZk+BhmZPgYdmUIGHZlCBh2dQgYhnUIGJaFCBimhRgYtpUYGMalKBjWtSgY9sU4GRbVSBk29VgZZxVoGZc1eBnHVZgaB4WoGke1yBqH5ega2BYIGyhWKBt4lkgbyMZ4HCkGmByJVrgc6ZboHTnXCB2aFzgd6kdYHiqHeB56t5geqteoHtr3uB77F8gfGyfYHxsn2B8bJ9gfCxfYHusHyB6657geireYHkqXeB36V2gdqic4HVnnGBz5pvgcqWbIHEkmqBvo5ngbmKZYGzhmOBroJhgap/XoGlfF2BoXlbgZ12WYGadFiBl3JWgZRwVYGSblSBkGxTgY5rU4GMalKBi2lRgYpoUYGJaFGBiGdQgYhnUIGHZlCBh2ZQgYZmT4GGZk+BhmZPgYZlT4GGZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZU+BhWVPgYVlT4GFZVCBhWVQgYVlUIGGZVCBhmZQgYZmUIGGZlCBhmZRgYZmUYGGZlGBhmZSgYZnUoGHZ1KBh2dTgYdoVIGHaFSBh2hVgYhpVoGIaVeBiWpYgYlrWYGKa1qBimxcgYttXYGLbl+BjG9hgY1wY4GOcWWBj3NngZB0aoGRdm2BkndwgZN5c4GVe3eBln16gZd/foGZgYKBm4SGgaGIiYGiio2BpI2SgaaPloGokpuBqZSfgauXpIGtmamBr5ytgbGesoGyobaBtKO6gbWlvoG3p8KBt6jCgbeowoG3qMKBt6jCgbeowoG3qMKBt6jCgbeowoG3qMKBt6jCgbeowoG3qMKBt6jCgbeowoG3qMKBt6jCgbeowoG2pr+BtKS7gbOht4Gxn7KBr5yuga2aqYGsl6WBqpWggaiSm4Gmj5eBpI2SgaOKjoGhiImBn4aFgZ6DgYGcgX2Bm395gZl9doGYe3KBl3pvgZZ4bIGVdmqBlHVngZN0ZYGScmKBkXFggZBwX4GQb12Bj25bgY5uWoGObVmBjmxYgY1sV4GNa1aBjGtVgYxqVIGMalOBjGpTgYxpUoGLaVKBi2lSgYtpUYGLaVGBi2lRgYtoUIGLaFCBi2hQgYtoUIGKaFCBimhQgYpoUIGKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+Bi2hPgYtoT4GLaE+Bi2hPgYtoT4GLaE+BjGlQgYxpUIGNaVCBjWpQgY5qUYGPa1GBkGxRgZJtUoGTblOBlW9TgZdxVIGZclWBnHRWgZ92WIGieVmBpntbgap+XIGugV6Bs4RggbeIYoG8i2SBwo9ngceTaYHMlmuB0Zptgdaeb4HboXGB36RzgeOndYHmqXaB6at3geuseIHsrXmB7K55geyueYHrrXiB6ax4geeqd4HkqHWB4KV0gdyicoHYn3CB05tugc6YbIHIlGqBw5Bngb6NZYG5iWOBtIZhgbCCX4Grf12Bp3xbgaN6WoGgd1iBnXVXgZpzVoGYcVWBlnBUgZRuU4GSbVKBkWxSgZBrUYGPa1GBjmpQgY1qUIGMaVCBjGlQgYxpUIGLaE+Bi2hPgYtoT4GLaE+Bi2hPgYtoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoT4GKaE+BimhPgYpoUIGKaFCBi2hQgYtoUIGLaFCBi2hQgYtoUYGLaVGBi2lRgYtpUoGLaVKBi2lSgYxqU4GMalOBjGpUgYxrVYGNa1aBjWxWgY1sV4GObVmBjm5agY9uW4GQb12BkHBegZFxYIGScmKBknNkgZN1Z4GUdmmBlXhsgZd5b4GYe3KBmX11gZp/eYGcgX2BnYOAgZ+FhYGmioeBp4yLgamOj4GrkZSBrJOYga6WnYGwmKGBspumgbOdqoG1oK+Bt6Kzgbikt4G6pruBu6i+gbyqwYG9qsKBvarCgb2qwoG9qsKBvarCgb2qwoG9qsKBvarCgb2qwoG9qsKBvarCgb2qwoG9qsKBvarCgb2qwoG7qb+Buqe7gbmlt4G3orOBtaCvgbSeq4Gym6aBsJmiga6WnYGtlJmBq5GUgamPkIGojIyBpoqHgaSIg4GjhX+BoYN8gaCBeIGff3SBnX5xgZx8boGbemuBmnlpgZl3ZoGYdmSBl3VigZZ0YIGWc16BlXJcgZVxW4GUcFqBlHBYgZNvV4GTb1aBkm5VgZJuVYGSbVSBkm1TgZFtU4GRbFKBkWxSgZFsUYGRbFGBkWxRgZFrUYGQa1CBkGtQgZBrUIGQa1CBkGtQgZBrUIGQa0+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa0+BkGtPgZBqT4GQak+BkGpPgZBqT4GQak+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa0+BkGtPgZFrT4GRa0+BkWtPgZFsUIGSbFCBkmxQgZNtUIGUbVCBlG5RgZVuUYGXb1KBmHBSgZpxU4Gbc1SBnnRVgaB2VoGjeFeBpnpYgal8WoGsf1uBsIJdgbSEXoG5iGCBvYtigcKOZIHGkWaBy5VogdCYaoHUm2yB2J5ugdyhcIHgo3GB46ZygeWnc4HnqXSB6Kl1geiqdYHoqnWB56l0geaodIHkpnOB4aRygd2icIHan2+B1pxtgdGZa4HNlmmByJNngcOPZYG/jGOBuolhgbaGX4Gyg12BroBcgap9WoGne1mBpHlXgaF3VoGedVWBnHNUgZpyU4GYcVOBl3BSgZZvUYGVblGBlG1RgZNtUIGSbFCBkmxQgZJsUIGRa0+BkWtPgZFrT4GRa0+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa0+BkGtPgZBrT4GQa1CBkGtQgZBrUIGQa1CBkGtQgZBrUIGRa1GBkWxRgZFsUYGRbFGBkWxSgZFsUoGRbVOBkm1TgZJtVIGSblWBkm5VgZNvVoGTb1eBlHBYgZRwWYGVcVuBlXJcgZZzXoGWdGCBl3VhgZh2ZIGZd2aBmnlogZt6a4GcfG6BnX1xgZ5/dIGggXeBoYN7gaOFf4Gkh4OBrIyFga2OiYGvkY2BsZORgbKVloG0mJqBtpqegbedo4G5n6eBu6Grgbykr4G+prOBv6i3gcGquoHCq72Bw63AgcSuwoHErsKBxK7CgcSuwoHErsKBxK7CgcSuwoHErsKBxK7CgcSuwoHErsKBxK7CgcOtwYHCrL6Bwaq7gb+ot4G+prSBvaSwgbuirIG5n6iBuJ2jgbabn4G0mJuBs5aWgbGTkoGvkY6Bro+JgayMhYGqioGBqYh+gaiGeoGmhHaBpYJzgaSAcIGjf22Bon1qgaF8aIGge2WBn3ljgZ54YYGdd1+BnXZdgZx1XIGbdVqBm3RZgZpzWIGac1eBmnJWgZlyVYGZcVSBmXFUgZlwU4GYcFOBmHBSgZhwUoGYb1GBmG9RgZhvUYGXb1CBl29QgZdvUIGXb1CBl29QgZdvUIGXblCBl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GYb0+BmG9PgZhvT4GYb0+BmW9QgZlwUIGZcFCBmnBQgZtxUYGcclGBnXJRgZ5zUoGfdFOBoXVTgaN3VIGleFWBqHpWgap8V4GtfliBsIBagbSDW4G3hV2Bu4hegb+LYIHDjmKByJFkgcyUZoHQl2eB1Jppgdica4Hbn2yB3qFtgeGjb4HjpHCB5aZwgeamcYHmp3GB5qZxgeWmcIHkpXCB4qNvgd+iboHcoG2B2Z1rgdWbaoHRmGiBzZVmgcmSZIHFj2OBwYxhgb2JX4G5hl2BtYRcgbGBWoGuf1mBq31Ygah7VoGmeVWBpHdUgaJ2VIGgdVOBnnRSgZ1zUoGcclGBm3FRgZpxUIGacFCBmXBQgZlvUIGYb1CBmG9PgZhvT4GYb0+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25PgZduT4GXbk+Bl25QgZdvUIGXb1CBl29QgZdvUIGXb1CBl29QgZhvUYGYb1GBmG9RgZhwUoGYcFKBmHBTgZhwU4GZcVSBmXFUgZlyVYGaclaBmnJXgZpzWIGbdFmBm3RagZx1XIGcdl2BnXdfgZ54YYGfeWOBn3plgaB8Z4GhfWqBon9tgaSAcIGlgnOBpoR2gaeGeYGpiH2BqoqBgbWQg4G2koeBuJSLgbmXj4G7mZOBvZuXgb6dm4HAoJ+BwaKkgcOkqIHFpquBxqmvgcers4HJrLaByq65gcuwvIHMsb6BzbLAgc2zwoHNs8KBzbPCgc2zwoHNs8KBzbPCgc2zwoHNs8KBzbLAgcyxvoHLsLyByq65gcmttoHIq7OBxqmwgcWnrIHDpaiBwqKkgcCgoIG+npyBvZuYgbuZk4G6l4+BuJWLgbaSh4G1kIOBs45/gbKMfIGxiniBr4h1ga6GcoGthW+BrINsgauCaYGqgGeBqX9kgah+YoGnfWCBp3xfgaZ7XYGleluBpXlagaR5WYGkeFiBpHdXgaN3VoGjdlWBo3ZUgaJ2VIGidVOBonVSgaJ1UoGidVKBonRRgaF0UYGhdFGBoXRQgaF0UIGhdFCBoXRQgaF0UIGhc1CBoXNQgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaF0T4GidE+BonRPgaJ0UIGidFCBo3VQgaN1UIGkdlCBpXZRgaZ3UYGneFKBqHlSgap6U4Gre1OBrXxUga9+VYGyf1aBtIFXgbeDWYG6hVqBvYhbgcGKXYHEjV6ByI9ggcySYYHQlWOB05dlgdeaZoHanGiB3Z5pgeCgaoHiomuB5KNsgeakbIHmpW2B56VtgeelbYHmpW2B5aRsgeOia4HhoWqB3p9pgdudaIHYm2eB1JhlgdGWZIHNk2KByZBggcaOX4HCi12Bv4hcgbuGWoG4hFmBtYJYgbOAV4GwflaBrn1Vgax7VIGqelOBqXlSgad4UoGmd1GBpXZRgaR2UYGkdVCBo3VQgaN1UIGidFCBonRPgaJ0T4GhdE+BoXRPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzT4Ghc0+BoXNPgaFzUIGhc1CBoXRQgaF0UIGhdFCBoXRQgaF0UIGhdFGBoXRRgaF0UYGidVKBonVSgaJ1UoGidVOBonZTgaN2VIGjdlWBo3dWgaR3VoGkeFeBpHhZgaV5WoGleluBpntdgad8XoGnfWCBqH5igal/ZIGqgGaBq4FpgayDa4GthW6BroZxga+IdIGwiniBsox7gbOOf4HMxf5/aWeGgGxrjoBvb5aAcnSegHV4poB4fa6Ae4G2gH6FvYCBisWAhI7NgIeS1ICKltuAjJnhgI6c54CQn+yAkqLwgJSk9ICVpviAlqf6gJeo/ICXqP2Al6n9gJeo/ICWp/qAlab4gJSk9YCSovGAkaDtgI+d54CMmeKAipbbgIeS1YCFjs6AgorGgH+Gv4B8greAeX2vgHV5p4BydJ+Ab3CXgGxrj4BpZ4eAZmOAgMe+8X/Ct+N/va/Wf7ioyX+zob1/rpuxf6qVpn+mj5x/o4qTf5+Fin+cgIJ/mXx6f5Z4c3+UdW1/knJnf5BvYn+ObF1/jGpZf4toVX+JZlJ/iGROf4djTH+GYUl/hWBHf4RfRX+EXkN/g11Cf4NcQH+CXD9/gls+f4FbPX+BWj1/gVo8f4FZO3+AWTt/gFk6f4BZOn+AWDp/gFg5f4BYOX+AWDl/gFg5f/+wcX7/sHF+/7Bxfv+wcH7/sHB+/69wfv+vcH7/r3B+/69wfv+vcH7/r3B+/69wfv+vcH7/r29+/69vfv+vb37/r29+/69vfv+vb37/r29+/69vfv+vb37/r29+/69vfv+vb37/r29+/69vfv+vb37/r29+/69vfv+vb37/r29+/69vfv+vb37/r29+/69vfoBYOH+AWDh/gFg4f4BYOH+AWDh/gVg4f4FZOH+CWTh/glo5f4NaOX+EWzp/hlw6f4ddO3+JXjx/jGA9f45iPn+SZD9/lWdBf5pqQ3+fbkV/pXJIf6x3Sn+zfE5/u4JRf8SJVX/OkFl/2Zhef+WgY3/xqGh//bFtf4VdOYCLYjyAkmY/gJhrQoCfb0SApXRHgKp4SYCve0uAs35NgLaAToC5gk+AuoNQgLuEUIC7hFCAuYNQgLeBT4C0f02AsHxMgKx5SoCmdUiAoXFFgJttQ4CUaECAjmM9gIdfOoCBWjeA9atqf+mjZX/dmmB/0pJbf8iLVn++hFJ/tn5Pf655S3+ndEh/oW9Gf5xsRH+XaEJ/k2VAf49jPn+MYT1/il88f4heO3+GXDp/hVs6f4RbOX+DWjl/glk5f4FZOH+BWTh/gVg4f4BYOH+AWDh/gFg4f4BYOH+AWDh/gFg4f4BYOH//sHF+/7BxfoBYOH+AWDh/gFg5f4BYOX+AWDl/gFg5f4BYOX+AWTp/gFk6f4BZO3+BWTt/gVo8f4FaPH+BWj1/gls+f4JcP3+DXEB/g11Cf4ReQ3+EX0V/hWBHf4ZhSX+HYkt/iGROf4lmUX+KZ1V/jGpYf45sXX+Pb2F/kXFmf5R1bH+WeHJ/mXx5f5yAgX+fhIl/oomRf6aOm3+qlKV/rpqwf7Kgu3+3p8d/vK7Uf8G24X/Hve9/wrzyf2RigIBnZoeAamqPgGxuloBvcp6AcnemgHV7rYB4f7WAe4O8gH6Hw4CBi8qAg4/QgIWS1oCIldyAipjhgIua5YCNnOmAjp7sgI+f7oCPoPCAkKHxgJCh8YCPoPCAj5/vgI6e7ICNnOqAi5rmgIqY4oCIld2AhpLXgIOP0YCBi8uAfojEgHyEvYB5gLaAdnyugHN3p4Bwc5+AbW+XgGprkIBnZoiAZGKBgMO99H++teZ/ua7Yf7SnzH+voL9/qpq0f6aTqX+ijp5/noiVf5uDjH+Xf4N/lHp8f5J2dH+Pc25/jW9of4tsYn+Jal1/h2dZf4VlVX+EY1F/g2FOf4FfS3+AXkh//7mMfv63iH78tYR++7OBfvqxfn75sHt++K95fveud373rXV+9qx0fvarcn71qnF+9apwfvSpb370qW9+9KlufvSobX7zqG1+86hsfvOobH7zp2x+86drfvOna37zp2t+86drfvOna37yp2p+8qdqfvKnan7yp2p+8qdqfvKnan7yp2p+8qdqfvKman7ypmp+8qZqfvKman7ypmp+8qZqfvKman7ypmp+8qZqfvKman7ypmp+8qZqfvKman7ypmp+8qZqfvKman7ypmp+8qZqfvKnan7yp2p+86dqfvOnan7zp2p+86dqfvOnan70qGp+9KhrfvWoa372qWt+96psfviqbH76rG1++61ufv6vb36AWDh/glk4f4RbOX+GXDp/iV88f4xhPX+QZD9/lWdBf5prQ3+gb0V/pnNIf655S3+2fk9/voRSf8iLVn/Sklt/3Jpff+eiZH/yqml//rJuf4RdOYCKYTuAj2U+gJVoQICZbEKAnm9EgKFxRYCkc0eApnVIgKh2SICodkiAqHZIgKd1SICldEeAonJGgJ9wRICbbUOAlmpBgJFmP4CMYjyAhl46gIFaN4D2rWp/66Rmf+CcYX/VlVx/y45Yf8GHVH+4gFB/sHpMf6l1SX+icEZ/nGxEf5ZoQX+SZT9/jmI+f4pfPH+HXTt/hVs6f4JaOX+BWDh//69vfvyubn76rG1++attfveqbH72qWx+9alrfvWoa370qGt+9KhrfvOna37zp2t+86drfvOna37zp2t+86drfvOna37zp2t+86hsfvOobH7zqGx+86htfvSobX70qW5+9KlufvSpb371qnB+9apxfvWrcn72rHN+9611fveud374r3l++bB7fvqxfX77s4B+/LWDfv63h37/uYt+gF5If4FfSn+CYU1/hGJQf4VkVH+HZ1h/iGldf4psYn+Mb2d/j3Jtf5F2c3+Uent/l36Cf5qDi3+eiJN/oY2df6WTp3+qmbJ/rp++f7Omyn+4rdd/vbTkf7mz5n+/u/R/YmGBgGVliIBnaY+Aam2WgG1xnoBwdaWAc3msgHV9s4B4gbqAe4TAgH2IxoB/i8yAgY7RgIOQ1oCFk9qAhpXegIeW4YCImOOAiZjkgImZ5YCJmeWAiZjkgIiY44CHluGAhpXegIWT24CDkdeAgY7SgH+LzYB9iMeAe4XBgHiBu4B2fbSAc3qtgHB2poBtcp+Aa26XgGhqkIBlZomAYmKCgL+89n+6tOh/ta3bf7Cmzn+rn8J/p5m2f6OSq3+ejaF/m4eXf5eCjn+UfYV/kXl9f451dn+LcW9/iW1pf4ZqY3+EZ15/g2VZf4FiVX//waJ+/L2bfvq5lX74to9+9rSKfvSxhn7yr4J+8a1+fvCre37vqnh+7qh2fu2nc37spnJ+7KVwfuukbn7rpG1+6qNsfuqia37pomp+6aFqfumhaX7poWh+6aFofuigaH7ooGd+6KBnfuigZ37ooGZ+6KBmfuigZn7on2Z+6J9mfuifZn7on2Z+6J9lfuifZX7on2V+6J9lfuefZX7nn2V+559lfuefZX7nn2V+559lfuefZX7nn2V+559lfuefZX7nn2V+559lfuefZX7nn2V+559lfuefZX7nn2V+6J9lfuifZX7on2V+6J9lfuifZX7on2V+6J9lfuigZX7poGV+6aBmfumgZn7qoWZ+66FmfuuiZ37so2d+7qRofu+laH7xpml+9KhqfveqbH76rW1+/7BvfoJZOH+EWzp/iF47f4xhPX+QZD9/lWdBf5trQ3+hcEZ/qHVJf7B6TH+4gFB/wIZTf8qNV3/TlFt/3Ztff+eiZH/xqWh/+7Bsf4JbOICGXjqAimE7gI5kPYCRZj6AlGg/gJVpQICXakGAl2pBgJdqQYCWaUCAlGhAgJJnP4CPZD6AjGI8gIhfOoCDXDiA/rJuf/SraX/qpGV/4J1hf9aWXX/Nj1l/xIhVf7uCUX+yfE1/q3dKf6NyR3+dbUR/l2lCf5JlP3+NYj1/iV88f4ZcOn+DWjl/gFg4f/yubn74q2x+9alrfvKnan7wpWl+7qRofu2jaH7somd+66JnfuqhZn7qoWZ+6aBmfumgZn7poGZ+6KBmfuigZn7ooGZ+6KBmfuigZn7ooGZ+6KBnfuigZ37ooGd+6KBofumhaH7poWh+6aFpfumhaX7pomp+6qJrfuqjbH7ro21+66RufuylcH7spnF+7adzfu6odX7vqXh+8Kt6fvGtfn7yr4F+9LGFfvaziX74to5++rmUfvy9mn7/wKF+gWJUf4JkWH+EZ11/hmpif4htaH+LcG5/jXR1f5B4fH+TfYR/l4GNf5qGln+ejJ9/opKqf6aYtX+rnsB/r6XNf7Ss2X+xq9t/trLof7u59X9gYIGAY2SIgGVoj4BobJaAa2+cgG1zo4Bwd6qAcnqwgHV+toB3gbyAeYTCgHuHxoB9icuAfovPgICN0oCBj9WAgpDXgIKR2YCCkdmAgpHZgIKR2YCCkNeAgY/VgICO04B/jM+AfYrMgHuHx4B5hMKAd4G9gHV+t4Bze7GAcHergG50pIBrcJ2AaGyXgGZokIBjZImAYGGCgLy693+3s+p/sqzdf62l0H+onsR/pJi5f6CSrn+bjKN/mIaZf5SBkH+RfId/jXh/f4t0d3+IcHB/hWxqf4NpZH+BZl9//se0fvvCq374vaJ+9bmbfvK1lH7wso5+7q+JfuyshH7qqoB+6ah8fuemeX7mpHZ+5aNzfuShcX7joG9+459tfuKea37inmp+4Z1pfuGcaH7gnGd+4JtmfuCbZX7gm2V+35pkft+aZH7fmmN+35pjft+aY37fmWJ+35lift+ZYn7emWJ+3plift6ZYn7emWJ+3plhft6ZYX7emWF+3plhft6ZYX7emWF+3plhft6ZYX7emWF+3plhft6ZYX7emWF+3plhft6ZYX7emWF+3plhft6ZYX7emWF+3plhft6ZYX7emWF+3plhft6ZYX7emWF+3plhft6ZYX7emWF+35lhft+ZYX7fmWF+35lhft+ZYX7gmmJ+4JpifuGaYn7im2J+4pxjfuSdY37lnmR+559lfumgZn7romd+76RofvKnan72qmt+/K5tfoBZOH+EWzl/iF47f4xhPX+RZD9/lmhBf5xsRH+jcUZ/qnZJf7F7TX+5gVB/wYdUf8qNV3/Sk1t/25lef+OfYn/rpWV/86ppf/qvbH+AWjeAglw4gIVdOYCGXjqAh186gIhfOoCIXzqAh186gIVeOYCDXDiAgVo3gPyxbX/1rGp/7qdnf+ahY3/em2B/1ZVcf82PWH/EiVV/vINRf7R9Tn+seEt/pXNHf55uRX+YakJ/k2ZAf45iPX+JXzt/hVw6f4JZOH/9r25++KtsfvSoan7wpWl+7aNnfuqhZn7on2V+5p5kfuSdZH7jnGN+4ptjfuGbYn7hmmJ+4JpifuCaYn7fmmJ+35lift+ZYn7fmWJ+35lift+ZYn7fmWJ+35lift+ZYn7fmmN+35pjft+aY37fmmR+35pkfuCbZX7gm2V+4JtmfuCcZ37hnGh+4Z1pfuKdan7inmt+459tfuOgbn7koXB+5aJzfuakdX7npnh+6Kd8fuqpf37srIR+7a6IfvCxjn7ytZR+9Liafve8oX76wap+/sayfoFlXn+DaGN/hWxpf4dvcH+Kc3Z/jXd+f5B8hn+UgY9/l4aYf5uLon+fkax/o5e3f6idw3+spM9/qqPQf66q3H+zsel/uLj1f15fgYBhY4eAY2aOgGZqlIBobpuAa3GhgG10p4BveK2AcXuygHN9t4B1gLyAd4LAgHiExIB6hseAe4jKgHuJzIB8ic2AfIrOgHyKzoB8is2Ae4nMgHuIyoB6hseAeYXEgHeDwYB1gLyAdH64gHJ7s4BweK2AbXWogGtxooBpbpuAZmqVgGRnj4BhY4iAX2CCgLm593+0sup/r6vef6qk0n+mncZ/oZe6f52RsH+Zi6V/lYabf5GBkn+OfIl/i3eBf4hzeX+Fb3J/gmtrf4BoZX/8ysB++MS1fvW/rH7xuqN+7racfuyylX7pro5+56uJfuWohH7jpn9+4qN7fuChd37foHR+3p5xft2db37cm21+25prftuZaX7amWd+2ZhmftmXZX7Zl2R+2JZjftiWYn7YlWJ+2JVhfteVYX7XlWB+15RgfteUX37XlF9+15RffteUX37XlF9+1pReftaTXn7Wk15+1pNeftaTXn7Wk15+1pNeftaTXn7Wk15+1pNeftaTXn7Wk15+1pNeftaTXn7Wk15+1pNeftaTXX7Wk11+1pNdftaTXX7Wk11+1pNdftaTXX7Wk11+1pNdftaTXX7Wk11+1pNdftaTXX7Wk11+1pNeftaTXn7Xk15+15NefteUXn7XlF5+2JReftiUXn7YlV5+2ZVfftqWX37bll9+3Jdgft6YYX7fmmF+4ptifuSdY37nn2V+66Jmfu+laH70qWp++q1tfoBYOH+EWzl/iF47f41hPX+SZT9/l2lBf51tRH+kckd/qndKf7F8TX+4gVB/wIZTf8eLVn/OkFl/1ZVcf9yaX3/hnmF/56Jkf+ulZn/vqGd/8qpof/SraX/0rGl/9Ktpf/OqaX/wqWh/7aZmf+ijZH/jn2J/3ptgf9eXXX/Rklp/yY1Xf8KIVH+7glF/tH1Of614S3+mc0h/n29Ff5lqQn+UZkB/jmM+f4lfPH+FXDp/gVk4f/yubn72qmt+8aZpfuyjZ37poGV+5Z5kfuKcY37gmmJ+3plhft2YYH7bl2B+2pZfftmVX37ZlV9+2JVfftiUXn7XlF5+15RefteUXn7XlF5+15RefteUXn7XlF5+15RffteUX37XlF9+15RffteUX37XlGB+15VgfteVYH7XlWF+2JViftiWYn7YlmN+2ZdkftmXZX7ZmGZ+2phnftqZaX7bmmp+3Jtsft2cbn7ennF+3590fuChd37ho3p+46V+fuWog37nq4h+6a6OfuuxlH7utZt+8bmifvS+q374w7R+/Mm+foBnZH+Ca2p/hW5xf4dyeH+KdoB/jnuIf5GAkX+VhZp/mIqkf5yQrn+hlrl/pZzEf6OcxX+notF/rKjcf7Cv6H+1tvR/XV6AgF9hhoBhZYyAZGiSgGZrmIBobp6AanGjgGx0qIBud62AcHmxgHF8tYBzfrmAdH+8gHWBvoB1gsCAdoLBgHaDwoB2g8KAdoLBgHaCwIB1gb6AdH+8gHN+uYBxfLaAcHqygG53roBsdamAanKkgGhvnoBmbJmAZGmTgGJljYBfYoeAXV6BgLa39n+xsOp/rKnef6ij0n+jnMd/n5a8f5uQsX+Xi6d/k4Wdf4+AlH+Me4t/iXaDf4Zye3+DbnR/gGptf/zOzn73yMJ+88K3fvC9rn7suKV+6bOdfuavlX7kq49+4aiJft+lg37don9+3KB6ftqedn7ZnHN+2JpwfteZbX7Wl2t+1ZZpftSVZ37TlGV+05RkftKTY37SkmJ+0pJhftGRYH7RkV9+0ZFeftGQXn7QkF1+0JBdftCQXX7Qj1x+0I9cftCPXH7Qj1x+0I9bftCPW37Pj1t+z49bfs+PW37Pj1t+z49bfs+PW37Pjlt+z45bfs+OW37Pjlt+z45bfs+OW37Pjlt+z45afs+OWn7Pjlp+z45afs+OWn7Pjlp+z45afs+OWn7Pjlp+z45afs+OWn7Pjlp+z45afs+OWn7Pjlp+z45afs+OWn7Qj1t+0I9bftCPW37Qj1t+0I9bftCPW37Rj1t+0ZBbftKQW37SkVx+05FcftSSXX7Wk11+15ReftmVX37bl2B+3plhfuGbYn7lnmR+6aFlfu6kaH7zqGp++q1tfoBZOH+EWzl/iF87f41iPX+SZT9/mGlCf51tRH+jckd/qXZJf696TH+2f05/vINRf8GHVH/Hi1Z/zI9Yf9CSWn/UlVx/2Jddf9qZXn/bml9/3Jpff9yaX3/amV5/2Jhdf9aWXH/Sk1t/zpBZf8mMV3/DiVR/voVSf7iAT3+yfE1/q3dKf6VzR3+fb0V/mWtCf5RnQH+PYz5/imA8f4ZcOn+BWjh//K5ufvaqa37wpmh+66JmfuafZH7inGN+35phftyYYH7all9+2JReftaTXX7Vkl1+1JJcftORXH7SkFx+0ZBcftGQW37Rj1t+0I9bftCPW37Qj1t+0I9bftCPW37Qj1t+0I9bftCPW37Qj1x+0I9cftCPXH7Qj1x+0JBdftCQXX7QkF1+0ZBeftGQXn7RkV9+0ZFgftKSYH7SkmF+0pNiftOTZH7TlGV+1JVnftWWaX7Vl2t+1pltfteacH7ZnHN+2p52ftugen7don5+36WDfuGoiH7jq45+5q+UfumznH7st6R+77ysfvPBtn73x8F++83MfoBqbH+CbnN/hXJ6f4h2gX+Leop/j3+Sf5KEnH+WiqV/mo+wf56Vun+clLt/oJrGf6Sg0H+pp9x/ra3nf7Kz8n+2uv5/XWCEgF9jioBhZo+AY2mVgGVsmoBnbp6AaXGjgGtzp4BsdauAbXeugG54sYBverOAcHu1gHB7toBxfLeAcXy3gHB7toBwe7WAb3qzgG55sYBtd66AbHWrgGtzqIBpcaSAZ2+fgGZsmoBkaZWAYmaQgF9ji4BdYIWAt7r/f7K09H+uruh/qafdf6Wh0n+hm8d/nZW8f5mPsn+Viqh/kYWef41/lX+Ke4x/h3aEf4RyfH+BbnV//dTdfvjN0H70x8R+78G6fuu7sH7otqZ+5bGefuKtl37fqZB+3aaJftqjhH7YoH9+1516ftWbdn7UmXJ+0pdvftGWbH7QlGp+z5Nnfs+SZX7OkWR+zZBifs2PYX7Mj2B+zI5ffsyNXn7LjV1+y41cfsuMXH7LjFt+yoxbfsqMWn7Ki1p+yotafsqLWX7Ki1l+yotZfsqLWX7Ki1l+yotZfsqLWH7Ji1h+yYpYfsmKWH7Jilh+yYpYfsmKWH7Jilh+yYpYfsmKWH7Jilh+yYpYfsmKWH7Jilh+yYpYfsmKWH7Jilh+yYpYfsmKWH7Jilh+yYpYfsmKWH7Jilh+yYpYfsmKWH7Jilh+yYpYfsmKWH7Jilh+yopYfsqKWH7Ki1h+yotYfsqLWH7Ki1h+y4tYfsuLWX7LjFl+zIxZfs2NWX7OjVp+z45aftCPW37SkFt+1JJcftaTXX7YlV5+3Jdgft+aYX7jnWN+6KBlfu2kZ37zqGp++q1tfoBZOH+EXDl/iV87f41iPX+SZT9/l2lBf5xtQ3+hcEZ/pnRIf6t4Sn+we0x/tX5Of7mBUH+9hFJ/wIZTf8OIVH/FilV/xotVf8aLVn/Gi1Z/xYpVf8OJVH/Bh1N/voVSf7qCUX+2f09/snxNf615S3+odUl/o3FGf55uRH+ZakJ/lGdAf49jPn+KYDx/hl06f4JaOH/8r25+9aprfu+laH7qoWZ+5Z5kfuCbYn7dmGB+2ZZffteUXn7Ukl1+0pFcftGPW37Pjlp+zo5afs2NWn7MjFl+zIxZfsuMWX7Li1l+y4tZfsqLWX7Ki1h+yotYfsqLWX7Ki1l+yotZfsqLWX7Ki1l+yotZfsqLWX7Ki1l+yotafsqLWn7KjFp+yoxbfsuMW37LjFx+y41cfsuNXX7MjV5+zI5efsyOX37Nj2F+zZBifs6RY37OkmV+z5NnftCUaX7RlWx+0pdvftOZcn7Vm3V+1p16ftiffn7aooN+3KWJft+pj37hrZZ+5LGdfue1pX7ruq5+78C4fvPGw373zM9+/NPbfoFtdH+DcXt/hnWDf4p6i3+Nf5R/kISdf5SJp3+Yj7F/lo6xf5qTu3+emcV/op/Pf6al2n+qquV/rrDvf7K2+n9bXoKAXWGHgF9jjIBhZpGAYmiVgGRrmYBmbZ2AZ2+ggGhwo4BpcqaAanOogGp0qoBrdauAa3WrgGt1q4BrdauAa3SqgGpzqIBpcqaAaHGkgGdvoYBmbZ2AZGuagGNploBhZpGAX2SMgF1hiIBbXoOAs7f7f6+x8X+rq+Z/p6Xbf6Kf0X+emsZ/mpS8f5eOsn+Tiah/j4Sff4x/ln+Ieo1/hXaFf4Jxfn//2+1++tPffvXM037wxsd+7MC8fui6sn7ktah+4bCgft6smH7bqJF+2aSKftahhH7Unn9+0pt6ftGZdn7Pl3J+zpVvfs2TbH7MkWl+y5BnfsqPZH7JjmN+yY1hfsiMX37Hi15+x4tdfseKXH7Gilt+xolafsaJWn7GiVl+xYhZfsWIWH7FiFh+xYhYfsWIV37FiFd+xYdXfsWHV37Fh1d+xIdWfsSHVn7Eh1Z+xIdWfsSHVn7Eh1Z+xIdWfsSHVn7Eh1Z+xIdWfsSHVn7Eh1Z+xIdWfsSHVn7Eh1Z+xIdWfsSHVn7Eh1Z+xIdWfsSHVn7Eh1Z+xIdWfsSHVn7Eh1Z+xIdWfsSHVn7Eh1Z+xIdWfsSHVn7Eh1Z+xIdWfsSHVn7Eh1Z+xYdWfsWHVn7Fh1Z+xYdWfsWIVn7GiFZ+xohWfsaIV37HiVd+yIlXfsmKWH7Ki1h+y4xZfs2NWX7Pjlp+0ZBbftSSXH7XlF1+2pZfft6ZYX7inGN+56Blfu2kZ37zqGp++q1sfoBZOH+EWzl/iF47f4xhPX+QZD5/lWdAf5lqQn+dbUR/oXBGf6VzR3+pdkl/rHhKf656S3+xe0x/sn1Nf7N9TX+0fk5/tH1Of7N9TX+xfE1/r3pMf615S3+qdkl/pnRIf6NxRn+fbkV/mmxDf5ZoQX+SZT9/jmI9f4lfO3+FXDp/gVo4f/yvbn71qmt+76VofumhZX7knmN+35phftuXYH7YlV5+1ZJdftKQW37Pj1p+zY1afsyMWX7Ki1h+yYpYfsiKV37HiVd+x4lXfsaIV37GiFZ+xYhWfsWIVn7Fh1Z+xYdWfsWHVn7Fh1Z+xYdWfsWHVn7Fh1Z+xYdXfsWHV37Fh1d+xYhXfsWIV37FiFh+xYhYfsWIWH7FiFl+xolZfsaJWn7GiVp+xopbfseKXH7Hi11+x4tefsiMX37IjWF+yY5ifsqPZH7LkGZ+zJFpfs2Ta37OlG5+z5ZyftGYdX7Sm3p+1J1+ftaghH7YpIl+26eQft6rl37hr59+5LSnfue5sH7rv7p+8MXFfvTL0X750t5+/trrfoJxfX+FdYR/iHmMf4t+lX+Pg55/koinf5CHp3+UjLB/mJK6f5uXxH+fnc1/o6LXf6eo4X+rret/r7L1f7K4/n9bXoOAXGGIgF5jjIBfZZCAYWeTgGJploBjapmAZGycgGVtnoBlbZ+AZm6ggGZuoYBmbqGAZm6ggGVun4BlbZ6AZGycgGNqmoBiaZeAYWeUgGBlkIBeY4yAXWGIgFtehICzuP9/r7P2f6uu7H+nqOJ/pKPZf6Cdz3+cmMV/mJK7f5WNsn+RiKh/jYOff4p+l3+HeY5/hHWGf4Fxf3/82u9+99PifvLM1X7txcl+6b++fuW5tH7htKp+3q+hftuqmX7YppJ+1aOLftOfhX7RnIB+z5l7fs2Xdn7MlXJ+ypNvfsmRa37Ij2l+x45mfsaNZH7Fi2J+xYtgfsSKXn7DiV1+w4hcfsKIW37Ch1p+wodZfsKGWH7Bhlh+wYZXfsGFV37BhVZ+wYVWfsCFVn7AhVV+wIRVfsCEVX7AhFV+wIRVfsCEVH7AhFR+wIRUfsCEVH7AhFR+wIRUfsCEVH7AhFR+wIRUfsCEVH7AhFR+wIRUfsCEVH7AhFR+wIRUfsCEVH7AhFR+wIRUfsCEVH7AhFR+wIRUfsCEVH7AhFR+wIRUfsCEVH7AhFR+wIRUfsCEVH7AhFR+wIRUfsCEVH7AhFR+wIRUfsCEVH7AhFR+wIRUfsCEVH7BhFR+wYVUfsGFVH7ChVR+woVVfsOGVX7EhlV+xYdWfsaIVn7HiVd+yYpXfsqLWH7NjVl+z49aftKRW37Vk11+2ZZeft2ZYH7inGJ+56BkfuykZ37yqGl++axsfv+xb36DWzl/hl06f4pgPH+NYj1/kWU/f5RnQH+XaUF/mmxDf51tRH+fb0V/oXBGf6JxRn+jckd/pHJHf6NyR3+jcUZ/oXFGf6BvRX+ebkR/m2xDf5hqQn+VaEF/kmY/f49jPn+LYTx/iF47f4RcOX+AWTh/+65tfvSpan7upWh+6aFlfuSdY37fmmF+2pdffteUXX7Tklx+0I9bfs2OWn7LjFl+yYpYfsiJV37GiFZ+xYdWfsSHVn7DhlV+woZVfsKFVX7ChVV+wYVUfsGFVH7BhFR+wIRUfsCEVH7AhFR+wIRUfsCEVH7AhFR+wIRUfsCEVX7AhFV+wIRVfsCEVX7AhVV+wIVWfsGFVn7BhVZ+wYVXfsGGV37Bhlh+woZYfsKHWX7Ch1p+wohbfsOIXH7DiV1+xIpefsSKYH7Fi2F+xoxjfseOZn7Ij2h+yZFrfsqSbn7LlHJ+zZd2fs+Zen7RnH9+05+EftWiin7YppF+2qqYft6uoH7hs6l+5biyfum+vX7txMh+8cvTfvbS4H782e1+gHB+f4N0hX+GeY1/in2Vf42Cnn+LgZ5/j4amf5KLr3+VkLh/mZXBf52ayn+gn9N/pKTdf6ep5X+qru5/rrP3f7G3/39aXYOAW1+GgFxhioBdY42AXmSPgF9mkYBgZ5OAYWeVgGFoloBhaJaAYWiWgGFoloBhZ5WAYGeTgF9mkoBfZJCAXmONgF1hioBbYIeAWl6DgFhcgICus/h/q6/vf6iq53+kpd5/oaDVf52bzH+ZlsJ/lpG5f5KMsH+Ph6d/jIKff4h9ln+FeY5/gnSHf//h/3762fF+9NLjfvDL137rxMt+577AfuO4tn7fs6x+266jftiqm37VpZN+06KNftCehn7Om4F+zJh7fsqWd37Jk3N+x5FvfsaPa37Fjmh+xIxmfsOLY37CimF+wYhffsCIXn7Ah1x+v4Zbfr+FWn6/hVl+voRYfr6EV36+hFZ+vYNWfr2DVX69g1V+vYJUfr2CVH69glR+vYJUfryCU368glN+vIJTfryCU368gVN+vIFTfryBU368gVJ+vIFSfryBUn68gVJ+vIFSfryBUn68gVJ+vIFSfryBUn68gVJ+vIFSfryBUn68gVJ+vIFSfryBUn68gVJ+vIFSfryBUn68gVJ+vIFSfryBUn68gVJ+vIFSfryBUn68gVJ+vIFSfryBUn68gVJ+vIFSfryBUn68gVJ+vIFSfryBUn69glJ+vYJSfr2CUn69glN+voJTfr6DU36/g1N+v4NTfsCEVH7BhVR+woVVfsOGVX7Fh1Z+x4lXfsmKV37LjFh+zo5aftGQW37Uk1x+2JVeftyYYH7hm2J+5p9kfuujZn7wp2h+9qtrfvyvbX6BWTh/hFs5f4ZdOn+JXzt/jGE8f45jPX+QZD5/kmY/f5RnQH+VaEB/lWhBf5ZoQX+WaEF/lWhAf5RnQH+TZj9/kWU/f49jPn+NYj1/imA8f4deO3+EXDl/glo4f/6wbn74rGx+8qhpfu2kZ37ooGV+451jft6ZYX7all9+1pNdftKRW37Pj1p+zI1ZfsqLWH7HiVd+xohWfsSHVX7ChlV+wYVUfsCEVH7AhFR+v4NTfr6DU36+glN+vYJTfr2CU369glN+vYJTfr2CU368glN+vIJTfryCU368glN+vIJTfryCU368glN+vIJTfryCU368glN+vYJUfr2CVH69glR+vYJUfr2DVX69g1V+vYNWfr6DVn6+hFd+voRYfr+FWX6/hVp+v4ZbfsCHXH7Ah11+wYhffsKJYX7Di2N+w4xlfsWNaH7Gj2t+x5FufsiTcn7KlXZ+zJh7fs6bgH7QnoZ+0qGMftWlkn7YqZp+266ift6yq37iuLR+5r2+furDyX7vytV+9NHifvnY737+4P1+gnSGf4V4jX+IfZV/hnyVf4mAnX+NhKV/kImtf5OOtX+Wkr5/mpfGf52cz3+goNd/o6Xff6ap53+pre5/rLH1f661/H9YXIGAWV2DgFpfhoBbYIiAXGGJgFxhi4BcYoyAXWKMgF1ijIBcYoyAXGGLgFxhioBbYIiAWl+GgFldhIBYXIGAr7X9f6yy9n+pru9/p6rof6Sl4H+hodh/nZzQf5qYx3+Xk79/lI63f5CKrn+NhaZ/ioGef4d8ln+EeI5/gXSHf/3g/3732PJ+8tHlfu3K2H7pxMx+5b7BfuG4t37dsq5+2a6lftapnH7TpZV+0aGOfs6dh37MmoJ+ypd8fsiUeH7GknN+xZBvfsOObH7CjGl+wYtmfsCJY36/iGF+vodffr6GXX69hVx+vIRafryDWX68g1h+u4JXfruCVn67gVV+uoFVfrqBVH66gVR+uoBTfrqAU365gFN+uYBSfrmAUn65gFJ+uX9Sfrl/Un65f1F+uX9Rfrl/UX65f1F+uX9Rfrl/UX65f1F+uX9Rfrl/UX65f1F+uX9Rfrl/UX65f1F+uX9Rfrl/UX65f1F+uX9Rfrl/UX65f1F+uX9Rfrl/UX65f1F+uX9Rfrl/UX65f1F+uX9Rfrl/UX65f1F+uX9Rfrl/UX65f1F+uX9Rfrl/UX65f1F+uX9Rfrl/UX65f1F+uX9Rfrl/UX66f1F+uoBRfrqAUX66gFF+u4BRfruBUn68gVJ+vYJSfr6CU36/g1N+wIRUfsKFVH7DhlV+xYhWfsiJV37Ki1h+zY1ZftCPW37Tklx+15VeftuXX37fmmF+5J5jfuihZX7tpGd+8qhpfvera377rm1+gFk3f4JaOH+EWzl/hV06f4deOn+IXzt/iV87f4pgPH+KYDx/imA8f4lfO3+IXzt/h147f4ZdOn+EXDl/gls4f4BZOH/9r25++KxsfvOpan7vpWh+6qJmfuWfZH7hm2J+3ZhgftiWXn7Vk11+0ZBbfs6OWn7LjFh+yIpXfsaIVn7Eh1V+woZVfsGEVH6/hFN+voNTfr2CU368gVJ+vIFSfruBUn67gFF+uoBRfrqAUX66gFF+uX9Rfrl/UX65f1F+uX9Rfrl/UX65f1F+uX9Rfrl/UX65f1F+uX9Rfrl/Un65f1J+uYBSfrmAUn65gFJ+uYBTfrqAU366gFN+uoFUfrqBVH66gVV+u4FVfruCVn67gld+u4NYfryDWX68hFp+vYVbfr2GXX6+h19+v4hhfsCJY37BimV+woxofsOOa37EkG9+xpJzfsiUd37Jl3x+y5qBfs6dh37QoI1+06SUftaom37ZraR+3LKsfuC3tn7kvcB+6MPLfu3J137y0ON+99fwfvzf/X6Ac4Z/g3eNf4J2jH+FepN/iH6bf4uDo3+Oh6p/kYuyf5SPun+XlMF/mpjJf5yc0H+foNd/oqTef6Sn5X+nq+t/qa7wf6ux9X+ss/p/rrX9f1dbgIBYXIGAWFyCgFhcgoBYXIKAWFyCgFhcgYBXW4CArrX+f62z+n+rsfZ/qa7xf6er63+lqOZ/oqTff6Ch2H+dndF/mpnKf5eUwn+UkLt/kYyzf46Hq3+Lg6R/iH+cf4V7lH+Cd41/f3OGf/re/3711/J+8NDlfuvJ2X7nw81+473Dft+3uH7bsq9+2K2mftSonn7RpJZ+z6CPfsydiX7KmYN+yJZ9fsaUeH7EkXR+wo9wfsGNbH7Ai2l+v4lmfr6IY369h2F+vIVffruEXX66g1t+uoNafrmCWH65gVd+uYFWfriAVX64gFV+uH9Ufrd/U363f1N+t39Sfrd+Un63flJ+t35Rfrd+UX62flF+tn5RfrZ9UH62fVB+tn1QfrZ9UH62fVB+tn1QfrZ9UH62fVB+tn1QfrZ9UH62fVB+tn1QfrZ9T362fU9+tn1PfrZ9T362fU9+tn1PfrZ9T362fU9+tn1PfrZ9T362fU9+tn1PfrZ9T362fU9+tn1PfrZ9T362fU9+tn1PfrZ9T362fU9+tn1PfrZ9T362fU9+tn1PfrZ9T362fU9+tn1PfrZ9T362fVB+t31Qfrd+UH63flB+t35Qfrh+UH64flB+uX9Qfrl/UX66gFF+u4FRfryBUn69glJ+v4NTfsCEVH7ChlV+xIdVfsaJVn7Ji1d+zI1Zfs+PWn7SkVt+1ZNdftmWXn7dmWB+4ZtifuSeY37ooWV+7KRnfvCmaH7zqWp+9qtrfvmtbH77r21+/bBufv+xb36AWTd/gFk3f4BZN3//sW9+/rBufvyvbX76rWx+96xrfvSpan7xp2l+7aRnfuqiZX7mn2R+4pxift6aYX7al19+15RdftOSXH7Qj1p+zY1ZfsqLWH7HiVd+xYhWfsOGVX7BhVR+v4RTfr6CU368glJ+u4FSfrqAUX66gFF+uX9Rfrh/UH64flB+t35Qfrd+UH63flB+t35Qfrd9UH62fVB+tn1QfrZ9UH62fVB+tn1QfrZ9UH62fVB+tn1QfrZ9UH62fVB+tn1QfrZ+UX62flF+t35Rfrd+UX63flJ+t35Sfrd/Un63f1N+t39Tfrh/VH64gFR+uIBVfrmBVn65gVd+uYJYfrqDWn66g1t+u4RdfryFXn69hmF+vYhjfr6JZn7Ai2h+wY1sfsKPb37EkXN+xpN4fseWfX7KmYJ+zJyIfs6gjn7RpJV+1KidftespX7bsa5+3re3fuK8wX7mwsx+68jXfu/P43701vB++d39fn9yhX9+cYR/gHWLf4N5kn+GfZl/iICgf4uEp3+OiK5/kYy1f5OQvH+WlMJ/mJfJf5ubz3+dntV/n6Hbf6Gk4H+jpuR/panof6ar7H+nrO5/qK3wf6iu8n+pr/N/qa/zf6iu8n+orfF/p6zvf6ar7H+lqel/o6flf6Kk4H+gott/nZ/Wf5ub0H+ZmMp/lpTDf5SRvX+RjbZ/jomvf4yFqH+JgaF/hn2Zf4N5k3+BdYx/fnKFf/fc/X7z1fF+7s/kfunI2X7lws5+4bzDft23uX7ZsbB+1q2nftOon37QpJd+zaCQfsucin7ImYR+xpZ+fsSTeX7CkXV+wY5wfr+MbX6+iml+vYlmfryHY367hmF+uoRffrmDXX64glt+uIFZfreBWH63gFd+tn9WfrZ/VX62flR+tX5TfrV+U361fVJ+tX1SfrV9UX60fVF+tHxQfrR8UH60fFB+tHxQfrR8T360fE9+tHxPfrR8T360fE9+tHxPfrR7T360e09+tHtPfrR7T360e09+tHtOfrN7Tn6ze05+s3tOfrN7Tn6ze05+s3tOfrN7Tn6ze05+s3tOfrN7Tn6ze05+s3tOfrN7Tn6ze05+s3tOfrN7Tn6ze05+s3tOfrN7Tn6ze05+s3tOfrN7Tn6ze05+tHtOfrR7Tn60e05+tHtOfrR7Tn60e05+tHxOfrR8Tn60fE9+tHxPfrV8T361fE9+tX1PfrZ9T362fU9+t35Qfrh+UH64f1B+uYBRfruAUX68gVJ+vYJTfr+EU37BhVR+w4ZVfsWIVn7Iild+yoxYfs2OWX7QkFp+05JcftaUXX7Zll5+3Jhgft+bYX7inWJ+5Z9jfuegZX7qomV+7KNmfu2kZ37upWd+76Zofu+maH7vpmh+76Vofu6lZ37spGd+6qJmfuihZX7mn2R+451jfuCbYX7dmWB+2pdffteVXn7Uklx+0ZBbfs6OWn7LjFh+yYpXfsaJVn7Eh1V+woVUfsCEVH6+g1N+vIJSfruBUn66gFF+uX9Rfrh+UH63flB+tn1QfrZ9T361fU9+tXxPfrV8T361fE9+tHxPfrR8T360fE9+tHxPfrR8T360fE9+tHxPfrR8T360fE9+tHxPfrR8T360fE9+tHxPfrR8T360fE9+tHxQfrR8UH60fFB+tHxQfrR9UX61fVF+tX1RfrV9Un61flN+tX5TfrZ+VH62f1V+tn9WfreAV363gVh+uIFZfriCW365g11+uoRffruFYX68h2N+vYhmfr6KaX6/jGx+wY5wfsKQdH7Ek3l+xpV+fsiYg37KnIl+zZ+Pfs+jln7Sp55+1qymftmxr37dtrh+4LvCfuTBzH7px9d+7c7jfvLU73732/x+9Nn5fnxwgn9/c4l/gXePf4R6ln+Gfpx/iYKif4uFqX+Oia9/kIy1f5KPu3+UksF/l5XGf5iYy3+am9B/nJ3Uf52f2H+eodt/n6Ldf6Cj33+hpOB/oaThf6Gk4X+hpOB/oKPff6Ci3X+fodt/nZ/Yf5yd1H+am9B/mZnMf5eWx3+Vk8J/k5C8f5CMtn+OibB/i4aqf4mCo3+Gfp1/hHuWf4F3kH9/dIp/fXCDf/Xa+37w0+9+7M3jfufH2H7jwc1+37vDftu2un7YsbB+1ayoftGooH7Oo5h+zJ+Rfsmci37HmYV+xZV/fsOTen7BkHV+v45xfr6MbX68imp+u4hnfrqGZH65hWF+uIRffreCXX63gVt+toBZfrWAWH61f1d+tH5VfrR+VH60fVR+s31TfrN8Un6zfFF+s3xRfrN8UH6ye1B+sntQfrJ7T36ye09+sntPfrJ7T36yek5+snpOfrJ6Tn6yek5+snpOfrJ6Tn6yek5+sXpOfrF6Tn6xek5+sXpOfrF6Tn6xek5+sXpNfrF6TX6xek1+sXpNfrF6TX6xek1+sXpNfrF6TX6xek1+sXpNfrF6TX6xek1+sXpNfrF6TX6xek1+sXpNfrF6TX6xek1+sXpNfrF6TX6xek1+sXpNfrF6TX6xek1+sXpNfrJ6TX6yek1+snpNfrJ6TX6yek5+snpOfrJ6Tn6yek5+s3tOfrN7Tn6ze05+tHtOfrR8T361fE9+tX1PfrZ9T363flB+uH9QfrmAUX67gVF+vIJSfr6DU37AhFN+woVUfsSHVX7GiVZ+yIpXfsuMWH7Njll+0I9aftKRW37Vk1x+15VdftmWXn7bmF9+3Zlgft6aYX7gm2F+4ZtifuGcYn7hnGJ+4ZxifuGcYn7gm2F+35phft2ZYH7cmF9+2pdfftiVXn7Vk11+05JcftGQW37Ojlp+zI1ZfsmLWH7HiVd+xYdWfsKGVX7AhVR+v4NTfr2CUn67gVJ+uoBRfrl/UH64flB+t35QfrZ9T361fE9+tHxPfrR8Tn6ze05+s3tOfrN7Tn6ye05+snpOfrJ6Tn6yek5+snpOfrJ6Tn6yek5+snpOfrJ6Tn6yek5+snpOfrJ6Tn6yek5+snpOfrJ6Tn6yek5+snpOfrJ7T36ye09+sntPfrJ7T36ye1B+sntQfrN7UH6zfFF+s3xRfrN8Un6zfVN+tH1TfrR+VH60flV+tX9WfrWAWH62gFl+t4FbfreCXX64g19+uYVhfrqGY367iGZ+vIlpfr6LbX6/jXF+wZB1fsKSeX7ElX5+x5iEfsmbin7Ln5B+zqOXftGnn37Uq6d+17Cvftu1uH7fu8J+48DMfufG137rzOJ+79Ptfu3Q637x1vZ+e26Af31xhn9/dYx/gXiSf4R7mH+Gfp5/iIKjf4qFqX+MiK5/jouzf5CNuH+SkL1/lJLBf5WUxX+Wlsh/mJfLf5iZzX+Zms9/mprQf5qb0H+am9F/mprQf5maz3+Zmc1/mJjLf5eWyH+VlMV/lJLBf5KQvX+Rjrl/j4u0f42Ir3+Lhap/iIKkf4Z/nn+EfJh/gniTf391jX99cod/e2+Bf/LX937u0ex+6cvhfuXF137hwMx+3brDftq1uX7WsLB+06uoftCnoH7No5l+yp+Sfsibi37GmIV+xJWAfsKSe37AkHZ+vo1yfr2Lbn67iWp+uodnfrmGZH64hGJ+t4NffraCXX61gVt+tYBZfrR/WH6zfld+s31VfrN9VH6yfFN+snxSfrJ7Un6xe1F+sXtQfrF6UH6xelB+sXpPfrB6T36wek9+sHlOfrB5Tn6weU5+sHlOfrB5Tn6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrF5TX6xeU1+sXpNfrF6TX6yek5+sntOfrN7Tn60e05+tHxPfrV9T362fU9+t35Qfrh/UH66gFF+u4FRfr2CUn6+g1N+wIRUfsKGVH7Eh1V+xohWfsiKV37Ki1h+zI1Zfs2OWX7Pj1p+0ZBbftKRW37Tklx+1JNcftWTXX7WlF1+1pRdftaUXX7VlF1+1ZNcftSSXH7Tklx+0ZFbftCQWn7Ojlp+zI1ZfsqMWH7Iild+xolWfsWIVn7DhlV+wYVUfr+EU369glJ+vIFSfrqAUX65f1F+uH5QfrZ9UH61fU9+tXxPfrR8Tn6ze05+s3tOfrJ6Tn6yek1+sXpNfrF6TX6xeU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5TX6weU1+sHlNfrB5Tn6weU5+sHlOfrB5Tn6wek5+sHpPfrF6T36xek9+sXpQfrF7UH6xe1F+sXtSfrJ8Un6yfFN+sn1UfrN9VX6zflZ+tH9YfrSAWX61gFt+toJdfreDX364hGF+uYVkfrqHZ367iWp+vIttfr6NcX6/j3Z+wZJ6fsOVf37FmIV+yJuLfsqfkX7Noph+0KafftOrp37Wr69+2bS4ft25wX7hv8t+5cTVfunK4H7myN1+6s7nfu7T8X7y2fx+e2+Df31yiH9/dY5/gXiTf4N7mH+Ffp1/h4Gif4mDp3+Lhqt/jIivf46Ks3+PjLZ/kI25f5GPvH+SkL5/kpG/f5ORwH+TksF/k5LBf5ORwH+Tkb9/kpC+f5GPvH+Qjrl/j4y3f46Ks3+MiLB/i4asf4mDp3+HgaN/hX6ef4N7mX+BeZR/f3aOf31ziX97cIR/89r9fu/U837rzuh+58nefuPD1H7fvst+3LnBfti0uH7Vr7B+0quofs+moH7Mopl+yZ+SfsebjH7FmIZ+wpWBfsCSfH6/j3d+vY1zfruLb366iWt+uYdofriFZX63hGJ+toJgfrWBXX60gFt+s39afrN+WH6yfVd+sn1VfrF8VH6xe1N+sHtSfrB7UX6welF+sHpQfq96UH6veU9+r3lPfq95Tn6veU5+r3hOfq94TX6veE1+rnhNfq54TX6ueE1+rnhNfq54TX6ueEx+rnhMfq54TH6ueEx+rnhMfq54TH6ueEx+rnhMfq54TH6ueEx+rnhMfq54TH6ud0x+rndMfq53TH6ud0x+rndMfq53TH6ud0x+rndMfq53TH6ud0x+rndMfq53TH6ud0x+rndMfq53TH6ud0x+rndMfq53TH6ud0x+rndMfq53TH6ueEx+rnhMfq54TH6ueEx+rnhMfq54TH6ueEx+rnhMfq94TH6veEx+r3hMfq94TH6veUx+sHlNfrB5TX6xeU1+sXpNfrJ6TX6ye05+s3tOfrR8Tn61fU9+tn1Pfrd+UH64f1B+uoBRfruBUn69glJ+voNTfsCEU37BhVR+w4ZVfsSHVX7GiFZ+x4lXfsiKV37Ji1h+yoxYfsuMWH7MjVl+zI1ZfsyNWX7MjVl+zI1ZfsuMWH7LjFh+yotYfsmLV37Iild+xolWfsWIVn7Dh1V+woZUfsCEVH6/g1N+vYJSfryBUn66gFF+uX9Rfrh+UH62flB+tX1PfrR8T360e05+s3tOfrJ6Tn6xek1+sXpNfrB5TX6weU1+sHlNfq94TH6veEx+r3hMfq94TH6veEx+rnhMfq54TH6ueEx+rnhMfq54TH6ueEx+rnhMfq54TH6ueEx+rnhMfq54TH6ueE1+rnhNfq54TX6ueE1+rnhNfq94TX6veE1+r3hOfq95Tn6veU5+r3lPfq95T36veVB+sHpQfrB6UX6welF+sHtSfrF7U36xfFR+sn1VfrJ9Vn6zflh+s39ZfrSAW361gV1+tYJffraEYn63hWR+uYdnfrqIa367im5+vY1yfr6Pdn7Aknt+wpSAfsSXhX7Hm4t+yZ6RfsyimH7Opp9+0aqnftSur37Ys7d+27jAft+9yX7iwtN+4MDQfuTF2X7nyuJ+69Dsfu/V9n7z2v9+e3CEf31yiX9/dY5/gHeSf4J6ln+EfJt/hX6ff4eAon+IgqZ/iYSpf4qFq3+Lh65/jIivf4yJsX+NibJ/jYmyf42Jsn+NibJ/jImxf4yIsH+Lh65/ioasf4mEqX+Ig6Z/h4Gjf4V/n3+EfJt/gnqXf4F4k39/dY5/fXOKf3twhX95bYB/79b3fuzQ7X7oy+R+5MbafuHB0X7dvMh+2re/ftayt37Trq9+0Kqnfs6moH7Lopl+yJ6SfsabjH7El4Z+wpSBfsCSfH6+j3d+vI1zfruKb365iGt+uIdofreFZX62g2J+tYJgfrSBXn6zgFx+sn9afrJ+WH6xfVd+sHxVfrB7VH6we1N+r3pSfq96UX6veVF+rnlQfq55T36ueE9+rnhOfq54Tn6ueE5+rXhNfq14TX6td01+rXdNfq13TH6td0x+rXdMfq13TH6td0x+rXdMfq13TH6td0x+rXdMfq13TH6td0x+rXdMfq13S36td0t+rXdLfq13S36td0t+rXdLfq13S36td0t+rXdLfq13S36td0t+rXdLfq13S36td0t+rXdLfq13S36td0t+rXdLfq13S36td0t+rXdLfq13S36td0t+rXdLfq13S36td0t+rXdLfq13S36td0t+rXdLfq13S36td0t+rXdLfq13S36td0t+rXdMfq13TH6ud0x+rndMfq54TH6ueEx+r3hMfq94TH6weU1+sHlNfrF6TX6yek1+sntOfrN7Tn60fE5+tXxPfrZ9T363flB+uH9QfrmAUX67gVF+vIFSfr2CUn6+g1N+v4RTfsCFVH7BhVR+woZVfsOHVX7Eh1V+xIdVfsSHVX7EiFV+xIdVfsSHVX7Eh1V+w4dVfsOGVX7ChlR+wYVUfsCEU36/g1N+vYNSfryCUn67gVF+uoBRfrl/UH63flB+tn1PfrV9T360fE9+s3tOfrN7Tn6yek1+sXpNfrB5TX6weU1+r3lMfq94TH6veEx+rnhMfq54TH6ud0x+rndMfq13TH6td0x+rXdMfq13TH6td0x+rXdMfq13TH6td0x+rXdMfq13TH6td0x+rXdMfq13TH6td0x+rXdMfq13TH6td0x+rXdMfq13TH6td01+rXdNfq14TX6teE1+rnhOfq54Tn6ueE5+rnhPfq55T36ueVB+r3lQfq96UX6velJ+sHtTfrB7VH6wfFV+sX1WfrJ+WH6yflp+s39bfrSBXX60gmB+tYNifreFZX64hmh+uYhrfrqKb368jHN+vo93fr+Re37BlIB+w5eGfsaai37InpJ+yqGYfs2ln37QqaZ+062uftaytn7Ztr5+3bvHftq5xH7evsx+4cLVfuTH3X7ozOZ+69Hufu7V9355bYB/em+Ef3xxiH99dIx/f3aQf4B4k3+BepZ/g3uZf4R9nH+Ffp5/hX+gf4aAon+HgaN/h4Gkf4eBpX+HgqV/h4Gkf4eBpH+GgKJ/hn+hf4V+n3+EfZx/g3uaf4J6l3+AeJN/f3aQf350jH98coh/em+Ef3ltgH/v1vh+7NHwfujM537lyN5+4cPWft6+zX7busV+2LW9ftWxtX7SrK1+z6imfsyln37KoZh+x52SfsWajH7Dl4Z+wZSBfr+RfH69j3h+u4xzfrqKcH64iGx+t4ZpfraFZn61g2N+tIJgfrOAXn6yf1x+sX5afrF9WH6wfFd+sHxVfq97VH6velN+rnpSfq55UX6ueVB+rXhQfq14T36teE9+rXhOfq13Tn6sd01+rHdNfqx3TX6sd0x+rHdMfqx2TH6sdkx+rHZMfqx2TH6sdkx+rHZLfqx2S36sdkt+rHZLfqx2S36sdkt+rHZLfqx2S36sdkt+rHZLfqt2S36rdkt+q3ZLfqt2S36rdkt+q3ZLfqt2S36rdkt+q3ZLfqt2S36rdkt+q3ZLfqt2S36rdkt+q3ZLfqt2S36rdkt+q3ZLfqt2S36rdkt+q3ZLfqt2S36rdkt+q3ZLfqt2S36sdkt+rHZLfqx2S36sdkt+rHZLfqx2S36sdkt+rHZLfqx2S36sdkt+rHZLfqx2S36td0t+rXdLfq13S36ud0x+rndMfq54TH6veEx+r3hMfrB5TX6xeU1+sXpNfrJ6Tn6ze05+tHxOfrV8T362fU9+tn5Pfrd+UH64f1B+uYBRfrqAUX67gVF+vIFSfryCUn69glJ+vYNSfr6DU36+g1N+voNTfr6DU36+g1N+voNSfr2CUn69glJ+vIJSfruBUX66gFF+uoBRfrl/UH64flB+t35QfrZ9T361fE9+tHxOfrN7Tn6ye05+snpNfrF6TX6weU1+sHlNfq94TH6ueEx+rnhMfq53TH6td0x+rXdLfq13S36td0t+rHZLfqx2S36sdkt+rHZLfqx2S36sdkt+rHZLfqx2S36sdkt+rHZLfqx2S36sdkt+rHZLfqx2S36sdkt+rHZLfqx2S36sdkt+rHZMfqx2TH6sdkx+rHZMfqx3TH6sd0x+rHdNfqx3TX6sd01+rXdOfq14Tn6teE9+rXhPfq14UH6ueVB+rnlRfq56Un6velN+r3tUfrB8VX6wfFd+sX1YfrF+Wn6yf1x+s4BefrSBYH61g2J+toRlfreGaH64iGt+uopvfruMc369jnd+vpF8fsCUgX7CloZ+xZqLfsedkX7JoJh+zKSefs+opX7RrKx+1LC0fte0vH7Vsrl+2LbAftu7yH7ev89+4cPXfuTI337nzOd+6tDufu3U9n7w2P1+eW6Cf3pwhX98cYh/fXOLf351jn9/dpB/gHeTf4B4lH+BeZZ/gXqXf4J6mH+Ceph/gnqYf4J6mH+Bepd/gXmWf4B4lX+Ad5N/f3aRf351jn99c4x/fHKJf3twhn95boJ/8Nn+fu3V937r0e9+6MzofuXI4H7ixNh+37/Qfty7yX7Zt8F+1rO5ftOvsn7Qq6t+zaekfsujnn7IoJd+xpyRfsSZjH7CloZ+wJOBfr6RfH68jnh+u4x0frmKcH64iGx+toZpfrWEZn60g2N+s4FhfrKAXn6xf1x+sX5afrB9WX6vfFd+r3tWfq57VH6uelN+rXlSfq15UX6teFB+rXhQfqx4T36sd05+rHdOfqx3Tn6sd01+q3ZNfqt2TH6rdkx+q3ZMfqt2TH6rdkx+q3ZLfqt2S36rdUt+q3VLfqt1S36rdUt+q3VLfqt1S36rdUt+q3VLfqt1S36rdUt+q3VLfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqt1Sn6rdUp+q3VKfqt1Sn6rdUp+q3VKfqt1Sn6rdUp+q3VLfqt1S36rdkt+q3ZLfqx2S36sdkt+rHZLfqx2S36td0t+rXdLfq53TH6ueEx+rnhMfq94TH6weU1+sHlNfrF6TX6yek1+sntOfrN7Tn60fE5+tXxPfrV9T362fU9+t35Pfrd+UH64flB+uH9Qfrh/UH65f1B+uX9Qfrl/UH65f1B+uX9Qfrl/UH64f1B+uH9Qfrd+UH63flB+tn1PfrV9T361fE9+tHxOfrN7Tn6ze05+snpNfrF6TX6weU1+sHlNfq94TH6veEx+rnhMfq53TH6td0x+rXdLfq13S36sdkt+rHZLfqx2S36rdkt+q3ZLfqt2S36rdUt+q3VLfqt1S36rdUt+q3VLfqt1S36rdUt+q3VLfqt1S36rdUt+q3VLfqt1S36rdUt+q3VLfqt1S36rdUt+q3VLfqt1S36rdkt+q3ZLfqt2TH6rdkx+q3ZMfqt2TH6rdkx+q3ZNfqx3TX6sd01+rHdOfqx3Tn6seE9+rHhQfq14UH6teVF+rXlSfq56U36uelR+r3tVfq98V36wfVh+sX5afrF/XH6ygF5+s4FgfrSDY361hGZ+toZpfreIbH65im9+uoxzfryOd36+kHx+v5OAfsGWhn7EmYt+xpyRfsifl37Lo51+zaajftCqqn7SrrF+0KyuftOwtX7WtLx+2LfCftu7yX7ev9B+4cPXfuPH3n7myuV+6M7rfuvS8n7t1fh+79j9fnhtgX95b4N/enCGf3txh398col/fHKKf3xzi399c4x/fXSMf310jH99c4x/fHOLf3xzi398col/e3GIf3pwhn95b4R/eW2Bf/DY/n7t1fh+69LyfunP7H7my+Z+5MfffuHD2H7ewNF+27zKftm4w37WtLx+07C2ftGtr37Oqah+zKWifsminH7Hn5Z+xZuQfsOYi37BloZ+v5OBfr2QfH67jnh+uox0friKcH63iGx+toZpfrWEZn6zg2N+soFhfrKAX36xf1x+sH5bfq99WX6vfFd+rntWfq56VH6telN+rXlSfqx4UX6seFB+rHhQfqx3T36rd05+q3dOfqt2TX6rdk1+q3ZNfqp2TH6qdkx+qnVMfqp1TH6qdUt+qnVLfqp1S36qdUt+qnVLfqp1S36qdUt+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqp0Sn6qdEp+qnRKfqp0Sn6qdEp+qnRKfqp0Sn6qdEp+qnRKfqp0Sn6qdEp+qnRKfqp0Sn6qdEp+qnRKfqp0Sn6qdEp+qnRKfqp0Sn6qdEp+qnRKfqp0Sn6qdEp+qnRKfqp0Sn6qdEp+qnRKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+q3VKfqt1Sn6rdkt+q3ZLfqx2S36sdkt+rHZLfq13S36td0t+rndMfq54TH6veEx+r3hMfrB5TX6weU1+sXpNfrF6TX6yek1+sntOfrN7Tn6ze05+tHxOfrR8Tn60fE9+tXxPfrV8T361fE9+tXxPfrV8T360fE9+tHxOfrR8Tn60fE5+s3tOfrN7Tn6ye05+snpNfrF6TX6weU1+sHlNfq95TH6veEx+rnhMfq53TH6td0x+rXdLfqx3S36sdkt+rHZLfqt2S36rdkt+q3VLfqt1Sn6rdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVLfqp1S36qdUt+qnVLfqp1S36qdUt+qnVLfqp1S36qdUx+qnZMfqp2TH6rdk1+q3ZNfqt2TX6rd05+q3dOfqt3T36seFB+rHhQfqx4UX6teVJ+rXpTfq56VH6ue1Z+r3xXfq99WX6wflp+sX9cfrGAXn6ygWF+s4JjfrSEZn62hml+t4dsfriJcH66i3N+u453fr2QfH6/k4B+wZWFfsOYin7Fm49+x56Vfsmhm37LpaF+zqiofsympH7Oqqp+0a2wftOwt37WtL1+2LfDftq7yX7dvs9+38HVfuHF237kyOF+5svmfujO637p0PB+69L0fuzV+H7u1vt+79j+fnhsgH94bYF/eG2Bf3htgn94bYJ/eG2Bf3htgX94bIB/79j+fu7X+37t1fh+69P0furQ8H7ozux+5svnfuTI4X7ixdx+38LWft2/0H7bu8p+2LjEfta0vn7Tsbd+0a2xfs+qq37Mp6V+yqOffsigmn7GnZR+xJqPfsKXin7AlYV+vpKAfryQfH67jXh+uYt0friJcH62h21+tYZpfrSEZn6zgmR+soFhfrGAX36wf11+r31bfq98WX6ufFd+rntWfq16VX6teVN+rHlSfqx4UX6reFB+q3dQfqt3T36rd05+qnZOfqp2TX6qdk1+qnZMfqp1TH6qdUx+qnVMfql1S36pdUt+qXVLfql1S36pdEt+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qnRKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+q3VKfqt1S36rdkt+rHZLfqx2S36sdkt+rXdLfq13S36ud0x+rnhMfq54TH6veEx+r3lMfrB5TX6weU1+sHlNfrF6TX6xek1+sXpNfrF6TX6xek1+sXpNfrF6TX6xek1+sXpNfrF6TX6xek1+sHlNfrB5TX6weU1+r3lMfq94TH6veEx+rnhMfq53TH6td0x+rXdLfqx3S36sdkt+rHZLfqt2S36rdkt+q3VKfqt1Sn6qdUp+qnVKfqp1Sn6qdUp+qnRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEt+qXVLfql1S36pdUt+qXVLfqp1TH6qdUx+qnVMfqp1TH6qdk1+qnZNfqp2Tn6rd05+q3dPfqt3UH6reFB+rHhRfqx5Un6teVN+rXpUfq57Vn6ue1d+r3xZfq99W36wflx+sYBffrKBYX6zgmN+tIRmfrWFaX62h2x+uIlwfrmLc366jXd+vI97fr6Sf37AlIR+wZeJfsOajn7FnZN+yKCZfsqjnn7IoZt+yqShfsynpn7Oqqx+0a2xftOwt37Vs7x+17bBftm5x37bvMx+3b/Rft/B1n7gxNp+4sbefuPI4n7lyuV+5szofufN637ozu1+6M/ufunQ737p0PB+6dDwfunQ8H7oz+9+6M7tfufN637mzOl+5crmfuTI4n7ixt9+4cTbft/C1n7dv9J+27zNftm6x37Xt8J+1bS9ftOxt37RrrJ+z6qsfs2np37KpKF+yKGcfsafl37EnJJ+wpmNfsGWiH6/lIN+vZF/fruPe366jXd+uItzfreJcH62h2x+tYVpfrOEZn6ygmR+sYFhfrGAX36wfl1+r31bfq58WX6ue1h+rXtWfq16VX6seVR+rHlSfqt4UX6rd1F+q3dQfqp3T36qdk5+qnZOfqp2TX6qdU1+qXVMfql1TH6pdUx+qXVLfql0S36pdEt+qXRLfql0S36pdEp+qXRKfqh0Sn6odEp+qHRKfqh0Sn6odEp+qHRKfqh0Sn6odEp+qHRKfqh0Sn6odEp+qHRJfqh0SX6odEl+qHRJfqh0SX6odEl+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHRJfqh0SX6odEl+qHRJfqh0SX6odEl+qHRJfqh0SX6pdEl+qXRJfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfqp1Sn6qdUp+qnVKfqp1Sn6rdUp+q3VKfqt2S36rdkt+rHZLfqx2S36sd0t+rXdLfq13S36td0x+rndMfq54TH6ueEx+rnhMfq94TH6veEx+r3hMfq94TH6veEx+r3hMfq94TH6ueEx+rnhMfq54TH6ud0x+rXdMfq13S36td0t+rXdLfqx2S36sdkt+rHZLfqt2S36rdUt+q3VKfqp1Sn6qdUp+qnVKfqp1Sn6qdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6odEp+qHRJfqh0SX6odEl+qHRJfqh0SX6odEp+qHRKfqh0Sn6odEp+qHRKfqh0Sn6odEp+qHRKfqh0Sn6odEp+qHRKfqh0Sn6odEp+qXRKfql0Sn6pdEt+qXRLfql0S36pdEt+qXVLfql1TH6pdUx+qXVMfql1TX6qdk1+qnZOfqp2Tn6qd09+q3dQfqt3UH6reFF+rHhSfqx5U36telV+rXpWfq57V36ufFl+r31bfrB+XX6wf19+sYFhfrKCY36zg2Z+tIVpfraHbH63iW9+uIpzfrqNdn67j3p+vZF/fr+Tg37Alod+wpmMfsSbkX7GnpZ+xJyTfsafmH7IoZ1+yqSifsynpn7Oqqt+0KywftKvtX7Tsrp+1bS+fte3wn7Yucd+2rvLftu9zn7dv9J+3sHVft/C137gw9l+4MTbfuHF3X7hxt1+4cbefuHG3n7hxt5+4cXdfuDE237gw9p+38LXft7B1X7dv9J+3L3Pftq7y37Zucd+17fDftW0v37Usrp+0q+2ftCtsX7Oqqx+zKenfsqlon7Iop1+xp+YfsWdlH7Dmo9+wZeLfr+Vhn6+k4J+vJB+fruOen65jHZ+uIpzfraIb361h2x+tIVpfrODZn6ygmR+sYFhfrB/X36vfl1+r31bfq58WX6te1h+rXpWfqx6VX6seVR+q3hTfqt4Un6rd1F+qndQfqp2T36qdk5+qXZOfql1TX6pdU1+qXVMfql1TH6pdEx+qHRLfqh0S36odEt+qHRLfqh0Sn6odEp+qHRKfqh0Sn6odEp+qHNKfqhzSn6oc0p+qHNKfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqh0SX6odEl+qHRJfql0SX6pdEp+qXRKfql0Sn6pdEp+qXRKfqp1Sn6qdUp+qnVKfqp1Sn6rdUp+q3VKfqt2S36rdkt+rHZLfqx2S36sdkt+rHZLfqx2S36sd0t+rXdLfq13S36td0t+rXdLfq13S36sd0t+rHZLfqx2S36sdkt+rHZLfqx2S36rdkt+q3ZLfqt1Sn6rdUp+qnVKfqp1Sn6qdUp+qnVKfqp0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0SX6odEl+qHRJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0p+qHNKfqhzSn6oc0p+qHRKfqh0Sn6odEp+qHRKfqh0Sn6odEt+qHRLfqh0S36odEt+qXRMfql1TH6pdUx+qXVNfql1TX6pdk5+qnZOfqp2T36qd1B+qndRfqt4UX6reFJ+rHlUfqx6VX6telZ+rXtYfq58WX6vfVt+r35dfrB/X36xgGF+soJjfrODZn60hWl+tYZsfraIb364inJ+uYx2frqOeX68kH1+vZKBfr+Vhn7Bl4p+w5qOfsGYjH7DmpB+xJyUfsafmH7IoZ1+yaShfsumpX7NqKl+zquuftCtsn7Rr7V+07G5ftSzvH7VtcB+1rbDfte4xX7Yucd+2brJftq7y37avMx+27zNftu8zn7bvM5+27zNftq8zH7au8t+2brKfti5yH7YuMZ+17fDftW1wH7Us71+07G5ftGvtn7QrbJ+zquufs2pqn7LpqZ+yqShfsiinX7Gn5l+xZ2VfsOakH7BmIx+wJaIfr6UhH69kYB+u498frqNeX64i3V+t4lyfraIb361hmx+s4RpfrKDZn6xgmR+sYBhfrB/X36vfl1+rn1bfq58WX6te1h+rHpWfqx6VX6reVR+q3hTfqt4Un6qd1F+qndQfqp2T36pdk5+qXZOfql1TX6pdU1+qHVMfqh0TH6odEx+qHRLfqh0S36odEt+qHRLfqh0Sn6oc0p+qHNKfqdzSn6nc0p+p3NKfqdzSn6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6odEl+qHRJfql0SX6pdEp+qXRKfql0Sn6pdEp+qXRKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qnVKfqt1Sn6rdUp+q3VKfqt1Sn6rdUp+q3VKfqt1Sn6rdUp+q3VKfqt1Sn6rdUp+qnVKfqp1Sn6qdUp+qnVKfqp1Sn6qdUp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEl+qHRJfqh0SX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NKfqdzSn6nc0p+p3NKfqhzSn6oc0p+qHRKfqh0S36odEt+qHRLfqh0S36odEx+qHRMfqh1TH6pdU1+qXVNfql1Tn6pdk5+qnZPfqp3UH6qd1F+qnhSfqt4U36reVR+rHlVfqx6Vn6te1h+rXxZfq59W36vfl1+sH9ffrCAYX6xgWN+soNmfrOEaH60hmt+todufreJcX64i3V+uY14fruPfH68kYB+vpODfr+Vh36+lIV+v5aIfsGYjH7CmpB+xJyUfsWel37HoJt+yKKffsqko37LpqZ+zKipfs6qrX7PrLB+0K2yftGvtX7SsLd+0rG5ftOyu37Us7x+1LO9ftS0vn7UtL9+1bS/ftS0vn7Us75+1LO9ftOyu37Tsbp+0rC4ftGvtX7QrbN+z6ywfs6qrX7MqKp+y6emfsqlo37Io59+x6GcfsWemH7EnJR+w5qQfsGYjX7Alol+vpSFfr2SgX67kH5+uo56frmMd363inR+tolxfrWHbn60hWt+s4RofrKDZn6xgWN+sIBhfq9/X36vfl1+rn1bfq18WX6te1h+rHpWfqx5VX6reVR+q3hTfqp4Un6qd1F+qndQfql2T36pdk9+qXVOfqh1TX6odU1+qHRMfqh0TH6odEx+qHRLfqh0S36ndEt+p3NKfqdzSn6nc0p+p3NKfqdzSn6nc0p+p3NKfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3JJfqdySX6nckl+p3JJfqdySX6nckl+p3JJfqdySX6nckl+p3JJfqdySX6nckl+p3JJfqdySX6nckl+p3JJfqdySX6nckl+p3JJfqdySX6nckl+p3JJfqdySX6nckl+p3JJfqdySX6nckl+p3JJfqdySX6nckl+p3JJfqdySX6nckl+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHRJfqh0SX6pdEl+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfqp0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRKfql0Sn6pdEp+qXRJfqh0SX6odEl+qHRJfqhzSX6oc0l+qHNJfqhzSX6oc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NKfqdzSn6nc0p+p3NKfqdzSn6nc0p+p3NKfqd0S36odEt+qHRLfqh0TH6odEx+qHRMfqh1TX6odU1+qXVOfql2Tn6pdk9+qXZQfqp3UX6qd1J+q3hTfqt5VH6reVV+rHpWfq17WH6tfFl+rn1bfq5+XX6vf19+sIBhfrGBY36ygmV+s4RofrSFa361h21+tohwfreKc365jHd+uo56fruQfX69koF+u5B+frySgX6+lIV+v5aIfsCXi37CmY9+w5uSfsSdlX7Fn5l+x6Ccfsiin37JpKF+yqWkfsumpn7MqKl+zKmrfs2qrH7Oq65+zquvfs+ssH7PrLF+z6yxfs+ssX7PrLF+z6ywfs6rr37Oq65+zaqtfs2pq37MqKl+y6enfsqlpH7JpKJ+yKKffsehnH7Gn5l+xJ2WfsObk37CmY9+wZiMfr+WiX6+lIV+vZKCfruQf366jnt+uY14friLdX63iXJ+tYhvfrSGbX6zhWp+soNofrGCZX6xgWN+sIBhfq9/X36ufV1+rnxbfq18WX6se1h+rHpXfqt5VX6reVR+qnhTfqp3Un6qd1F+qXZQfql2T36pdk9+qHVOfqh1TX6odU1+qHRMfqh0TH6ndEx+p3RLfqd0S36nc0t+p3NKfqdzSn6nc0p+p3NKfqdzSn6nc0p+p3NJfqdzSX6nc0l+p3NJfqdySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+p3JJfqdySX6nckl+p3JJfqdySX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqhzSX6odEl+qHRJfqh0SX6odEl+qHRJfqh0SX6odEl+qHRJfqh0SX6odEl+qHRJfqh0SX6odEl+qHNJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdySX6nckl+p3JJfqdySX6nckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqdySX6nc0l+p3NJfqdzSX6nc0l+p3NKfqdzSn6nc0p+p3NKfqdzSn6nc0p+p3NLfqd0S36ndEt+p3RMfqh0TH6odEx+qHVNfqh1TX6odU5+qXZPfql2T36pdlB+qndRfqp3Un6qeFN+q3hUfqt5VX6selZ+rHtYfq17WX6tfFt+rn1dfq9+Xn6wf2B+sIFjfrGCZX6yg2d+s4VqfrSGbH61iG9+tolyfriLdX65jHh+uo57frmNeH66jnt+u5B+frySgX69k4R+vpWHfr+Win7BmI1+wpmPfsObkn7EnJV+xZ6XfsafmX7GoJx+x6Gefsiin37Io6F+yaSifsmko37KpaR+yqWlfsqlpX7KpaV+yqWlfsqlpH7JpKN+yaSifsijoX7IoqB+x6GefsagnH7Gn5p+xZ6YfsSdlX7Dm5N+wpqQfsGYjX7Al4p+vpWHfr2ThH68koJ+u5B/frqOfH65jXl+uIt2freKc362iHF+tYdufrSFa36zhGl+soNnfrGCZH6wgGJ+r39gfq9+Xn6ufV1+rXxbfq17WX6se1h+q3pWfqt5VX6qeFR+qnhTfqp3Un6pd1F+qXZQfql2T36odU9+qHVOfqh1TX6odE1+qHRMfqd0TH6ndEx+p3RLfqdzS36nc0t+p3NKfqdzSn6nc0p+p3NKfqZzSn6mc0p+pnNJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySX6mckl+p3JJfqdySX6nckl+p3JJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqhzSX6oc0l+qHNJfqhzSX6oc0l+qHNJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdySX6nckl+p3JJfqZySX6mckl+pnJJfqZySX6mckl+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZzSX6mc0l+pnNKfqdzSn6nc0p+p3NKfqdzSn6nc0t+p3NLfqd0S36ndEx+p3RMfqh0TH6odE1+qHVNfqh1Tn6odU9+qXZPfql2UH6pd1F+qndSfqp4U36qeFR+q3lVfqt6Vn6selh+rHtZfq18W36ufVx+rn5efq9/YH6wgGJ+sYFkfrKDZn6zhGl+s4VrfrSHbn61iHB+topzfriLdn62inN+t4t2friMeH65jnt+uo99fruRgH68koJ+vZOFfr6Vh36/lop+wJeMfsGZjn7CmpB+wpuSfsOclH7EnJV+xJ2WfsSel37Fnph+xZ+ZfsWfmn7Fn5p+xZ+afsWfmn7Fn5l+xZ6ZfsWemH7EnZd+xJ2VfsOclH7Cm5J+wpqQfsGZjn7AmIx+v5aKfr6ViH69lIV+vJKDfruRgH66j35+uY57friNeX63i3Z+t4p0fraIcX61h29+tIZsfrOEan6yg2h+sYJmfrCBZH6wgGJ+r39gfq5+Xn6tfVx+rXxbfqx7WX6selh+q3pWfqt5VX6qeFR+qnhTfql3Un6pd1F+qXZQfqh2T36odU9+qHVOfqh1Tn6odE1+p3RNfqd0TH6ndEx+p3NLfqdzS36nc0t+p3NKfqZzSn6mc0p+pnNKfqZzSn6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJJfqZySX6mckl+p3JJfqdySX6nckl+p3JJfqdySX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nc0l+p3NJfqdzSX6nckl+p3JJfqdySX6nckl+pnJJfqZySX6mckl+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mc0p+pnNKfqZzSn6mc0p+p3NKfqdzS36nc0t+p3NLfqd0TH6ndEx+p3RMfqd0TX6odU1+qHVOfqh1T36odk9+qXZQfql3UX6pd1J+qnhTfqp4VH6reVV+q3pWfqx6V36se1l+rXxafq19XH6ufl5+r39ffq+AYX6wgWN+sYJlfrKDZ36zhGp+tIZsfrSHbn61iHF+tIdufrWIcX62iXN+t4t1friMd365jXp+uY58frqPfn67kYB+vJKCfr2ThH69lIZ+vpWHfr+WiX6/lot+wJeMfsCYjX7BmI5+wZmPfsGZj37BmZB+wZmQfsGakH7BmZB+wZmPfsGZj37BmI5+wJiNfsCXjH6/l4t+v5aJfr6ViH69lIZ+vZOEfrySgn67kYB+upB+frqOfH65jXp+uIx4freLdX62iXN+tYhxfrSHb360hm1+s4VqfrKDaH6xgmZ+sIFkfrCAYn6vf2F+rn5ffq59XX6tfFx+rHxafqx7WX6reld+q3lWfqp5VX6qeFR+qnhTfql3Un6pd1F+qXZQfqh2T36odU9+qHVOfqh1Tn6ndE1+p3RNfqd0TH6ndEx+p3NLfqdzS36mc0t+pnNKfqZzSn6mc0p+pnNKfqZySn6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySH6mckh+pnJIfqZySH6mckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJJfqZySn6mckp+pnNKfqZzSn6mc0p+pnNLfqdzS36nc0t+p3RMfqd0TH6ndE1+p3RNfqh1Tn6odU5+qHVPfqh2T36pdlB+qXZRfql3Un6qd1N+qnhUfqp5VX6reVZ+q3pXfqx7WX6sfFp+rXxbfq59XX6ufl9+r39gfrCAYn6wgWR+sYJmfrKDaH6zhGp+s4ZsfrKEan6zhWx+tIdufrWIcH61iXJ+top0freLdn64jHh+uI15frmOe366j31+upB+fruQgH67kYF+vJKCfryThH69k4V+vZSFfr2Uhn6+lId+vpSHfr6Vh36+lYd+vpSHfr6Uh369lIZ+vZSGfr2ThX68k4R+vJKDfryRgX67kYB+upB/frqPfX65jnt+uI16friMeH63i3Z+top0fraJcn61iHB+tIdufrOGbH6zhWp+soNpfrGCZ36wgWV+sIBjfq9/YX6uf2B+rn5efq19XX6tfFt+rHtafqx7WH6reld+q3lWfqp5VX6qeFR+qXdTfql3Un6pdlF+qHZQfqh2T36odU9+qHVOfqd1Tn6ndE1+p3RNfqd0TH6ndEx+p3NLfqZzS36mc0t+pnNKfqZzSn6mc0p+pnJKfqZySn6mckl+pnJJfqZySX6mckl+pnJJfqZySX6lckl+pXJJfqVySX6lckl+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6mckh+pnJIfqZySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckl+pXJJfqVySX6lckl+pnJJfqZySX6mckl+pnJJfqZySX6mckl+pnJKfqZySn6mc0p+pnNKfqZzSn6mc0t+pnNLfqZzS36nc0x+p3RMfqd0TX6ndE1+p3ROfqh1Tn6odU9+qHZPfqh2UH6pdlF+qXdSfql3U36qeFR+qnhVfqt5Vn6reld+q3pYfqx7Wn6tfFt+rX1cfq5+Xn6ufl9+r39hfrCAY36wgWV+sYJmfrKDaH6xgmZ+sYNofrKEan6zhWt+s4ZtfrSHb361iHB+tYlyfraJc363inV+t4t2friMeH64jXl+uY16frmOe365jnx+uo99frqPfn66kH5+upB/frqQf367kH9+u5B/frqQf366kH9+upB+frqPfn66j31+uY58frmOe365jXp+uI15friMeH63i3d+t4p1fraKdH61iXJ+tYhwfrSHb360hm1+s4VsfrKEan6yg2h+sYJnfrCBZX6wgGN+r4Bifq5/YH6ufl9+rX1dfq18XH6sfFp+rHtZfqt6WH6reVd+qnlWfqp4VX6qeFR+qXdTfql3Un6pdlF+qHZQfqh1T36odU9+p3VOfqd0Tn6ndE1+p3RNfqd0TH6nc0x+pnNLfqZzS36mc0t+pnNKfqZzSn6mckp+pnJKfqZySn6mckl+pnJJfqVySX6lckl+pXJJfqVySX6lckl+pXJJfqVySX6lckh+pXJIfqVySH6lckh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXJIfqVySH6lckh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVySH6lckh+pXJIfqVySH6lckl+pXJJfqVySX6lckl+pXJJfqVySX6lckl+pnJJfqZySX6mckp+pnJKfqZySn6mc0p+pnNKfqZzS36mc0t+pnNLfqZzTH6ndEx+p3RNfqd0TX6ndE5+p3VOfqh1T36odU9+qHZQfqh2UX6pd1J+qXdTfql4U36qeFR+qnlVfqt5V36relh+rHtZfqx7Wn6tfFx+rX1dfq5+Xn6uf2B+r39hfrCAY36wgWV+r4BjfrCBZH6wgmZ+sYNnfrKDaX6yhGp+s4VrfrOGbX60hm5+tIdvfrWIcX61iXJ+tolzfraKdH62inV+t4t2freLdn63i3d+t4x4friMeH64jHh+uIx4friMeH64jHh+uIx4freMeH63i3d+t4t3freLdn62inV+top0fraJc361iXJ+tYhxfrSHcH60h25+s4ZtfrOFbH6yhGp+soNpfrGDZ36xgmZ+sIFkfq+AY36vf2J+rn9gfq5+X36tfV1+rXxcfqx8W36se1p+q3pYfqt6V36qeVZ+qnlVfqp4VH6peFN+qXdSfql3Un6odlF+qHZQfqh1T36odU9+p3VOfqd0Tn6ndE1+p3RNfqd0TH6mc0x+pnNLfqZzS36mc0t+pnNLfqZzSn6mckp+pnJKfqZySn6lckl+pXJJfqVySX6lckl+pXJJfqVySX6lckl+pXJJfqVySX6lckh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXJIfqVySX6lckl+pXJJfqVySX6lckl+pXJJfqVySX6lckl+pXJJfqZySn6mckp+pnJKfqZzSn6mc0p+pnNLfqZzS36mc0t+pnNMfqd0TH6ndE1+p3RNfqd0Tn6ndU5+p3VPfqh1T36odlB+qHZRfql3UX6pd1J+qXdTfqp4VH6qeVV+qnlWfqt6V36relh+rHtZfqx8W36tfFx+rX1dfq5+X36uf2B+r39hfq5+YH6uf2F+r4Bifq+AY36wgWV+sIJmfrGCZ36xg2h+soRpfrKEa36zhWx+s4ZtfrOGbn60h25+tIdvfrSHcH61iHF+tYhxfrWIcX61iHJ+tYlyfrWJcn61iXJ+tYlyfrWIcn61iHJ+tYhxfrWIcX60h3B+tIdvfrSHb36zhm5+s4ZtfrOFbH6yhGt+soRqfrGDaH6xg2d+sIJmfrCBZX6vgWR+r4Bifq9/YX6ufmB+rn5ffq19XX6tfFx+rHxbfqx7Wn6re1l+q3pYfqp5V36qeVZ+qnhVfql4VH6pd1N+qXdSfqh2UX6odlF+qHZQfqh1T36ndU9+p3VOfqd0Tn6ndE1+p3RNfqZ0TH6mc0x+pnNLfqZzS36mc0t+pnNLfqZySn6mckp+pXJKfqVySn6lckl+pXJJfqVySX6lckl+pXJJfqVySX6lckl+pXJJfqVxSX6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFJfqVySX6lckl+pXJJfqVySX6lckl+pXJJfqVySX6lckl+pXJKfqVySn6mckp+pnJKfqZzS36mc0t+pnNLfqZzS36mc0x+pnRMfqd0TX6ndE1+p3ROfqd1Tn6ndU9+qHVPfqh2UH6odlF+qHZRfql3Un6pd1N+qXhUfqp4VX6qeVZ+qnlXfqt6WH6rell+rHtafqx8W36tfFx+rX1dfq1+Xn6tfV1+rX1efq5+X36uf2B+rn9hfq+AYn6vgGN+sIFkfrCBZX6wgmZ+sYJnfrGDaH6xg2l+soRqfrKEan6yhGt+soVrfrOFbH6zhWx+s4VsfrOFbX6zhm1+s4ZtfrOFbX6zhWx+s4VsfrOFbH6yhWt+soVrfrKEan6yhGp+sYNpfrGDaH6xgmd+sIJmfrCBZX6wgWR+r4Bjfq+AYn6vf2F+rn9gfq5+X36tfV5+rX1dfqx8XH6sfFt+rHtafqt6WX6relh+qnlXfqp5Vn6qeFV+qXhUfql3U36pd1N+qHdSfqh2UX6odlB+qHVQfqd1T36ndU9+p3ROfqd0Tn6ndE1+pnRNfqZzTH6mc0x+pnNLfqZzS36mc0t+pnNLfqZySn6lckp+pXJKfqVySn6lckl+pXJJfqVySX6lckl+pXJJfqVySX6lckl+pXFJfqVxSX6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUl+pXFJfqVySX6lckl+pXJJfqVySX6lckl+pXJJfqVySX6lckp+pXJKfqVySn6mckp+pnNLfqZzS36mc0t+pnNLfqZzTH6mc0x+pnRNfqd0TX6ndE1+p3ROfqd1Tn6ndU9+qHVQfqh2UH6odlF+qHdSfql3Un6pd1N+qXhUfqp4VX6qeVZ+qnlXfqt6WH6rell+rHtafqx8W36sfFx+rHtafqx8W36sfFx+rX1dfq19Xn6tfl9+rn5gfq5/YX6vf2J+r4Bifq+AY36vgWR+sIFlfrCBZX6wgmZ+sIJmfrGCZ36xgmd+sYNnfrGDaH6xg2h+sYNofrGDaH6xg2h+sYNofrGDZ36xgmd+sYJnfrCCZn6wgmZ+sIFlfrCBZX6vgWR+r4Bjfq+AYn6vf2J+rn9hfq5+YH6ufl9+rX1efq19XX6sfFx+rHxbfqx7Wn6re1p+q3pZfqt6WH6qeVd+qnlWfqp4VX6peFR+qXhUfql3U36pd1J+qHZRfqh2UX6odlB+p3VQfqd1T36ndU5+p3ROfqd0TX6ndE1+pnRNfqZzTH6mc0x+pnNLfqZzS36mc0t+pnNLfqVySn6lckp+pXJKfqVySn6lckp+pXJJfqVySX6lckl+pXJJfqVySX6lcUl+pXFJfqVxSX6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSX6lcUl+pXFJfqVySX6lckl+pXJJfqVySX6lckl+pXJJfqVySn6lckp+pXJKfqVySn6mckt+pnNLfqZzS36mc0t+pnNMfqZzTH6mdE1+pnRNfqd0TX6ndE5+p3VOfqd1T36ndU9+qHZQfqh2UX6odlF+qHdSfql3U36pd1N+qXhUfqp4VX6qeVZ+qnlXfqt6WH6rell+q3tZfqt6WH6rell+q3tafqx7Wn6sfFt+rHxcfq19XX6tfV5+rX1efq1+X36ufmB+rn5gfq5/YX6uf2F+r39ifq+AYn6vgGN+r4Bjfq+AY36vgGN+r4Bkfq+AZH6vgGR+r4Bkfq+AY36vgGN+r4Bjfq+AY36vgGJ+r39ifq5/YX6uf2F+rn9gfq5+YH6tfl9+rX1efq19Xn6tfV1+rHxcfqx8W36se1t+q3tafqt6WX6relh+qnpXfqp5V36qeVZ+qnhVfql4VH6peFR+qXdTfqh3Un6odlJ+qHZRfqh2UH6odVB+p3VPfqd1T36ndE5+p3ROfqd0TX6mdE1+pnRMfqZzTH6mc0x+pnNLfqZzS36mc0t+pXJLfqVySn6lckp+pXJKfqVySn6lckp+pXJJfqVySX6lckl+pXJJfqVxSX6lcUl+pXFJfqVxSX6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFIfqVxSH6lcUh+pXFJfqVxSX6lcUl+pXFJfqVySX6lckl+pXJJfqVySX6lckl+pXJKfqVySn6lckp+pXJKfqVyS36mc0t+pnNLfqZzS36mc0x+pnNMfqZzTH6mdE1+p3RNfqd0Tn6ndE5+p3VPfqd1T36ndVB+qHZQfqh2UX6odlJ+qHdSfql3U36pd1R+qXhUfqp4VX6qeVZ+qnlXfqp6V36qeVZ+qnlXfqp6V36relh+q3pZfqt7WX6re1p+rHtbfqx8W36sfFx+rHxdfq19XX6tfV5+rX1efq19Xn6tfl9+rX5ffq1+X36ufmB+rn5gfq5+YH6ufmB+rn5gfq5+YH6ufmB+rn5gfq1+X36tfl9+rX5ffq19Xn6tfV5+rX1efq19XX6sfF1+rHxcfqx8W36se1t+q3tafqt7Wn6rell+q3pYfqp6WH6qeVd+qnlWfqp5Vn6peFV+qXhUfql3VH6pd1N+qHdSfqh2Un6odlF+qHZRfqh1UH6ndU9+p3VPfqd1Tn6ndE5+p3ROfqZ0TX6mdE1+pnNMfqZzTH6mc0x+pnNLfqZzS36mc0t+pXJLfqVySn6lckp+pXJKfqVySn6lckp+pXJJfqVySX6lckl+pXJJfqVxSX6lcUl+pXFJfqVxSX6lcUh+pXFIfqVxSH6lcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqVxSH6lcUh+pXFIfqVxSH6lcUl+pXFJfqVxSX6lcUl+pXJJfqVySX6lckl+pXJJfqVySn6lckp+pXJKfqVySn6lckp+pXJLfqVzS36mc0t+pnNLfqZzTH6mc0x+pnNMfqZ0TX6mdE1+p3ROfqd0Tn6ndU5+p3VPfqd1T36ndVB+qHZQfqh2UX6odlJ+qHdSfql3U36pd1N+qXhUfql4VX6qeFV+qXhUfql4VX6qeFZ+qnlWfqp5V36qeVd+qnpYfqt6WH6rell+q3tZfqt7Wn6re1p+rHtbfqx8W36sfFt+rHxcfqx8XH6sfFx+rHxcfqx8XH6sfF1+rHxdfqx8XX6sfF1+rHxcfqx8XH6sfFx+rHxcfqx8XH6sfFt+rHxbfqx7W36re1p+q3tafqt7WX6rell+q3pYfqt6WH6qeVd+qnlXfqp5Vn6qeVZ+qXhVfql4VH6peFR+qXdTfql3U36od1J+qHZSfqh2UX6odlF+p3VQfqd1UH6ndU9+p3VPfqd0Tn6ndE5+pnRNfqZ0TX6mdE1+pnNMfqZzTH6mc0x+pnNLfqZzS36lc0t+pXJLfqVySn6lckp+pXJKfqVySn6lckp+pXJJfqVySX6lckl+pXFJfqVxSX6lcUl+pXFJfqVxSX6lcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pXFIfqVxSX6lcUl+pXFJfqVxSX6lcUl+pXJJfqVySX6lckl+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJLfqZzS36mc0t+pnNMfqZzTH6mc0x+pnNNfqZ0TX6mdE1+p3ROfqd0Tn6ndU9+p3VPfqd1T36ndVB+qHZQfqh2UX6odlJ+qHdSfqh3U36pd1N+qXhUfqh3U36pd1N+qXdUfql4VH6peFV+qXhVfqp5Vn6qeVZ+qnlXfqp5V36qeVd+qnpYfqt6WH6relh+q3pZfqt6WX6rell+q3tZfqt7Wn6re1p+q3tafqt7Wn6re1p+q3tafqt7Wn6re1p+q3tZfqt6WX6rell+q3pZfqt6WH6relh+qnpYfqp5V36qeVd+qnlXfqp5Vn6qeVZ+qXhVfql4VX6peFR+qXhUfql3U36pd1N+qHdSfqh2Un6odlF+qHZRfqh2UH6ndVB+p3VQfqd1T36ndU9+p3ROfqd0Tn6mdE1+pnRNfqZ0TX6mc0x+pnNMfqZzTH6mc0t+pnNLfqVzS36lckt+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJJfqVySX6lckl+pXFJfqVxSX6lcUl+pXFJfqVxSX6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFJfqVxSX6lcUl+pXFJfqVxSX6lckl+pXJJfqVySX6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckt+pXNLfqZzS36mc0t+pnNMfqZzTH6mc0x+pnRNfqZ0TX6mdE1+p3ROfqd0Tn6ndU9+p3VPfqd1T36ndVB+qHZQfqh2UX6odlF+qHZSfqh3Un6odlF+qHZSfqh3Un6od1N+qXdTfql3U36pd1R+qXhUfql4VX6peFV+qXhVfqp4Vn6qeVZ+qnlWfqp5Vn6qeVd+qnlXfqp5V36qeVd+qnlXfqp5V36qeVd+qnlXfqp5V36qeVd+qnlXfqp5V36qeVd+qnlXfqp5Vn6qeVZ+qnlWfqp4Vn6peFV+qXhVfql4VX6peFR+qXhUfql3U36pd1N+qHdTfqh3Un6odlJ+qHZRfqh2UX6odlF+p3VQfqd1UH6ndU9+p3VPfqd1T36ndE5+p3ROfqZ0Tn6mdE1+pnRNfqZzTX6mc0x+pnNMfqZzTH6mc0t+pXNLfqVzS36lckt+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJJfqVySX6lckl+pXFJfqVxSX6lcUl+pHFJfqRxSX6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUl+pHFJfqVxSX6lcUl+pXFJfqVySX6lckl+pXJJfqVySX6lckp+pXJKfqVySn6lckp+pXJKfqVyS36lckt+pXNLfqZzS36mc0x+pnNMfqZzTH6mc0x+pnRNfqZ0TX6mdE1+p3ROfqd0Tn6ndU9+p3VPfqd1T36ndVB+p3VQfqh2UX6odlF+p3VQfqh2UX6odlF+qHZRfqh2Un6odlJ+qHdSfqh3U36od1N+qXdTfql3U36pd1R+qXhUfql4VH6peFR+qXhVfql4VX6peFV+qXhVfql4VX6peFV+qXhVfql4VX6peFV+qXhVfql4VX6peFV+qXhVfql4VX6peFR+qXhUfql4VH6pd1R+qXdTfql3U36od1N+qHdTfqh3Un6odlJ+qHZSfqh2UX6odlF+qHZRfqd1UH6ndVB+p3VQfqd1T36ndU9+p3ROfqd0Tn6mdE5+pnRNfqZ0TX6mdE1+pnNNfqZzTH6mc0x+pnNMfqZzS36lc0t+pXNLfqVyS36lckt+pXJKfqVySn6lckp+pXJKfqVySn6lckl+pXJJfqVySX6lcUl+pXFJfqVxSX6kcUl+pHFJfqRxSX6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSX6kcUl+pHFJfqVxSX6lcUl+pXFJfqVySX6lckl+pXJJfqVySn6lckp+pXJKfqVySn6lckp+pXJLfqVyS36lc0t+pXNLfqZzS36mc0x+pnNMfqZzTH6mc01+pnRNfqZ0TX6mdE1+pnROfqd0Tn6ndE5+p3VPfqd1T36ndU9+p3VQfqd1T36ndU9+p3VQfqd1UH6ndVB+p3ZRfqh2UX6odlF+qHZRfqh2Un6odlJ+qHZSfqh3Un6od1J+qHdTfqh3U36od1N+qHdTfqh3U36od1N+qHdTfql3U36pd1N+qHdTfqh3U36od1N+qHdTfqh3U36od1N+qHdTfqh3Un6od1J+qHZSfqh2Un6odlJ+qHZRfqh2UX6odlF+p3ZRfqd1UH6ndVB+p3VQfqd1T36ndU9+p3VPfqd0T36ndE5+pnROfqZ0Tn6mdE1+pnRNfqZ0TX6mc01+pnNMfqZzTH6mc0x+pnNMfqVzS36lc0t+pXJLfqVyS36lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckl+pXJJfqVySX6lcUl+pXFJfqRxSX6kcUl+pHFJfqRxSX6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFJfqRxSX6kcUl+pHFJfqVxSX6lcUl+pXJJfqVySX6lckl+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJLfqVyS36lc0t+pXNLfqZzS36mc0x+pnNMfqZzTH6mc0x+pnRNfqZ0TX6mdE1+pnROfqZ0Tn6ndE5+p3ROfqd1T36mdE5+p3ROfqd1T36ndU9+p3VPfqd1T36ndVB+p3VQfqd1UH6ndVB+p3ZQfqd2UX6odlF+qHZRfqh2UX6odlF+qHZRfqh2UX6odlF+qHZRfqh2Un6odlJ+qHZSfqh2Un6odlF+qHZRfqh2UX6odlF+qHZRfqh2UX6odlF+qHZRfqd2UX6ndlB+p3VQfqd1UH6ndVB+p3VQfqd1T36ndU9+p3VPfqd1T36ndE5+p3ROfqZ0Tn6mdE5+pnRNfqZ0TX6mdE1+pnNNfqZzTH6mc0x+pnNMfqZzTH6lc0x+pXNLfqVzS36lckt+pXJLfqVyS36lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckl+pXJJfqVxSX6lcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUl+pHFJfqRxSX6kcUl+pHFJfqVxSX6lcUl+pXJJfqVySX6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJLfqVyS36lc0t+pXNLfqVzS36mc0x+pnNMfqZzTH6mc0x+pnNNfqZ0TX6mdE1+pnRNfqZ0Tn6mdE5+pnRNfqZ0TX6mdE5+pnROfqZ0Tn6ndE5+p3ROfqd1T36ndU9+p3VPfqd1T36ndU9+p3VPfqd1UH6ndVB+p3VQfqd1UH6ndVB+p3VQfqd1UH6ndVB+p3VQfqd1UH6ndVB+p3VQfqd1UH6ndVB+p3VQfqd1UH6ndVB+p3VQfqd1T36ndU9+p3VPfqd1T36ndU9+p3VPfqd0T36ndE5+pnROfqZ0Tn6mdE5+pnROfqZ0TX6mdE1+pnRNfqZzTX6mc0x+pnNMfqZzTH6mc0x+pXNMfqVzS36lc0t+pXNLfqVyS36lckt+pXJLfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySX6lckl+pXJJfqVxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqVxSX6lckl+pXJJfqVySX6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckt+pXJLfqVyS36lc0t+pXNLfqVzS36lc0x+pnNMfqZzTH6mc0x+pnNMfqZzTX6mdE1+pnRNfqZzTX6mc01+pnRNfqZ0TX6mdE1+pnRNfqZ0Tn6mdE5+pnROfqZ0Tn6mdE5+pnROfqd0Tn6ndE5+p3RPfqd0T36ndU9+p3VPfqd1T36ndU9+p3VPfqd1T36ndU9+p3VPfqd1T36ndU9+p3VPfqd1T36ndE9+p3RPfqd0Tn6ndE5+pnROfqZ0Tn6mdE5+pnROfqZ0Tn6mdE5+pnRNfqZ0TX6mdE1+pnRNfqZzTX6mc01+pnNMfqZzTH6mc0x+pnNMfqVzTH6lc0t+pXNLfqVzS36lckt+pXJLfqVyS36lckt+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySX6lckl+pXFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqVxSX6lckl+pXJJfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJLfqVyS36lckt+pXNLfqVzS36lc0t+pXNMfqZzTH6mc0x+pnNMfqZzTH6mc0x+pnNMfqZzTH6mc0x+pnNMfqZzTX6mc01+pnNNfqZ0TX6mdE1+pnRNfqZ0TX6mdE1+pnRNfqZ0Tn6mdE5+pnROfqZ0Tn6mdE5+pnROfqZ0Tn6mdE5+pnROfqZ0Tn6mdE5+pnROfqZ0Tn6mdE5+pnROfqZ0Tn6mdE1+pnRNfqZ0TX6mdE1+pnRNfqZ0TX6mc01+pnNNfqZzTX6mc0x+pnNMfqZzTH6mc0x+pnNMfqVzTH6lc0x+pXNLfqVzS36lc0t+pXJLfqVyS36lckt+pXJLfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJJfqVySX6lcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxR36kcUd+pHFHfqRxR36kcUd+pHFHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHFHfqRxR36kcUd+pHFHfqRxR36kcUd+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqVxSX6lckl+pXJJfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJLfqVyS36lckt+pXJLfqVzS36lc0t+pXNLfqVzTH6lc0x+pXNLfqVzS36lc0x+pXNMfqVzTH6mc0x+pnNMfqZzTH6mc0x+pnNMfqZzTH6mc0x+pnNNfqZzTX6mc01+pnNNfqZzTX6mc01+pnNNfqZzTX6mdE1+pnRNfqZ0TX6mdE1+pnNNfqZzTX6mc01+pnNNfqZzTX6mc01+pnNNfqZzTX6mc0x+pnNMfqZzTH6mc0x+pnNMfqZzTH6mc0x+pXNMfqVzTH6lc0x+pXNLfqVzS36lc0t+pXJLfqVyS36lckt+pXJLfqVyS36lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckl+pXJJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHFHfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6lckl+pXJJfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVyS36lckt+pXJLfqVyS36lckt+pXNLfqVyS36lckt+pXJLfqVyS36lc0t+pXNLfqVzS36lc0t+pXNMfqVzTH6lc0x+pXNMfqVzTH6lc0x+pnNMfqZzTH6mc0x+pnNMfqZzTH6mc0x+pnNMfqZzTH6mc0x+pnNMfqZzTH6mc0x+pnNMfqZzTH6mc0x+pnNMfqVzTH6lc0x+pXNMfqVzTH6lc0x+pXNMfqVzS36lc0t+pXNLfqVzS36lckt+pXJLfqVyS36lckt+pXJLfqVyS36lckt+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySX6lckl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRwSH6kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pXJJfqVySX6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJLfqVyS36lckp+pXJKfqVyS36lckt+pXJLfqVyS36lckt+pXJLfqVyS36lckt+pXJLfqVzS36lc0t+pXNLfqVzS36lc0t+pXNLfqVzS36lc0t+pXNLfqVzS36lc0t+pXNLfqVzS36lc0t+pXNLfqVzS36lc0t+pXNLfqVzS36lc0t+pXNLfqVzS36lckt+pXJLfqVyS36lckt+pXJLfqVyS36lckt+pXJLfqVyS36lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckl+pHJJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcEh+pHBIfqRwSH6kcEh+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwSH6kcEh+pHBIfqRwSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHJJfqVySX6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJLfqVyS36lckt+pXJLfqVyS36lckt+pXJLfqVyS36lckt+pXJLfqVyS36lckt+pXJLfqVyS36lckt+pXJLfqVyS36lckt+pXJLfqVyS36lckt+pXJLfqVyS36lckt+pXJLfqVyS36lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckl+pXJJfqRySX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6lckl+pXJJfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckl+pHJJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRySX6lckl+pXJKfqVySn6kcUl+pHJJfqRySX6kckl+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pHJJfqRySX6kckl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRySX6kckl+pHJJfqRySX6kckl+pHJJfqRySX6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pXJKfqVySn6lckp+pHJJfqRySX6kckl+pHJJfqRySX6kckl+pHJJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFIfqRxSH6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFJfqRxSX6kcUl+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEd+pHBHfqRwR36kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHBIfqRwSH6kcEh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+pHFIfqRxSH6kcUh+";
 
+// src/render3d/engine-host.js
+var HOST = null;
+var EngineHost = class {
+  constructor() {
+    const cv = this.cv = document.createElement("canvas");
+    cv.setAttribute("aria-hidden", "true");
+    const E = this.engine = new B3.Engine(cv, false, { stencil: true, antialias: false, alpha: true, premultipliedAlpha: false, preserveDrawingBuffer: false, powerPreference: "high-performance" }, false);
+    E.enableOfflineSupport = false;
+    E.disableManifestCheck = true;
+    this.stack = [];
+    this.owners = /* @__PURE__ */ new Set();
+    this.cur = null;
+    this.running = false;
+    this.dead = false;
+    cv.addEventListener("webglcontextlost", (ev2) => {
+      ev2.preventDefault();
+      this.lose();
+    }, false);
+  }
+  adopt(owner) {
+    this.owners.add(owner);
+    return this;
+  }
+  forget(owner) {
+    this.owners.delete(owner);
+    this.release(owner);
+  }
+  // o: { cls, id, first (вставить первым ребёнком), replace (узел-заглушка), dpr }
+  mount(owner, host, o = {}) {
+    if (this.dead || !host) return;
+    this.stack = this.stack.filter((e2) => e2.owner !== owner);
+    const e = { owner, host, cls: o.cls || "", id: o.id || "", dpr: o.dpr || 2 };
+    if (o.replace && o.replace !== this.cv && o.replace.parentNode === host) o.replace.replaceWith(this.cv);
+    else if (o.first) host.insertBefore(this.cv, host.firstChild);
+    this.stack.push(e);
+    this.show(e, true);
+  }
+  release(owner) {
+    const top = this.cur && this.cur.owner === owner;
+    this.stack = this.stack.filter((e) => e.owner !== owner);
+    if (top) {
+      this.cur = null;
+      if (!this.pick()) this.park();
+    }
+  }
+  isCur(owner) {
+    return !!(this.cur && this.cur.owner === owner && this.cv.isConnected);
+  }
+  show(e, placed) {
+    const cv = this.cv;
+    if (!placed || cv.parentNode !== e.host) e.host.appendChild(cv);
+    cv.className = e.cls;
+    if (e.id) cv.id = e.id;
+    else cv.removeAttribute("id");
+    this.engine.setHardwareScalingLevel(1 / Math.min(window.devicePixelRatio || 1, e.dpr));
+    this.cur = e;
+    this.engine.resize();
+    this.start();
+  }
+  // верхний владелец с живым хостом; отпавшие снимаются
+  pick() {
+    while (this.stack.length) {
+      const e = this.stack[this.stack.length - 1];
+      if (e.host.isConnected) {
+        this.show(e);
+        return e;
+      }
+      this.stack.pop();
+      if (this.cur === e) this.cur = null;
+      try {
+        e.owner.onDetach && e.owner.onDetach();
+      } catch (err) {
+        errLog("detach", err);
+      }
+    }
+    return null;
+  }
+  park() {
+    this.cur = null;
+    this.stop();
+    if (this.cv.parentNode) this.cv.remove();
+    this.cv.removeAttribute("id");
+  }
+  start() {
+    if (this.running || this.dead) return;
+    this.running = true;
+    this.engine.runRenderLoop(() => this.frame());
+  }
+  stop() {
+    if (!this.running) return;
+    this.running = false;
+    this.engine.stopRenderLoop();
+  }
+  frame() {
+    let e = this.cur;
+    if (!e || !e.host.isConnected || this.cv.parentNode !== e.host) {
+      this.cur = null;
+      e = this.pick();
+      if (!e) {
+        this.park();
+        return;
+      }
+    }
+    try {
+      e.owner.frame();
+    } catch (err) {
+      errLog("frame", err);
+    }
+  }
+  lose() {
+    if (this.dead) return;
+    this.dead = true;
+    this.stop();
+    errLog("webgl", "context lost");
+    if (HOST === this) HOST = null;
+    const all = [...this.owners];
+    this.owners.clear();
+    this.stack = [];
+    this.cur = null;
+    for (const o of all) try {
+      o.contextLost ? o.contextLost() : o.dispose();
+    } catch (e) {
+    }
+    try {
+      this.engine.dispose();
+    } catch (e) {
+    }
+    try {
+      this.cv.width = 0;
+      this.cv.height = 0;
+    } catch (e) {
+    }
+  }
+};
+function engineHost() {
+  if (!HOST || HOST.dead) HOST = new EngineHost();
+  return HOST;
+}
+function hostKick() {
+  const H = HOST;
+  if (H && !H.dead && !H.running && H.stack.length) H.pick();
+}
+
 // src/render3d/scenes/base-scene.js
 function freeCanvas(cv, keep) {
   try {
@@ -5145,13 +5291,12 @@ var SAVE_LOW = () => {
 };
 var Stage3D = class {
   constructor(opts = {}) {
-    this.cv = document.createElement("canvas");
-    this.cv.className = opts.cls || "stage3d";
-    this.cv.setAttribute("aria-hidden", "true");
+    const H = this.host = engineHost().adopt(this);
+    this.cv = H.cv;
+    this.cls = opts.cls || "stage3d";
+    this.maxDpr = opts.maxDpr || 2;
     this.small = Math.min(innerWidth, innerHeight) < 600;
-    const E = this.engine = new B3.Engine(this.cv, true, { stencil: true, antialias: true, powerPreference: "high-performance", alpha: !!opts.alpha, premultipliedAlpha: false, loseContextOnDispose: true }, false);
-    E.setHardwareScalingLevel(1 / Math.min(window.devicePixelRatio || 1, opts.maxDpr || 2));
-    E.enableOfflineSupport = false;
+    const E = this.engine = H.engine;
     const S2 = this.scene = new B3.Scene(E);
     S2.useRightHandedSystem = true;
     S2.skipPointerMovePicking = true;
@@ -5211,22 +5356,15 @@ var Stage3D = class {
     } catch (e) {
     }
   }
-  attach(host) {
-    if (!host) return;
-    if (this.cv.parentNode !== host) host.appendChild(this.cv);
-    this.engine.resize();
-    if (!this.running) {
-      this.running = true;
-      this.engine.runRenderLoop(() => this.frame());
-    }
+  attach(host, first) {
+    if (!host || !this.alive) return;
+    this.host.mount(this, host, { cls: this.cls, dpr: this.maxDpr, first });
+  }
+  isCur() {
+    return this.host.isCur(this);
   }
   frame() {
-    if (!this.cv.isConnected || this.paused()) {
-      this.engine.stopRenderLoop();
-      this.running = false;
-      this.stopped = performance.now();
-      return;
-    }
+    if (this.paused()) return;
     if (this.cv.clientWidth !== this.w || this.cv.clientHeight !== this.h) {
       this.w = this.cv.clientWidth;
       this.h = this.cv.clientHeight;
@@ -5254,14 +5392,13 @@ var Stage3D = class {
     this.tr.push({ mesh, t0: performance.now(), life, upd });
   }
   dispose() {
+    if (!this.alive) return;
     this.alive = false;
     try {
-      this.engine.stopRenderLoop();
       this.scene.dispose();
-      this.engine.dispose();
     } catch (e) {
     }
-    freeCanvas(this.cv);
+    this.host.forget(this);
   }
 };
 
@@ -5270,106 +5407,106 @@ var HeroStage = class extends Stage3D {
   constructor() {
     super({ cls: "stage3d hero3d", alpha: false });
     const S2 = this.scene;
-    set_SC(S2);
-    S2._maxL = 5;
-    S2.clearColor = new B3.Color4(0.07, 0.045, 0.03, 1);
-    S2.ambientColor = B3.Color3.Black();
-    const bg = MB().CreateSphere("bg", { diameter: 60, segments: 16, sideOrientation: B3.Mesh.BACKSIDE }, S2);
-    bg.material = basic3("#0e0906", { fog: false });
-    bg.isPickable = false;
-    this.bg = bg;
-    const halo = mk(bPlane(7, 7), null, 0, 1.4, -3, false);
-    const hm = basic3("#3a2210", { fog: false, add: true });
-    const htx = dynTex(glowCanvas(), 0, true);
-    hm.emissiveTexture = htx;
-    hm.opacityTexture = htx;
-    hm.disableDepthWrite = true;
-    halo.material = hm;
-    this.halo = halo;
-    const hemi = new B3.HemisphericLight("h", V3(0, 1, 0), S2);
-    hemi.intensity = 0.35;
-    hemi.diffuse = col3("#c8b090");
-    hemi.groundColor = col3("#2a1a10");
-    hemi.specular = B3.Color3.Black();
-    const key = this.key = new B3.DirectionalLight("key", V3(-0.5, -0.8, -0.6), S2);
-    key.position = V3(4, 7, 6);
-    key.intensity = 1.7;
-    key.diffuse = col3("#ffe2b8");
-    key.autoUpdateExtends = false;
-    key.orthoLeft = -2;
-    key.orthoRight = 2;
-    key.orthoTop = 3;
-    key.orthoBottom = -1;
-    key.shadowMinZ = 0.5;
-    key.shadowMaxZ = 20;
-    const rim = this.rim = new B3.SpotLight("rim", V3(-2.5, 3.2, -2.5), V3(0.6, -0.5, 0.6), Math.PI / 3, 2, S2);
-    rim.intensity = 1.6;
-    rim.diffuse = col3("#8fc0ff");
-    const rim2 = this.rim2 = new B3.SpotLight("rim2", V3(2.6, 2.6, -2.2), V3(-0.6, -0.4, 0.6), Math.PI / 3, 2, S2);
-    rim2.intensity = 1.1;
-    rim2.diffuse = col3("#ffa860");
-    set_SHG(this.shadows = new B3.ShadowGenerator(this.small ? 1024 : 2048, key));
-    SHG.bias = 6e-4;
-    SHG.normalBias = 0.01;
-    SHG.darkness = 0.2;
-    SHG.usePercentageCloserFiltering = this.engine.webGLVersion >= 2;
-    SHG.filteringQuality = B3.ShadowGenerator.QUALITY_MEDIUM;
-    const stone = mat3("#5a4030", { roughness: 0.8 }), top = mat3("#7a5a3e", { roughness: 0.65 });
-    mk(bCyl(1.05, 1.15, 0.22, 48), stone, 0, -0.11, 0, false);
-    mk(bCyl(0.98, 0.98, 0.02, 48), top, 0, 5e-3, 0, false);
-    this.ring = mk(MB().CreateTorus("ring", { diameter: 2.04, thickness: 0.03, tessellation: 64 }, S2), basic3("#e8913f"), 0, 0.01, 0, false);
-    const tx = dynTex(glowCanvas(), 0, true);
-    const dust = new B3.ParticleSystem("motes", 160, S2);
-    dust.particleTexture = tx;
-    dust.emitter = V3(0, 0, 0);
-    dust.minEmitBox = V3(-1.6, 0, -1.2);
-    dust.maxEmitBox = V3(1.6, 2.6, 1);
-    dust.direction1 = V3(-0.05, 0.05, -0.05);
-    dust.direction2 = V3(0.05, 0.15, 0.05);
-    dust.minLifeTime = 4;
-    dust.maxLifeTime = 8;
-    dust.minSize = 0.01;
-    dust.maxSize = 0.03;
-    dust.color1 = new B3.Color4(1, 0.85, 0.6, 0.7);
-    dust.color2 = new B3.Color4(1, 0.7, 0.4, 0.5);
-    dust.colorDead = new B3.Color4(1, 0.6, 0.3, 0);
-    dust.emitRate = 20;
-    dust.blendMode = B3.ParticleSystem.BLENDMODE_ADD;
-    dust.preWarmCycles = 100;
-    dust.start();
-    const burst = this.burst = new B3.ParticleSystem("burst", 500, S2);
-    burst.particleTexture = tx;
-    burst.emitter = V3(0, 0.1, 0);
-    burst.minEmitBox = V3(-0.6, 0, -0.6);
-    burst.maxEmitBox = V3(0.6, 0.1, 0.6);
-    burst.direction1 = V3(-0.4, 2, -0.4);
-    burst.direction2 = V3(0.4, 4, 0.4);
-    burst.gravity = V3(0, -1.5, 0);
-    burst.minLifeTime = 0.8;
-    burst.maxLifeTime = 1.8;
-    burst.minSize = 0.02;
-    burst.maxSize = 0.06;
-    burst.color1 = new B3.Color4(1, 0.85, 0.45, 1);
-    burst.color2 = new B3.Color4(1, 0.65, 0.25, 1);
-    burst.colorDead = new B3.Color4(1, 0.4, 0.1, 0);
-    burst.blendMode = B3.ParticleSystem.BLENDMODE_ADD;
-    burst.emitRate = 0;
-    burst.manualEmitCount = 0;
-    burst.start();
-    const rp = new B3.ReflectionProbe("rp", 64, S2);
-    rp.renderList.push(bg);
-    rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
-    S2.environmentTexture = rp.cubeTexture;
-    try {
-      const env = new B3.HDRCubeTexture(ENV_HDR, S2, 64, false, true, false, true, () => {
-        S2.environmentTexture = env;
-        S2.environmentIntensity = 0.85;
-      }, () => {
-      });
-    } catch (e) {
-    }
-    set_SC(null);
-    set_SHG(null);
+    let tx;
+    withCtx({ scene: S2, shadows: null }, () => {
+      S2._maxL = 5;
+      S2.clearColor = new B3.Color4(0.07, 0.045, 0.03, 1);
+      S2.ambientColor = B3.Color3.Black();
+      const bg = MB().CreateSphere("bg", { diameter: 60, segments: 16, sideOrientation: B3.Mesh.BACKSIDE }, S2);
+      bg.material = basic3("#0e0906", { fog: false });
+      bg.isPickable = false;
+      this.bg = bg;
+      const halo = mk(bPlane(7, 7), null, 0, 1.4, -3, false);
+      const hm = basic3("#3a2210", { fog: false, add: true });
+      const htx = dynTex(glowCanvas(), 0, true);
+      hm.emissiveTexture = htx;
+      hm.opacityTexture = htx;
+      hm.disableDepthWrite = true;
+      halo.material = hm;
+      this.halo = halo;
+      const hemi = new B3.HemisphericLight("h", V3(0, 1, 0), S2);
+      hemi.intensity = 0.35;
+      hemi.diffuse = col3("#c8b090");
+      hemi.groundColor = col3("#2a1a10");
+      hemi.specular = B3.Color3.Black();
+      const key = this.key = new B3.DirectionalLight("key", V3(-0.5, -0.8, -0.6), S2);
+      key.position = V3(4, 7, 6);
+      key.intensity = 1.7;
+      key.diffuse = col3("#ffe2b8");
+      key.autoUpdateExtends = false;
+      key.orthoLeft = -2;
+      key.orthoRight = 2;
+      key.orthoTop = 3;
+      key.orthoBottom = -1;
+      key.shadowMinZ = 0.5;
+      key.shadowMaxZ = 20;
+      const rim = this.rim = new B3.SpotLight("rim", V3(-2.5, 3.2, -2.5), V3(0.6, -0.5, 0.6), Math.PI / 3, 2, S2);
+      rim.intensity = 1.6;
+      rim.diffuse = col3("#8fc0ff");
+      const rim2 = this.rim2 = new B3.SpotLight("rim2", V3(2.6, 2.6, -2.2), V3(-0.6, -0.4, 0.6), Math.PI / 3, 2, S2);
+      rim2.intensity = 1.1;
+      rim2.diffuse = col3("#ffa860");
+      CTX.shadows = this.shadows = new B3.ShadowGenerator(this.small ? 1024 : 2048, key);
+      CTX.shadows.bias = 6e-4;
+      CTX.shadows.normalBias = 0.01;
+      CTX.shadows.darkness = 0.2;
+      CTX.shadows.usePercentageCloserFiltering = this.engine.webGLVersion >= 2;
+      CTX.shadows.filteringQuality = B3.ShadowGenerator.QUALITY_MEDIUM;
+      const stone = mat3("#5a4030", { roughness: 0.8 }), top = mat3("#7a5a3e", { roughness: 0.65 });
+      mk(bCyl(1.05, 1.15, 0.22, 48), stone, 0, -0.11, 0, false);
+      mk(bCyl(0.98, 0.98, 0.02, 48), top, 0, 5e-3, 0, false);
+      this.ring = mk(MB().CreateTorus("ring", { diameter: 2.04, thickness: 0.03, tessellation: 64 }, S2), basic3("#e8913f"), 0, 0.01, 0, false);
+      tx = dynTex(glowCanvas(), 0, true);
+      const dust = new B3.ParticleSystem("motes", 160, S2);
+      dust.particleTexture = tx;
+      dust.emitter = V3(0, 0, 0);
+      dust.minEmitBox = V3(-1.6, 0, -1.2);
+      dust.maxEmitBox = V3(1.6, 2.6, 1);
+      dust.direction1 = V3(-0.05, 0.05, -0.05);
+      dust.direction2 = V3(0.05, 0.15, 0.05);
+      dust.minLifeTime = 4;
+      dust.maxLifeTime = 8;
+      dust.minSize = 0.01;
+      dust.maxSize = 0.03;
+      dust.color1 = new B3.Color4(1, 0.85, 0.6, 0.7);
+      dust.color2 = new B3.Color4(1, 0.7, 0.4, 0.5);
+      dust.colorDead = new B3.Color4(1, 0.6, 0.3, 0);
+      dust.emitRate = 20;
+      dust.blendMode = B3.ParticleSystem.BLENDMODE_ADD;
+      dust.preWarmCycles = 100;
+      dust.start();
+      const burst = this.burst = new B3.ParticleSystem("burst", 500, S2);
+      burst.particleTexture = tx;
+      burst.emitter = V3(0, 0.1, 0);
+      burst.minEmitBox = V3(-0.6, 0, -0.6);
+      burst.maxEmitBox = V3(0.6, 0.1, 0.6);
+      burst.direction1 = V3(-0.4, 2, -0.4);
+      burst.direction2 = V3(0.4, 4, 0.4);
+      burst.gravity = V3(0, -1.5, 0);
+      burst.minLifeTime = 0.8;
+      burst.maxLifeTime = 1.8;
+      burst.minSize = 0.02;
+      burst.maxSize = 0.06;
+      burst.color1 = new B3.Color4(1, 0.85, 0.45, 1);
+      burst.color2 = new B3.Color4(1, 0.65, 0.25, 1);
+      burst.colorDead = new B3.Color4(1, 0.4, 0.1, 0);
+      burst.blendMode = B3.ParticleSystem.BLENDMODE_ADD;
+      burst.emitRate = 0;
+      burst.manualEmitCount = 0;
+      burst.start();
+      const rp = new B3.ReflectionProbe("rp", 64, S2);
+      rp.renderList.push(bg);
+      rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
+      S2.environmentTexture = rp.cubeTexture;
+      try {
+        const env = new B3.HDRCubeTexture(ENV_HDR, S2, 64, false, true, false, true, () => {
+          S2.environmentTexture = env;
+          S2.environmentIntensity = 0.85;
+        }, () => {
+        });
+      } catch (e) {
+      }
+    });
     this.look({ dof: { f: 85, stop: 2, d: 4200 }, exposure: 1.05, ssao: 0.35, bloomW: 0.35, bloomT: 0.85 });
     this.yaw = 0;
     this.yawV = 0;
@@ -5399,12 +5536,13 @@ var HeroStage = class extends Stage3D {
     dp.start();
     const cv = this.cv;
     cv.addEventListener("pointerdown", (e) => {
+      if (!this.isCur()) return;
       this.drag = { x: e.clientX, y0: this.yaw };
       this.auto = false;
       cv.setPointerCapture && cv.setPointerCapture(e.pointerId);
     });
     cv.addEventListener("pointermove", (e) => {
-      if (!this.drag) return;
+      if (!this.drag || !this.isCur()) return;
       const nx = this.yaw;
       this.yaw = this.drag.y0 + (e.clientX - this.drag.x) * 0.012;
       this.yawV = (this.yaw - nx) * 60;
@@ -5421,13 +5559,7 @@ var HeroStage = class extends Stage3D {
   setHero(def, prog0) {
     if (this.def === def && this.o) return;
     if (this.o) this.o.root.dispose(false, true);
-    set_SC(this.scene);
-    set_SHG(this.shadows);
-    set_PBR_ON(true);
-    const o = makeHuman3(def);
-    set_PBR_ON(false);
-    set_SC(null);
-    set_SHG(null);
+    const o = makeHuman3(def, { scene: this.scene, shadows: this.shadows, pbr: true });
     o.base = V3(0, 0, 0);
     o.face = 0;
     o.side = "A";
@@ -5490,7 +5622,7 @@ function mountHeroStage(id) {
   const host = document.querySelector("#overlay .cfig");
   if (!host) return;
   try {
-    if (!HERO_STAGE) HERO_STAGE = new HeroStage();
+    if (!HERO_STAGE || !HERO_STAGE.alive) HERO_STAGE = new HeroStage();
     const p = prog(id), d = CH[id];
     host.classList.add("has3d");
     HERO_STAGE.setHero(d, p);
@@ -5518,114 +5650,112 @@ var CampStage = class extends Stage3D {
     super({ cls: "stage3d camp3d", maxDpr: 1.75 });
     this.raid = false;
     this.units = {};
-    set_SC(this.scene);
-    buildEnv(this, "sietch");
-    set_SC(this.scene);
-    set_SHG(this.shadows);
-    const S2 = this.scene;
-    S2.fogStart = 30;
-    S2.fogEnd = 120;
-    const rp = new B3.ReflectionProbe("rp", 64, S2);
-    rp.renderList.push(this.sky, this.ground);
-    rp.position = V3(0, 2, 0);
-    rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
-    S2.environmentTexture = rp.cubeTexture;
-    const fx = 0, fz = 1.2, fy = this.heightAt(fx, fz);
-    this.fire = V3(fx, fy, fz);
-    const stoneM = mat3("#4a3a30", { roughness: 0.9, flatShading: true });
-    for (let i = 0; i < 10; i++) {
-      const a = i / 10 * Math.PI * 2, st = mk(bRock(i + 90, 0), stoneM, fx + Math.cos(a) * 0.55, fy + 0.05, fz + Math.sin(a) * 0.55);
-      st.scaling.setAll(0.16 + i % 3 * 0.03);
-    }
-    const logM = mat3("#3a2414", { roughness: 0.9 });
-    for (let i = 0; i < 4; i++) {
-      const lg = mk(bCyl(0.06, 0.07, 0.9, 8), logM, fx, fy + 0.12, fz);
-      lg.rotation.z = Math.PI / 2 - 0.35;
-      lg.rotation.y = i * Math.PI / 4;
-    }
-    mk(bSph(0.22, 12), basic3("#ff7a2a"), fx, fy + 0.12, fz, false).scaling.set(1, 0.4, 1);
-    const L = this.fireL = new B3.PointLight("fire", V3(fx, fy + 0.8, fz), S2);
-    L.diffuse = col3("#ff9a4a");
-    L.specular = col3("#ff8a3a");
-    L.intensity = 2.4;
-    L.range = 14;
-    this.fireShadow = null;
-    const tx = dynTex(glowCanvas(), 0, true);
-    const fl = new B3.ParticleSystem("flame", 400, S2);
-    fl.particleTexture = tx;
-    fl.emitter = V3(fx, fy + 0.1, fz);
-    fl.minEmitBox = V3(-0.18, 0, -0.18);
-    fl.maxEmitBox = V3(0.18, 0.05, 0.18);
-    fl.direction1 = V3(-0.15, 1.4, -0.15);
-    fl.direction2 = V3(0.15, 2.2, 0.15);
-    fl.minLifeTime = 0.35;
-    fl.maxLifeTime = 0.8;
-    fl.minSize = 0.18;
-    fl.maxSize = 0.42;
-    fl.addSizeGradient(0, 0.3);
-    fl.addSizeGradient(1, 0.05);
-    fl.addColorGradient(0, new B3.Color4(1, 0.9, 0.5, 1));
-    fl.addColorGradient(0.4, new B3.Color4(1, 0.5, 0.15, 0.9));
-    fl.addColorGradient(1, new B3.Color4(0.5, 0.1, 0.02, 0));
-    fl.emitRate = 260;
-    fl.blendMode = B3.ParticleSystem.BLENDMODE_ADD;
-    fl.start();
-    const sp = new B3.ParticleSystem("sparks", 120, S2);
-    sp.particleTexture = tx;
-    sp.emitter = V3(fx, fy + 0.3, fz);
-    sp.minEmitBox = V3(-0.15, 0, -0.15);
-    sp.maxEmitBox = V3(0.15, 0.2, 0.15);
-    sp.direction1 = V3(-0.5, 2, -0.5);
-    sp.direction2 = V3(0.5, 4, 0.5);
-    sp.minLifeTime = 1;
-    sp.maxLifeTime = 2.4;
-    sp.minSize = 0.02;
-    sp.maxSize = 0.05;
-    sp.color1 = new B3.Color4(1, 0.7, 0.3, 1);
-    sp.color2 = new B3.Color4(1, 0.5, 0.15, 1);
-    sp.colorDead = new B3.Color4(1, 0.3, 0, 0);
-    sp.emitRate = 18;
-    sp.blendMode = B3.ParticleSystem.BLENDMODE_ADD;
-    sp.start();
-    const smk = new B3.ParticleSystem("smoke", 120, S2);
-    smk.particleTexture = tx;
-    smk.emitter = V3(fx, fy + 1.2, fz);
-    smk.minEmitBox = V3(-0.1, 0, -0.1);
-    smk.maxEmitBox = V3(0.1, 0.2, 0.1);
-    smk.direction1 = V3(0.1, 0.8, -0.1);
-    smk.direction2 = V3(0.4, 1.3, 0.1);
-    smk.minLifeTime = 3;
-    smk.maxLifeTime = 5;
-    smk.minSize = 0.4;
-    smk.maxSize = 0.9;
-    smk.addSizeGradient(0, 0.3);
-    smk.addSizeGradient(1, 1.6);
-    smk.color1 = new B3.Color4(0.25, 0.2, 0.18, 0.25);
-    smk.color2 = new B3.Color4(0.2, 0.17, 0.15, 0.2);
-    smk.colorDead = new B3.Color4(0.1, 0.1, 0.1, 0);
-    smk.emitRate = 14;
-    smk.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD;
-    smk.start();
-    const tentM = mat3("#8a6a4a", { roughness: 0.95, side: "double" }), darkM = mat3("#3a2a1c");
-    for (const [x, z, r, s] of [[-6.5, -3.5, 0.6, 1.3], [6.8, -4.2, -0.5, 1.5], [-9, 1, 1.2, 1.1]]) {
-      const t = mk(bCyl(0, 1.6, 2, 4), tentM, x, this.heightAt(x, z) + 1, z);
-      t.rotation.y = r;
-      t.scaling.set(s, s, s * 0.8);
-      mk(bBox(0.5, 1, 0.05), darkM, x + Math.sin(r) * 1.05 * s, this.heightAt(x, z) + 0.5, z + Math.cos(r) * 1.05 * s).rotation.y = r;
-    }
-    const crateM = mat3("#6a4a2a", { roughness: 0.8 });
-    for (const [x, z] of [[4.6, -1.5], [5.2, -1.1], [-4.4, -2.2]]) mk(bBox(0.6, 0.5, 0.6), crateM, x, this.heightAt(x, z) + 0.25, z).rotation.y = x;
-    const pole = mat3("#4a3420"), flag = mat3(S_FLAG(), { side: "double", roughness: 0.9 });
-    for (const x of [-3.6, 3.6]) {
-      const z = -2.8, y = this.heightAt(x, z);
-      mk(bCyl(0.04, 0.05, 3.6, 8), pole, x, y + 1.8, z);
-      this.flag = this.flag || [];
-      const f = mk(bPlane(0.9, 1.3), flag, x + 0.48, y + 3, z);
-      this.flag.push(f);
-    }
-    staticNoCast(this);
-    set_SC(null);
-    set_SHG(null);
+    withCtx({ scene: this.scene, shadows: null }, () => {
+      buildEnv(this, "sietch");
+      CTX.shadows = this.shadows;
+      const S2 = this.scene;
+      S2.fogStart = 30;
+      S2.fogEnd = 120;
+      const rp = new B3.ReflectionProbe("rp", 64, S2);
+      rp.renderList.push(this.sky, this.ground);
+      rp.position = V3(0, 2, 0);
+      rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
+      S2.environmentTexture = rp.cubeTexture;
+      const fx = 0, fz = 1.2, fy = this.heightAt(fx, fz);
+      this.fire = V3(fx, fy, fz);
+      const stoneM = mat3("#4a3a30", { roughness: 0.9, flatShading: true });
+      for (let i = 0; i < 10; i++) {
+        const a = i / 10 * Math.PI * 2, st = mk(bRock(i + 90, 0), stoneM, fx + Math.cos(a) * 0.55, fy + 0.05, fz + Math.sin(a) * 0.55);
+        st.scaling.setAll(0.16 + i % 3 * 0.03);
+      }
+      const logM = mat3("#3a2414", { roughness: 0.9 });
+      for (let i = 0; i < 4; i++) {
+        const lg = mk(bCyl(0.06, 0.07, 0.9, 8), logM, fx, fy + 0.12, fz);
+        lg.rotation.z = Math.PI / 2 - 0.35;
+        lg.rotation.y = i * Math.PI / 4;
+      }
+      mk(bSph(0.22, 12), basic3("#ff7a2a"), fx, fy + 0.12, fz, false).scaling.set(1, 0.4, 1);
+      const L = this.fireL = new B3.PointLight("fire", V3(fx, fy + 0.8, fz), S2);
+      L.diffuse = col3("#ff9a4a");
+      L.specular = col3("#ff8a3a");
+      L.intensity = 2.4;
+      L.range = 14;
+      this.fireShadow = null;
+      const tx = dynTex(glowCanvas(), 0, true);
+      const fl = new B3.ParticleSystem("flame", 400, S2);
+      fl.particleTexture = tx;
+      fl.emitter = V3(fx, fy + 0.1, fz);
+      fl.minEmitBox = V3(-0.18, 0, -0.18);
+      fl.maxEmitBox = V3(0.18, 0.05, 0.18);
+      fl.direction1 = V3(-0.15, 1.4, -0.15);
+      fl.direction2 = V3(0.15, 2.2, 0.15);
+      fl.minLifeTime = 0.35;
+      fl.maxLifeTime = 0.8;
+      fl.minSize = 0.18;
+      fl.maxSize = 0.42;
+      fl.addSizeGradient(0, 0.3);
+      fl.addSizeGradient(1, 0.05);
+      fl.addColorGradient(0, new B3.Color4(1, 0.9, 0.5, 1));
+      fl.addColorGradient(0.4, new B3.Color4(1, 0.5, 0.15, 0.9));
+      fl.addColorGradient(1, new B3.Color4(0.5, 0.1, 0.02, 0));
+      fl.emitRate = 260;
+      fl.blendMode = B3.ParticleSystem.BLENDMODE_ADD;
+      fl.start();
+      const sp = new B3.ParticleSystem("sparks", 120, S2);
+      sp.particleTexture = tx;
+      sp.emitter = V3(fx, fy + 0.3, fz);
+      sp.minEmitBox = V3(-0.15, 0, -0.15);
+      sp.maxEmitBox = V3(0.15, 0.2, 0.15);
+      sp.direction1 = V3(-0.5, 2, -0.5);
+      sp.direction2 = V3(0.5, 4, 0.5);
+      sp.minLifeTime = 1;
+      sp.maxLifeTime = 2.4;
+      sp.minSize = 0.02;
+      sp.maxSize = 0.05;
+      sp.color1 = new B3.Color4(1, 0.7, 0.3, 1);
+      sp.color2 = new B3.Color4(1, 0.5, 0.15, 1);
+      sp.colorDead = new B3.Color4(1, 0.3, 0, 0);
+      sp.emitRate = 18;
+      sp.blendMode = B3.ParticleSystem.BLENDMODE_ADD;
+      sp.start();
+      const smk = new B3.ParticleSystem("smoke", 120, S2);
+      smk.particleTexture = tx;
+      smk.emitter = V3(fx, fy + 1.2, fz);
+      smk.minEmitBox = V3(-0.1, 0, -0.1);
+      smk.maxEmitBox = V3(0.1, 0.2, 0.1);
+      smk.direction1 = V3(0.1, 0.8, -0.1);
+      smk.direction2 = V3(0.4, 1.3, 0.1);
+      smk.minLifeTime = 3;
+      smk.maxLifeTime = 5;
+      smk.minSize = 0.4;
+      smk.maxSize = 0.9;
+      smk.addSizeGradient(0, 0.3);
+      smk.addSizeGradient(1, 1.6);
+      smk.color1 = new B3.Color4(0.25, 0.2, 0.18, 0.25);
+      smk.color2 = new B3.Color4(0.2, 0.17, 0.15, 0.2);
+      smk.colorDead = new B3.Color4(0.1, 0.1, 0.1, 0);
+      smk.emitRate = 14;
+      smk.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD;
+      smk.start();
+      const tentM = mat3("#8a6a4a", { roughness: 0.95, side: "double" }), darkM = mat3("#3a2a1c");
+      for (const [x, z, r, s] of [[-6.5, -3.5, 0.6, 1.3], [6.8, -4.2, -0.5, 1.5], [-9, 1, 1.2, 1.1]]) {
+        const t = mk(bCyl(0, 1.6, 2, 4), tentM, x, this.heightAt(x, z) + 1, z);
+        t.rotation.y = r;
+        t.scaling.set(s, s, s * 0.8);
+        mk(bBox(0.5, 1, 0.05), darkM, x + Math.sin(r) * 1.05 * s, this.heightAt(x, z) + 0.5, z + Math.cos(r) * 1.05 * s).rotation.y = r;
+      }
+      const crateM = mat3("#6a4a2a", { roughness: 0.8 });
+      for (const [x, z] of [[4.6, -1.5], [5.2, -1.1], [-4.4, -2.2]]) mk(bBox(0.6, 0.5, 0.6), crateM, x, this.heightAt(x, z) + 0.25, z).rotation.y = x;
+      const pole = mat3("#4a3420"), flag = mat3(S_FLAG(), { side: "double", roughness: 0.9 });
+      for (const x of [-3.6, 3.6]) {
+        const z = -2.8, y = this.heightAt(x, z);
+        mk(bCyl(0.04, 0.05, 3.6, 8), pole, x, y + 1.8, z);
+        this.flag = this.flag || [];
+        const f = mk(bPlane(0.9, 1.3), flag, x + 0.48, y + 3, z);
+        this.flag.push(f);
+      }
+      staticNoCast(this);
+    });
     this.look({ dof: { f: 50, stop: 2.4, d: 9e3 }, exposure: 1.25, ssao: 0.9, bloomT: 0.7, bloomW: 0.45, vig: 2.6 });
     this.slots = [[0, -0.7], [-1.45, -0.3], [1.45, -0.3], [-2.55, 0.6], [2.55, 0.6]];
   }
@@ -5635,24 +5765,20 @@ var CampStage = class extends Stage3D {
     this.key0 = key;
     for (const o of Object.values(this.units)) o.root.dispose(false, true);
     this.units = {};
-    set_SC(this.scene);
-    set_SHG(this.shadows);
-    ids.forEach((id, k) => {
-      set_PBR_ON(true);
-      const o = makeHuman3(CH[id]);
-      set_PBR_ON(false);
-      const [x, z] = this.slots[k] || [0, 0], y = this.heightAt(x, z);
-      o.base = V3(x, y, z);
-      o.face = -x * 0.16;
-      o.side = "A";
-      o.phase = k * 1.7;
-      o.def = CH[id];
-      o.id = id;
-      this.units[id] = o;
-      if (this.fireShadow) for (const m of o.root.getChildMeshes()) this.fireShadow.addShadowCaster(m, false);
+    withCtx({ scene: this.scene, shadows: this.shadows }, () => {
+      ids.forEach((id, k) => {
+        const o = makeHuman3(CH[id], { pbr: true });
+        const [x, z] = this.slots[k] || [0, 0], y = this.heightAt(x, z);
+        o.base = V3(x, y, z);
+        o.face = -x * 0.16;
+        o.side = "A";
+        o.phase = k * 1.7;
+        o.def = CH[id];
+        o.id = id;
+        this.units[id] = o;
+        if (this.fireShadow) for (const m of o.root.getChildMeshes()) this.fireShadow.addShadowCaster(m, false);
+      });
     });
-    set_SC(null);
-    set_SHG(null);
   }
   tick(now, t) {
     const f = 0.85 + Math.sin(t * 9) * 0.08 + Math.sin(t * 23) * 0.06 + Math.sin(t * 3.1) * 0.05;
@@ -5732,20 +5858,17 @@ function mountCampStage() {
   const host = document.querySelector(".lobby");
   if (!host) return false;
   try {
-    if (!CAMP_STAGE) CAMP_STAGE = new CampStage();
+    if (!CAMP_STAGE || !CAMP_STAGE.alive) CAMP_STAGE = new CampStage();
     CAMP_STAGE.setSquad(S.squad.slice(0, 5));
     host.classList.add("has3d");
-    host.insertBefore(CAMP_STAGE.cv, host.firstChild);
-    CAMP_STAGE.attach(host);
+    CAMP_STAGE.attach(host, true);
     return true;
   } catch (e) {
     console.warn("camp stage", e);
     return false;
   }
 }
-setInterval(() => {
-  for (const st of [CAMP_STAGE, HERO_STAGE]) if (st && !st.running && st.cv.isConnected && !st.paused()) st.attach(st.cv.parentNode);
-}, 400);
+setInterval(() => hostKick(), 400);
 function set_CAMP_STAGE(v) {
   return CAMP_STAGE = v;
 }
@@ -5798,11 +5921,10 @@ function idbPut(db, k, v) {
 }
 var Baker = class {
   constructor() {
-    const cv = this.cv = document.createElement("canvas");
-    cv.width = 256;
-    cv.height = 452;
-    const E = this.engine = new B3.Engine(cv, true, { preserveDrawingBuffer: true, alpha: true, premultipliedAlpha: false, antialias: true, stencil: false, loseContextOnDispose: true }, false);
-    E.enableOfflineSupport = false;
+    const H = this.host = engineHost().adopt(this);
+    this.alive = true;
+    this.cv = document.createElement("canvas");
+    const E = this.engine = H.engine;
     const S2 = this.scene = new B3.Scene(E);
     S2.useRightHandedSystem = true;
     S2.clearColor = new B3.Color4(0, 0, 0, 0);
@@ -5827,25 +5949,38 @@ var Baker = class {
     rim2.intensity = 0.7;
     rim2.diffuse = col3("#ffb070");
   }
+  target(w, h) {
+    if (this.rt && this.rw === w && this.rh === h) return this.rt;
+    if (this.rt) this.rt.dispose();
+    const t = this.rt = new B3.RenderTargetTexture("bake", { width: w, height: h }, this.scene, false, true);
+    t.samples = this.engine.webGLVersion >= 2 ? 4 : 1;
+    this.rw = w;
+    this.rh = h;
+    return t;
+  }
   async shot(w, h, fov, pos, target) {
-    this.engine.setSize(w, h);
-    this.cv.width = w;
-    this.cv.height = h;
-    this.engine.setSize(w, h);
+    if (!this.alive) return null;
+    const rt = this.target(w, h);
+    this.camera.outputRenderTarget = rt;
     this.camera.fov = fov;
     this.camera.position.copyFrom(pos);
     this.camera.setTarget(target);
     for (let k = 0; k < 30 && !this.scene.isReady(); k++) await bakeSleep(16);
+    if (!this.alive) return null;
     this.scene.render();
     this.scene.render();
-    return await new Promise((res) => this.cv.toBlob((b) => res(b), "image/png"));
+    const px = await rt.readPixels(0, 0, null, true);
+    if (!px || !this.alive) return null;
+    const cv = this.cv;
+    cv.width = w;
+    cv.height = h;
+    const g = cv.getContext("2d"), img = g.createImageData(w, h), row = w * 4, src = new Uint8Array(px.buffer, px.byteOffset, w * h * 4);
+    for (let y = 0; y < h; y++) img.data.set(src.subarray((h - 1 - y) * row, (h - y) * row), y * row);
+    g.putImageData(img, 0, 0);
+    return await new Promise((res) => cv.toBlob((b) => res(b), "image/png"));
   }
   async bake(def) {
-    set_SC(this.scene);
-    set_SHG(null);
-    set_PBR_ON(false);
-    const o = makeHuman3(def);
-    set_SC(null);
+    const o = makeHuman3(def, { scene: this.scene, shadows: null, pbr: false });
     o.base = V3(0, 0, 0);
     o.face = 0;
     o.side = "A";
@@ -5866,12 +6001,15 @@ var Baker = class {
     return { full, face };
   }
   dispose() {
+    if (!this.alive) return;
+    this.alive = false;
     try {
+      if (this.rt) this.rt.dispose();
       this.scene.dispose();
-      this.engine.dispose();
     } catch (e) {
     }
-    freeCanvas(this.cv);
+    this.host.forget(this);
+    this.cv.width = this.cv.height = 0;
   }
 };
 async function bakePortraits() {
@@ -5894,7 +6032,7 @@ async function bakePortraits() {
         }
         await bakeSleep(1500);
       }
-      if (!bk) bk = new Baker();
+      if (!bk || !bk.alive) bk = new Baker();
       const r = await bk.bake(CH[id]);
       if (!r.full || !r.face) continue;
       await idbPut(db, BAKE_V + ":" + id, r);
@@ -9907,7 +10045,6 @@ function freeStages() {
       set_HERO_SNAP(null);
     }
     if (typeof CAMP_STAGE !== "undefined" && CAMP_STAGE) {
-      CAMP_STAGE.cv.remove();
       CAMP_STAGE.dispose();
       set_CAMP_STAGE(null);
     }

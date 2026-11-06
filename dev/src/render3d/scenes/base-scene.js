@@ -1,6 +1,6 @@
 // render3d/scenes/base-scene.js — строки 2384–2426 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { BT } from '../../core/state.js';
-import '../../assets/env-hdr.js'; // порядок исполнения
+import { engineHost } from '../engine-host.js';
 import { V3, inPlaceKeep } from '../materials.js';
 import { B3 } from '../base.js';
 
@@ -9,10 +9,10 @@ function freeCanvas(cv, keep) { try { if (!cv) return; cv.width = 0; cv.height =
 const SAVE_LOW = () => { try { return !!JSON.parse(localStorage.getItem('dune-gfx-low') || 'false'); } catch (e) { return false; } };
 class Stage3D {
   constructor(opts = {}) {
-    this.cv = document.createElement('canvas'); this.cv.className = opts.cls || 'stage3d'; this.cv.setAttribute('aria-hidden', 'true');
+    // phase 3b: one shared engine/canvas (EngineHost); the stage owns only its scene
+    const H = this.host = engineHost().adopt(this); this.cv = H.cv; this.cls = opts.cls || 'stage3d'; this.maxDpr = opts.maxDpr || 2;
     this.small = Math.min(innerWidth, innerHeight) < 600;
-    const E = this.engine = new B3.Engine(this.cv, true, { stencil: true, antialias: true, powerPreference: 'high-performance', alpha: !!opts.alpha, premultipliedAlpha: false, loseContextOnDispose: true }, false);
-    E.setHardwareScalingLevel(1 / Math.min(window.devicePixelRatio || 1, opts.maxDpr || 2)); E.enableOfflineSupport = false;
+    const E = this.engine = H.engine;
     const S = this.scene = new B3.Scene(E); S.useRightHandedSystem = true; S.skipPointerMovePicking = true;
     this.camera = new B3.UniversalCamera('cam', V3(0, 1.4, 6), S); this.camera.minZ = .05; this.camera.maxZ = 1200; this.camera.inputs.clear();
     this.parts = []; this.tr = []; this.alive = true; this.running = false;
@@ -29,14 +29,13 @@ class Stage3D {
     this.glow = new B3.GlowLayer('glow', S, { mainTextureRatio: this.small ? .35 : .5, blurKernelSize: 32 }); this.glow.intensity = pipeOpts.glow ?? .6;
     try { if (pipeOpts.ssao && this.engine.webGLVersion >= 2 && B3.SSAO2RenderingPipeline.IsSupported) { const ao = new B3.SSAO2RenderingPipeline('ssao', S, { ssaoRatio: this.small ? .5 : .75, blurRatio: .5 }, [this.camera], true); ao.radius = pipeOpts.ssao; ao.totalStrength = 1.2; ao.base = .1; ao.samples = this.small ? 8 : 16; ao.maxZ = 60; } } catch (e) {}
   }
-  attach(host) {
-    if (!host) return;
-    if (this.cv.parentNode !== host) host.appendChild(this.cv);
-    this.engine.resize();
-    if (!this.running) { this.running = true; this.engine.runRenderLoop(() => this.frame()); }
+  attach(host, first) {
+    if (!host || !this.alive) return;
+    this.host.mount(this, host, { cls: this.cls, dpr: this.maxDpr, first });
   }
+  isCur() { return this.host.isCur(this); }
   frame() {
-    if (!this.cv.isConnected || this.paused()) { this.engine.stopRenderLoop(); this.running = false; this.stopped = performance.now(); return; }
+    if (this.paused()) return;
     if (this.cv.clientWidth !== this.w || this.cv.clientHeight !== this.h) { this.w = this.cv.clientWidth; this.h = this.cv.clientHeight; this.engine.resize(); this.onResize && this.onResize(); }
     const now = performance.now(); this.tick(now, now / 1000);
     if (this.tr.length) inPlaceKeep(this.tr, T => { const k = (now - T.t0) / T.life; if (k >= 1) { T.mesh.dispose(false, true); return false; } T.upd(T.mesh, k); return true; });
@@ -44,7 +43,7 @@ class Stage3D {
   }
   paused() { return !!(BT && BT.B); }
   fade(mesh, life, upd) { this.tr.push({ mesh, t0: performance.now(), life, upd }); }
-  dispose() { this.alive = false; try { this.engine.stopRenderLoop(); this.scene.dispose(); this.engine.dispose(); } catch (e) {} freeCanvas(this.cv); }
+  dispose() { if (!this.alive) return; this.alive = false; try { this.scene.dispose(); } catch (e) {} this.host.forget(this); }
 }
 
 
