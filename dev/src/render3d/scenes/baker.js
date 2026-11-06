@@ -7,7 +7,7 @@ import { toast } from '../../ui/common.js';
 import { errLog } from '../../core/errlog.js';
 import { BT, S } from '../../core/state.js';
 import { SAVE_LOW } from './base-scene.js';
-import { setGfx } from '../quality.js';
+import { gfxMemFallback } from '../quality.js';
 import { engineHost } from '../engine-host.js';
 import { poseHuman } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
@@ -106,7 +106,7 @@ setTimeout(() => {
   if (!m || Date.now() - m.t > 3 * 3600e3) return;
   errLog('crash', 'reload during battle (' + (m.mode || '?') + ')');
   let n = 0; try { n = (+localStorage.getItem('dune-crashN') || 0) + 1; localStorage.setItem('dune-crashN', n); } catch (e) {}
-  if (n >= 2 && typeof SAVE_LOW === 'function' && !SAVE_LOW()) { setGfx('low'); try { localStorage.setItem('dune-crashN', '0'); } catch (e) {} toast('Бой прервался из-за нехватки памяти. Включена упрощённая графика (можно вернуть в настройках боя).'); }
+  if (n >= 2 && typeof SAVE_LOW === 'function' && !SAVE_LOW()) { gfxMemFallback(); try { localStorage.setItem('dune-crashN', '0'); } catch (e) {} toast('Бой прервался из-за нехватки памяти. Графика снижена до «Низкой» (можно изменить в настройках боя).'); }
   else toast('Бой прервался: система перезапустила игру из-за нехватки памяти.');
 }, 1500);
 

@@ -1,6 +1,6 @@
 // render3d/quality.js — профили графики (фаза 6, шаг 3). Один источник параметров качества для сцен и хоста движка.
 // Значение параметра — скаляр или пара [desktop, phone]; phone = «small» (меньшая сторона окна < 600 px), как и раньше в сценах.
-// Хранение: localStorage 'dune-gfx' = { p: 'auto'|'high'|'med'|'low', auto: <ступеней понижения от базы auto> }.
+// Хранение: localStorage 'dune-gfx' = { p: 'auto'|'high'|'med'|'low', auto: <ступеней понижения от базы auto, 0..3>, bad, good, noUp }.
 // auto: база desktop — high, phone — med; адаптивное понижение (шаг 6) двигает её вниз на auto ступеней.
 // Шаг 3: HIGH = вид v59. Шаг 5: LOW от MED вниз (см. PROFILES.low).
 // Шаг 4: MED — без SSAO, grain, хроматики и резкости, MSAA 1, DoF только у героя, тени 1024 только по персонажам (тени и контактный AO
@@ -24,6 +24,7 @@ const HIGH = {
   glowSel: false,                   // glow только по светящимся мешам (без неба и фона)
   glowKernel: 32,                   // blurKernelSize GlowLayer
   shadowQ: 'medium',                // качество PCF теней (WebGL2): 'medium' | 'low'
+  arenaActive: 0,                   // шаг 6: потолок active-кадров в бою (0 — как fps.active); 30 — ступень low30
 };
 const PROFILES = {
   high: HIGH,
@@ -35,7 +36,9 @@ PROFILES.low = { ...PROFILES.med, dpr: { arena: 1.25, hero: [1.5, 1.25], camp: 1
   glowRatio: [.35, .25], glowKernel: 16, shadowSize: 512, shadowQ: 'low',
   probe: { arena: 32, hero: 32, camp: 32 }, groundSeg: [100, 80], particles: .5,
   fps: { active: 60, idle: 20, idleLow: 15, static: 0 }, campIdle: 'idleLow' };
-const ORDER = ['high', 'med', 'low'];
+// шаг 6: ступени auto; low30 — LOW с 30 fps в бою, только для авто (ручного выбора нет)
+PROFILES.low30 = { ...PROFILES.low, arenaActive: 30 };
+const ORDER = ['high', 'med', 'low'], STEPS = ['high', 'med', 'low', 'low30'];
 const KEY = 'dune-gfx';
 let STORE = null; // прочитанное значение; пишется только через setGfx
 function readGfx() {
@@ -49,25 +52,47 @@ function readGfx() {
     }
   } catch (e) {}
   if (!o || typeof o !== 'object') o = {};
-  return (STORE = { p: ORDER.includes(o.p) ? o.p : 'auto', auto: Math.max(0, Math.min(2, o.auto | 0)) });
+  const n = (v, m) => Math.max(0, Math.min(m, v | 0));
+  return (STORE = { p: ORDER.includes(o.p) ? o.p : 'auto', auto: n(o.auto, 3), bad: n(o.bad, 9), good: n(o.good, 99), noUp: !!o.noUp });
 }
 function writeGfx(o) { STORE = o; try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} CACHE = {}; }
-// выбранный уровень: 'high' | 'med' | 'low'
-function gfxLevel(small = isSmall()) {
+// ступень профиля: 'high' | 'med' | 'low' | 'low30' (последняя — только в auto)
+const autoBase = small => small ? 1 : 0, autoMax = small => STEPS.length - 1 - autoBase(small);
+function gfxStep(small = isSmall()) {
   const o = readGfx(); if (o.p !== 'auto') return o.p;
-  return ORDER[Math.min(ORDER.length - 1, (small ? 1 : 0) + o.auto)];
+  return STEPS[Math.min(STEPS.length - 1, autoBase(small) + o.auto)];
 }
+// выбранный уровень: 'high' | 'med' | 'low'
+function gfxLevel(small = isSmall()) { const s = gfxStep(small); return s === 'low30' ? 'low' : s; }
 let CACHE = {};
 // разрешённые параметры текущего профиля для desktop/phone
 function gfx(small = isSmall()) {
-  const lv = gfxLevel(small), k = lv + (small ? 'p' : 'd'); if (CACHE[k]) return CACHE[k];
+  const lv = gfxStep(small), k = lv + (small ? 'p' : 'd'); if (CACHE[k]) return CACHE[k];
   const pick = v => Array.isArray(v) ? v[small ? 1 : 0] : v && typeof v === 'object' && !('active' in v) ? Object.fromEntries(Object.entries(v).map(([n, x]) => [n, pick(x)])) : v;
   const P = PROFILES[lv], r = { level: lv };
   for (const n in P) r[n] = pick(P[n]);
   return (CACHE[k] = r);
 }
-// p: 'auto' | 'high' | 'med' | 'low'; понижение auto сбрасывается при ручном выборе
-function setGfx(p, auto) { const o = readGfx(); writeGfx({ p, auto: auto ?? (p === 'auto' ? o.auto : 0) }); }
+// p: 'auto' | 'high' | 'med' | 'low'; любой ручной выбор (в т.ч. «Авто») сбрасывает понижение auto и счётчики (шаг 6)
+function setGfx(p) { writeGfx({ p, auto: 0, bad: 0, good: 0, noUp: false }); }
+// откат по нехватке памяти (baker): остаёмся в auto на ступени LOW, повышение запрещено
+function gfxMemFallback(small = isSmall()) {
+  const lowAt = STEPS.indexOf('low') - autoBase(small), o = readGfx();
+  writeGfx({ p: 'auto', auto: Math.max(lowAt, o.p === 'auto' ? o.auto : 0), bad: 0, good: 0, noUp: true });
+}
+// шаг 6: адаптивное понижение. r — итог боя от engine-host.perfEnd(): { sec, late, p95, capped } (p95 — доля целевого интервала).
+// Плохой бой: опозданий > 15% или p95 > 1,6; хороший: < 3% и p95 <= 1,2. 2 плохих подряд — ступень вниз, 6 хороших подряд — вверх
+// (если не запрещено откатом по памяти). Бой короче 15 с активных кадров и упор во внешний предел частоты (энергосбережение) не считаются.
+// Возвращает 'down' | 'up' | null; новый профиль действует со следующей сцены.
+const PERF_MIN_SEC = 15;
+function gfxReport(r, small = isSmall()) {
+  const o = readGfx(); if (o.p !== 'auto' || !r || r.sec < PERF_MIN_SEC || r.capped) return null;
+  const bad = r.late > .15 || r.p95 > 1.6, good = r.late < .03 && r.p95 <= 1.2;
+  const n = { ...o, bad: bad ? o.bad + 1 : 0, good: good ? o.good + 1 : 0 }; let dir = null;
+  if (n.bad >= 2 && o.auto < autoMax(small)) { n.auto = o.auto + 1; n.bad = n.good = 0; dir = 'down'; }
+  else if (n.good >= 6 && o.auto > 0 && !o.noUp) { n.auto = o.auto - 1; n.bad = n.good = 0; dir = 'up'; }
+  writeGfx(n); return dir;
+}
 // обёртка прежнего флага упрощённой графики (battle-settings, baker, camp, arena)
 const SAVE_LOW = () => gfxLevel() === 'low';
 // DoF сцены: true — везде, 'hero' — только окно героя
@@ -84,4 +109,4 @@ function glowy(M) {
   const c = M.emissiveColor; return !!c && c.r + c.g + c.b > .02;
 }
 
-export { gfx, gfxLevel, readGfx, setGfx, SAVE_LOW, dofOn, glowOnly };
+export { gfx, gfxLevel, gfxStep, readGfx, setGfx, gfxMemFallback, gfxReport, SAVE_LOW, dofOn, glowOnly };

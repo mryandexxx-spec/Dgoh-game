@@ -11,8 +11,7 @@ import { toast } from '../common.js';
 import { BT, NOTES, S, set_BT, set_view, view } from '../../core/state.js';
 import { persist } from '../../core/save.js';
 import { GLYPH } from '../../data/glyphs.js';
-import { SAVE_LOW } from '../../render3d/scenes/base-scene.js';
-import { setGfx } from '../../render3d/quality.js';
+import { setGfx, readGfx, gfxStep } from '../../render3d/quality.js';
 import { aiPlan } from '../../logic/battle/ai.js';
 import { fmt } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
@@ -25,12 +24,26 @@ function openBattleSettings() {
       <button class="btn bsb" data-bsauto="1"><b>Автобой</b><small>${BT.auto ? 'включён' : 'выключен'}</small></button>
       <button class="btn bsb" data-bsspeed="1"><b>Скорость ×${BT.speed}</b><small>нажмите, чтобы сменить</small></button>
       <button class="btn bsb" data-bslog="1"><b>Журнал боя</b><small>${BT.showLog ? 'показан' : 'скрыт'}</small></button>
-      <button class="btn bsb" data-bsgfx="1"><b>Графика: ${SAVE_LOW() ? 'экономная' : 'высокая'}</b><small>${SAVE_LOW() ? 'без глубины резкости и SSAO — для слабых телефонов' : 'все эффекты; применится со следующего боя'}</small></button>
       <button class="btn bsb" data-bscine="1"><b>Наезд камеры</b><small>${CINE_OFF() ? 'выключен — камера неподвижна' : 'включён на особых и мощных умениях'}</small></button>
       <button class="btn bsb" data-bsdlg="1"><b>Диалоги перед боем</b><small>${S.skipDlg ? 'выключены' : 'включены'}</small></button>
+      ${gfxRow()}
     </div>
     <div class="acts"><button class="btn" data-bsreplay="1">${GLYPH.march ? '' : ''}Переиграть<small>начать бой заново</small></button><button class="btn danger" data-bsquit="1">Отступить<small>засчитается поражение</small></button><button class="btn go" data-bpopx="1" style="margin-left:auto">Продолжить</button></div>`);
 }
+// шаг 6: строка «Графика» — Авто / Высокая / Средняя / Низкая; справа фактический уровень (для авто — подобранный)
+const GFX_OPT = [['auto', 'Авто'], ['high', 'Высокая'], ['med', 'Средняя'], ['low', 'Низкая']];
+const GFX_CAP = { auto: 'Подбирается по устройству и плавности.', high: 'Все эффекты: SSAO, глубина резкости, bloom. Для iPad и ПК.',
+  med: 'Без SSAO и зерна, глубина резкости только у героя. Рекомендуется для iPhone.', low: 'Без глубины резкости и bloom, упрощённые тени. Для слабых или горячих телефонов.' };
+const GFX_NOW = { high: 'высокая', med: 'средняя', low: 'низкая', low30: 'низкая, 30 fps в бою' };
+function gfxRow() {
+  const p = readGfx().p;
+  return `<div class="bsgfx"><div class="bsgh"><b>Графика</b><small>сейчас: ${GFX_NOW[gfxStep()]}</small></div>
+        <div class="bsseg" role="radiogroup" aria-label="Графика">${GFX_OPT.map(([k, t]) => `<button class="btn${k === p ? ' on' : ''}" role="radio" aria-checked="${k === p}" data-bsgfx="${k}">${t}</button>`).join('')}</div>
+        <small>${GFX_CAP[p]} Применится со следующего боя.</small></div>`;
+}
+// шаг 6: адаптивное понижение (engine-host → quality.gfxReport) сообщает о смене ступени после боя
+const GFX_TOAST = { down: 'Графика снижена до «{l}» для плавности — можно изменить в настройках боя', up: 'Плавность в норме — графика повышена до «{l}»' };
+addEventListener('dune-gfx', e => { const d = e.detail && e.detail.dir; if (GFX_TOAST[d]) setTimeout(() => toast(GFX_TOAST[d].replace('{l}', GFX_NOW[gfxStep()])), 400); });
 const GEAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19.4 13a7.6 7.6 0 000-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 00-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 00-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 000 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 001.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 001.7-1l2.4 1 2-3.4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>';
 const LOG_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h10l3 3v15H6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 9h7M9 13h7M9 17h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 function replayBattle() {
@@ -48,7 +61,7 @@ function meta2Click(d) {
   if (d.bsauto) { BT.auto = BT.autoPref = !BT.auto; bPopClose(); if (BT.auto && BT.waiting) { const u = BT.waiting; const p = aiPlan(BT.B, u); doAct(u, p.key, p.target && p.target.uid); } else renderBattle(); return true; }
   if (d.bsspeed) { BT.speed = BT.speedPref = BT.speed >= 4 ? 1 : BT.speed * 2; $('#bpop').remove(); BT.pop = false; renderBattle(); openBattleSettings(); return true; }
   if (d.bslog) { BT.showLog = !BT.showLog; $('#bpop').remove(); BT.pop = false; renderBattle(); openBattleSettings(); return true; }
-  if (d.bsgfx) { setGfx(SAVE_LOW() ? 'auto' : 'low'); $('#bpop').remove(); BT.pop = false; openBattleSettings(); toast('Применится со следующего боя'); return true; }
+  if (d.bsgfx) { if (d.bsgfx !== readGfx().p) { setGfx(d.bsgfx); $('#bpop').remove(); BT.pop = false; openBattleSettings(); toast('Применится со следующего боя'); } return true; }
   if (d.bscine) { try { localStorage.setItem('dune-cine-off', JSON.stringify(!CINE_OFF())); } catch (e) {} $('#bpop').remove(); BT.pop = false; openBattleSettings(); return true; }
   if (d.bsdlg) { S.skipDlg = !S.skipDlg; persist(); $('#bpop').remove(); BT.pop = false; openBattleSettings(); return true; }
   if (d.bsreplay) { $('#bpop').remove(); BT.pop = false; BT.resume = null; replayBattle(); return true; }

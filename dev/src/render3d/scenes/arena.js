@@ -24,7 +24,7 @@ import { GameScene } from '../game-scene.js';
 // после боя и при отпадении хоста — dispose (не sleep).
 class Arena3D extends GameScene {
   constructor(canvas, key, B) {
-    super(engineHost()); this.key = key; this.units = {}; this.parts = []; this.speed = 1;
+    super(engineHost()); this.isArena = true; this.host.perfBegin(this); this.key = key; this.units = {}; this.parts = []; this.speed = 1;
     const small = Math.min(innerWidth, innerHeight) < 600; this.small = small; const Q = gfx(small);
     const E = this.engine; // phase 3b: shared engine; the placeholder canvas is replaced by the host canvas
     this.place(canvas.parentNode, { replace: canvas, cls: canvas.className || 'bgc', id: canvas.id || 'bgc', dpr: Q.dpr.arena });

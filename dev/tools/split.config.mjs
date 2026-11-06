@@ -17,6 +17,6 @@ export const SPLIT = [
   [4109, 'ui/views/rules.js'], [4130, 'ui/battle/battle-ui.js'], [4473, 'ui/events.js'], [4622, 'core/boot.js'], [4648, 'ui/hero-window.js'],
   [4681, 'logic/trials.js'], [4681, 'ui/views/trials.js'], [4810, 'logic/stats.js'], [4826, 'data/cosmetics.js'], [4856, 'ui/views/feats.js'], [4906, 'ui/overlays/profile.js'],
   [4934, 'ui/wiring.js'], [4966, 'logic/account.js'], [5015, 'ui/fx-text.js'], [5020, 'ui/overlays/levelup.js'], [5037, 'ui/notifications.js'],
-  [5084, 'ui/mouse.js'], [5105, 'ui/craft.js'], [5118, 'ui/overlays/battle-settings.js'], [5164, 'ui/reward-tiles.js'], [5200, 'ui/overlays/celebrate.js'],
+  [5084, 'ui/mouse.js'], [5105, 'ui/craft.js'], [5118, 'ui/overlays/battle-settings.js'], [5164, 'ui/perf-overlay.js'], [5164, 'ui/reward-tiles.js'], [5200, 'ui/overlays/celebrate.js'],
   [5255, 'data/conquest-data.js'], [5394, 'logic/conquest.js'], [5531, 'ui/views/conq.js'], [5729, 'boot.js'],
 ];

@@ -1,5 +1,5 @@
 // ui/reward-tiles.js — строки 5164–5199 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import './overlays/battle-settings.js'; // порядок исполнения
+import './perf-overlay.js'; // порядок исполнения
 import { SHCONV, SHCONV_T, set_SHCONV } from './overlays/squad-select.js';
 import { prog } from '../logic/progress.js';
 import { ITEMS, TIER_COL } from '../logic/gear.js';

@@ -23,3 +23,8 @@ nav.tabs .back { color: var(--spice); }
 
 .appver { position: fixed; left: calc(8px + env(safe-area-inset-left, 0px)); bottom: calc(4px + env(safe-area-inset-bottom, 0px)); z-index: 99999; font: 600 10px/1 "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .04em; color: rgba(240, 226, 200, .72); text-shadow: 0 1px 2px rgba(0, 0, 0, .8); pointer-events: none; }   /* v54: футер на всех экранах; ниже только #rotate (100000) */
 body:has(#battle) .appver { left: 50%; transform: translateX(-50%); }   /* в бою слева снизу — панель активного героя */
+/* шаг 6 (v63): оверлей замера ?perf — правый верхний угол под safe-area, касание сворачивает в строку */
+#perfov { position: fixed; top: calc(6px + env(safe-area-inset-top, 0px)); right: calc(6px + env(safe-area-inset-right, 0px)); z-index: 99998; min-width: 150px; padding: 5px 8px; border-radius: 6px; background: rgba(0, 0, 0, .72); color: #e8e2d6; font: 500 11px/1.5 "IBM Plex Mono", ui-monospace, monospace; }
+#perfov div { display: flex; justify-content: space-between; gap: 10px; } #perfov i { font-style: normal; color: #9a958a; } #perfov b { font-weight: 600; }
+#perfov .ok { color: #8fd18f; } #perfov .warn { color: #e0b45a; } #perfov .bad { color: #ef7a6a; }
+#perfov svg { display: block; margin-top: 3px; } #perfov polyline { fill: none; stroke: #8fd18f; stroke-width: 1.2; } #perfov .lim { stroke: #e0b45a; stroke-dasharray: 2 3; stroke-width: .8; }
