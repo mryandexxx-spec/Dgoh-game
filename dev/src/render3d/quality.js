@@ -66,11 +66,12 @@ function setGfx(p, auto) { const o = readGfx(); writeGfx({ p, auto: auto ?? (p =
 const SAVE_LOW = () => gfxLevel() === 'low';
 // DoF сцены: true — везде, 'hero' — только окно героя
 const dofOn = (Q, kind) => Q.dof === true || Q.dof === kind;
-// шаг 4: glow только по светящимся мешам. Небо/фон исключаются явно (без перекрытия их свечение заливает кадр, см. шаг 2)
-function glowOnly(G, skip = []) {
+// шаг 4: glow только по светящимся мешам; keep — меши, которые рисуются всегда (небо/фон и земля-заслонка: без перекрытия
+// свечение неба заливает кадр, см. шаг 2), остальные непрозрачные несветящиеся в проход glow не попадают
+function glowOnly(G, keep = []) {
   const T = G && (G._thinEffectLayer || G); if (!T || !T._shouldRenderMesh) return;
-  const base = T._shouldRenderMesh.bind(T), ex = new Set(skip.filter(Boolean));
-  T._shouldRenderMesh = m => !ex.has(m) && glowy(m.material) && base(m);
+  const base = T._shouldRenderMesh.bind(T), K = new Set(keep.filter(Boolean));
+  T._shouldRenderMesh = m => (K.has(m) || glowy(m.material)) && base(m);
 }
 function glowy(M) {
   if (!M) return false; if (M.disableLighting || M.emissiveTexture) return true;

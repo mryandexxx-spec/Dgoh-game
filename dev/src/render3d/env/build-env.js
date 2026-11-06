@@ -84,14 +84,14 @@ function bakeImpl(A) {
     const r = Math.min(1.4, .35 + ht * .45), a0 = Math.max(0, ix(lo.x - r)), a1 = Math.min(N - 1, ix(hi.x + r)), b0 = Math.max(0, ix(lo.z - r)), b1 = Math.min(N - 1, ix(hi.z + r));
     for (let j = b0; j <= b1; j++) for (let i = a0; i <= a1; i++) { const x = -R + (i + .5) * cs, z = -R + (j + .5) * cs;
       const d = Math.hypot(Math.max(lo.x - x, 0, x - hi.x), Math.max(lo.z - z, 0, z - hi.z)), o = Math.max(0, 1 - d / r);
-      if (o > 0) ao[j * N + i] *= 1 - .42 * o * o; }
+      if (o > 0) ao[j * N + i] *= 1 - .3 * o * o; }
   }
   // мягкий край (2 прохода 3×3) — как PCF у карты теней
   const blur = a => { const b = new Float32Array(a.length); for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { let s = 0, n = 0; for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) { const y = j + dj, x = i + di; if (x >= 0 && y >= 0 && x < N && y < N) { s += a[y * N + x]; n++; } } b[j * N + i] = s / n; } return b; };
   const S1 = blur(blur(sh)), px = new Uint8Array(N * N * 4), sc = A.sun.diffuse, hc = hemi ? hemi.diffuse : sc, hg = hemi ? hemi.groundColor : sc;
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const q = j * N + i, x = -R + (i + .5) * cs, z = -R + (j + .5) * cs;
     const edge = i === 0 || j === 0 || i === N - 1 || j === N - 1, e = .4, nx = H(x - e, z) - H(x + e, z), nz = H(x, z - e) - H(x, z + e), nl = Math.hypot(nx, 2 * e, nz);
-    v.set(nx / nl, 2 * e / nl, nz / nl); const nd = Math.max(0, B3.Vector3.Dot(v, L)) * sI, w = .5 + .5 * v.y, s = edge ? 1 : S1[q], a = edge ? 1 : ao[q];
+    v.set(nx / nl, 2 * e / nl, nz / nl); const nd = Math.max(0, B3.Vector3.Dot(v, L)) * sI, w = .5 + .5 * v.y, s = edge ? 1 : S1[q], a = edge ? 1 : Math.max(.75, ao[q]);   // AO не глубже 0,75 (кольцо камней у костра сливалось в пятно)
     for (let c = 0; c < 3; c++) { const k = c ? c === 1 ? 'g' : 'b' : 'r', lh = (hc[k] * w + hg[k] * (1 - w)) * hI, ls = sc[k] * nd;
       px[q * 4 + c] = Math.round(255 * Math.min(1, a * (lh + ls * (dark + (1 - dark) * s)) / Math.max(1e-4, lh + ls))); }
     px[q * 4 + 3] = 255; }
