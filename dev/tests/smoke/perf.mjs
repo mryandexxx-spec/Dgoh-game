@@ -15,7 +15,7 @@ const chrome = process.env.CHROME_PATH || ['/usr/bin/google-chrome', '/usr/bin/c
 const LATE = fs.readFileSync(path.join(DEV, 'tests/fixtures/saves/03-late.json'), 'utf8');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const browser = await puppeteer.launch({ executablePath: chrome, headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--font-render-hinting=none'] });
-const page = await browser.newPage();
+const page = await browser.newPage(); page.on('console', m => { if (/bake|camp stage/.test(m.text())) console.log('console:', m.text()); }); page.on('pageerror', e => console.log('pageerror:', e.message));
 await page.setViewport(PHONE ? { width: 844, height: 390, deviceScaleFactor: +opt('--dpr', 1), isMobile: true, hasTouch: true, isLandscape: true } : { width: 960, height: 600, deviceScaleFactor: +opt('--dpr', 1) });
 await page.setRequestInterception(true); page.on('request', r => /^(data|blob):|^http:\/\/127\.0\.0\.1:/.test(r.url()) ? r.continue() : r.abort());
 await page.evaluateOnNewDocument((save, low, gfx) => {
@@ -89,19 +89,19 @@ const cost = (stageExpr, ms = 4000) => page.evaluate(async (stageExpr, ms) => {
 
 const out = {};
 await run(LOBBY); await sleep(2500);
-out.camp = { cost: await cost('CAMP_STAGE'), vram: await vram() };
+out.camp = { cost: await cost('CAMP_STAGE'), vram: await vram(), bakeMs: await page.evaluate(() => CAMP_STAGE.bakeMs) };
 await run(`openDetail('paul');`); await sleep(3000);
 out.hero = { cost: await cost('HERO_STAGE'), vram: await vram() };
 await run(`closeInfo(true); closeOverlay(); view = 'lobby';`);
 await run(BATTLE); await sleep(4000);
-out.battle = { cost: await cost('BT.arena'), vram: await vram() };
+out.battle = { cost: await cost('BT.arena'), vram: await vram(), bakeMs: await page.evaluate(() => BT.arena.bakeMs) };
 await browser.close(); SRV.close && SRV.close();
 
 const sum = (rows, f) => rows.filter(f).reduce((a, r) => a + r.mb, 0);
 for (const [k, v] of Object.entries(out)) {
   const R = v.vram.rows, rt = sum(R, r => r.rt), tex = sum(R, r => !r.rt);
   const grp = {}; for (const r of R.filter(r => r.rt)) { const g = r.o.replace(/:(.*)$/, (m, n) => ':' + n.replace(/\d+$/, '')); grp[g] = (grp[g] || 0) + r.mb; }
-  console.log(`\n== ${k}${PHONE ? ' phone' : ''}${LOW ? ' LOW' : ''}${GFX ? ' ' + GFX.toUpperCase() : ''}: canvas ${v.vram.canvas.join('×')}  кадр: ${JSON.stringify(v.cost)}`);
+  console.log(`\n== ${k}${PHONE ? ' phone' : ''}${LOW ? ' LOW' : ''}${GFX ? ' ' + GFX.toUpperCase() : ''}: canvas ${v.vram.canvas.join('×')}  кадр: ${JSON.stringify(v.cost)}${v.bakeMs != null ? '  запекание ' + v.bakeMs + ' мс' : ''}`);
   console.log(`   RT ${rt.toFixed(1)} МБ + depth RB ${v.vram.depthMB.toFixed(1)} + backbuffer ${v.vram.backbufMB.toFixed(1)}; текстуры ${tex.toFixed(1)} МБ`);
   for (const [g, mb] of Object.entries(grp).sort((a, b) => b[1] - a[1])) if (mb > .05) console.log(`     ${mb.toFixed(1).padStart(6)}  ${g}`);
 }

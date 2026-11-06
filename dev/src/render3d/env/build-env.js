@@ -62,7 +62,8 @@ function buildEnv(A, key, day, ctx) { return withCtx(ctx, () => {
 // фаза 6, шаг 4 (MED): тени и контактный AO статичных пропсов запекаются в карту освещения земли (UV2, квадрат ±R м вокруг центра),
 // пропсы уходят из карты теней — в ней остаются только персонажи. Множитель на текстуру: (hemi + darkness·sun) / (hemi + sun) по нормали земли.
 const BAKE_R = 22, BAKE_N = 256;
-function bakeStatic(A) {
+function bakeStatic(A) { try { bakeImpl(A); } catch (e) { console.warn('bake', e); } }
+function bakeImpl(A) {
   const Q = gfx(A.small), sm = A.shadows && A.shadows.getShadowMap(), G = A.ground; if (!Q.bake || !sm || !G || !A.sun) return;
   const t0 = performance.now(), casters = (sm.renderList || []).filter(m => m && m !== G && !m.isDisposed()); if (!casters.length) return;
   const N = BAKE_N, R = BAKE_R, cs = 2 * R / N, L = A.sun.direction.scale(-1).normalize(), dark = A.shadows.darkness;
@@ -94,8 +95,12 @@ function bakeStatic(A) {
     for (let c = 0; c < 3; c++) { const k = c ? c === 1 ? 'g' : 'b' : 'r', lh = (hc[k] * w + hg[k] * (1 - w)) * hI, ls = sc[k] * nd;
       px[q * 4 + c] = Math.round(255 * Math.min(1, a * (lh + ls * (dark + (1 - dark) * s)) / Math.max(1e-4, lh + ls))); }
     px[q * 4 + 3] = 255; }
-  const T = new B3.RawTexture(px, N, N, B3.Constants.TEXTUREFORMAT_RGBA, A.scene, false, false, B3.Texture.BILINEAR_SAMPLINGMODE);
-  T.wrapU = T.wrapV = B3.Texture.CLAMP_ADDRESSMODE; T.coordinatesIndex = 1; T.gammaSpace = false; T.name = 'bake';
+  // текстура через канвас (RawTexture в чанк Babylon не входит): строка j (z растёт) → v = j/N; DynamicTexture с invertY кладёт верх канваса в v = 1
+  const cv = document.createElement('canvas'); cv.width = cv.height = N; const g = cv.getContext('2d'), img = g.createImageData(N, N);
+  for (let j = 0; j < N; j++) img.data.set(px.subarray(j * N * 4, (j + 1) * N * 4), (N - 1 - j) * N * 4);
+  g.putImageData(img, 0, 0);
+  const T = new B3.DynamicTexture('bake', cv, A.scene, false, B3.Texture.BILINEAR_SAMPLINGMODE); T.update(true);
+  T.wrapU = T.wrapV = B3.Texture.CLAMP_ADDRESSMODE; T.coordinatesIndex = 1; T.gammaSpace = false;
   const p = G.getVerticesData(B3.VertexBuffer.PositionKind), uv = new Float32Array(p.length / 3 * 2);
   for (let i = 0, k = 0; i < p.length; i += 3, k += 2) { uv[k] = (p[i] + R) / (2 * R); uv[k + 1] = (p[i + 2] + R) / (2 * R); }
   G.setVerticesData(B3.VertexBuffer.UV2Kind, uv); G.material.lightmapTexture = T; G.material.useLightmapAsShadowmap = true;

@@ -45,7 +45,7 @@ import '@babylonjs/core/Rendering/geometryBufferRendererSceneComponent.js';
 import '@babylonjs/core/Rendering/prePassRendererSceneComponent.js';
 import { DepthOfFieldEffectBlurLevel } from '@babylonjs/core/PostProcesses/depthOfFieldEffect.js';
 import { ReflectionProbe } from '@babylonjs/core/Probes/reflectionProbe.js';
-import '@babylonjs/core/Culling/ray.js';
+import { Ray } from '@babylonjs/core/Culling/ray.js';   // фаза 6, шаг 4: запекание теней пропсов (build-env bakeStatic)
 import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder.js';
 import { CreateCylinder } from '@babylonjs/core/Meshes/Builders/cylinderBuilder.js';
 import { CreateDisc } from '@babylonjs/core/Meshes/Builders/discBuilder.js';
@@ -63,7 +63,7 @@ const B3 = {
   Engine, EngineStore, Constants, Scene, Vector3, Quaternion, Matrix, Color3, Color4, Axis, Curve3, Viewport, Skeleton, Bone,
   UniversalCamera, DirectionalLight, HemisphericLight, PointLight, SpotLight, ShadowGenerator, GlowLayer, StandardMaterial, PBRMaterial,
   Effect, ImageProcessingConfiguration, Texture, DynamicTexture, RenderTargetTexture, CubeTexture, KhronosTextureContainer2, Mesh, TransformNode, VertexData,
-  VertexBuffer, ParticleSystem, DefaultRenderingPipeline, SSAO2RenderingPipeline, DepthOfFieldEffectBlurLevel, ReflectionProbe, MeshBuilder,
+  VertexBuffer, ParticleSystem, DefaultRenderingPipeline, SSAO2RenderingPipeline, DepthOfFieldEffectBlurLevel, ReflectionProbe, MeshBuilder, Ray,
 };
 globalThis.__B3 = B3;   // для 3D-смоука (EngineStore.Instances) и render3d/base.js
 
