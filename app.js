@@ -2450,6 +2450,80 @@ function withCtx(c, fn) {
   }
 }
 
+// src/render3d/game-scene.js
+var GameScene = class {
+  constructor(host) {
+    this.host = host.adopt(this);
+    this.cv = host.cv;
+    this.engine = host.engine;
+    this.state = "created";
+    this.alive = true;
+    this.scene = null;
+    this._el = null;
+    this._mo = null;
+  }
+  get awake() {
+    return this.state === "awake";
+  }
+  // o — параметры EngineHost.mount: { cls, id, first, replace, dpr }; без аргументов — повторно в прежний хост
+  place(el, o) {
+    if (el) {
+      this._el = el;
+      this._mo = o || {};
+    }
+    if (!this.alive || !this._el) return false;
+    this.host.mount(this, this._el, this._mo);
+    return true;
+  }
+  wake(el, o) {
+    if (!this.alive || !this.place(el, o)) return false;
+    const was = this.state;
+    this.state = "awake";
+    if (was !== "awake" && this.onWake) this.onWake(was);
+    return true;
+  }
+  // o — подсказки подклассу (например { light: true } — освободить экранные цели рендера); спящую сцену можно «углубить» повторным sleep
+  sleep(o) {
+    if (!this.alive || this.state === "disposed" || this.state === "created") return;
+    if (this.state === "awake") {
+      this.state = "asleep";
+      this.host.release(this);
+    }
+    if (this.onSleep) this.onSleep(o || {});
+  }
+  frame() {
+    if (this.state === "awake") this.update(performance.now());
+  }
+  update() {
+  }
+  onDetach() {
+    this.sleep();
+  }
+  dispose() {
+    if (!this.alive) return;
+    this.alive = false;
+    this.state = "disposed";
+    if (this.onDispose) try {
+      this.onDispose();
+    } catch (e) {
+    }
+    try {
+      if (this.ssao) this.ssao.dispose(true);
+    } catch (e) {
+    }
+    try {
+      if (this.scene && this.scene.disableGeometryBufferRenderer) this.scene.disableGeometryBufferRenderer();
+    } catch (e) {
+    }
+    this.ssao = null;
+    try {
+      this.scene && this.scene.dispose();
+    } catch (e) {
+    }
+    this.host.forget(this);
+  }
+};
+
 // src/render3d/materials.js
 var V3 = (x = 0, y = 0, z = 0) => new B3.Vector3(x, y, z);
 function addScaled(v, d, k) {
@@ -2655,10 +2729,25 @@ var glowCanvas = () => GLOW_CANVAS || (GLOW_CANVAS = canvasEl(128, (g, S2) => {
   g.fillStyle = r;
   g.fillRect(0, 0, S2, S2);
 }));
+function glowTex(ctx) {
+  const S2 = ctx && ctx.scene !== void 0 ? ctx.scene : CTX.scene;
+  if (S2 && S2._glowTex) return S2._glowTex;
+  const t = dynTex(glowCanvas(), 0, true, { scene: S2 });
+  if (!S2) return t;
+  const real = t.dispose.bind(t);
+  t.dispose = () => {
+  };
+  t._shared = true;
+  S2.onDisposeObservable.addOnce(() => {
+    S2._glowTex = null;
+    real();
+  });
+  return S2._glowTex = t;
+}
 function glowSprite(color, size, x, y, z, add2 = true) {
   const p = mk(bPlane(1, 1), null, x, y, z, false);
   const m = basic3(color, { fog: false, add: add2 });
-  const t = dynTex(glowCanvas(), 0, true);
+  const t = glowTex();
   m.emissiveTexture = t;
   m.opacityTexture = t;
   m.disableDepthWrite = true;
@@ -2902,7 +2991,7 @@ var PROPS3 = {
 
 // src/render3d/env/particles.js
 function addParticles3(A, type) {
-  const tex = dynTex(glowCanvas(), 0, true);
+  const tex = glowTex();
   const cfg = {
     sand: { n: 650, box: [[-36, 0, -27], [36, 3.5, 15]], dir: [[2.2, -0.05, -0.4], [4, 0.25, 0.4]], life: [5, 9], size: [0.06, 0.14], col: "#f0d0a0", a: 0.75, add: false },
     storm: { n: 2600, box: [[-40, 0, -31], [-20, 14, 19]], dir: [[12, -0.5, -1], [17, 1, 1]], life: [3, 5], size: [0.12, 0.32], col: "#e0b07a", a: 0.7, add: false },
@@ -3810,19 +3899,17 @@ function makeWorm3(ctx) {
 }
 
 // src/render3d/scenes/arena.js
-var Arena3D = class {
+var Arena3D = class extends GameScene {
   constructor(canvas, key, B) {
-    const H = this.host = engineHost().adopt(this);
-    this.cv = H.cv;
+    super(engineHost());
     this.key = key;
     this.units = {};
     this.parts = [];
     this.speed = 1;
-    this.alive = true;
     const small = Math.min(innerWidth, innerHeight) < 600;
     this.small = small;
-    const E = this.engine = H.engine;
-    H.mount(this, canvas.parentNode, { replace: canvas, cls: canvas.className || "bgc", id: canvas.id || "bgc", dpr: small ? 1.5 : 2 });
+    const E = this.engine;
+    this.place(canvas.parentNode, { replace: canvas, cls: canvas.className || "bgc", id: canvas.id || "bgc", dpr: small ? 1.5 : 2 });
     const S2 = this.scene = new B3.Scene(E);
     S2.useRightHandedSystem = true;
     S2.skipPointerMovePicking = true;
@@ -3857,8 +3944,9 @@ var Arena3D = class {
       errLog("wormkit", e);
     }
     this.resize();
+    this.wake();
   }
-  frame() {
+  update() {
     this.loop();
   }
   onDetach() {
@@ -3876,7 +3964,7 @@ var Arena3D = class {
     this.glow.addExcludedMesh(this.sky);
     if (this.ground) this.glow.addExcludedMesh(this.ground);
     for (const o of Object.values(this.units)) if (o.bubble) this.glow.addExcludedMesh(o.bubble);
-    const tx = dynTex(glowCanvas(), 0, true, { scene: S2 });
+    const tx = glowTex({ scene: S2 });
     const sp = this.sparks = new B3.ParticleSystem("sparks", 600, S2);
     sp.particleTexture = tx;
     sp.emitter = V3(0, -50, 0);
@@ -4000,10 +4088,7 @@ var Arena3D = class {
         o.pool = mk(bDisc(o.legend ? 1.15 : 0.72, 40), basic3("#ffffff", { add: true, alpha: 0 }), x, y + 0.04, z, false);
         o.pool.rotation.x = Math.PI / 2;
         o.pool.material.disableDepthWrite = true;
-        const gtx = (() => {
-          const t = dynTex(glowCanvas(), 0, true);
-          return t;
-        })();
+        const gtx = glowTex();
         o.pool.material.emissiveTexture = gtx;
         o.pool.material.opacityTexture = gtx;
       }
@@ -4382,7 +4467,7 @@ var Arena3D = class {
   smokeFX(x) {
     if (!this.smoke) {
       const S2 = this.scene;
-      const t = dynTex(glowCanvas(), 0, true, { scene: S2 });
+      const t = glowTex({ scene: S2 });
       const ps = this.smoke = new B3.ParticleSystem("smoke", 300, S2);
       ps.particleTexture = t;
       ps.emitter = V3(0, -50, 0);
@@ -4671,7 +4756,7 @@ var Arena3D = class {
         K.mouthT.material = K.WM.mouth;
         K.mouthT.setEnabled(false);
       }
-      K.tx = dynTex(glowCanvas(), 0, true);
+      K.tx = glowTex();
       K.dm = basic3("#d8a868", { alpha: 0 });
       K.dm.emissiveTexture = K.tx;
       K.dm.opacityTexture = K.tx;
@@ -4748,15 +4833,7 @@ var Arena3D = class {
       this.summons.push({ g, col, mouth, rocks, dust, s, t0, dur: 2600, victim, burst });
     });
   }
-  dispose() {
-    if (!this.alive) return;
-    this.alive = false;
-    try {
-      this.scene.dispose();
-    } catch (e) {
-    }
-    this.host.forget(this);
-  }
+  // dispose — GameScene: scene.dispose + host.forget (канвас уходит предыдущему хосту или паркуется)
 };
 
 // src/render3d/characters/pose-duncan.js
@@ -5282,6 +5359,7 @@ function freeCanvas(cv, keep) {
   } catch (e) {
   }
 }
+var LIGHT_SLEEP = () => Math.min(innerWidth, innerHeight) < 600 || matchMedia("(pointer: coarse)").matches;
 var SAVE_LOW = () => {
   try {
     return !!JSON.parse(localStorage.getItem("dune-gfx-low") || "false");
@@ -5289,14 +5367,13 @@ var SAVE_LOW = () => {
     return false;
   }
 };
-var Stage3D = class {
+var Stage3D = class extends GameScene {
   constructor(opts = {}) {
-    const H = this.host = engineHost().adopt(this);
-    this.cv = H.cv;
+    super(engineHost());
     this.cls = opts.cls || "stage3d";
     this.maxDpr = opts.maxDpr || 2;
     this.small = Math.min(innerWidth, innerHeight) < 600;
-    const E = this.engine = H.engine;
+    const E = this.engine;
     const S2 = this.scene = new B3.Scene(E);
     S2.useRightHandedSystem = true;
     S2.skipPointerMovePicking = true;
@@ -5306,10 +5383,10 @@ var Stage3D = class {
     this.camera.inputs.clear();
     this.parts = [];
     this.tr = [];
-    this.alive = true;
     this.running = false;
   }
   look(pipeOpts = {}) {
+    this._look = { ...pipeOpts, dof: pipeOpts.dof && { ...pipeOpts.dof } };
     const S2 = this.scene, P = this.pipe = new B3.DefaultRenderingPipeline("dp", true, S2, [this.camera]);
     P.fxaaEnabled = true;
     P.samples = this.engine.webGLVersion >= 2 && !this.small ? 4 : 1;
@@ -5346,7 +5423,7 @@ var Stage3D = class {
     this.glow.intensity = pipeOpts.glow ?? 0.6;
     try {
       if (pipeOpts.ssao && this.engine.webGLVersion >= 2 && B3.SSAO2RenderingPipeline.IsSupported) {
-        const ao = new B3.SSAO2RenderingPipeline("ssao", S2, { ssaoRatio: this.small ? 0.5 : 0.75, blurRatio: 0.5 }, [this.camera], true);
+        const ao = this.ssao = new B3.SSAO2RenderingPipeline("ssao", S2, { ssaoRatio: this.small ? 0.5 : 0.75, blurRatio: 0.5 }, [this.camera], true);
         ao.radius = pipeOpts.ssao;
         ao.totalStrength = 1.2;
         ao.base = 0.1;
@@ -5356,14 +5433,43 @@ var Stage3D = class {
     } catch (e) {
     }
   }
+  // phase 3b, step 4: light sleep on phones (before a battle, sleepStages) — screen-size targets (post pipeline MSAA, SSAO, glow) are freed while the stage
+  // sleeps (iOS reloads the page when GPU memory runs out); scene, meshes, materials and textures stay. Re-created on wake.
+  onSleep(o) {
+    if (!o.light || !LIGHT_SLEEP() || !this.pipe) return;
+    const cams = [this.camera];
+    try {
+      if (this.ssao) {
+        this.scene.postProcessRenderPipelineManager.detachCamerasFromRenderPipeline("ssao", cams);
+        this.ssao.dispose(true);
+        this.scene.disableGeometryBufferRenderer && this.scene.disableGeometryBufferRenderer();
+      }
+    } catch (e) {
+    }
+    try {
+      this.pipe.dispose();
+    } catch (e) {
+    }
+    try {
+      this.glow.dispose();
+    } catch (e) {
+    }
+    this.pipe = this.glow = this.ssao = null;
+    this._light = true;
+  }
+  onWake() {
+    if (this._light) {
+      this._light = false;
+      this.look(this._look || {});
+    }
+  }
   attach(host, first) {
-    if (!host || !this.alive) return;
-    this.host.mount(this, host, { cls: this.cls, dpr: this.maxDpr, first });
+    if (host) this.wake(host, { cls: this.cls, dpr: this.maxDpr, first });
   }
   isCur() {
     return this.host.isCur(this);
   }
-  frame() {
+  update() {
     if (this.paused()) return;
     if (this.cv.clientWidth !== this.w || this.cv.clientHeight !== this.h) {
       this.w = this.cv.clientWidth;
@@ -5391,15 +5497,6 @@ var Stage3D = class {
   fade(mesh, life, upd) {
     this.tr.push({ mesh, t0: performance.now(), life, upd });
   }
-  dispose() {
-    if (!this.alive) return;
-    this.alive = false;
-    try {
-      this.scene.dispose();
-    } catch (e) {
-    }
-    this.host.forget(this);
-  }
 };
 
 // src/render3d/scenes/hero.js
@@ -5418,7 +5515,7 @@ var HeroStage = class extends Stage3D {
       this.bg = bg;
       const halo = mk(bPlane(7, 7), null, 0, 1.4, -3, false);
       const hm = basic3("#3a2210", { fog: false, add: true });
-      const htx = dynTex(glowCanvas(), 0, true);
+      const htx = glowTex();
       hm.emissiveTexture = htx;
       hm.opacityTexture = htx;
       hm.disableDepthWrite = true;
@@ -5456,7 +5553,7 @@ var HeroStage = class extends Stage3D {
       mk(bCyl(1.05, 1.15, 0.22, 48), stone, 0, -0.11, 0, false);
       mk(bCyl(0.98, 0.98, 0.02, 48), top, 0, 5e-3, 0, false);
       this.ring = mk(MB().CreateTorus("ring", { diameter: 2.04, thickness: 0.03, tessellation: 64 }, S2), basic3("#e8913f"), 0, 0.01, 0, false);
-      tx = dynTex(glowCanvas(), 0, true);
+      tx = glowTex();
       const dust = new B3.ParticleSystem("motes", 160, S2);
       dust.particleTexture = tx;
       dust.emitter = V3(0, 0, 0);
@@ -5681,7 +5778,7 @@ var CampStage = class extends Stage3D {
       L.intensity = 2.4;
       L.range = 14;
       this.fireShadow = null;
-      const tx = dynTex(glowCanvas(), 0, true);
+      const tx = glowTex();
       const fl = new B3.ParticleSystem("flame", 400, S2);
       fl.particleTexture = tx;
       fl.emitter = V3(fx, fy + 0.1, fz);
@@ -5866,6 +5963,14 @@ function mountCampStage() {
   } catch (e) {
     console.warn("camp stage", e);
     return false;
+  }
+}
+function sleepStages() {
+  try {
+    if (HERO_STAGE) HERO_STAGE.sleep({ light: true });
+    if (CAMP_STAGE) CAMP_STAGE.sleep({ light: true });
+  } catch (e) {
+    console.warn("sleep stages", e);
   }
 }
 setInterval(() => hostKick(), 400);
@@ -8703,7 +8808,7 @@ function launch(cfg) {
     let lg = 0;
     cfg.squad = cfg.squad.filter((id) => !isLegend(id) || !lg++);
   }
-  freeStages();
+  sleepStages();
   const B = createBattle(cfg.squad.map((id) => ({ id, ...prog(id) })), cfg.enemy || [], { desert: cfg.desert, seed: Date.now() & 16777215, boss: cfg.boss });
   if (cfg.mode === "conq" && typeof cqApply === "function") cqApply(B, cfg);
   set_BT({ B, cfg, i: cfg.i, auto: BT?.autoPref ?? false, autoPref: BT?.autoPref ?? false, speed: Math.min(4, BT?.speedPref ?? 1), speedPref: Math.min(4, BT?.speedPref ?? 1), timer: null, waiting: null, sel: "basic", done: false });
@@ -10035,22 +10140,6 @@ function detailNav(dir) {
     }
   }, true);
 })();
-function freeStages() {
-  const phone = Math.min(innerWidth, innerHeight) < 600 || matchMedia("(pointer: coarse)").matches;
-  if (!phone) return;
-  try {
-    if (typeof HERO_STAGE !== "undefined" && HERO_STAGE) {
-      HERO_STAGE.dispose();
-      set_HERO_STAGE(null);
-      set_HERO_SNAP(null);
-    }
-    if (typeof CAMP_STAGE !== "undefined" && CAMP_STAGE) {
-      CAMP_STAGE.dispose();
-      set_CAMP_STAGE(null);
-    }
-  } catch (e) {
-  }
-}
 var WORM_BADGE = `<div class="wormbadge" aria-hidden="true"><svg viewBox="0 0 120 120"><defs><radialGradient id="wbg" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#ffcf7a"/><stop offset=".6" stop-color="#c0661e"/><stop offset="1" stop-color="#3a1a08"/></radialGradient></defs><circle cx="60" cy="60" r="56" fill="url(#wbg)" stroke="#ffe0a0" stroke-width="3"/>${typeof WORM_IMG !== "undefined" ? `<g class="wbw"><image href="${WORM_IMG.badge}" x="8" y="6" width="104" height="104"/></g>` : ""}<g class="wbs">${Array.from({ length: 10 }, (_, i) => `<circle cx="${14 + i * 10}" cy="${100 + i % 3 * 4}" r="${1.5 + i % 3}" fill="#ffd9a0"/>`).join("")}</g></svg></div>`;
 
 // src/logic/trials.js
