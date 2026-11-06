@@ -2,7 +2,9 @@
 // Значение параметра — скаляр или пара [desktop, phone]; phone = «small» (меньшая сторона окна < 600 px), как и раньше в сценах.
 // Хранение: localStorage 'dune-gfx' = { p: 'auto'|'high'|'med'|'low', auto: <ступеней понижения от базы auto> }.
 // auto: база desktop — high, phone — med; адаптивное понижение (шаг 6) двигает её вниз на auto ступеней.
-// Шаг 3: HIGH = вид v59, MED = HIGH (наполнится в шаге 4), LOW = прежний dune-gfx-low (без DoF и SSAO, лагерь в покое 20 fps).
+// Шаг 3: HIGH = вид v59, LOW = прежний dune-gfx-low (без DoF и SSAO, лагерь в покое 20 fps).
+// Шаг 4: MED — без SSAO, grain, хроматики и резкости, MSAA 1, DoF только у героя, тени 1024 только по персонажам (тени и контактный AO
+// статичных пропсов запечены в карту освещения земли, build-env bakeStatic), glow только по светящимся мешам без неба (glowOnly), ниже dpr.
 import './base.js'; // порядок исполнения
 
 const isSmall = () => Math.min(innerWidth, innerHeight) < 600;
@@ -18,10 +20,13 @@ const HIGH = {
   groundSeg: [170, 120],
   particles: 1,                     // множитель фоновых частиц окружения
   fps: { active: 60, idle: 30, idleLow: 20, static: 0 }, campIdle: 'idle',
+  bake: false,                      // запечь тени/AO статичных пропсов в землю и убрать их из карты теней
+  glowSel: false,                   // glow только по светящимся мешам (без неба и фона)
 };
 const PROFILES = {
   high: HIGH,
-  med: { ...HIGH },
+  med: { ...HIGH, dpr: { arena: [1.5, 1.25], hero: [1.75, 1.5], camp: [1.5, 1.25] }, msaa: 1,
+    grain: false, chromatic: false, sharpen: false, dof: 'hero', ssao: false, shadowSize: 1024, bake: true, glowSel: true },
   low: { ...HIGH, dof: false, ssao: false, campIdle: 'idleLow' },
 };
 const ORDER = ['high', 'med', 'low'];
@@ -59,5 +64,17 @@ function gfx(small = isSmall()) {
 function setGfx(p, auto) { const o = readGfx(); writeGfx({ p, auto: auto ?? (p === 'auto' ? o.auto : 0) }); }
 // обёртка прежнего флага упрощённой графики (battle-settings, baker, camp, arena)
 const SAVE_LOW = () => gfxLevel() === 'low';
+// DoF сцены: true — везде, 'hero' — только окно героя
+const dofOn = (Q, kind) => Q.dof === true || Q.dof === kind;
+// шаг 4: glow только по светящимся мешам. Небо/фон исключаются явно (без перекрытия их свечение заливает кадр, см. шаг 2)
+function glowOnly(G, skip = []) {
+  const T = G && (G._thinEffectLayer || G); if (!T || !T._shouldRenderMesh) return;
+  const base = T._shouldRenderMesh.bind(T), ex = new Set(skip.filter(Boolean));
+  T._shouldRenderMesh = m => !ex.has(m) && glowy(m.material) && base(m);
+}
+function glowy(M) {
+  if (!M) return false; if (M.disableLighting || M.emissiveTexture) return true;
+  const c = M.emissiveColor; return !!c && c.r + c.g + c.b > .02;
+}
 
-export { gfx, gfxLevel, readGfx, setGfx, SAVE_LOW };
+export { gfx, gfxLevel, readGfx, setGfx, SAVE_LOW, dofOn, glowOnly };

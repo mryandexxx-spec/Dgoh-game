@@ -1,5 +1,6 @@
 // A/B рендера (фаза 3b): одинаковые кадры двух сборок при виртуальных часах и попиксельное сравнение.
-//   node tests/smoke/ab.mjs <A.html> <B.html> [--out dir] [--phone] [--babylon path — только для старых сборок] [--chrome path]
+//   node tests/smoke/ab.mjs <A.html> <B.html> [--out dir] [--phone] [--gfx high,med] [--babylon path — только для старых сборок] [--chrome path]
+// --gfx a,b — принудительный уровень графики (localStorage 'dune-gfx') для A и B; пусто — авто
 // Часы: performance.now/Date.now идут только по команде tick(n) — по 1/60 с на реальный кадр, поэтому сцена в момент
 // снимка определяется числом кадров, а не скоростью машины. Снимки: лагерь, окно героя, арена (бой заморожен
 // до первого хода), портрет Baker. Печатает долю отличающихся пикселей (|Δ| > 8 в любом канале) и макс. Δ.
@@ -13,7 +14,8 @@ const require = createRequire(import.meta.url);
 const puppeteer = require('puppeteer-core');
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2), opt = (k, d = null) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
-const VAL = new Set(['--out', '--babylon', '--chrome']);
+const VAL = new Set(['--out', '--babylon', '--chrome', '--gfx']);
+const GFX = (opt('--gfx') || '').split(',');
 const [A, B] = args.filter((a, i) => !a.startsWith('--') && !VAL.has(args[i - 1]));
 const OUT = opt('--out', path.join(HERE, 'ab-out')), PHONE = args.includes('--phone');
 const chrome = opt('--chrome') || process.env.CHROME_PATH || ['/usr/bin/google-chrome', '/usr/bin/chromium'].find(f => fs.existsSync(f));
@@ -31,15 +33,15 @@ async function shots(html, tag) {
   await page.setViewport(PHONE ? { width: 844, height: 390, deviceScaleFactor: 1, isMobile: true, hasTouch: true, isLandscape: true } : { width: 960, height: 600, deviceScaleFactor: 1 });
   await page.setRequestInterception(true);
   page.on('request', r => { const u = r.url(); if (babylon && /babylon\.min\.js$/.test(u)) return r.respond({ status: 200, contentType: 'text/javascript', body: fs.readFileSync(babylon) }); if (/^(file|data|blob):|^http:\/\/127\.0\.0\.1:/.test(u)) return r.continue(); return r.abort(); });
-  await page.evaluateOnNewDocument(save => {
+  await page.evaluateOnNewDocument((save, gfx) => {
     let a = 12345; Math.random = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-    try { localStorage.clear(); localStorage.setItem('dune-goh-v1', save); localStorage.setItem('dune-cine-off', 'true'); } catch (e) {}
+    try { localStorage.clear(); localStorage.setItem('dune-goh-v1', save); localStorage.setItem('dune-cine-off', 'true'); if (gfx) localStorage.setItem('dune-gfx', JSON.stringify({ p: gfx, auto: 0 })); } catch (e) {}
     try { navigator.serviceWorker && Object.defineProperty(navigator, 'serviceWorker', { value: undefined }); } catch (e) {}
     const C = window.__clock = { vt: 5000, pending: 0, last: -1 };
     performance.now = () => C.vt; const D0 = 1762074000000; Date.now = () => D0 + C.vt;
     const raf = window.requestAnimationFrame.bind(window);
     window.requestAnimationFrame = cb => raf(t => { if (t !== C.last) { C.last = t; if (C.pending > 0) { C.pending--; C.vt += 1000 / 60; } } cb(C.vt); });
-  }, LATE);
+  }, LATE, GFX[tag === 'A' ? 0 : 1] || '');
   const srv = await serve(path.dirname(path.resolve(html)));   // фаза 5: HTTP вместо file:// — ассеты грузятся через fetch
   await page.goto(srv.url(path.basename(html)), { waitUntil: 'load' });
   await page.evaluate(async () => typeof loadB3 === 'function' && await loadB3()); await sleep(400);   // фаза 4: дождаться чанка и проявления 3D

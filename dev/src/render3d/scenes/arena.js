@@ -5,13 +5,13 @@ import { errLog } from '../../core/errlog.js';
 import { BT } from '../../core/state.js';
 import { TIER_COL } from '../../logic/gear.js';
 import { RELIC_COL } from '../../logic/relics.js';
-import { gfx } from '../quality.js';
+import { gfx, dofOn, glowOnly } from '../quality.js';
 import { engineHost } from '../engine-host.js';
 import { MOCAP_OK } from '../characters/mocap.js';
 import { makeWorm3, wormData, wormMats, wormMesh } from '../worm.js';
 import { ANIM_SLOW, poseHuman, unmapK } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
-import { buildEnv } from '../env/build-env.js';
+import { bakeStatic, buildEnv } from '../env/build-env.js';
 import { MB, add, bBox, bCone, bCyl, bDisc, bRock, bSph, bTorus, glowTex, grp } from '../geometry.js';
 import { C3_CHARM, C3_SPICE, C3_TGT, V3, basic3, col3, inPlaceKeep, mat3, mk, runDue } from '../materials.js';
 import { CTX, withCtx } from '../ctx.js';
@@ -31,7 +31,7 @@ class Arena3D extends GameScene {
     const S = this.scene = new B3.Scene(E); S.useRightHandedSystem = true; S.skipPointerMovePicking = true; S.autoClear = true;
     this.camera = new B3.UniversalCamera('cam', V3(0, 11, 18), S); this.camera.minZ = .1; this.camera.maxZ = 1200; this.camera.inputs.clear();
     this.raid = !!B.raid; this.summons = []; this.nA = B.units.filter(x => x.side === 'A').length;
-    withCtx({ scene: S, shadows: null }, () => { buildEnv(this, key, true); CTX.shadows = this.shadows;
+    withCtx({ scene: S, shadows: null }, () => { buildEnv(this, key, true); CTX.shadows = this.shadows; bakeStatic(this);
     const rp = this.probe = new B3.ReflectionProbe('rp', Q.probe.arena, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
     for (const u of B.units) this.addUnit(u);
     this.setupFX();
@@ -47,7 +47,7 @@ class Arena3D extends GameScene {
     const S = this.scene, Q = gfx(this.small);
     // emissive bloom for windows, eyes, rings, worm glow
     if (Q.glow) { this.glow = new B3.GlowLayer('glow', S, { mainTextureRatio: Q.glowRatio, blurKernelSize: 32 }); this.glow.intensity = .55;
-    this.glow.addExcludedMesh(this.sky); if (this.ground) this.glow.addExcludedMesh(this.ground); for (const o of Object.values(this.units)) if (o.bubble) this.glow.addExcludedMesh(o.bubble); }
+    this.glow.addExcludedMesh(this.sky); if (this.ground) this.glow.addExcludedMesh(this.ground); for (const o of Object.values(this.units)) if (o.bubble) this.glow.addExcludedMesh(o.bubble); if (Q.glowSel) glowOnly(this.glow, [this.sky]); }
     const tx = glowTex({ scene: S });
     const sp = this.sparks = new B3.ParticleSystem('sparks', 600, S); sp.particleTexture = tx; sp.emitter = V3(0, -50, 0); sp.minEmitBox = V3(-.15, -.2, -.15); sp.maxEmitBox = V3(.15, .2, .15);
     sp.direction1 = V3(-2.5, 1, -2.5); sp.direction2 = V3(2.5, 4, 2.5); sp.gravity = V3(0, -9, 0); sp.minLifeTime = .2; sp.maxLifeTime = .45; sp.minSize = .04; sp.maxSize = .1; sp.minEmitPower = 1; sp.maxEmitPower = 2.2;
@@ -65,7 +65,7 @@ class Arena3D extends GameScene {
     P.chromaticAberrationEnabled = Q.chromatic; if (P.chromaticAberration) P.chromaticAberration.aberrationAmount = 6;
     P.grainEnabled = Q.grain; P.grain.intensity = 5; P.grain.animated = true;
     P.sharpenEnabled = Q.sharpen; if (P.sharpen) P.sharpen.edgeAmount = .2;
-    P.depthOfFieldEnabled = Q.dof; P.depthOfFieldBlurLevel = Q.dofBlur === 'low' ? B3.DepthOfFieldEffectBlurLevel.Low : B3.DepthOfFieldEffectBlurLevel.Medium;
+    P.depthOfFieldEnabled = dofOn(Q, 'arena'); P.depthOfFieldBlurLevel = Q.dofBlur === 'low' ? B3.DepthOfFieldEffectBlurLevel.Low : B3.DepthOfFieldEffectBlurLevel.Medium;
     P.depthOfField.focalLength = 60; P.depthOfField.fStop = 3.2; P.depthOfField.focusDistance = 20000; P.depthOfField.lensSize = 50;
     try { if (Q.ssao && this.engine.webGLVersion >= 2 && B3.SSAO2RenderingPipeline.IsSupported) { const ao = this.ssao = new B3.SSAO2RenderingPipeline('ssao', S, { ssaoRatio: Q.ssaoRatio, blurRatio: .5 }, [this.camera], true); ao.radius = 1.4; ao.totalStrength = 1.15; ao.base = .12; ao.samples = Q.ssaoSamples; ao.maxZ = 70; ao.minZAspect = .3; ao.expensiveBlur = Q.ssaoExpBlur; } } catch (e) {}
   }

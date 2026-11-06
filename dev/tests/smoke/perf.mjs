@@ -1,5 +1,5 @@
 // Замер цены кадра и VRAM (фаза 6, шаг 1): лагерь, окно героя, бой. SwiftShader — только относительные метрики.
-//   node tests/smoke/perf.mjs <game.html> [--phone] [--dpr 3] [--low] [--out f.json]   (из dev/)
+//   node tests/smoke/perf.mjs <game.html> [--phone] [--dpr 3] [--low | --gfx high|med|low] [--out f.json]   (из dev/)
 //   draws — draw calls за кадр; passes — проходы (сегменты framebuffer+viewport с отрисовкой); mpx — Σ площадей проходов, Мпикс/кадр;
 //   VRAM — внутренние текстуры движка (RT с MSAA-буфером), depth-renderbuffer обёрток RT, backbuffer канваса.
 import fs from 'node:fs';
@@ -10,7 +10,7 @@ const require = createRequire(path.join(DEV, 'package.json'));
 const puppeteer = require('puppeteer-core');
 const { serve } = await import(path.join(DEV, 'tests/lib/serve.mjs'));
 const args = process.argv.slice(2), has = k => args.includes(k), opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
-const html = args.find(a => !a.startsWith('--') && a.endsWith('.html')), PHONE = has('--phone'), LOW = has('--low');
+const html = args.find(a => !a.startsWith('--') && a.endsWith('.html')), PHONE = has('--phone'), LOW = has('--low'), GFX = opt('--gfx', '');
 const chrome = process.env.CHROME_PATH || ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'].find(f => fs.existsSync(f));
 const LATE = fs.readFileSync(path.join(DEV, 'tests/fixtures/saves/03-late.json'), 'utf8');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -18,8 +18,8 @@ const browser = await puppeteer.launch({ executablePath: chrome, headless: true,
 const page = await browser.newPage();
 await page.setViewport(PHONE ? { width: 844, height: 390, deviceScaleFactor: +opt('--dpr', 1), isMobile: true, hasTouch: true, isLandscape: true } : { width: 960, height: 600, deviceScaleFactor: +opt('--dpr', 1) });
 await page.setRequestInterception(true); page.on('request', r => /^(data|blob):|^http:\/\/127\.0\.0\.1:/.test(r.url()) ? r.continue() : r.abort());
-await page.evaluateOnNewDocument((save, low) => {
-  try { localStorage.clear(); localStorage.setItem('dune-goh-v1', save); localStorage.setItem('dune-cine-off', 'true'); if (low) localStorage.setItem('dune-gfx-low', 'true'); } catch (e) {}
+await page.evaluateOnNewDocument((save, low, gfx) => {
+  try { localStorage.clear(); localStorage.setItem('dune-goh-v1', save); localStorage.setItem('dune-cine-off', 'true'); if (low) localStorage.setItem('dune-gfx-low', 'true'); if (gfx) localStorage.setItem('dune-gfx', JSON.stringify({ p: gfx, auto: 0 })); } catch (e) {}
   try { Object.defineProperty(navigator, 'serviceWorker', { value: undefined }); } catch (e) {}
   // счётчики GL: draw calls, смены framebuffer, «пиксели проходов» = Σ площади вьюпорта по сегментам (fb, viewport) с ≥1 draw
   const G = window.__gl = { draws: 0, tris: 0, fbBinds: 0, passes: 0, px: 0, clears: 0, seg: null };
@@ -31,7 +31,7 @@ await page.evaluateOnNewDocument((save, low) => {
     for (const n of ['drawElements', 'drawArrays', 'drawElementsInstanced', 'drawArraysInstanced']) { const f = pr[n]; if (!f) continue;
       pr[n] = function (...a) { G.draws++; if (!G.seg) { G.seg = { fb: G.fb, px: this.__vp || 0, n: 0 }; G.passes++; G.px += this.__vp || 0; if (G.rec) G.rec.push(G.seg); } G.seg.n++; return f.apply(this, a); }; }
   }
-}, LATE, LOW);
+}, LATE, LOW, GFX);
 const SRV = await serve(path.dirname(path.resolve(html)));
 await page.goto(SRV.url(path.basename(html)), { waitUntil: 'load' });
 await sleep(3000);
@@ -101,7 +101,7 @@ const sum = (rows, f) => rows.filter(f).reduce((a, r) => a + r.mb, 0);
 for (const [k, v] of Object.entries(out)) {
   const R = v.vram.rows, rt = sum(R, r => r.rt), tex = sum(R, r => !r.rt);
   const grp = {}; for (const r of R.filter(r => r.rt)) { const g = r.o.replace(/:(.*)$/, (m, n) => ':' + n.replace(/\d+$/, '')); grp[g] = (grp[g] || 0) + r.mb; }
-  console.log(`\n== ${k}${PHONE ? ' phone' : ''}${LOW ? ' LOW' : ''}: canvas ${v.vram.canvas.join('×')}  кадр: ${JSON.stringify(v.cost)}`);
+  console.log(`\n== ${k}${PHONE ? ' phone' : ''}${LOW ? ' LOW' : ''}${GFX ? ' ' + GFX.toUpperCase() : ''}: canvas ${v.vram.canvas.join('×')}  кадр: ${JSON.stringify(v.cost)}`);
   console.log(`   RT ${rt.toFixed(1)} МБ + depth RB ${v.vram.depthMB.toFixed(1)} + backbuffer ${v.vram.backbufMB.toFixed(1)}; текстуры ${tex.toFixed(1)} МБ`);
   for (const [g, mb] of Object.entries(grp).sort((a, b) => b[1] - a[1])) if (mb > .05) console.log(`     ${mb.toFixed(1).padStart(6)}  ${g}`);
 }

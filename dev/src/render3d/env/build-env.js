@@ -59,6 +59,49 @@ function buildEnv(A, key, day, ctx) { return withCtx(ctx, () => {
   staticNoCast(A); // perf step 5: shadow map every 2nd frame
   if (E.parts) addParticles3(A, E.parts, E);
 }); }
+// фаза 6, шаг 4 (MED): тени и контактный AO статичных пропсов запекаются в карту освещения земли (UV2, квадрат ±R м вокруг центра),
+// пропсы уходят из карты теней — в ней остаются только персонажи. Множитель на текстуру: (hemi + darkness·sun) / (hemi + sun) по нормали земли.
+const BAKE_R = 22, BAKE_N = 256;
+function bakeStatic(A) {
+  const Q = gfx(A.small), sm = A.shadows && A.shadows.getShadowMap(), G = A.ground; if (!Q.bake || !sm || !G || !A.sun) return;
+  const t0 = performance.now(), casters = (sm.renderList || []).filter(m => m && m !== G && !m.isDisposed()); if (!casters.length) return;
+  const N = BAKE_N, R = BAKE_R, cs = 2 * R / N, L = A.sun.direction.scale(-1).normalize(), dark = A.shadows.darkness;
+  const hemi = A.scene.lights.find(l => l instanceof B3.HemisphericLight), hI = hemi ? hemi.intensity : 0, sI = A.sun.intensity;
+  const sh = new Float32Array(N * N).fill(1), ao = new Float32Array(N * N).fill(1), ray = new B3.Ray(V3(), L, 400), v = V3();
+  const H = (x, z) => A.heightAt(x, z), ix = x => Math.floor((x + R) / cs);
+  for (const m of casters) {
+    m.computeWorldMatrix(true); const bb = m.getBoundingInfo().boundingBox, lo = bb.minimumWorld, hi = bb.maximumWorld;
+    // след тени: углы AABB, сдвинутые вдоль -L до уровня земли под объектом
+    const gy = H((lo.x + hi.x) / 2, (lo.z + hi.z) / 2) - .3, k = (hi.y - gy) / Math.max(.05, L.y);
+    let x0 = Math.min(lo.x, lo.x - L.x * k), x1 = Math.max(hi.x, hi.x - L.x * k), z0 = Math.min(lo.z, lo.z - L.z * k), z1 = Math.max(hi.z, hi.z - L.z * k);
+    const i0 = Math.max(0, ix(x0)), i1 = Math.min(N - 1, ix(x1)), j0 = Math.max(0, ix(z0)), j1 = Math.min(N - 1, ix(z1));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const q = j * N + i; if (!sh[q]) continue;
+      const x = -R + (i + .5) * cs, z = -R + (j + .5) * cs; ray.origin.set(x, H(x, z) + .03, z);
+      if (ray.intersectsBoxMinMax(lo, hi) && m.intersects(ray, true).hit) sh[q] = 0; }
+    // контактный AO: затемнение у основания по расстоянию до габарита в плане, радиус от высоты объекта
+    const ht = hi.y - lo.y; if (lo.y - H((lo.x + hi.x) / 2, (lo.z + hi.z) / 2) > .6 || ht < .08) continue;
+    const r = Math.min(1.4, .35 + ht * .45), a0 = Math.max(0, ix(lo.x - r)), a1 = Math.min(N - 1, ix(hi.x + r)), b0 = Math.max(0, ix(lo.z - r)), b1 = Math.min(N - 1, ix(hi.z + r));
+    for (let j = b0; j <= b1; j++) for (let i = a0; i <= a1; i++) { const x = -R + (i + .5) * cs, z = -R + (j + .5) * cs;
+      const d = Math.hypot(Math.max(lo.x - x, 0, x - hi.x), Math.max(lo.z - z, 0, z - hi.z)), o = Math.max(0, 1 - d / r);
+      if (o > 0) ao[j * N + i] *= 1 - .42 * o * o; }
+  }
+  // мягкий край (2 прохода 3×3) — как PCF у карты теней
+  const blur = a => { const b = new Float32Array(a.length); for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { let s = 0, n = 0; for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) { const y = j + dj, x = i + di; if (x >= 0 && y >= 0 && x < N && y < N) { s += a[y * N + x]; n++; } } b[j * N + i] = s / n; } return b; };
+  const S1 = blur(blur(sh)), px = new Uint8Array(N * N * 4), sc = A.sun.diffuse, hc = hemi ? hemi.diffuse : sc, hg = hemi ? hemi.groundColor : sc;
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const q = j * N + i, x = -R + (i + .5) * cs, z = -R + (j + .5) * cs;
+    const edge = i === 0 || j === 0 || i === N - 1 || j === N - 1, e = .4, nx = H(x - e, z) - H(x + e, z), nz = H(x, z - e) - H(x, z + e), nl = Math.hypot(nx, 2 * e, nz);
+    v.set(nx / nl, 2 * e / nl, nz / nl); const nd = Math.max(0, B3.Vector3.Dot(v, L)) * sI, w = .5 + .5 * v.y, s = edge ? 1 : S1[q], a = edge ? 1 : ao[q];
+    for (let c = 0; c < 3; c++) { const k = c ? c === 1 ? 'g' : 'b' : 'r', lh = (hc[k] * w + hg[k] * (1 - w)) * hI, ls = sc[k] * nd;
+      px[q * 4 + c] = Math.round(255 * Math.min(1, a * (lh + ls * (dark + (1 - dark) * s)) / Math.max(1e-4, lh + ls))); }
+    px[q * 4 + 3] = 255; }
+  const T = new B3.RawTexture(px, N, N, B3.Constants.TEXTUREFORMAT_RGBA, A.scene, false, false, B3.Texture.BILINEAR_SAMPLINGMODE);
+  T.wrapU = T.wrapV = B3.Texture.CLAMP_ADDRESSMODE; T.coordinatesIndex = 1; T.gammaSpace = false; T.name = 'bake';
+  const p = G.getVerticesData(B3.VertexBuffer.PositionKind), uv = new Float32Array(p.length / 3 * 2);
+  for (let i = 0, k = 0; i < p.length; i += 3, k += 2) { uv[k] = (p[i] + R) / (2 * R); uv[k + 1] = (p[i + 2] + R) / (2 * R); }
+  G.setVerticesData(B3.VertexBuffer.UV2Kind, uv); G.material.lightmapTexture = T; G.material.useLightmapAsShadowmap = true;
+  for (const m of casters) A.shadows.removeShadowCaster(m, false);
+  A.bakeMs = Math.round(performance.now() - t0);
+}
 function heightAt(kind, x, z) {
   const r = Math.hypot(x, z * 1.25), far = sstep(13, 44, r);
   if (kind === 'dunes') { const n = NZ(x * .03 + 50, z * .03 + 20, 4), rr = 1 - Math.abs(2 * n - 1); return Math.pow(rr, 1.6) * 4.6 * far + (NZ(x * .1, z * .1, 2) - .5) * .35 * (.3 + far); }
@@ -67,4 +110,4 @@ function heightAt(kind, x, z) {
   return 0;
 }
 
-export { staticNoCast, buildEnv, heightAt };
+export { staticNoCast, buildEnv, bakeStatic, heightAt };
