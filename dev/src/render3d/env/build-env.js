@@ -68,7 +68,7 @@ function bakeImpl(A) {
   const t0 = performance.now(), casters = (sm.renderList || []).filter(m => m && m !== G && !m.isDisposed()); if (!casters.length) return;
   const N = BAKE_N, R = BAKE_R, cs = 2 * R / N, L = A.sun.direction.scale(-1).normalize(), dark = A.shadows.darkness;
   const hemi = A.scene.lights.find(l => l instanceof B3.HemisphericLight), hI = hemi ? hemi.intensity : 0, sI = A.sun.intensity;
-  const sh = new Float32Array(N * N).fill(1), ao = new Float32Array(N * N).fill(1), ray = new B3.Ray(V3(), L, 400), v = V3();
+  const sh = new Float32Array(N * N).fill(1), ao = new Float32Array(N * N).fill(1), ray = new B3.Ray(V3(), L, 400), lr = new B3.Ray(V3(), V3(), 1), v = V3();
   const H = (x, z) => A.heightAt(x, z), ix = x => Math.floor((x + R) / cs);
   for (const m of casters) {
     m.computeWorldMatrix(true); const bb = m.getBoundingInfo().boundingBox, lo = bb.minimumWorld, hi = bb.maximumWorld;
@@ -76,9 +76,11 @@ function bakeImpl(A) {
     const gy = H((lo.x + hi.x) / 2, (lo.z + hi.z) / 2) - .3, k = (hi.y - gy) / Math.max(.05, L.y);
     let x0 = Math.min(lo.x, lo.x - L.x * k), x1 = Math.max(hi.x, hi.x - L.x * k), z0 = Math.min(lo.z, lo.z - L.z * k), z1 = Math.max(hi.z, hi.z - L.z * k);
     const i0 = Math.max(0, ix(x0)), i1 = Math.min(N - 1, ix(x1)), j0 = Math.max(0, ix(z0)), j1 = Math.min(N - 1, ix(z1));
+    // шаг 7: intersects ждёт луч в локальных координатах меша (мировой давал попадания только у мешей с единичной матрицей — слитых)
+    const inv = m.getWorldMatrix().clone().invert();
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const q = j * N + i; if (!sh[q]) continue;
       const x = -R + (i + .5) * cs, z = -R + (j + .5) * cs; ray.origin.set(x, H(x, z) + .03, z);
-      if (ray.intersectsBoxMinMax(lo, hi) && m.intersects(ray, true).hit) sh[q] = 0; }
+      if (ray.intersectsBoxMinMax(lo, hi)) { B3.Ray.TransformToRef(ray, inv, lr); if (m.intersects(lr, true).hit) sh[q] = 0; } }
     // контактный AO: затемнение у основания по расстоянию до габарита в плане, радиус от высоты объекта
     const ht = hi.y - lo.y; if (lo.y - H((lo.x + hi.x) / 2, (lo.z + hi.z) / 2) > .6 || ht < .08) continue;
     const r = Math.min(1.4, .35 + ht * .45), a0 = Math.max(0, ix(lo.x - r)), a1 = Math.min(N - 1, ix(hi.x + r)), b0 = Math.max(0, ix(lo.z - r)), b1 = Math.min(N - 1, ix(hi.z + r));
