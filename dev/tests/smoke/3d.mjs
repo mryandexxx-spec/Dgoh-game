@@ -139,7 +139,10 @@ for (let c = 0; c < CYCLES; c++) {
   C.enterMs = await until(frameOf('BT.arena') + ' > 0') + C.enterSyncMs;
   await sleep(500); // «wake» + первый кадр с эффектами
   const l0 = (await probe()).link, fx0 = await effKeys();
-  await sleep(+opt('--battle-ms', 6000));
+  // снимок посреди боя при реальных часах (тени персонажей на арене): через 2,5 с после wake
+  const BMS = +opt('--battle-ms', 6000), MID = SHOTS && c === 0 ? Math.min(2500, BMS) : 0;
+  if (MID) { await sleep(MID); await page.screenshot({ path: path.join(SHOTS, `arena-mid${PHONE ? '-phone' : ''}.png`) }); }
+  await sleep(BMS - MID);
   C.battle = await probe(); C.compilesAfterWake = C.battle.link - l0;
   if (C.compilesAfterWake) C.newEffects = await effKeys(fx0); // какие эффекты скомпилированы после wake (имя@defines, усечено)
   C.log = await page.evaluate(() => (BT && BT.B && BT.B.log && BT.B.log.length) || 0);
