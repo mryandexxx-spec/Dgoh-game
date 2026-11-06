@@ -11,7 +11,8 @@ const TYPES = { '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; char
 
 // Фаза 5, шаг 4 (tests/smoke/sw.mjs): srv.dir(новый) — подменить каталог (выкатка), srv.dir(null) — «нет сети» (соединение рвётся);
 // onReq(путь, код) — журнал запросов на стороне сервера (видит и запросы SW).
-export function serve(dir, { gzip = false, onReq = null } = {}) {
+// cc — Cache-Control (по умолчанию no-store; sw.mjs, первая установка — max-age=600, как GitHub Pages)
+export function serve(dir, { gzip = false, onReq = null, cc = 'no-store' } = {}) {
   const cache = new Map();
   const srv = http.createServer((q, r) => {
     if (!dir) return q.socket.destroy();
@@ -20,7 +21,7 @@ export function serve(dir, { gzip = false, onReq = null } = {}) {
     if (!fp.startsWith(dir) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory()) { onReq && onReq(f, 404); r.writeHead(404); return r.end(); }
     onReq && onReq(f, 200);
     if (!cache.has(f)) { const b = fs.readFileSync(fp); cache.set(f, gzip ? zlib.gzipSync(b, { level: 6 }) : b); }
-    r.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream', 'cache-control': 'no-store', ...(gzip ? { 'content-encoding': 'gzip' } : {}) });
+    r.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream', 'cache-control': cc, ...(gzip ? { 'content-encoding': 'gzip' } : {}) });
     r.end(cache.get(f));
   });
   return new Promise(res => srv.listen(0, '127.0.0.1', () => res({

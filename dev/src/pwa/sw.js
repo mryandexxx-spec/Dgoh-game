@@ -24,7 +24,7 @@ async function installShell() {
   }
 }
 async function installAssets() {
-  const ac = await caches.open(AC), upd = await isUpdate();
+  const upd = await isUpdate(), ac = await caches.open(AC);   // фаза 5, шаг 7: isUpdate до open — иначе AC уже есть и первая установка считается обновлением
   for (const p of ASSETS) {
     const u = abs(p); if (LAZY.has(p) || await ac.match(u)) continue;
     const old = await caches.match(u); if (old) { await ac.put(u, old); continue; }

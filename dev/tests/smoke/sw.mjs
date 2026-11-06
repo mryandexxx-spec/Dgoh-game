@@ -4,7 +4,7 @@
 // открытая вкладка A продолжает работать; новая вкладка — версия B; докачка ничего не качает.
 // B → C (C — с изменённым ассетом): качается ровно изменённый ассет; прежняя версия файла остаётся в кэше (предыдущее поколение).
 // Затем «нет сети»: новая вкладка открывается из кэша, loadB3() → true, модели и клипы из кэша.
-// Первая установка (новый профиль, C): докачка заполняет кэш ассетов целиком.
+// Первая установка (новый профиль, C): install не качает ассеты, докачка заполняет кэш ассетов целиком, каждый ассет с сервера — один раз.
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -90,15 +90,23 @@ const po = await open();
 const off = await po.evaluate(async () => ({ v: (document.getElementById('appver') || {}).textContent, b3: await loadB3(), duncan: !!(MODEL_DATA.duncan && MODEL_DATA.duncan.parts || MODEL_DATA.duncan), worm: !!MODEL_DATA.worm, mocap: typeof MOCAP_OK !== 'undefined' && MOCAP_OK, ktx2: typeof KTX2 === 'object' ? Object.keys(KTX2).length : -1 }));
 check(off.b3 === true && off.duncan && off.worm && off.mocap && off.ktx2 !== 0, `офлайн: ${JSON.stringify(off)}`);
 
-// 6. первая установка в новом профиле: докачка заполняет кэш ассетов
-srv.dir(C || B); LOG = [];
-const ctx = await browser.createBrowserContext(), pf = await open(ctx);
+// 6. первая установка в новом профиле (фаза 5, шаг 7): прежние вкладки закрыты — их 3D на SwiftShader душит воркер KTX2 (сторож 30 с);
+// отдельный сервер с max-age=600, как GitHub Pages: страница (ещё без SW) и докачка делят HTTP-кэш, поэтому повторный запрос
+// к серверу — это install SW с cache: 'no-cache' (первая установка ассеты качать не должна)
+for (const pg of [pa, pb, po]) await pg.close();
+const LOGF = [], srvF = await serve(C || B, { onReq: (f, c) => LOGF.push([f, c]), cc: 'max-age=600' }), urlF = p => srvF.url(p).replace('127.0.0.1', 'localhost');
+const ctx = await browser.createBrowserContext(), pf = await ctx.newPage(); await pf.setViewport({ width: 960, height: 600 });
+pf.on('console', m => m.type() === 'error' && errs.push(m.text())); pf.on('pageerror', e => errs.push(String(e)));
+await pf.evaluateOnNewDocument(() => { try { localStorage.setItem('dune-cine-off', 'true'); } catch (e) {} window.__warm = null;
+  navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.type === 'warm') window.__warm = e.data; }); });
+await pf.goto(urlF('index.html'), { waitUntil: 'load', timeout: 180000 });
 await until(pf, () => navigator.serviceWorker.controller, 60000);
 const wf = await until(pf, () => window.__warm, 60000), stF = await cacheState(pf);
-const per = {}; for (const [f] of assetHits()) per[f] = (per[f] || 0) + 1;
-const lazyF = swList(C || B, 'LAZY'), lazyHit = Object.keys(per).filter(f => lazyF.includes(f));   // фолбэк-JPEG качаться не должны
-check(wf && wf.fetched + wf.cached === wf.total && (stF['dune-goh-assets'] || []).filter(f => f.startsWith('assets/') && !lazyF.includes(f)).length === wf.total && !lazyHit.length,
-  `первая установка: докачка ${JSON.stringify(wf)}; запросов ассетов ${assetHits().length}, повторных ${Object.values(per).filter(n => n > 1).length}, фолбэк-JPEG ${lazyHit.length}`);
+const per = {}; for (const [f] of LOGF) if (f.startsWith('assets/')) per[f] = (per[f] || 0) + 1;
+const lazyF = swList(C || B, 'LAZY'), lazyHit = Object.keys(per).filter(f => lazyF.includes(f)), rep = Object.keys(per).filter(f => per[f] > 1);   // фолбэк-JPEG качаться не должны
+check(wf && wf.fetched + wf.cached === wf.total && (stF['dune-goh-assets'] || []).filter(f => f.startsWith('assets/') && !lazyF.includes(f)).length === wf.total && !lazyHit.length && !rep.length,
+  `первая установка: докачка ${JSON.stringify(wf)}; запросов ассетов ${Object.values(per).reduce((a, b) => a + b, 0)}, повторных ${rep.length}${rep.length ? ' (' + rep.slice(0, 3).join(', ') + ')' : ''}, фолбэк-JPEG ${lazyHit.length}`);
+await srvF.close();
 
 check(!errs.length, `ошибки консоли: ${errs.length}${errs.length ? ' — ' + errs.slice(0, 3).join(' | ') : ''}`);
 await browser.close(); await srv.close();
