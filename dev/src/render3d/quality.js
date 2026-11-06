@@ -30,9 +30,9 @@ const PROFILES = {
   med: { ...HIGH, dpr: { arena: [1.5, 1.25], hero: [1.75, 1.5], camp: [1.5, 1.25] }, msaa: 1,
     grain: false, chromatic: false, sharpen: false, dof: 'hero', ssao: false, shadowSize: 1024, bake: true, glowSel: true },
 };
-// шаг 5: LOW — от MED вниз: без DoF и bloom, glow дешевле, тени 512 (PCF low, обновление реже), ниже dpr, пробники, сетка земли, частицы, кадр в покое
-PROFILES.low = { ...PROFILES.med, dpr: { arena: [1.25, 1], hero: [1.5, 1.25], camp: [1.25, 1] }, dof: false, bloom: false,
-  glowRatio: [.35, .25], glowKernel: 16, shadowSize: 512, shadowRefresh: 3, shadowQ: 'low',
+// шаг 5: LOW — от MED вниз: без DoF и bloom, glow дешевле, тени 512 (PCF low), ниже dpr, пробники, сетка земли, частицы, кадр в покое
+PROFILES.low = { ...PROFILES.med, dpr: { arena: 1.25, hero: [1.5, 1.25], camp: 1.25 }, dof: false, bloom: false,
+  glowRatio: [.35, .25], glowKernel: 16, shadowSize: 512, shadowQ: 'low',
   probe: { arena: 32, hero: 32, camp: 32 }, groundSeg: [100, 80], particles: .5,
   fps: { active: 60, idle: 20, idleLow: 15, static: 0 }, campIdle: 'idleLow' };
 const ORDER = ['high', 'med', 'low'];

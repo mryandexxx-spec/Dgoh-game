@@ -1,5 +1,5 @@
 // 3D-смоук (фаза 3b, шаг 1): реальный WebGL (SwiftShader), цикл лагерь → окно героя → бой → выход ×N.
-//   node tests/smoke/3d.mjs <game.html> [--cycles 5] [--phone] [--shots dir] [--out file.json] [--chrome path] [--strict]
+//   node tests/smoke/3d.mjs <game.html> [--cycles 5] [--phone] [--shots dir] [--out file.json] [--chrome path] [--strict] [--gfx high|med|low]
 //   node tests/smoke/3d.mjs <game.html> --tti 5 [--phone] [--net wifi|4g|none] [--cpu 3] — время до интерактивного лобби (фаза 4, шаг 5):
 //     папка страницы отдаётся по HTTP с gzip, каждый прогон — новый контекст без кэша; медиана: lobby (появилось лобби), tti (setTimeout(0) после него),
 //     b3 (готов Babylon), camp3d (смонтирован 3D-лагерь), load; плюс размер страницы и чанка
@@ -76,15 +76,15 @@ page.on('request', r => {
 const errors = [];
 page.on('pageerror', e => errors.push('pageerror: ' + String(e.message).slice(0, 200)));
 page.on('console', m => { if (m.type() === 'error' && !/manifest/.test(m.text() + (m.location() && m.location().url || ''))) errors.push('console: ' + m.text().slice(0, 200)); });
-await page.evaluateOnNewDocument(save => {
+await page.evaluateOnNewDocument((save, gfx) => {
   let a = 12345; Math.random = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-  try { localStorage.clear(); localStorage.setItem('dune-goh-v1', save); localStorage.setItem('dune-cine-off', 'true'); } catch (e) {}
+  try { localStorage.clear(); localStorage.setItem('dune-goh-v1', save); localStorage.setItem('dune-cine-off', 'true'); if (gfx) localStorage.setItem('dune-gfx', JSON.stringify({ p: gfx, auto: 0 })); } catch (e) {}
   try { navigator.serviceWorker && Object.defineProperty(navigator, 'serviceWorker', { value: undefined }); } catch (e) {}
   const SM = window.__sm = { ctx: [], link: 0 };
   const g = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function (t, o) { const c = g.call(this, t, o); if (c && /webgl/.test(t) && !SM.ctx.some(w => w.deref() === c)) SM.ctx.push(new WeakRef(c)); return c; };
   for (const P of [window.WebGLRenderingContext, window.WebGL2RenderingContext]) if (P) { const l = P.prototype.linkProgram; P.prototype.linkProgram = function (p) { SM.link++; return l.call(this, p); }; }
-}, LATE);
+}, LATE, opt('--gfx', ''));
 
 // в странице: состояние 3D
 const probe = () => page.evaluate(() => {
