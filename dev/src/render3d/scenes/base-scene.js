@@ -37,7 +37,7 @@ class Stage3D extends GameScene {
   onSleep(o) {
     if (!o.light || !LIGHT_SLEEP() || !this.pipe) return;
     const cams = [this.camera];
-    try { if (this.ssao) { this.scene.postProcessRenderPipelineManager.detachCamerasFromRenderPipeline('ssao', cams); this.ssao.dispose(true); } } catch (e) {}
+    try { if (this.ssao) { this.scene.postProcessRenderPipelineManager.detachCamerasFromRenderPipeline('ssao', cams); this.ssao.dispose(true); this.scene.disableGeometryBufferRenderer && this.scene.disableGeometryBufferRenderer(); } } catch (e) {}
     try { this.pipe.dispose(); } catch (e) {} try { this.glow.dispose(); } catch (e) {}
     this.pipe = this.glow = this.ssao = null; this._light = true;
   }

@@ -12,7 +12,7 @@ import { makeWorm3, wormData, wormMats, wormMesh } from '../worm.js';
 import { ANIM_SLOW, poseHuman, unmapK } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
 import { buildEnv } from '../env/build-env.js';
-import { MB, add, bBox, bCone, bCyl, bDisc, bRock, bSph, bTorus, dynTex, glowCanvas, grp } from '../geometry.js';
+import { MB, add, bBox, bCone, bCyl, bDisc, bRock, bSph, bTorus, glowTex, grp } from '../geometry.js';
 import { C3_CHARM, C3_SPICE, C3_TGT, V3, basic3, col3, inPlaceKeep, mat3, mk, runDue } from '../materials.js';
 import { CTX, withCtx } from '../ctx.js';
 import { B3, SLOT3 } from '../base.js';
@@ -48,7 +48,7 @@ class Arena3D extends GameScene {
     // emissive bloom for windows, eyes, rings, worm glow
     this.glow = new B3.GlowLayer('glow', S, { mainTextureRatio: this.small ? .35 : .5, blurKernelSize: 32 }); this.glow.intensity = .55;
     this.glow.addExcludedMesh(this.sky); if (this.ground) this.glow.addExcludedMesh(this.ground); for (const o of Object.values(this.units)) if (o.bubble) this.glow.addExcludedMesh(o.bubble);
-    const tx = dynTex(glowCanvas(), 0, true, { scene: S });
+    const tx = glowTex({ scene: S });
     const sp = this.sparks = new B3.ParticleSystem('sparks', 600, S); sp.particleTexture = tx; sp.emitter = V3(0, -50, 0); sp.minEmitBox = V3(-.15, -.2, -.15); sp.maxEmitBox = V3(.15, .2, .15);
     sp.direction1 = V3(-2.5, 1, -2.5); sp.direction2 = V3(2.5, 4, 2.5); sp.gravity = V3(0, -9, 0); sp.minLifeTime = .2; sp.maxLifeTime = .45; sp.minSize = .04; sp.maxSize = .1; sp.minEmitPower = 1; sp.maxEmitPower = 2.2;
     sp.colorDead = new B3.Color4(1, .4, .1, 0); sp.blendMode = B3.ParticleSystem.BLENDMODE_ADD; sp.emitRate = 0; sp.manualEmitCount = 0; sp.start();
@@ -85,7 +85,7 @@ class Arena3D extends GameScene {
     const r0 = o.boss ? 2.8 : o.legend ? .78 : .52, th = o.boss ? .4 : o.legend ? .2 : .15;
     o.ring = mk(MB().CreateTorus('ring', { diameter: 2 * r0, thickness: th, tessellation: 48 }, CTX.scene), basic3('#e8913f', { alpha: 0 }), x, y + .05, z, false); o.ring.scaling.y = .08; o.ring.material.disableDepthWrite = true;
     if (this.raid && u.def.boss) o.ring.scaling.set(1.9, .08, 1.9);
-    if (!o.boss) { o.pool = mk(bDisc(o.legend ? 1.15 : .72, 40), basic3('#ffffff', { add: true, alpha: 0 }), x, y + .04, z, false); o.pool.rotation.x = Math.PI / 2; o.pool.material.disableDepthWrite = true; const gtx = (() => { const t = dynTex(glowCanvas(), 0, true); return t; })(); o.pool.material.emissiveTexture = gtx; o.pool.material.opacityTexture = gtx; }
+    if (!o.boss) { o.pool = mk(bDisc(o.legend ? 1.15 : .72, 40), basic3('#ffffff', { add: true, alpha: 0 }), x, y + .04, z, false); o.pool.rotation.x = Math.PI / 2; o.pool.material.disableDepthWrite = true; const gtx = glowTex(); o.pool.material.emissiveTexture = gtx; o.pool.material.opacityTexture = gtx; }
     this.units[u.uid] = o;
     });
   }
@@ -266,7 +266,7 @@ class Arena3D extends GameScene {
     });
   }
   smokeFX(x) {
-    if (!this.smoke) { const S = this.scene; const t = dynTex(glowCanvas(), 0, true, { scene: S }); const ps = this.smoke = new B3.ParticleSystem('smoke', 300, S); ps.particleTexture = t; ps.emitter = V3(0, -50, 0); ps.minEmitBox = V3(-.4, 0, -.4); ps.maxEmitBox = V3(.4, 1.6, .4); ps.direction1 = V3(-.4, .3, -.4); ps.direction2 = V3(.4, .9, .4); ps.minLifeTime = .7; ps.maxLifeTime = 1.3; ps.minSize = .4; ps.maxSize = .9; ps.color1 = new B3.Color4(.75, .65, .5, .5); ps.color2 = new B3.Color4(.55, .45, .35, .4); ps.colorDead = new B3.Color4(.4, .3, .2, 0); ps.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD; ps.emitRate = 0; ps.manualEmitCount = 0; ps.start(); }
+    if (!this.smoke) { const S = this.scene; const t = glowTex({ scene: S }); const ps = this.smoke = new B3.ParticleSystem('smoke', 300, S); ps.particleTexture = t; ps.emitter = V3(0, -50, 0); ps.minEmitBox = V3(-.4, 0, -.4); ps.maxEmitBox = V3(.4, 1.6, .4); ps.direction1 = V3(-.4, .3, -.4); ps.direction2 = V3(.4, .9, .4); ps.minLifeTime = .7; ps.maxLifeTime = 1.3; ps.minSize = .4; ps.maxSize = .9; ps.color1 = new B3.Color4(.75, .65, .5, .5); ps.color2 = new B3.Color4(.55, .45, .35, .4); ps.colorDead = new B3.Color4(.4, .3, .2, 0); ps.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD; ps.emitRate = 0; ps.manualEmitCount = 0; ps.start(); }
     const p = x.root.position; this.smoke.emitter = V3(p.x, p.y, p.z); this.smoke.manualEmitCount = 90;
   }
   miasmaFX(x, c) {
@@ -381,7 +381,7 @@ class Arena3D extends GameScene {
       K.colT = wormMesh(WD.col); K.colT.material = K.WM.skin; K.colT.setEnabled(false);
       K.mouthT = wormMesh(WD.mouth); K.mouthT.material = K.WM.mouth; K.mouthT.setEnabled(false);
     }
-    K.tx = dynTex(glowCanvas(), 0, true);
+    K.tx = glowTex();
     K.dm = basic3('#d8a868', { alpha: 0 }); K.dm.emissiveTexture = K.tx; K.dm.opacityTexture = K.tx; K.dm.disableDepthWrite = true;
     const b = K.burst = new B3.ParticleSystem('burst', 400, CTX.scene); b.particleTexture = K.tx; b.emitter = V3(0, -50, 0);
     b.direction1 = V3(-3, 6, -3); b.direction2 = V3(3, 10, 3); b.gravity = V3(0, -9, 0); b.minLifeTime = .8; b.maxLifeTime = 1.8; b.minSize = .15; b.maxSize = .5;

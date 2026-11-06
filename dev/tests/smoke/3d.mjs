@@ -1,6 +1,6 @@
 // 3D-смоук (фаза 3b, шаг 1): реальный WebGL (SwiftShader), цикл лагерь → окно героя → бой → выход ×N.
 //   node tests/smoke/3d.mjs <game.html> [--cycles 5] [--phone] [--babylon path] [--shots dir] [--out file.json] [--chrome path] [--strict]
-// Метрики: живые WebGL-контексты (после gc), сумма scene.meshes/textures/materials по всем движкам (без сцены Baker — камера 'bc'),
+// Метрики: живые WebGL-контексты (после gc), сумма scene.meshes/textures/materials по всем движкам, gpuTex — внутренние текстуры движка (без сцены Baker — камера 'bc'),
 // линковки шейдеров в бою после «пробуждения» арены, время входа в бой / возврата в лагерь (до первого кадра),
 // ошибки консоли. Критерии фазы 3b печатаются как PASS/FAIL; --strict → код выхода 1 при FAIL.
 import fs from 'node:fs';
@@ -56,7 +56,7 @@ const probe = () => page.evaluate(() => {
   const live = SM.ctx.map(w => w.deref()).filter(c => !c.isContextLost());
   const r = { contexts: live.length, contextsInDom: live.filter(c => c.canvas && c.canvas.isConnected).length, engines: 0, scenes: 0, meshes: 0, textures: 0, materials: 0, link: SM.link, canv: live.map(c => (c.canvas.className || c.canvas.id || '?') + (c.canvas.isConnected ? '' : '(off)')).join(',') };
   const E = (window.BABYLON && BABYLON.EngineStore && BABYLON.EngineStore.Instances) || [];
-  for (const e of E) { if (e.isDisposed) continue; r.engines++; for (const s of e.scenes) { if (s.cameras.some(c => c.name === 'bc')) { r.baker = (r.baker || 0) + 1; continue; } r.scenes++; r.meshes += s.meshes.length; r.textures += s.textures.length; r.materials += s.materials.length; } }
+  for (const e of E) { if (e.isDisposed) continue; r.engines++; r.gpuTex = (r.gpuTex || 0) + (e.getLoadedTexturesCache ? e.getLoadedTexturesCache().length : 0); if (e.getLoadedTexturesCache) { const K = r.gpuKinds = r.gpuKinds || {}; for (const t of e.getLoadedTexturesCache()) { const k = t.source + ':' + (t.url ? t.url.slice(0, 24) : '') + ':' + t.width + 'x' + t.height + (t.isCube ? 'c' : ''); K[k] = (K[k] || 0) + 1; } } for (const s of e.scenes) { if (s.cameras.some(c => c.name === 'bc')) { r.baker = (r.baker || 0) + 1; continue; } r.scenes++; r.meshes += s.meshes.length; r.textures += s.textures.length; r.materials += s.materials.length; } }
   return r;
 });
 const run = code => page.evaluate(c => { (0, eval)(c); }, code);
@@ -100,7 +100,7 @@ for (let c = 0; c < CYCLES; c++) {
   C.exitMs = w < 0 ? -1 : w + syncX;
   await sleep(600); C.after = await probe();
   cycles.push(C);
-  process.stdout.write(`цикл ${C.n}: контекстов ${C.after.contexts} [${C.after.canv}] (в бою ${C.battle.contexts} [${C.battle.canv}]), meshes ${C.after.meshes}, tex ${C.after.textures}, mat ${C.after.materials}, вход ${C.enterMs} мс, выход ${C.exitMs} мс, компиляций после wake ${C.compilesAfterWake} (журнал боя ${C.log})\n`);
+  process.stdout.write(`цикл ${C.n}: контекстов ${C.after.contexts} [${C.after.canv}] (в бою ${C.battle.contexts} [${C.battle.canv}]), meshes ${C.after.meshes}, tex ${C.after.textures} (gpu ${C.after.gpuTex}, в бою ${C.battle.gpuTex}), mat ${C.after.materials}, вход ${C.enterMs} мс, выход ${C.exitMs} мс, компиляций после wake ${C.compilesAfterWake} (журнал боя ${C.log})\n`);
 }
 await browser.close();
 

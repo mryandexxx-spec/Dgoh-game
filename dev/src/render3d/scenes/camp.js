@@ -5,7 +5,7 @@ import { Stage3D } from './base-scene.js';
 import { poseHuman } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
 import { buildEnv, staticNoCast } from '../env/build-env.js';
-import { bBox, bCyl, bPlane, bRock, bSph, dynTex, glowCanvas } from '../geometry.js';
+import { bBox, bCyl, bPlane, bRock, bSph, glowTex } from '../geometry.js';
 import { V3, basic3, col3, mat3, mk } from '../materials.js';
 import { CTX, withCtx } from '../ctx.js';
 import { B3, HAS3D } from '../base.js';
@@ -29,7 +29,7 @@ class CampStage extends Stage3D {
     mk(bSph(.22, 12), basic3('#ff7a2a'), fx, fy + .12, fz, false).scaling.set(1, .4, 1);
     const L = this.fireL = new B3.PointLight('fire', V3(fx, fy + .8, fz), S); L.diffuse = col3('#ff9a4a'); L.specular = col3('#ff8a3a'); L.intensity = 2.4; L.range = 14;
     this.fireShadow = null; // perf step 5: campfire point light no longer renders a 6-face cube shadow map
-    const tx = dynTex(glowCanvas(), 0, true);
+    const tx = glowTex();
     const fl = new B3.ParticleSystem('flame', 400, S); fl.particleTexture = tx; fl.emitter = V3(fx, fy + .1, fz); fl.minEmitBox = V3(-.18, 0, -.18); fl.maxEmitBox = V3(.18, .05, .18);
     fl.direction1 = V3(-.15, 1.4, -.15); fl.direction2 = V3(.15, 2.2, .15); fl.minLifeTime = .35; fl.maxLifeTime = .8; fl.minSize = .18; fl.maxSize = .42; fl.addSizeGradient(0, .3); fl.addSizeGradient(1, .05);
     fl.addColorGradient(0, new B3.Color4(1, .9, .5, 1)); fl.addColorGradient(.4, new B3.Color4(1, .5, .15, .9)); fl.addColorGradient(1, new B3.Color4(.5, .1, .02, 0)); fl.emitRate = 260; fl.blendMode = B3.ParticleSystem.BLENDMODE_ADD; fl.start();

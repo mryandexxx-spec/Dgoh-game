@@ -1,12 +1,12 @@
 // render3d/env/particles.js — строки 1391–1417 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import './props.js'; // порядок исполнения
-import { dynTex, glowCanvas } from '../geometry.js';
+import { glowTex } from '../geometry.js';
 import { V3, col3 } from '../materials.js';
 import { CTX } from '../ctx.js';
 import { B3 } from '../base.js';
 
 function addParticles3(A, type) {
-  const tex = dynTex(glowCanvas(), 0, true);
+  const tex = glowTex();
   const cfg = {
     sand:  { n: 650, box: [[-36, 0, -27], [36, 3.5, 15]], dir: [[2.2, -.05, -.4], [4, .25, .4]], life: [5, 9], size: [.06, .14], col: '#f0d0a0', a: .75, add: false },
     storm: { n: 2600, box: [[-40, 0, -31], [-20, 14, 19]], dir: [[12, -.5, -1], [17, 1, 1]], life: [3, 5], size: [.12, .32], col: '#e0b07a', a: .7, add: false },

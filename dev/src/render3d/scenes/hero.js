@@ -5,7 +5,7 @@ import { Stage3D } from './base-scene.js';
 import { ENV_HDR } from '../../assets/env-hdr.js';
 import { poseHuman } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
-import { MB, bCyl, bPlane, dynTex, glowCanvas } from '../geometry.js';
+import { MB, bCyl, bPlane, glowTex } from '../geometry.js';
 import { V3, basic3, col3, mat3, mk } from '../materials.js';
 import { CTX, withCtx } from '../ctx.js';
 import { B3, HAS3D } from '../base.js';
@@ -19,7 +19,7 @@ class HeroStage extends Stage3D {
     S.clearColor = new B3.Color4(.07, .045, .03, 1); S.ambientColor = B3.Color3.Black();
     // backdrop: soft radial gradient sphere + floor podium
     const bg = MB().CreateSphere('bg', { diameter: 60, segments: 16, sideOrientation: B3.Mesh.BACKSIDE }, S); bg.material = basic3('#0e0906', { fog: false }); bg.isPickable = false; this.bg = bg;
-    const halo = mk(bPlane(7, 7), null, 0, 1.4, -3, false); const hm = basic3('#3a2210', { fog: false, add: true }); const htx = dynTex(glowCanvas(), 0, true); hm.emissiveTexture = htx; hm.opacityTexture = htx; hm.disableDepthWrite = true; halo.material = hm; this.halo = halo;
+    const halo = mk(bPlane(7, 7), null, 0, 1.4, -3, false); const hm = basic3('#3a2210', { fog: false, add: true }); const htx = glowTex(); hm.emissiveTexture = htx; hm.opacityTexture = htx; hm.disableDepthWrite = true; halo.material = hm; this.halo = halo;
     const hemi = new B3.HemisphericLight('h', V3(0, 1, 0), S); hemi.intensity = .35; hemi.diffuse = col3('#c8b090'); hemi.groundColor = col3('#2a1a10'); hemi.specular = B3.Color3.Black();
     const key = this.key = new B3.DirectionalLight('key', V3(-.5, -.8, -.6), S); key.position = V3(4, 7, 6); key.intensity = 1.7; key.diffuse = col3('#ffe2b8');
     key.autoUpdateExtends = false; key.orthoLeft = -2; key.orthoRight = 2; key.orthoTop = 3; key.orthoBottom = -1; key.shadowMinZ = .5; key.shadowMaxZ = 20;
@@ -32,7 +32,7 @@ class HeroStage extends Stage3D {
     const stone = mat3('#5a4030', { roughness: .8 }), top = mat3('#7a5a3e', { roughness: .65 });
     mk(bCyl(1.05, 1.15, .22, 48), stone, 0, -.11, 0, false); mk(bCyl(.98, .98, .02, 48), top, 0, .005, 0, false);
     this.ring = mk(MB().CreateTorus('ring', { diameter: 2.04, thickness: .03, tessellation: 64 }, S), basic3('#e8913f'), 0, .01, 0, false);
-    tx = dynTex(glowCanvas(), 0, true);
+    tx = glowTex();
     const dust = new B3.ParticleSystem('motes', 160, S); dust.particleTexture = tx; dust.emitter = V3(0, 0, 0); dust.minEmitBox = V3(-1.6, 0, -1.2); dust.maxEmitBox = V3(1.6, 2.6, 1); dust.direction1 = V3(-.05, .05, -.05); dust.direction2 = V3(.05, .15, .05);
     dust.minLifeTime = 4; dust.maxLifeTime = 8; dust.minSize = .01; dust.maxSize = .03; dust.color1 = new B3.Color4(1, .85, .6, .7); dust.color2 = new B3.Color4(1, .7, .4, .5); dust.colorDead = new B3.Color4(1, .6, .3, 0); dust.emitRate = 20; dust.blendMode = B3.ParticleSystem.BLENDMODE_ADD; dust.preWarmCycles = 100; dust.start();
     const burst = this.burst = new B3.ParticleSystem('burst', 500, S); burst.particleTexture = tx; burst.emitter = V3(0, .1, 0); burst.minEmitBox = V3(-.6, 0, -.6); burst.maxEmitBox = V3(.6, .1, .6); burst.direction1 = V3(-.4, 2, -.4); burst.direction2 = V3(.4, 4, .4); burst.gravity = V3(0, -1.5, 0);

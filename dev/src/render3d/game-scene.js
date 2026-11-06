@@ -32,6 +32,10 @@ class GameScene {
   dispose() {
     if (!this.alive) return; this.alive = false; this.state = 'disposed';
     if (this.onDispose) try { this.onDispose(); } catch (e) {}
+    // scene.dispose() не освобождает буферы SSAO2 (MRT геометрии, depth, raw) — утечка ~4 GPU-текстур на бой (найдено смоуком, шаг 5)
+    try { if (this.ssao) this.ssao.dispose(true); } catch (e) {}
+    try { if (this.scene && this.scene.disableGeometryBufferRenderer) this.scene.disableGeometryBufferRenderer(); } catch (e) {}
+    this.ssao = null;
     try { this.scene && this.scene.dispose(); } catch (e) {}
     this.host.forget(this);
   }

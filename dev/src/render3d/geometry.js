@@ -47,10 +47,20 @@ function groundCanvas(kind) {
 }
 let GLOW_CANVAS = null;
 const glowCanvas = () => GLOW_CANVAS || (GLOW_CANVAS = canvasEl(128, (g, S) => { const r = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.18, 'rgba(255,255,255,.85)'); r.addColorStop(.4, 'rgba(255,255,255,.25)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, S, S); }));
+// phase 3b, step 5: one glow texture per scene (was a DynamicTexture per particle system / pool / sprite). Shared, so
+// mesh.dispose(false, true) of a sprite must not kill it: dispose() is a no-op, the real one runs when the scene is disposed
+function glowTex(ctx) {
+  const S = ctx && ctx.scene !== undefined ? ctx.scene : CTX.scene;
+  if (S && S._glowTex) return S._glowTex;
+  const t = dynTex(glowCanvas(), 0, true, { scene: S }); if (!S) return t;
+  const real = t.dispose.bind(t); t.dispose = () => {}; t._shared = true;
+  S.onDisposeObservable.addOnce(() => { S._glowTex = null; real(); });
+  return S._glowTex = t;
+}
 function glowSprite(color, size, x, y, z, add = true) {
-  const p = mk(bPlane(1, 1), null, x, y, z, false); const m = basic3(color, { fog: false, add }); const t = dynTex(glowCanvas(), 0, true);
+  const p = mk(bPlane(1, 1), null, x, y, z, false); const m = basic3(color, { fog: false, add }); const t = glowTex();
   m.emissiveTexture = t; m.opacityTexture = t; m.disableDepthWrite = true; p.material = m; p.scaling.set(size, size, 1); p.billboardMode = B3.Mesh.BILLBOARDMODE_ALL; p.receiveShadows = false; return p;
 }
 
 
-export { grp, add, MB, bBox, bCyl, bSph, bCone, bTorus, bDisc, bPlane, bOcta, bRock, canvasEl, dynTex, groundCanvas, GLOW_CANVAS, glowCanvas, glowSprite };
+export { grp, add, MB, bBox, bCyl, bSph, bCone, bTorus, bDisc, bPlane, bOcta, bRock, canvasEl, dynTex, groundCanvas, GLOW_CANVAS, glowCanvas, glowSprite, glowTex };
