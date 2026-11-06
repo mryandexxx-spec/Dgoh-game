@@ -53,3 +53,4 @@
 .bsseg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
 .bsseg .btn { padding: 7px 2px; font-size: 12px; min-width: 0; }
 .bsseg .btn.on { background: var(--spice); color: var(--night); border-color: transparent; }
+@media (orientation: landscape) and (max-height: 520px) { .bset { grid-template-columns: repeat(3, minmax(0, 1fr)); } }   /* шаг 6: строка «Графика» — на 1 ряд кнопок меньше в альбомной ориентации телефона */
