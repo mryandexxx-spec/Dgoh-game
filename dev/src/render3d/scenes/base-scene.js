@@ -7,7 +7,10 @@ import { GameScene } from '../game-scene.js';
 
 // perf step 1: after engine.dispose() (loseContextOnDispose) drop the backbuffer and detach the canvas so iOS frees the context right away
 function freeCanvas(cv, keep) { try { if (!cv) return; cv.width = 0; cv.height = 0; if (!keep) cv.remove(); } catch (e) {} }
-const LIGHT_SLEEP = () => Math.min(innerWidth, innerHeight) < 600 || matchMedia('(pointer: coarse)').matches; // same test as the former freeStages
+// фаза 6, шаг 2: DepthRenderer (для DoF) создаётся под размер канваса на момент создания, а канвас общий и переезжает между хостами —
+// у окна героя глубина считалась в размере лагеря (×8 пикселей), у лагеря — 300×150 (канвас до монтирования). Пока только уменьшаем (вид лагеря v58 держится на грубой глубине; grow — после согласования A/B).
+function fitDepth(scene, grow = false) { const D = scene._depthRenderer, E = scene.getEngine(); if (!D) return; const w = E.getRenderWidth(), h = E.getRenderHeight();
+  for (const k in D) { const m = D[k] && D[k].getDepthMap && D[k].getDepthMap(); if (!m) continue; const z = m.getSize(); if (z.width * z.height > w * h || (grow && (z.width !== w || z.height !== h))) m.resize({ width: w, height: h }); } }
 const SAVE_LOW = () => { try { return !!JSON.parse(localStorage.getItem('dune-gfx-low') || 'false'); } catch (e) { return false; } };
 class Stage3D extends GameScene {
   constructor(opts = {}) {
@@ -35,18 +38,18 @@ class Stage3D extends GameScene {
   // phase 3b, step 4: light sleep on phones (before a battle, sleepStages) — screen-size targets (post pipeline MSAA, SSAO, glow) are freed while the stage
   // sleeps (iOS reloads the page when GPU memory runs out); scene, meshes, materials and textures stay. Re-created on wake.
   onSleep(o) {
-    if (!o.light || !LIGHT_SLEEP() || !this.pipe) return;
+    if (!o.light || !this.pipe) return;   // фаза 6, шаг 2: и на desktop (в бою три сцены держали ≈ 310 МБ RT)
     const cams = [this.camera];
     try { if (this.ssao) { this.scene.postProcessRenderPipelineManager.detachCamerasFromRenderPipeline('ssao', cams); this.ssao.dispose(true); this.scene.disableGeometryBufferRenderer && this.scene.disableGeometryBufferRenderer(); } } catch (e) {}
     try { this.pipe.dispose(); } catch (e) {} try { this.glow.dispose(); } catch (e) {}
     this.pipe = this.glow = this.ssao = null; this._light = true;
   }
-  onWake() { if (this._light) { this._light = false; this.look(this._look || {}); } }
+  onWake() { if (this._light) { this._light = false; this.look(this._look || {}); } fitDepth(this.scene); }
   attach(host, first) { if (host) this.wake(host, { cls: this.cls, dpr: this.maxDpr, first }); }
   isCur() { return this.host.isCur(this); }
   update() {
     if (this.paused()) return;
-    if (this.cv.clientWidth !== this.w || this.cv.clientHeight !== this.h) { this.w = this.cv.clientWidth; this.h = this.cv.clientHeight; this.engine.resize(); this.onResize && this.onResize(); }
+    if (this.cv.clientWidth !== this.w || this.cv.clientHeight !== this.h) { this.w = this.cv.clientWidth; this.h = this.cv.clientHeight; this.engine.resize(); fitDepth(this.scene); this.onResize && this.onResize(); }
     const now = performance.now(); this.tick(now, now / 1000);
     if (this.tr.length) inPlaceKeep(this.tr, T => { const k = (now - T.t0) / T.life; if (k >= 1) { T.mesh.dispose(false, true); return false; } T.upd(T.mesh, k); return true; });
     this.scene.render(); this.post && this.post(now);
@@ -62,4 +65,4 @@ class Stage3D extends GameScene {
 }
 
 
-export { freeCanvas, SAVE_LOW, Stage3D };
+export { fitDepth, freeCanvas, SAVE_LOW, Stage3D };
