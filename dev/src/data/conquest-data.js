@@ -128,9 +128,7 @@ const CQ_DISKS = {
   fury:   { r: 'l', n: 'Ярость джихада', d: 'Герои невосприимчивы к Страху; за каждого павшего союзника остальные наносят +35% урона.', f: us => us.forEach(u => { u.fearImmune = true; u.cqFury = (u.cqFury || 0) + .35; }) },
 };
 const cqRar = k => CQ_RAR[(CQ_DISKS[k] || {}).r || 'c'];
-const cqRarTag = k => `<span class="cqrar r-${CQ_DISKS[k].r}">${cqRar(k).n}</span>`;
 // карточка диска для выбора/магазина: иконка, редкость, название, описание + произвольная кнопка
-const cqDiskCard = (k, btn) => `<div class="cqdiff disk r-${CQ_DISKS[k].r}">${cqI('disk')}${cqRarTag(k)}<h3>${CQ_DISKS[k].n}</h3><p>${CQ_DISKS[k].d}</p>${btn}</div>`;
 const CQ_ICON = {
   fight: '<path d="M5 19L17 7M17 7V4h3v3zM19 19L7 7M7 7V4H4v3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
   elite: '<path d="M12 3c-4.4 0-7 2.8-7 6.6 0 2.4 1.2 4 2.6 4.9V18h8.8v-3.5c1.4-.9 2.6-2.5 2.6-4.9C19 5.8 16.4 3 12 3z" fill="currentColor"/><circle cx="9.2" cy="10" r="1.7" fill="#140c08"/><circle cx="14.8" cy="10" r="1.7" fill="#140c08"/><path d="M10 18v2.5M12 18v2.5M14 18v2.5" stroke="currentColor" stroke-width="1.6"/>',
@@ -142,7 +140,6 @@ const CQ_ICON = {
   med: '<rect x="4" y="6" width="16" height="13" rx="2" fill="#c84a3a"/><path d="M12 9v7M8.5 12.5h7" stroke="#fff" stroke-width="2.4"/><rect x="9" y="3.5" width="6" height="3" rx="1" fill="none" stroke="#c84a3a" stroke-width="1.6"/>',
   rest: '<path d="M3 20h18M5 20l7-14 7 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 20l2-5 2 5" fill="currentColor"/>',
 };
-const cqI = (k, cls = '') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${CQ_ICON[k]}</svg>`;
 
 
-export { CQ_DIFF, CQ_SECT, CQ_LAYERS, CQ_LAST, CQ_LTYPE, CQ_CHESTS, CQ_ERI, cqK, pcs, cqHpUp, CQ_BMOD, cqMod, cqModD, CQ_GF, CQ_LFAC, cqFeats, cqScore, cqBump, CQ_EN, CQ_STA, CQ_DMAX, CQ_RF, CQ_MED, cqRfN, cqRfCost, CQ_TROPHY, CQ_MODS, CQ_RAR, CQ_LMAX, CQ_DISKS, cqRar, cqRarTag, cqDiskCard, CQ_ICON, cqI };
+export { CQ_DIFF, CQ_SECT, CQ_LAYERS, CQ_LAST, CQ_LTYPE, CQ_CHESTS, CQ_ERI, cqK, pcs, cqHpUp, CQ_BMOD, cqMod, cqModD, CQ_GF, CQ_LFAC, cqFeats, cqScore, cqBump, CQ_EN, CQ_STA, CQ_DMAX, CQ_RF, CQ_MED, cqRfN, cqRfCost, CQ_TROPHY, CQ_MODS, CQ_RAR, CQ_LMAX, CQ_DISKS, cqRar, CQ_ICON };

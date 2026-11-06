@@ -4,7 +4,6 @@ import { S } from '../core/state.js';
 import { ROMAN } from './economy.js';
 import { CAMP_KEYS, NODES, campNodes } from '../data/campaigns.js';
 import { ghash } from '../data/looks.js';
-import { amt } from '../core/format.js';
 import { sRng } from '../core/rng.js';
 
 // ===== gear =====
@@ -45,10 +44,6 @@ function rollItems(i) {
   return out;
 }
 function grantFrags(list) { for (const [id, q] of list) S.inv[id] = (S.inv[id] || 0) + q; }
-function fragLines(list) {
-  const agg = {}; for (const [id, q] of list) agg[id] = (agg[id] || 0) + q;
-  return Object.entries(agg).map(([id, q]) => `+${amt('frag', q, 'frag:' + id)} ${itemIcon(ITEMS[id], 18)} ${ITEMS[id].n}`);
-}
 function raidFrags(tier, pct) {
   const R = RAID_FRAGS[tier], n = Math.round(R.n * pct), pool = Object.values(ITEMS).filter(it => R.tiers.includes(it.t)), out = [];
   for (let k = 0; k < n; k++) out.push([pool[Math.floor(Math.random() * pool.length)].id, 1]);
@@ -68,8 +63,5 @@ const IG = {
   emitter: (c, d) => `<circle cx="12" cy="12" r="4" fill="${c}"/><circle cx="12" cy="12" r="8.5" fill="none" stroke="${c}" stroke-width="1.6" stroke-dasharray="3 2"/>`,
   compass: (c, d) => `<circle cx="12" cy="12" r="8" fill="none" stroke="${c}" stroke-width="2"/><path d="M12 5.5l2.6 6.5-2.6 6.5-2.6-6.5z" fill="${c}"/>`,
 };
-function itemIcon(it, size = 40, extra = '') {
-  return `<span class="itm ${extra}" data-info="frag:${it.id}" style="--tc:${TIER_COL[it.t]};width:${size}px;height:${size}px"><svg viewBox="0 0 24 24" aria-hidden="true">${IG[it.kind]('#efe6d6', '#1a1420')}</svg></span>`;
-}
 
-export { ITEM_KINDS, TIER_COL, TIER_NAME, FRAG_NEED, CRAFT, GEAR_UP_SOL, SHOP_FRAG, RAID_FRAGS, ITEMS, gearPlan, NODE_ITEMS, nodeChance, rollItems, grantFrags, fragLines, raidFrags, IG, itemIcon };
+export { ITEM_KINDS, TIER_COL, TIER_NAME, FRAG_NEED, CRAFT, GEAR_UP_SOL, SHOP_FRAG, RAID_FRAGS, ITEMS, gearPlan, NODE_ITEMS, nodeChance, rollItems, grantFrags, raidFrags, IG };

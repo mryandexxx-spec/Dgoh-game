@@ -2,11 +2,12 @@
 import './overlays/battle-settings.js'; // порядок исполнения
 import { SHCONV, SHCONV_T, set_SHCONV } from './overlays/squad-select.js';
 import { prog } from '../logic/progress.js';
-import { ITEMS, TIER_COL, itemIcon } from '../logic/gear.js';
+import { ITEMS, TIER_COL } from '../logic/gear.js';
 import { portrait } from '../render2d/figures.js';
 import { CH } from '../data/chars.js';
 import { RW_NAME } from '../logic/economy.js';
 import { fmt, ic } from '../core/format.js';
+import { itemIcon } from './common.js';
 
 // ===================== reward tiles (one look everywhere) =====================
 const RW_TITLE = { wring: 'Вод. кольца', core: 'Др. память', sol: 'Солярии', pl: 'Пласталь', cry: 'Кристаллы', folio: 'Фолианты', seal: 'Печать', wol: 'Вода жизни', teeth: 'Зубы червя', water: 'Вода', candle: 'Свечи', rid: 'Ридулиан' };

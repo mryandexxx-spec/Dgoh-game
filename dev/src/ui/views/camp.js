@@ -2,7 +2,7 @@
 import '../router.js'; // порядок исполнения
 import { campSquad, enGet, nodePower, prog, reqText, sideOk } from '../../logic/progress.js';
 import { S } from '../../core/state.js';
-import { ITEMS, NODE_ITEMS, TIER_COL, itemIcon } from '../../logic/gear.js';
+import { ITEMS, NODE_ITEMS, TIER_COL } from '../../logic/gear.js';
 import { ROMAN, campReward, enemyProg } from '../../logic/economy.js';
 import { CAMP_DEF, CAMP_KEYS, NODES, ROM7, campNodes, chapNodes, nodeCost, nodeEn, nodeOpen } from '../../data/campaigns.js';
 import { portrait } from '../../render2d/figures.js';
@@ -10,7 +10,7 @@ import { unitPower } from '../../logic/battle/stats.js';
 import { CH } from '../../data/chars.js';
 import { amt, fmt, ic } from '../../core/format.js';
 import { $, isLandPhone } from '../../core/dom.js';
-import { starStr } from '../common.js';
+import { itemIcon, starStr } from '../common.js';
 
 let campSel = null;
 function chapStars(ck, c) { return chapNodes(ck, c).reduce((a, i) => a + (S.cleared[i] || 0), 0); }

@@ -3,11 +3,11 @@ import '../../logic/trials.js'; // порядок исполнения
 import { rwTile } from '../reward-tiles.js';
 import { statInc } from '../../logic/stats.js';
 import { openSquadSel } from '../overlays/squad-select.js';
-import { accXP, giveRewards, rewardWin } from '../rewards.js';
+import { accXP, fragLines, giveRewards, rewardWin } from '../rewards.js';
 import { render } from '../router.js';
 import { S } from '../../core/state.js';
 import { persist } from '../../core/save.js';
-import { fragLines, grantFrags } from '../../logic/gear.js';
+import { grantFrags } from '../../logic/gear.js';
 import { ROMAN } from '../../logic/economy.js';
 import { portrait } from '../../render2d/figures.js';
 import { living } from '../../logic/battle/engine.js';

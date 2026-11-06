@@ -8,9 +8,9 @@ import { crefillCost, crefillN } from './sim.js';
 import { nextShards } from '../views/squad.js';
 import { enGet, getRes, prog } from '../../logic/progress.js';
 import { S, tickWater } from '../../core/state.js';
-import { CRAFT, FRAG_NEED, ITEMS, NODE_ITEMS, RAID_FRAGS, SHOP_FRAG, TIER_COL, TIER_NAME, gearPlan, itemIcon, nodeChance } from '../../logic/gear.js';
+import { CRAFT, FRAG_NEED, ITEMS, NODE_ITEMS, RAID_FRAGS, SHOP_FRAG, TIER_COL, TIER_NAME, gearPlan, nodeChance } from '../../logic/gear.js';
 import { unlockNeed } from '../../logic/relics.js';
-import { CANDLE_REFILL, CMAX, CRY_3STAR, CRY_JOURNEY, CRY_WIN, REFILL_AMT, REFILL_MAX, ROMAN, ROSTER_IDS, STAR_COST, WATER_SEC, WMAX, refillCost, refillN, thumb } from '../../logic/economy.js';
+import { CANDLE_REFILL, CMAX, CRY_3STAR, CRY_JOURNEY, CRY_WIN, REFILL_AMT, REFILL_MAX, ROMAN, ROSTER_IDS, STAR_COST, WATER_SEC, WMAX, refillCost, refillN } from '../../logic/economy.js';
 import { JOURNEYS } from '../../data/journeys.js';
 import { NODES, NODE_SCENES, nodeCost, nodeEn, nodeOpen, nodeTitle } from '../../data/campaigns.js';
 import { BIOS } from '../../data/story.js';
@@ -20,7 +20,7 @@ import { CH } from '../../data/chars.js';
 import { FACTIONS, ROLES } from '../../data/fx.js';
 import { amt, fmt, ic } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
-import { starStr } from '../common.js';
+import { itemIcon, starStr, thumb } from '../common.js';
 
 // ===== info popups =====
 function campRow(i, note) {

@@ -1,6 +1,6 @@
 // ui/views/conq.js — строки 5531–5728 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { cq, cqAddDisk, cqCanClaim, cqCanOn, cqChest, cqDiskOn, cqDiskPick, cqEn, cqEnSpend, cqEnTxt, cqFoes, cqGoods, cqLayout, cqLive, cqNode, cqNodeDisks, cqOpen, cqRwHtml, cqStCan, cqSta, cqStaCol, cqStaPen, cqStaSet, cqStatic, cqSyncTrack, cqTrack, cqTypeN } from '../../logic/conquest.js';
-import { CQ_CHESTS, CQ_DIFF, CQ_DISKS, CQ_DMAX, CQ_EN, CQ_LAST, CQ_LAYERS, CQ_LFAC, CQ_LMAX, CQ_MED, CQ_RF, CQ_SECT, CQ_STA, CQ_TROPHY, cqBump, cqDiskCard, cqFeats, cqI, cqK, cqMod, cqModD, cqRar, cqRarTag, cqRfCost, cqRfN, cqScore } from '../../data/conquest-data.js';
+import { cq, cqAddDisk, cqCanClaim, cqCanOn, cqChest, cqDiskOn, cqDiskPick, cqEn, cqEnSpend, cqEnTxt, cqFoes, cqGoods, cqLayout, cqLive, cqNode, cqNodeDisks, cqOpen, cqStCan, cqStReady, cqSta, cqStaCol, cqStaPen, cqStaSet, cqStatic, cqSyncTrack, cqTrack, cqTypeN } from '../../logic/conquest.js';
+import { CQ_CHESTS, CQ_DIFF, CQ_DISKS, CQ_DMAX, CQ_EN, CQ_ICON, CQ_LAST, CQ_LAYERS, CQ_LFAC, CQ_LMAX, CQ_MED, CQ_RF, CQ_SECT, CQ_STA, CQ_TROPHY, cqBump, cqFeats, cqK, cqMod, cqModD, cqRar, cqRfCost, cqRfN, cqScore } from '../../data/conquest-data.js';
 import { MOUSE_SVG } from '../mouse.js';
 import { statInc } from '../../logic/stats.js';
 import { leaveBattle } from '../battle/battle-ui.js';
@@ -15,7 +15,7 @@ import { S, set_view, view } from '../../core/state.js';
 import { persist } from '../../core/save.js';
 import { TIER_COL } from '../../logic/gear.js';
 import { MEM, RELIC_COL, ringCol } from '../../logic/relics.js';
-import { REFILL_MAX, ROMAN, todayKey } from '../../logic/economy.js';
+import { REFILL_MAX, ROMAN, RW_NAME, todayKey } from '../../logic/economy.js';
 import { portrait } from '../../render2d/figures.js';
 import { ghash } from '../../data/looks.js';
 import { computeIntents } from '../../logic/battle/ai.js';
@@ -226,6 +226,11 @@ function cqPop(el, html) {    // маленькая всплывашка над 
   const r = el.getBoundingClientRect(), d = document.createElement('div'); d.className = 'cqpop'; d.innerHTML = html;
   d.style.left = (r.left + r.width / 2) + 'px'; d.style.top = r.top + 'px'; document.body.appendChild(d); setTimeout(() => d.remove(), 1700);
 }
+const cqRwHtml = r => amt(r[0], r[1], r[2] ? 'shard:' + r[2] : undefined) + (r[2] ? ` <span class="cqrwn">${CH[r[2]].sn}</span>` : ` <span class="cqrwn">${RW_NAME[r[0]] || ''}</span>`);
+const cqBadge = () => { if (!S) return ''; const C = cq(); if (!C.diff) return 'новая неделя'; const ready = CQ_CHESTS.filter((t, i) => cqCanClaim(i)).length, st = cqStReady(); return ready ? `сундуков: ${ready}` : st ? `наград: ${st}` : `очки ${cqScore()}`; };
+const cqRarTag = k => `<span class="cqrar r-${CQ_DISKS[k].r}">${cqRar(k).n}</span>`;
+const cqDiskCard = (k, btn) => `<div class="cqdiff disk r-${CQ_DISKS[k].r}">${cqI('disk')}${cqRarTag(k)}<h3>${CQ_DISKS[k].n}</h3><p>${CQ_DISKS[k].d}</p>${btn}</div>`;
+const cqI = (k, cls = '') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${CQ_ICON[k]}</svg>`;
 
 
-export { cqApply, cqFinish, cqFoeCard, cqDetail, renderConq, cqDiskWin, cqResWin, CQ_PRICE, cqShopItems, cqShopView, cqChestWin, cqFeatWin, cqClick, cqPop };
+export { cqApply, cqFinish, cqFoeCard, cqDetail, renderConq, cqDiskWin, cqResWin, CQ_PRICE, cqShopItems, cqShopView, cqChestWin, cqFeatWin, cqClick, cqPop, cqRwHtml, cqBadge, cqRarTag, cqDiskCard, cqI };

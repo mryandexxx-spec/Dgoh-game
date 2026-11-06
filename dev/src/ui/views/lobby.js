@@ -1,6 +1,6 @@
 // ui/views/lobby.js — строки 4072–4108 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import './shop.js'; // порядок исполнения
-import { cqBadge, cqHot } from '../../logic/conquest.js';
+import { cqHot } from '../../logic/conquest.js';
 import { profileChip } from '../overlays/profile.js';
 import { featMax, featRank, featsReady } from './feats.js';
 import { raidPct } from './raid.js';
@@ -19,6 +19,7 @@ import { TRIALS, trialBest3, trialLeft, trialOpen } from '../../logic/trials.js'
 import { amt, fmt } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
 import { dailyReady } from '../../logic/daily.js';
+import { cqBadge } from './conq.js';
 
 const SPOT_ICONS = {
   map: '<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 4v14M15 6v14" stroke="currentColor" stroke-width="1.8"/>',

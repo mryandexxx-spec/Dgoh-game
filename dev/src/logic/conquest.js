@@ -2,11 +2,10 @@
 import { CQ_CHESTS, CQ_DIFF, CQ_DISKS, CQ_DMAX, CQ_EN, CQ_ERI, CQ_LAST, CQ_LAYERS, CQ_LMAX, CQ_LTYPE, CQ_MODS, CQ_SECT, CQ_STA, cqBump, cqRar, cqScore } from '../data/conquest-data.js';
 import { statInc } from './stats.js';
 import { S } from '../core/state.js';
-import { RW_NAME, enemyProg } from './economy.js';
+import { enemyProg } from './economy.js';
 import { ghash } from '../data/looks.js';
 import { CH } from '../data/chars.js';
 import { unlockedIds } from './progress.js';
-import { amt } from '../core/format.js';
 import { sRng } from '../core/rng.js';
 
 const cqWeek = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toDateString(); };
@@ -138,9 +137,7 @@ const cqCanClaim = i => { const C = cq(); return !!C.diff && cqScore() >= CQ_CHE
 function cqSyncTrack() {}      // промежуточные награды больше не начисляются сами — «доступно», забираются по тапу
 const cqStCan = j => { const C = cq(); if (!C.diff || C.tk['s' + j]) return false; const T = cqTrack().find(x => x.kind === 'st' && x.i === j); return !!T && cqScore() >= T.at; };
 const cqStReady = () => cqTrack().filter(x => x.kind === 'st' && cqStCan(x.i)).length;
-const cqRwHtml = r => amt(r[0], r[1], r[2] ? 'shard:' + r[2] : undefined) + (r[2] ? ` <span class="cqrwn">${CH[r[2]].sn}</span>` : ` <span class="cqrwn">${RW_NAME[r[0]] || ''}</span>`);
-const cqBadge = () => { if (!S) return ''; const C = cq(); if (!C.diff) return 'новая неделя'; const ready = CQ_CHESTS.filter((t, i) => cqCanClaim(i)).length, st = cqStReady(); return ready ? `сундуков: ${ready}` : st ? `наград: ${st}` : `очки ${cqScore()}`; };
 const cqHot = () => { if (!S) return false; const C = cq(); return S.acc.lvl >= CQ_DIFF.easy.acc && (!C.diff || !!C.pick || CQ_CHESTS.some((t, i) => cqCanClaim(i)) || cqStReady() > 0); };
 
 
-export { cqWeek, cq, cqEn, cqEnSpend, cqEnNext, cqEnTxt, cqSta, cqStaSet, cqStaPen, cqStaCol, cqDiskOn, CQ_DROP, cqDropW, cqDiskPick, cqLegOn, cqCanOn, cqAddDisk, cqNodeDisks, CQ_GOODS, cqGoods, CQ_MEMO, CQ_MEMO_CLR, cqLayout, cqNode, cqFoes, cqLive, cqOpen, cqTypeN, cqTrack, cqStatic, cqChest, cqCanClaim, cqSyncTrack, cqStCan, cqStReady, cqRwHtml, cqBadge, cqHot };
+export { cqWeek, cq, cqEn, cqEnSpend, cqEnNext, cqEnTxt, cqSta, cqStaSet, cqStaPen, cqStaCol, cqDiskOn, CQ_DROP, cqDropW, cqDiskPick, cqLegOn, cqCanOn, cqAddDisk, cqNodeDisks, CQ_GOODS, cqGoods, CQ_MEMO, CQ_MEMO_CLR, cqLayout, cqNode, cqFoes, cqLive, cqOpen, cqTypeN, cqTrack, cqStatic, cqChest, cqCanClaim, cqSyncTrack, cqStCan, cqStReady, cqHot };

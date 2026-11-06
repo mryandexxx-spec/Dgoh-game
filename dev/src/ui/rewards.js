@@ -10,6 +10,8 @@ import { CANDLE_BASE, CMAX, MAX_LVL, ROMAN, RW_NAME, WATER_BASE, WMAX } from '..
 import { RELIC_AT } from '../logic/relics.js';
 import { amt } from '../core/format.js';
 import { $ } from '../core/dom.js';
+import { itemIcon } from './common.js';
+import { ITEMS } from '../logic/gear.js';
 
 // ===== rewards helper =====
 function rewardWin(title, lines, o = {}) {
@@ -44,6 +46,10 @@ function accXP(n) {
   if (S.acc.lvl >= ACC_MAX) S.acc.xp = 0;
   return out;
 }
+function fragLines(list) {
+  const agg = {}; for (const [id, q] of list) agg[id] = (agg[id] || 0) + q;
+  return Object.entries(agg).map(([id, q]) => `+${amt('frag', q, 'frag:' + id)} ${itemIcon(ITEMS[id], 18)} ${ITEMS[id].n}`);
+}
 
 
-export { rewardWin, addRes, giveRewards, rewardsHtml, accXP };
+export { rewardWin, addRes, giveRewards, rewardsHtml, accXP, fragLines };

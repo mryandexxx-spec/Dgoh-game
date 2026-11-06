@@ -129,7 +129,6 @@ function skillGlyph(def, key) {
   if (key === 'leader') return GLYPH.crown; if (key === 'passive') return GLYPH.shieldplus; if (key === 'gl') return GLYPH.worm;
   const ab = def[key] || {}; return GLYPH[{ blade: 'sword', fast: 'pistol', laser: 'lasgun', voice: 'voice', poison: 'needle' }[ab.dt]] || (ab.heal ? GLYPH.heart : GLYPH.emblem);
 }
-const skillSvg = (def, key) => `<svg viewBox="0 0 24 24" aria-hidden="true">${skillGlyph(def, key)}</svg>`;
 
 
-export { GF, GS, GLYPH, SKILL_ICON, skillGlyph, skillSvg };
+export { GF, GS, GLYPH, SKILL_ICON, skillGlyph };

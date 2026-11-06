@@ -7,10 +7,9 @@ import { GEAR_CAP_AT, gearCap, heroCap } from '../../logic/account.js';
 import { itemSourceRows } from './info.js';
 import { getRes, prog } from '../../logic/progress.js';
 import { S } from '../../core/state.js';
-import { CRAFT, FRAG_NEED, GEAR_UP_SOL, ITEMS, TIER_COL, TIER_NAME, gearPlan, itemIcon } from '../../logic/gear.js';
+import { CRAFT, FRAG_NEED, GEAR_UP_SOL, ITEMS, TIER_COL, TIER_NAME, gearPlan } from '../../logic/gear.js';
 import { MEM, RELIC_AT, RELIC_CORES, RELIC_MAX, RELIC_SOL, isLegend, relicCap, relicReady, sideName, unlockNeed } from '../../logic/relics.js';
 import { LVL_COST, MAX_GEAR, MAX_LVL, ROMAN, STAR_COST } from '../../logic/economy.js';
-import { skillSvg } from '../../data/glyphs.js';
 import { mountHeroStage } from '../../render3d/scenes/hero.js';
 import { sceneThumb } from '../../render2d/scenes.js';
 import { figureSVG } from '../../render2d/figures.js';
@@ -20,7 +19,7 @@ import { CH } from '../../data/chars.js';
 import { DT, FACTIONS, ROLES } from '../../data/fx.js';
 import { amt, fmt, ic } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
-import { starStr } from '../common.js';
+import { itemIcon, skillSvg, starStr } from '../common.js';
 
 const SK_NAME = { basic: 'базовая', special: 'особая', ult: 'мощная', passive: 'пассивная', leader: 'лидерка' };
 function skCost(next) {

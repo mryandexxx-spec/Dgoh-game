@@ -5,6 +5,8 @@ import { CMAX, WATER_SEC, WMAX } from '../logic/economy.js';
 import { fc, fmt, ic } from '../core/format.js';
 import { SPOT_ICONS } from './views/lobby.js';
 import { figureSVG } from '../render2d/figures.js';
+import { skillGlyph } from '../data/glyphs.js';
+import { IG, TIER_COL } from '../logic/gear.js';
 
 function toast(t) {
   document.querySelectorAll('.toast').forEach(x => x.remove());
@@ -27,6 +29,11 @@ function renderRes() {
 }
 const starStr = (n, max = 7) => '★'.repeat(n) + `<i>${'★'.repeat(max - n)}</i>`;
 const glyph = (def, extra = '') => def.boss ? `<span class="gl ${extra}" style="--fc:var(--worm);color:var(--worm)" aria-hidden="true"><svg viewBox="0 0 24 24">${SPOT_ICONS.worm}</svg></span>` : `<span class="gl face ${extra}" style="--fc:${fc(def)}" aria-hidden="true">${figureSVG(def)}</span>`;
+const thumb = (scene, n) => `<div class="thumb"><canvas data-scene="${scene}" width="200" height="100"></canvas><span>${n}</span></div>`;
+const skillSvg = (def, key) => `<svg viewBox="0 0 24 24" aria-hidden="true">${skillGlyph(def, key)}</svg>`;
+function itemIcon(it, size = 40, extra = '') {
+  return `<span class="itm ${extra}" data-info="frag:${it.id}" style="--tc:${TIER_COL[it.t]};width:${size}px;height:${size}px"><svg viewBox="0 0 24 24" aria-hidden="true">${IG[it.kind]('#efe6d6', '#1a1420')}</svg></span>`;
+}
 
 
-export { toast, renderRes, starStr, glyph };
+export { toast, renderRes, starStr, glyph, thumb, skillSvg, itemIcon };

@@ -3,14 +3,14 @@ import './raid.js'; // порядок исполнения
 import { prog } from '../../logic/progress.js';
 import { S } from '../../core/state.js';
 import { MEM, ringCol } from '../../logic/relics.js';
-import { MAX_GEAR, ROMAN, thumb } from '../../logic/economy.js';
+import { MAX_GEAR, ROMAN } from '../../logic/economy.js';
 import { JK, JOURNEYS, JP, JR, JREQ, jReady, jRelic } from '../../data/journeys.js';
 import { portrait } from '../../render2d/figures.js';
 import { CH } from '../../data/chars.js';
 import { FACTIONS } from '../../data/fx.js';
 import { amt } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
-import { glyph } from '../common.js';
+import { glyph, thumb } from '../common.js';
 
 function journeyReady(t) { return jReady(JK(), t); }
 function renderLegend() {

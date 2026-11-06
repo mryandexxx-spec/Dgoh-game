@@ -17,7 +17,6 @@ const SHOP = [
 ];
 const ROSTER_IDS = CHARS.filter(c => !c.npc).map(c => c.id);
 const RAID_SCENES = ['desert', 'saltflat', 'storm'];
-const thumb = (scene, n) => `<div class="thumb"><canvas data-scene="${scene}" width="200" height="100"></canvas><span>${n}</span></div>`;
 const enemyProg = (id, lvl, boss) => ({ id, lvl, stars: Math.min(7, 1 + Math.floor(lvl / 5)), gear: Math.min(13, 1 + Math.floor(lvl / 6.2)), relic: lvl > 55 ? Math.min(7, Math.floor((lvl - 55) / 4.3)) : 0, pow: (1 + Math.max(0, lvl - 10) * .006) * (boss ? 1.1 : 1) });
 const SHARDS_NEXT = [10, 15, 25, 30, 65, 85, 100];   // index = current stars
 const STAR_COST = s => s * s * 500;
@@ -39,4 +38,4 @@ function campReward(i, st) {
 }
 
 
-export { RAID_REWARD, REFILL_AMT, REFILL_MAX, CRY_WIN, CRY_3STAR, CRY_JOURNEY, refillPrice, todayKey, refillN, refillCost, SHOP, ROSTER_IDS, RAID_SCENES, thumb, enemyProg, SHARDS_NEXT, STAR_COST, LVL_COST, GEAR_COST, MAX_LVL, MAX_GEAR, WATER_BASE, WATER_SEC, BATTLE_WATER, CANDLE_BASE, CANDLE_SEC, CANDLE_COST, CANDLE_REFILL, enCapStep, WMAX, CMAX, ROMAN, RW_NAME, rollShards, campReward };
+export { RAID_REWARD, REFILL_AMT, REFILL_MAX, CRY_WIN, CRY_3STAR, CRY_JOURNEY, refillPrice, todayKey, refillN, refillCost, SHOP, ROSTER_IDS, RAID_SCENES, enemyProg, SHARDS_NEXT, STAR_COST, LVL_COST, GEAR_COST, MAX_LVL, MAX_GEAR, WATER_BASE, WATER_SEC, BATTLE_WATER, CANDLE_BASE, CANDLE_SEC, CANDLE_COST, CANDLE_REFILL, enCapStep, WMAX, CMAX, ROMAN, RW_NAME, rollShards, campReward };
