@@ -1,6 +1,6 @@
 // DOM-снимки экранов (REFACTOR_PLAN §6.4): Playwright проходит по всем view и основным оверлеям,
 // снимает innerHTML (#view, #overlay, #overlay2, header) без канвасов.
-//   node tests/dom/screens.mjs <game.html> [--update] [--babylon path/babylon.min.js] [--shots dir]
+//   node tests/dom/screens.mjs <game.html> [--update] [--shots dir]
 // Режим: WebGL отключён (--disable-webgl) → HAS3D = false, 2D-фоллбек; Babylon подгружается локально (без сети),
 // т.к. скрипт №1 обращается к BABYLON на верхнем уровне. Часы Playwright зафиксированы, Math.random сидирован,
 // сохранение — tests/fixtures/saves/03-late.json (всё открыто) и «без сохранения» для стартовых экранов.
@@ -17,8 +17,7 @@ const { chromium } = require('playwright');
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const [html, ...rest] = argv();
 const opt = k => { const i = rest.indexOf(k); return i >= 0 ? rest[i + 1] : null; };
-const babylon = opt('--babylon') || [path.join(path.dirname(path.resolve(html)), 'babylon.min.js'), path.join(HERE, '..', 'vendor', 'babylon.min.js')].find(f => fs.existsSync(f));
-// фаза 4: babylon.min.js нужен только старым сборкам (до чанка babylon3d.js); новые без WebGL Babylon не грузят
+// фаза 4: Babylon в DOM-тестах не нужен — без WebGL чанк babylon3d.js не грузится
 const shots = opt('--shots');
 const LATE = fs.readFileSync(path.join(HERE, '..', 'fixtures', 'saves', '03-late.json'), 'utf8');
 
@@ -53,7 +52,6 @@ for (const [name, save, code, wait = 1500] of SCREENS) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: 'ru-RU', timezoneId: 'Europe/Moscow', reducedMotion: 'reduce' });
   await ctx.route('**/*', r => {
     const u = r.request().url();
-    if (babylon && /babylon(\.min)?\.js$/.test(u)) return r.fulfill({ path: babylon, contentType: 'text/javascript' });
     if (u.startsWith('file:') || u.startsWith('data:') || u.startsWith('blob:')) return r.continue();
     return r.abort();
   });
@@ -76,7 +74,7 @@ for (const [name, save, code, wait = 1500] of SCREENS) {
       if (!el) return null;
       const c = el.cloneNode(true);
       c.querySelectorAll('canvas').forEach(x => x.replaceWith(document.createComment('canvas')));
-      return c.innerHTML.replace(/blob:[^"')\s]+/g, 'blob:*');
+      return c.innerHTML.replace(/blob:[^"')\s]+/g, 'blob:*').replace(/(<div class="appver"[^>]*>)[^<]*/g, '$1v0');   // номер версии меняется с каждой выкаткой
     };
     return { header: clean(document.querySelector('header')), view: clean(document.getElementById('view')), overlay: clean(document.getElementById('overlay')), overlay2: clean(document.getElementById('overlay2')), bodyClass: document.body.className };
   });

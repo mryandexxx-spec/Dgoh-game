@@ -1,5 +1,5 @@
 // A/B рендера (фаза 3b): одинаковые кадры двух сборок при виртуальных часах и попиксельное сравнение.
-//   node tests/smoke/ab.mjs <A.html> <B.html> [--out dir] [--phone] [--babylon path] [--chrome path]
+//   node tests/smoke/ab.mjs <A.html> <B.html> [--out dir] [--phone] [--babylon path — только для старых сборок] [--chrome path]
 // Часы: performance.now/Date.now идут только по команде tick(n) — по 1/60 с на реальный кадр, поэтому сцена в момент
 // снимка определяется числом кадров, а не скоростью машины. Снимки: лагерь, окно героя, арена (бой заморожен
 // до первого хода), портрет Baker. Печатает долю отличающихся пикселей (|Δ| > 8 в любом канале) и макс. Δ.
@@ -23,11 +23,13 @@ fs.mkdirSync(OUT, { recursive: true });
 const browser = await puppeteer.launch({ executablePath: chrome, headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--font-render-hinting=none'] });
 
 async function shots(html, tag) {
-  const babylon = opt('--babylon') || [path.join(path.dirname(path.resolve(html)), 'babylon.min.js'), path.join(HERE, '../../../babylon.min.js')].find(f => fs.existsSync(f));
+  // --babylon нужен только старым сборкам (до фазы 4), где в HTML есть тег babylon.min.js; новые грузят чанк babylon3d.js сами
+  const old = /babylon\.min\.js/.test(fs.readFileSync(html, 'utf8').slice(0, 300000)), babylon = old && (opt('--babylon') || [path.join(path.dirname(path.resolve(html)), 'babylon.min.js'), path.join(HERE, '../../../babylon.min.js')].find(f => fs.existsSync(f)));
+  if (old && !babylon) throw new Error(`${html}: старая сборка — нужен --babylon <babylon.min.js>`);
   const page = await browser.newPage();
   await page.setViewport(PHONE ? { width: 844, height: 390, deviceScaleFactor: 1, isMobile: true, hasTouch: true, isLandscape: true } : { width: 960, height: 600, deviceScaleFactor: 1 });
   await page.setRequestInterception(true);
-  page.on('request', r => { const u = r.url(); if (/babylon(\.min)?\.js$/.test(u)) return r.respond({ status: 200, contentType: 'text/javascript', body: fs.readFileSync(babylon) }); if (/^(file|data|blob):/.test(u)) return r.continue(); return r.abort(); });
+  page.on('request', r => { const u = r.url(); if (babylon && /babylon\.min\.js$/.test(u)) return r.respond({ status: 200, contentType: 'text/javascript', body: fs.readFileSync(babylon) }); if (/^(file|data|blob):/.test(u)) return r.continue(); return r.abort(); });
   await page.evaluateOnNewDocument(save => {
     let a = 12345; Math.random = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
     try { localStorage.clear(); localStorage.setItem('dune-goh-v1', save); localStorage.setItem('dune-cine-off', 'true'); } catch (e) {}

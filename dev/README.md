@@ -1,7 +1,7 @@
 # Dune GoH — исходники и сборка (папка dev/ репозитория mryandexxx-spec/Dgoh-game)
 
 **Источник правды — `dev/src/` (ES-модули).** Корень репозитория — собранная PWA (GitHub Pages); артефакт https://claude.ai/artifact/WE7ymKgZXUxH7tH4TDvfoT собирается из тех же исходников.
-Статус: фаза 2 — `PHASE2_STATUS.md`, фаза 3 — `PHASE3_STATUS.md`. Документы `dune-tools/src.pack.txt` и `dune-workspace.zip` больше не нужны.
+Статус: фаза 2 — `PHASE2_STATUS.md`, фаза 3 — `PHASE3_STATUS.md`, фаза 4 — `PHASE4_STATUS.md`. Документы `dune-tools/src.pack.txt` и `dune-workspace.zip` больше не нужны.
 
 ## Цикл правки
 ```
@@ -9,10 +9,10 @@ git clone https://github.com/mryandexxx-spec/dgoh-game && cd dgoh-game/dev && np
 # правки в src/
 node tools/build.mjs --deploy        # dist/artifact.html + PWA прямо в корень репозитория (статика — из корня, по списку sw.js)
 node tools/check-bundle.mjs dist/pwa/app.js
-node tests/run.mjs dist/artifact.html --babylon ../babylon.min.js && node tests/run.mjs dist/pwa/index.html
+node tests/run.mjs dist/artifact.html && node tests/run.mjs dist/pwa/index.html   # = npm test
 git add -A && git commit && git push  # в main
 ```
-Затем dist/artifact.html публикуется в артефакт. `--static <dune-pwa-flat.zip>` — взять статику из архива вместо корня.
+Перед выкаткой поднять номер в `version.json` (в лобби выводится «v<номер> · <хеш сборки>», хеш = версия кэша SW). Затем dist/artifact.html публикуется в артефакт. `--static <dune-pwa-flat.zip>` — взять статику из архива вместо корня.
 JS-инструменты (`tools/`): `build.mjs`; `move-decl.mjs` — перенос объявлений между модулями с починкой импортов и цепочки порядка; `extract-pass1.mjs`, `modularize.mjs` + `split.config.mjs` + `scope.mjs`, `split-css.mjs` — разрезание монолита (выполнено, повторно не запускать: src/ правится вручную); `check-bundle.mjs`; `check-deps.mjs` — правило зависимостей §2; `pack.mjs` — упаковка src/ в текст (запасной вариант).
 Python/Blender-скрипты моделей лежат в документах проекта dune-tools/.
 
@@ -20,13 +20,13 @@ Python/Blender-скрипты моделей лежат в документах 
 Эталоны сняты 2026-11-05 с артефакта v45 (= index.html PWA `dune-goh-b19cf011b1`). В фазе 2 не менялись: сборки из src/ (артефакт и PWA) совпадают с ними. Нужны Node ≥ 20; для DOM — Playwright + Chromium.
 
 ```
-node tests/run.mjs dist/artifact.html --babylon dist/pwa/babylon.min.js   # все 4 набора, сравнение с эталоном
-node tests/run.mjs dist/pwa/index.html                                      # PWA (babylon.min.js лежит рядом)
+node tests/run.mjs dist/artifact.html                                      # все 4 набора, сравнение с эталоном
+node tests/run.mjs dist/pwa/index.html                                      # PWA
 node tests/run.mjs <html> --no-dom                                          # только Node-наборы (~5 с)
 node tests/golden/battles.mjs <html> [--update]                             # отдельный набор; --update переснимает эталон
 node tests/lib/golden.mjs unpack battles meta saves screens                 # распаковать эталоны в .json для просмотра
 ```
-`<html>` — артефакт, `index.html` PWA или старый монолит. Для DOM нужен `babylon.min.js` 9.30.0 из dune-pwa-flat.zip (рядом с HTML или через `--babylon`).
+`<html>` — артефакт или `index.html` PWA. Babylon тестам не нужен: без WebGL чанк `babylon3d.js` не грузится (фаза 4; `babylon.min.js` больше не поставляется). Номер версии в лобби в снимках экранов маскируется (`v0`).
 При расхождении печатаются первые 5 различий, полный факт — в `tests/golden/data/<набор>.actual.json`.
 
 | Набор | Что проверяет | Объём |
@@ -43,3 +43,10 @@ node tests/lib/golden.mjs unpack battles meta saves screens                 # р
 - Реальные сохранения: положить в `tests/fixtures/saves/` как `.json` или `.txt` (код «Экспорт сохранения») и переснять `saves.mjs --update` **на базовой сборке**.
 
 Правило: эталон переснимается (`--update`) только при осознанном изменении логики/вёрстки; при механическом переносе кода наборы обязаны совпасть. Запись в глобал из eval-шагов тестов (`view = …`, `S = …`) попадает в ту же привязку, что читают модули (бандл плоский).
+
+## 3D-смоук и A/B (tests/smoke/, нужен Chrome)
+```
+node tests/smoke/3d.mjs dist/pwa/index.html --cycles 20 [--phone]     # реальный WebGL (SwiftShader): лагерь → герой → бой → выход; утечки, компиляции
+node tests/smoke/3d.mjs dist/pwa/index.html --tti 5 [--phone] [--net wifi|4g] [--cpu 3]   # время до интерактивного лобби: HTTP + gzip, без кэша, медиана
+node tests/smoke/ab.mjs A.html B.html --out dir [--phone] [--babylon babylon.min.js]       # скриншоты A/B; --babylon — только для старых сборок (до фазы 4)
+```

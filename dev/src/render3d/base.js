@@ -21,8 +21,7 @@ function loadB3() {   // Promise<boolean>: true — 3D готово; повто�
       else { console.warn('чанк Babylon не загрузился'); B3_P = null; }   // следующий вызов попробует снова
       res(HAS3D);
     };
-    const s = document.createElement('script'), inl = document.getElementById('b3src');
-    if (inl) { setTimeout(() => { s.textContent = inl.textContent; try { document.head.appendChild(s); } catch (e) {} done(true); }, 0); return; }   // артефакт: чанк в <script type="text/plain">, исполняется инлайном
+    const s = document.createElement('script');   // PWA и артефакт: babylon3d.js лежит рядом со страницей (артефакт — multi-file, фаза 4 шаг 4)
     s.src = B3_URL; s.onload = () => done(true); s.onerror = () => done(false);
     document.head.appendChild(s);
   }));

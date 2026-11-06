@@ -1,5 +1,8 @@
 // 3D-смоук (фаза 3b, шаг 1): реальный WebGL (SwiftShader), цикл лагерь → окно героя → бой → выход ×N.
-//   node tests/smoke/3d.mjs <game.html> [--cycles 5] [--phone] [--babylon path] [--shots dir] [--out file.json] [--chrome path] [--strict]
+//   node tests/smoke/3d.mjs <game.html> [--cycles 5] [--phone] [--shots dir] [--out file.json] [--chrome path] [--strict]
+//   node tests/smoke/3d.mjs <game.html> --tti 5 [--phone] [--net wifi|4g|none] [--cpu 3] — время до интерактивного лобби (фаза 4, шаг 5):
+//     папка страницы отдаётся по HTTP с gzip, каждый прогон — новый контекст без кэша; медиана: lobby (появилось лобби), tti (setTimeout(0) после него),
+//     b3 (готов Babylon), camp3d (смонтирован 3D-лагерь), load; плюс размер страницы и чанка
 // Метрики: живые WebGL-контексты (после gc), сумма scene.meshes/textures/materials по всем движкам, gpuTex — внутренние текстуры движка (без сцены Baker — камера 'bc'),
 // линковки шейдеров в бою после «пробуждения» арены, время входа в бой / возврата в лагерь (до первого кадра),
 // ошибки консоли. Критерии фазы 3b печатаются как PASS/FAIL; --strict → код выхода 1 при FAIL.
@@ -16,11 +19,51 @@ const html = args.find(a => !a.startsWith('--') && !/^\d+$/.test(a)) || path.joi
 const opt = (k, d = null) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
 const has = k => args.includes(k);
 const CYCLES = +opt('--cycles', 5), PHONE = has('--phone'), SHOTS = opt('--shots'), OUT = opt('--out');
-const babylon = opt('--babylon') || [path.join(path.dirname(path.resolve(html)), 'babylon.min.js'), path.join(HERE, '../../../babylon.min.js')].find(f => fs.existsSync(f));
 const chrome = opt('--chrome') || process.env.CHROME_PATH || ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].find(f => fs.existsSync(f));
 if (!chrome) { console.error('нужен Chrome: --chrome <путь> или CHROME_PATH'); process.exit(2); }
 const LATE = fs.readFileSync(path.join(HERE, '../fixtures/saves/03-late.json'), 'utf8');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+if (has('--tti')) { await tti(+opt('--tti', 5)); process.exit(0); }
+async function tti(N) {
+  const http = await import('node:http'), zlib = await import('node:zlib');
+  const dir = path.dirname(path.resolve(html)), page0 = path.basename(html), gz = new Map();
+  const T = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
+  const srv = http.createServer((q, r) => { const f = decodeURIComponent(q.url.split('?')[0]).slice(1) || page0, fp = path.join(dir, f);
+    if (!fs.existsSync(fp) || fs.statSync(fp).isDirectory()) { r.writeHead(404); return r.end(); }
+    if (!gz.has(f)) gz.set(f, zlib.gzipSync(fs.readFileSync(fp), { level: 6 }));
+    r.writeHead(200, { 'content-type': T[path.extname(f)] || 'application/octet-stream', 'content-encoding': 'gzip', 'cache-control': 'no-store' }); r.end(gz.get(f)); }).listen(0);
+  const NET = { wifi: { d: 30e6, u: 10e6, l: 20 }, '4g': { d: 9e6, u: 4e6, l: 80 }, none: null }[opt('--net', 'wifi')], CPU = +opt('--cpu', 1);
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--font-render-hinting=none'] });
+  const runs = [];
+  for (let i = 0; i < N; i++) {
+    const ctx = await browser.createBrowserContext(), page = await ctx.newPage();
+    await page.setViewport(PHONE ? { width: 844, height: 390, deviceScaleFactor: 1, isMobile: true, hasTouch: true, isLandscape: true } : { width: 960, height: 600, deviceScaleFactor: 1 });
+    const cdp = await page.createCDPSession(); await cdp.send('Network.enable'); await cdp.send('Network.setCacheDisabled', { cacheDisabled: true });
+    if (NET) await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: NET.l, downloadThroughput: NET.d / 8, uploadThroughput: NET.u / 8 });
+    if (CPU > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU });
+    await page.setRequestInterception(true); page.on('request', r => /^http:\/\/127\.0\.0\.1/.test(r.url()) ? r.continue() : r.abort());
+    await page.evaluateOnNewDocument(save => {
+      try { localStorage.clear(); localStorage.setItem('dune-goh-v1', save); localStorage.setItem('dune-cine-off', 'true'); } catch (e) {}
+      try { Object.defineProperty(navigator, 'serviceWorker', { value: undefined }); } catch (e) {}
+      const M = window.__tti = {}, now = () => performance.now();
+      let v; Object.defineProperty(globalThis, '__B3', { configurable: true, get: () => v, set: x => { v = x; M.b3 = M.b3 || now(); } });
+      new MutationObserver(() => { if (!M.lobby && document.getElementById('lobbybg')) { M.lobby = now(); setTimeout(() => { M.tti = now(); }, 0); } if (!M.camp3d && document.querySelector('.camp3d')) M.camp3d = now(); }).observe(document, { childList: true, subtree: true });
+    }, LATE);
+    await page.goto(`http://127.0.0.1:${srv.address().port}/${page0}`, { waitUntil: 'load', timeout: 180000 });
+    const t0 = Date.now(); let M = {};
+    while (Date.now() - t0 < 60000) { M = await page.evaluate(() => ({ ...window.__tti, b3: window.__tti.b3 || (typeof BABYLON !== 'undefined' ? -1 : undefined) })); if (M.tti && M.camp3d) break; await sleep(50); }
+    M.load = await page.evaluate(() => performance.getEntriesByType('navigation')[0].loadEventEnd);
+    runs.push(M); await ctx.close();
+  }
+  await browser.close(); srv.close();
+  const med = k => { const a = runs.map(r => r[k]).filter(x => x > 0).sort((a, b) => a - b); return a.length ? Math.round(a[(a.length - 1) >> 1]) : null; };
+  const size = f => fs.existsSync(path.join(dir, f)) ? +(fs.statSync(path.join(dir, f)).size / 1048576).toFixed(2) : null;
+  const res = { mode: 'tti', html: path.resolve(html), phone: PHONE, net: opt('--net', 'wifi'), cpu: CPU, runs: N, mb: { page: size(page0), app: size('app.js'), chunk: size('babylon3d.js'), babylonMin: size('babylon.min.js') },
+    median: { lobby: med('lobby'), tti: med('tti'), b3: med('b3'), camp3d: med('camp3d'), load: med('load') }, tti: runs.map(r => Math.round(r.tti || -1)) };
+  console.log(JSON.stringify(res));
+  if (OUT) { fs.mkdirSync(path.dirname(OUT), { recursive: true }); fs.writeFileSync(OUT, JSON.stringify(res, null, 1)); }
+}
 
 const browser = await puppeteer.launch({
   executablePath: chrome, headless: true,
@@ -32,7 +75,6 @@ await page.emulateTimezone('Europe/Moscow');
 await page.setRequestInterception(true);
 page.on('request', r => {
   const u = r.url();
-  if (/babylon(\.min)?\.js$/.test(u) && babylon) return r.respond({ status: 200, contentType: 'text/javascript', body: fs.readFileSync(babylon) });
   if (/^(file|data|blob):/.test(u)) return r.continue();
   return r.abort();
 });

@@ -74,14 +74,20 @@ function page({ head, cssTag, babylon, jsTag, tail }) {
     .replace('<!--@js-->', () => jsTag).replace('<!--@tail-->\n', () => tail);
 }
 
-const { code, meta } = await js(), styles = css(), b3 = await babylonChunk();
+const { code: code0, meta } = await js(), styles = css(), b3 = await babylonChunk();
+// номер версии: dev/version.json (правится вручную при выкатке) + хеш сборки (он же версия кэша SW); выводится в лобби (ui/views/lobby.js APP_VER)
+const VNUM = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8')).v;
+const ver = sha(Buffer.from(`v${VNUM}\n${read('index.html')}\n${code0}\n${styles}\n${b3}`, 'utf8')).slice(0, 10);
+if (code0.split('__APP_VER__').length !== 2) throw new Error('в коде должен быть ровно один __APP_VER__');
+const APP_VER = `v${VNUM} · ${ver}`, code = code0.replace('__APP_VER__', () => APP_VER);
+console.log(`версия: ${APP_VER}`);
 fs.mkdirSync(OUT, { recursive: true });
 console.log(`${B3_FILE}: ${(b3.length / 1048576).toFixed(2)} МБ`);
 const mods = Object.keys(meta.inputs).length;
 
-if (target === 'artifact' || target === 'all') {   // фаза 4, временно: чанк — <script type=text/plain id=b3src>, loadB3 исполняет его инлайном (решение — шаг 4)
-  const html = page({ head: read('pwa/artifact-head.html'), cssTag: `<style>\n${styles}</style>`, babylon: `<script type="text/plain" id="b3src" data-b3>\n${b3}</script>`, jsTag: `<script>\n${code}</script>`, tail: '' });
-  fs.writeFileSync(path.join(OUT, 'artifact.html'), html);
+if (target === 'artifact' || target === 'all') {   // фаза 4, шаг 4: артефакт multi-file — artifact.html + babylon3d.js рядом (публикуется через files); loadB3 грузит его по относительному пути
+  const html = page({ head: read('pwa/artifact-head.html'), cssTag: `<style>\n${styles}</style>`, babylon: '', jsTag: `<script>\n${code}</script>`, tail: '' });
+  fs.writeFileSync(path.join(OUT, 'artifact.html'), html); fs.writeFileSync(path.join(OUT, B3_FILE), b3);
   console.log(`artifact.html: ${(html.length / 1e6).toFixed(2)} МБ, модулей ${mods}`);
 }
 
@@ -95,7 +101,6 @@ if (target === 'pwa' || target === 'all') {
   const html = read('pwa/doc-head.html') + page({ head: read('pwa/pwa-head.html'), cssTag: '<link rel="stylesheet" href="app.css">', babylon: '',
     jsTag: '<script src="app.js"></script>', tail: read('pwa/tail.html') }).replace(/\n+<\/body><\/html>\n$/, '\n');
   files['index.html'] = enc(html); files['app.js'] = enc(code); files['app.css'] = enc(styles); files[B3_FILE] = enc(b3);
-  const ver = sha(Buffer.concat([files['index.html'], files['app.js'], files['app.css'], files[B3_FILE]])).slice(0, 10);
   let sw = Buffer.from(files['sw.js']).toString('utf8'), k = 0;
   sw = sw.replace(/const CACHE = 'dune-goh-[0-9a-f]*';/, () => (k++, `const CACHE = 'dune-goh-${ver}';`));
   sw = sw.replace(/const ASSETS = \[[^\]]*\];/, () => (k++, 'const ASSETS = ' + JSON.stringify(['./', ...Object.keys(files).filter(f => f !== 'sw.js' && !/LICENSE/.test(f)).sort()]).replace(/","/g, '", "') + ';'));
