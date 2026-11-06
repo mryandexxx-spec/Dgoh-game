@@ -52,9 +52,10 @@ await until(pa, v => caches.keys().then(ks => ks.includes('dune-goh-' + v) && !k
 const stB = await cacheState(pa);
 check(Object.keys(stB).includes('dune-goh-' + vB) && !Object.keys(stB).includes('dune-goh-' + vA), `A→B: кэш оболочки dune-goh-${vB}, старый удалён (${Object.keys(stB).join(', ')})`);
 check(!LOG.some(([, c]) => c === 404), `A→B: без 404 (${LOG.filter(([, c]) => c === 404).map(x => x[0]).join(', ') || '—'})`);
+const sameB3 = fs.readFileSync(path.join(A, 'babylon3d.js')).equals(fs.readFileSync(path.join(B, 'babylon3d.js')));   // изменённый чанк качается законно
 const newB = new Set(swList(B, 'ASSETS').filter(f => !swList(A, 'ASSETS').includes(f) && !swList(B, 'LAZY').includes(f))), hitsB = new Set(assetHits().map(x => x[0]));
-check([...hitsB].every(f => newB.has(f)) && [...newB].every(f => hitsB.has(f)) && !LOG.some(([f]) => f === 'babylon3d.js' || /\.woff2$|\.png$/.test(f)),
-  `A→B: из ассетов скачаны ровно новые (${hitsB.size} из ${newB.size}), babylon3d.js, шрифты, иконки не качались; прочие запросы: ${[...new Set(LOG.map(x => x[0]).filter(f => !f.startsWith('assets/')))].join(', ')}`);
+check([...hitsB].every(f => newB.has(f)) && [...newB].every(f => hitsB.has(f)) && !LOG.some(([f]) => (f === 'babylon3d.js' && sameB3) || /\.woff2$|\.png$/.test(f)),
+  `A→B: из ассетов скачаны ровно новые (${hitsB.size} из ${newB.size}), ${sameB3 ? 'babylon3d.js, ' : ''}шрифты, иконки не качались; прочие запросы: ${[...new Set(LOG.map(x => x[0]).filter(f => !f.startsWith('assets/')))].join(', ')}`);
 check((stB['dune-goh-assets'] || []).length >= 30, `A→B: кэш ассетов — ${(stB['dune-goh-assets'] || []).length} записей (перенос из кэша A)`);
 // старая вкладка: открыть героя, вернуться в лобби, 3D
 const oldOk = await pa.evaluate(async () => { try { (0, eval)("closeInfo(true); closeOverlay(); view = 'lobby'; render(); openDetail('paul');"); await new Promise(r => setTimeout(r, 1500)); (0, eval)("closeInfo(true); closeOverlay(); view = 'lobby'; render();"); return await loadB3(); } catch (e) { return String(e); } });
@@ -93,8 +94,9 @@ const ctx = await browser.createBrowserContext(), pf = await open(ctx);
 await until(pf, () => navigator.serviceWorker.controller, 60000);
 const wf = await until(pf, () => window.__warm, 60000), stF = await cacheState(pf);
 const per = {}; for (const [f] of assetHits()) per[f] = (per[f] || 0) + 1;
-check(wf && wf.fetched + wf.cached === wf.total && (stF['dune-goh-assets'] || []).filter(f => f.startsWith('assets/')).length === wf.total,
-  `первая установка: докачка ${JSON.stringify(wf)}; запросов ассетов ${assetHits().length}, повторных ${Object.values(per).filter(n => n > 1).length}`);
+const lazyF = swList(C || B, 'LAZY'), lazyHit = Object.keys(per).filter(f => lazyF.includes(f));   // фолбэк-JPEG качаться не должны
+check(wf && wf.fetched + wf.cached === wf.total && (stF['dune-goh-assets'] || []).filter(f => f.startsWith('assets/') && !lazyF.includes(f)).length === wf.total && !lazyHit.length,
+  `первая установка: докачка ${JSON.stringify(wf)}; запросов ассетов ${assetHits().length}, повторных ${Object.values(per).filter(n => n > 1).length}, фолбэк-JPEG ${lazyHit.length}`);
 
 check(!errs.length, `ошибки консоли: ${errs.length}${errs.length ? ' — ' + errs.slice(0, 3).join(' | ') : ''}`);
 await browser.close(); await srv.close();

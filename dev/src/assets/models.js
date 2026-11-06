@@ -35,9 +35,13 @@ function parseDgm(b) {
 // JPEG остаётся фолбэком (render3d/characters/authored.js tex3), если KTX2 не загрузился или транскодер не сработал.
 const KTX2 = {};
 function ktx2For(url) { return KTX2[url] || null; }
-function loadKtx2() {   // сначала декодер (24 КБ): не загрузился — KTX2 не качаем вовсе, текстуры будут JPEG
-  if (!assetUrl('ktx2/decoder.js') || typeof WebAssembly !== 'object' || typeof Worker !== 'function') return Promise.resolve();
-  return fetch(assetUrl('ktx2/decoder.js')).then(r => { if (!r.ok) throw new Error('decoder.js: HTTP ' + r.status); }).then(() => Promise.allSettled(Object.keys(ASSET).filter(n => /^ktx2\/.*\.ktx2$/.test(n)).map(n => {
+// Сначала транскодер (декодер 24 КБ + msc 0,5 МБ; воркер потом берёт их из кэша): не загрузился или wasm не проходит проверку —
+// KTX2 не качаем вовсе, текстуры будут JPEG. Транскод тогда не ждёт сети, и сторож в authored.js ловит только сбои воркера.
+function loadKtx2() {
+  const tr = ['decoder.js', 'msc_basis_transcoder.js', 'msc_basis_transcoder.wasm'].map(n => assetUrl('ktx2/' + n));
+  if (tr.some(u => !u) || typeof WebAssembly !== 'object' || typeof Worker !== 'function') return Promise.resolve();
+  return Promise.all(tr.map(u => fetch(u).then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error(u + ': HTTP ' + r.status)))))
+    .then(([, , w]) => { if (!WebAssembly.validate(new Uint8Array(w))) throw new Error('msc_basis_transcoder.wasm не прошёл проверку'); }).then(() => Promise.allSettled(Object.keys(ASSET).filter(n => /^ktx2\/.*\.ktx2$/.test(n)).map(n => {
     const jpg = assetUrl(n.replace(/^ktx2\/(.*)\.ktx2$/, 'tex/$1.jpg'));
     return jpg ? assetBytes(n).then(b => { KTX2[jpg] = b; }) : null;
   }))).then(rs => { const bad = rs.filter(r => r.status === 'rejected'); if (bad.length) console.warn('KTX2: не загружено ' + bad.length + ', будут JPEG', bad[0].reason); },
