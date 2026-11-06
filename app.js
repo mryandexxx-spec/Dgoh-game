@@ -6788,7 +6788,6 @@ function skillGlyph(def, key) {
   const ab = def[key] || {};
   return GLYPH[{ blade: "sword", fast: "pistol", laser: "lasgun", voice: "voice", poison: "needle" }[ab.dt]] || (ab.heal ? GLYPH.heart : GLYPH.emblem);
 }
-var skillSvg = (def, key) => `<svg viewBox="0 0 24 24" aria-hidden="true">${skillGlyph(def, key)}</svg>`;
 
 // src/data/journeys.js
 var JOURNEYS = {
@@ -6858,7 +6857,6 @@ var SHOP = [
 ];
 var ROSTER_IDS = CHARS.filter((c) => !c.npc).map((c) => c.id);
 var RAID_SCENES = ["desert", "saltflat", "storm"];
-var thumb = (scene, n) => `<div class="thumb"><canvas data-scene="${scene}" width="200" height="100"></canvas><span>${n}</span></div>`;
 var enemyProg = (id, lvl, boss) => ({ id, lvl, stars: Math.min(7, 1 + Math.floor(lvl / 5)), gear: Math.min(13, 1 + Math.floor(lvl / 6.2)), relic: lvl > 55 ? Math.min(7, Math.floor((lvl - 55) / 4.3)) : 0, pow: (1 + Math.max(0, lvl - 10) * 6e-3) * (boss ? 1.1 : 1) });
 var SHARDS_NEXT = [10, 15, 25, 30, 65, 85, 100];
 var STAR_COST = (s) => s * s * 500;
@@ -6959,11 +6957,6 @@ function rollItems(i) {
 function grantFrags(list) {
   for (const [id, q] of list) S.inv[id] = (S.inv[id] || 0) + q;
 }
-function fragLines(list) {
-  const agg = {};
-  for (const [id, q] of list) agg[id] = (agg[id] || 0) + q;
-  return Object.entries(agg).map(([id, q]) => `+${amt("frag", q, "frag:" + id)} ${itemIcon(ITEMS[id], 18)} ${ITEMS[id].n}`);
-}
 function raidFrags(tier, pct) {
   const R = RAID_FRAGS[tier], n = Math.round(R.n * pct), pool = Object.values(ITEMS).filter((it) => R.tiers.includes(it.t)), out = [];
   for (let k = 0; k < n; k++) out.push([pool[Math.floor(Math.random() * pool.length)].id, 1]);
@@ -6983,9 +6976,6 @@ var IG = {
   emitter: (c, d) => `<circle cx="12" cy="12" r="4" fill="${c}"/><circle cx="12" cy="12" r="8.5" fill="none" stroke="${c}" stroke-width="1.6" stroke-dasharray="3 2"/>`,
   compass: (c, d) => `<circle cx="12" cy="12" r="8" fill="none" stroke="${c}" stroke-width="2"/><path d="M12 5.5l2.6 6.5-2.6 6.5-2.6-6.5z" fill="${c}"/>`
 };
-function itemIcon(it, size = 40, extra = "") {
-  return `<span class="itm ${extra}" data-info="frag:${it.id}" style="--tc:${TIER_COL[it.t]};width:${size}px;height:${size}px"><svg viewBox="0 0 24 24" aria-hidden="true">${IG[it.kind]("#efe6d6", "#1a1420")}</svg></span>`;
-}
 
 // src/core/format.js
 var fmt = (n) => n.toLocaleString("ru-RU");
@@ -7085,9 +7075,13 @@ function persist() {
   persist0();
   if (!notePend) notePend = setTimeout(() => {
     notePend = 0;
-    if (typeof notePoll === "function") notePoll();
+    if (persistHook) persistHook();
   }, 60);
 }
+var persistHook = null;
+var onPersist = (f) => {
+  persistHook = f;
+};
 
 // src/core/state.js
 var S, view = "lobby", filter = "all", BT = null;
@@ -7127,10 +7121,53 @@ function set_S(v) {
 }
 var NOTES = [];
 
-// src/core/util.js
+// src/logic/daily.js
+var DAILY = [
+  { k: "login", n: "Зайти в игру", need: 1, rw: [["cry", 20]] },
+  { k: "water", n: "Потратить 120 Воды", need: 120, rw: [["cry", 30], ["sol", 2e3]], go: "camp" },
+  { k: "camp", n: "Провести 8 боёв кампании (симуляции считаются)", need: 8, rw: [["folio", 3], ["sol", 3e3]], go: "camp" },
+  { k: "chron", n: "Провести 3 боя в Хрониках Дюны (симуляции считаются)", need: 3, rw: [["rid", 20], ["cry", 20]], go: "chron" },
+  { k: "shop", n: "Совершить 3 покупки в Лавке сиетча", need: 3, rw: [["pl", 5], ["cry", 20]], go: "shop" },
+  { k: "raid", n: "Атаковать Шаи-Хулуда", need: 1, rw: [["teeth", 60]], go: "raid" },
+  { k: "ult", n: "Применить мощное умение 3 раза", need: 3, rw: [["folio", 2]], go: "camp" },
+  { k: "skill", n: "Повысить умение героя", need: 1, rw: [["sol", 1500]], go: "squad" },
+  { k: "craft", n: "Собрать предмет снаряжения", need: 1, rw: [["pl", 3]], go: "squad" },
+  { k: "lvl", n: "Повысить уровень героев 3 раза", need: 3, rw: [["sol", 1500]], go: "squad" }
+];
+var CHEST_NEED = 7, CHEST_RW = [["seal", 1], ["cry", "50–300"], ["sol", 5e3]], CHEST_CRY = [50, 300];
+function dly() {
+  if (S.daily.d !== todayKey()) S.daily = { d: todayKey(), c: {}, got: {}, chest: false };
+  return S.daily;
+}
+function quest(k, n = 1) {
+  if (!S) return;
+  const D = dly();
+  D.c[k] = Math.max(0, (D.c[k] || 0) + n);
+}
+function qState(q) {
+  const D = dly();
+  return D.got[q.k] ? "got" : (D.c[q.k] || 0) >= q.need ? "done" : "prog";
+}
+var dailyGot = () => DAILY.filter((q) => dly().got[q.k]).length;
+var dailyReady = () => DAILY.filter((q) => qState(q) === "done").length + (dailyGot() >= CHEST_NEED && !dly().chest ? 1 : 0);
+
+// src/core/dom.js
 var $ = (s) => document.querySelector(s);
 var LAND_MQ = typeof matchMedia !== "undefined" ? matchMedia("(orientation: landscape) and (max-height: 520px)") : null;
 var isLandPhone = () => !!(LAND_MQ && LAND_MQ.matches);
+
+// src/core/rng.js
+function sRng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = a + 1831565813 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// src/logic/progress.js
 var EN_MAX = { get water() {
   return WMAX();
 }, get candle() {
@@ -7189,18 +7226,68 @@ var getRes = (k) => k === "sol" ? S.solari : k === "pl" ? S.plast : k === "water
 var prog = (id) => S.roster[id];
 var squadPower = () => S.squad.reduce((a, id) => a + unitPower(CH[id], prog(id)), 0);
 var nodePower = (n) => n.enemy.reduce((a, id) => a + unitPower(CH[id], enemyProg(id, n.lvl, n.m === 9)), 0);
-var starStr = (n, max = 7) => "★".repeat(n) + `<i>${"★".repeat(max - n)}</i>`;
-var glyph = (def, extra = "") => def.boss ? `<span class="gl ${extra}" style="--fc:var(--worm);color:var(--worm)" aria-hidden="true"><svg viewBox="0 0 24 24">${SPOT_ICONS.worm}</svg></span>` : `<span class="gl face ${extra}" style="--fc:${fc(def)}" aria-hidden="true">${figureSVG(def)}</span>`;
-function sRng(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = a + 1831565813 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
 var unlockedIds = () => ROSTER_IDS.filter((id) => prog(id).stars > 0);
+
+// src/logic/rewards.js
+var rewardHooks = { unlock: (id) => {
+}, shardConv: (n) => {
+} };
+function addRes(k, q) {
+  if (k === "sol") S.solari += q;
+  else if (k === "pl") S.plast += q;
+  else if (k === "water") S.water += q;
+  else S[k] = (S[k] || 0) + q;
+}
+var RING_RATE = 10;
+function grantShards(id, k) {
+  const p = prog(id);
+  if (p.stars >= 7) {
+    const n = k * RING_RATE;
+    S.wring = (S.wring || 0) + n;
+    rewardHooks.shardConv(n);
+    return false;
+  }
+  p.shards += k;
+  const un = unlockNeed(CH[id]);
+  if (p.stars === 0 && p.shards >= un) {
+    p.shards -= un;
+    p.stars = un > 10 ? 7 : 1;
+    rewardHooks.unlock(id);
+    return true;
+  }
+  return false;
+}
+function applyRewards(list) {
+  const out = [];
+  for (const [k, q, id] of list) {
+    if (k === "shard") out.push({ k, q, id, unlocked: grantShards(id, q) });
+    else {
+      addRes(k, q);
+      out.push({ k, q });
+    }
+  }
+  return out;
+}
+function accGain(n) {
+  if (!n || S.acc.lvl >= ACC_MAX) return [];
+  S.acc.xp += Math.round(n);
+  const out = [];
+  while (S.acc.lvl < ACC_MAX && S.acc.xp >= accNeed(S.acc.lvl)) {
+    S.acc.xp -= accNeed(S.acc.lvl);
+    S.acc.lvl++;
+    const L = S.acc.lvl, rw = accReward(L), got = applyRewards(rw), un = [];
+    if (L <= MAX_LVL) un.push(["hero", `Потолок уровня героев: ${L - 1} → ${L}`]);
+    for (const [t, l] of Object.entries(GEAR_CAP_AT)) if (l === L) un.push(["gear", `Открыто снаряжение ${ROMAN[t]}`]);
+    RELIC_AT.forEach((l, r) => {
+      if (r && l === L) un.push(["gear", `Открыта Другая память ${r}`]);
+    });
+    if (L % 10 === 0) un.push(["energy", `Запас Воды ${WATER_BASE + 15 * (L / 10 - 1)} → ${WMAX()}, Свечей ${CANDLE_BASE + 10 * (L / 10 - 1)} → ${CMAX()}`]);
+    ACC_UPS.push({ L, rw, un });
+    out.push(L);
+  }
+  if (S.acc.lvl >= ACC_MAX) S.acc.xp = 0;
+  return out;
+}
 
 // src/core/errlog.js
 var ERR_T = /* @__PURE__ */ new Map();
@@ -7288,6 +7375,13 @@ function renderRes() {
     <div class="pill" data-info="cry"><span>Кристаллы</span><b>${ic("cry")}${fmt(S.cry)}</b></div>
     <div class="pill" data-info="rid"><span>Ридулиан</span><b>${ic("rid")}${fmt(S.rid)}</b></div>`;
   document.querySelectorAll(".resbox").forEach((el) => el.innerHTML = html);
+}
+var starStr = (n, max = 7) => "★".repeat(n) + `<i>${"★".repeat(max - n)}</i>`;
+var glyph = (def, extra = "") => def.boss ? `<span class="gl ${extra}" style="--fc:var(--worm);color:var(--worm)" aria-hidden="true"><svg viewBox="0 0 24 24">${SPOT_ICONS.worm}</svg></span>` : `<span class="gl face ${extra}" style="--fc:${fc(def)}" aria-hidden="true">${figureSVG(def)}</span>`;
+var thumb = (scene, n) => `<div class="thumb"><canvas data-scene="${scene}" width="200" height="100"></canvas><span>${n}</span></div>`;
+var skillSvg = (def, key) => `<svg viewBox="0 0 24 24" aria-hidden="true">${skillGlyph(def, key)}</svg>`;
+function itemIcon(it, size = 40, extra = "") {
+  return `<span class="itm ${extra}" data-info="frag:${it.id}" style="--tc:${TIER_COL[it.t]};width:${size}px;height:${size}px"><svg viewBox="0 0 24 24" aria-hidden="true">${IG[it.kind]("#efe6d6", "#1a1420")}</svg></span>`;
 }
 
 // src/ui/router.js
@@ -7940,74 +8034,20 @@ function rewardWin(title, lines, o = {}) {
   el.innerHTML = `<div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${MOUSE_SVG(false)}</div><h3>${title}</h3>${o.sub ? `<div style="color:var(--dust)">${o.sub}</div>` : ""}<ul>${lines.map((l) => `<li>${l}</li>`).join("")}</ul><div class="acts" style="justify-content:center">${o.btns || ""}<button class="btn ${o.btns ? "" : "go"}" data-rwok="1">${o.ok || "Забрать"}</button></div></div>`;
   document.body.appendChild(el);
 }
-function addRes(k, q) {
-  if (k === "sol") S.solari += q;
-  else if (k === "pl") S.plast += q;
-  else if (k === "water") S.water += q;
-  else S[k] = (S[k] || 0) + q;
-}
 function giveRewards(list) {
-  const out = [];
-  for (const [k, q, id] of list) {
-    if (k === "shard") out.push(`+${amt("shard", q, "shard:" + id)} ${CH[id].sn}${grantShards(id, q) ? " — персонаж открыт!" : ""}`);
-    else {
-      addRes(k, q);
-      out.push(`+${amt(k, q)} ${RW_NAME[k]}`);
-    }
-  }
-  return out;
+  return applyRewards(list).map((r) => r.k === "shard" ? `+${amt("shard", r.q, "shard:" + r.id)} ${CH[r.id].sn}${r.unlocked ? " — персонаж открыт!" : ""}` : `+${amt(r.k, r.q)} ${RW_NAME[r.k]}`);
 }
 var rewardsHtml = (list) => rwGrid(list, { sm: 1 });
 function accXP(n) {
-  if (!n || S.acc.lvl >= ACC_MAX) return [];
-  S.acc.xp += Math.round(n);
-  const out = [];
-  while (S.acc.lvl < ACC_MAX && S.acc.xp >= accNeed(S.acc.lvl)) {
-    S.acc.xp -= accNeed(S.acc.lvl);
-    S.acc.lvl++;
-    const L = S.acc.lvl, rw = accReward(L), got = giveRewards(rw), un = [];
-    if (L <= MAX_LVL) un.push(["hero", `Потолок уровня героев: ${L - 1} → ${L}`]);
-    for (const [t, l] of Object.entries(GEAR_CAP_AT)) if (l === L) un.push(["gear", `Открыто снаряжение ${ROMAN[t]}`]);
-    RELIC_AT.forEach((l, r) => {
-      if (r && l === L) un.push(["gear", `Открыта Другая память ${r}`]);
-    });
-    if (L % 10 === 0) un.push(["energy", `Запас Воды ${WATER_BASE + 15 * (L / 10 - 1)} → ${WMAX()}, Свечей ${CANDLE_BASE + 10 * (L / 10 - 1)} → ${CMAX()}`]);
-    ACC_UPS.push({ L, rw, un });
-    out.push(`<b class="acclv">Уровень аккаунта ${L}!</b>`);
-  }
-  if (S.acc.lvl >= ACC_MAX) S.acc.xp = 0;
-  return out;
+  return accGain(n).map((L) => `<b class="acclv">Уровень аккаунта ${L}!</b>`);
+}
+function fragLines(list) {
+  const agg = {};
+  for (const [id, q] of list) agg[id] = (agg[id] || 0) + q;
+  return Object.entries(agg).map(([id, q]) => `+${amt("frag", q, "frag:" + id)} ${itemIcon(ITEMS[id], 18)} ${ITEMS[id].n}`);
 }
 
 // src/ui/views/daily.js
-var DAILY = [
-  { k: "login", n: "Зайти в игру", need: 1, rw: [["cry", 20]] },
-  { k: "water", n: "Потратить 120 Воды", need: 120, rw: [["cry", 30], ["sol", 2e3]], go: "camp" },
-  { k: "camp", n: "Провести 8 боёв кампании (симуляции считаются)", need: 8, rw: [["folio", 3], ["sol", 3e3]], go: "camp" },
-  { k: "chron", n: "Провести 3 боя в Хрониках Дюны (симуляции считаются)", need: 3, rw: [["rid", 20], ["cry", 20]], go: "chron" },
-  { k: "shop", n: "Совершить 3 покупки в Лавке сиетча", need: 3, rw: [["pl", 5], ["cry", 20]], go: "shop" },
-  { k: "raid", n: "Атаковать Шаи-Хулуда", need: 1, rw: [["teeth", 60]], go: "raid" },
-  { k: "ult", n: "Применить мощное умение 3 раза", need: 3, rw: [["folio", 2]], go: "camp" },
-  { k: "skill", n: "Повысить умение героя", need: 1, rw: [["sol", 1500]], go: "squad" },
-  { k: "craft", n: "Собрать предмет снаряжения", need: 1, rw: [["pl", 3]], go: "squad" },
-  { k: "lvl", n: "Повысить уровень героев 3 раза", need: 3, rw: [["sol", 1500]], go: "squad" }
-];
-var CHEST_NEED = 7, CHEST_RW = [["seal", 1], ["cry", "50–300"], ["sol", 5e3]], CHEST_CRY = [50, 300];
-function dly() {
-  if (S.daily.d !== todayKey()) S.daily = { d: todayKey(), c: {}, got: {}, chest: false };
-  return S.daily;
-}
-function quest(k, n = 1) {
-  if (!S) return;
-  const D = dly();
-  D.c[k] = Math.max(0, (D.c[k] || 0) + n);
-}
-function qState(q) {
-  const D = dly();
-  return D.got[q.k] ? "got" : (D.c[q.k] || 0) >= q.need ? "done" : "prog";
-}
-var dailyGot = () => DAILY.filter((q) => dly().got[q.k]).length;
-var dailyReady = () => DAILY.filter((q) => qState(q) === "done").length + (dailyGot() >= CHEST_NEED && !dly().chest ? 1 : 0);
 function claimQuest(k, silent) {
   const q = DAILY.find((x) => x.k === k);
   if (!q || qState(q) !== "done") return;
@@ -8238,34 +8278,19 @@ function sqGo() {
   if (!R) return;
   return launch({ mode: "raid", scene: RAID_SCENES[R.tier], title: "Шаи-Хулуд · " + RAID_TIERS[R.tier].n.split(" · ")[0], squad: a.slice(), boss: { tier: R.tier, hp: R.hp, maxHp: R.maxHp } });
 }
-var RING_RATE = 10;
 var SHCONV = 0, SHCONV_T = 0;
+rewardHooks.unlock = (id) => celebQueue({ type: "unlock", id });
+rewardHooks.shardConv = (n) => {
+  SHCONV += n;
+  clearTimeout(SHCONV_T);
+  SHCONV_T = setTimeout(convFlush, 700);
+};
 function convFlush() {
   if (SHCONV > 0) {
     const n = SHCONV;
     SHCONV = 0;
     toast(`Осколки героев 7★ обменены: +${amt("wring", n)} водяных колец`);
   }
-}
-function grantShards(id, k) {
-  const p = prog(id);
-  if (p.stars >= 7) {
-    const n = k * RING_RATE;
-    S.wring = (S.wring || 0) + n;
-    SHCONV += n;
-    clearTimeout(SHCONV_T);
-    SHCONV_T = setTimeout(convFlush, 700);
-    return false;
-  }
-  p.shards += k;
-  const un = unlockNeed(CH[id]);
-  if (p.stars === 0 && p.shards >= un) {
-    p.shards -= un;
-    p.stars = un > 10 ? 7 : 1;
-    celebQueue({ type: "unlock", id });
-    return true;
-  }
-  return false;
 }
 function pickerHtml(kind, ids, pick, disabled = /* @__PURE__ */ new Set()) {
   return `<div class="pick">${ids.map((id) => {
@@ -10634,6 +10659,7 @@ var noteDrop = (id) => {
   document.addEventListener("pointerup", up);
   document.addEventListener("pointercancel", up);
 })();
+onPersist(notePoll);
 
 // src/ui/mouse.js
 var MOUSE_SVG = (sad) => `<svg class="mouse ${sad ? "sad" : "joy"}" viewBox="0 0 120 100" aria-hidden="true">
@@ -11208,8 +11234,6 @@ var CQ_DISKS = {
   }) }
 };
 var cqRar = (k) => CQ_RAR[(CQ_DISKS[k] || {}).r || "c"];
-var cqRarTag = (k) => `<span class="cqrar r-${CQ_DISKS[k].r}">${cqRar(k).n}</span>`;
-var cqDiskCard = (k, btn) => `<div class="cqdiff disk r-${CQ_DISKS[k].r}">${cqI("disk")}${cqRarTag(k)}<h3>${CQ_DISKS[k].n}</h3><p>${CQ_DISKS[k].d}</p>${btn}</div>`;
 var CQ_ICON = {
   fight: '<path d="M5 19L17 7M17 7V4h3v3zM19 19L7 7M7 7V4H4v3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
   elite: '<path d="M12 3c-4.4 0-7 2.8-7 6.6 0 2.4 1.2 4 2.6 4.9V18h8.8v-3.5c1.4-.9 2.6-2.5 2.6-4.9C19 5.8 16.4 3 12 3z" fill="currentColor"/><circle cx="9.2" cy="10" r="1.7" fill="#140c08"/><circle cx="14.8" cy="10" r="1.7" fill="#140c08"/><path d="M10 18v2.5M12 18v2.5M14 18v2.5" stroke="currentColor" stroke-width="1.6"/>',
@@ -11221,7 +11245,6 @@ var CQ_ICON = {
   med: '<rect x="4" y="6" width="16" height="13" rx="2" fill="#c84a3a"/><path d="M12 9v7M8.5 12.5h7" stroke="#fff" stroke-width="2.4"/><rect x="9" y="3.5" width="6" height="3" rx="1" fill="none" stroke="#c84a3a" stroke-width="1.6"/>',
   rest: '<path d="M3 20h18M5 20l7-14 7 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 20l2-5 2 5" fill="currentColor"/>'
 };
-var cqI = (k, cls = "") => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${CQ_ICON[k]}</svg>`;
 
 // src/logic/conquest.js
 var cqWeek = () => {
@@ -11446,14 +11469,6 @@ var cqStCan = (j) => {
   return !!T && cqScore() >= T.at;
 };
 var cqStReady = () => cqTrack().filter((x) => x.kind === "st" && cqStCan(x.i)).length;
-var cqRwHtml = (r) => amt(r[0], r[1], r[2] ? "shard:" + r[2] : void 0) + (r[2] ? ` <span class="cqrwn">${CH[r[2]].sn}</span>` : ` <span class="cqrwn">${RW_NAME[r[0]] || ""}</span>`);
-var cqBadge = () => {
-  if (!S) return "";
-  const C = cq();
-  if (!C.diff) return "новая неделя";
-  const ready = CQ_CHESTS.filter((t, i) => cqCanClaim(i)).length, st = cqStReady();
-  return ready ? `сундуков: ${ready}` : st ? `наград: ${st}` : `очки ${cqScore()}`;
-};
 var cqHot = () => {
   if (!S) return false;
   const C = cq();
@@ -11945,6 +11960,17 @@ function cqPop(el, html) {
   document.body.appendChild(d);
   setTimeout(() => d.remove(), 1700);
 }
+var cqRwHtml = (r) => amt(r[0], r[1], r[2] ? "shard:" + r[2] : void 0) + (r[2] ? ` <span class="cqrwn">${CH[r[2]].sn}</span>` : ` <span class="cqrwn">${RW_NAME[r[0]] || ""}</span>`);
+var cqBadge = () => {
+  if (!S) return "";
+  const C = cq();
+  if (!C.diff) return "новая неделя";
+  const ready = CQ_CHESTS.filter((t, i) => cqCanClaim(i)).length, st = cqStReady();
+  return ready ? `сундуков: ${ready}` : st ? `наград: ${st}` : `очки ${cqScore()}`;
+};
+var cqRarTag = (k) => `<span class="cqrar r-${CQ_DISKS[k].r}">${cqRar(k).n}</span>`;
+var cqDiskCard = (k, btn) => `<div class="cqdiff disk r-${CQ_DISKS[k].r}">${cqI("disk")}${cqRarTag(k)}<h3>${CQ_DISKS[k].n}</h3><p>${CQ_DISKS[k].d}</p>${btn}</div>`;
+var cqI = (k, cls = "") => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${CQ_ICON[k]}</svg>`;
 
 // src/boot.js
 var spiceUser = (d) => !!d && !d.boss && !!d.legendary;

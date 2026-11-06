@@ -1,7 +1,7 @@
 # Dune GoH — исходники и сборка (папка dev/ репозитория mryandexxx-spec/Dgoh-game)
 
 **Источник правды — `dev/src/` (ES-модули).** Корень репозитория — собранная PWA (GitHub Pages); артефакт https://claude.ai/artifact/WE7ymKgZXUxH7tH4TDvfoT собирается из тех же исходников.
-Статус фазы 2 — `PHASE2_STATUS.md`. Документы `dune-tools/src.pack.txt` и `dune-workspace.zip` больше не нужны.
+Статус: фаза 2 — `PHASE2_STATUS.md`, фаза 3 — `PHASE3_STATUS.md`. Документы `dune-tools/src.pack.txt` и `dune-workspace.zip` больше не нужны.
 
 ## Цикл правки
 ```
