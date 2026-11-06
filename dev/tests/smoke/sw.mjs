@@ -17,6 +17,8 @@ const [A, B, C] = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '
 const chrome = opt('--chrome') || process.env.CHROME_PATH || ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'].find(f => fs.existsSync(f));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const swVer = d => /const (?:VER = '|CACHE = 'dune-goh-)([0-9a-f]+)'/.exec(fs.readFileSync(path.join(d, 'sw.js'), 'utf8'))[1];
+// фаза 5, шаг 5: список ассетов и ленивых (фолбэк-JPEG к KTX2) из sw.js — при обновлении качаются только новые неленивые
+const swList = (d, k) => { const m = new RegExp(`const ${k} = (?:new Set\\()?(\\[[^\\]]*\\])`).exec(fs.readFileSync(path.join(d, 'sw.js'), 'utf8')); return m ? JSON.parse(m[1]) : []; };
 let LOG = []; const srv = await serve(A, { onReq: (f, c) => LOG.push([f, c]) });
 const url = p => srv.url(p).replace('127.0.0.1', 'localhost');   // SW регистрируется только на https или localhost
 let fails = 0; const check = (ok, msg) => { console.log(`${ok ? 'PASS' : 'FAIL'} ${msg}`); if (!ok) fails++; };
@@ -50,7 +52,9 @@ await until(pa, v => caches.keys().then(ks => ks.includes('dune-goh-' + v) && !k
 const stB = await cacheState(pa);
 check(Object.keys(stB).includes('dune-goh-' + vB) && !Object.keys(stB).includes('dune-goh-' + vA), `A→B: кэш оболочки dune-goh-${vB}, старый удалён (${Object.keys(stB).join(', ')})`);
 check(!LOG.some(([, c]) => c === 404), `A→B: без 404 (${LOG.filter(([, c]) => c === 404).map(x => x[0]).join(', ') || '—'})`);
-check(assetHits().length === 0 && !LOG.some(([f]) => f === 'babylon3d.js' || /\.woff2$|\.png$/.test(f)), `A→B: ассеты, babylon3d.js, шрифты, иконки не качались; запросы: ${[...new Set(LOG.map(x => x[0]))].join(', ')}`);
+const newB = new Set(swList(B, 'ASSETS').filter(f => !swList(A, 'ASSETS').includes(f) && !swList(B, 'LAZY').includes(f))), hitsB = new Set(assetHits().map(x => x[0]));
+check([...hitsB].every(f => newB.has(f)) && [...newB].every(f => hitsB.has(f)) && !LOG.some(([f]) => f === 'babylon3d.js' || /\.woff2$|\.png$/.test(f)),
+  `A→B: из ассетов скачаны ровно новые (${hitsB.size} из ${newB.size}), babylon3d.js, шрифты, иконки не качались; прочие запросы: ${[...new Set(LOG.map(x => x[0]).filter(f => !f.startsWith('assets/')))].join(', ')}`);
 check((stB['dune-goh-assets'] || []).length >= 30, `A→B: кэш ассетов — ${(stB['dune-goh-assets'] || []).length} записей (перенос из кэша A)`);
 // старая вкладка: открыть героя, вернуться в лобби, 3D
 const oldOk = await pa.evaluate(async () => { try { (0, eval)("closeInfo(true); closeOverlay(); view = 'lobby'; render(); openDetail('paul');"); await new Promise(r => setTimeout(r, 1500)); (0, eval)("closeInfo(true); closeOverlay(); view = 'lobby'; render();"); return await loadB3(); } catch (e) { return String(e); } });
@@ -80,8 +84,8 @@ if (C) {   // 4. B → C: изменён один ассет
 // 5. нет сети: новая вкладка из кэша, 3D из кэша
 srv.dir(null);
 const po = await open();
-const off = await po.evaluate(async () => ({ v: (document.getElementById('appver') || {}).textContent, b3: await loadB3(), duncan: !!(MODEL_DATA.duncan && MODEL_DATA.duncan.parts || MODEL_DATA.duncan), worm: !!MODEL_DATA.worm, mocap: typeof MOCAP_OK !== 'undefined' && MOCAP_OK }));
-check(off.b3 === true && off.duncan && off.worm && off.mocap, `офлайн: ${JSON.stringify(off)}`);
+const off = await po.evaluate(async () => ({ v: (document.getElementById('appver') || {}).textContent, b3: await loadB3(), duncan: !!(MODEL_DATA.duncan && MODEL_DATA.duncan.parts || MODEL_DATA.duncan), worm: !!MODEL_DATA.worm, mocap: typeof MOCAP_OK !== 'undefined' && MOCAP_OK, ktx2: typeof KTX2 === 'object' ? Object.keys(KTX2).length : -1 }));
+check(off.b3 === true && off.duncan && off.worm && off.mocap && off.ktx2 !== 0, `офлайн: ${JSON.stringify(off)}`);
 
 // 6. первая установка в новом профиле: докачка заполняет кэш ассетов
 srv.dir(C || B); LOG = [];

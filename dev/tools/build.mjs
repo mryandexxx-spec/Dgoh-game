@@ -1,5 +1,5 @@
 // Сборка Dune GoH из src/ (заменяет build_pwa.py). Без зависимостей, кроме esbuild и fflate.
-//   node tools/build.mjs [--target artifact|pwa|all] [--static <прошлый dune-pwa-flat.zip>] [--out dist] [--deploy]
+//   node tools/build.mjs [--target artifact|pwa|all] [--static <прошлый dune-pwa-flat.zip>] [--out dist] [--deploy] [--ktx2 <каталог>|off]
 // Без --static статика берётся из корня репозитория (dev/ лежит в mryandexxx-spec/Dgoh-game): файлы из списка ASSETS
 // текущего sw.js + BABYLON-LICENSE.md. --deploy — записать собранную PWA в корень репозитория (затем git commit/push).
 // artifact → dist/: artifact.html (каркас) + app.js + app.css + babylon3d.js + assets/ — multi-file, публикуется через files
@@ -37,13 +37,29 @@ const MINIFY = !args.includes('--no-minify');   // фаза 5: app.js — minify
 
 // Ассеты (фаза 5): dev/assets/** → «assets/<имя>.<хеш8>.<расш>»; в артефакте не отдаваемые им типы — base64 в «….txt».
 const ASSET_SRC = path.join(ROOT, 'assets');
+const KTX2_DIR = (k => k === 'off' || k === 'default' ? k : path.resolve(k))(opt('--ktx2', 'default'));
 const ART_TYPES = /\.(json|jpe?g|png|webp|avif|wasm|js|txt)$/;
 function assets() {
   const list = []; const walk = d => { for (const e of fs.readdirSync(d, { withFileTypes: true }).sort((a, b) => a.name < b.name ? -1 : 1)) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else list.push(p); } };
   if (fs.existsSync(ASSET_SRC)) walk(ASSET_SRC);
-  return list.map(p => { const name = path.relative(ASSET_SRC, p).split(path.sep).join('/'), bytes = fs.readFileSync(p);
+  // фаза 5, шаг 5: KTX2 — dev/assets/ktx2/*.ktx2 (tools/encode-ktx2.mjs); --ktx2 <каталог> — другой набор (A/B), --ktx2 off — без KTX2
+  let src = list.map(p => [path.relative(ASSET_SRC, p).split(path.sep).join('/'), fs.readFileSync(p)]).filter(([n]) => n !== 'ktx2/manifest.json');
+  if (KTX2_DIR !== 'default') { src = src.filter(([n]) => !n.startsWith('ktx2/'));
+    if (KTX2_DIR !== 'off') for (const f of fs.readdirSync(KTX2_DIR).filter(f => f.endsWith('.ktx2')).sort()) src.push(['ktx2/' + f, fs.readFileSync(path.join(KTX2_DIR, f))]); }
+  const kx = src.filter(([n]) => n.endsWith('.ktx2'));
+  if (kx.length) src.push(...ktx2Transcoder(kx.some(([, b]) => b.readUInt32LE(44) !== 1)));   // supercompressionScheme 1 (BasisLZ) — ETC1S; иначе UASTC
+  return src.map(([name, bytes]) => {
     const file = 'assets/' + name.replace(/(\.[^./]+)$/, `.${sha(bytes).slice(0, 8)}$1`);
     return { name, bytes, pwa: file, art: ART_TYPES.test(file) ? file : file + '.txt' }; });
+}
+// Транскодер KTX2 (@babylonjs/ktx2decoder той же версии, что core): декодер — IIFE с глобальным KTX2DECODER (воркер грузит его importScripts),
+// wasm — как есть. ETC1S — msc_basis_transcoder; UASTC-цели (→ ASTC/BC7/RGBA8, zstd) — только если есть UASTC-файлы.
+function ktx2Transcoder(uastc) {
+  const K = path.join(ROOT, 'node_modules', '@babylonjs', 'ktx2decoder');
+  const dec = esbuild.buildSync({ entryPoints: [path.join(K, 'legacy', 'legacy.js')], bundle: true, write: false, format: 'iife', globalName: 'KTX2DECODER',
+    minify: true, legalComments: 'none', target: 'es2020', logLevel: 'warning' }).outputFiles[0].contents;
+  const w = ['msc_basis_transcoder.js', 'msc_basis_transcoder.wasm', ...(uastc ? ['uastc_astc.wasm', 'uastc_bc7.wasm', 'uastc_rgba8_unorm_v2.wasm', 'uastc_rgba8_srgb_v2.wasm', 'zstddec.wasm'] : [])];
+  return [['ktx2/decoder.js', Buffer.from(dec)], ...w.map(f => ['ktx2/' + f, fs.readFileSync(path.join(K, 'wasm', f))])];
 }
 const withAssets = (code, key) => { const parts = code.split('__ASSET_MAP__'); if (parts.length !== 2) throw new Error('в коде должен быть ровно один __ASSET_MAP__');
   const map = JSON.stringify(Object.fromEntries(ASSETS.map(a => [a.name, a[key]]))); if (/['\\]/.test(map)) throw new Error('кавычка или «\\» в пути ассета');
@@ -138,9 +154,11 @@ if (target === 'pwa' || target === 'all') {
   for (const a of ASSETS) files[a.pwa] = new Uint8Array(a.bytes);
   // фаза 5, шаг 4: sw.js — из шаблона src/pwa/sw.js; оболочка — {путь: sha256-16} (перенос неизменённых файлов при обновлении), ассеты — пути с хешем
   const shell = Object.fromEntries(Object.keys(files).filter(f => f !== 'sw.js' && !/LICENSE/.test(f) && !f.startsWith('assets/')).sort().map(f => [f, sha(files[f]).slice(0, 16)]));
-  const tpl = read('pwa/sw.js'), subst = { __VER__: ver, __SHELL__: JSON.stringify(shell).replace(/","/g, '", "'), __ASSETS__: JSON.stringify(ASSETS.map(a => a.pwa).sort()).replace(/","/g, '", "') };
+  const tpl = read('pwa/sw.js'), subst = { __VER__: ver, __SHELL__: JSON.stringify(shell).replace(/","/g, '", "'), __ASSETS__: JSON.stringify(ASSETS.map(a => a.pwa).sort()).replace(/","/g, '", "'),
+    // фаза 5, шаг 5: JPEG, у которых есть KTX2, — только фолбэк: не докачиваются заранее, кэшируются по факту запроса
+    __LAZY__: JSON.stringify(ASSETS.filter(a => /^tex\/.*\.jpg$/.test(a.name) && ASSETS.some(k => k.name === a.name.replace(/^tex\/(.*)\.jpg$/, 'ktx2/$1.ktx2'))).map(a => a.pwa).sort()).replace(/","/g, '", "') };
   for (const k of Object.keys(subst)) if (tpl.split(k).length !== 2) throw new Error(`в шаблоне sw.js должен быть ровно один ${k}`);
-  files['sw.js'] = enc(tpl.replace(/__VER__|__SHELL__|__ASSETS__/g, m => subst[m]));
+  files['sw.js'] = enc(tpl.replace(/__VER__|__SHELL__|__ASSETS__|__LAZY__/g, m => subst[m]));
   const dir = path.join(OUT, 'pwa'); fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
   for (const [n, b] of Object.entries(files)) { fs.mkdirSync(path.dirname(path.join(dir, n)), { recursive: true }); fs.writeFileSync(path.join(dir, n), b); }
   const sorted = Object.fromEntries(Object.keys(files).sort().map(n => [n, [files[n], { level: 9, mtime: new Date(Date.UTC(2026, 0, 1)) }]]));

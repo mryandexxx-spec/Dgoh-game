@@ -1,5 +1,5 @@
 // render3d/characters/authored.js — строки 1454–1511 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { MODEL_DATA } from '../../assets/models.js';
+import { MODEL_DATA, assetUrl, ktx2For } from '../../assets/models.js';
 import { ANIM3 } from './pose-duncan.js';
 import { HERO3 } from './rig.js';
 import { add, bBox, bCyl, bSph, grp } from '../geometry.js';
@@ -27,6 +27,40 @@ function modelData(id) {
   return (MODEL_CACHE[id] = { joints: R.joints, parts, grip: R.grip || null, v: R.v || 1 });
 }
 const MODEL_MAT = { skin: { roughness: .5 }, cloth: { roughness: .92 }, plate: { roughness: .42, metalness: .3, noSheen: 1 }, cape: { roughness: .95, side: 'double' }, leather: { roughness: .58 }, metal: { roughness: .28, metalness: .75 }, hair: { roughness: .7, noSheen: 1 }, eye: { roughness: .15, noSheen: 1 } };
+// Фаза 5, шаг 5: текстура модели — KTX2 (байты из assets/models.js), фолбэк — JPEG по тому же пути. set(t) кладёт текстуру в материал;
+// при ошибке set вызывается повторно с JPEG. Ключ кэша движка — путь JPEG + «#ktx2».
+// Сбой транскодера внутри воркера (importScripts, wasm) до текстуры не доходит — текстура просто не готовится. Поэтому сторож:
+// пока ни одна KTX2-текстура не загрузилась (KTX2_ST 0), созданные ждут; через KTX2_WAIT мс без единой загрузки KTX2 выключается
+// (KTX2_ST -1), ожидающие и все следующие — JPEG. Первая загрузка — KTX2_ST 1, сторож снят.
+const KTX2_WAIT = 15000;
+let KTX2_ST = 0, KTX2_CFG = false, KTX2_T = 0;
+const KTX2_PEND = [];
+function ktx2Cfg() {
+  if (KTX2_CFG) return true;
+  const K = B3.KhronosTextureContainer2, u = n => assetUrl('ktx2/' + n);
+  if (!K || !u('decoder.js') || !u('msc_basis_transcoder.wasm')) { KTX2_ST = -1; return false; }
+  Object.assign(K.URLConfig, { jsDecoderModule: u('decoder.js'), jsMSCTranscoder: u('msc_basis_transcoder.js'), wasmMSCTranscoder: u('msc_basis_transcoder.wasm'),
+    wasmUASTCToASTC: u('uastc_astc.wasm'), wasmUASTCToBC7: u('uastc_bc7.wasm'), wasmUASTCToRGBA_UNORM: u('uastc_rgba8_unorm_v2.wasm'),
+    wasmUASTCToRGBA_SRGB: u('uastc_rgba8_srgb_v2.wasm'), wasmZSTDDecoder: u('zstddec.wasm') });
+  K.DefaultNumWorkers = 1;   // 24 текстуры, транскод — десятки мс; второй воркер — лишняя память на телефоне
+  return (KTX2_CFG = true);
+}
+function ktx2Fail(why) {
+  if (KTX2_ST !== 0) return; KTX2_ST = -1; clearTimeout(KTX2_T); console.warn('KTX2 выключен, текстуры — JPEG:', why);
+  for (const p of KTX2_PEND.splice(0)) p.fallback();
+}
+function tex3(url, scene, set) {
+  const jpg = () => set(new B3.Texture(url, scene, false, true));
+  const b = ktx2For(url); if (KTX2_ST < 0 || !b || !ktx2Cfg()) return jpg();
+  let t = null, done = false;
+  const p = { fallback: () => { if (done) return; done = true; if (t) t.dispose(); if (!scene.isDisposed) jpg(); } };
+  t = new B3.Texture(url + '#ktx2', scene, { noMipmap: false, invertY: true, buffer: b, forcedExtension: '.ktx2',
+    onLoad: () => { if (KTX2_ST === 0) { KTX2_ST = 1; clearTimeout(KTX2_T); } const i = KTX2_PEND.indexOf(p); if (i >= 0) KTX2_PEND.splice(i, 1); },
+    onError: (m, e) => { console.warn('KTX2 → JPEG', url, m || e); const i = KTX2_PEND.indexOf(p); if (i >= 0) KTX2_PEND.splice(i, 1); p.fallback(); } });
+  if (done) return;
+  set(t);
+  if (KTX2_ST === 0 && !t.isReady()) { KTX2_PEND.push(p); if (!KTX2_T) KTX2_T = setTimeout(() => ktx2Fail('нет загрузок за ' + KTX2_WAIT / 1000 + ' с'), KTX2_WAIT); }
+}
 function makeModel3(def, D) { return withCtx(null, () => {
   const SHG0 = CTX.shadows; CTX.shadows = null;
   const X = HERO3[def.id] || {}, root = grp(null), body = grp(root), N = {}, abs = {};
@@ -41,10 +75,10 @@ function makeModel3(def, D) { return withCtx(null, () => {
     me.setVerticesData(B3.VertexBuffer.MatricesIndicesKind, P.jj, false); me.setVerticesData(B3.VertexBuffer.MatricesWeightsKind, P.ww, false);
     me.numBoneInfluencers = 4; me.skeleton = skel; me.parent = body; me.receiveShadows = true; me.isPickable = false; me.alwaysSelectAsActiveMesh = true;
     const m = mat3('#ffffff', MODEL_MAT[k] || {}); me.material = m; if (m._lit) mats.push(m);
-    if (P.alb) { const t = new B3.Texture(P.alb, CTX.scene, false, true); if (m.albedoTexture !== undefined && m instanceof B3.PBRMaterial) m.albedoTexture = t; else m.diffuseTexture = t; }
-    if (P.nrm) { const t = new B3.Texture(P.nrm, CTX.scene, false, true); m.bumpTexture = t; t.level = k === 'skin' ? .7 : 1; m.invertNormalMapY = true; }
+    if (P.alb) tex3(P.alb, CTX.scene, t => { if (m.albedoTexture !== undefined && m instanceof B3.PBRMaterial) m.albedoTexture = t; else m.diffuseTexture = t; });
+    if (P.nrm) tex3(P.nrm, CTX.scene, t => { m.bumpTexture = t; t.level = k === 'skin' ? .7 : 1; m.invertNormalMapY = true; });
     if (P.orm && m instanceof B3.PBRMaterial) {          // R: ambient occlusion, G: roughness, B: metallic (baked in Blender)
-      const t = new B3.Texture(P.orm, CTX.scene, false, true); m.metallicTexture = t; m.useAmbientOcclusionFromMetallicTextureRed = true; m.useRoughnessFromMetallicTextureGreen = true; m.useMetallnessFromMetallicTextureBlue = true;
+      tex3(P.orm, CTX.scene, t => { m.metallicTexture = t; }); m.useAmbientOcclusionFromMetallicTextureRed = true; m.useRoughnessFromMetallicTextureGreen = true; m.useMetallnessFromMetallicTextureBlue = true;
       m.metallic = 1; m.roughness = 1; m.sheen.isEnabled = false; m.environmentIntensity = .75;
     }
     if (m instanceof B3.PBRMaterial && (k === 'skin' || k === 'cape')) {    // light bleeding through ears / thin cloth when back-lit
@@ -67,4 +101,4 @@ function makeModel3(def, D) { return withCtx(null, () => {
   return { root, body, hips: N.hips, spine: N.spine, head: N.head, R, Lf, LL, LR, skirt: null, wpn: w, mats, h: 1.95 * sc * tl, melee: true, hipY0: N.hips.position.y, anim: ANIM3[def.id] || null, capeB: root._capeB || null, stance: def.role === 'tank' && !X.noShield ? 'shield' : 'guard', float: 0 };
 }); }
 
-export { MODEL_CACHE, b64bytes, modelData, MODEL_MAT, makeModel3 };
+export { MODEL_CACHE, b64bytes, modelData, MODEL_MAT, makeModel3, tex3 };

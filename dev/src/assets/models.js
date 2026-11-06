@@ -31,6 +31,18 @@ function parseDgm(b) {
     : Object.fromEntries(Object.entries(o).map(([k, v]) => [k, fix(v)]));
   return fix(JSON.parse(new TextDecoder().decode(b.subarray(8, base))));
 }
+// Фаза 5, шаг 5: KTX2 к текстурам tex/<n>.jpg — ktx2/<n>.ktx2 (байты грузятся вместе с моделями). Ключ — путь JPEG (он же в MODEL_DATA);
+// JPEG остаётся фолбэком (render3d/characters/authored.js tex3), если KTX2 не загрузился или транскодер не сработал.
+const KTX2 = {};
+function ktx2For(url) { return KTX2[url] || null; }
+function loadKtx2() {   // сначала декодер (24 КБ): не загрузился — KTX2 не качаем вовсе, текстуры будут JPEG
+  if (!assetUrl('ktx2/decoder.js') || typeof WebAssembly !== 'object' || typeof Worker !== 'function') return Promise.resolve();
+  return fetch(assetUrl('ktx2/decoder.js')).then(r => { if (!r.ok) throw new Error('decoder.js: HTTP ' + r.status); }).then(() => Promise.allSettled(Object.keys(ASSET).filter(n => /^ktx2\/.*\.ktx2$/.test(n)).map(n => {
+    const jpg = assetUrl(n.replace(/^ktx2\/(.*)\.ktx2$/, 'tex/$1.jpg'));
+    return jpg ? assetBytes(n).then(b => { KTX2[jpg] = b; }) : null;
+  }))).then(rs => { const bad = rs.filter(r => r.status === 'rejected'); if (bad.length) console.warn('KTX2: не загружено ' + bad.length + ', будут JPEG', bad[0].reason); },
+    e => console.warn('KTX2 выключен, текстуры — JPEG:', e));
+}
 let ASSETS_P = null;
 function loadAssets3() {   // Promise: каждый ассет независим — что не загрузилось, то 3D заменяет как раньше (процедурная модель, без mocap/окружения)
   return ASSETS_P || (ASSETS_P = Promise.allSettled([
@@ -38,9 +50,10 @@ function loadAssets3() {   // Promise: каждый ассет независи�
     fetch(assetUrl('anim/mocap.json')).then(r => r.ok ? r.json() : Promise.reject(new Error('mocap.json: HTTP ' + r.status))).then(setMocap),
     (async () => { const u = assetUrl('env/desert.hdr'); if (!u) throw new Error('нет env/desert.hdr');
       setEnvHdr(u.endsWith('.txt') ? 'data:application/octet-stream;base64,' + (await (await fetch(u)).text()).trim() : u); })(),
+    loadKtx2(),
   ]).then(rs => { const bad = rs.filter(r => r.status === 'rejected'); for (const r of bad) console.warn('ассет 3D', r.reason); if (bad.length) ASSETS_P = null; }));
 }
 b3Pre(loadAssets3);
 
 
-export { MODEL_DATA, WORM_IMG, assetUrl, loadAssets3 };
+export { MODEL_DATA, WORM_IMG, assetUrl, ktx2For, loadAssets3 };

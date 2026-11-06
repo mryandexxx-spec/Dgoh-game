@@ -29,6 +29,8 @@ import { Texture } from '@babylonjs/core/Materials/Textures/texture.js';
 import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture.js';
 import { RenderTargetTexture } from '@babylonjs/core/Materials/Textures/renderTargetTexture.js';
 import { HDRCubeTexture } from '@babylonjs/core/Materials/Textures/hdrCubeTexture.js';
+import { KhronosTextureContainer2 } from '@babylonjs/core/Misc/khronosTextureContainer2.js';
+import '@babylonjs/core/Materials/Textures/Loaders/ktxTextureLoader.js';   // фаза 5, шаг 5: загрузчик .ktx2 (транскодер — assets/ktx2/, URLConfig в authored.js)
 import { Mesh } from '@babylonjs/core/Meshes/mesh.js';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode.js';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData.js';
@@ -59,7 +61,7 @@ const MeshBuilder = { CreateBox, CreateCylinder, CreateDisc, CreateGround, Creat
 const B3 = {
   Engine, EngineStore, Constants, Scene, Vector3, Quaternion, Matrix, Color3, Color4, Axis, Curve3, Viewport, Skeleton, Bone,
   UniversalCamera, DirectionalLight, HemisphericLight, PointLight, SpotLight, ShadowGenerator, GlowLayer, StandardMaterial, PBRMaterial,
-  Effect, ImageProcessingConfiguration, Texture, DynamicTexture, RenderTargetTexture, HDRCubeTexture, Mesh, TransformNode, VertexData,
+  Effect, ImageProcessingConfiguration, Texture, DynamicTexture, RenderTargetTexture, HDRCubeTexture, KhronosTextureContainer2, Mesh, TransformNode, VertexData,
   VertexBuffer, ParticleSystem, DefaultRenderingPipeline, SSAO2RenderingPipeline, DepthOfFieldEffectBlurLevel, ReflectionProbe, MeshBuilder,
 };
 globalThis.__B3 = B3;   // для 3D-смоука (EngineStore.Instances) и render3d/base.js

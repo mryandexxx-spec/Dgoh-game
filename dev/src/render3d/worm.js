@@ -1,7 +1,7 @@
 // render3d/worm.js — строки 1739–1799 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { MODEL_DATA } from '../assets/models.js';
 import './characters/pose-generic.js'; // порядок исполнения
-import { b64bytes } from './characters/authored.js';
+import { b64bytes, tex3 } from './characters/authored.js';
 import { MB, add, bCone, bDisc, bRock, bSph, bTorus, grp } from './geometry.js';
 import { V3, basic3, col3, lerpC, mat3, mk } from './materials.js';
 import { CTX, withCtx } from './ctx.js';
@@ -28,8 +28,8 @@ function wormMesh(P) {
 }
 function wormMats(WD) {
   const skin = mat3('#ffffff', { roughness: .82, noSheen: 1 }), mouth = mat3('#ffffff', { roughness: .45, side: 'double', noSheen: 1 });
-  const ta = new B3.Texture(WD.alb, CTX.scene, false, true), tn = new B3.Texture(WD.nrm, CTX.scene, false, true);
-  if (skin instanceof B3.PBRMaterial) skin.albedoTexture = ta; else skin.diffuseTexture = ta; skin.bumpTexture = tn; tn.level = 1.2; skin.invertNormalMapY = true;
+  tex3(WD.alb, CTX.scene, ta => { if (skin instanceof B3.PBRMaterial) skin.albedoTexture = ta; else skin.diffuseTexture = ta; });
+  tex3(WD.nrm, CTX.scene, tn => { skin.bumpTexture = tn; tn.level = 1.2; }); skin.invertNormalMapY = true;
   return { skin, mouth };
 }
 function makeWorm3(ctx) { return withCtx(ctx, () => {

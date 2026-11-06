@@ -8,10 +8,13 @@
   },
   "devDependencies": {
     "@babylonjs/core": "9.30.0",
+    "@babylonjs/ktx2decoder": "^9.30.0",
     "acorn": "^8.14.0",
     "acorn-walk": "^8.3.4",
     "esbuild": "^0.24.2",
     "fflate": "^0.8.2",
+    "jpeg-js": "^0.4.4",
+    "ktx2-encoder": "^0.6.0",
     "puppeteer-core": "^25.16.0"
   }
 }

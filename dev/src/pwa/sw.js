@@ -1,4 +1,4 @@
-// SW Dune GoH (фаза 5, шаг 4) — шаблон: tools/build.mjs подставляет VER, SHELL, ASSETS.
+// SW Dune GoH (фаза 5, шаги 4–5) — шаблон: tools/build.mjs подставляет VER, SHELL, ASSETS, LAZY.
 // Два кэша: оболочка «dune-goh-<ver>» (index, app.js, app.css, babylon3d.js, шрифты, иконки, manifest) и ассеты «dune-goh-assets»
 // (имена с хешем содержимого — файл неизменен, cache-first). Установка переносит из старых кэшей всё, что не изменилось
 // (оболочка — по sha256 тела, ассеты — по имени), и качает только изменённое; при первой установке ассеты не качаются —
@@ -7,6 +7,7 @@
 const VER = '__VER__';
 const SHELL = __SHELL__;   // путь → sha256 (16 hex)
 const ASSETS = __ASSETS__;
+const LAZY = new Set(__LAZY__);   // фаза 5, шаг 5: фолбэк-JPEG к KTX2 — не качаются при установке и докачке, кэшируются по факту запроса
 const SC = 'dune-goh-' + VER, AC = 'dune-goh-assets', LIST = '__assets-list__';
 const abs = p => new URL(p, self.registration.scope).href;
 const hex = b => crypto.subtle.digest('SHA-256', b).then(d => [...new Uint8Array(d)].slice(0, 8).map(x => x.toString(16).padStart(2, '0')).join(''));
@@ -25,7 +26,7 @@ async function installShell() {
 async function installAssets() {
   const ac = await caches.open(AC), upd = await isUpdate();
   for (const p of ASSETS) {
-    const u = abs(p); if (await ac.match(u)) continue;
+    const u = abs(p); if (LAZY.has(p) || await ac.match(u)) continue;
     const old = await caches.match(u); if (old) { await ac.put(u, old); continue; }
     if (upd) { const r = await fetch(u, { cache: 'no-cache' }); if (!r.ok) throw new Error(p + ': HTTP ' + r.status); await ac.put(u, r); }
   }
@@ -48,8 +49,8 @@ function asset(u) {
 }
 async function warm() {
   const ac = await caches.open(AC); let fetched = 0, cached = 0;
-  for (const p of ASSETS) { const u = abs(p); if (await ac.match(u)) { cached++; continue; } try { if ((await asset(u)).ok) fetched++; } catch (_) {} }
-  return { fetched, cached, total: ASSETS.length };
+  for (const p of ASSETS) { if (LAZY.has(p)) continue; const u = abs(p); if (await ac.match(u)) { cached++; continue; } try { if ((await asset(u)).ok) fetched++; } catch (_) {} }
+  return { fetched, cached, total: ASSETS.length - LAZY.size };
 }
 self.addEventListener('message', e => { if (e.data && e.data.type === 'warm') e.waitUntil(warm().then(r => e.source && e.source.postMessage({ type: 'warm', ver: VER, ...r }))); });
 
