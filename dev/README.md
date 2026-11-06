@@ -13,7 +13,7 @@ node tests/run.mjs dist/artifact.html --babylon ../babylon.min.js && node tests/
 git add -A && git commit && git push  # в main
 ```
 Затем dist/artifact.html публикуется в артефакт. `--static <dune-pwa-flat.zip>` — взять статику из архива вместо корня.
-JS-инструменты (`tools/`): `build.mjs`; `extract-pass1.mjs`, `modularize.mjs` + `split.config.mjs` + `scope.mjs`, `split-css.mjs` — разрезание монолита (выполнено, повторно не запускать: src/ правится вручную); `check-bundle.mjs`; `check-deps.mjs` — правило зависимостей §2; `pack.mjs` — упаковка src/ в текст (запасной вариант).
+JS-инструменты (`tools/`): `build.mjs`; `move-decl.mjs` — перенос объявлений между модулями с починкой импортов и цепочки порядка; `extract-pass1.mjs`, `modularize.mjs` + `split.config.mjs` + `scope.mjs`, `split-css.mjs` — разрезание монолита (выполнено, повторно не запускать: src/ правится вручную); `check-bundle.mjs`; `check-deps.mjs` — правило зависимостей §2; `pack.mjs` — упаковка src/ в текст (запасной вариант).
 Python/Blender-скрипты моделей лежат в документах проекта dune-tools/.
 
 ## Golden-тесты (tests/) — фаза 0 REFACTOR_PLAN §6.1–6.4
