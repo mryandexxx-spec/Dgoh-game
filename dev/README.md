@@ -7,7 +7,7 @@
 ```
 git clone https://github.com/mryandexxx-spec/dgoh-game && cd dgoh-game/dev && npm i
 # правки в src/
-node tools/build.mjs --deploy        # dist/artifact.html + PWA прямо в корень репозитория (статика — из корня, по списку sw.js)
+node tools/build.mjs --deploy        # dist/artifact.html + PWA прямо в корень репозитория (статика — из корня, по списку sw.js; sw.js — из шаблона src/pwa/sw.js)
 node tools/check-bundle.mjs dist/pwa/app.js
 node tests/run.mjs dist/artifact.html && node tests/run.mjs dist/pwa/index.html   # = npm test
 git add -A && git commit && git push  # в main
@@ -49,4 +49,5 @@ node tests/lib/golden.mjs unpack battles meta saves screens                 # р
 node tests/smoke/3d.mjs dist/pwa/index.html --cycles 20 [--phone]     # реальный WebGL (SwiftShader): лагерь → герой → бой → выход; утечки, компиляции
 node tests/smoke/3d.mjs dist/pwa/index.html --tti 5 [--phone] [--net wifi|4g] [--cpu 3]   # время до интерактивного лобби: HTTP + gzip, без кэша, медиана
 node tests/smoke/ab.mjs A.html B.html --out dir [--phone] [--babylon babylon.min.js]       # скриншоты A/B; --babylon — только для старых сборок (до фазы 4)
+node tests/smoke/sw.mjs <A> <B> [<C>]   # обновление PWA (SW) на localhost: A, B, C — каталоги PWA (C — с изменённым ассетом); перенос кэша, офлайн, старая вкладка
 ```

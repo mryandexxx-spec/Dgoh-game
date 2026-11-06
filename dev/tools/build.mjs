@@ -24,7 +24,8 @@ const target = opt('--target', 'all'), OUT = path.resolve(opt('--out', path.join
 const STATIC = opt('--static', [path.join(ROOT, 'static', 'dune-pwa-flat.zip')].find(f => fs.existsSync(f)));
 const REPO = path.resolve(ROOT, '..'), DEPLOY = args.includes('--deploy');
 function repoStatic() {   // статика из корня репозитория — ровно то, что сейчас кэширует SW
-  const sw = fs.readFileSync(path.join(REPO, 'sw.js'), 'utf8'), list = JSON.parse(/const ASSETS = (\[[^\]]*\]);/.exec(sw)[1]);
+  const sw = fs.readFileSync(path.join(REPO, 'sw.js'), 'utf8'), sh = /const SHELL = (\{[^}]*\});/.exec(sw);   // фаза 5, шаг 4: SHELL {путь: хеш}; до v55 — ASSETS [пути]
+  const list = sh ? Object.keys(JSON.parse(sh[1])) : JSON.parse(/const ASSETS = (\[[^\]]*\]);/.exec(sw)[1]);
   const out = { 'sw.js': new Uint8Array(fs.readFileSync(path.join(REPO, 'sw.js'))) };
   for (const f of [...list, 'BABYLON-LICENSE.md']) if (f !== './' && !/^(index\.html|app\.js|app\.css|babylon3d\.js|assets\/.*)$/.test(f) && fs.existsSync(path.join(REPO, f))) out[f] = new Uint8Array(fs.readFileSync(path.join(REPO, f)));
   return out;
@@ -101,7 +102,7 @@ const ASSETS = assets();
 const { code: code0, meta } = await js(), styles = css(), b3 = await babylonChunk();
 // номер версии: dev/version.json (правится вручную при выкатке) + хеш сборки (он же версия кэша SW); выводится в лобби (ui/views/lobby.js APP_VER)
 const VNUM = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8')).v;
-const ver = sha(Buffer.from(`v${VNUM}\n${read('index.html')}\n${code0}\n${styles}\n${b3}\n${ASSETS.map(a => a.pwa).join('\n')}\n${MINIFY}`, 'utf8')).slice(0, 10);
+const ver = sha(Buffer.from(`v${VNUM}\n${read('index.html')}\n${['pwa/sw.js', 'pwa/tail.html', 'pwa/pwa-head.html', 'pwa/doc-head.html'].map(read).join('\n')}\n${code0}\n${styles}\n${b3}\n${ASSETS.map(a => a.pwa).join('\n')}\n${MINIFY}`, 'utf8')).slice(0, 10);
 if (code0.split('__APP_VER__').length !== 2) throw new Error('в коде должен быть ровно один __APP_VER__');
 const APP_VER = `v${VNUM} · ${ver}`, code1 = code0.replace('__APP_VER__', () => APP_VER);
 fs.mkdirSync(OUT, { recursive: true });
@@ -135,11 +136,11 @@ if (target === 'pwa' || target === 'all') {
     jsTag: '<script src="app.js"></script>', tail: read('pwa/tail.html') }).replace(/\n+<\/body><\/html>\n$/, '\n');
   files['index.html'] = enc(html); files['app.js'] = enc(await minify(withAssets(code1, 'pwa'))); files['app.css'] = enc(styles); files[B3_FILE] = enc(b3);
   for (const a of ASSETS) files[a.pwa] = new Uint8Array(a.bytes);
-  let sw = Buffer.from(files['sw.js']).toString('utf8'), k = 0;
-  sw = sw.replace(/const CACHE = 'dune-goh-[0-9a-f]*';/, () => (k++, `const CACHE = 'dune-goh-${ver}';`));
-  sw = sw.replace(/const ASSETS = \[[^\]]*\];/, () => (k++, 'const ASSETS = ' + JSON.stringify(['./', ...Object.keys(files).filter(f => f !== 'sw.js' && !/LICENSE/.test(f)).sort()]).replace(/","/g, '", "') + ';'));
-  if (k !== 2) throw new Error('в sw.js не найдены строки CACHE/ASSETS');
-  files['sw.js'] = enc(sw);
+  // фаза 5, шаг 4: sw.js — из шаблона src/pwa/sw.js; оболочка — {путь: sha256-16} (перенос неизменённых файлов при обновлении), ассеты — пути с хешем
+  const shell = Object.fromEntries(Object.keys(files).filter(f => f !== 'sw.js' && !/LICENSE/.test(f) && !f.startsWith('assets/')).sort().map(f => [f, sha(files[f]).slice(0, 16)]));
+  const tpl = read('pwa/sw.js'), subst = { __VER__: ver, __SHELL__: JSON.stringify(shell).replace(/","/g, '", "'), __ASSETS__: JSON.stringify(ASSETS.map(a => a.pwa).sort()).replace(/","/g, '", "') };
+  for (const k of Object.keys(subst)) if (tpl.split(k).length !== 2) throw new Error(`в шаблоне sw.js должен быть ровно один ${k}`);
+  files['sw.js'] = enc(tpl.replace(/__VER__|__SHELL__|__ASSETS__/g, m => subst[m]));
   const dir = path.join(OUT, 'pwa'); fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
   for (const [n, b] of Object.entries(files)) { fs.mkdirSync(path.dirname(path.join(dir, n)), { recursive: true }); fs.writeFileSync(path.join(dir, n), b); }
   const sorted = Object.fromEntries(Object.keys(files).sort().map(n => [n, [files[n], { level: 9, mtime: new Date(Date.UTC(2026, 0, 1)) }]]));

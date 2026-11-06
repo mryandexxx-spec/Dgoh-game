@@ -9,17 +9,23 @@ import zlib from 'node:zlib';
 const TYPES = { '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.html': 'text/html; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp',
   '.woff2': 'font/woff2', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.txt': 'text/plain; charset=utf-8', '.wasm': 'application/wasm' };
 
-export function serve(dir, { gzip = false } = {}) {
+// Фаза 5, шаг 4 (tests/smoke/sw.mjs): srv.dir(новый) — подменить каталог (выкатка), srv.dir(null) — «нет сети» (соединение рвётся);
+// onReq(путь, код) — журнал запросов на стороне сервера (видит и запросы SW).
+export function serve(dir, { gzip = false, onReq = null } = {}) {
   const cache = new Map();
   const srv = http.createServer((q, r) => {
-    const f = decodeURIComponent(q.url.split('?')[0]).slice(1), fp = path.join(dir, f);
-    if (!fp.startsWith(dir) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory()) { r.writeHead(404); return r.end(); }
+    if (!dir) return q.socket.destroy();
+    let f = decodeURIComponent(q.url.split('?')[0]).slice(1); if (f === '' || f.endsWith('/')) f += 'index.html';   // как GitHub Pages: каталог → index.html (SW v54 кэширует './')
+    const fp = path.join(dir, f);
+    if (!fp.startsWith(dir) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory()) { onReq && onReq(f, 404); r.writeHead(404); return r.end(); }
+    onReq && onReq(f, 200);
     if (!cache.has(f)) { const b = fs.readFileSync(fp); cache.set(f, gzip ? zlib.gzipSync(b, { level: 6 }) : b); }
     r.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream', 'cache-control': 'no-store', ...(gzip ? { 'content-encoding': 'gzip' } : {}) });
     r.end(cache.get(f));
   });
   return new Promise(res => srv.listen(0, '127.0.0.1', () => res({
     url: p => `http://127.0.0.1:${srv.address().port}/${p.split(path.sep).map(encodeURIComponent).join('/')}`,
-    close: () => new Promise(c => srv.close(c)),
+    dir: d => { dir = d && path.resolve(d); cache.clear(); },
+    close: () => new Promise(c => { srv.closeAllConnections && srv.closeAllConnections(); srv.close(c); }),
   })));
 }

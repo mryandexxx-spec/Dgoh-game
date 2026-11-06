@@ -1,5 +1,10 @@
 <style>html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}</style>
 <script>
-if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) addEventListener('load', () => {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+  // фаза 5: докачка ассетов в кэш для офлайна — через 3 с после load, в простое; SW качает по одному и не дублирует запросы loadB3
+  if (!(navigator.connection && navigator.connection.saveData)) setTimeout(() => { const go = () => navigator.serviceWorker.ready.then(r => r.active && r.active.postMessage({ type: 'warm' }));
+    self.requestIdleCallback ? requestIdleCallback(go, { timeout: 5000 }) : go(); }, 3000);
+});
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 </script>
