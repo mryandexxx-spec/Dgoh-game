@@ -9,7 +9,8 @@ import { B3 } from '../base.js';
 
 // ---------- authored models (built in Blender, skinned to the same rig the procedural heroes use) ----------
 const MODEL_CACHE = {};
-function b64bytes(s) { const b = atob(s), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
+function b64bytes(s) { if (typeof s !== 'string') return s.slice();   // фаза 5: из DGM1 уже байты (копия — свой ArrayBuffer с нуля)
+  const b = atob(s), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
 function modelData(id) {
   if (MODEL_CACHE[id] !== undefined) return MODEL_CACHE[id];
   const R = typeof MODEL_DATA !== 'undefined' && MODEL_DATA[id]; if (!R) return (MODEL_CACHE[id] = null);

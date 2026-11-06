@@ -2,9 +2,11 @@
 //   node tools/build.mjs [--target artifact|pwa|all] [--static <прошлый dune-pwa-flat.zip>] [--out dist] [--deploy]
 // Без --static статика берётся из корня репозитория (dev/ лежит в mryandexxx-spec/Dgoh-game): файлы из списка ASSETS
 // текущего sw.js + BABYLON-LICENSE.md. --deploy — записать собранную PWA в корень репозитория (затем git commit/push).
-// artifact → dist/artifact.html: один HTML (CSS, JS и чанк Babylon инлайном) — публикуется в артефакт как есть.
+// artifact → dist/: artifact.html (каркас) + app.js + app.css + babylon3d.js + assets/ — multi-file, публикуется через files
+//            (фаза 5: типы, которые артефакт не отдаёт — .dgm, .hdr, — лежат base64-текстом в «<имя>.txt»).
 // pwa      → dist/pwa/ + dist/dune-pwa-flat.zip: index.html + app.js + app.css + статика прошлого архива
-//            + babylon3d.js (чанк @babylonjs/core) (шрифты, иконки, manifest, sw.js). В sw.js обновляются версия кэша и список файлов.
+//            + babylon3d.js (чанк @babylonjs/core) + assets/ (фаза 5: файлы dev/assets/ с хешем содержимого в имени)
+//            (шрифты, иконки, manifest, sw.js). В sw.js обновляются версия кэша и список файлов.
 // JS: src/main.js → esbuild (bundle, ESM без экспорта, без tree-shaking) → классический <script>: верхний уровень бандла
 //     остаётся глобальной областью, как в монолите (на это опираются тесты и eval-шаги DOM-набора).
 // CSS: src/styles/index.css — список @import; склеивается текстуально, без преобразований.
@@ -24,12 +26,27 @@ const REPO = path.resolve(ROOT, '..'), DEPLOY = args.includes('--deploy');
 function repoStatic() {   // статика из корня репозитория — ровно то, что сейчас кэширует SW
   const sw = fs.readFileSync(path.join(REPO, 'sw.js'), 'utf8'), list = JSON.parse(/const ASSETS = (\[[^\]]*\]);/.exec(sw)[1]);
   const out = { 'sw.js': new Uint8Array(fs.readFileSync(path.join(REPO, 'sw.js'))) };
-  for (const f of [...list, 'BABYLON-LICENSE.md']) if (f !== './' && !/^(index\.html|app\.js|app\.css|babylon3d\.js)$/.test(f) && fs.existsSync(path.join(REPO, f))) out[f] = new Uint8Array(fs.readFileSync(path.join(REPO, f)));
+  for (const f of [...list, 'BABYLON-LICENSE.md']) if (f !== './' && !/^(index\.html|app\.js|app\.css|babylon3d\.js|assets\/.*)$/.test(f) && fs.existsSync(path.join(REPO, f))) out[f] = new Uint8Array(fs.readFileSync(path.join(REPO, f)));
   return out;
 }
 const B3_FILE = 'babylon3d.js';   // грузится лениво (render3d/base.js loadB3), в index.html PWA тега нет
 const DROP = new Set(['babylon.min.js', 'duncan.glb']);   // фаза 4: UMD Babylon заменён чанком; duncan.glb кодом не читается
 const read = f => fs.readFileSync(path.join(SRC, f), 'utf8');
+const MINIFY = !args.includes('--no-minify');   // фаза 5: app.js — minifyWhitespace + minifySyntax, имена верхнего уровня сохраняются
+
+// Ассеты (фаза 5): dev/assets/** → «assets/<имя>.<хеш8>.<расш>»; в артефакте не отдаваемые им типы — base64 в «….txt».
+const ASSET_SRC = path.join(ROOT, 'assets');
+const ART_TYPES = /\.(json|jpe?g|png|webp|avif|wasm|js|txt)$/;
+function assets() {
+  const list = []; const walk = d => { for (const e of fs.readdirSync(d, { withFileTypes: true }).sort((a, b) => a.name < b.name ? -1 : 1)) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else list.push(p); } };
+  if (fs.existsSync(ASSET_SRC)) walk(ASSET_SRC);
+  return list.map(p => { const name = path.relative(ASSET_SRC, p).split(path.sep).join('/'), bytes = fs.readFileSync(p);
+    const file = 'assets/' + name.replace(/(\.[^./]+)$/, `.${sha(bytes).slice(0, 8)}$1`);
+    return { name, bytes, pwa: file, art: ART_TYPES.test(file) ? file : file + '.txt' }; });
+}
+const withAssets = (code, key) => { const parts = code.split('__ASSET_MAP__'); if (parts.length !== 2) throw new Error('в коде должен быть ровно один __ASSET_MAP__');
+  const map = JSON.stringify(Object.fromEntries(ASSETS.map(a => [a.name, a[key]]))); if (/['\\]/.test(map)) throw new Error('кавычка или «\\» в пути ассета');
+  return parts[0] + JSON.stringify(map).slice(1, -1) + parts[1]; };   // плейсхолдер стоит внутри строкового литерала — вставляем экранированный текст
 const sha = b => crypto.createHash('sha256').update(b).digest('hex');
 
 function css() {
@@ -39,6 +56,12 @@ function css() {
     return fs.readFileSync(p, 'utf8').replace(/^@import\s+["']([^"']+)["'];[^\n]*\n/gm, (m, x) => inc(x));
   };
   return inc(fs.existsSync(path.join(SRC, 'styles', 'index.css')) ? 'index.css' : 'app.css');
+}
+
+async function minify(code) {   // без переименований: верхний уровень бандла — глобальная область (тесты, eval-шаги DOM-набора)
+  if (!MINIFY) return code;
+  const r = await esbuild.transform(code, { minifyWhitespace: true, minifySyntax: true, minifyIdentifiers: false, legalComments: 'none', charset: 'utf8', target: 'esnext' });
+  return r.code;
 }
 
 async function js() {
@@ -74,21 +97,31 @@ function page({ head, cssTag, babylon, jsTag, tail }) {
     .replace('<!--@js-->', () => jsTag).replace('<!--@tail-->\n', () => tail);
 }
 
+const ASSETS = assets();
 const { code: code0, meta } = await js(), styles = css(), b3 = await babylonChunk();
 // номер версии: dev/version.json (правится вручную при выкатке) + хеш сборки (он же версия кэша SW); выводится в лобби (ui/views/lobby.js APP_VER)
 const VNUM = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8')).v;
-const ver = sha(Buffer.from(`v${VNUM}\n${read('index.html')}\n${code0}\n${styles}\n${b3}`, 'utf8')).slice(0, 10);
+const ver = sha(Buffer.from(`v${VNUM}\n${read('index.html')}\n${code0}\n${styles}\n${b3}\n${ASSETS.map(a => a.pwa).join('\n')}\n${MINIFY}`, 'utf8')).slice(0, 10);
 if (code0.split('__APP_VER__').length !== 2) throw new Error('в коде должен быть ровно один __APP_VER__');
-const APP_VER = `v${VNUM} · ${ver}`, code = code0.replace('__APP_VER__', () => APP_VER);
+const APP_VER = `v${VNUM} · ${ver}`, code1 = code0.replace('__APP_VER__', () => APP_VER);
+fs.mkdirSync(OUT, { recursive: true });
+fs.writeFileSync(path.join(OUT, 'app.unmin.js'), withAssets(code1, 'pwa'));   // для tools/check-bundle.mjs (порядок модулей по комментариям-маркерам)
 console.log(`версия: ${APP_VER}`);
+console.log(`ассеты: ${ASSETS.length} файлов, ${(ASSETS.reduce((s, a) => s + a.bytes.length, 0) / 1048576).toFixed(2)} МБ`);
 fs.mkdirSync(OUT, { recursive: true });
 console.log(`${B3_FILE}: ${(b3.length / 1048576).toFixed(2)} МБ`);
 const mods = Object.keys(meta.inputs).length;
 
 if (target === 'artifact' || target === 'all') {   // фаза 4, шаг 4: артефакт multi-file — artifact.html + babylon3d.js рядом (публикуется через files); loadB3 грузит его по относительному пути
-  const html = page({ head: read('pwa/artifact-head.html'), cssTag: `<style>\n${styles}</style>`, babylon: '', jsTag: `<script>\n${code}</script>`, tail: '' });
+  // фаза 5: каркас + app.js + app.css рядом (как babylon3d.js); список файлов для publish — dist/artifact-files.json
+  const html = page({ head: read('pwa/artifact-head.html'), cssTag: '<link rel="stylesheet" href="app.css">', babylon: '', jsTag: '<script src="app.js"></script>', tail: '' });
+  const acode = await minify(withAssets(code1, 'art'));
+  fs.rmSync(path.join(OUT, 'assets'), { recursive: true, force: true });
   fs.writeFileSync(path.join(OUT, 'artifact.html'), html); fs.writeFileSync(path.join(OUT, B3_FILE), b3);
-  console.log(`artifact.html: ${(html.length / 1e6).toFixed(2)} МБ, модулей ${mods}`);
+  fs.writeFileSync(path.join(OUT, 'app.js'), acode); fs.writeFileSync(path.join(OUT, 'app.css'), styles);
+  for (const a of ASSETS) { const p = path.join(OUT, a.art); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, a.art === a.pwa ? a.bytes : a.bytes.toString('base64')); }
+  fs.writeFileSync(path.join(OUT, 'artifact-files.json'), JSON.stringify(['app.js', 'app.css', B3_FILE, ...ASSETS.map(a => a.art)], null, 1));
+  console.log(`artifact.html: ${html.length} Б + app.js ${(acode.length / 1e6).toFixed(2)} МБ + app.css + ${B3_FILE} + ${ASSETS.length} ассетов, модулей ${mods}`);
 }
 
 if (target === 'pwa' || target === 'all') {
@@ -100,16 +133,18 @@ if (target === 'pwa' || target === 'all') {
   const enc = s => Buffer.from(s, 'utf8');
   const html = read('pwa/doc-head.html') + page({ head: read('pwa/pwa-head.html'), cssTag: '<link rel="stylesheet" href="app.css">', babylon: '',
     jsTag: '<script src="app.js"></script>', tail: read('pwa/tail.html') }).replace(/\n+<\/body><\/html>\n$/, '\n');
-  files['index.html'] = enc(html); files['app.js'] = enc(code); files['app.css'] = enc(styles); files[B3_FILE] = enc(b3);
+  files['index.html'] = enc(html); files['app.js'] = enc(await minify(withAssets(code1, 'pwa'))); files['app.css'] = enc(styles); files[B3_FILE] = enc(b3);
+  for (const a of ASSETS) files[a.pwa] = new Uint8Array(a.bytes);
   let sw = Buffer.from(files['sw.js']).toString('utf8'), k = 0;
   sw = sw.replace(/const CACHE = 'dune-goh-[0-9a-f]*';/, () => (k++, `const CACHE = 'dune-goh-${ver}';`));
   sw = sw.replace(/const ASSETS = \[[^\]]*\];/, () => (k++, 'const ASSETS = ' + JSON.stringify(['./', ...Object.keys(files).filter(f => f !== 'sw.js' && !/LICENSE/.test(f)).sort()]).replace(/","/g, '", "') + ';'));
   if (k !== 2) throw new Error('в sw.js не найдены строки CACHE/ASSETS');
   files['sw.js'] = enc(sw);
   const dir = path.join(OUT, 'pwa'); fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
-  for (const [n, b] of Object.entries(files)) fs.writeFileSync(path.join(dir, n), b);
+  for (const [n, b] of Object.entries(files)) { fs.mkdirSync(path.dirname(path.join(dir, n)), { recursive: true }); fs.writeFileSync(path.join(dir, n), b); }
   const sorted = Object.fromEntries(Object.keys(files).sort().map(n => [n, [files[n], { level: 9, mtime: new Date(Date.UTC(2026, 0, 1)) }]]));
   fs.writeFileSync(path.join(OUT, 'dune-pwa-flat.zip'), zipSync(sorted));
-  if (DEPLOY) { for (const n of ['index.html', 'app.js', 'app.css', 'sw.js', B3_FILE]) fs.writeFileSync(path.join(REPO, n), files[n]); for (const n of DROP) fs.rmSync(path.join(REPO, n), { force: true }); console.log(`записано в корень репозитория: index.html, app.js, app.css, sw.js, ${B3_FILE}; удалено: ${[...DROP].join(', ')}`); }
+  if (DEPLOY) { fs.rmSync(path.join(REPO, 'assets'), { recursive: true, force: true });
+    for (const n of ['index.html', 'app.js', 'app.css', 'sw.js', B3_FILE, ...ASSETS.map(a => a.pwa)]) { fs.mkdirSync(path.dirname(path.join(REPO, n)), { recursive: true }); fs.writeFileSync(path.join(REPO, n), files[n]); } for (const n of DROP) fs.rmSync(path.join(REPO, n), { force: true }); console.log(`записано в корень репозитория: index.html, app.js, app.css, sw.js, ${B3_FILE}, assets/ (${ASSETS.length}); удалено: ${[...DROP].join(', ')}`); }
   console.log(`dune-pwa-flat.zip: ${Object.keys(files).length} файлов, app.js ${(files['app.js'].length / 1e6).toFixed(2)} МБ, index.html ${files['index.html'].length} Б, кэш SW dune-goh-${ver}`);
 }

@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { serve } from '../lib/serve.mjs';
 
 const require = createRequire(import.meta.url);
 const puppeteer = require('puppeteer-core');
@@ -26,13 +27,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 if (has('--tti')) { await tti(+opt('--tti', 5)); process.exit(0); }
 async function tti(N) {
-  const http = await import('node:http'), zlib = await import('node:zlib');
-  const dir = path.dirname(path.resolve(html)), page0 = path.basename(html), gz = new Map();
-  const T = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
-  const srv = http.createServer((q, r) => { const f = decodeURIComponent(q.url.split('?')[0]).slice(1) || page0, fp = path.join(dir, f);
-    if (!fs.existsSync(fp) || fs.statSync(fp).isDirectory()) { r.writeHead(404); return r.end(); }
-    if (!gz.has(f)) gz.set(f, zlib.gzipSync(fs.readFileSync(fp), { level: 6 }));
-    r.writeHead(200, { 'content-type': T[path.extname(f)] || 'application/octet-stream', 'content-encoding': 'gzip', 'cache-control': 'no-store' }); r.end(gz.get(f)); }).listen(0);
+  const dir = path.dirname(path.resolve(html)), page0 = path.basename(html), srv = await serve(dir, { gzip: true });   // фаза 5: общий сервер tests/lib/serve.mjs
   const NET = { wifi: { d: 30e6, u: 10e6, l: 20 }, '4g': { d: 9e6, u: 4e6, l: 80 }, none: null }[opt('--net', 'wifi')], CPU = +opt('--cpu', 1);
   const browser = await puppeteer.launch({ executablePath: chrome, headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--font-render-hinting=none'] });
   const runs = [];
@@ -50,7 +45,7 @@ async function tti(N) {
       let v; Object.defineProperty(globalThis, '__B3', { configurable: true, get: () => v, set: x => { v = x; M.b3 = M.b3 || now(); } });
       new MutationObserver(() => { if (!M.lobby && document.getElementById('lobbybg')) { M.lobby = now(); setTimeout(() => { M.tti = now(); }, 0); } if (!M.camp3d && document.querySelector('.camp3d')) M.camp3d = now(); }).observe(document, { childList: true, subtree: true });
     }, LATE);
-    await page.goto(`http://127.0.0.1:${srv.address().port}/${page0}`, { waitUntil: 'load', timeout: 180000 });
+    await page.goto(srv.url(page0), { waitUntil: 'load', timeout: 180000 });
     const t0 = Date.now(); let M = {};
     while (Date.now() - t0 < 60000) { M = await page.evaluate(() => ({ ...window.__tti, b3: window.__tti.b3 || (typeof BABYLON !== 'undefined' ? -1 : undefined) })); if (M.tti && M.camp3d) break; await sleep(50); }
     M.load = await page.evaluate(() => performance.getEntriesByType('navigation')[0].loadEventEnd);
@@ -75,7 +70,7 @@ await page.emulateTimezone('Europe/Moscow');
 await page.setRequestInterception(true);
 page.on('request', r => {
   const u = r.url();
-  if (/^(file|data|blob):/.test(u)) return r.continue();
+  if (/^(file|data|blob):|^http:\/\/127\.0\.0\.1:/.test(u)) return r.continue();   // фаза 5: страница и ассеты — с локального сервера
   return r.abort();
 });
 const errors = [];
@@ -121,7 +116,8 @@ const effKeys = (prev = null) => page.evaluate(prev => {
   });
 }, prev);
 const has3d = async () => page.evaluate(async () => typeof loadB3 === 'function' ? await loadB3() : typeof HAS3D !== 'undefined' && HAS3D);   // фаза 4: чанк Babylon ленивый
-await page.goto(pathToFileURL(path.resolve(html)).href, { waitUntil: 'load' });
+const SRV = await serve(path.dirname(path.resolve(html)));   // фаза 5: HTTP вместо file:// — ассеты грузятся через fetch
+await page.goto(SRV.url(path.basename(html)), { waitUntil: 'load' });
 await sleep(3000);
 if (!await has3d()) { console.error('HAS3D = false — WebGL недоступен в Chrome'); await browser.close(); process.exit(2); }
 const LOBBY = `closeInfo(true); closeOverlay(); view = 'lobby'; render();`;

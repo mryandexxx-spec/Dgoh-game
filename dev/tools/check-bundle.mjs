@@ -1,9 +1,12 @@
 // Проверка бандла после разрезания: (1) модули идут в порядке tools/split.config.mjs; (2) все верхнеуровневые имена
 // монолита остались верхнеуровневыми в бандле без переименований (на них опираются тесты и eval-шаги).
-//   node tools/check-bundle.mjs dist/pwa/app.js
+//   node tools/check-bundle.mjs dist/pwa/app.js [dist/app.unmin.js]
 import fs from 'node:fs'; import * as acorn from 'acorn'; import { patNames } from './scope.mjs'; import { SPLIT } from './split.config.mjs';
 const code = fs.readFileSync(process.argv[2] || 'dist/pwa/app.js', 'utf8');
-const order = [...code.matchAll(/^\/\/ src\/(.+\.js)$/gm)].map(m => m[1]).filter(f => f !== 'main.js');
+// фаза 5: app.js минифицирован (комментарии-маркеры удалены) — порядок модулей берётся из несжатой копии dist/app.unmin.js,
+// имена верхнего уровня проверяются в самом файле (минификация не должна их переименовать или убрать).
+const marked = /^\/\/ src\//m.test(code) ? code : fs.readFileSync(process.argv[3] || 'dist/app.unmin.js', 'utf8');
+const order = [...marked.matchAll(/^\/\/ src\/(.+\.js)$/gm)].map(m => m[1]).filter(f => f !== 'main.js');
 const want = SPLIT.map(s => s[1]);
 const badOrder = want.findIndex((f, i) => order[i] !== f);
 const ast = acorn.parse(code, { ecmaVersion: 'latest', sourceType: 'script' });

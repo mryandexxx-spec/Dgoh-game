@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { serve } from '../lib/serve.mjs';
 
 const require = createRequire(import.meta.url);
 const puppeteer = require('puppeteer-core');
@@ -29,7 +30,7 @@ async function shots(html, tag) {
   const page = await browser.newPage();
   await page.setViewport(PHONE ? { width: 844, height: 390, deviceScaleFactor: 1, isMobile: true, hasTouch: true, isLandscape: true } : { width: 960, height: 600, deviceScaleFactor: 1 });
   await page.setRequestInterception(true);
-  page.on('request', r => { const u = r.url(); if (babylon && /babylon\.min\.js$/.test(u)) return r.respond({ status: 200, contentType: 'text/javascript', body: fs.readFileSync(babylon) }); if (/^(file|data|blob):/.test(u)) return r.continue(); return r.abort(); });
+  page.on('request', r => { const u = r.url(); if (babylon && /babylon\.min\.js$/.test(u)) return r.respond({ status: 200, contentType: 'text/javascript', body: fs.readFileSync(babylon) }); if (/^(file|data|blob):|^http:\/\/127\.0\.0\.1:/.test(u)) return r.continue(); return r.abort(); });
   await page.evaluateOnNewDocument(save => {
     let a = 12345; Math.random = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
     try { localStorage.clear(); localStorage.setItem('dune-goh-v1', save); localStorage.setItem('dune-cine-off', 'true'); } catch (e) {}
@@ -39,7 +40,8 @@ async function shots(html, tag) {
     const raf = window.requestAnimationFrame.bind(window);
     window.requestAnimationFrame = cb => raf(t => { if (t !== C.last) { C.last = t; if (C.pending > 0) { C.pending--; C.vt += 1000 / 60; } } cb(C.vt); });
   }, LATE);
-  await page.goto(pathToFileURL(path.resolve(html)).href, { waitUntil: 'load' });
+  const srv = await serve(path.dirname(path.resolve(html)));   // фаза 5: HTTP вместо file:// — ассеты грузятся через fetch
+  await page.goto(srv.url(path.basename(html)), { waitUntil: 'load' });
   await page.evaluate(async () => typeof loadB3 === 'function' && await loadB3()); await sleep(400);   // фаза 4: дождаться чанка и проявления 3D
   const run = c => page.evaluate(x => { (0, eval)(x); }, c);
   const tick = async n => { await page.evaluate(n => { window.__clock.pending += n; }, n); for (let k = 0; k < 600 && await page.evaluate(() => window.__clock.pending > 0); k++) await sleep(25); await sleep(1500); };

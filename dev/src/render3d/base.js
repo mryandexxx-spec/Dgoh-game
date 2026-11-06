@@ -12,17 +12,20 @@ let HAS3D = !!B3 && HAS_GL;
 const B3_SUBS = [];
 function onB3(fn) { if (HAS3D) fn(); else B3_SUBS.push(fn); }
 let B3_P = null;
+const B3_PRE = [];   // фаза 5: предусловия 3D (ассеты, assets/models.js) — грузятся параллельно с чанком, loadB3 ждёт и их
+function b3Pre(fn) { B3_PRE.push(fn); }
 function loadB3() {   // Promise<boolean>: true — 3D готово; повторные вызовы получают тот же Promise
   if (HAS3D) return Promise.resolve(true);
   if (!HAS_GL) return Promise.resolve(false);
   return B3_P || (B3_P = new Promise(res => {
+    const pre = Promise.all(B3_PRE.map(f => Promise.resolve().then(f).catch(e => console.warn('предусловие 3D', e))));
     const done = ok => {
       if (ok && globalThis.__B3) { B3 = globalThis.__B3; HAS3D = true; for (const f of B3_SUBS.splice(0)) try { f(); } catch (e) { console.warn('onB3', e); } }
       else { console.warn('чанк Babylon не загрузился'); B3_P = null; }   // следующий вызов попробует снова
       res(HAS3D);
     };
     const s = document.createElement('script');   // PWA и артефакт: babylon3d.js лежит рядом со страницей (артефакт — multi-file, фаза 4 шаг 4)
-    s.src = B3_URL; s.onload = () => done(true); s.onerror = () => done(false);
+    s.src = B3_URL; s.onload = () => pre.then(() => done(true)); s.onerror = () => pre.then(() => done(false));
     document.head.appendChild(s);
   }));
 }
@@ -46,4 +49,4 @@ const ENV3 = {
 const SLOT3 = [[-3.6, .4], [-6.6, -3.4], [-2.6, -4.4], [-7.4, 3.6], [-2.2, 4.6]];
 
 
-export { B3, HAS3D, HAS_GL, loadB3, onB3, ENV3, SLOT3 };
+export { B3, HAS3D, HAS_GL, loadB3, onB3, b3Pre, ENV3, SLOT3 };
