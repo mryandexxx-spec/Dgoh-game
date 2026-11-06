@@ -1,7 +1,7 @@
 // ui/overlays/battle-settings.js — строки 5118–5163 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { showCeleb } from './celebrate.js';
 import { craftAll } from '../craft.js';
-import { NOTES, noteDrop, renderNotes } from '../notifications.js';
+import { showCeleb } from './celebrate.js';
+import { noteDrop, renderNotes } from '../notifications.js';
 import { showLevelUp } from './levelup.js';
 import { CINE_OFF } from '../../logic/account.js';
 import { bPop, bPopClose, doAct, finish, launch, leaveBattle, renderBattle } from '../battle/battle-ui.js';
@@ -9,11 +9,12 @@ import { closeInfo } from './info.js';
 import { render } from '../router.js';
 import { toast } from '../common.js';
 import { $ } from '../../core/util.js';
-import { BT, S, set_BT, set_view, view } from '../../core/state.js';
-import { fmt, persist } from '../../core/save.js';
+import { BT, NOTES, S, set_BT, set_view, view } from '../../core/state.js';
+import { persist } from '../../core/save.js';
 import { GLYPH } from '../../data/glyphs.js';
 import { SAVE_LOW } from '../../render3d/scenes/base-scene.js';
 import { aiPlan } from '../../logic/battle/ai.js';
+import { fmt } from '../../core/format.js';
 
 // ===================== battle settings (gear) =====================
 function openBattleSettings() {

@@ -1,13 +1,12 @@
 // ui/overlays/detail.js — строки 3365–3549 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import { nextShards, rosterList } from '../views/squad.js';
 import { craftAllPlan } from '../craft.js';
 import { renderNotes } from '../notifications.js';
 import { fxText } from '../fx-text.js';
 import { GEAR_CAP_AT, gearCap, heroCap } from '../../logic/account.js';
 import { itemSourceRows } from './info.js';
-import { nextShards, rosterList } from '../views/squad.js';
 import { $, getRes, prog, starStr } from '../../core/util.js';
 import { S } from '../../core/state.js';
-import { amt, fmt, ic } from '../../core/save.js';
 import { CRAFT, FRAG_NEED, GEAR_UP_SOL, ITEMS, TIER_COL, TIER_NAME, gearPlan, itemIcon } from '../../logic/gear.js';
 import { MEM, RELIC_AT, RELIC_CORES, RELIC_MAX, RELIC_SOL, isLegend, relicCap, relicReady, sideName, unlockNeed } from '../../logic/relics.js';
 import { LVL_COST, MAX_GEAR, MAX_LVL, ROMAN, STAR_COST } from '../../logic/economy.js';
@@ -19,6 +18,7 @@ import { unitPower, unitStats } from '../../logic/battle/stats.js';
 import { SK_KEYS, SK_MLV, SK_UPS, leadBonus, pasMult, skMax, skMult } from '../../logic/battle/skills.js';
 import { CH } from '../../data/chars.js';
 import { DT, FACTIONS, ROLES } from '../../data/fx.js';
+import { amt, fmt, ic } from '../../core/format.js';
 
 const SK_NAME = { basic: 'базовая', special: 'особая', ult: 'мощная', passive: 'пассивная', leader: 'лидерка' };
 function skCost(next) {

@@ -1,9 +1,7 @@
 // data/conquest-data.js — строки 5255–5393 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { cq } from '../logic/conquest.js';
 import '../ui/overlays/celebrate.js'; // порядок исполнения
-import { NOTES } from '../ui/notifications.js';
-import { SPOT_ICONS } from '../ui/views/lobby.js';
-import { S } from '../core/state.js';
+import { NOTES, S } from '../core/state.js';
 import { refillPrice, todayKey } from '../logic/economy.js';
 import { MENTAT } from './chars.js';
 import { FACTIONS } from './fx.js';
@@ -144,7 +142,6 @@ const CQ_ICON = {
   med: '<rect x="4" y="6" width="16" height="13" rx="2" fill="#c84a3a"/><path d="M12 9v7M8.5 12.5h7" stroke="#fff" stroke-width="2.4"/><rect x="9" y="3.5" width="6" height="3" rx="1" fill="none" stroke="#c84a3a" stroke-width="1.6"/>',
   rest: '<path d="M3 20h18M5 20l7-14 7 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 20l2-5 2 5" fill="currentColor"/>',
 };
-SPOT_ICONS.conq = '<path d="M5 21V4M5 4h11l-2 3.5 2 3.5H5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M9 21l3-6 3 6M12 15V12" stroke="currentColor" stroke-width="1.7" fill="none"/>';
 const cqI = (k, cls = '') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${CQ_ICON[k]}</svg>`;
 
 

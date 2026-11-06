@@ -1,8 +1,8 @@
 // core/boot.js — строки 4622–4647 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import '../ui/events.js'; // порядок исполнения
 import { CQ_DISKS } from '../data/conquest-data.js';
 import { noteSnap } from '../ui/notifications.js';
 import { metaFill } from '../ui/wiring.js';
-import '../ui/events.js'; // порядок исполнения
 import { RING_RATE } from '../ui/overlays/squad-select.js';
 import { loginCan, openCalendar } from '../ui/overlays/calendar.js';
 import { dly } from '../ui/views/daily.js';
@@ -10,8 +10,9 @@ import { render } from '../ui/router.js';
 import { renderRes, toast } from '../ui/common.js';
 import { $, LAND_MQ, prog } from './util.js';
 import { BT, S, set_S, tickWater, view } from './state.js';
-import { amt, loadSave, newSave, persist } from './save.js';
+import { loadSave, newSave, persist } from './save.js';
 import { ROSTER_IDS } from '../logic/economy.js';
+import { amt } from './format.js';
 
 function splashOff() {
   const sp = document.getElementById('splash'); if (!sp || sp.classList.contains('off') || sp._t) return;

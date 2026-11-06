@@ -1,13 +1,13 @@
 // core/util.js — строки 3210–3233 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import { S, tickWater } from './state.js';
 import { SPOT_ICONS } from '../ui/views/lobby.js';
 import { quest } from '../ui/views/daily.js';
-import { S, tickWater } from './state.js';
-import { fc } from './save.js';
-import { CMAX, WMAX, enemyProg } from '../logic/economy.js';
+import { CMAX, ROSTER_IDS, WMAX, enemyProg } from '../logic/economy.js';
 import { CAMP_DEF, NODES } from '../data/campaigns.js';
 import { figureSVG } from '../render2d/figures.js';
 import { unitPower } from '../logic/battle/stats.js';
 import { CH } from '../data/chars.js';
+import { fc } from './format.js';
 
 const $ = s => document.querySelector(s);
 const LAND_MQ = typeof matchMedia !== 'undefined' ? matchMedia('(orientation: landscape) and (max-height: 520px)') : null;
@@ -32,6 +32,10 @@ const nodePower = n => n.enemy.reduce((a, id) => a + unitPower(CH[id], enemyProg
 const starStr = (n, max = 7) => '★'.repeat(n) + `<i>${'★'.repeat(max - n)}</i>`;
 const glyph = (def, extra = '') => def.boss ? `<span class="gl ${extra}" style="--fc:var(--worm);color:var(--worm)" aria-hidden="true"><svg viewBox="0 0 24 24">${SPOT_ICONS.worm}</svg></span>` : `<span class="gl face ${extra}" style="--fc:${fc(def)}" aria-hidden="true">${figureSVG(def)}</span>`;
 
+function sRng(seed) { let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const unlockedIds = () => ROSTER_IDS.filter(id => prog(id).stars > 0);
+
 // perf step 13: repeats of the same error are counted in memory; localStorage is written at most once per 5 s per error, console.warn only for the first 3
 
-export { $, LAND_MQ, isLandPhone, EN_MAX, enGet, enSpend, enRefund, campSquad, sideOk, NODE_REQ, REQ_FN, reqFacOk, reqMissing, reqText, getRes, prog, squadPower, nodePower, starStr, glyph };
+
+export { $, LAND_MQ, isLandPhone, EN_MAX, enGet, enSpend, enRefund, campSquad, sideOk, NODE_REQ, REQ_FN, reqFacOk, reqMissing, reqText, getRes, prog, squadPower, nodePower, starStr, glyph, sRng, unlockedIds };

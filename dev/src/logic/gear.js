@@ -1,11 +1,11 @@
 // logic/gear.js — строки 3087–3150 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { S } from '../core/state.js';
-import { amt } from '../core/save.js';
 import './relics.js'; // порядок исполнения
+import { S } from '../core/state.js';
 import { ROMAN } from './economy.js';
 import { CAMP_KEYS, NODES, campNodes } from '../data/campaigns.js';
-import { sRng } from '../render2d/scenes.js';
 import { ghash } from '../data/looks.js';
+import { sRng } from '../core/util.js';
+import { amt } from '../core/format.js';
 
 // ===== gear =====
 const ITEM_KINDS = [['mask', 'Фильтр-маска'], ['boots', 'Сапоги-песчаники'], ['belt', 'Пояс-разгрузка'], ['knife', 'Боевой нож'], ['cloak', 'Пустынный плащ'], ['ring', 'Перстень-печать'],

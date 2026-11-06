@@ -1,22 +1,22 @@
 // ui/overlays/sim.js — строки 3668–3760 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import { infoKey, openInfo } from './info.js';
 import { MOUSE_SVG } from '../mouse.js';
-import { accXP } from '../../logic/account.js';
 import { statInc } from '../../logic/stats.js';
 import { grantShards } from './squad-select.js';
 import { quest } from '../views/daily.js';
-import { rewardWin } from '../rewards.js';
-import { infoKey, openInfo } from './info.js';
+import { accXP, rewardWin } from '../rewards.js';
 import { detailCid, itemCtx, openDetail, openItem, slotState } from './detail.js';
 import { render } from '../router.js';
 import { toast } from '../common.js';
 import { $, enGet, enSpend, starStr } from '../../core/util.js';
 import { S, tickWater } from '../../core/state.js';
-import { amt, persist } from '../../core/save.js';
-import { ITEMS, fragLines, grantFrags, rollItems } from '../../logic/gear.js';
-import { CANDLE_REFILL, CRY_WIN, REFILL_AMT, REFILL_MAX, WMAX, refillCost, refillN, refillPrice, thumb, todayKey } from '../../logic/economy.js';
+import { persist } from '../../core/save.js';
+import { ITEMS, fragLines, grantFrags } from '../../logic/gear.js';
+import { CANDLE_REFILL, CRY_WIN, REFILL_AMT, REFILL_MAX, WMAX, campReward, refillCost, refillN, refillPrice, thumb, todayKey } from '../../logic/economy.js';
 import { NODES, NODE_SCENES, nodeCost, nodeEn, nodeTitle } from '../../data/campaigns.js';
 import { sceneThumb } from '../../render2d/scenes.js';
 import { CH } from '../../data/chars.js';
+import { amt } from '../../core/format.js';
 
 function refreshAll() {
   render();
@@ -50,16 +50,6 @@ function doXSim(spec) {
     btns: `<button class="btn go ${more ? '' : 'lack'}" data-isim="${spec}" ${more ? '' : 'disabled'}>Ещё ×${kk}<small>${amt(en, cost)}</small></button>` });
 }
 
-function rollShards(n, ch) {   // never more than 2 shards per attempt
-  const r = Math.random(), a = r < (ch ? .4 : .5) ? 0 : r < (ch ? .78 : .8) ? 1 : 2, b = a < 2 && Math.random() < .3 ? 1 : 0;
-  return [[n.drops[0], a], [n.drops[1], b]].filter(x => x[1] > 0);
-}
-function campReward(i, st) {
-  const n = NODES[i], ch = n.camp === 'C', L = n.lvl;
-  return { sol: ch ? 300 + L * 60 : 400 + L * 110, pl: 1 + (st === 3 ? 1 : 0) + (L >= 14 ? 1 : 0), folio: ch ? 2 + (L >= 20 ? 1 : 0) : 1 + (L >= 14 ? 1 : 0),
-    seal: Math.random() < (ch ? .08 : L >= 8 ? .04 : 0) ? 1 : 0, rid: ch ? 8 + Math.floor(Math.random() * 8) : 0,
-    core: L >= 30 ? (n.m === 9 ? 1 : Math.random() < .25 ? 1 : 0) : 0, drops: rollShards(n, ch), items: rollItems(i) };
-}
 let simNode = null;
 function openSim(i) {
   tickWater();
@@ -112,4 +102,4 @@ function simCore(i, k) {
   return { lines, sh, fr };
 }
 
-export { refreshAll, crefillN, crefillCost, doRefill, doXSim, rollShards, campReward, simNode, openSim, updSim, runSim, simCore };
+export { refreshAll, crefillN, crefillCost, doRefill, doXSim, simNode, openSim, updSim, runSim, simCore };

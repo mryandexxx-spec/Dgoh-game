@@ -15,4 +15,7 @@ function set_BT(v) { return BT = v; }
 function set_view(v) { return view = v; }
 function set_filter(v) { return filter = v; }
 function set_S(v) { return S = v; }
-export { S, view, filter, BT, tickWater, set_BT, set_view, set_filter, set_S };
+const NOTES = [];
+
+
+export { S, view, filter, BT, tickWater, set_BT, set_view, set_filter, set_S, NOTES };

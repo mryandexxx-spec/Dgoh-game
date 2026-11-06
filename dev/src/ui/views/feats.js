@@ -1,12 +1,14 @@
 // ui/views/feats.js — строки 4856–4905 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { EMBLEMS, FRAMES, TITLES, avatarHtml } from '../../data/cosmetics.js';
+import { EMBLEMS, FRAMES, TITLES } from '../../data/cosmetics.js';
 import { METRIC } from '../../logic/stats.js';
 import { giveRewards, rewardWin, rewardsHtml } from '../rewards.js';
 import { render } from '../router.js';
 import { $ } from '../../core/util.js';
 import { S } from '../../core/state.js';
-import { fmt, persist } from '../../core/save.js';
+import { persist } from '../../core/save.js';
 import { ROMAN } from '../../logic/economy.js';
+import { avatarHtml } from '../overlays/profile.js';
+import { fmt } from '../../core/format.js';
 
 // ===================== feats =====================
 const FEATS = [

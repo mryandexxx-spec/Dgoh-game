@@ -7,13 +7,13 @@ import { openDetail } from './detail.js';
 import { render } from '../router.js';
 import { $, prog } from '../../core/util.js';
 import { BT, set_view, view } from '../../core/state.js';
-import { fmt } from '../../core/save.js';
 import { ringCol, sideName } from '../../logic/relics.js';
 import { BIOS } from '../../data/story.js';
 import { figureSVG, portrait } from '../../render2d/figures.js';
 import { unitPower } from '../../logic/battle/stats.js';
 import { CH } from '../../data/chars.js';
 import { FACTIONS, ROLES } from '../../data/fx.js';
+import { fmt } from '../../core/format.js';
 
 // ===================== celebrations: star-up & hero unlock =====================
 const CELEB = [];

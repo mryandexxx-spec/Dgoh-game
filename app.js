@@ -1511,15 +1511,6 @@ var SCENES = {
   dawn: { sky: ["#2a2440"], parts: "sand" },
   harvester: { sky: ["#9a6a40"], parts: "sand" }
 };
-function sRng(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = a + 1831565813 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
 function skyFill(c, w, h, stops) {
   const g = c.createLinearGradient(0, 0, 0, h);
   stops.forEach((s, i) => g.addColorStop(i / (stops.length - 1), s));
@@ -6876,6 +6867,24 @@ var GEAR_COST = (g) => ({ sol: g * 1e3, pl: g * 3 });
 var MAX_LVL = 85, MAX_GEAR = 13, WATER_BASE = 150, WATER_SEC = 20, BATTLE_WATER = 6, CANDLE_BASE = 120, CANDLE_SEC = 30, CANDLE_COST = 8, CANDLE_REFILL = 100;
 var enCapStep = () => Math.floor((S && S.acc ? S.acc.lvl : 1) / 10), WMAX = () => WATER_BASE + 15 * enCapStep(), CMAX = () => CANDLE_BASE + 10 * enCapStep();
 var ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII"];
+var RW_NAME = { wring: "водяных колец", jt: "трофеев Джихада", core: "Другой памяти", rid: "ридулианских кристаллов", candle: "Свечей хроник", sol: "соляриев", cry: "кристаллов", folio: "фолиантов", seal: "Печать Ландсраада", wol: "Вода жизни", pl: "пластали", teeth: "зубов червя", water: "Воды" };
+function rollShards(n, ch) {
+  const r = Math.random(), a = r < (ch ? 0.4 : 0.5) ? 0 : r < (ch ? 0.78 : 0.8) ? 1 : 2, b = a < 2 && Math.random() < 0.3 ? 1 : 0;
+  return [[n.drops[0], a], [n.drops[1], b]].filter((x) => x[1] > 0);
+}
+function campReward(i, st) {
+  const n = NODES[i], ch = n.camp === "C", L = n.lvl;
+  return {
+    sol: ch ? 300 + L * 60 : 400 + L * 110,
+    pl: 1 + (st === 3 ? 1 : 0) + (L >= 14 ? 1 : 0),
+    folio: ch ? 2 + (L >= 20 ? 1 : 0) : 1 + (L >= 14 ? 1 : 0),
+    seal: Math.random() < (ch ? 0.08 : L >= 8 ? 0.04 : 0) ? 1 : 0,
+    rid: ch ? 8 + Math.floor(Math.random() * 8) : 0,
+    core: L >= 30 ? n.m === 9 ? 1 : Math.random() < 0.25 ? 1 : 0 : 0,
+    drops: rollShards(n, ch),
+    items: rollItems(i)
+  };
+}
 
 // src/logic/relics.js
 var RELIC_MAX = 7, RELIC_AT = [0, 52, 56, 60, 65, 70, 75, 80], RELIC_CORES = [0, 10, 18, 30, 45, 65, 90, 125], RELIC_SOL = (r) => 4e4 * r, RELIC_COL = "#ff6a3a";
@@ -6978,8 +6987,7 @@ function itemIcon(it, size = 40, extra = "") {
   return `<span class="itm ${extra}" data-info="frag:${it.id}" style="--tc:${TIER_COL[it.t]};width:${size}px;height:${size}px"><svg viewBox="0 0 24 24" aria-hidden="true">${IG[it.kind]("#efe6d6", "#1a1420")}</svg></span>`;
 }
 
-// src/core/save.js
-var SAVE_KEY = "dune-goh-v1";
+// src/core/format.js
 var fmt = (n) => n.toLocaleString("ru-RU");
 var ICONS_RES = {
   wring: '<circle cx="8" cy="9.2" r="5" fill="none" stroke="#9fd8e8" stroke-width="2.2"/><circle cx="8" cy="9.2" r="5" fill="none" stroke="#3a7a92" stroke-width=".7"/><path d="M8 .8c1.2 1.6 1.9 2.6 1.9 3.4a1.9 1.9 0 01-3.8 0c0-.8.7-1.8 1.9-3.4z" fill="#5fc0e0"/>',
@@ -7001,6 +7009,9 @@ var ICONS_RES = {
 var ic = (k) => `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true">${ICONS_RES[k]}</svg>`;
 var amt = (k, n, key) => `<span class="amt" data-info="${key || k}">${ic(k)}${typeof n === "number" ? fmt(n) : n}</span>`;
 var fc = (def) => `var(--${def.f[0]})`;
+
+// src/core/save.js
+var SAVE_KEY = "dune-goh-v1";
 function newSave() {
   const roster = {};
   for (const c of CHARS) roster[c.id] = { shards: 0, stars: 0, lvl: 1, gear: 1 };
@@ -7114,6 +7125,7 @@ function set_filter(v) {
 function set_S(v) {
   return S = v;
 }
+var NOTES = [];
 
 // src/core/util.js
 var $ = (s) => document.querySelector(s);
@@ -7179,6 +7191,16 @@ var squadPower = () => S.squad.reduce((a, id) => a + unitPower(CH[id], prog(id))
 var nodePower = (n) => n.enemy.reduce((a, id) => a + unitPower(CH[id], enemyProg(id, n.lvl, n.m === 9)), 0);
 var starStr = (n, max = 7) => "★".repeat(n) + `<i>${"★".repeat(max - n)}</i>`;
 var glyph = (def, extra = "") => def.boss ? `<span class="gl ${extra}" style="--fc:var(--worm);color:var(--worm)" aria-hidden="true"><svg viewBox="0 0 24 24">${SPOT_ICONS.worm}</svg></span>` : `<span class="gl face ${extra}" style="--fc:${fc(def)}" aria-hidden="true">${figureSVG(def)}</span>`;
+function sRng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = a + 1831565813 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+var unlockedIds = () => ROSTER_IDS.filter((id) => prog(id).stars > 0);
 
 // src/core/errlog.js
 var ERR_T = /* @__PURE__ */ new Map();
@@ -7832,23 +7854,6 @@ function doXSim(spec) {
     btns: `<button class="btn go ${more ? "" : "lack"}" data-isim="${spec}" ${more ? "" : "disabled"}>Ещё ×${kk}<small>${amt(en, cost)}</small></button>`
   });
 }
-function rollShards(n, ch) {
-  const r = Math.random(), a = r < (ch ? 0.4 : 0.5) ? 0 : r < (ch ? 0.78 : 0.8) ? 1 : 2, b = a < 2 && Math.random() < 0.3 ? 1 : 0;
-  return [[n.drops[0], a], [n.drops[1], b]].filter((x) => x[1] > 0);
-}
-function campReward(i, st) {
-  const n = NODES[i], ch = n.camp === "C", L = n.lvl;
-  return {
-    sol: ch ? 300 + L * 60 : 400 + L * 110,
-    pl: 1 + (st === 3 ? 1 : 0) + (L >= 14 ? 1 : 0),
-    folio: ch ? 2 + (L >= 20 ? 1 : 0) : 1 + (L >= 14 ? 1 : 0),
-    seal: Math.random() < (ch ? 0.08 : L >= 8 ? 0.04 : 0) ? 1 : 0,
-    rid: ch ? 8 + Math.floor(Math.random() * 8) : 0,
-    core: L >= 30 ? n.m === 9 ? 1 : Math.random() < 0.25 ? 1 : 0 : 0,
-    drops: rollShards(n, ch),
-    items: rollItems(i)
-  };
-}
 var simNode = null;
 function openSim(i) {
   tickWater();
@@ -7941,7 +7946,6 @@ function addRes(k, q) {
   else if (k === "water") S.water += q;
   else S[k] = (S[k] || 0) + q;
 }
-var RW_NAME = { wring: "водяных колец", jt: "трофеев Джихада", core: "Другой памяти", rid: "ридулианских кристаллов", candle: "Свечей хроник", sol: "соляриев", cry: "кристаллов", folio: "фолиантов", seal: "Печать Ландсраада", wol: "Вода жизни", pl: "пластали", teeth: "зубов червя", water: "Воды" };
 function giveRewards(list) {
   const out = [];
   for (const [k, q, id] of list) {
@@ -7954,6 +7958,26 @@ function giveRewards(list) {
   return out;
 }
 var rewardsHtml = (list) => rwGrid(list, { sm: 1 });
+function accXP(n) {
+  if (!n || S.acc.lvl >= ACC_MAX) return [];
+  S.acc.xp += Math.round(n);
+  const out = [];
+  while (S.acc.lvl < ACC_MAX && S.acc.xp >= accNeed(S.acc.lvl)) {
+    S.acc.xp -= accNeed(S.acc.lvl);
+    S.acc.lvl++;
+    const L = S.acc.lvl, rw = accReward(L), got = giveRewards(rw), un = [];
+    if (L <= MAX_LVL) un.push(["hero", `Потолок уровня героев: ${L - 1} → ${L}`]);
+    for (const [t, l] of Object.entries(GEAR_CAP_AT)) if (l === L) un.push(["gear", `Открыто снаряжение ${ROMAN[t]}`]);
+    RELIC_AT.forEach((l, r) => {
+      if (r && l === L) un.push(["gear", `Открыта Другая память ${r}`]);
+    });
+    if (L % 10 === 0) un.push(["energy", `Запас Воды ${WATER_BASE + 15 * (L / 10 - 1)} → ${WMAX()}, Свечей ${CANDLE_BASE + 10 * (L / 10 - 1)} → ${CMAX()}`]);
+    ACC_UPS.push({ L, rw, un });
+    out.push(`<b class="acclv">Уровень аккаунта ${L}!</b>`);
+  }
+  if (S.acc.lvl >= ACC_MAX) S.acc.xp = 0;
+  return out;
+}
 
 // src/ui/views/daily.js
 var DAILY = [
@@ -8243,7 +8267,6 @@ function grantShards(id, k) {
   }
   return false;
 }
-var unlockedIds = () => ROSTER_IDS.filter((id) => prog(id).stars > 0);
 function pickerHtml(kind, ids, pick, disabled = /* @__PURE__ */ new Set()) {
   return `<div class="pick">${ids.map((id) => {
     const d = CH[id], i = pick.indexOf(id);
@@ -9868,8 +9891,7 @@ function freeStages() {
 }
 var WORM_BADGE = `<div class="wormbadge" aria-hidden="true"><svg viewBox="0 0 120 120"><defs><radialGradient id="wbg" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#ffcf7a"/><stop offset=".6" stop-color="#c0661e"/><stop offset="1" stop-color="#3a1a08"/></radialGradient></defs><circle cx="60" cy="60" r="56" fill="url(#wbg)" stroke="#ffe0a0" stroke-width="3"/>${typeof WORM_IMG !== "undefined" ? `<g class="wbw"><image href="${WORM_IMG.badge}" x="8" y="6" width="104" height="104"/></g>` : ""}<g class="wbs">${Array.from({ length: 10 }, (_, i) => `<circle cx="${14 + i * 10}" cy="${100 + i % 3 * 4}" r="${1.5 + i % 3}" fill="#ffd9a0"/>`).join("")}</g></svg></div>`;
 
-// src/ui/views/trials.js
-var DAYS_RU = ["Вс.", "Пн.", "Вт.", "Ср.", "Чт.", "Пт.", "Сб."];
+// src/logic/trials.js
 var TRIAL_LVL = [3, 8, 13, 18, 24, 30], TRIAL_ST = [2, 3, 4, 5, 6, 7], TRIAL_RUNS = 3;
 var weekNo = () => Math.floor((Date.now() / 864e5 + 4) / 7);
 var gearTiers = (t) => t < 2 ? [1, 2] : t < 4 ? [2, 3] : t < 5 ? [3, 4] : [4, 5];
@@ -10003,6 +10025,9 @@ function trialRoll(T, t) {
   }
   return out;
 }
+
+// src/ui/views/trials.js
+var DAYS_RU = ["Вс.", "Пн.", "Вт.", "Ср.", "Чт.", "Пт.", "Сб."];
 function trialGive(list) {
   const fr = list.filter((x) => x[0] === "frag").map((x) => [x[2], x[1]]), rest = list.filter((x) => x[0] !== "frag");
   grantFrags(fr);
@@ -10185,17 +10210,6 @@ var TITLES = {
 };
 var FREE = { title: ["novice"], frame: ["basic", "bronze"], ava: [] };
 var unlocked = (kind, id) => FREE[kind].includes(id) || !!S.unlocks[kind][id] || kind === "ava" && id.startsWith("hero:") && CH[id.slice(5)] && prog(id.slice(5)).stars > 0;
-function avatarHtml(ava, frame, size = 56) {
-  let inner;
-  if (ava && ava.startsWith("emb:") && EMBLEMS[ava.slice(4)]) {
-    const E = EMBLEMS[ava.slice(4)];
-    inner = `<svg viewBox="0 0 40 40" aria-hidden="true"><defs><radialGradient id="eg-${ava.slice(4)}" cx=".5" cy=".35" r=".75"><stop offset="0" stop-color="${E.bg[0]}"/><stop offset="1" stop-color="${E.bg[1]}"/></radialGradient></defs><rect width="40" height="40" fill="url(#eg-${ava.slice(4)})"/>${E.svg}</svg>`;
-  } else {
-    const d = CH[(ava || "hero:leto").slice(5)] || CH.leto;
-    inner = `<span class="pt" style="--fc:var(--${d.f[0]});width:100%;height:100%">${figureSVG(d)}</span>`;
-  }
-  return `<span class="pfr fr-${FRAMES[frame] ? frame : "basic"}" style="--sz:${size}px"><span class="pin">${inner}</span></span>`;
-}
 
 // src/ui/views/feats.js
 var FEATS = [
@@ -10306,6 +10320,25 @@ function openProfile() {
 }
 var esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 var profileChip = () => `<button class="pchip" data-profile="1" aria-label="Профиль игрока, уровень ${S.acc.lvl}"><span class="pchav">${avatarHtml(S.profile.ava, S.profile.frame, 40)}${accBadge()}</span><span><b>${esc(S.profile.nick)}</b><small>${TITLES[S.profile.title] || ""}</small></span></button>`;
+function avatarHtml(ava, frame, size = 56) {
+  let inner;
+  if (ava && ava.startsWith("emb:") && EMBLEMS[ava.slice(4)]) {
+    const E = EMBLEMS[ava.slice(4)];
+    inner = `<svg viewBox="0 0 40 40" aria-hidden="true"><defs><radialGradient id="eg-${ava.slice(4)}" cx=".5" cy=".35" r=".75"><stop offset="0" stop-color="${E.bg[0]}"/><stop offset="1" stop-color="${E.bg[1]}"/></radialGradient></defs><rect width="40" height="40" fill="url(#eg-${ava.slice(4)})"/>${E.svg}</svg>`;
+  } else {
+    const d = CH[(ava || "hero:leto").slice(5)] || CH.leto;
+    inner = `<span class="pt" style="--fc:var(--${d.f[0]});width:100%;height:100%">${figureSVG(d)}</span>`;
+  }
+  return `<span class="pfr fr-${FRAMES[frame] ? frame : "basic"}" style="--sz:${size}px"><span class="pin">${inner}</span></span>`;
+}
+var accBadge = () => `<span class="accb" title="Уровень аккаунта ${S.acc.lvl}" style="--p:${S.acc.lvl >= ACC_MAX ? 100 : Math.round(S.acc.xp / accNeed(S.acc.lvl) * 100)}%"><b>${S.acc.lvl}</b></span>`;
+function accPanel() {
+  const L = S.acc.lvl, max = L >= ACC_MAX, need = accNeed(L), pct = max ? 100 : S.acc.xp / need * 100;
+  const nextG = Object.entries(GEAR_CAP_AT).find(([t, l]) => l > L);
+  return `<div class="accp"><div class="accrow"><span class="acclvl">${L}</span><div style="flex:1;min-width:0"><b>Уровень аккаунта</b><div class="fbar"><i style="width:${pct}%"></i><b class="mono">${max ? "максимум" : `${fmt(S.acc.xp)} / ${fmt(need)} опыта`}</b></div></div></div>
+    <div class="acckv"><span>Потолок уровня героев</span><b>${heroCap()}</b><span>Потолок снаряжения</span><b>${ROMAN[gearCap()]}</b><span>Запас энергии</span><b>${ic("water")} ${WMAX()} · ${ic("candle")} ${CMAX()} <small style="color:var(--dust)">+15/+10 каждые 10 ур.</small></b>${nextG ? `<span>Снаряжение ${ROMAN[nextG[0]]}</span><b>с ур. ${nextG[1]}</b>` : ""}<span>Потолок Другой памяти</span><b>${MEM(relicCap())}${relicCap() < RELIC_MAX ? ` · ${MEM(relicCap() + 1)} с ур. ${RELIC_AT[relicCap() + 1]}` : ""}</b><span>Награда за ур. ${Math.min(ACC_MAX, L + 1)}</span><b>${rewardsHtml(accReward(Math.min(ACC_MAX, L + 1)))}</b></div>
+    <p class="sub" style="margin:4px 0 0;font-size:11px">Опыт: 3 за каждую единицу Воды или Свечей в победе и симуляции, 15 за победу в испытании, 40 в путешествии легенды, 30 за атаку в рейде, 10 за дневное задание.</p></div>`;
+}
 
 // src/ui/wiring.js
 function metaFill(s) {
@@ -10439,6 +10472,7 @@ function metaClick(d) {
 }
 SPOT_ICONS.trial = '<path d="M12 2l3 6 6 1-4.5 4.3 1 6.2L12 16.6 6.5 19.5l1-6.2L3 9l6-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 7v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
 SPOT_ICONS.feat = '<path d="M7 3h10v4a5 5 0 01-10 0z" fill="currentColor"/><path d="M7 5H4a3 3 0 003 4M17 5h3a3 3 0 01-3 4M12 12v4M8 20h8M10 16h4v4h-4z" fill="none" stroke="currentColor" stroke-width="1.8"/>';
+SPOT_ICONS.conq = '<path d="M5 21V4M5 4h11l-2 3.5 2 3.5H5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M9 21l3-6 3 6M12 15V12" stroke="currentColor" stroke-width="1.7" fill="none"/>';
 
 // src/logic/account.js
 var ACC_MAX = 85;
@@ -10465,38 +10499,10 @@ var CINE_OFF = () => {
     return false;
   }
 };
-function accXP(n) {
-  if (!n || S.acc.lvl >= ACC_MAX) return [];
-  S.acc.xp += Math.round(n);
-  const out = [];
-  while (S.acc.lvl < ACC_MAX && S.acc.xp >= accNeed(S.acc.lvl)) {
-    S.acc.xp -= accNeed(S.acc.lvl);
-    S.acc.lvl++;
-    const L = S.acc.lvl, rw = accReward(L), got = giveRewards(rw), un = [];
-    if (L <= MAX_LVL) un.push(["hero", `Потолок уровня героев: ${L - 1} → ${L}`]);
-    for (const [t, l] of Object.entries(GEAR_CAP_AT)) if (l === L) un.push(["gear", `Открыто снаряжение ${ROMAN[t]}`]);
-    RELIC_AT.forEach((l, r) => {
-      if (r && l === L) un.push(["gear", `Открыта Другая память ${r}`]);
-    });
-    if (L % 10 === 0) un.push(["energy", `Запас Воды ${WATER_BASE + 15 * (L / 10 - 1)} → ${WMAX()}, Свечей ${CANDLE_BASE + 10 * (L / 10 - 1)} → ${CMAX()}`]);
-    ACC_UPS.push({ L, rw, un });
-    out.push(`<b class="acclv">Уровень аккаунта ${L}!</b>`);
-  }
-  if (S.acc.lvl >= ACC_MAX) S.acc.xp = 0;
-  return out;
-}
 function accFill(s) {
   if (s.acc) return;
   const maxLvl = Math.max(1, ...Object.values(s.roster).map((r) => r.lvl || 1)), maxGear = Math.max(1, ...Object.values(s.roster).map((r) => r.gear || 1));
   s.acc = { lvl: Math.min(ACC_MAX, Math.max(maxLvl, GEAR_CAP_AT[maxGear] || 1)), xp: 0 };
-}
-var accBadge = () => `<span class="accb" title="Уровень аккаунта ${S.acc.lvl}" style="--p:${S.acc.lvl >= ACC_MAX ? 100 : Math.round(S.acc.xp / accNeed(S.acc.lvl) * 100)}%"><b>${S.acc.lvl}</b></span>`;
-function accPanel() {
-  const L = S.acc.lvl, max = L >= ACC_MAX, need = accNeed(L), pct = max ? 100 : S.acc.xp / need * 100;
-  const nextG = Object.entries(GEAR_CAP_AT).find(([t, l]) => l > L);
-  return `<div class="accp"><div class="accrow"><span class="acclvl">${L}</span><div style="flex:1;min-width:0"><b>Уровень аккаунта</b><div class="fbar"><i style="width:${pct}%"></i><b class="mono">${max ? "максимум" : `${fmt(S.acc.xp)} / ${fmt(need)} опыта`}</b></div></div></div>
-    <div class="acckv"><span>Потолок уровня героев</span><b>${heroCap()}</b><span>Потолок снаряжения</span><b>${ROMAN[gearCap()]}</b><span>Запас энергии</span><b>${ic("water")} ${WMAX()} · ${ic("candle")} ${CMAX()} <small style="color:var(--dust)">+15/+10 каждые 10 ур.</small></b>${nextG ? `<span>Снаряжение ${ROMAN[nextG[0]]}</span><b>с ур. ${nextG[1]}</b>` : ""}<span>Потолок Другой памяти</span><b>${MEM(relicCap())}${relicCap() < RELIC_MAX ? ` · ${MEM(relicCap() + 1)} с ур. ${RELIC_AT[relicCap() + 1]}` : ""}</b><span>Награда за ур. ${Math.min(ACC_MAX, L + 1)}</span><b>${rewardsHtml(accReward(Math.min(ACC_MAX, L + 1)))}</b></div>
-    <p class="sub" style="margin:4px 0 0;font-size:11px">Опыт: 3 за каждую единицу Воды или Свечей в победе и симуляции, 15 за победу в испытании, 40 в путешествии легенды, 30 за атаку в рейде, 10 за дневное задание.</p></div>`;
 }
 
 // src/ui/fx-text.js
@@ -10526,7 +10532,6 @@ function showLevelUp() {
 }
 
 // src/ui/notifications.js
-var NOTES = [];
 function noteSnap(init) {
   S.notes ??= { d: "", q: {}, f: {} };
   if (S.notes.d !== todayKey()) {
@@ -11216,7 +11221,6 @@ var CQ_ICON = {
   med: '<rect x="4" y="6" width="16" height="13" rx="2" fill="#c84a3a"/><path d="M12 9v7M8.5 12.5h7" stroke="#fff" stroke-width="2.4"/><rect x="9" y="3.5" width="6" height="3" rx="1" fill="none" stroke="#c84a3a" stroke-width="1.6"/>',
   rest: '<path d="M3 20h18M5 20l7-14 7 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 20l2-5 2 5" fill="currentColor"/>'
 };
-SPOT_ICONS.conq = '<path d="M5 21V4M5 4h11l-2 3.5 2 3.5H5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M9 21l3-6 3 6M12 15V12" stroke="currentColor" stroke-width="1.7" fill="none"/>';
 var cqI = (k, cls = "") => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${CQ_ICON[k]}</svg>`;
 
 // src/logic/conquest.js
@@ -11442,15 +11446,6 @@ var cqStCan = (j) => {
   return !!T && cqScore() >= T.at;
 };
 var cqStReady = () => cqTrack().filter((x) => x.kind === "st" && cqStCan(x.i)).length;
-function cqPop(el, html) {
-  const r = el.getBoundingClientRect(), d = document.createElement("div");
-  d.className = "cqpop";
-  d.innerHTML = html;
-  d.style.left = r.left + r.width / 2 + "px";
-  d.style.top = r.top + "px";
-  document.body.appendChild(d);
-  setTimeout(() => d.remove(), 1700);
-}
 var cqRwHtml = (r) => amt(r[0], r[1], r[2] ? "shard:" + r[2] : void 0) + (r[2] ? ` <span class="cqrwn">${CH[r[2]].sn}</span>` : ` <span class="cqrwn">${RW_NAME[r[0]] || ""}</span>`);
 var cqBadge = () => {
   if (!S) return "";
@@ -11940,6 +11935,15 @@ function cqClick(d) {
     return true;
   }
   return false;
+}
+function cqPop(el, html) {
+  const r = el.getBoundingClientRect(), d = document.createElement("div");
+  d.className = "cqpop";
+  d.innerHTML = html;
+  d.style.left = r.left + r.width / 2 + "px";
+  d.style.top = r.top + "px";
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 1700);
 }
 
 // src/boot.js

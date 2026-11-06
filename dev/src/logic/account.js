@@ -1,10 +1,7 @@
 // logic/account.js — строки 4966–5014 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import '../ui/wiring.js'; // порядок исполнения
-import { giveRewards, rewardsHtml } from '../ui/rewards.js';
 import { S } from '../core/state.js';
-import { fmt, ic } from '../core/save.js';
-import { MEM, RELIC_AT, RELIC_MAX, relicCap } from './relics.js';
-import { CANDLE_BASE, CMAX, MAX_LVL, ROMAN, WATER_BASE, WMAX } from './economy.js';
+import { MAX_LVL } from './economy.js';
 
 // ===================== account level =====================
 const ACC_MAX = 85;
@@ -25,35 +22,11 @@ const accReward = L => {
 };
 const ACC_UPS = [];
 const CINE_OFF = () => { try { return !!JSON.parse(localStorage.getItem('dune-cine-off') || 'false'); } catch (e) { return false; } };
-function accXP(n) {
-  if (!n || S.acc.lvl >= ACC_MAX) return [];
-  S.acc.xp += Math.round(n); const out = [];
-  while (S.acc.lvl < ACC_MAX && S.acc.xp >= accNeed(S.acc.lvl)) {
-    S.acc.xp -= accNeed(S.acc.lvl); S.acc.lvl++;
-    const L = S.acc.lvl, rw = accReward(L), got = giveRewards(rw), un = [];
-    if (L <= MAX_LVL) un.push(['hero', `Потолок уровня героев: ${L - 1} → ${L}`]);
-    for (const [t, l] of Object.entries(GEAR_CAP_AT)) if (l === L) un.push(['gear', `Открыто снаряжение ${ROMAN[t]}`]);
-    RELIC_AT.forEach((l, r) => { if (r && l === L) un.push(['gear', `Открыта Другая память ${r}`]); });
-    if (L % 10 === 0) un.push(['energy', `Запас Воды ${WATER_BASE + 15 * (L / 10 - 1)} → ${WMAX()}, Свечей ${CANDLE_BASE + 10 * (L / 10 - 1)} → ${CMAX()}`]);
-    ACC_UPS.push({ L, rw, un });
-    out.push(`<b class="acclv">Уровень аккаунта ${L}!</b>`);
-  }
-  if (S.acc.lvl >= ACC_MAX) S.acc.xp = 0;
-  return out;
-}
 function accFill(s) {
   if (s.acc) return;
   const maxLvl = Math.max(1, ...Object.values(s.roster).map(r => r.lvl || 1)), maxGear = Math.max(1, ...Object.values(s.roster).map(r => r.gear || 1));
   s.acc = { lvl: Math.min(ACC_MAX, Math.max(maxLvl, GEAR_CAP_AT[maxGear] || 1)), xp: 0 };
 }
-const accBadge = () => `<span class="accb" title="Уровень аккаунта ${S.acc.lvl}" style="--p:${S.acc.lvl >= ACC_MAX ? 100 : Math.round(S.acc.xp / accNeed(S.acc.lvl) * 100)}%"><b>${S.acc.lvl}</b></span>`;
-function accPanel() {
-  const L = S.acc.lvl, max = L >= ACC_MAX, need = accNeed(L), pct = max ? 100 : S.acc.xp / need * 100;
-  const nextG = Object.entries(GEAR_CAP_AT).find(([t, l]) => l > L);
-  return `<div class="accp"><div class="accrow"><span class="acclvl">${L}</span><div style="flex:1;min-width:0"><b>Уровень аккаунта</b><div class="fbar"><i style="width:${pct}%"></i><b class="mono">${max ? 'максимум' : `${fmt(S.acc.xp)} / ${fmt(need)} опыта`}</b></div></div></div>
-    <div class="acckv"><span>Потолок уровня героев</span><b>${heroCap()}</b><span>Потолок снаряжения</span><b>${ROMAN[gearCap()]}</b><span>Запас энергии</span><b>${ic('water')} ${WMAX()} · ${ic('candle')} ${CMAX()} <small style="color:var(--dust)">+15/+10 каждые 10 ур.</small></b>${nextG ? `<span>Снаряжение ${ROMAN[nextG[0]]}</span><b>с ур. ${nextG[1]}</b>` : ''}<span>Потолок Другой памяти</span><b>${MEM(relicCap())}${relicCap() < RELIC_MAX ? ` · ${MEM(relicCap() + 1)} с ур. ${RELIC_AT[relicCap() + 1]}` : ''}</b><span>Награда за ур. ${Math.min(ACC_MAX, L + 1)}</span><b>${rewardsHtml(accReward(Math.min(ACC_MAX, L + 1)))}</b></div>
-    <p class="sub" style="margin:4px 0 0;font-size:11px">Опыт: 3 за каждую единицу Воды или Свечей в победе и симуляции, 15 за победу в испытании, 40 в путешествии легенды, 30 за атаку в рейде, 10 за дневное задание.</p></div>`;
-}
 
 
-export { ACC_MAX, accNeed, GEAR_CAP_AT, heroCap, gearCap, accReward, ACC_UPS, CINE_OFF, accXP, accFill, accBadge, accPanel };
+export { ACC_MAX, accNeed, GEAR_CAP_AT, heroCap, gearCap, accReward, ACC_UPS, CINE_OFF, accFill };

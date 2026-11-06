@@ -1,14 +1,13 @@
 // ui/overlays/info.js — строки 3550–3667 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import { detailCid, itemCtx, openDetail, openItem } from './detail.js';
 import { renderNotes } from '../notifications.js';
 import { SPOT_ICONS } from '../views/lobby.js';
 import { SHOPS, shopItems, shopLeft } from '../views/shop.js';
 import { RING_RATE } from './squad-select.js';
 import { crefillCost, crefillN } from './sim.js';
-import { detailCid, itemCtx, openDetail, openItem } from './detail.js';
 import { nextShards } from '../views/squad.js';
 import { $, enGet, getRes, prog, starStr } from '../../core/util.js';
 import { S, tickWater } from '../../core/state.js';
-import { amt, fmt, ic } from '../../core/save.js';
 import { CRAFT, FRAG_NEED, ITEMS, NODE_ITEMS, RAID_FRAGS, SHOP_FRAG, TIER_COL, TIER_NAME, gearPlan, itemIcon, nodeChance } from '../../logic/gear.js';
 import { unlockNeed } from '../../logic/relics.js';
 import { CANDLE_REFILL, CMAX, CRY_3STAR, CRY_JOURNEY, CRY_WIN, REFILL_AMT, REFILL_MAX, ROMAN, ROSTER_IDS, STAR_COST, WATER_SEC, WMAX, refillCost, refillN, thumb } from '../../logic/economy.js';
@@ -19,6 +18,7 @@ import { sceneThumb } from '../../render2d/scenes.js';
 import { figureSVG, portrait } from '../../render2d/figures.js';
 import { CH } from '../../data/chars.js';
 import { FACTIONS, ROLES } from '../../data/fx.js';
+import { amt, fmt, ic } from '../../core/format.js';
 
 // ===== info popups =====
 function campRow(i, note) {

@@ -1,12 +1,15 @@
 // ui/rewards.js — строки 3761–3778 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import './overlays/sim.js'; // порядок исполнения
 import { rwGrid } from './reward-tiles.js';
 import { MOUSE_SVG } from './mouse.js';
 import { grantShards } from './overlays/squad-select.js';
-import './overlays/sim.js'; // порядок исполнения
 import { $ } from '../core/util.js';
 import { S } from '../core/state.js';
-import { amt } from '../core/save.js';
 import { CH } from '../data/chars.js';
+import { ACC_MAX, ACC_UPS, GEAR_CAP_AT, accNeed, accReward } from '../logic/account.js';
+import { CANDLE_BASE, CMAX, MAX_LVL, ROMAN, RW_NAME, WATER_BASE, WMAX } from '../logic/economy.js';
+import { RELIC_AT } from '../logic/relics.js';
+import { amt } from '../core/format.js';
 
 // ===== rewards helper =====
 function rewardWin(title, lines, o = {}) {
@@ -16,7 +19,6 @@ function rewardWin(title, lines, o = {}) {
   document.body.appendChild(el);
 }
 function addRes(k, q) { if (k === 'sol') S.solari += q; else if (k === 'pl') S.plast += q; else if (k === 'water') S.water += q; else S[k] = (S[k] || 0) + q; }
-const RW_NAME = { wring: 'водяных колец', jt: 'трофеев Джихада', core: 'Другой памяти', rid: 'ридулианских кристаллов', candle: 'Свечей хроник', sol: 'соляриев', cry: 'кристаллов', folio: 'фолиантов', seal: 'Печать Ландсраада', wol: 'Вода жизни', pl: 'пластали', teeth: 'зубов червя', water: 'Воды' };
 function giveRewards(list) {
   const out = [];
   for (const [k, q, id] of list) {
@@ -26,5 +28,22 @@ function giveRewards(list) {
   return out;
 }
 const rewardsHtml = list => rwGrid(list, { sm: 1 });
+function accXP(n) {
+  if (!n || S.acc.lvl >= ACC_MAX) return [];
+  S.acc.xp += Math.round(n); const out = [];
+  while (S.acc.lvl < ACC_MAX && S.acc.xp >= accNeed(S.acc.lvl)) {
+    S.acc.xp -= accNeed(S.acc.lvl); S.acc.lvl++;
+    const L = S.acc.lvl, rw = accReward(L), got = giveRewards(rw), un = [];
+    if (L <= MAX_LVL) un.push(['hero', `Потолок уровня героев: ${L - 1} → ${L}`]);
+    for (const [t, l] of Object.entries(GEAR_CAP_AT)) if (l === L) un.push(['gear', `Открыто снаряжение ${ROMAN[t]}`]);
+    RELIC_AT.forEach((l, r) => { if (r && l === L) un.push(['gear', `Открыта Другая память ${r}`]); });
+    if (L % 10 === 0) un.push(['energy', `Запас Воды ${WATER_BASE + 15 * (L / 10 - 1)} → ${WMAX()}, Свечей ${CANDLE_BASE + 10 * (L / 10 - 1)} → ${CMAX()}`]);
+    ACC_UPS.push({ L, rw, un });
+    out.push(`<b class="acclv">Уровень аккаунта ${L}!</b>`);
+  }
+  if (S.acc.lvl >= ACC_MAX) S.acc.xp = 0;
+  return out;
+}
 
-export { rewardWin, addRes, RW_NAME, giveRewards, rewardsHtml };
+
+export { rewardWin, addRes, giveRewards, rewardsHtml, accXP };

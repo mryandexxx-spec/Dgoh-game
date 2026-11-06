@@ -1,12 +1,12 @@
 // ui/overlays/levelup.js — строки 5020–5036 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { rwGrid } from '../reward-tiles.js';
 import '../fx-text.js'; // порядок исполнения
+import { rwGrid } from '../reward-tiles.js';
 import { ACC_UPS } from '../../logic/account.js';
 import { renderRes } from '../common.js';
 import { $ } from '../../core/util.js';
 import { BT } from '../../core/state.js';
-import { ic } from '../../core/save.js';
 import { MAX_LVL } from '../../logic/economy.js';
+import { ic } from '../../core/format.js';
 
 // ===================== level-up window =====================
 function showLevelUp() {

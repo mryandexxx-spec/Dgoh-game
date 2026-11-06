@@ -1,10 +1,11 @@
 // logic/stats.js — строки 4810–4825 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { TRIALS, TRIAL_LVL, trialStars } from '../ui/views/trials.js';
+import '../ui/views/trials.js'; // порядок исполнения
 import { prog } from '../core/util.js';
 import { S } from '../core/state.js';
 import { ROSTER_IDS } from './economy.js';
 import { campNodes } from '../data/campaigns.js';
 import { CH } from '../data/chars.js';
+import { TRIALS, TRIAL_LVL, trialStars } from './trials.js';
 
 // ===================== stats =====================
 function statInc(k, n = 1) { S.stats[k] = (S.stats[k] || 0) + n; }

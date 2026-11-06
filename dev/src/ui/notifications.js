@@ -1,18 +1,18 @@
 // ui/notifications.js — строки 5037–5083 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import { showLevelUp } from './overlays/levelup.js';
 import { CQ_SECT } from '../data/conquest-data.js';
 import { showCeleb } from './overlays/celebrate.js';
-import { showLevelUp } from './overlays/levelup.js';
 import { FEATS, featRw, featStep } from './views/feats.js';
 import { METRIC } from '../logic/stats.js';
 import { DAILY, qState } from './views/daily.js';
 import { rewardsHtml } from './rewards.js';
 import { $ } from '../core/util.js';
-import { BT, S } from '../core/state.js';
-import { fmt, persist0 } from '../core/save.js';
+import { BT, NOTES, S } from '../core/state.js';
+import { persist0 } from '../core/save.js';
 import { ROMAN, todayKey } from '../logic/economy.js';
+import { fmt } from '../core/format.js';
 
 // ===================== corner notifications (daily quests / feats) =====================
-const NOTES = [];
 function noteSnap(init) {
   S.notes ??= { d: '', q: {}, f: {} };
   if (S.notes.d !== todayKey()) { S.notes.d = todayKey(); S.notes.q = {}; init = init || false; }
@@ -59,4 +59,4 @@ const noteDrop = id => { const i = NOTES.findIndex(n => n.id === id); if (i >= 0
 })();
 
 
-export { NOTES, noteSnap, notePoll, noteHtml, renderNotes, noteDrop };
+export { noteSnap, notePoll, noteHtml, renderNotes, noteDrop };

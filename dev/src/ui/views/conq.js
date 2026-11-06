@@ -1,27 +1,27 @@
 // ui/views/conq.js — строки 5531–5728 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { cq, cqAddDisk, cqCanClaim, cqCanOn, cqChest, cqDiskOn, cqDiskPick, cqEn, cqEnSpend, cqEnTxt, cqFoes, cqGoods, cqLayout, cqLive, cqNode, cqNodeDisks, cqOpen, cqPop, cqRwHtml, cqStCan, cqSta, cqStaCol, cqStaPen, cqStaSet, cqStatic, cqSyncTrack, cqTrack, cqTypeN } from '../../logic/conquest.js';
+import { cq, cqAddDisk, cqCanClaim, cqCanOn, cqChest, cqDiskOn, cqDiskPick, cqEn, cqEnSpend, cqEnTxt, cqFoes, cqGoods, cqLayout, cqLive, cqNode, cqNodeDisks, cqOpen, cqRwHtml, cqStCan, cqSta, cqStaCol, cqStaPen, cqStaSet, cqStatic, cqSyncTrack, cqTrack, cqTypeN } from '../../logic/conquest.js';
 import { CQ_CHESTS, CQ_DIFF, CQ_DISKS, CQ_DMAX, CQ_EN, CQ_LAST, CQ_LAYERS, CQ_LFAC, CQ_LMAX, CQ_MED, CQ_RF, CQ_SECT, CQ_STA, CQ_TROPHY, cqBump, cqDiskCard, cqFeats, cqI, cqK, cqMod, cqModD, cqRar, cqRarTag, cqRfCost, cqRfN, cqScore } from '../../data/conquest-data.js';
 import { MOUSE_SVG } from '../mouse.js';
 import { statInc } from '../../logic/stats.js';
 import { leaveBattle } from '../battle/battle-ui.js';
 import { SHOPS } from './shop.js';
-import { grantShards, openSquadSel, unlockedIds } from '../overlays/squad-select.js';
+import { grantShards, openSquadSel } from '../overlays/squad-select.js';
 import { addRes, giveRewards } from '../rewards.js';
 import { openInfo } from '../overlays/info.js';
 import { render } from '../router.js';
 import { renderRes, toast } from '../common.js';
-import { $, getRes, isLandPhone, prog, starStr } from '../../core/util.js';
+import { $, getRes, isLandPhone, prog, sRng, starStr, unlockedIds } from '../../core/util.js';
 import { S, set_view, view } from '../../core/state.js';
-import { amt, fmt, ic, persist } from '../../core/save.js';
+import { persist } from '../../core/save.js';
 import { TIER_COL } from '../../logic/gear.js';
 import { MEM, RELIC_COL, ringCol } from '../../logic/relics.js';
 import { REFILL_MAX, ROMAN, todayKey } from '../../logic/economy.js';
-import { sRng } from '../../render2d/scenes.js';
 import { portrait } from '../../render2d/figures.js';
 import { ghash } from '../../data/looks.js';
 import { computeIntents } from '../../logic/battle/ai.js';
 import { unitPower } from '../../logic/battle/stats.js';
 import { CH } from '../../data/chars.js';
+import { amt, fmt, ic } from '../../core/format.js';
 
 // ---- battle hooks ----
 function cqApply(B, cfg) {
@@ -220,6 +220,10 @@ function cqClick(d) {
   if (d.cqback) { leaveBattle(); set_view('conq'); render(); return true; }
   return false;
 }
+function cqPop(el, html) {    // маленькая всплывашка над наградой
+  const r = el.getBoundingClientRect(), d = document.createElement('div'); d.className = 'cqpop'; d.innerHTML = html;
+  d.style.left = (r.left + r.width / 2) + 'px'; d.style.top = r.top + 'px'; document.body.appendChild(d); setTimeout(() => d.remove(), 1700);
+}
 
 
-export { cqApply, cqFinish, cqFoeCard, cqDetail, renderConq, cqDiskWin, cqResWin, CQ_PRICE, cqShopItems, cqShopView, cqChestWin, cqFeatWin, cqClick };
+export { cqApply, cqFinish, cqFoeCard, cqDetail, renderConq, cqDiskWin, cqResWin, CQ_PRICE, cqShopItems, cqShopView, cqChestWin, cqFeatWin, cqClick, cqPop };

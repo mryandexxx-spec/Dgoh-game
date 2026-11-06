@@ -3,7 +3,6 @@ import '../logic/stats.js'; // порядок исполнения
 import { prog } from '../core/util.js';
 import { S } from '../core/state.js';
 import { WORM_IMG } from '../assets/models.js';
-import { figureSVG } from '../render2d/figures.js';
 import { CH } from './chars.js';
 
 // ===================== cosmetics =====================
@@ -29,12 +28,6 @@ const TITLES = {
 };
 const FREE = { title: ['novice'], frame: ['basic', 'bronze'], ava: [] };
 const unlocked = (kind, id) => FREE[kind].includes(id) || !!S.unlocks[kind][id] || (kind === 'ava' && id.startsWith('hero:') && CH[id.slice(5)] && prog(id.slice(5)).stars > 0);
-function avatarHtml(ava, frame, size = 56) {
-  let inner;
-  if (ava && ava.startsWith('emb:') && EMBLEMS[ava.slice(4)]) { const E = EMBLEMS[ava.slice(4)]; inner = `<svg viewBox="0 0 40 40" aria-hidden="true"><defs><radialGradient id="eg-${ava.slice(4)}" cx=".5" cy=".35" r=".75"><stop offset="0" stop-color="${E.bg[0]}"/><stop offset="1" stop-color="${E.bg[1]}"/></radialGradient></defs><rect width="40" height="40" fill="url(#eg-${ava.slice(4)})"/>${E.svg}</svg>`; }
-  else { const d = CH[(ava || 'hero:leto').slice(5)] || CH.leto; inner = `<span class="pt" style="--fc:var(--${d.f[0]});width:100%;height:100%">${figureSVG(d)}</span>`; }
-  return `<span class="pfr fr-${FRAMES[frame] ? frame : 'basic'}" style="--sz:${size}px"><span class="pin">${inner}</span></span>`;
-}
 
 
-export { EMBLEMS, FRAMES, TITLES, FREE, unlocked, avatarHtml };
+export { EMBLEMS, FRAMES, TITLES, FREE, unlocked };

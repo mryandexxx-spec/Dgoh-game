@@ -1,8 +1,8 @@
 // ui/common.js — строки 3252–3271 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import '../core/errlog.js'; // порядок исполнения
 import { S, tickWater } from '../core/state.js';
-import { fmt, ic } from '../core/save.js';
 import { CMAX, WATER_SEC, WMAX } from '../logic/economy.js';
+import { fmt, ic } from '../core/format.js';
 
 function toast(t) {
   document.querySelectorAll('.toast').forEach(x => x.remove());

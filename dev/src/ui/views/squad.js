@@ -2,7 +2,6 @@
 import './camp.js'; // порядок исполнения
 import { $, prog, squadPower, starStr } from '../../core/util.js';
 import { S, filter } from '../../core/state.js';
-import { fmt } from '../../core/save.js';
 import { TIER_COL } from '../../logic/gear.js';
 import { ringCol, sideName, unlockNeed } from '../../logic/relics.js';
 import { ROMAN, SHARDS_NEXT } from '../../logic/economy.js';
@@ -10,6 +9,7 @@ import { portrait } from '../../render2d/figures.js';
 import { unitPower } from '../../logic/battle/stats.js';
 import { CH, CHARS } from '../../data/chars.js';
 import { FACTIONS, ROLES } from '../../data/fx.js';
+import { fmt } from '../../core/format.js';
 
 function nextShards(p) { return SHARDS_NEXT[p.stars] ?? null; }
 const canStar = id => { const p = prog(id), n = nextShards(p); return !!(p.stars && n && p.shards >= n); };

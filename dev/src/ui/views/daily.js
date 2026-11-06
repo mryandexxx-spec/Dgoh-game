@@ -1,7 +1,6 @@
 // ui/views/daily.js — строки 3779–3825 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { accXP } from '../../logic/account.js';
 import { MONTHS, loginCan, monthHero } from '../overlays/calendar.js';
-import { giveRewards, rewardWin, rewardsHtml } from '../rewards.js';
+import { accXP, giveRewards, rewardWin, rewardsHtml } from '../rewards.js';
 import { refreshAll } from '../overlays/sim.js';
 import { $ } from '../../core/util.js';
 import { S } from '../../core/state.js';

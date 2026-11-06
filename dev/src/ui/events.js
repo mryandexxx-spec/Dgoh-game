@@ -1,4 +1,5 @@
 // ui/events.js — строки 4473–4621 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import { DLG, bPopClose, dlgEnd, dlgNext, doAct, finish, launch, leaveBattle, openFxPop, playDialog, renderBattle, startBattle, useAbil } from './battle/battle-ui.js';
 import { cqClick } from './views/conq.js';
 import { celebClick, celebQueue, showCeleb } from './overlays/celebrate.js';
 import { meta2Click } from './overlays/battle-settings.js';
@@ -6,13 +7,12 @@ import { renderNotes } from './notifications.js';
 import { gearCap, heroCap } from '../logic/account.js';
 import { metaClick } from './wiring.js';
 import { WORM_BADGE, detailNav, heroSnap } from './hero-window.js';
-import { DLG, bPopClose, dlgEnd, dlgNext, doAct, finish, launch, leaveBattle, openFxPop, playDialog, renderBattle, startBattle, useAbil } from './battle/battle-ui.js';
 import { buysToday, findShopItem, shopLeft } from './views/shop.js';
 import { raidPct, raidReward } from './views/raid.js';
 import { SQ, grantShards, openSquadSel, renderSquadSel, set_SQ, sqArr, sqGo } from './overlays/squad-select.js';
 import { claimLogin, openCalendar } from './overlays/calendar.js';
 import { DAILY, claimChest, claimQuest, qState, quest } from './views/daily.js';
-import { RW_NAME, addRes, rewardWin } from './rewards.js';
+import { addRes, rewardWin } from './rewards.js';
 import { doRefill, doXSim, openSim, refreshAll, runSim, simCore, updSim } from './overlays/sim.js';
 import { RES_INFO, closeInfo, infoKey, openInfo } from './overlays/info.js';
 import { DETAIL_BACK, closeOverlay, detailSk, itemCtx, lackKey, lvlCost, openDetail, openItem, set_DETAIL_BACK, set_detailSk, skCost, slotState, updLvl } from './overlays/detail.js';
@@ -22,10 +22,10 @@ import { render } from './router.js';
 import { toast } from './common.js';
 import { $, getRes, prog } from '../core/util.js';
 import { BT, S, filter, set_filter, set_view, tickWater, view } from '../core/state.js';
-import { amt, persist } from '../core/save.js';
+import { persist } from '../core/save.js';
 import { CRAFT, GEAR_UP_SOL, ITEMS, SHOP_FRAG, fragLines, grantFrags, raidFrags } from '../logic/gear.js';
 import { MEM, RELIC_CORES, RELIC_MAX, RELIC_SOL, isLegend, relicCap, relicReady } from '../logic/relics.js';
-import { BATTLE_WATER, GEAR_COST, LVL_COST, MAX_GEAR, MAX_LVL, RAID_SCENES, ROMAN, STAR_COST, WMAX } from '../logic/economy.js';
+import { BATTLE_WATER, GEAR_COST, LVL_COST, MAX_GEAR, MAX_LVL, RAID_SCENES, ROMAN, RW_NAME, STAR_COST, WMAX } from '../logic/economy.js';
 import { JK, JR } from '../data/journeys.js';
 import { NODES, campNodes, nodeOpen } from '../data/campaigns.js';
 import { aiPlan } from '../logic/battle/ai.js';
@@ -34,6 +34,7 @@ import { unitPower } from '../logic/battle/stats.js';
 import { RAID_TIERS } from '../data/boss.js';
 import { skMax } from '../logic/battle/skills.js';
 import { CH } from '../data/chars.js';
+import { amt } from '../core/format.js';
 
 // ===== events =====
 document.addEventListener('click', e => {

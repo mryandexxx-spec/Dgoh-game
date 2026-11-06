@@ -6,10 +6,11 @@ import { render } from '../router.js';
 import { toast } from '../common.js';
 import { $ } from '../../core/util.js';
 import { S } from '../../core/state.js';
-import { fmt, ic, persist } from '../../core/save.js';
+import { persist } from '../../core/save.js';
 import { todayKey } from '../../logic/economy.js';
 import { figureSVG, portrait } from '../../render2d/figures.js';
 import { CH } from '../../data/chars.js';
+import { fmt, ic } from '../../core/format.js';
 
 // ===== login calendar =====
 const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];

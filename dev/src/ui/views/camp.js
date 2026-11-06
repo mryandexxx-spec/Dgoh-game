@@ -1,15 +1,14 @@
 // ui/views/camp.js — строки 3282–3329 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { campReward } from '../overlays/sim.js';
 import '../router.js'; // порядок исполнения
 import { $, campSquad, enGet, isLandPhone, nodePower, prog, reqText, sideOk, starStr } from '../../core/util.js';
 import { S } from '../../core/state.js';
-import { amt, fmt, ic } from '../../core/save.js';
 import { ITEMS, NODE_ITEMS, TIER_COL, itemIcon } from '../../logic/gear.js';
-import { ROMAN, enemyProg } from '../../logic/economy.js';
+import { ROMAN, campReward, enemyProg } from '../../logic/economy.js';
 import { CAMP_DEF, CAMP_KEYS, NODES, ROM7, campNodes, chapNodes, nodeCost, nodeEn, nodeOpen } from '../../data/campaigns.js';
 import { portrait } from '../../render2d/figures.js';
 import { unitPower } from '../../logic/battle/stats.js';
 import { CH } from '../../data/chars.js';
+import { amt, fmt, ic } from '../../core/format.js';
 
 let campSel = null;
 function chapStars(ck, c) { return chapNodes(ck, c).reduce((a, i) => a + (S.cleared[i] || 0), 0); }

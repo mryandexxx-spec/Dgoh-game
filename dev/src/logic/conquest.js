@@ -1,14 +1,12 @@
 // logic/conquest.js — строки 5394–5530 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { CQ_CHESTS, CQ_DIFF, CQ_DISKS, CQ_DMAX, CQ_EN, CQ_ERI, CQ_LAST, CQ_LAYERS, CQ_LMAX, CQ_LTYPE, CQ_MODS, CQ_SECT, CQ_STA, cqBump, cqRar, cqScore } from '../data/conquest-data.js';
 import { statInc } from './stats.js';
-import { unlockedIds } from '../ui/overlays/squad-select.js';
-import { RW_NAME } from '../ui/rewards.js';
 import { S } from '../core/state.js';
-import { amt } from '../core/save.js';
-import { enemyProg } from './economy.js';
-import { sRng } from '../render2d/scenes.js';
+import { RW_NAME, enemyProg } from './economy.js';
 import { ghash } from '../data/looks.js';
 import { CH } from '../data/chars.js';
+import { sRng, unlockedIds } from '../core/util.js';
+import { amt } from '../core/format.js';
 
 const cqWeek = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toDateString(); };
 function cq() {
@@ -139,13 +137,9 @@ const cqCanClaim = i => { const C = cq(); return !!C.diff && cqScore() >= CQ_CHE
 function cqSyncTrack() {}      // промежуточные награды больше не начисляются сами — «доступно», забираются по тапу
 const cqStCan = j => { const C = cq(); if (!C.diff || C.tk['s' + j]) return false; const T = cqTrack().find(x => x.kind === 'st' && x.i === j); return !!T && cqScore() >= T.at; };
 const cqStReady = () => cqTrack().filter(x => x.kind === 'st' && cqStCan(x.i)).length;
-function cqPop(el, html) {    // маленькая всплывашка над наградой
-  const r = el.getBoundingClientRect(), d = document.createElement('div'); d.className = 'cqpop'; d.innerHTML = html;
-  d.style.left = (r.left + r.width / 2) + 'px'; d.style.top = r.top + 'px'; document.body.appendChild(d); setTimeout(() => d.remove(), 1700);
-}
 const cqRwHtml = r => amt(r[0], r[1], r[2] ? 'shard:' + r[2] : undefined) + (r[2] ? ` <span class="cqrwn">${CH[r[2]].sn}</span>` : ` <span class="cqrwn">${RW_NAME[r[0]] || ''}</span>`);
 const cqBadge = () => { if (!S) return ''; const C = cq(); if (!C.diff) return 'новая неделя'; const ready = CQ_CHESTS.filter((t, i) => cqCanClaim(i)).length, st = cqStReady(); return ready ? `сундуков: ${ready}` : st ? `наград: ${st}` : `очки ${cqScore()}`; };
 const cqHot = () => { if (!S) return false; const C = cq(); return S.acc.lvl >= CQ_DIFF.easy.acc && (!C.diff || !!C.pick || CQ_CHESTS.some((t, i) => cqCanClaim(i)) || cqStReady() > 0); };
 
 
-export { cqWeek, cq, cqEn, cqEnSpend, cqEnNext, cqEnTxt, cqSta, cqStaSet, cqStaPen, cqStaCol, cqDiskOn, CQ_DROP, cqDropW, cqDiskPick, cqLegOn, cqCanOn, cqAddDisk, cqNodeDisks, CQ_GOODS, cqGoods, CQ_MEMO, CQ_MEMO_CLR, cqLayout, cqNode, cqFoes, cqLive, cqOpen, cqTypeN, cqTrack, cqStatic, cqChest, cqCanClaim, cqSyncTrack, cqStCan, cqStReady, cqPop, cqRwHtml, cqBadge, cqHot };
+export { cqWeek, cq, cqEn, cqEnSpend, cqEnNext, cqEnTxt, cqSta, cqStaSet, cqStaPen, cqStaCol, cqDiskOn, CQ_DROP, cqDropW, cqDiskPick, cqLegOn, cqCanOn, cqAddDisk, cqNodeDisks, CQ_GOODS, cqGoods, CQ_MEMO, CQ_MEMO_CLR, cqLayout, cqNode, cqFoes, cqLive, cqOpen, cqTypeN, cqTrack, cqStatic, cqChest, cqCanClaim, cqSyncTrack, cqStCan, cqStReady, cqRwHtml, cqBadge, cqHot };

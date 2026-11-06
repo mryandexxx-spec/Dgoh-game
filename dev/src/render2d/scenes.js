@@ -1,6 +1,7 @@
 // render2d/scenes.js — строки 805–1081 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import './figures.js'; // порядок исполнения
 import { ghash } from '../data/looks.js';
+import { sRng } from '../core/util.js';
 
 // ---------- scenes ----------
 const SCENES = {
@@ -20,7 +21,6 @@ const SCENES = {
   dawn:     { sky: ['#2a2440'], parts: 'sand' },
   harvester: { sky: ['#9a6a40'], parts: 'sand' },
 };
-function sRng(seed) { let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function skyFill(c, w, h, stops) { const g = c.createLinearGradient(0, 0, 0, h); stops.forEach((s, i) => g.addColorStop(i / (stops.length - 1), s)); c.fillStyle = g; c.fillRect(0, 0, w, h); }
 function ridge(c, w, h, base, amp, color, seed, crest, jag) {
   const r = sRng(seed), f1 = .6 + r() * 1.4, f2 = 2 + r() * 3, p1 = r() * 6, p2 = r() * 6, pts = [];
@@ -280,4 +280,4 @@ function sceneThumb(cv) {
 }
 
 
-export { SCENES, sRng, skyFill, ridge, disc, makeNoise, NZ, hexc, mixc, sstep, SCN, crestArr, renderLayers, drawScene, rays, haze, rock, sceneExtras, THUMB_CACHE, sceneThumb };
+export { SCENES, skyFill, ridge, disc, makeNoise, NZ, hexc, mixc, sstep, SCN, crestArr, renderLayers, drawScene, rays, haze, rock, sceneExtras, THUMB_CACHE, sceneThumb };

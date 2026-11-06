@@ -1,19 +1,19 @@
 // ui/overlays/squad-select.js — строки 3859–3950 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import './calendar.js'; // порядок исполнения
 import { cq, cqEn, cqEnSpend, cqEnTxt, cqLive, cqNode, cqSta, cqStaCol, cqTypeN } from '../../logic/conquest.js';
 import { CQ_EN, CQ_SECT, CQ_STA, cqMod } from '../../data/conquest-data.js';
 import { celebQueue } from './celebrate.js';
-import { TRIALS, TRIAL_SQ, trialFoes, trialOfSQ, trialOk } from '../views/trials.js';
+import { trialOfSQ } from '../views/trials.js';
 import { launch, startBattle } from '../battle/battle-ui.js';
 import { SPOT_ICONS } from '../views/lobby.js';
-import './calendar.js'; // порядок исполнения
 import { openInfo } from './info.js';
 import { renderRes, toast } from '../common.js';
-import { $, campSquad, enGet, glyph, nodePower, prog, reqFacOk, reqMissing, reqText, sideOk } from '../../core/util.js';
+import { $, campSquad, enGet, glyph, nodePower, prog, reqFacOk, reqMissing, reqText, sideOk, unlockedIds } from '../../core/util.js';
 import { S, tickWater } from '../../core/state.js';
-import { amt, fmt, persist } from '../../core/save.js';
+import { persist } from '../../core/save.js';
 import { TIER_COL } from '../../logic/gear.js';
 import { unlockNeed } from '../../logic/relics.js';
-import { RAID_SCENES, ROMAN, ROSTER_IDS, enemyProg } from '../../logic/economy.js';
+import { RAID_SCENES, ROMAN, enemyProg } from '../../logic/economy.js';
 import { JK, JR, jFoes } from '../../data/journeys.js';
 import { CAMP_DEF, NODES, NODE_SCENES, nodeCost, nodeEn, nodeTitle } from '../../data/campaigns.js';
 import { sceneThumb } from '../../render2d/scenes.js';
@@ -22,6 +22,8 @@ import { unitPower } from '../../logic/battle/stats.js';
 import { RAID_TIERS } from '../../data/boss.js';
 import { CH } from '../../data/chars.js';
 import { FACTIONS } from '../../data/fx.js';
+import { TRIALS, TRIAL_SQ, trialFoes, trialOk } from '../../logic/trials.js';
+import { amt, fmt } from '../../core/format.js';
 
 // ===== squad select =====
 let SQ = null;
@@ -110,7 +112,6 @@ function grantShards(id, k) {
   if (p.stars === 0 && p.shards >= un) { p.shards -= un; p.stars = un > 10 ? 7 : 1; celebQueue({ type: 'unlock', id }); return true; }
   return false;
 }
-const unlockedIds = () => ROSTER_IDS.filter(id => prog(id).stars > 0);
 function pickerHtml(kind, ids, pick, disabled = new Set()) {
   return `<div class="pick">${ids.map(id => { const d = CH[id], i = pick.indexOf(id);
     return `<button data-pick="${kind}:${id}" aria-pressed="${i >= 0}" ${disabled.has(id) ? 'disabled' : ''}><span class="ord">${i >= 0 ? (i === 0 ? 'Л' : i + 1) : ''}</span>${glyph(d)}${d.sn} <span class="mono" style="color:var(--dust)">${'★'.repeat(prog(id).stars)}</span></button>`; }).join('')}</div>`;
@@ -118,4 +119,4 @@ function pickerHtml(kind, ids, pick, disabled = new Set()) {
 
 function set_SQ(v) { return SQ = v; }
 function set_SHCONV(v) { return SHCONV = v; }
-export { SQ, sqArr, sqPool, openSquadSel, sqEnemy, renderSquadSel, sqGo, RING_RATE, SHCONV, SHCONV_T, convFlush, grantShards, unlockedIds, pickerHtml, set_SQ, set_SHCONV };
+export { SQ, sqArr, sqPool, openSquadSel, sqEnemy, renderSquadSel, sqGo, RING_RATE, SHCONV, SHCONV_T, convFlush, grantShards, pickerHtml, set_SQ, set_SHCONV };
