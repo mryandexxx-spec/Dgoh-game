@@ -1,7 +1,8 @@
 // render3d/scenes/camp.js — строки 2504–2585 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { BT, S } from '../../core/state.js';
 import { HERO_STAGE } from './hero.js';
-import { SAVE_LOW, Stage3D } from './base-scene.js';
+import { Stage3D } from './base-scene.js';
+import { gfx } from '../quality.js';
 import { poseHuman } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
 import { buildEnv, staticNoCast } from '../env/build-env.js';
@@ -15,11 +16,11 @@ import { CH } from '../../data/chars.js';
 // ---------- 3D camp lobby ----------
 class CampStage extends Stage3D {
   constructor() {
-    super({ cls: 'stage3d camp3d', maxDpr: 1.75 });
+    super({ cls: 'stage3d camp3d', kind: 'camp' });
     this.raid = false; this.units = {};
     withCtx({ scene: this.scene, shadows: null }, () => { buildEnv(this, 'sietch'); CTX.shadows = this.shadows;
     const S = this.scene; S.fogStart = 30; S.fogEnd = 120;
-    const rp = new B3.ReflectionProbe('rp', 64, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
+    const rp = new B3.ReflectionProbe('rp', gfx(this.small).probe.camp, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
     // campfire: stones ring, logs, flickering light, flame + sparks particles
     const fx = 0, fz = 1.2, fy = this.heightAt(fx, fz); this.fire = V3(fx, fy, fz);
     const stoneM = mat3('#4a3a30', { roughness: .9, flatShading: true });
@@ -81,7 +82,7 @@ class CampStage extends Stage3D {
   }
   paused() { return !!(BT && BT.B) || !!document.querySelector('#overlay .detail, #overlay .sqsel'); }
   // шаг 6: лагерь — фоновая сцена, 30 fps (20 в упрощённой графике); флаг перечитывается раз в секунду
-  idleMode(now) { if (!(now - this._lowAt < 1000)) { this._low = SAVE_LOW(); this._lowAt = now; } return this._low ? 'idleLow' : 'idle'; }
+  idleMode(now) { if (!(now - this._lowAt < 1000)) { this._low = gfx(this.small).campIdle; this._lowAt = now; } return this._low; }
   slashFX() {} muzzleFX() {} voiceFX() {} castFX() {}
 }
 const S_FLAG = () => '#4c6b4e';

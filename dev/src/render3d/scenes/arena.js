@@ -5,7 +5,7 @@ import { errLog } from '../../core/errlog.js';
 import { BT } from '../../core/state.js';
 import { TIER_COL } from '../../logic/gear.js';
 import { RELIC_COL } from '../../logic/relics.js';
-import { SAVE_LOW } from './base-scene.js';
+import { gfx } from '../quality.js';
 import { engineHost } from '../engine-host.js';
 import { MOCAP_OK } from '../characters/mocap.js';
 import { makeWorm3, wormData, wormMats, wormMesh } from '../worm.js';
@@ -25,14 +25,14 @@ import { GameScene } from '../game-scene.js';
 class Arena3D extends GameScene {
   constructor(canvas, key, B) {
     super(engineHost()); this.key = key; this.units = {}; this.parts = []; this.speed = 1;
-    const small = Math.min(innerWidth, innerHeight) < 600; this.small = small;
+    const small = Math.min(innerWidth, innerHeight) < 600; this.small = small; const Q = gfx(small);
     const E = this.engine; // phase 3b: shared engine; the placeholder canvas is replaced by the host canvas
-    this.place(canvas.parentNode, { replace: canvas, cls: canvas.className || 'bgc', id: canvas.id || 'bgc', dpr: small ? 1.5 : 2 });
+    this.place(canvas.parentNode, { replace: canvas, cls: canvas.className || 'bgc', id: canvas.id || 'bgc', dpr: Q.dpr.arena });
     const S = this.scene = new B3.Scene(E); S.useRightHandedSystem = true; S.skipPointerMovePicking = true; S.autoClear = true;
     this.camera = new B3.UniversalCamera('cam', V3(0, 11, 18), S); this.camera.minZ = .1; this.camera.maxZ = 1200; this.camera.inputs.clear();
     this.raid = !!B.raid; this.summons = []; this.nA = B.units.filter(x => x.side === 'A').length;
     withCtx({ scene: S, shadows: null }, () => { buildEnv(this, key, true); CTX.shadows = this.shadows;
-    const rp = this.probe = new B3.ReflectionProbe('rp', this.small ? 64 : 128, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
+    const rp = this.probe = new B3.ReflectionProbe('rp', Q.probe.arena, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
     for (const u of B.units) this.addUnit(u);
     this.setupFX();
     if (B.units.some(u => u.def && u.def.gl)) { this.glLight = new B3.PointLight('gll', V3(0, 6, 2), S); this.glLight.diffuse = col3('#ffc860'); this.glLight.range = 40; this.glLight.intensity = 0; } // perf step 6: no idle extra light in every shader
@@ -44,10 +44,10 @@ class Arena3D extends GameScene {
   onDetach() { this.dispose(); }
   contextLost() { if (!this.alive) return; this.lost = true; if (this.onLost) setTimeout(() => this.onLost && this.onLost(), 0); }
   setupFX() {
-    const S = this.scene;
+    const S = this.scene, Q = gfx(this.small);
     // emissive bloom for windows, eyes, rings, worm glow
-    this.glow = new B3.GlowLayer('glow', S, { mainTextureRatio: this.small ? .35 : .5, blurKernelSize: 32 }); this.glow.intensity = .55;
-    this.glow.addExcludedMesh(this.sky); if (this.ground) this.glow.addExcludedMesh(this.ground); for (const o of Object.values(this.units)) if (o.bubble) this.glow.addExcludedMesh(o.bubble);
+    if (Q.glow) { this.glow = new B3.GlowLayer('glow', S, { mainTextureRatio: Q.glowRatio, blurKernelSize: 32 }); this.glow.intensity = .55;
+    this.glow.addExcludedMesh(this.sky); if (this.ground) this.glow.addExcludedMesh(this.ground); for (const o of Object.values(this.units)) if (o.bubble) this.glow.addExcludedMesh(o.bubble); }
     const tx = glowTex({ scene: S });
     const sp = this.sparks = new B3.ParticleSystem('sparks', 600, S); sp.particleTexture = tx; sp.emitter = V3(0, -50, 0); sp.minEmitBox = V3(-.15, -.2, -.15); sp.maxEmitBox = V3(.15, .2, .15);
     sp.direction1 = V3(-2.5, 1, -2.5); sp.direction2 = V3(2.5, 4, 2.5); sp.gravity = V3(0, -9, 0); sp.minLifeTime = .2; sp.maxLifeTime = .45; sp.minSize = .04; sp.maxSize = .1; sp.minEmitPower = 1; sp.maxEmitPower = 2.2;
@@ -57,18 +57,17 @@ class Arena3D extends GameScene {
     hp.blendMode = B3.ParticleSystem.BLENDMODE_ADD; hp.emitRate = 0; hp.manualEmitCount = 0; hp.start();
     // cinematic post-processing
     const P = this.pipe = new B3.DefaultRenderingPipeline('dp', true, S, [this.camera]);
-    P.fxaaEnabled = true; P.samples = this.engine.webGLVersion >= 2 && !this.small ? 4 : 1;
-    P.bloomEnabled = true; P.bloomThreshold = .82; P.bloomWeight = .3; P.bloomKernel = 48; P.bloomScale = .5;
+    P.fxaaEnabled = true; P.samples = this.engine.webGLVersion >= 2 ? Q.msaa : 1;
+    P.bloomEnabled = Q.bloom; P.bloomThreshold = .82; P.bloomWeight = .3; P.bloomKernel = 48; P.bloomScale = .5;
     P.imageProcessingEnabled = true; const ip = P.imageProcessing;
     ip.toneMappingEnabled = true; ip.toneMappingType = B3.ImageProcessingConfiguration.TONEMAPPING_ACES; ip.exposure = 1.12; ip.contrast = 1.12;
     ip.vignetteEnabled = true; ip.vignetteWeight = 1.6; ip.vignetteColor = new B3.Color4(.08, .04, .02, 0); ip.vignetteStretch = .3;
-    P.chromaticAberrationEnabled = !this.small; if (P.chromaticAberration) P.chromaticAberration.aberrationAmount = 6;
-    P.grainEnabled = true; P.grain.intensity = 5; P.grain.animated = true;
-    P.sharpenEnabled = !this.small; if (P.sharpen) P.sharpen.edgeAmount = .2;
-    const LOW = SAVE_LOW();
-    P.depthOfFieldEnabled = !LOW; P.depthOfFieldBlurLevel = this.small ? B3.DepthOfFieldEffectBlurLevel.Low : B3.DepthOfFieldEffectBlurLevel.Medium;
+    P.chromaticAberrationEnabled = Q.chromatic; if (P.chromaticAberration) P.chromaticAberration.aberrationAmount = 6;
+    P.grainEnabled = Q.grain; P.grain.intensity = 5; P.grain.animated = true;
+    P.sharpenEnabled = Q.sharpen; if (P.sharpen) P.sharpen.edgeAmount = .2;
+    P.depthOfFieldEnabled = Q.dof; P.depthOfFieldBlurLevel = Q.dofBlur === 'low' ? B3.DepthOfFieldEffectBlurLevel.Low : B3.DepthOfFieldEffectBlurLevel.Medium;
     P.depthOfField.focalLength = 60; P.depthOfField.fStop = 3.2; P.depthOfField.focusDistance = 20000; P.depthOfField.lensSize = 50;
-    try { if (!LOW && this.engine.webGLVersion >= 2 && B3.SSAO2RenderingPipeline.IsSupported) { const ao = this.ssao = new B3.SSAO2RenderingPipeline('ssao', S, { ssaoRatio: this.small ? .5 : .75, blurRatio: .5 }, [this.camera], true); ao.radius = 1.4; ao.totalStrength = 1.15; ao.base = .12; ao.samples = this.small ? 8 : 16; ao.maxZ = 70; ao.minZAspect = .3; ao.expensiveBlur = !this.small; } } catch (e) {}
+    try { if (Q.ssao && this.engine.webGLVersion >= 2 && B3.SSAO2RenderingPipeline.IsSupported) { const ao = this.ssao = new B3.SSAO2RenderingPipeline('ssao', S, { ssaoRatio: Q.ssaoRatio, blurRatio: .5 }, [this.camera], true); ao.radius = 1.4; ao.totalStrength = 1.15; ao.base = .12; ao.samples = Q.ssaoSamples; ao.maxZ = 70; ao.minZAspect = .3; ao.expensiveBlur = Q.ssaoExpBlur; } } catch (e) {}
   }
   addUnit(u) {
     withCtx({ scene: this.scene, shadows: this.shadows }, () => {

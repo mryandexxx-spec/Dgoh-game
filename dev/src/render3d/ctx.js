@@ -2,7 +2,7 @@
 // withCtx(c, fn): на время fn подменяет заданные поля (undefined — наследуются), после выхода (в т.ч. по исключению)
 // восстанавливает прежние. fn синхронна: async/Promise внутри запрещён — контекст снят бы до продолжения.
 // Внутри fn поля можно менять напрямую (CTX.shadows = …) — откатятся вместе с кадром withCtx.
-import './base.js'; // порядок исполнения
+import './quality.js'; // порядок исполнения
 
 const CTX = { scene: null, shadows: null, pbr: false };
 function withCtx(c, fn) {

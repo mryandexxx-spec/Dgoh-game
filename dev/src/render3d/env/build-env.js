@@ -5,12 +5,13 @@ import { PROPS3 } from './props.js';
 import { V3, basic3, col3, lerpC, mat3 } from '../materials.js';
 import { CTX, withCtx } from '../ctx.js';
 import { B3, ENV3 } from '../base.js';
+import { gfx } from '../quality.js';
 import { NZ, SCN, sstep } from '../../render2d/scenes.js';
 import { sRng } from '../../core/rng.js';
 
 // ---------- environment ----------
 // perf step 5 (agreed compromise): scenery keeps casting, the sun shadow map is refreshed every 2nd frame
-function staticNoCast(A) { try { const sm = A.shadows && A.shadows.getShadowMap(); if (sm) sm.refreshRate = 2; } catch (e) {} }
+function staticNoCast(A) { try { const sm = A.shadows && A.shadows.getShadowMap(); if (sm) sm.refreshRate = gfx(A.small).shadowRefresh; } catch (e) {} }
 function buildEnv(A, key, day, ctx) { return withCtx(ctx, () => {
   let E = ENV3[key] || ENV3.desert, S = SCN[key] || SCN.desert;
   if (day && E.night) { E = { ...E, night: 0, sand: '#b88a5e', sand2: '#6a4632' }; S = SCN.canyon; }
@@ -29,7 +30,7 @@ function buildEnv(A, key, day, ctx) { return withCtx(ctx, () => {
   const sun = new B3.DirectionalLight('sun', sunDir.scale(-1), CTX.scene); sun.position = sunDir.scale(40);
   sun.diffuse = S.sun ? lerpC(col3(S.sun[3]), col3('#ffd8a0'), .35) : col3('#9aa6d8'); sun.intensity = E.night ? .6 : E.dark ? .3 : 1.35;
   sun.autoUpdateExtends = false; sun.autoCalcShadowZBounds = false; sun.orthoLeft = -17; sun.orthoRight = 17; sun.orthoTop = 13; sun.orthoBottom = -13; sun.shadowMinZ = 1; sun.shadowMaxZ = 120;
-  CTX.shadows = new B3.ShadowGenerator(A.small ? 1024 : 2048, sun, undefined, undefined, true);
+  CTX.shadows = new B3.ShadowGenerator(gfx(A.small).shadowSize, sun, undefined, undefined, true);
   if (A.engine.webGLVersion >= 2) { CTX.shadows.usePercentageCloserFiltering = true; CTX.shadows.filteringQuality = B3.ShadowGenerator.QUALITY_MEDIUM; } else CTX.shadows.usePoissonSampling = true;
   CTX.shadows.bias = .0008; CTX.shadows.normalBias = .02; CTX.shadows.darkness = .25; A.sun = sun; A.shadows = CTX.shadows;
   if (S.sun) glowSprite(S.sun[3], 90, sunDir.x * 380, sunDir.y * 380, sunDir.z * 380);
@@ -40,7 +41,7 @@ function buildEnv(A, key, day, ctx) { return withCtx(ctx, () => {
     for (const [x, y, s] of [[-140, 170, 46], [-80, 210, 22]]) glowSprite('#f2ecd8', s, x, y, -330, false);
   }
   // ground (displaced, vertex-coloured, textured)
-  const gk = E.ground, size = 160, seg = A.small ? 120 : 170;
+  const gk = E.ground, size = 160, seg = gfx(A.small).groundSeg;
   const ground = MB().CreateGround('ground', { width: size, height: size, subdivisions: seg, updatable: true }, CTX.scene);
   const p = ground.getVerticesData(B3.VertexBuffer.PositionKind), vc = [], c1 = col3(E.sand), c2 = col3(E.sand2), spice = E.spice ? col3(E.spice) : null;
   for (let i = 0; i < p.length; i += 3) {

@@ -12,6 +12,7 @@ import { BT, NOTES, S, set_BT, set_view, view } from '../../core/state.js';
 import { persist } from '../../core/save.js';
 import { GLYPH } from '../../data/glyphs.js';
 import { SAVE_LOW } from '../../render3d/scenes/base-scene.js';
+import { setGfx } from '../../render3d/quality.js';
 import { aiPlan } from '../../logic/battle/ai.js';
 import { fmt } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
@@ -47,7 +48,7 @@ function meta2Click(d) {
   if (d.bsauto) { BT.auto = BT.autoPref = !BT.auto; bPopClose(); if (BT.auto && BT.waiting) { const u = BT.waiting; const p = aiPlan(BT.B, u); doAct(u, p.key, p.target && p.target.uid); } else renderBattle(); return true; }
   if (d.bsspeed) { BT.speed = BT.speedPref = BT.speed >= 4 ? 1 : BT.speed * 2; $('#bpop').remove(); BT.pop = false; renderBattle(); openBattleSettings(); return true; }
   if (d.bslog) { BT.showLog = !BT.showLog; $('#bpop').remove(); BT.pop = false; renderBattle(); openBattleSettings(); return true; }
-  if (d.bsgfx) { try { localStorage.setItem('dune-gfx-low', JSON.stringify(!SAVE_LOW())); } catch (e) {} $('#bpop').remove(); BT.pop = false; openBattleSettings(); toast('Применится со следующего боя'); return true; }
+  if (d.bsgfx) { setGfx(SAVE_LOW() ? 'auto' : 'low'); $('#bpop').remove(); BT.pop = false; openBattleSettings(); toast('Применится со следующего боя'); return true; }
   if (d.bscine) { try { localStorage.setItem('dune-cine-off', JSON.stringify(!CINE_OFF())); } catch (e) {} $('#bpop').remove(); BT.pop = false; openBattleSettings(); return true; }
   if (d.bsdlg) { S.skipDlg = !S.skipDlg; persist(); $('#bpop').remove(); BT.pop = false; openBattleSettings(); return true; }
   if (d.bsreplay) { $('#bpop').remove(); BT.pop = false; BT.resume = null; replayBattle(); return true; }

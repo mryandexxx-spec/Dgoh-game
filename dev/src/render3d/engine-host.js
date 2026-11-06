@@ -7,12 +7,14 @@
 import '../assets/env-hdr.js'; // порядок исполнения
 import { errLog } from '../core/errlog.js';
 import { B3 } from './base.js';
+import { gfx } from './quality.js';
 
 // фаза 3b, шаг 6: планировщик кадров. Каждый кадр rAF хост спрашивает у верхней сцены режим mode(now) и решает, рисовать ли:
 //   active — до 60 fps (движение, ввод, первые 0,8 с после wake/ресайза); idle — 30 fps (лагерь, ожидание ввода в бою);
 //   idleLow — 20 fps (лагерь в упрощённой графике); static — 0 fps, кадр держится (арена после результата; ресайз → сцена вернёт active);
 //   paused — цикл rAF останавливается (сцену перекрыл оверлей); возобновляет hostKick.
 // Throttle по времени, а не пропуском rAF: на 120 Гц частоты те же. Допуск 3 мс на дрожание rAF.
+// базовые частоты (профиль HIGH); фактические берутся из gfx().fps (профиль графики, render3d/quality.js)
 const FPS = { active: 60, idle: 30, idleLow: 20, static: 0 };
 let HOST = null;
 class EngineHost {
@@ -71,7 +73,7 @@ class EngineHost {
     let m = 'active'; try { if (o.mode) m = o.mode(now) || 'active'; } catch (err) { errLog('mode', err); }
     this.mode = m; this.modeN[m] = (this.modeN[m] || 0) + 1;
     if (m === 'paused') { this.stop(); return; }
-    const fps = FPS[m] ?? 60;
+    const fps = gfx().fps[m] ?? 60;
     if (!fps || now - this.lastR < 1000 / fps - 3) return;
     this.lastR = now; this.frames++;
     try { o.frame(); } catch (err) { errLog('frame', err); }

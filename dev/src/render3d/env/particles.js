@@ -4,6 +4,7 @@ import { glowTex } from '../geometry.js';
 import { V3, col3 } from '../materials.js';
 import { CTX } from '../ctx.js';
 import { B3 } from '../base.js';
+import { gfx } from '../quality.js';
 
 function addParticles3(A, type) {
   const tex = glowTex();
@@ -15,18 +16,19 @@ function addParticles3(A, type) {
     dust:  { n: 260, box: [[-35, 0, -26], [35, 4, 14]], dir: [[-.15, -.05, -.15], [.15, .08, .15]], life: [8, 16], size: [.06, .14], col: '#ffd9a0', a: .5, add: true },
   }[type];
   if (cfg) {
-    const ps = new B3.ParticleSystem(type, cfg.n, CTX.scene); ps.particleTexture = tex; ps.emitter = V3(0, 0, 0);
+    const k = gfx(A.small).particles, n = Math.max(1, Math.round(cfg.n * k));
+    const ps = new B3.ParticleSystem(type, n, CTX.scene); ps.particleTexture = tex; ps.emitter = V3(0, 0, 0);
     ps.minEmitBox = V3(...cfg.box[0]); ps.maxEmitBox = V3(...cfg.box[1]); ps.direction1 = V3(...cfg.dir[0]); ps.direction2 = V3(...cfg.dir[1]);
     ps.minEmitPower = ps.maxEmitPower = 1; ps.minLifeTime = cfg.life[0]; ps.maxLifeTime = cfg.life[1]; ps.minSize = cfg.size[0]; ps.maxSize = cfg.size[1];
     const c = col3(cfg.col); ps.color1 = new B3.Color4(c.r, c.g, c.b, cfg.a); ps.color2 = new B3.Color4(c.r, c.g, c.b, cfg.a * .6); ps.colorDead = new B3.Color4(c.r, c.g, c.b, 0);
-    ps.emitRate = cfg.n / ((cfg.life[0] + cfg.life[1]) / 2); ps.blendMode = cfg.add ? B3.ParticleSystem.BLENDMODE_ADD : B3.ParticleSystem.BLENDMODE_STANDARD;
+    ps.emitRate = n / ((cfg.life[0] + cfg.life[1]) / 2); ps.blendMode = cfg.add ? B3.ParticleSystem.BLENDMODE_ADD : B3.ParticleSystem.BLENDMODE_STANDARD;
     if (cfg.stretch) ps.billboardMode = B3.ParticleSystem.BILLBOARDMODE_STRETCHED;
     ps.preWarmCycles = 120; ps.preWarmStepOffset = 5; ps.start(); A.parts.push(ps);
   }
   for (const pl of A.plumes || []) {
     const ps = new B3.ParticleSystem('plume', 140, CTX.scene); ps.particleTexture = tex; ps.emitter = V3(pl.x, pl.y, pl.z);
     ps.minEmitBox = V3(-1.5, 0, -1.5); ps.maxEmitBox = V3(1.5, 0, 1.5); ps.direction1 = V3(.1, 2.2, -.2); ps.direction2 = V3(.6, 3, .2);
-    ps.minLifeTime = 7; ps.maxLifeTime = 11; ps.emitRate = 14; ps.minSize = 4; ps.maxSize = 8; ps.addSizeGradient(0, 4, 6); ps.addSizeGradient(1, 14, 20);
+    ps.minLifeTime = 7; ps.maxLifeTime = 11; ps.emitRate = 14 * gfx(A.small).particles; ps.minSize = 4; ps.maxSize = 8; ps.addSizeGradient(0, 4, 6); ps.addSizeGradient(1, 14, 20);
     ps.color1 = new B3.Color4(.85, .4, .17, .18); ps.color2 = new B3.Color4(.95, .55, .25, .12); ps.colorDead = new B3.Color4(.6, .3, .15, 0);
     ps.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD; ps.preWarmCycles = 200; ps.preWarmStepOffset = 5; ps.start(); A.parts.push(ps);
   }
