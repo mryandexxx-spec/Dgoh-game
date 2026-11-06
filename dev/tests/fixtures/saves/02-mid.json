@@ -1,0 +1,647 @@
+{
+ "v": 1,
+ "water": 80,
+ "waterTs": 1792454400000,
+ "candle": 60,
+ "candleTs": 1792454400000,
+ "solari": 125000,
+ "plast": 44,
+ "cry": 900,
+ "folio": 37,
+ "seal": 2,
+ "rid": 140,
+ "roster": {
+  "leto": {
+   "shards": 0,
+   "stars": 1,
+   "lvl": 10,
+   "gear": 1,
+   "sk": {
+    "basic": 1,
+    "special": 1,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    true,
+    true,
+    false,
+    true,
+    false,
+    false
+   ]
+  },
+  "paul": {
+   "shards": 3,
+   "stars": 2,
+   "lvl": 12,
+   "gear": 2,
+   "sk": {
+    "basic": 2,
+    "special": 2,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "jessica": {
+   "shards": 6,
+   "stars": 3,
+   "lvl": 14,
+   "gear": 3,
+   "sk": {
+    "basic": 3,
+    "special": 3,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "gurney": {
+   "shards": 9,
+   "stars": 4,
+   "lvl": 16,
+   "gear": 4,
+   "sk": {
+    "basic": 4,
+    "special": 1,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    false,
+    true,
+    false,
+    true,
+    false,
+    false
+   ]
+  },
+  "duncan": {
+   "shards": 12,
+   "stars": 5,
+   "lvl": 18,
+   "gear": 5,
+   "sk": {
+    "basic": 1,
+    "special": 2,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "thufir": {
+   "shards": 15,
+   "stars": 6,
+   "lvl": 20,
+   "gear": 6,
+   "sk": {
+    "basic": 2,
+    "special": 3,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "baron": {
+   "shards": 18,
+   "stars": 1,
+   "lvl": 22,
+   "gear": 7,
+   "sk": {
+    "basic": 3,
+    "special": 1,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    true,
+    true,
+    false,
+    true,
+    false,
+    false
+   ]
+  },
+  "feyd": {
+   "shards": 21,
+   "stars": 2,
+   "lvl": 24,
+   "gear": 1,
+   "sk": {
+    "basic": 4,
+    "special": 2,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "rabban": {
+   "shards": 24,
+   "stars": 3,
+   "lvl": 26,
+   "gear": 2,
+   "sk": {
+    "basic": 1,
+    "special": 3,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "piter": {
+   "shards": 27,
+   "stars": 4,
+   "lvl": 28,
+   "gear": 3,
+   "sk": {
+    "basic": 2,
+    "special": 1,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    false,
+    true,
+    false,
+    true,
+    false,
+    false
+   ]
+  },
+  "trooper": {
+   "shards": 30,
+   "stars": 5,
+   "lvl": 30,
+   "gear": 4,
+   "sk": {
+    "basic": 3,
+    "special": 2,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "stilgar": {
+   "shards": 33,
+   "stars": 6,
+   "lvl": 32,
+   "gear": 5,
+   "sk": {
+    "basic": 4,
+    "special": 3,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "chani": {
+   "shards": 36,
+   "stars": 1,
+   "lvl": 34,
+   "gear": 6,
+   "sk": {
+    "basic": 1,
+    "special": 1,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    true,
+    true,
+    false,
+    true,
+    false,
+    false
+   ]
+  },
+  "kynes": {
+   "shards": 39,
+   "stars": 2,
+   "lvl": 36,
+   "gear": 7,
+   "sk": {
+    "basic": 2,
+    "special": 2,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "fedaykin": {
+   "shards": 2,
+   "stars": 3,
+   "lvl": 38,
+   "gear": 1,
+   "sk": {
+    "basic": 3,
+    "special": 3,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "shaddam": {
+   "shards": 5,
+   "stars": 4,
+   "lvl": 40,
+   "gear": 2,
+   "sk": {
+    "basic": 4,
+    "special": 1,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    false,
+    true,
+    false,
+    true,
+    false,
+    false
+   ]
+  },
+  "bashar": {
+   "shards": 8,
+   "stars": 5,
+   "lvl": 42,
+   "gear": 3,
+   "sk": {
+    "basic": 1,
+    "special": 2,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "legion": {
+   "shards": 11,
+   "stars": 6,
+   "lvl": 44,
+   "gear": 4,
+   "sk": {
+    "basic": 2,
+    "special": 3,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "mohiam": {
+   "shards": 14,
+   "stars": 1,
+   "lvl": 11,
+   "gear": 5,
+   "sk": {
+    "basic": 3,
+    "special": 1,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    true,
+    true,
+    false,
+    true,
+    false,
+    false
+   ]
+  },
+  "fenring": {
+   "shards": 17,
+   "stars": 2,
+   "lvl": 13,
+   "gear": 6,
+   "sk": {
+    "basic": 4,
+    "special": 2,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "muaddib": {
+   "shards": 20,
+   "stars": 3,
+   "lvl": 15,
+   "gear": 7,
+   "sk": {
+    "basic": 1,
+    "special": 3,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "liet": {
+   "shards": 23,
+   "stars": 4,
+   "lvl": 17,
+   "gear": 1,
+   "sk": {
+    "basic": 2,
+    "special": 1,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    false,
+    true,
+    false,
+    true,
+    false,
+    false
+   ]
+  },
+  "atrguard": {
+   "shards": 26,
+   "stars": 5,
+   "lvl": 19,
+   "gear": 2,
+   "sk": {
+    "basic": 3,
+    "special": 2,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "robot": {
+   "shards": 29,
+   "stars": 6,
+   "lvl": 21,
+   "gear": 3,
+   "sk": {
+    "basic": 4,
+    "special": 3,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "cymek": {
+   "shards": 32,
+   "stars": 1,
+   "lvl": 23,
+   "gear": 4,
+   "sk": {
+    "basic": 1,
+    "special": 1,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    true,
+    true,
+    false,
+    true,
+    false,
+    false
+   ]
+  },
+  "erasmus": {
+   "shards": 35,
+   "stars": 2,
+   "lvl": 25,
+   "gear": 5,
+   "sk": {
+    "basic": 2,
+    "special": 2,
+    "ult": 1,
+    "passive": 2,
+    "leader": 1
+   },
+   "eq": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false
+   ]
+  }
+ },
+ "squad": [
+  "leto",
+  "paul",
+  "jessica",
+  "duncan",
+  "gurney"
+ ],
+ "squadD": [
+  "baron",
+  "rabban",
+  "piter",
+  "feyd",
+  "trooper"
+ ],
+ "cleared": {
+  "0": 1,
+  "1": 2,
+  "2": 3,
+  "3": 1,
+  "4": 2,
+  "5": 3,
+  "6": 1,
+  "7": 2,
+  "8": 3,
+  "9": 1,
+  "10": 2,
+  "11": 3,
+  "12": 1,
+  "13": 2,
+  "14": 3,
+  "15": 1,
+  "16": 2,
+  "17": 3,
+  "18": 1,
+  "19": 2,
+  "20": 3,
+  "21": 1,
+  "22": 2,
+  "23": 3,
+  "24": 1,
+  "25": 2,
+  "26": 3,
+  "27": 1,
+  "28": 2,
+  "29": 3,
+  "30": 1,
+  "31": 2,
+  "32": 3,
+  "33": 1,
+  "34": 2,
+  "35": 3,
+  "36": 1,
+  "37": 2,
+  "38": 3,
+  "39": 1
+ },
+ "inv": {
+  "belt2": 3,
+  "ring3": 1,
+  "mask4": 5
+ },
+ "journey": {
+  "0": 1
+ },
+ "jPick": [
+  "paul",
+  "jessica"
+ ],
+ "raid": {
+  "tier": 0,
+  "hp": 90000,
+  "maxHp": 150000,
+  "log": []
+ },
+ "raidKills": [
+  1
+ ],
+ "daily": {
+  "d": "2026-10-20",
+  "c": {
+   "login": 1
+  },
+  "got": {},
+  "chest": false
+ },
+ "darkGift": 1
+}

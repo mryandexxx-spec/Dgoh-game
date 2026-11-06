@@ -1,0 +1,93 @@
+// render3d/scenes/hero.js — строки 2427–2503 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import { prog } from '../../core/util.js';
+import { TIER_COL } from '../../logic/gear.js';
+import { Stage3D } from './base-scene.js';
+import { ENV_HDR } from '../../assets/env-hdr.js';
+import { poseHuman } from '../characters/pose-generic.js';
+import { makeHuman3 } from '../characters/procedural.js';
+import { MB, bCyl, bPlane, dynTex, glowCanvas } from '../geometry.js';
+import { PBR_ON, SC, SHG, V3, basic3, col3, mat3, mk, set_PBR_ON, set_SC, set_SHG } from '../materials.js';
+import { B3, HAS3D } from '../base.js';
+import { CH } from '../../data/chars.js';
+
+// ---------- hero showcase (character window) ----------
+class HeroStage extends Stage3D {
+  constructor() {
+    super({ cls: 'stage3d hero3d', alpha: false });
+    const S = this.scene; set_SC(S); S._maxL = 5; // hemi + key + 2 rims + aura
+    S.clearColor = new B3.Color4(.07, .045, .03, 1); S.ambientColor = B3.Color3.Black();
+    // backdrop: soft radial gradient sphere + floor podium
+    const bg = MB().CreateSphere('bg', { diameter: 60, segments: 16, sideOrientation: B3.Mesh.BACKSIDE }, S); bg.material = basic3('#0e0906', { fog: false }); bg.isPickable = false; this.bg = bg;
+    const halo = mk(bPlane(7, 7), null, 0, 1.4, -3, false); const hm = basic3('#3a2210', { fog: false, add: true }); const htx = dynTex(glowCanvas(), 0, true); hm.emissiveTexture = htx; hm.opacityTexture = htx; hm.disableDepthWrite = true; halo.material = hm; this.halo = halo;
+    const hemi = new B3.HemisphericLight('h', V3(0, 1, 0), S); hemi.intensity = .35; hemi.diffuse = col3('#c8b090'); hemi.groundColor = col3('#2a1a10'); hemi.specular = B3.Color3.Black();
+    const key = this.key = new B3.DirectionalLight('key', V3(-.5, -.8, -.6), S); key.position = V3(4, 7, 6); key.intensity = 1.7; key.diffuse = col3('#ffe2b8');
+    key.autoUpdateExtends = false; key.orthoLeft = -2; key.orthoRight = 2; key.orthoTop = 3; key.orthoBottom = -1; key.shadowMinZ = .5; key.shadowMaxZ = 20;
+    const rim = this.rim = new B3.SpotLight('rim', V3(-2.5, 3.2, -2.5), V3(.6, -.5, .6), Math.PI / 3, 2, S); rim.intensity = 1.6; rim.diffuse = col3('#8fc0ff');
+    const rim2 = this.rim2 = new B3.SpotLight('rim2', V3(2.6, 2.6, -2.2), V3(-.6, -.4, .6), Math.PI / 3, 2, S); rim2.intensity = 1.1; rim2.diffuse = col3('#ffa860');
+    set_SHG(this.shadows = new B3.ShadowGenerator(this.small ? 1024 : 2048, key)); SHG.bias = .0006; SHG.normalBias = .01; SHG.darkness = .2;
+    SHG.usePercentageCloserFiltering = this.engine.webGLVersion >= 2; // perf step 5: PCF instead of PCSS (contact hardening)
+    SHG.filteringQuality = B3.ShadowGenerator.QUALITY_MEDIUM;
+    // podium: sand-stone disc with glowing tier ring
+    const stone = mat3('#5a4030', { roughness: .8 }), top = mat3('#7a5a3e', { roughness: .65 });
+    mk(bCyl(1.05, 1.15, .22, 48), stone, 0, -.11, 0, false); mk(bCyl(.98, .98, .02, 48), top, 0, .005, 0, false);
+    this.ring = mk(MB().CreateTorus('ring', { diameter: 2.04, thickness: .03, tessellation: 64 }, S), basic3('#e8913f'), 0, .01, 0, false);
+    const tx = dynTex(glowCanvas(), 0, true);
+    const dust = new B3.ParticleSystem('motes', 160, S); dust.particleTexture = tx; dust.emitter = V3(0, 0, 0); dust.minEmitBox = V3(-1.6, 0, -1.2); dust.maxEmitBox = V3(1.6, 2.6, 1); dust.direction1 = V3(-.05, .05, -.05); dust.direction2 = V3(.05, .15, .05);
+    dust.minLifeTime = 4; dust.maxLifeTime = 8; dust.minSize = .01; dust.maxSize = .03; dust.color1 = new B3.Color4(1, .85, .6, .7); dust.color2 = new B3.Color4(1, .7, .4, .5); dust.colorDead = new B3.Color4(1, .6, .3, 0); dust.emitRate = 20; dust.blendMode = B3.ParticleSystem.BLENDMODE_ADD; dust.preWarmCycles = 100; dust.start();
+    const burst = this.burst = new B3.ParticleSystem('burst', 500, S); burst.particleTexture = tx; burst.emitter = V3(0, .1, 0); burst.minEmitBox = V3(-.6, 0, -.6); burst.maxEmitBox = V3(.6, .1, .6); burst.direction1 = V3(-.4, 2, -.4); burst.direction2 = V3(.4, 4, .4); burst.gravity = V3(0, -1.5, 0);
+    burst.minLifeTime = .8; burst.maxLifeTime = 1.8; burst.minSize = .02; burst.maxSize = .06; burst.color1 = new B3.Color4(1, .85, .45, 1); burst.color2 = new B3.Color4(1, .65, .25, 1); burst.colorDead = new B3.Color4(1, .4, .1, 0); burst.blendMode = B3.ParticleSystem.BLENDMODE_ADD; burst.emitRate = 0; burst.manualEmitCount = 0; burst.start();
+    const rp = new B3.ReflectionProbe('rp', 64, S); rp.renderList.push(bg); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
+    try { const env = new B3.HDRCubeTexture(ENV_HDR, S, 64, false, true, false, true, () => { S.environmentTexture = env; S.environmentIntensity = .85; }, () => {}); } catch (e) {}
+    set_SC(null); set_SHG(null);
+    this.look({ dof: { f: 85, stop: 2, d: 4200 }, exposure: 1.05, ssao: .35, bloomW: .35, bloomT: .85 });
+    this.yaw = 0; this.yawV = 0; this.drag = null; this.auto = true; this.showcase = true;
+    const dp = this.dustP = new B3.ParticleSystem('dust', 260, S); dp.particleTexture = tx; dp.emitter = V3(0, 1.2, 0); dp.minEmitBox = V3(-.08, -.05, -.05); dp.maxEmitBox = V3(.08, .05, .05);
+    dp.direction1 = V3(-.4, .2, -.3); dp.direction2 = V3(.4, .7, .5); dp.gravity = V3(0, -.6, 0); dp.minLifeTime = .7; dp.maxLifeTime = 1.6; dp.minSize = .02; dp.maxSize = .07; dp.minEmitPower = .2; dp.maxEmitPower = .6;
+    dp.color1 = new B3.Color4(.78, .64, .46, .7); dp.color2 = new B3.Color4(.6, .48, .34, .55); dp.colorDead = new B3.Color4(.5, .4, .3, 0); dp.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD; dp.emitRate = 0; dp.manualEmitCount = 0; dp.start();
+    const cv = this.cv;
+    cv.addEventListener('pointerdown', e => { this.drag = { x: e.clientX, y0: this.yaw }; this.auto = false; cv.setPointerCapture && cv.setPointerCapture(e.pointerId); });
+    cv.addEventListener('pointermove', e => { if (!this.drag) return; const nx = this.yaw; this.yaw = this.drag.y0 + (e.clientX - this.drag.x) * .012; this.yawV = (this.yaw - nx) * 60; });
+    const up = () => { if (this.drag) { this.drag = null; this.resumeT = performance.now() + 3000; } }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  }
+  setHero(def, prog0) {
+    if (this.def === def && this.o) return;
+    if (this.o) this.o.root.dispose(false, true);
+    set_SC(this.scene); set_SHG(this.shadows); set_PBR_ON(true); const o = makeHuman3(def); set_PBR_ON(false); set_SC(null); set_SHG(null);
+    o.base = V3(0, 0, 0); o.face = 0; o.side = 'A'; o.phase = 0; o.def = def; this.o = o; this.def = def; this.yaw = -.35; this.auto = true;
+    const tc = col3(TIER_COL[(prog0 || {}).gear || 1] || '#e8913f'); this.ring.material.emissiveColor = tc; this.rim.diffuse = def.side === 'dark' ? col3('#ff6a5a') : col3('#8fc0ff');
+    this.intro = performance.now();
+  }
+  celebrate(kind) { const b = this.burst; b.manualEmitCount = kind === 'star' ? 420 : 220; this.flashT = performance.now(); this.flashKind = kind; }
+  tick(now, t) {
+    const o = this.o; if (!o) return;
+    if (this.auto && !this.drag && (!this.resumeT || now > this.resumeT)) this.yaw += Math.sin(t * .35) * .0025;
+    if (!this.drag) { this.yaw += this.yawV / 60; this.yawV *= .92; }
+    poseHuman(this, o, now, t, 1); o.root.rotation.y = this.yaw;
+    const H = o.h, ik = this.intro ? Math.min(1, (now - this.intro) / 1100) : 1, e = 1 - (1 - ik) ** 3;
+    const asp = (this.cv.clientWidth || 1) / (this.cv.clientHeight || 1), dist = (H * 1.35 + .6) / Math.min(1, asp * 1.9);
+    this.camera.position.set(Math.sin(.25) * dist * (1.25 - .25 * e), H * .62 + .25 * (1 - e), Math.cos(.25) * dist * (1.25 - .25 * e)); this.camera.setTarget((this._tg || (this._tg = V3())).set(0, H * .52, 0)); this.camera.fov = .75;
+    if (this.pipe.depthOfFieldEnabled) this.pipe.depthOfField.focusDistance = dist * 1000;
+    const fk = this.flashT ? Math.max(0, 1 - (now - this.flashT) / 900) : 0;
+    this.key.intensity = 1.7 + fk * 2; this.ring.scaling.setAll(1 + fk * .15); this.glow.intensity = .6 + fk;
+  }
+  slashFX() {} muzzleFX() {} voiceFX() {} castFX() {}
+  dustFX(o, where) { const H = o.h, r = o.root.rotation.y, off = where === 'shoulder' ? V3(.28, H * .74, .05) : where === 'cape' ? V3(-.1, H * .5, -.3) : V3(-.05, H * .66, .14); const c = Math.cos(r), s = Math.sin(r); this.dustP.emitter = V3(off.x * c + off.z * s, off.y, -off.x * s + off.z * c); this.dustP.manualEmitCount = where === 'cape' ? 140 : 40; }
+}
+let HERO_STAGE = null, HERO_SNAP = null;
+function mountHeroStage(id) {
+  if (!HAS3D) return;
+  const host = document.querySelector('#overlay .cfig'); if (!host) return;
+  try {
+    if (!HERO_STAGE) HERO_STAGE = new HeroStage();
+    const p = prog(id), d = CH[id];
+    host.classList.add('has3d'); HERO_STAGE.setHero(d, p); HERO_STAGE.attach(host);
+    const snap = { id, stars: p.stars, gear: p.gear, eq: p.eq.filter(Boolean).length, lvl: p.lvl, sk: JSON.stringify(p.sk) };
+    if (HERO_SNAP && HERO_SNAP.id === id) { if (snap.stars > HERO_SNAP.stars || snap.gear > HERO_SNAP.gear) HERO_STAGE.celebrate('star'); else if (snap.eq > HERO_SNAP.eq || snap.lvl > HERO_SNAP.lvl || snap.sk !== HERO_SNAP.sk) HERO_STAGE.celebrate('up'); }
+    HERO_SNAP = snap;
+  } catch (e) { console.warn('hero stage', e); }
+}
+
+
+function set_HERO_STAGE(v) { return HERO_STAGE = v; }
+function set_HERO_SNAP(v) { return HERO_SNAP = v; }
+export { HeroStage, HERO_STAGE, HERO_SNAP, mountHeroStage, set_HERO_STAGE, set_HERO_SNAP };

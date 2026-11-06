@@ -1,0 +1,62 @@
+/* ===== v30: roster level, gear pips, star-up highlight ===== */
+.rctop { display: flex; align-items: center; gap: 10px; }
+.rclv { display: grid; justify-items: start; line-height: 1; }
+.rclv b { font-family: var(--f-display); font-size: 30px; font-weight: 400; color: #ffe6b0; text-shadow: 0 2px 6px #000; }
+.rclv small { font-family: var(--f-mono); font-size: 9px; letter-spacing: .14em; color: var(--dust); text-transform: uppercase; }
+.rcrel { align-self: flex-start; margin-left: auto; margin-right: 34px; font-family: var(--f-mono); font-size: 11px; font-weight: 700; color: #ffe0c8; background: linear-gradient(180deg, #ff6a3a, #9a2a1a); border-radius: 3px; padding: 2px 6px; box-shadow: 0 0 10px rgb(255 106 58 / .5); }
+.gpips { display: inline-flex; align-items: center; gap: 3px; }
+.gpips i { width: 7px; height: 7px; border-radius: 2px; background: #2a1e14; border: 1px solid color-mix(in srgb, var(--tc) 60%, #000); transform: rotate(45deg); }
+.gpips i.on { background: var(--tc); box-shadow: 0 0 6px var(--tc); border-color: var(--tc); }
+.gpips b { margin-left: 4px; font-size: 11px; color: #f4e7cf; }
+.rc.canstar { box-shadow: 0 0 0 2px #ffd27a, 0 0 22px rgb(255 200 90 / .75) !important; animation: canstar 1.6s ease-in-out infinite; }
+.rc.canstar .pt { box-shadow: 0 0 0 3px #ffd27a, 0 0 18px #ffb040; }
+@keyframes canstar { 50% { box-shadow: 0 0 0 3px #fff0b0, 0 0 34px rgb(255 210 110 / .95) !important; } }
+.csbadge { position: absolute; left: 50%; top: -9px; transform: translateX(-50%); z-index: 3; white-space: nowrap; font-family: var(--f-mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: #2a1806; background: linear-gradient(90deg, #ffe08a, #ffb040); padding: 2px 8px; border-radius: 10px; box-shadow: 0 0 12px #ffb040; }
+.ncstars i { color: rgb(255 255 255 / .16); font-style: normal; }
+/* red text when a resource is missing */
+.btn.lack, .btn.lack small, .btn.lack small .amt { color: #ff6a5a !important; }
+.btn.lack { border-color: #8a3a2e !important; }
+/* character window: nav, resources, relics */
+.csheet { position: relative; }
+.ccenter { position: relative; }
+.dnav { position: absolute; top: 34%; z-index: 6; width: 30px; height: 56px; margin-top: -28px; border: 1px solid #6a4a2a; background: rgb(26 17 10 / .88); color: #ffd9a0; font-size: 30px; line-height: 1; border-radius: 6px; cursor: pointer; display: grid; place-items: center; }
+.dnav.prev { left: -2px; } .dnav.next { right: -2px; }
+.dnav:hover { background: #3a2614; }
+.csheet.swl { animation: swl .28s ease-out; } .csheet.swr { animation: swr .28s ease-out; }
+@keyframes swl { from { transform: translateX(28px); opacity: .4; } } @keyframes swr { from { transform: translateX(-28px); opacity: .4; } }
+.dres { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 6px 10px; margin-bottom: 8px; border: 1px solid #4e3a26; border-radius: 4px; background: rgb(0 0 0 / .25); font-size: 13px; }
+.dres .amt { font-weight: 600; }
+.relbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 6px; padding: 8px 10px; border: 1px solid #6a2a1a; border-radius: 4px; background: linear-gradient(90deg, rgb(255 106 58 / .14), transparent); }
+.rtier { font-family: var(--f-display); font-size: 16px; color: #ffb090; }
+.relt { color: #ff8a5a; }
+/* hero upgrade popup */
+.celeb.hup { background: rgb(8 5 3 / .78); animation: fadein .2s; }
+.hutop { position: relative; display: flex; align-items: center; gap: 6px; }
+.humouse { width: 110px; } .humouse .mouse { width: 100%; height: auto; }
+.hubadge { position: absolute; right: -10px; bottom: -4px; font-family: var(--f-display); font-size: 20px; color: #2a1806; background: linear-gradient(180deg, #ffe08a, #e0a040); border-radius: 14px; padding: 2px 10px; box-shadow: 0 0 14px #ffb040; animation: csnew .9s cubic-bezier(.2, 1.3, .4, 1) .3s both; }
+.hubadge.relic { background: linear-gradient(180deg, #ff9a6a, #c0401a); color: #fff0e0; }
+.hustats { position: relative; width: 100%; display: grid; gap: 3px; margin-top: 4px; }
+.hurow { display: grid; grid-template-columns: 1fr auto auto auto 64px; gap: 8px; align-items: baseline; padding: 4px 8px; border-radius: 3px; background: rgb(0 0 0 / .25); font-size: 13px; text-align: left; animation: hurow .4s ease-out both; }
+.hurow:nth-child(2) { animation-delay: .1s; } .hurow:nth-child(3) { animation-delay: .2s; } .hurow:nth-child(4) { animation-delay: .3s; } .hurow:nth-child(5) { animation-delay: .4s; }
+.hurow i { color: var(--dust); font-style: normal; } .hurow b.up { color: #9ee28a; } .hurow em { color: #9ee28a; font-style: normal; font-size: 11px; text-align: right; }
+@keyframes hurow { from { opacity: 0; transform: translateX(-12px); } }
+.ulegend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #ffe08a; margin: 4px 0; }
+/* raid reward: animated worm medal */
+.wormbadge { width: 120px; height: 120px; margin: -6px auto 4px; filter: drop-shadow(0 0 18px rgb(255 160 60 / .6)); animation: wbpop .7s cubic-bezier(.2, 1.4, .4, 1) both; }
+.wormbadge svg { width: 100%; height: 100%; display: block; }
+.wormbadge .wbw { transform-origin: 60px 70px; animation: wbw 2.4s ease-in-out infinite; }
+.wormbadge .wbs circle { animation: wbs 1.4s ease-in infinite; } .wormbadge .wbs circle:nth-child(odd) { animation-delay: .5s; }
+@keyframes wbpop { from { transform: scale(.2) rotate(-40deg); opacity: 0; } }
+@keyframes wbw { 0%, 100% { transform: translateY(6px) rotate(-4deg); } 50% { transform: translateY(-4px) rotate(4deg); } }
+@keyframes wbs { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-16px); opacity: 0; } }
+.result.raidres .rwgrid .rwt { transform-origin: center; }
+/* legend requirements */
+.reqh.full { background: rgb(158 226 138 / .08); box-shadow: inset 0 0 0 1px rgb(158 226 138 / .35); }
+.rqc { display: flex; flex-wrap: wrap; gap: 2px 6px; font-family: var(--f-mono); font-size: 10px; }
+.rqc i { font-style: normal; } .rqc i.ok { color: #9ee28a; } .rqc i.no { color: #ff7a5a; }
+/* battle: 2D fallback active highlight */
+.unit.active .shadow { background: radial-gradient(ellipse, transparent 40%, var(--tc, #e48a3c) 52%, transparent 70%); filter: brightness(1.4) drop-shadow(0 0 6px var(--tc, #e48a3c)); }
+.unit.legend.active .shadow { filter: brightness(2) drop-shadow(0 0 14px #ffe08a); }
+.unit.charmed .uname { color: #9fe8ff; }
+.sqhp { width: 80%; height: 4px; border-radius: 2px; background: #2a1a10; overflow: hidden; } .sqhp i { display: block; height: 100%; background: linear-gradient(90deg, #6ad06a, #b8e86a); }
+.sqfat { font-size: 9px; color: #ffb070; }

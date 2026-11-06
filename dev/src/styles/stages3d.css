@@ -1,0 +1,11 @@
+/* ===== 3D stages ===== */
+.stage3d { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+.lobby .camp3d { position: absolute; inset: 0; z-index: 0; }
+.lobby.has3d #lobbybg { display: none; }
+.lobby.has3d .lfig { width: auto; aspect-ratio: .42; transform: translate(-50%, -100%); }
+.lobby.has3d .lfig svg { opacity: 0; height: 100%; width: 100%; }
+.lobby.has3d .lfig span { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); white-space: nowrap; font-size: 11px; color: #f4e7cf; }
+.cfig.has3d { width: min(240px, 100%) !important; aspect-ratio: 3 / 4.4; background: #120c08; border: 1px solid #5a4028; box-shadow: inset 0 0 30px #000; overflow: hidden; border-radius: 8px; cursor: grab; }
+.cfig.has3d > svg { display: none; }
+@media (orientation: landscape) and (max-height: 520px) { .cfig.has3d { width: 150px !important; } }
+

@@ -1,0 +1,12 @@
+/* ===== spice hourglass & gauges ===== */
+.hglass { position: relative; width: 52px; height: 64px; padding: 2px; border: 0; background: radial-gradient(circle at 50% 50%, rgb(232 145 63 / .2), transparent 70%); display: grid; justify-items: center; color: #ffd8a0; cursor: pointer; align-self: center; }
+.hglass svg { width: 28px; height: 38px; filter: drop-shadow(0 2px 4px #000); } .hglass b { font: 700 12px var(--f-mono); text-shadow: 0 1px 2px #000; }
+.hglass .hgs { animation: hgs .5s linear infinite; } @keyframes hgs { to { stroke-dashoffset: -5; } }
+.hglass.full svg { filter: drop-shadow(0 0 8px #ffb040) drop-shadow(0 0 16px #ff8a20); animation: hgfull 1.2s ease-in-out infinite; } .hglass.full b { color: #ffe08a; }
+@keyframes hgfull { 50% { transform: scale(1.08); } }
+.hud .hb.spm { height: 4px; border-color: #6a3a10; } .hud .hb.spm i { background: linear-gradient(90deg, #a85a20, #ffb05a); }
+.hud .hb.spm.full { box-shadow: 0 0 6px #ffb040, 0 0 12px #ff8a20; } .hud .hb.spm.full i { animation: glbar .7s ease-in-out infinite alternate; }
+button.bgz { cursor: pointer; font: inherit; } button.bgz:hover { border-color: var(--spice); } .bgz.worm.full { box-shadow: 0 0 10px #ff6a3a; }
+.reqh { cursor: pointer; border-radius: 4px; } .reqh:hover { background: rgb(232 145 63 / .1); }
+@media (orientation: landscape) and (max-height: 520px) { .hglass { width: 44px; height: 54px; } .hglass svg { width: 22px; height: 30px; } .hglass b { font-size: 10px; } }
+

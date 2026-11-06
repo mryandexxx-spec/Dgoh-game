@@ -1,0 +1,11 @@
+/* ===== 3D battle HUD ===== */
+.field.three::before { display: none; }
+.field.three .unit, .field.three .unit.boss { width: var(--w, 60px) !important; }
+.field.three .fig { aspect-ratio: auto !important; height: var(--fh, 120px); animation: none !important; filter: none !important; transform: none !important; }
+.field.three .shadow { display: none; }
+.field.three .uname { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 2px; }
+.field.three .unit.dead { opacity: 1; filter: none; }
+.field.three .unit.dead .hud, .field.three .unit.dead .uname, .field.three .unit.dead .intent { visibility: hidden; }
+.field.three .unit.tgt .fig { box-shadow: none; }
+.battle.raid3d .field.three .unit.boss .uname { display: none; }
+

@@ -1,0 +1,63 @@
+{
+ "v": 1,
+ "water": 120,
+ "waterTs": 1790812800000,
+ "solari": 4200,
+ "plast": 5,
+ "roster": {
+  "leto": {
+   "shards": 4,
+   "stars": 3,
+   "lvl": 5,
+   "gear": 2
+  },
+  "paul": {
+   "shards": 4,
+   "stars": 3,
+   "lvl": 5,
+   "gear": 2
+  },
+  "jessica": {
+   "shards": 4,
+   "stars": 2,
+   "lvl": 5,
+   "gear": 2
+  },
+  "duncan": {
+   "shards": 4,
+   "stars": 2,
+   "lvl": 5,
+   "gear": 2
+  },
+  "gurney": {
+   "shards": 4,
+   "stars": 2,
+   "lvl": 5,
+   "gear": 2
+  },
+  "rabban": {
+   "shards": 4,
+   "stars": 2,
+   "lvl": 5,
+   "gear": 2
+  },
+  "trooper": {
+   "shards": 4,
+   "stars": 2,
+   "lvl": 5,
+   "gear": 2
+  }
+ },
+ "squad": [
+  "leto",
+  "paul",
+  "jessica",
+  "duncan",
+  "gurney"
+ ],
+ "cleared": {
+  "0": 3,
+  "1": 3,
+  "2": 2
+ }
+}

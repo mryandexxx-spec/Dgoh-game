@@ -1,0 +1,27 @@
+/* ===== legend ultimate cinematic ===== */
+.ultcine { position: fixed; inset: 0; z-index: 42; pointer-events: none; overflow: hidden; animation: ucfade var(--ud, 2.9s) ease forwards; }
+@keyframes ucfade { 0% { opacity: 0; } 6% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
+.ucbar { position: absolute; left: 0; right: 0; height: 13vh; background: #050302; z-index: 3; }
+.ucbar.t { top: 0; animation: ucbt var(--ud, 2.9s) cubic-bezier(.2, .8, .2, 1) forwards; } .ucbar.b { bottom: 0; animation: ucbb var(--ud, 2.9s) cubic-bezier(.2, .8, .2, 1) forwards; }
+@keyframes ucbt { 0% { transform: translateY(-100%); } 12%, 85% { transform: none; } 100% { transform: translateY(-100%); } }
+@keyframes ucbb { 0% { transform: translateY(100%); } 12%, 85% { transform: none; } 100% { transform: translateY(100%); } }
+.ucrays { position: absolute; inset: -50%; background: repeating-conic-gradient(from 0deg at 50% 50%, color-mix(in srgb, var(--uc) 30%, transparent) 0 6deg, transparent 6deg 18deg); animation: ucspin var(--ud, 2.9s) linear forwards; }
+@keyframes ucspin { from { transform: rotate(0) scale(.6); opacity: 0; } 15% { opacity: .9; } to { transform: rotate(40deg) scale(1.1); opacity: .15; } }
+.ucband { position: absolute; left: -10%; right: -10%; top: 28%; height: 44%; background: linear-gradient(90deg, transparent, rgb(10 6 3 / .88) 12%, rgb(10 6 3 / .9) 88%, transparent), linear-gradient(180deg, var(--uc), transparent 4%, transparent 96%, var(--uc)); box-shadow: 0 0 60px color-mix(in srgb, var(--uc) 60%, transparent); animation: ucband var(--ud, 2.9s) cubic-bezier(.2, .8, .2, 1) forwards; }
+@keyframes ucband { 0% { transform: skewY(-6deg) scaleX(0); } 14% { transform: skewY(-6deg) scaleX(1); } 85% { transform: skewY(-6deg) scaleX(1); opacity: 1; } 100% { transform: skewY(-6deg) scaleX(1.1); opacity: 0; } }
+.ucfig { position: absolute; left: 6%; bottom: 10vh; height: 78vh; aspect-ratio: 60 / 106; filter: drop-shadow(0 0 22px var(--uc)) drop-shadow(0 10px 18px #000); animation: ucfig var(--ud, 2.9s) cubic-bezier(.2, .8, .2, 1) forwards; z-index: 2; }
+.ucfig svg { width: 100%; height: 100%; }
+@keyframes ucfig { 0% { transform: translateX(-120%) scale(1.1); } 16% { transform: translateX(0) scale(1); } 80% { transform: translateX(6%) scale(1.02); opacity: 1; } 100% { transform: translateX(18%) scale(1.04); opacity: 0; } }
+.uctext { position: absolute; right: 6%; top: 50%; text-align: right; display: grid; gap: 4px; max-width: 58%; z-index: 2; animation: uctext var(--ud, 2.9s) cubic-bezier(.2, .8, .2, 1) forwards; }
+@keyframes uctext { 0%, 10% { transform: translate(40%, -50%); opacity: 0; } 24% { transform: translate(0, -50%); opacity: 1; } 82% { transform: translate(-3%, -50%); opacity: 1; } 100% { transform: translate(-6%, -50%); opacity: 0; } }
+.uctext small { font-family: var(--f-mono); font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: var(--uc); }
+.uctext b { font-family: var(--f-display); font-weight: 400; font-size: clamp(30px, 6.4vw, 76px); line-height: 1; letter-spacing: .04em; text-transform: uppercase; color: #fff8e6; text-shadow: 0 0 24px var(--uc), 0 0 60px color-mix(in srgb, var(--uc) 70%, transparent), 0 4px 10px #000; text-wrap: balance; }
+.uctext span { font-family: var(--f-display); font-size: clamp(16px, 2.4vw, 26px); color: #f4e7cf; }
+.uctext em { font-style: normal; font-family: var(--f-mono); font-size: 12px; letter-spacing: .12em; color: #ffb0a4; text-transform: uppercase; }
+.ultcine.foe .ucfig { left: auto; right: 6%; } .ultcine.foe .ucfig svg { transform: scaleX(-1); } .ultcine.foe .uctext { right: auto; left: 6%; text-align: left; }
+.ucsand i { position: absolute; left: var(--x); bottom: -10px; width: var(--sz); height: var(--sz); border-radius: 50%; background: color-mix(in srgb, var(--uc) 45%, #e0b070); opacity: 0; animation: ucgrain 1.8s ease-out forwards; animation-delay: calc(.4s + var(--dl)); }
+@keyframes ucgrain { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: .9; } 100% { opacity: 0; transform: translate(10vw, -70vh); } }
+.unit.devoured { animation: devour 1.6s ease-in .9s forwards; }
+@keyframes devour { 0% { transform: translate(-50%, -100%); } 30% { transform: translate(-50%, -112%) scale(1.05); } 100% { transform: translate(-50%, -20%) scale(.3); opacity: 0; } }
+@media (orientation: landscape) and (max-height: 520px) { .ucbar { height: 10vh; } .ucfig { height: 84vh; bottom: 8vh; } .uctext b { font-size: clamp(26px, 5.4vw, 52px); } }
+
