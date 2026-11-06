@@ -34,7 +34,7 @@ const MODEL_MAT = { skin: { roughness: .5 }, cloth: { roughness: .92 }, plate: {
 // (KTX2_ST -1), ожидающие и все следующие — JPEG. Первая загрузка — KTX2_ST 1, сторож снят.
 const KTX2_WAIT = 30000;
 let KTX2_ST = 0, KTX2_CFG = false, KTX2_T = 0;
-const KTX2_PEND = [];
+const KTX2_PEND = [], KTX2_KEEP = new Set();
 function ktx2Cfg() {
   if (KTX2_CFG) return true;
   const K = B3.KhronosTextureContainer2, u = n => assetUrl('ktx2/' + n);
@@ -55,7 +55,9 @@ function tex3(url, scene, set) {
   let t = null, done = false;
   const p = { fallback: () => { if (done) return; done = true; if (t) t.dispose(); if (!scene.isDisposed) jpg(); } };
   t = new B3.Texture(url + '#ktx2', scene, { noMipmap: false, invertY: true, buffer: b, forcedExtension: '.ktx2',
-    onLoad: () => { if (KTX2_ST === 0) { KTX2_ST = 1; clearTimeout(KTX2_T); } const i = KTX2_PEND.indexOf(p); if (i >= 0) KTX2_PEND.splice(i, 1); },
+    onLoad: () => { if (KTX2_ST === 0) { KTX2_ST = 1; clearTimeout(KTX2_T); }
+      // транскод — в воркере, не мгновенно: держим внутреннюю текстуру, чтобы новая сцена (бой — червь) брала её из кэша движка готовой
+      const it = t.getInternalTexture(); if (it && !KTX2_KEEP.has(url)) { KTX2_KEEP.add(url); it.incrementReferences(); } const i = KTX2_PEND.indexOf(p); if (i >= 0) KTX2_PEND.splice(i, 1); },
     onError: (m, e) => { console.warn('KTX2 → JPEG', url, m || e); const i = KTX2_PEND.indexOf(p); if (i >= 0) KTX2_PEND.splice(i, 1); p.fallback(); } });
   if (done) return;
   set(t);
