@@ -6,8 +6,10 @@ import { poseHuman } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
 import { buildEnv, staticNoCast } from '../env/build-env.js';
 import { bBox, bCyl, bPlane, bRock, bSph, dynTex, glowCanvas } from '../geometry.js';
-import { PBR_ON, SC, SHG, V3, basic3, col3, mat3, mk, set_PBR_ON, set_SC, set_SHG } from '../materials.js';
+import { V3, basic3, col3, mat3, mk } from '../materials.js';
+import { CTX, withCtx } from '../ctx.js';
 import { B3, HAS3D } from '../base.js';
+import { hostKick } from '../engine-host.js';
 import { CH } from '../../data/chars.js';
 
 // ---------- 3D camp lobby ----------
@@ -15,7 +17,7 @@ class CampStage extends Stage3D {
   constructor() {
     super({ cls: 'stage3d camp3d', maxDpr: 1.75 });
     this.raid = false; this.units = {};
-    set_SC(this.scene); buildEnv(this, 'sietch'); set_SC(this.scene); set_SHG(this.shadows);
+    withCtx({ scene: this.scene, shadows: null }, () => { buildEnv(this, 'sietch'); CTX.shadows = this.shadows;
     const S = this.scene; S.fogStart = 30; S.fogEnd = 120;
     const rp = new B3.ReflectionProbe('rp', 64, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
     // campfire: stones ring, logs, flickering light, flame + sparks particles
@@ -43,17 +45,17 @@ class CampStage extends Stage3D {
     const pole = mat3('#4a3420'), flag = mat3(S_FLAG(), { side: 'double', roughness: .9 });
     for (const x of [-3.6, 3.6]) { const z = -2.8, y = this.heightAt(x, z); mk(bCyl(.04, .05, 3.6, 8), pole, x, y + 1.8, z); this.flag = this.flag || []; const f = mk(bPlane(.9, 1.3), flag, x + .48, y + 3, z); this.flag.push(f); }
     staticNoCast(this);
-    set_SC(null); set_SHG(null);
+    });
     this.look({ dof: { f: 50, stop: 2.4, d: 9000 }, exposure: 1.25, ssao: .9, bloomT: .7, bloomW: .45, vig: 2.6 });
     this.slots = [[0, -.7], [-1.45, -.3], [1.45, -.3], [-2.55, .6], [2.55, .6]];
   }
   setSquad(ids) {
     const key = ids.join(','); if (key === this.key0) return; this.key0 = key;
     for (const o of Object.values(this.units)) o.root.dispose(false, true); this.units = {};
-    set_SC(this.scene); set_SHG(this.shadows);
-    ids.forEach((id, k) => { set_PBR_ON(true); const o = makeHuman3(CH[id]); set_PBR_ON(false); const [x, z] = this.slots[k] || [0, 0], y = this.heightAt(x, z);
+    withCtx({ scene: this.scene, shadows: this.shadows }, () => {
+    ids.forEach((id, k) => { const o = makeHuman3(CH[id], { pbr: true }); const [x, z] = this.slots[k] || [0, 0], y = this.heightAt(x, z);
       o.base = V3(x, y, z); o.face = -x * .16; o.side = 'A'; o.phase = k * 1.7; o.def = CH[id]; o.id = id; this.units[id] = o; if (this.fireShadow) for (const m of o.root.getChildMeshes()) this.fireShadow.addShadowCaster(m, false); });
-    set_SC(null); set_SHG(null);
+    });
   }
   tick(now, t) {
     const f = .85 + Math.sin(t * 9) * .08 + Math.sin(t * 23) * .06 + Math.sin(t * 3.1) * .05; this.fireL.intensity = 2.6 * f; this.fireL.position.x = this.fire.x + Math.sin(t * 7) * .04;
@@ -86,11 +88,11 @@ let CAMP_STAGE = null;
 function mountCampStage() {
   if (!HAS3D) return false;
   const host = document.querySelector('.lobby'); if (!host) return false;
-  try { if (!CAMP_STAGE) CAMP_STAGE = new CampStage(); CAMP_STAGE.setSquad(S.squad.slice(0, 5)); host.classList.add('has3d'); host.insertBefore(CAMP_STAGE.cv, host.firstChild); CAMP_STAGE.attach(host); return true; }
+  try { if (!CAMP_STAGE || !CAMP_STAGE.alive) CAMP_STAGE = new CampStage(); CAMP_STAGE.setSquad(S.squad.slice(0, 5)); host.classList.add('has3d'); CAMP_STAGE.attach(host, true); return true; }
   catch (e) { console.warn('camp stage', e); return false; }
 }
 // resume paused stages when overlays close
-setInterval(() => { for (const st of [CAMP_STAGE, HERO_STAGE]) if (st && !st.running && st.cv.isConnected && !st.paused()) st.attach(st.cv.parentNode); }, 400);
+setInterval(() => hostKick(), 400); // phase 3b: one render loop in EngineHost
 
 
 function set_CAMP_STAGE(v) { return CAMP_STAGE = v; }

@@ -6,10 +6,11 @@ import { render } from '../../ui/router.js';
 import { toast } from '../../ui/common.js';
 import { errLog } from '../../core/errlog.js';
 import { BT, S } from '../../core/state.js';
-import { SAVE_LOW, freeCanvas } from './base-scene.js';
+import { SAVE_LOW } from './base-scene.js';
+import { engineHost } from '../engine-host.js';
 import { poseHuman } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
-import { PBR_ON, SC, SHG, V3, col3, set_PBR_ON, set_SC, set_SHG } from '../materials.js';
+import { V3, col3 } from '../materials.js';
 import { B3, HAS3D } from '../base.js';
 import { figureSVG, set_figureSVG } from '../../render2d/figures.js';
 import { CH, CHARS } from '../../data/chars.js';
@@ -30,9 +31,9 @@ function idbGet(db, k) { return new Promise(res => { if (!db) return res(null); 
 function idbPut(db, k, v) { return new Promise(res => { if (!db) return res(); try { const tx = db.transaction('img', 'readwrite'); tx.objectStore('img').put(v, k); tx.oncomplete = () => res(); tx.onerror = () => res(); } catch (e) { res(); } }); }
 class Baker {
   constructor() {
-    const cv = this.cv = document.createElement('canvas'); cv.width = 256; cv.height = 452;
-    const E = this.engine = new B3.Engine(cv, true, { preserveDrawingBuffer: true, alpha: true, premultipliedAlpha: false, antialias: true, stencil: false, loseContextOnDispose: true }, false);
-    E.enableOfflineSupport = false;
+    // phase 3b: no own engine — the scene lives on the shared engine and renders into a RenderTarget (MSAA×4), pixels → 2D canvas → PNG
+    const H = this.host = engineHost().adopt(this); this.alive = true; this.cv = document.createElement('canvas');
+    const E = this.engine = H.engine;
     const S = this.scene = new B3.Scene(E); S.useRightHandedSystem = true; S.clearColor = new B3.Color4(0, 0, 0, 0); S.ambientColor = col3('#2a2018'); S._maxL = 5;
     this.camera = new B3.UniversalCamera('bc', V3(0, 1, 6), S); this.camera.minZ = .05; this.camera.maxZ = 100; this.camera.inputs.clear();
     const hemi = new B3.HemisphericLight('h', V3(0, 1, .3), S); hemi.intensity = .6; hemi.diffuse = col3('#efe0c8'); hemi.groundColor = col3('#3a2a1c'); hemi.specular = col3('#202020');
@@ -40,15 +41,27 @@ class Baker {
     const rim = new B3.DirectionalLight('r', V3(-.7, -.25, .9), S); rim.intensity = 1.1; rim.diffuse = col3('#9cc4ff');
     const rim2 = new B3.DirectionalLight('r2', V3(.8, -.2, .7), S); rim2.intensity = .7; rim2.diffuse = col3('#ffb070');
   }
+  target(w, h) {
+    if (this.rt && this.rw === w && this.rh === h) return this.rt;
+    if (this.rt) this.rt.dispose();
+    const t = this.rt = new B3.RenderTargetTexture('bake', { width: w, height: h }, this.scene, false, true); t.samples = this.engine.webGLVersion >= 2 ? 4 : 1;
+    this.rw = w; this.rh = h; return t;
+  }
   async shot(w, h, fov, pos, target) {
-    this.engine.setSize(w, h); this.cv.width = w; this.cv.height = h; this.engine.setSize(w, h);
+    if (!this.alive) return null;
+    const rt = this.target(w, h); this.camera.outputRenderTarget = rt;
     this.camera.fov = fov; this.camera.position.copyFrom(pos); this.camera.setTarget(target);
     for (let k = 0; k < 30 && !this.scene.isReady(); k++) await bakeSleep(16);
+    if (!this.alive) return null;
     this.scene.render(); this.scene.render();
-    return await new Promise(res => this.cv.toBlob(b => res(b), 'image/png'));
+    const px = await rt.readPixels(0, 0, null, true); if (!px || !this.alive) return null;
+    const cv = this.cv; cv.width = w; cv.height = h; const g = cv.getContext('2d'), img = g.createImageData(w, h), row = w * 4, src = new Uint8Array(px.buffer, px.byteOffset, w * h * 4);
+    for (let y = 0; y < h; y++) img.data.set(src.subarray((h - 1 - y) * row, (h - y) * row), y * row); // GL rows are bottom-up
+    g.putImageData(img, 0, 0);
+    return await new Promise(res => cv.toBlob(b => res(b), 'image/png'));
   }
   async bake(def) {
-    set_SC(this.scene); set_SHG(null); set_PBR_ON(false); const o = makeHuman3(def); set_SC(null);
+    const o = makeHuman3(def, { scene: this.scene, shadows: null, pbr: false });
     o.base = V3(0, 0, 0); o.face = 0; o.side = 'A'; o.phase = 1.2; o.def = def;
     poseHuman(this, o, performance.now(), 1.3, 1); o.root.rotation.y = def.id === 'erasmus' ? -.22 : -.3;
     o.root.computeWorldMatrix(true); for (const m of o.root.getChildMeshes(false)) m.computeWorldMatrix(true);
@@ -60,7 +73,7 @@ class Baker {
     o.root.dispose(false, true);
     return { full, face };
   }
-  dispose() { try { this.scene.dispose(); this.engine.dispose(); } catch (e) {} freeCanvas(this.cv); }
+  dispose() { if (!this.alive) return; this.alive = false; try { if (this.rt) this.rt.dispose(); this.scene.dispose(); } catch (e) {} this.host.forget(this); this.cv.width = this.cv.height = 0; }
 }
 async function bakePortraits() {
   if (!HAS3D || typeof indexedDB === 'undefined') return;
@@ -72,7 +85,7 @@ async function bakePortraits() {
   try {
     for (const id of todo) {
       while (BT && BT.B) { if (bk) { bk.dispose(); bk = null; } await bakeSleep(1500); }
-      if (!bk) bk = new Baker();
+      if (!bk || !bk.alive) bk = new Baker();
       const r = await bk.bake(CH[id]); if (!r.full || !r.face) continue;
       await idbPut(db, BAKE_V + ':' + id, r);
       BAKED[id] = { full: URL.createObjectURL(r.full), face: URL.createObjectURL(r.face) };

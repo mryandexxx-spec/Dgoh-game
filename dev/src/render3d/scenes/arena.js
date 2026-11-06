@@ -5,45 +5,47 @@ import { errLog } from '../../core/errlog.js';
 import { BT } from '../../core/state.js';
 import { TIER_COL } from '../../logic/gear.js';
 import { RELIC_COL } from '../../logic/relics.js';
-import { SAVE_LOW, freeCanvas } from './base-scene.js';
+import { SAVE_LOW } from './base-scene.js';
+import { engineHost } from '../engine-host.js';
 import { MOCAP_OK } from '../characters/mocap.js';
 import { makeWorm3, wormData, wormMats, wormMesh } from '../worm.js';
 import { ANIM_SLOW, poseHuman, unmapK } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
 import { buildEnv } from '../env/build-env.js';
 import { MB, add, bBox, bCone, bCyl, bDisc, bRock, bSph, bTorus, dynTex, glowCanvas, grp } from '../geometry.js';
-import { C3_CHARM, C3_SPICE, C3_TGT, PBR_ON, SC, SHG, V3, basic3, col3, inPlaceKeep, mat3, mk, runDue, set_PBR_ON, set_SC, set_SHG } from '../materials.js';
+import { C3_CHARM, C3_SPICE, C3_TGT, V3, basic3, col3, inPlaceKeep, mat3, mk, runDue } from '../materials.js';
+import { CTX, withCtx } from '../ctx.js';
 import { B3, SLOT3 } from '../base.js';
 import { FX } from '../../data/fx.js';
 
 // ---------- arena ----------
 class Arena3D {
   constructor(canvas, key, B) {
-    this.cv = canvas; this.key = key; this.units = {}; this.parts = []; this.speed = 1; this.alive = true;
+    const H = this.host = engineHost().adopt(this); this.cv = H.cv; this.key = key; this.units = {}; this.parts = []; this.speed = 1; this.alive = true;
     const small = Math.min(innerWidth, innerHeight) < 600; this.small = small;
-    const E = this.engine = new B3.Engine(canvas, true, { preserveDrawingBuffer: false, stencil: true, powerPreference: 'high-performance', antialias: true, loseContextOnDispose: true }, false);
-    E.setHardwareScalingLevel(1 / Math.min(window.devicePixelRatio || 1, small ? 1.5 : 2));
-    E.enableOfflineSupport = false; E.disableManifestCheck = true;
-    canvas.addEventListener('webglcontextlost', ev => { if (!this.alive) return; ev.preventDefault(); this.lost = true; errLog('webgl', 'context lost'); if (this.onLost) setTimeout(() => this.onLost && this.onLost(), 0); }, false);
-    const S = this.scene = set_SC(new B3.Scene(E)); S.useRightHandedSystem = true; S.skipPointerMovePicking = true; S.autoClear = true;
+    const E = this.engine = H.engine; // phase 3b: shared engine; the placeholder canvas is replaced by the host canvas
+    H.mount(this, canvas.parentNode, { replace: canvas, cls: canvas.className || 'bgc', id: canvas.id || 'bgc', dpr: small ? 1.5 : 2 });
+    const S = this.scene = new B3.Scene(E); S.useRightHandedSystem = true; S.skipPointerMovePicking = true; S.autoClear = true;
     this.camera = new B3.UniversalCamera('cam', V3(0, 11, 18), S); this.camera.minZ = .1; this.camera.maxZ = 1200; this.camera.inputs.clear();
     this.raid = !!B.raid; this.summons = []; this.nA = B.units.filter(x => x.side === 'A').length;
-    buildEnv(this, key, true);
+    withCtx({ scene: S, shadows: null }, () => { buildEnv(this, key, true); CTX.shadows = this.shadows;
     const rp = this.probe = new B3.ReflectionProbe('rp', this.small ? 64 : 128, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
     for (const u of B.units) this.addUnit(u);
     this.setupFX();
     if (B.units.some(u => u.def && u.def.gl)) { this.glLight = new B3.PointLight('gll', V3(0, 6, 2), S); this.glLight.diffuse = col3('#ffc860'); this.glLight.range = 40; this.glLight.intensity = 0; } // perf step 6: no idle extra light in every shader
-    set_SC(null); set_SHG(null);
+    });
     if (B.units.some(u => u.def && u.def.gl)) try { this.wormKit(true); } catch (e) { errLog('wormkit', e); }
     this.resize();
-    E.runRenderLoop(() => this.loop());
   }
+  frame() { this.loop(); }
+  onDetach() { this.dispose(); }
+  contextLost() { if (!this.alive) return; this.lost = true; if (this.onLost) setTimeout(() => this.onLost && this.onLost(), 0); }
   setupFX() {
     const S = this.scene;
     // emissive bloom for windows, eyes, rings, worm glow
     this.glow = new B3.GlowLayer('glow', S, { mainTextureRatio: this.small ? .35 : .5, blurKernelSize: 32 }); this.glow.intensity = .55;
     this.glow.addExcludedMesh(this.sky); if (this.ground) this.glow.addExcludedMesh(this.ground); for (const o of Object.values(this.units)) if (o.bubble) this.glow.addExcludedMesh(o.bubble);
-    const tx = (() => { set_SC(S); const t = dynTex(glowCanvas(), 0, true); set_SC(null); return t; })();
+    const tx = dynTex(glowCanvas(), 0, true, { scene: S });
     const sp = this.sparks = new B3.ParticleSystem('sparks', 600, S); sp.particleTexture = tx; sp.emitter = V3(0, -50, 0); sp.minEmitBox = V3(-.15, -.2, -.15); sp.maxEmitBox = V3(.15, .2, .15);
     sp.direction1 = V3(-2.5, 1, -2.5); sp.direction2 = V3(2.5, 4, 2.5); sp.gravity = V3(0, -9, 0); sp.minLifeTime = .2; sp.maxLifeTime = .45; sp.minSize = .04; sp.maxSize = .1; sp.minEmitPower = 1; sp.maxEmitPower = 2.2;
     sp.colorDead = new B3.Color4(1, .4, .1, 0); sp.blendMode = B3.ParticleSystem.BLENDMODE_ADD; sp.emitRate = 0; sp.manualEmitCount = 0; sp.start();
@@ -66,8 +68,8 @@ class Arena3D {
     try { if (!LOW && this.engine.webGLVersion >= 2 && B3.SSAO2RenderingPipeline.IsSupported) { const ao = this.ssao = new B3.SSAO2RenderingPipeline('ssao', S, { ssaoRatio: this.small ? .5 : .75, blurRatio: .5 }, [this.camera], true); ao.radius = 1.4; ao.totalStrength = 1.15; ao.base = .12; ao.samples = this.small ? 8 : 16; ao.maxZ = 70; ao.minZAspect = .3; ao.expensiveBlur = !this.small; } } catch (e) {}
   }
   addUnit(u) {
-    set_SC(this.scene); set_SHG(this.shadows);
-    set_PBR_ON(!u.def.boss); const o = u.def.boss ? makeWorm3() : makeHuman3(u.def); set_PBR_ON(false); o.def = u.def;
+    withCtx({ scene: this.scene, shadows: this.shadows }, () => {
+    const o = u.def.boss ? makeWorm3({ pbr: false }) : makeHuman3(u.def, { pbr: true }); o.def = u.def;
     o.slot = u.def.boss ? [7.4, -7, true] : (() => { const s = SLOT3[u.idx] || SLOT3[0]; return [u.side === 'A' ? s[0] : -s[0], s[1], false, u.idx]; })();
     const [x, y, z] = this.slotPos(o.slot);
     o.base = V3(x, y, z); o.root.position.copyFrom(o.base);
@@ -78,11 +80,11 @@ class Arena3D {
     o.side = u.side; o.uid = u.uid; o.phase = Math.random() * 6;
     if (!o.boss) { o.bubble = add(o.root, mk(bSph(1, 24), basic3('#3f8ee0', { add: true, alpha: 0 }), 0, .98, 0, false)); o.bubble.scaling.set(.55, 1.08, .55); o.bubble.material.disableDepthWrite = true; }
     const r0 = o.boss ? 2.8 : o.legend ? .78 : .52, th = o.boss ? .4 : o.legend ? .2 : .15;
-    o.ring = mk(MB().CreateTorus('ring', { diameter: 2 * r0, thickness: th, tessellation: 48 }, SC), basic3('#e8913f', { alpha: 0 }), x, y + .05, z, false); o.ring.scaling.y = .08; o.ring.material.disableDepthWrite = true;
+    o.ring = mk(MB().CreateTorus('ring', { diameter: 2 * r0, thickness: th, tessellation: 48 }, CTX.scene), basic3('#e8913f', { alpha: 0 }), x, y + .05, z, false); o.ring.scaling.y = .08; o.ring.material.disableDepthWrite = true;
     if (this.raid && u.def.boss) o.ring.scaling.set(1.9, .08, 1.9);
     if (!o.boss) { o.pool = mk(bDisc(o.legend ? 1.15 : .72, 40), basic3('#ffffff', { add: true, alpha: 0 }), x, y + .04, z, false); o.pool.rotation.x = Math.PI / 2; o.pool.material.disableDepthWrite = true; const gtx = (() => { const t = dynTex(glowCanvas(), 0, true); return t; })(); o.pool.material.emissiveTexture = gtx; o.pool.material.opacityTexture = gtx; }
     this.units[u.uid] = o;
-    set_SC(null); set_SHG(null);
+    });
   }
   slotPos([sx, sz, boss, idx]) {
     if (this.raid) {
@@ -172,35 +174,35 @@ class Arena3D {
   fade(mesh, life, upd) { (this.tr ||= []).push({ mesh, t0: performance.now(), life, upd }); }
   wpos(node, local) { node.computeWorldMatrix(true); return B3.Vector3.TransformCoordinates(local || V3(), node.getWorldMatrix()); }
   muzzleFX(o, a) {
-    set_SC(this.scene); const from = this.wpos(o.wpn, o.root._muzzle), c = a.dt === 'laser' ? '#7fe0ff' : a.dt === 'poison' ? '#9ae06a' : '#ffd890';
+    withCtx({ scene: this.scene }, () => { const from = this.wpos(o.wpn, o.root._muzzle), c = a.dt === 'laser' ? '#7fe0ff' : a.dt === 'poison' ? '#9ae06a' : '#ffd890';
     const fl = mk(bSph(.09, 10), basic3(c, { add: true, alpha: 1 }), from.x, from.y, from.z, false); this.fade(fl, 110, (m, k) => { m.scaling.setAll(1 + k * 1.5); m.material.alpha = 1 - k; });
     for (const t of a.tg) {
-      const b = t.base.add(V3(0, t.boss ? 3 : 1.1, 0)), ln = MB().CreateTube('tr', { path: [from, b], radius: a.dt === 'laser' ? .045 : .022, tessellation: 6 }, SC);
+      const b = t.base.add(V3(0, t.boss ? 3 : 1.1, 0)), ln = MB().CreateTube('tr', { path: [from, b], radius: a.dt === 'laser' ? .045 : .022, tessellation: 6 }, CTX.scene);
       ln.material = basic3(c, { add: true, alpha: .95 }); ln.isPickable = false; this.fade(ln, a.dt === 'laser' ? 320 : 200, (m, k) => { m.material.alpha = .95 * (1 - k); });
     }
-    set_SC(null);
+    });
   }
   slashFX(p, yaw, aoe) {
-    set_SC(this.scene); const arc = aoe ? 1 : .42, r = aoe ? 1.6 : .9;
+    withCtx({ scene: this.scene }, () => { const arc = aoe ? 1 : .42, r = aoe ? 1.6 : .9;
     const pts = []; for (let i = 0; i <= 24; i++) { const a = -arc * Math.PI + i / 24 * arc * Math.PI * 2; pts.push(V3(Math.sin(a) * r, 1.1 + (aoe ? 0 : (i / 24 - .5) * .9), Math.cos(a) * r)); }
-    const m = MB().CreateTube('sl', { path: pts, radiusFunction: i => .05 * Math.sin(i / 24 * Math.PI) + .005, tessellation: 6 }, SC); m.material = basic3('#e8f4ff', { add: true, alpha: .9 }); m.position.copyFrom(aoe ? p.subtract(V3(0, 0, 0)) : p.subtract(V3(Math.sin(yaw) * .8, 0, Math.cos(yaw) * .8))); m.rotation.y = yaw; m.isPickable = false;
+    const m = MB().CreateTube('sl', { path: pts, radiusFunction: i => .05 * Math.sin(i / 24 * Math.PI) + .005, tessellation: 6 }, CTX.scene); m.material = basic3('#e8f4ff', { add: true, alpha: .9 }); m.position.copyFrom(aoe ? p.subtract(V3(0, 0, 0)) : p.subtract(V3(Math.sin(yaw) * .8, 0, Math.cos(yaw) * .8))); m.rotation.y = yaw; m.isPickable = false;
     this.fade(m, 230, (mm, k) => { mm.material.alpha = .9 * (1 - k); mm.scaling.setAll(1 + k * .25); });
-    set_SC(null);
+    });
   }
   voiceFX(o, a) {
-    set_SC(this.scene); const from = o.base.add(V3(0, 1.62, 0));
+    withCtx({ scene: this.scene }, () => { const from = o.base.add(V3(0, 1.62, 0));
     for (const t of a.tg) for (let n = 0; n < 3; n++) {
       const ring = mk(bTorus(.22, .02, 24), basic3('#c8a0ff', { add: true, alpha: 0 }), from.x, from.y, from.z, false), to = t.base.add(V3(0, 1.3, 0)), dir = to.subtract(from);
       const q = new B3.Quaternion(); B3.Quaternion.FromUnitVectorsToRef(V3(0, 0, 1), dir.normalizeToNew(), q); ring.rotationQuaternion = q;
       const d0 = n * 90; this.fade(ring, 420 + d0, (m, k) => { const kk = Math.max(0, (k * (420 + d0) - d0) / 420); m.position.copyFrom(B3.Vector3.Lerp(from, to, kk)); m.scaling.setAll(1 + kk * 3); m.material.alpha = kk > 0 ? .8 * (1 - kk) : 0; });
     }
-    set_SC(null);
+    });
   }
   castFX(o) {
-    set_SC(this.scene); const c = o.side === 'A' ? '#ffd27a' : '#ff7a6a', p = o.base;
+    withCtx({ scene: this.scene }, () => { const c = o.side === 'A' ? '#ffd27a' : '#ff7a6a', p = o.base;
     const ring = mk(bTorus(.5, .04, 32), basic3(c, { add: true, alpha: .9 }), p.x, p.y + .06, p.z, false); ring.rotation.x = Math.PI / 2; this.fade(ring, 650, (m, k) => { m.scaling.set(1 + k * 2.2, 1 + k * 2.2, 1); m.material.alpha = .9 * (1 - k); });
     const col = mk(bCyl(.5, .6, 3, 24, true), basic3(c, { add: true, alpha: .4 }), p.x, p.y + 1.5, p.z, false); this.fade(col, 650, (m, k) => { m.material.alpha = .4 * Math.sin(k * Math.PI); m.scaling.set(1 - k * .4, 1 + k * .3, 1 - k * .4); });
-    set_SC(null);
+    });
   }
   sparkFX(o, power) {
     if (!this.sparks) return; const p = o.root.position;
@@ -228,43 +230,47 @@ class Arena3D {
     if (ab.tm && ab.tm.enemies < 0) on(foes, x => this.ringFX(x, '#8a7aff', .5));
   }
   domeFX(x, c, k = 1) {
-    set_SC(this.scene); const p = x.root.position, d = mk(bSph(.95 * k, 24, 1, .5), basic3(c, { add: true, alpha: 0 }), p.x, p.y, p.z, false); d.scaling.y = 1.3; d.material.backFaceCulling = false; set_SC(null);
+    withCtx({ scene: this.scene }, () => { const p = x.root.position, d = mk(bSph(.95 * k, 24, 1, .5), basic3(c, { add: true, alpha: 0 }), p.x, p.y, p.z, false); d.scaling.y = 1.3; d.material.backFaceCulling = false;
     this.fade(d, 1300, (m, kk) => { m.position.copyFrom(x.root.position); m.material.alpha = .75 * Math.sin(Math.min(1, kk * 1.6) * Math.PI * .5) * (1 - kk); m.scaling.set(.6 + kk * .5, (.6 + kk * .5) * 1.3, .6 + kk * .5); });
     this.ringFX(x, c, .9);
+    });
   }
   ringFX(x, c, r = .7) {
-    set_SC(this.scene); const p = x.root.position, m0 = mk(bTorus(r, .06, 32), basic3(c, { add: true, alpha: 1 }), p.x, p.y + .05, p.z, false); set_SC(null);
+    withCtx({ scene: this.scene }, () => { const p = x.root.position, m0 = mk(bTorus(r, .06, 32), basic3(c, { add: true, alpha: 1 }), p.x, p.y + .05, p.z, false);
     this.fade(m0, 1000, (m, k) => { m.scaling.set(1 + k * 1.2, 1, 1 + k * 1.2); m.position.y = p.y + .05 + k * 1.6; m.material.alpha = 1 - k; });
+    });
   }
   swirlFX(x, c) {
-    set_SC(this.scene); const p = x.root.position;
+    withCtx({ scene: this.scene }, () => { const p = x.root.position;
     for (let n = 0; n < 3; n++) { const m0 = mk(bTorus(.55, .022, 28, .6), basic3(c, { add: true, alpha: .8 }), p.x, p.y + .3, p.z, false);
       this.fade(m0, 800, (m, k) => { m.position.copyFrom(x.root.position); m.position.y += .3 + k * 1.5 + n * .25; m.rotation.y = k * 9 + n * 2; m.material.alpha = .8 * Math.sin(k * Math.PI); m.scaling.setAll(1 - k * .4); }); }
-    set_SC(null);
+    });
   }
   speedFX(x) {
-    set_SC(this.scene); const p = x.root.position;
+    withCtx({ scene: this.scene }, () => { const p = x.root.position;
     for (let n = 0; n < 6; n++) { const a = n / 6 * Math.PI * 2, m0 = mk(bBox(.025, .7, .025), basic3('#ffe08a', { add: true, alpha: .9 }), p.x + Math.cos(a) * .55, p.y, p.z + Math.sin(a) * .55, false);
       this.fade(m0, 520, (m, k) => { m.position.y = x.root.position.y + k * 2.4; m.material.alpha = .9 * (1 - k); }); }
-    set_SC(null);
+    });
   }
   tauntFX(x) {
-    set_SC(this.scene); const p = x.root.position;
+    withCtx({ scene: this.scene }, () => { const p = x.root.position;
     for (let n = 0; n < 3; n++) { const m0 = mk(bTorus(.4, .05, 32), basic3('#ff5a3a', { add: true, alpha: 0 }), p.x, p.y + 1.2, p.z, false); m0.rotation.x = Math.PI / 2;
       const yaw = x.root.rotation.y; m0.rotation.y = yaw; const d0 = n * 140;
       this.fade(m0, 700 + d0, (m, k) => { const kk = Math.max(0, (k * (700 + d0) - d0) / 700); m.scaling.setAll(1 + kk * 3.2); m.material.alpha = kk > 0 ? .85 * (1 - kk) : 0; }); }
-    const col = mk(bCyl(.45, .55, 2.4, 24, true), basic3('#ff4a2a', { add: true, alpha: 0 }), p.x, p.y + 1.2, p.z, false); set_SC(null);
+    const col = mk(bCyl(.45, .55, 2.4, 24, true), basic3('#ff4a2a', { add: true, alpha: 0 }), p.x, p.y + 1.2, p.z, false);
     this.fade(col, 900, (m, k) => { m.material.alpha = .35 * Math.sin(k * Math.PI); m.scaling.set(1 + k * .3, 1, 1 + k * .3); });
     this.shakeT = performance.now();
+    });
   }
   smokeFX(x) {
-    if (!this.smoke) { const S = this.scene; set_SC(S); const t = dynTex(glowCanvas(), 0, true); set_SC(null); const ps = this.smoke = new B3.ParticleSystem('smoke', 300, S); ps.particleTexture = t; ps.emitter = V3(0, -50, 0); ps.minEmitBox = V3(-.4, 0, -.4); ps.maxEmitBox = V3(.4, 1.6, .4); ps.direction1 = V3(-.4, .3, -.4); ps.direction2 = V3(.4, .9, .4); ps.minLifeTime = .7; ps.maxLifeTime = 1.3; ps.minSize = .4; ps.maxSize = .9; ps.color1 = new B3.Color4(.75, .65, .5, .5); ps.color2 = new B3.Color4(.55, .45, .35, .4); ps.colorDead = new B3.Color4(.4, .3, .2, 0); ps.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD; ps.emitRate = 0; ps.manualEmitCount = 0; ps.start(); }
+    if (!this.smoke) { const S = this.scene; const t = dynTex(glowCanvas(), 0, true, { scene: S }); const ps = this.smoke = new B3.ParticleSystem('smoke', 300, S); ps.particleTexture = t; ps.emitter = V3(0, -50, 0); ps.minEmitBox = V3(-.4, 0, -.4); ps.maxEmitBox = V3(.4, 1.6, .4); ps.direction1 = V3(-.4, .3, -.4); ps.direction2 = V3(.4, .9, .4); ps.minLifeTime = .7; ps.maxLifeTime = 1.3; ps.minSize = .4; ps.maxSize = .9; ps.color1 = new B3.Color4(.75, .65, .5, .5); ps.color2 = new B3.Color4(.55, .45, .35, .4); ps.colorDead = new B3.Color4(.4, .3, .2, 0); ps.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD; ps.emitRate = 0; ps.manualEmitCount = 0; ps.start(); }
     const p = x.root.position; this.smoke.emitter = V3(p.x, p.y, p.z); this.smoke.manualEmitCount = 90;
   }
   miasmaFX(x, c) {
-    set_SC(this.scene); const p = x.root.position, m0 = mk(bSph(.7, 18), basic3(c, { add: true, alpha: 0 }), p.x, p.y + 1, p.z, false); set_SC(null);
+    withCtx({ scene: this.scene }, () => { const p = x.root.position, m0 = mk(bSph(.7, 18), basic3(c, { add: true, alpha: 0 }), p.x, p.y + 1, p.z, false);
     this.fade(m0, 800, (m, k) => { m.material.alpha = .4 * Math.sin(k * Math.PI); m.scaling.set(1 + k * .6, 1.4 + k * .4, 1 + k * .6); m.position.y = p.y + 1 + k * .3; });
     this.ringFX(x, c, .5);
+    });
   }
   project(v) { const p = B3.Vector3.Project(v, B3.Matrix.IdentityReadOnly, this.scene.getTransformMatrix(), new B3.Viewport(0, 0, this.w, this.h)); return [p.x, p.y]; }
   // perf step 9: no per-frame layout reads — rects are measured after a DOM rebuild / resize / every 0.5 s; units move via transform; --fh/--w only on >1 px change
@@ -364,7 +370,7 @@ class Arena3D {
   }
   wormKit(warm) {
     if (this._wk) return this._wk;
-    set_SC(this.scene); set_SHG(this.shadows);
+    return withCtx({ scene: this.scene, shadows: this.shadows }, () => {
     const WD = wormData(), K = { WD };
     K.skin = mat3('#a88058', { roughness: .9 }); K.band = mat3('#6a4a2e', { roughness: 1 }); K.sand = mat3('#c89058', { flatShading: true });
     if (WD) {
@@ -374,19 +380,19 @@ class Arena3D {
     }
     K.tx = dynTex(glowCanvas(), 0, true);
     K.dm = basic3('#d8a868', { alpha: 0 }); K.dm.emissiveTexture = K.tx; K.dm.opacityTexture = K.tx; K.dm.disableDepthWrite = true;
-    const b = K.burst = new B3.ParticleSystem('burst', 400, SC); b.particleTexture = K.tx; b.emitter = V3(0, -50, 0);
+    const b = K.burst = new B3.ParticleSystem('burst', 400, CTX.scene); b.particleTexture = K.tx; b.emitter = V3(0, -50, 0);
     b.direction1 = V3(-3, 6, -3); b.direction2 = V3(3, 10, 3); b.gravity = V3(0, -9, 0); b.minLifeTime = .8; b.maxLifeTime = 1.8; b.minSize = .15; b.maxSize = .5;
     b.color1 = new B3.Color4(.9, .7, .45, .9); b.color2 = new B3.Color4(.75, .55, .35, .8); b.colorDead = new B3.Color4(.6, .45, .3, 0); b.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD;
     if (warm && K.WM) { try { K.WM.skin.forceCompilation(K.colT); K.WM.mouth.forceCompilation(K.mouthT); } catch (e) {} }
-    set_SC(null); set_SHG(null);
     return (this._wk = K);
+    });
   }
   summon(x, z, s, t0, victim) {
     const K = this.wormKit();
-    set_SC(this.scene); set_SHG(this.shadows);
+    withCtx({ scene: this.scene, shadows: this.shadows }, () => {
     const y = this.heightAt(x, z), g = grp(null, x, y, z); g.setEnabled(false);
     const col = grp(g), WD = K.WD;
-    if (WD) { const m = K.colT.clone('wc', col); m.setEnabled(true); m.receiveShadows = true; if (SHG && K.WM.skin._lit) SHG.addShadowCaster(m, false); }
+    if (WD) { const m = K.colT.clone('wc', col); m.setEnabled(true); m.receiveShadows = true; if (CTX.shadows && K.WM.skin._lit) CTX.shadows.addShadowCaster(m, false); }
     else for (let i = 0; i < 7; i++) { const r = 1.25 - i * .03; add(col, mk(bCyl(r, r + .05, 1.5, 24, true), i % 2 ? K.skin : K.band, 0, -i * 1.5, 0)); }
     const mouth = grp(col, 0, .8, 0);
     if (WD) { const m = K.mouthT.clone('wm', mouth); m.setEnabled(true); }
@@ -402,13 +408,13 @@ class Arena3D {
     for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2, m = add(g, mk(bRock(i + 60, 0), K.sand)); m.scaling.setAll(.45 + (i % 3) * .15); rocks.push([m, a]); }
     const dust = add(g, mk(bDisc(3, 32), K.dm, 0, .1, 0, false)); dust.rotation.x = -Math.PI / 2; if (this.glow) this.glow.addExcludedMesh(dust);
     const burst = K.burst; burst.emitter = V3(x, y + .3, z); burst.minEmitBox = V3(-1.2 * s, 0, -1.2 * s); burst.maxEmitBox = V3(1.2 * s, .5, 1.2 * s); burst.manualEmitCount = 380;
-    set_SC(null); set_SHG(null);
     this.summons.push({ g, col, mouth, rocks, dust, s, t0, dur: 2600, victim, burst });
+    });
   }
   dispose() {
     if (!this.alive) return; this.alive = false;
-    try { this.engine.stopRenderLoop(); this.scene.dispose(); this.engine.dispose(); } catch (e) {}
-    freeCanvas(this.cv, true); // canvas node belongs to the battle DOM (onLost replaces it), keep it attached
+    try { this.scene.dispose(); } catch (e) {}
+    this.host.forget(this); // phase 3b: the shared canvas goes back to the previous host (camp) or is parked
   }
 }
 

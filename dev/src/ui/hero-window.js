@@ -44,7 +44,7 @@ function detailNav(dir) {
 function freeStages() {
   const phone = Math.min(innerWidth, innerHeight) < 600 || matchMedia('(pointer: coarse)').matches;
   if (!phone) return;
-  try { if (typeof HERO_STAGE !== 'undefined' && HERO_STAGE) { HERO_STAGE.dispose(); set_HERO_STAGE(null); set_HERO_SNAP(null); } if (typeof CAMP_STAGE !== 'undefined' && CAMP_STAGE) { CAMP_STAGE.cv.remove(); CAMP_STAGE.dispose(); set_CAMP_STAGE(null); } } catch (e) {}
+  try { if (typeof HERO_STAGE !== 'undefined' && HERO_STAGE) { HERO_STAGE.dispose(); set_HERO_STAGE(null); set_HERO_SNAP(null); } if (typeof CAMP_STAGE !== 'undefined' && CAMP_STAGE) { CAMP_STAGE.dispose(); set_CAMP_STAGE(null); } } catch (e) {}
 }
 const WORM_BADGE = `<div class="wormbadge" aria-hidden="true"><svg viewBox="0 0 120 120"><defs><radialGradient id="wbg" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#ffcf7a"/><stop offset=".6" stop-color="#c0661e"/><stop offset="1" stop-color="#3a1a08"/></radialGradient></defs><circle cx="60" cy="60" r="56" fill="url(#wbg)" stroke="#ffe0a0" stroke-width="3"/>${typeof WORM_IMG !== 'undefined' ? `<g class="wbw"><image href="${WORM_IMG.badge}" x="8" y="6" width="104" height="104"/></g>` : ''}<g class="wbs">${Array.from({ length: 10 }, (_, i) => `<circle cx="${14 + i * 10}" cy="${100 + (i % 3) * 4}" r="${1.5 + (i % 3)}" fill="#ffd9a0"/>`).join('')}</g></svg></div>`;
 

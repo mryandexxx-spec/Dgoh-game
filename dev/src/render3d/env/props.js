@@ -1,7 +1,8 @@
 // render3d/env/props.js — строки 1352–1390 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { heightAt } from './build-env.js';
 import { MB, add, bBox, bCyl, bDisc, bPlane, bRock, bSph, bTorus, grp } from '../geometry.js';
-import { SC, V3, basic3, col3, mat3, mk } from '../materials.js';
+import { V3, basic3, col3, mat3, mk } from '../materials.js';
+import { CTX } from '../ctx.js';
 import { B3 } from '../base.js';
 import { sRng } from '../../core/rng.js';
 
@@ -13,10 +14,10 @@ const PROPS3 = {
     const m = mat3('#7a5638', { roughness: 1, flatShading: true }); m.backFaceCulling = false;
     m.twoSidedLighting = true; const dome = mk(bRock(4, 3), m, 0, 4, -8, false); dome.scaling.set(46, 22, 38);
     const op = mk(bDisc(3.2, 24, .5), basic3('#e8b878', { fog: false }), 0, -.5, -52, false);
-    for (const [x, y, z] of [[-12, 4, -10], [12, 4.5, -12], [-7, 3, 6], [8, 3, 5]]) { const L = new B3.PointLight('pl', V3(x, y, z), SC); L.diffuse = col3('#ffa860'); L.intensity = 1.4; L.range = 26; mk(bSph(.22, 10), basic3('#ffd08a'), x, y, z, false); }
+    for (const [x, y, z] of [[-12, 4, -10], [12, 4.5, -12], [-7, 3, 6], [8, 3, 5]]) { const L = new B3.PointLight('pl', V3(x, y, z), CTX.scene); L.diffuse = col3('#ffa860'); L.intensity = 1.4; L.range = 26; mk(bSph(.22, 10), basic3('#ffd08a'), x, y, z, false); }
   },
   city(A) { const m = mat3('#3a2016', { roughness: 1 }), w = basic3('#ffb060'), r = sRng(17); for (let i = 0; i < 46; i++) { const x = -60 + r() * 120, z = -38 - r() * 26, hh = 2 + r() * 9, b = mk(bBox(2 + r() * 4, hh, 2 + r() * 4), m, x, hh / 2 + heightAt('dunes', x, z) - 1, z, false); if (r() < .6) mk(bBox(.3, .3, .05), w, x + (r() - .5), b.position.y + (r() - .5) * hh * .6, z + 2.1, false); } },
-  sea(A) { const sea = mk(MB().CreateGround('sea', { width: 600, height: 600 }, SC), mat3('#2a4c58', { roughness: .2, metalness: .5 }), 0, -4.5, 0, false); A.sea = sea; },
+  sea(A) { const sea = mk(MB().CreateGround('sea', { width: 600, height: 600 }, CTX.scene), mat3('#2a4c58', { roughness: .2, metalness: .5 }), 0, -4.5, 0, false); A.sea = sea; },
   castle(A) { const rk = mk(bRock(9, 2), mat3('#3a443e', { flatShading: true }), -34, -4, -52, false); rk.scaling.set(14, 9, 12); const m = mat3('#4a4e4c'); for (const [x, z, w, h, d] of [[-34, -52, 9, 7, 6], [-38, -50, 2.6, 13, 2.6], [-29, -54, 2.6, 15, 2.6]]) mk(bBox(w, h, d), m, x, 4 + h / 2, z, false); mk(bBox(.6, .8, .1), basic3('#ffc070'), -33, 9, -48.9, false); },
   towers(A) { const m = mat3('#1a1212', { roughness: .6, metalness: .4 }), w = basic3('#ff4a28'), r = sRng(23); for (let i = 0; i < 34; i++) { const x = -70 + r() * 140, z = -30 - r() * 50, hh = 10 + r() * 34; mk(bBox(3 + r() * 5, hh, 3 + r() * 5), m, x, hh / 2 - 1, z, false); for (let k = 0; k < 4; k++) mk(bBox(.5, .25, .1), w, x + (r() - .5) * 2, r() * hh, z + 2.6, false); } },
   palace(A) {

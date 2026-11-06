@@ -1,0 +1,287 @@
+{
+ "html": "index.html",
+ "mode": "desktop",
+ "cycles": 5,
+ "start": {
+  "contexts": 1,
+  "contextsInDom": 1,
+  "engines": 1,
+  "scenes": 1,
+  "meshes": 179,
+  "textures": 40,
+  "materials": 98,
+  "link": 62,
+  "canv": "stage3d camp3d"
+ },
+ "maxCtx": 4,
+ "crit": {
+  "один WebGL-контекст": false,
+  "нет компиляций после wake": false,
+  "лагерь ↔ бой ≤ 400 мс": false,
+  "нет роста meshes/textures": false,
+  "нет ошибок консоли": true
+ },
+ "errors": [],
+ "cycleData": [
+  {
+   "n": 1,
+   "camp": {
+    "contexts": 1,
+    "contextsInDom": 1,
+    "engines": 1,
+    "scenes": 1,
+    "meshes": 179,
+    "textures": 40,
+    "materials": 98,
+    "link": 62,
+    "canv": "stage3d camp3d"
+   },
+   "hero": {
+    "contexts": 2,
+    "contextsInDom": 2,
+    "engines": 2,
+    "scenes": 2,
+    "meshes": 211,
+    "textures": 55,
+    "materials": 120,
+    "link": 102,
+    "canv": "stage3d camp3d,stage3d hero3d"
+   },
+   "enterSyncMs": 8374,
+   "enterMs": 11161,
+   "battle": {
+    "contexts": 3,
+    "contextsInDom": 2,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 484,
+    "textures": 105,
+    "materials": 312,
+    "link": 171,
+    "canv": "stage3d camp3d,stage3d hero3d(off),bgc"
+   },
+   "compilesAfterWake": 0,
+   "log": 6,
+   "exitMs": 7269,
+   "after": {
+    "contexts": 3,
+    "contextsInDom": 1,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 242,
+    "textures": 55,
+    "materials": 140,
+    "link": 176,
+    "canv": "stage3d camp3d,stage3d hero3d(off),?(off)"
+   }
+  },
+  {
+   "n": 2,
+   "camp": {
+    "contexts": 3,
+    "contextsInDom": 1,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 242,
+    "textures": 55,
+    "materials": 140,
+    "link": 176,
+    "canv": "stage3d camp3d,stage3d hero3d(off),?(off)"
+   },
+   "hero": {
+    "contexts": 3,
+    "contextsInDom": 2,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 238,
+    "textures": 55,
+    "materials": 140,
+    "link": 176,
+    "canv": "stage3d camp3d,stage3d hero3d,?(off)"
+   },
+   "enterSyncMs": 8271,
+   "enterMs": 10929,
+   "battle": {
+    "contexts": 3,
+    "contextsInDom": 2,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 484,
+    "textures": 105,
+    "materials": 312,
+    "link": 242,
+    "canv": "stage3d camp3d,stage3d hero3d(off),bgc"
+   },
+   "compilesAfterWake": 1,
+   "log": 6,
+   "exitMs": 6733,
+   "after": {
+    "contexts": 3,
+    "contextsInDom": 1,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 241,
+    "textures": 55,
+    "materials": 139,
+    "link": 245,
+    "canv": "stage3d camp3d,stage3d hero3d(off),?(off)"
+   }
+  },
+  {
+   "n": 3,
+   "camp": {
+    "contexts": 3,
+    "contextsInDom": 1,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 241,
+    "textures": 55,
+    "materials": 139,
+    "link": 245,
+    "canv": "stage3d camp3d,stage3d hero3d(off),?(off)"
+   },
+   "hero": {
+    "contexts": 3,
+    "contextsInDom": 2,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 211,
+    "textures": 55,
+    "materials": 124,
+    "link": 245,
+    "canv": "stage3d camp3d,stage3d hero3d,?(off)"
+   },
+   "enterSyncMs": 8087,
+   "enterMs": 10762,
+   "battle": {
+    "contexts": 4,
+    "contextsInDom": 2,
+    "engines": 4,
+    "scenes": 4,
+    "meshes": 484,
+    "textures": 105,
+    "materials": 320,
+    "link": 311,
+    "canv": "stage3d camp3d,stage3d hero3d(off),?(off),bgc"
+   },
+   "compilesAfterWake": 1,
+   "log": 4,
+   "exitMs": 5203,
+   "after": {
+    "contexts": 3,
+    "contextsInDom": 1,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 223,
+    "textures": 69,
+    "materials": 131,
+    "link": 313,
+    "canv": "stage3d camp3d,stage3d hero3d(off),?(off)"
+   }
+  },
+  {
+   "n": 4,
+   "camp": {
+    "contexts": 3,
+    "contextsInDom": 1,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 223,
+    "textures": 70,
+    "materials": 131,
+    "link": 315,
+    "canv": "stage3d camp3d,stage3d hero3d(off),?(off)"
+   },
+   "hero": {
+    "contexts": 3,
+    "contextsInDom": 2,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 223,
+    "textures": 70,
+    "materials": 131,
+    "link": 315,
+    "canv": "stage3d camp3d,stage3d hero3d,?(off)"
+   },
+   "enterSyncMs": 8203,
+   "enterMs": 10843,
+   "battle": {
+    "contexts": 3,
+    "contextsInDom": 2,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 484,
+    "textures": 105,
+    "materials": 312,
+    "link": 380,
+    "canv": "stage3d camp3d,stage3d hero3d(off),bgc"
+   },
+   "compilesAfterWake": 0,
+   "log": 4,
+   "exitMs": 6988,
+   "after": {
+    "contexts": 3,
+    "contextsInDom": 1,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 239,
+    "textures": 55,
+    "materials": 139,
+    "link": 384,
+    "canv": "stage3d camp3d,stage3d hero3d(off),?(off)"
+   }
+  },
+  {
+   "n": 5,
+   "camp": {
+    "contexts": 3,
+    "contextsInDom": 1,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 239,
+    "textures": 55,
+    "materials": 139,
+    "link": 384,
+    "canv": "stage3d camp3d,stage3d hero3d(off),?(off)"
+   },
+   "hero": {
+    "contexts": 3,
+    "contextsInDom": 2,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 248,
+    "textures": 55,
+    "materials": 149,
+    "link": 385,
+    "canv": "stage3d camp3d,stage3d hero3d,?(off)"
+   },
+   "enterSyncMs": 8477,
+   "enterMs": 11289,
+   "battle": {
+    "contexts": 4,
+    "contextsInDom": 2,
+    "engines": 4,
+    "scenes": 4,
+    "meshes": 521,
+    "textures": 105,
+    "materials": 341,
+    "link": 451,
+    "canv": "stage3d camp3d,stage3d hero3d(off),?(off),bgc"
+   },
+   "compilesAfterWake": 1,
+   "log": 4,
+   "exitMs": 5296,
+   "after": {
+    "contexts": 3,
+    "contextsInDom": 1,
+    "engines": 3,
+    "scenes": 3,
+    "meshes": 244,
+    "textures": 55,
+    "materials": 148,
+    "link": 452,
+    "canv": "stage3d camp3d,stage3d hero3d(off),?(off)"
+   }
+  }
+ ]
+}

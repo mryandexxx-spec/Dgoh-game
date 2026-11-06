@@ -6,7 +6,8 @@ import { ENV_HDR } from '../../assets/env-hdr.js';
 import { poseHuman } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
 import { MB, bCyl, bPlane, dynTex, glowCanvas } from '../geometry.js';
-import { PBR_ON, SC, SHG, V3, basic3, col3, mat3, mk, set_PBR_ON, set_SC, set_SHG } from '../materials.js';
+import { V3, basic3, col3, mat3, mk } from '../materials.js';
+import { CTX, withCtx } from '../ctx.js';
 import { B3, HAS3D } from '../base.js';
 import { CH } from '../../data/chars.js';
 
@@ -14,7 +15,7 @@ import { CH } from '../../data/chars.js';
 class HeroStage extends Stage3D {
   constructor() {
     super({ cls: 'stage3d hero3d', alpha: false });
-    const S = this.scene; set_SC(S); S._maxL = 5; // hemi + key + 2 rims + aura
+    const S = this.scene; let tx; withCtx({ scene: S, shadows: null }, () => { S._maxL = 5; // hemi + key + 2 rims + aura
     S.clearColor = new B3.Color4(.07, .045, .03, 1); S.ambientColor = B3.Color3.Black();
     // backdrop: soft radial gradient sphere + floor podium
     const bg = MB().CreateSphere('bg', { diameter: 60, segments: 16, sideOrientation: B3.Mesh.BACKSIDE }, S); bg.material = basic3('#0e0906', { fog: false }); bg.isPickable = false; this.bg = bg;
@@ -24,35 +25,35 @@ class HeroStage extends Stage3D {
     key.autoUpdateExtends = false; key.orthoLeft = -2; key.orthoRight = 2; key.orthoTop = 3; key.orthoBottom = -1; key.shadowMinZ = .5; key.shadowMaxZ = 20;
     const rim = this.rim = new B3.SpotLight('rim', V3(-2.5, 3.2, -2.5), V3(.6, -.5, .6), Math.PI / 3, 2, S); rim.intensity = 1.6; rim.diffuse = col3('#8fc0ff');
     const rim2 = this.rim2 = new B3.SpotLight('rim2', V3(2.6, 2.6, -2.2), V3(-.6, -.4, .6), Math.PI / 3, 2, S); rim2.intensity = 1.1; rim2.diffuse = col3('#ffa860');
-    set_SHG(this.shadows = new B3.ShadowGenerator(this.small ? 1024 : 2048, key)); SHG.bias = .0006; SHG.normalBias = .01; SHG.darkness = .2;
-    SHG.usePercentageCloserFiltering = this.engine.webGLVersion >= 2; // perf step 5: PCF instead of PCSS (contact hardening)
-    SHG.filteringQuality = B3.ShadowGenerator.QUALITY_MEDIUM;
+    CTX.shadows = this.shadows = new B3.ShadowGenerator(this.small ? 1024 : 2048, key); CTX.shadows.bias = .0006; CTX.shadows.normalBias = .01; CTX.shadows.darkness = .2;
+    CTX.shadows.usePercentageCloserFiltering = this.engine.webGLVersion >= 2; // perf step 5: PCF instead of PCSS (contact hardening)
+    CTX.shadows.filteringQuality = B3.ShadowGenerator.QUALITY_MEDIUM;
     // podium: sand-stone disc with glowing tier ring
     const stone = mat3('#5a4030', { roughness: .8 }), top = mat3('#7a5a3e', { roughness: .65 });
     mk(bCyl(1.05, 1.15, .22, 48), stone, 0, -.11, 0, false); mk(bCyl(.98, .98, .02, 48), top, 0, .005, 0, false);
     this.ring = mk(MB().CreateTorus('ring', { diameter: 2.04, thickness: .03, tessellation: 64 }, S), basic3('#e8913f'), 0, .01, 0, false);
-    const tx = dynTex(glowCanvas(), 0, true);
+    tx = dynTex(glowCanvas(), 0, true);
     const dust = new B3.ParticleSystem('motes', 160, S); dust.particleTexture = tx; dust.emitter = V3(0, 0, 0); dust.minEmitBox = V3(-1.6, 0, -1.2); dust.maxEmitBox = V3(1.6, 2.6, 1); dust.direction1 = V3(-.05, .05, -.05); dust.direction2 = V3(.05, .15, .05);
     dust.minLifeTime = 4; dust.maxLifeTime = 8; dust.minSize = .01; dust.maxSize = .03; dust.color1 = new B3.Color4(1, .85, .6, .7); dust.color2 = new B3.Color4(1, .7, .4, .5); dust.colorDead = new B3.Color4(1, .6, .3, 0); dust.emitRate = 20; dust.blendMode = B3.ParticleSystem.BLENDMODE_ADD; dust.preWarmCycles = 100; dust.start();
     const burst = this.burst = new B3.ParticleSystem('burst', 500, S); burst.particleTexture = tx; burst.emitter = V3(0, .1, 0); burst.minEmitBox = V3(-.6, 0, -.6); burst.maxEmitBox = V3(.6, .1, .6); burst.direction1 = V3(-.4, 2, -.4); burst.direction2 = V3(.4, 4, .4); burst.gravity = V3(0, -1.5, 0);
     burst.minLifeTime = .8; burst.maxLifeTime = 1.8; burst.minSize = .02; burst.maxSize = .06; burst.color1 = new B3.Color4(1, .85, .45, 1); burst.color2 = new B3.Color4(1, .65, .25, 1); burst.colorDead = new B3.Color4(1, .4, .1, 0); burst.blendMode = B3.ParticleSystem.BLENDMODE_ADD; burst.emitRate = 0; burst.manualEmitCount = 0; burst.start();
     const rp = new B3.ReflectionProbe('rp', 64, S); rp.renderList.push(bg); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
     try { const env = new B3.HDRCubeTexture(ENV_HDR, S, 64, false, true, false, true, () => { S.environmentTexture = env; S.environmentIntensity = .85; }, () => {}); } catch (e) {}
-    set_SC(null); set_SHG(null);
+    });
     this.look({ dof: { f: 85, stop: 2, d: 4200 }, exposure: 1.05, ssao: .35, bloomW: .35, bloomT: .85 });
     this.yaw = 0; this.yawV = 0; this.drag = null; this.auto = true; this.showcase = true;
     const dp = this.dustP = new B3.ParticleSystem('dust', 260, S); dp.particleTexture = tx; dp.emitter = V3(0, 1.2, 0); dp.minEmitBox = V3(-.08, -.05, -.05); dp.maxEmitBox = V3(.08, .05, .05);
     dp.direction1 = V3(-.4, .2, -.3); dp.direction2 = V3(.4, .7, .5); dp.gravity = V3(0, -.6, 0); dp.minLifeTime = .7; dp.maxLifeTime = 1.6; dp.minSize = .02; dp.maxSize = .07; dp.minEmitPower = .2; dp.maxEmitPower = .6;
     dp.color1 = new B3.Color4(.78, .64, .46, .7); dp.color2 = new B3.Color4(.6, .48, .34, .55); dp.colorDead = new B3.Color4(.5, .4, .3, 0); dp.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD; dp.emitRate = 0; dp.manualEmitCount = 0; dp.start();
     const cv = this.cv;
-    cv.addEventListener('pointerdown', e => { this.drag = { x: e.clientX, y0: this.yaw }; this.auto = false; cv.setPointerCapture && cv.setPointerCapture(e.pointerId); });
-    cv.addEventListener('pointermove', e => { if (!this.drag) return; const nx = this.yaw; this.yaw = this.drag.y0 + (e.clientX - this.drag.x) * .012; this.yawV = (this.yaw - nx) * 60; });
+    cv.addEventListener('pointerdown', e => { if (!this.isCur()) return; this.drag = { x: e.clientX, y0: this.yaw }; this.auto = false; cv.setPointerCapture && cv.setPointerCapture(e.pointerId); });
+    cv.addEventListener('pointermove', e => { if (!this.drag || !this.isCur()) return; const nx = this.yaw; this.yaw = this.drag.y0 + (e.clientX - this.drag.x) * .012; this.yawV = (this.yaw - nx) * 60; });
     const up = () => { if (this.drag) { this.drag = null; this.resumeT = performance.now() + 3000; } }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   }
   setHero(def, prog0) {
     if (this.def === def && this.o) return;
     if (this.o) this.o.root.dispose(false, true);
-    set_SC(this.scene); set_SHG(this.shadows); set_PBR_ON(true); const o = makeHuman3(def); set_PBR_ON(false); set_SC(null); set_SHG(null);
+    const o = makeHuman3(def, { scene: this.scene, shadows: this.shadows, pbr: true });
     o.base = V3(0, 0, 0); o.face = 0; o.side = 'A'; o.phase = 0; o.def = def; this.o = o; this.def = def; this.yaw = -.35; this.auto = true;
     const tc = col3(TIER_COL[(prog0 || {}).gear || 1] || '#e8913f'); this.ring.material.emissiveColor = tc; this.rim.diffuse = def.side === 'dark' ? col3('#ff6a5a') : col3('#8fc0ff');
     this.intro = performance.now();
@@ -78,7 +79,7 @@ function mountHeroStage(id) {
   if (!HAS3D) return;
   const host = document.querySelector('#overlay .cfig'); if (!host) return;
   try {
-    if (!HERO_STAGE) HERO_STAGE = new HeroStage();
+    if (!HERO_STAGE || !HERO_STAGE.alive) HERO_STAGE = new HeroStage();
     const p = prog(id), d = CH[id];
     host.classList.add('has3d'); HERO_STAGE.setHero(d, p); HERO_STAGE.attach(host);
     const snap = { id, stars: p.stars, gear: p.gear, eq: p.eq.filter(Boolean).length, lvl: p.lvl, sk: JSON.stringify(p.sk) };
