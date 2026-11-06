@@ -4,7 +4,7 @@ export const SPLIT = [
   [1, 'data/fx.js'], [33, 'data/chars.js'], [184, 'logic/battle/skills.js'], [214, 'data/boss.js'],
   [228, 'logic/battle/stats.js'], [246, 'logic/battle/engine.js'], [434, 'logic/battle/turns.js'], [584, 'logic/battle/raid.js'], [623, 'logic/battle/ai.js'],
   [654, 'data/looks.js'], [676, 'render2d/figures.js'], [805, 'render2d/scenes.js'], [1082, 'render2d/scene-bg.js'], [1138, 'render2d/fx-layer.js'],
-  [1183, 'render3d/base.js'], [1205, 'render3d/ctx.js'], [1205, 'render3d/materials.js'], [1248, 'render3d/geometry.js'], [1295, 'render3d/env/build-env.js'], [1352, 'render3d/env/props.js'],
+  [1183, 'render3d/base.js'], [1205, 'render3d/ctx.js'], [1205, 'render3d/game-scene.js'], [1205, 'render3d/materials.js'], [1248, 'render3d/geometry.js'], [1295, 'render3d/env/build-env.js'], [1352, 'render3d/env/props.js'],
   [1391, 'render3d/env/particles.js'], [1418, 'render3d/characters/rig.js'], [1454, 'render3d/characters/authored.js'], [1512, 'render3d/characters/procedural.js'],
   [1666, 'render3d/characters/pose-generic.js'], [1739, 'render3d/worm.js'], [1800, 'render3d/scenes/arena.js'], [2196, 'render3d/characters/pose-duncan.js'],
   [2333, 'assets/mocap-data.js'], [2337, 'render3d/characters/mocap.js'], [2381, 'assets/env-hdr.js'], [2384, 'render3d/engine-host.js'], [2384, 'render3d/scenes/base-scene.js'],

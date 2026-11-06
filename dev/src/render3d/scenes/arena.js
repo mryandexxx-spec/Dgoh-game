@@ -17,14 +17,17 @@ import { C3_CHARM, C3_SPICE, C3_TGT, V3, basic3, col3, inPlaceKeep, mat3, mk, ru
 import { CTX, withCtx } from '../ctx.js';
 import { B3, SLOT3 } from '../base.js';
 import { FX } from '../../data/fx.js';
+import { GameScene } from '../game-scene.js';
 
 // ---------- arena ----------
-class Arena3D {
+// GameScene: create = конструктор (канвас ставится в хост заранее — раскладка рейда меряет его), wake в конце конструктора;
+// после боя и при отпадении хоста — dispose (не sleep).
+class Arena3D extends GameScene {
   constructor(canvas, key, B) {
-    const H = this.host = engineHost().adopt(this); this.cv = H.cv; this.key = key; this.units = {}; this.parts = []; this.speed = 1; this.alive = true;
+    super(engineHost()); this.key = key; this.units = {}; this.parts = []; this.speed = 1;
     const small = Math.min(innerWidth, innerHeight) < 600; this.small = small;
-    const E = this.engine = H.engine; // phase 3b: shared engine; the placeholder canvas is replaced by the host canvas
-    H.mount(this, canvas.parentNode, { replace: canvas, cls: canvas.className || 'bgc', id: canvas.id || 'bgc', dpr: small ? 1.5 : 2 });
+    const E = this.engine; // phase 3b: shared engine; the placeholder canvas is replaced by the host canvas
+    this.place(canvas.parentNode, { replace: canvas, cls: canvas.className || 'bgc', id: canvas.id || 'bgc', dpr: small ? 1.5 : 2 });
     const S = this.scene = new B3.Scene(E); S.useRightHandedSystem = true; S.skipPointerMovePicking = true; S.autoClear = true;
     this.camera = new B3.UniversalCamera('cam', V3(0, 11, 18), S); this.camera.minZ = .1; this.camera.maxZ = 1200; this.camera.inputs.clear();
     this.raid = !!B.raid; this.summons = []; this.nA = B.units.filter(x => x.side === 'A').length;
@@ -35,9 +38,9 @@ class Arena3D {
     if (B.units.some(u => u.def && u.def.gl)) { this.glLight = new B3.PointLight('gll', V3(0, 6, 2), S); this.glLight.diffuse = col3('#ffc860'); this.glLight.range = 40; this.glLight.intensity = 0; } // perf step 6: no idle extra light in every shader
     });
     if (B.units.some(u => u.def && u.def.gl)) try { this.wormKit(true); } catch (e) { errLog('wormkit', e); }
-    this.resize();
+    this.resize(); this.wake();
   }
-  frame() { this.loop(); }
+  update() { this.loop(); }
   onDetach() { this.dispose(); }
   contextLost() { if (!this.alive) return; this.lost = true; if (this.onLost) setTimeout(() => this.onLost && this.onLost(), 0); }
   setupFX() {
@@ -411,11 +414,7 @@ class Arena3D {
     this.summons.push({ g, col, mouth, rocks, dust, s, t0, dur: 2600, victim, burst });
     });
   }
-  dispose() {
-    if (!this.alive) return; this.alive = false;
-    try { this.scene.dispose(); } catch (e) {}
-    this.host.forget(this); // phase 3b: the shared canvas goes back to the previous host (camp) or is parked
-  }
+  // dispose — GameScene: scene.dispose + host.forget (канвас уходит предыдущему хосту или паркуется)
 }
 
 

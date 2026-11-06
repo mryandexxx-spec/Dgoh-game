@@ -8,7 +8,8 @@ import { renderNotes } from '../notifications.js';
 import { fxText } from '../fx-text.js';
 import { statInc } from '../../logic/stats.js';
 import { trialFinish } from '../views/trials.js';
-import { WORM_BADGE, freeStages } from '../hero-window.js';
+import { WORM_BADGE } from '../hero-window.js';
+import { sleepStages } from '../../render3d/scenes/camp.js';
 import { raidPct, raidReward } from '../views/raid.js';
 import { SQ, openSquadSel, set_SQ } from '../overlays/squad-select.js';
 import { closeInfo, openInfo, wormIco } from '../overlays/info.js';
@@ -57,7 +58,7 @@ function launch(cfg) {
   set_SQ(null);
   closeInfo(true);
   { let lg = 0; cfg.squad = cfg.squad.filter(id => !isLegend(id) || !lg++); }
-  freeStages();
+  sleepStages();
   const B = createBattle(cfg.squad.map(id => ({ id, ...prog(id) })), cfg.enemy || [], { desert: cfg.desert, seed: Date.now() & 0xffffff, boss: cfg.boss });
   if (cfg.mode === 'conq' && typeof cqApply === 'function') cqApply(B, cfg);
   set_BT({ B, cfg, i: cfg.i, auto: BT?.autoPref ?? false, autoPref: BT?.autoPref ?? false, speed: Math.min(4, BT?.speedPref ?? 1), speedPref: Math.min(4, BT?.speedPref ?? 1), timer: null, waiting: null, sel: 'basic', done: false });

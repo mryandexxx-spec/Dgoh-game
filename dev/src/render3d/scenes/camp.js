@@ -88,12 +88,15 @@ let CAMP_STAGE = null;
 function mountCampStage() {
   if (!HAS3D) return false;
   const host = document.querySelector('.lobby'); if (!host) return false;
-  try { if (!CAMP_STAGE || !CAMP_STAGE.alive) CAMP_STAGE = new CampStage(); CAMP_STAGE.setSquad(S.squad.slice(0, 5)); host.classList.add('has3d'); CAMP_STAGE.attach(host, true); return true; }
+  try { if (!CAMP_STAGE || !CAMP_STAGE.alive) CAMP_STAGE = new CampStage(); CAMP_STAGE.setSquad(S.squad.slice(0, 5)); host.classList.add('has3d'); CAMP_STAGE.attach(host, true); return true; } // asleep → wake
   catch (e) { console.warn('camp stage', e); return false; }
 }
+// phase 3b, step 4: before a battle the lobby and hero stages go to sleep (were disposed on phones by freeStages) —
+// scenes, meshes and textures stay; the next mountCampStage / mountHeroStage wakes them
+function sleepStages() { try { if (HERO_STAGE) HERO_STAGE.sleep({ light: true }); if (CAMP_STAGE) CAMP_STAGE.sleep({ light: true }); } catch (e) { console.warn('sleep stages', e); } }
 // resume paused stages when overlays close
 setInterval(() => hostKick(), 400); // phase 3b: one render loop in EngineHost
 
 
 function set_CAMP_STAGE(v) { return CAMP_STAGE = v; }
-export { CampStage, S_FLAG, cols4, CAMP_STAGE, mountCampStage, set_CAMP_STAGE };
+export { CampStage, S_FLAG, cols4, CAMP_STAGE, mountCampStage, set_CAMP_STAGE, sleepStages };

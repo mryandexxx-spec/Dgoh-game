@@ -1,4 +1,5 @@
 // render3d/materials.js — строки 1205–1247 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import './game-scene.js'; // порядок исполнения
 import { errLog } from '../core/errlog.js';
 import { CTX } from './ctx.js';
 import { B3 } from './base.js';
