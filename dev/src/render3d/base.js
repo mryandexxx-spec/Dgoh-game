@@ -2,7 +2,8 @@
 import '../render2d/fx-layer.js'; // порядок исполнения
 
 // ===== 3D battle arena (Babylon.js engine) =====
-const B3 = typeof BABYLON !== 'undefined' ? BABYLON : null;
+// B3 — чанк render3d/babylon.js (globalThis.__B3); BABYLON — заглушка Node-тестов (tests/lib/load.mjs)
+const B3 = globalThis.__B3 || (typeof BABYLON !== 'undefined' ? BABYLON : null);
 const HAS3D = (() => { try { if (!B3) return false; const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();
 
 const ENV3 = {

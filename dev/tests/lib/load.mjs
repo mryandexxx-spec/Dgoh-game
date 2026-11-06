@@ -41,6 +41,7 @@ export function extractScripts(html, dir = '.') {
   let m;
   while ((m = re.exec(html))) {
     const src = m[1] && /\bsrc\s*=\s*["']?([^"'\s>]+)/.exec(m[1]);
+    if (m[1] && /\bdata-b3\b/.test(m[1])) continue;                           // инлайн-чанк Babylon (артефакт) — заглушка
     if (!src) { out.push(m[2]); continue; }
     if (/babylon/i.test(src[1]) || /^[a-z]+:/i.test(src[1])) continue;      // Babylon и внешние — заглушки
     out.push(fs.readFileSync(path.join(dir, src[1]), 'utf8'));                // бандл PWA (app.js)

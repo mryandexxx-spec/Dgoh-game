@@ -55,7 +55,7 @@ const probe = () => page.evaluate(() => {
   const SM = window.__sm; SM.ctx = SM.ctx.filter(w => w.deref());
   const live = SM.ctx.map(w => w.deref()).filter(c => !c.isContextLost());
   const r = { contexts: live.length, contextsInDom: live.filter(c => c.canvas && c.canvas.isConnected).length, engines: 0, scenes: 0, meshes: 0, textures: 0, materials: 0, link: SM.link, canv: live.map(c => (c.canvas.className || c.canvas.id || '?') + (c.canvas.isConnected ? '' : '(off)')).join(',') };
-  const E = (window.BABYLON && BABYLON.EngineStore && BABYLON.EngineStore.Instances) || [];
+  const E = ((B => B && B.EngineStore && B.EngineStore.Instances)(window.__B3 || window.BABYLON)) || [];
   for (const e of E) { if (e.isDisposed) continue; r.engines++; r.gpuTex = (r.gpuTex || 0) + (e.getLoadedTexturesCache ? e.getLoadedTexturesCache().length : 0); if (e.getLoadedTexturesCache) { const K = r.gpuKinds = r.gpuKinds || {}; for (const t of e.getLoadedTexturesCache()) { const k = t.source + ':' + (t.url ? t.url.slice(0, 24) : '') + ':' + t.width + 'x' + t.height + (t.isCube ? 'c' : ''); K[k] = (K[k] || 0) + 1; } } for (const s of e.scenes) { if (s.cameras.some(c => c.name === 'bc')) { r.baker = (r.baker || 0) + 1; continue; } r.scenes++; r.meshes += s.meshes.length; r.textures += s.textures.length; r.materials += s.materials.length; } }
   return r;
 });
@@ -66,7 +66,7 @@ const frameOf = v => `(${v} && ${v}.scene && ${v}.scene.getFrameId && ${v}.scene
 
 // ключи кэша эффектов движка; с аргументом — только новые относительно снимка
 const effKeys = (prev = null) => page.evaluate(prev => {
-  const E = ((window.BABYLON && BABYLON.EngineStore && BABYLON.EngineStore.Instances) || []).find(e => !e.isDisposed), C = E ? E._compiledEffects || {} : {}, k = Object.keys(C);
+  const E = (((B => B && B.EngineStore && B.EngineStore.Instances)(window.__B3 || window.BABYLON)) || []).find(e => !e.isDisposed), C = E ? E._compiledEffects || {} : {}, k = Object.keys(C);
   if (!prev) return k;
   // новые эффекты: имя шейдера, материалы и меши, которые им рисуются, и defines, отличные от ближайшего уже бывшего эффекта того же шейдера
   return k.filter(x => !prev.includes(x)).map(x => {
