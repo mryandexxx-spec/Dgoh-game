@@ -9,10 +9,10 @@ import { metaClick } from './wiring.js';
 import { WORM_BADGE, detailNav, heroSnap } from './hero-window.js';
 import { buysToday, findShopItem, shopLeft } from './views/shop.js';
 import { raidPct, raidReward } from './views/raid.js';
-import { SQ, grantShards, openSquadSel, renderSquadSel, set_SQ, sqArr, sqGo } from './overlays/squad-select.js';
+import { SQ, openSquadSel, renderSquadSel, set_SQ, sqArr, sqGo } from './overlays/squad-select.js';
 import { claimLogin, openCalendar } from './overlays/calendar.js';
 import { claimChest, claimQuest } from './views/daily.js';
-import { addRes, fragLines, rewardWin } from './rewards.js';
+import { fragLines, rewardWin } from './rewards.js';
 import { doRefill, doXSim, openSim, refreshAll, runSim, simCore, updSim } from './overlays/sim.js';
 import { RES_INFO, closeInfo, infoKey, openInfo } from './overlays/info.js';
 import { DETAIL_BACK, closeOverlay, detailSk, itemCtx, lackKey, lvlCost, openDetail, openItem, set_DETAIL_BACK, set_detailSk, skCost, slotState, updLvl } from './overlays/detail.js';
@@ -37,6 +37,7 @@ import { CH } from '../data/chars.js';
 import { amt } from '../core/format.js';
 import { $ } from '../core/dom.js';
 import { DAILY, qState, quest } from '../logic/daily.js';
+import { addRes, grantShards } from '../logic/rewards.js';
 
 // ===== events =====
 document.addEventListener('click', e => {

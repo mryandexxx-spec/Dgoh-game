@@ -5,8 +5,8 @@ import { MOUSE_SVG } from '../mouse.js';
 import { statInc } from '../../logic/stats.js';
 import { leaveBattle } from '../battle/battle-ui.js';
 import { SHOPS } from './shop.js';
-import { grantShards, openSquadSel } from '../overlays/squad-select.js';
-import { addRes, giveRewards } from '../rewards.js';
+import { openSquadSel } from '../overlays/squad-select.js';
+import { giveRewards } from '../rewards.js';
 import { openInfo } from '../overlays/info.js';
 import { render } from '../router.js';
 import { renderRes, starStr, toast } from '../common.js';
@@ -24,6 +24,7 @@ import { CH } from '../../data/chars.js';
 import { amt, fmt, ic } from '../../core/format.js';
 import { $, isLandPhone } from '../../core/dom.js';
 import { sRng } from '../../core/rng.js';
+import { addRes, grantShards } from '../../logic/rewards.js';
 
 // ---- battle hooks ----
 function cqApply(B, cfg) {

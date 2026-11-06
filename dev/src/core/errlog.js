@@ -1,5 +1,5 @@
 // core/errlog.js — строки 3234–3251 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import '../logic/progress.js'; // порядок исполнения
+import '../logic/rewards.js'; // порядок исполнения
 import { BT } from './state.js';
 
 const ERR_T = new Map();

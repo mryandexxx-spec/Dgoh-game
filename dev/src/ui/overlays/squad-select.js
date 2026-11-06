@@ -2,7 +2,6 @@
 import './calendar.js'; // порядок исполнения
 import { cq, cqEn, cqEnSpend, cqEnTxt, cqLive, cqNode, cqSta, cqStaCol, cqTypeN } from '../../logic/conquest.js';
 import { CQ_EN, CQ_SECT, CQ_STA, cqMod } from '../../data/conquest-data.js';
-import { celebQueue } from './celebrate.js';
 import { trialOfSQ } from '../views/trials.js';
 import { launch, startBattle } from '../battle/battle-ui.js';
 import { SPOT_ICONS } from '../views/lobby.js';
@@ -12,7 +11,6 @@ import { campSquad, enGet, nodePower, prog, reqFacOk, reqMissing, reqText, sideO
 import { S, tickWater } from '../../core/state.js';
 import { persist } from '../../core/save.js';
 import { TIER_COL } from '../../logic/gear.js';
-import { unlockNeed } from '../../logic/relics.js';
 import { RAID_SCENES, ROMAN, enemyProg } from '../../logic/economy.js';
 import { JK, JR, jFoes } from '../../data/journeys.js';
 import { CAMP_DEF, NODES, NODE_SCENES, nodeCost, nodeEn, nodeTitle } from '../../data/campaigns.js';
@@ -25,6 +23,8 @@ import { FACTIONS } from '../../data/fx.js';
 import { TRIALS, TRIAL_SQ, trialFoes, trialOk } from '../../logic/trials.js';
 import { amt, fmt } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
+import { rewardHooks } from '../../logic/rewards.js';
+import { celebQueue } from './celebrate.js';
 
 // ===== squad select =====
 let SQ = null;
@@ -102,17 +102,10 @@ function sqGo() {
   if (mode === 'journey') { const t = JR().tiers[i]; return launch({ mode: 'journey', scene: JR().scenes[i], i, title: `Легенда ${i + 1}. ${t.n}`, desert: t.desert, squad: a.slice(), enemy: jFoes(JK(), i) }); }
   const R = S.raid; if (!R) return; return launch({ mode: 'raid', scene: RAID_SCENES[R.tier], title: 'Шаи-Хулуд · ' + RAID_TIERS[R.tier].n.split(' · ')[0], squad: a.slice(), boss: { tier: R.tier, hp: R.hp, maxHp: R.maxHp } });
 }
-const RING_RATE = 10;   // 1 осколок героя на 7★ = 10 водяных колец
 let SHCONV = 0, SHCONV_T = 0;
+rewardHooks.unlock = id => celebQueue({ type: 'unlock', id });
+rewardHooks.shardConv = n => { SHCONV += n; clearTimeout(SHCONV_T); SHCONV_T = setTimeout(convFlush, 700); };
 function convFlush() { if (SHCONV > 0) { const n = SHCONV; SHCONV = 0; toast(`Осколки героев 7★ обменены: +${amt('wring', n)} водяных колец`); } }
-function grantShards(id, k) {
-  const p = prog(id);
-  if (p.stars >= 7) { const n = k * RING_RATE; S.wring = (S.wring || 0) + n; SHCONV += n; clearTimeout(SHCONV_T); SHCONV_T = setTimeout(convFlush, 700); return false; }
-  p.shards += k;
-  const un = unlockNeed(CH[id]);
-  if (p.stars === 0 && p.shards >= un) { p.shards -= un; p.stars = un > 10 ? 7 : 1; celebQueue({ type: 'unlock', id }); return true; }
-  return false;
-}
 function pickerHtml(kind, ids, pick, disabled = new Set()) {
   return `<div class="pick">${ids.map(id => { const d = CH[id], i = pick.indexOf(id);
     return `<button data-pick="${kind}:${id}" aria-pressed="${i >= 0}" ${disabled.has(id) ? 'disabled' : ''}><span class="ord">${i >= 0 ? (i === 0 ? 'Л' : i + 1) : ''}</span>${glyph(d)}${d.sn} <span class="mono" style="color:var(--dust)">${'★'.repeat(prog(id).stars)}</span></button>`; }).join('')}</div>`;
@@ -120,4 +113,4 @@ function pickerHtml(kind, ids, pick, disabled = new Set()) {
 
 function set_SQ(v) { return SQ = v; }
 function set_SHCONV(v) { return SHCONV = v; }
-export { SQ, sqArr, sqPool, openSquadSel, sqEnemy, renderSquadSel, sqGo, RING_RATE, SHCONV, SHCONV_T, convFlush, grantShards, pickerHtml, set_SQ, set_SHCONV };
+export { SQ, sqArr, sqPool, openSquadSel, sqEnemy, renderSquadSel, sqGo, SHCONV, SHCONV_T, convFlush, pickerHtml, set_SQ, set_SHCONV };

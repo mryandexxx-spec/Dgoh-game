@@ -10,7 +10,7 @@ import { statInc } from '../../logic/stats.js';
 import { trialFinish } from '../views/trials.js';
 import { WORM_BADGE, freeStages } from '../hero-window.js';
 import { raidPct, raidReward } from '../views/raid.js';
-import { SQ, grantShards, openSquadSel, set_SQ } from '../overlays/squad-select.js';
+import { SQ, openSquadSel, set_SQ } from '../overlays/squad-select.js';
 import { closeInfo, openInfo, wormIco } from '../overlays/info.js';
 import { abDescLv, closeOverlay } from '../overlays/detail.js';
 import { render } from '../router.js';
@@ -41,6 +41,7 @@ import { accXP, fragLines } from '../rewards.js';
 import { amt, fmt } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
 import { quest } from '../../logic/daily.js';
+import { grantShards } from '../../logic/rewards.js';
 
 // ===== battle UI =====
 function startBattle(i) {

@@ -3,7 +3,6 @@ import { detailCid, itemCtx, openDetail, openItem } from './detail.js';
 import { renderNotes } from '../notifications.js';
 import { SPOT_ICONS } from '../views/lobby.js';
 import { SHOPS, shopItems, shopLeft } from '../views/shop.js';
-import { RING_RATE } from './squad-select.js';
 import { crefillCost, crefillN } from './sim.js';
 import { nextShards } from '../views/squad.js';
 import { enGet, getRes, prog } from '../../logic/progress.js';
@@ -21,6 +20,7 @@ import { FACTIONS, ROLES } from '../../data/fx.js';
 import { amt, fmt, ic } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
 import { itemIcon, starStr, thumb } from '../common.js';
+import { RING_RATE } from '../../logic/rewards.js';
 
 // ===== info popups =====
 function campRow(i, note) {

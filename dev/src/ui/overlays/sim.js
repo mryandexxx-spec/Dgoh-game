@@ -2,7 +2,6 @@
 import { infoKey, openInfo } from './info.js';
 import { MOUSE_SVG } from '../mouse.js';
 import { statInc } from '../../logic/stats.js';
-import { grantShards } from './squad-select.js';
 import { accXP, fragLines, rewardWin } from '../rewards.js';
 import { detailCid, itemCtx, openDetail, openItem, slotState } from './detail.js';
 import { render } from '../router.js';
@@ -18,6 +17,7 @@ import { CH } from '../../data/chars.js';
 import { amt } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
 import { quest } from '../../logic/daily.js';
+import { grantShards } from '../../logic/rewards.js';
 
 function refreshAll() {
   render();

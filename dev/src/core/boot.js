@@ -3,7 +3,6 @@ import '../ui/events.js'; // порядок исполнения
 import { CQ_DISKS } from '../data/conquest-data.js';
 import { noteSnap } from '../ui/notifications.js';
 import { metaFill } from '../ui/wiring.js';
-import { RING_RATE } from '../ui/overlays/squad-select.js';
 import { loginCan, openCalendar } from '../ui/overlays/calendar.js';
 import { render } from '../ui/router.js';
 import { renderRes, toast } from '../ui/common.js';
@@ -14,6 +13,7 @@ import { ROSTER_IDS } from '../logic/economy.js';
 import { amt } from './format.js';
 import { $, LAND_MQ } from './dom.js';
 import { dly } from '../logic/daily.js';
+import { RING_RATE } from '../logic/rewards.js';
 
 function splashOff() {
   const sp = document.getElementById('splash'); if (!sp || sp.classList.contains('off') || sp._t) return;
