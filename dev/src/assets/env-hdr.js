@@ -3,7 +3,7 @@ import '../render3d/characters/mocap.js'; // порядок исполнения
 
 // ===================== 3D stages outside battle: hero showcase + camp lobby =====================
 // Persistent canvases: the UI re-renders its HTML often, so each stage keeps its <canvas> and is re-inserted into the new layout.
-// Фаза 5: окружение — файл dev/assets/env/desert.hdr; путь (PWA) или data-URI (артефакт) ставит загрузчик assets/models.js.
+// Фаза 5: окружение — файл dev/assets/env/desert.env (шаг 6: prefiltered .env вместо .hdr); путь (PWA) или data-URI (артефакт) ставит загрузчик assets/models.js.
 let ENV_HDR = null;
 function setEnvHdr(u) { ENV_HDR = u; }
 

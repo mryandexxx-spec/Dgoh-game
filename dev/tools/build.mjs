@@ -3,7 +3,7 @@
 // Без --static статика берётся из корня репозитория (dev/ лежит в mryandexxx-spec/Dgoh-game): файлы из списка ASSETS
 // текущего sw.js + BABYLON-LICENSE.md. --deploy — записать собранную PWA в корень репозитория (затем git commit/push).
 // artifact → dist/: artifact.html (каркас) + app.js + app.css + babylon3d.js + assets/ — multi-file, публикуется через files
-//            (фаза 5: типы, которые артефакт не отдаёт — .dgm, .hdr, — лежат base64-текстом в «<имя>.txt»).
+//            (фаза 5: типы, которые артефакт не отдаёт — .dgm, .env, — лежат base64-текстом в «<имя>.txt»).
 // pwa      → dist/pwa/ + dist/dune-pwa-flat.zip: index.html + app.js + app.css + статика прошлого архива
 //            + babylon3d.js (чанк @babylonjs/core) + assets/ (фаза 5: файлы dev/assets/ с хешем содержимого в имени)
 //            (шрифты, иконки, manifest, sw.js). В sw.js обновляются версия кэша и список файлов.

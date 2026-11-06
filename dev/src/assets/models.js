@@ -6,7 +6,7 @@ import { b3Pre } from '../render3d/base.js';
 
 // ===== Фаза 5: ассеты — файлы (источник — dev/assets/, разовый перенос tools/export-assets.mjs) =====
 // Сборка подставляет карту «логическое имя → путь» (имена с хешем содержимого). В артефакте типы, которые он не отдаёт
-// (.dgm, .hdr), лежат base64-текстом в «<имя>.txt». Модели и клипы грузятся вместе с чанком Babylon (loadB3 ждёт их через b3Pre).
+// (.dgm, .env), лежат base64-текстом в «<имя>.txt». Модели и клипы грузятся вместе с чанком Babylon (loadB3 ждёт их через b3Pre).
 const ASSET = JSON.parse('__ASSET_MAP__');   // сборка заменяет плейсхолдер на JSON (в путях нет кавычек и «\»)
 function assetUrl(n) { return ASSET[n] || null; }
 const MODEL_DATA = {};   // заполняется loadAssets3: та же структура, что раньше, base64-поля — Uint8Array, текстуры — пути
@@ -52,7 +52,7 @@ function loadAssets3() {   // Promise: каждый ассет независи�
   return ASSETS_P || (ASSETS_P = Promise.allSettled([
     ...['duncan', 'worm'].map(id => assetBytes(`models/${id}.dgm`).then(b => { MODEL_DATA[id] = parseDgm(b); })),
     fetch(assetUrl('anim/mocap.json')).then(r => r.ok ? r.json() : Promise.reject(new Error('mocap.json: HTTP ' + r.status))).then(setMocap),
-    (async () => { const u = assetUrl('env/desert.hdr'); if (!u) throw new Error('нет env/desert.hdr');
+    (async () => { const u = assetUrl('env/desert.env'); if (!u) throw new Error('нет env/desert.env');
       setEnvHdr(u.endsWith('.txt') ? 'data:application/octet-stream;base64,' + (await (await fetch(u)).text()).trim() : u); })(),
     loadKtx2(),
   ]).then(rs => { const bad = rs.filter(r => r.status === 'rejected'); for (const r of bad) console.warn('ассет 3D', r.reason); if (bad.length) ASSETS_P = null; }));

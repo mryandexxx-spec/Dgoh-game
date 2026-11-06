@@ -38,7 +38,7 @@ class HeroStage extends Stage3D {
     const burst = this.burst = new B3.ParticleSystem('burst', 500, S); burst.particleTexture = tx; burst.emitter = V3(0, .1, 0); burst.minEmitBox = V3(-.6, 0, -.6); burst.maxEmitBox = V3(.6, .1, .6); burst.direction1 = V3(-.4, 2, -.4); burst.direction2 = V3(.4, 4, .4); burst.gravity = V3(0, -1.5, 0);
     burst.minLifeTime = .8; burst.maxLifeTime = 1.8; burst.minSize = .02; burst.maxSize = .06; burst.color1 = new B3.Color4(1, .85, .45, 1); burst.color2 = new B3.Color4(1, .65, .25, 1); burst.colorDead = new B3.Color4(1, .4, .1, 0); burst.blendMode = B3.ParticleSystem.BLENDMODE_ADD; burst.emitRate = 0; burst.manualEmitCount = 0; burst.start();
     const rp = new B3.ReflectionProbe('rp', 64, S); rp.renderList.push(bg); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
-    try { const env = new B3.HDRCubeTexture(ENV_HDR, S, 64, false, true, false, true, () => { S.environmentTexture = env; S.environmentIntensity = .85; }, () => {}); } catch (e) {}
+    if (ENV_HDR) try { const env = new B3.CubeTexture(ENV_HDR, S, null, false, null, () => { S.environmentTexture = env; S.environmentIntensity = .85; }, () => {}, undefined, true, '.env'); } catch (e) {}   // фаза 5, шаг 6: prefiltered .env (мипы + SH готовы, без префильтрации на устройстве); при ошибке — пробник rp, как раньше
     });
     this.look({ dof: { f: 85, stop: 2, d: 4200 }, exposure: 1.05, ssao: .35, bloomW: .35, bloomT: .85 });
     this.yaw = 0; this.yawV = 0; this.drag = null; this.auto = true; this.showcase = true;

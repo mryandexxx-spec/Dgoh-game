@@ -130,3 +130,18 @@ VRAM Дункана (RGBA8 с мипами) — около 56 МБ; цель ≤
 
 ## Дальше
 - Шаг 6 — .env вместо HDR; шаг 7 — замеры tti/load и VRAM.
+
+## Шаг 6 — .env вместо HDR (2026-11-06, прототип в phase5-wip, ждёт согласования)
+- `dune-tools/make_env.py` делает только исходный .hdr (256×128), .env он не умеет → новый `tools/make-env.mjs`: puppeteer + Babylon из node_modules, та же префильтрация, что в игре (HDRCubeTexture 64, prefilterOnLoad), затем `CreateEnvTextureAsync` (RGBD PNG). Разовый: `dev/assets/env/desert.env` коммитится.
+- Исходник `desert.hdr` перенесён в `dev/assets-src/env/` (в сборку не входит).
+- Рантайм: `B3.CubeTexture(url, …, prefiltered=true, '.env')` + `envTextureLoader`; `HDRCubeTexture` из чанка убран. При ошибке — пробник `rp`, как раньше (без HDR-фолбэка).
+- Окружение используется только в окне героя; лагерь и арена берут отражения из своего `ReflectionProbe` — .env их не касается.
+
+| | HDR (v56) | .env |
+|---|---|---|
+| ассет PWA / артефакт | 131 / 175 КБ | 48 / 64 КБ |
+| babylon3d.js | 2,363 МБ | 2,316 МБ (−47 КБ) |
+| окно героя: openDetail → окружение готово (SwiftShader, 3 прогона) | 2,9–3,2 с | 2,1–2,5 с |
+| текстура окружения | куб 64, half float, SH | то же (VRAM ≈ 0,26 МБ), без временных RT префильтрации |
+
+- A/B (`ab.mjs`, desktop): hero 0,057 % пикселей (шум, Δ > 8 — единичные точки и строка версии), кроп торса ×2 глазом не отличим; bake 0 %. camp/arena 0,5/1,3 % — фаза анимации, окружение там не используется.
