@@ -27,7 +27,7 @@ function repoStatic() {   // статика из корня репозитори
   for (const f of [...list, 'BABYLON-LICENSE.md']) if (f !== './' && !/^(index\.html|app\.js|app\.css|babylon3d\.js)$/.test(f) && fs.existsSync(path.join(REPO, f))) out[f] = new Uint8Array(fs.readFileSync(path.join(REPO, f)));
   return out;
 }
-const B3_FILE = 'babylon3d.js', BABYLON_LOCAL = `<script src="${B3_FILE}"></script>`;
+const B3_FILE = 'babylon3d.js';   // грузится лениво (render3d/base.js loadB3), в index.html PWA тега нет
 const DROP = new Set(['babylon.min.js', 'duncan.glb']);   // фаза 4: UMD Babylon заменён чанком; duncan.glb кодом не читается
 const read = f => fs.readFileSync(path.join(SRC, f), 'utf8');
 const sha = b => crypto.createHash('sha256').update(b).digest('hex');
@@ -69,8 +69,9 @@ async function babylonChunk() {
 }
 
 function page({ head, cssTag, babylon, jsTag, tail }) {
-  return read('index.html').replace('<!--@head-->\n', head).replace('<!--@css-->', cssTag).replace('<!--@babylon-->', babylon)
-    .replace('<!--@js-->', jsTag).replace('<!--@tail-->\n', tail);
+  // функции-замены: в коде бывают $' / $& — строка-замена их бы раскрыла
+  return read('index.html').replace('<!--@head-->\n', () => head).replace('<!--@css-->', () => cssTag).replace('<!--@babylon-->', () => babylon)
+    .replace('<!--@js-->', () => jsTag).replace('<!--@tail-->\n', () => tail);
 }
 
 const { code, meta } = await js(), styles = css(), b3 = await babylonChunk();
@@ -78,8 +79,8 @@ fs.mkdirSync(OUT, { recursive: true });
 console.log(`${B3_FILE}: ${(b3.length / 1048576).toFixed(2)} МБ`);
 const mods = Object.keys(meta.inputs).length;
 
-if (target === 'artifact' || target === 'all') {
-  const html = page({ head: read('pwa/artifact-head.html'), cssTag: `<style>\n${styles}</style>`, babylon: `<script data-b3>\n${b3}</script>`, jsTag: `<script>\n${code}</script>`, tail: '' });
+if (target === 'artifact' || target === 'all') {   // фаза 4, временно: чанк — <script type=text/plain id=b3src>, loadB3 исполняет его инлайном (решение — шаг 4)
+  const html = page({ head: read('pwa/artifact-head.html'), cssTag: `<style>\n${styles}</style>`, babylon: `<script type="text/plain" id="b3src" data-b3>\n${b3}</script>`, jsTag: `<script>\n${code}</script>`, tail: '' });
   fs.writeFileSync(path.join(OUT, 'artifact.html'), html);
   console.log(`artifact.html: ${(html.length / 1e6).toFixed(2)} МБ, модулей ${mods}`);
 }
@@ -91,7 +92,7 @@ if (target === 'pwa' || target === 'all') {
   for (const k of DROP) delete files[k];
   if (!files['sw.js']) throw new Error('в архиве нет sw.js');
   const enc = s => Buffer.from(s, 'utf8');
-  const html = read('pwa/doc-head.html') + page({ head: read('pwa/pwa-head.html'), cssTag: '<link rel="stylesheet" href="app.css">', babylon: BABYLON_LOCAL,
+  const html = read('pwa/doc-head.html') + page({ head: read('pwa/pwa-head.html'), cssTag: '<link rel="stylesheet" href="app.css">', babylon: '',
     jsTag: '<script src="app.js"></script>', tail: read('pwa/tail.html') }).replace(/\n+<\/body><\/html>\n$/, '\n');
   files['index.html'] = enc(html); files['app.js'] = enc(code); files['app.css'] = enc(styles); files[B3_FILE] = enc(b3);
   const ver = sha(Buffer.concat([files['index.html'], files['app.js'], files['app.css'], files[B3_FILE]])).slice(0, 10);

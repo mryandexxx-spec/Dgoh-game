@@ -26,7 +26,7 @@ import { CRY_3STAR, CRY_JOURNEY, CRY_WIN, campReward, enemyProg } from '../../lo
 import { JK, JP, JR } from '../../data/journeys.js';
 import { NODES, NODE_SCENES, nodeCost, nodeEn, nodeOpen, nodeTitle } from '../../data/campaigns.js';
 import { Arena3D } from '../../render3d/scenes/arena.js';
-import { HAS3D } from '../../render3d/base.js';
+import { HAS3D, HAS_GL, loadB3 } from '../../render3d/base.js';
 import { FXLayer } from '../../render2d/fx-layer.js';
 import { SceneBG, reduceMotion } from '../../render2d/scene-bg.js';
 import { figureSVG, portrait, wormSVG } from '../../render2d/figures.js';
@@ -54,7 +54,14 @@ function startBattle(i) {
   const n = NODES[i];
   launch({ mode: 'camp', dlg: !!n.dlg && !S.skipDlg && !S.seenDlg[i], scene: NODE_SCENES[i], i, title: nodeTitle(i), desert: n.desert, squad: sq, enemy: n.enemy.map(id => enemyProg(id, n.lvl, n.m === 9)) });
 }
+let LAUNCH_WAIT = false, B3_TRIED = false;
 function launch(cfg) {
+  if (!HAS3D && HAS_GL && !B3_TRIED) {   // фаза 4: чанк Babylon ещё грузится — бой ждёт его (2D-бой не подставляем)
+    if (LAUNCH_WAIT) return; LAUNCH_WAIT = true;
+    $('#overlay').innerHTML = `<div class="battle b3load"><div class="b3spin">Загрузка 3D…</div></div>`;
+    loadB3().then(() => { LAUNCH_WAIT = false; B3_TRIED = true; launch(cfg); });   // не загрузился — 2D-бой
+    return;
+  }
   set_SQ(null);
   closeInfo(true);
   { let lg = 0; cfg.squad = cfg.squad.filter(id => !isLegend(id) || !lg++); }

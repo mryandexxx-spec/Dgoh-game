@@ -38,6 +38,7 @@ async function shots(html, tag) {
     window.requestAnimationFrame = cb => raf(t => { if (t !== C.last) { C.last = t; if (C.pending > 0) { C.pending--; C.vt += 1000 / 60; } } cb(C.vt); });
   }, LATE);
   await page.goto(pathToFileURL(path.resolve(html)).href, { waitUntil: 'load' });
+  await page.evaluate(async () => typeof loadB3 === 'function' && await loadB3()); await sleep(400);   // фаза 4: дождаться чанка и проявления 3D
   const run = c => page.evaluate(x => { (0, eval)(x); }, c);
   const tick = async n => { await page.evaluate(n => { window.__clock.pending += n; }, n); for (let k = 0; k < 600 && await page.evaluate(() => window.__clock.pending > 0); k++) await sleep(25); await sleep(1500); };
   const out = {};

@@ -8,7 +8,7 @@ import { buildEnv, staticNoCast } from '../env/build-env.js';
 import { bBox, bCyl, bPlane, bRock, bSph, glowTex } from '../geometry.js';
 import { V3, basic3, col3, mat3, mk } from '../materials.js';
 import { CTX, withCtx } from '../ctx.js';
-import { B3, HAS3D } from '../base.js';
+import { B3, HAS3D, HAS_GL, loadB3 } from '../base.js';
 import { hostKick } from '../engine-host.js';
 import { CH } from '../../data/chars.js';
 
@@ -87,9 +87,29 @@ class CampStage extends Stage3D {
 const S_FLAG = () => '#4c6b4e';
 const cols4 = (arr, c) => arr.push(c.r, c.g, c.b, 1);
 let CAMP_STAGE = null;
-function mountCampStage() {
-  if (!HAS3D) return false;
+// Фаза 4: чанк Babylon ещё не загружен → лобби уже интерактивно; если загрузка длится дольше B3_WAIT, запускается
+// 2D-лагерь (fallback) с плашкой «Загрузка 3D-лагеря»; по готовности 3D проявляется поверх 2D, 2D-канвас удаляется.
+// Хост лобби пересоздаётся при каждой отрисовке — монтируется только тот, что ещё в DOM (без гонок).
+const B3_WAIT = 250, B3_FADE = 320;
+function mountCampStage(fallback) {
   const host = document.querySelector('.lobby'); if (!host) return false;
+  if (!HAS3D) {
+    if (!HAS_GL) return false;
+    let shown = false;
+    const t = setTimeout(() => { if (!host.isConnected || HAS3D) return; shown = true; if (fallback) fallback(); host.classList.add('b3wait'); }, B3_WAIT);
+    loadB3().then(ok => {
+      clearTimeout(t); host.classList.remove('b3wait');
+      if (!host.isConnected) return;
+      if (!ok || !campMount(host)) { if (!shown && fallback) fallback(); return; }
+      if (!shown) return;
+      host.classList.add('b3fade');
+      setTimeout(() => { host.classList.remove('b3fade'); const bg = host.querySelector('#lobbybg'); if (bg) bg.remove(); }, B3_FADE);
+    });
+    return true;
+  }
+  return campMount(host);
+}
+function campMount(host) {
   try { if (!CAMP_STAGE || !CAMP_STAGE.alive) CAMP_STAGE = new CampStage(); CAMP_STAGE.setSquad(S.squad.slice(0, 5)); host.classList.add('has3d'); CAMP_STAGE.attach(host, true); return true; } // asleep → wake
   catch (e) { console.warn('camp stage', e); return false; }
 }

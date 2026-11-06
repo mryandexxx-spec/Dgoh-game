@@ -8,7 +8,7 @@ import { makeHuman3 } from '../characters/procedural.js';
 import { MB, bCyl, bPlane, glowTex } from '../geometry.js';
 import { V3, basic3, col3, mat3, mk } from '../materials.js';
 import { CTX, withCtx } from '../ctx.js';
-import { B3, HAS3D } from '../base.js';
+import { B3, HAS3D, HAS_GL, loadB3 } from '../base.js';
 import { CH } from '../../data/chars.js';
 
 // ---------- hero showcase (character window) ----------
@@ -76,8 +76,8 @@ class HeroStage extends Stage3D {
 }
 let HERO_STAGE = null, HERO_SNAP = null;
 function mountHeroStage(id) {
-  if (!HAS3D) return;
   const host = document.querySelector('#overlay .cfig'); if (!host) return;
+  if (!HAS3D) { if (HAS_GL) loadB3().then(ok => { if (ok && host.isConnected) mountHeroStage(id); }); return; }   // фаза 4: пока грузится чанк — 2D-фигура
   try {
     if (!HERO_STAGE || !HERO_STAGE.alive) HERO_STAGE = new HeroStage();
     const p = prog(id), d = CH[id];

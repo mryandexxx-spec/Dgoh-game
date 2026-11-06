@@ -2402,16 +2402,60 @@ var FXLayer = class {
 };
 
 // src/render3d/base.js
-var B3 = typeof BABYLON !== "undefined" ? BABYLON : null;
-var HAS3D = (() => {
+var B3_URL = "babylon3d.js";
+var B3 = globalThis.__B3 || (typeof BABYLON !== "undefined" ? BABYLON : null);
+var HAS_GL = (() => {
   try {
-    if (!B3) return false;
     const c = document.createElement("canvas");
     return !!(c.getContext("webgl2") || c.getContext("webgl"));
   } catch (e) {
     return false;
   }
 })();
+var HAS3D = !!B3 && HAS_GL;
+var B3_SUBS = [];
+function onB3(fn) {
+  if (HAS3D) fn();
+  else B3_SUBS.push(fn);
+}
+var B3_P = null;
+function loadB3() {
+  if (HAS3D) return Promise.resolve(true);
+  if (!HAS_GL) return Promise.resolve(false);
+  return B3_P || (B3_P = new Promise((res) => {
+    const done = (ok) => {
+      if (ok && globalThis.__B3) {
+        B3 = globalThis.__B3;
+        HAS3D = true;
+        for (const f of B3_SUBS.splice(0)) try {
+          f();
+        } catch (e) {
+          console.warn("onB3", e);
+        }
+      } else {
+        console.warn("чанк Babylon не загрузился");
+        B3_P = null;
+      }
+      res(HAS3D);
+    };
+    const s = document.createElement("script"), inl = document.getElementById("b3src");
+    if (inl) {
+      setTimeout(() => {
+        s.textContent = inl.textContent;
+        try {
+          document.head.appendChild(s);
+        } catch (e) {
+        }
+        done(true);
+      }, 0);
+      return;
+    }
+    s.src = B3_URL;
+    s.onload = () => done(true);
+    s.onerror = () => done(false);
+    document.head.appendChild(s);
+  }));
+}
 var ENV3 = {
   desert: { ground: "dunes", sand: "#e2ae6c", sand2: "#b07440", props: ["farrocks"], parts: "sand" },
   spicefield: { ground: "dunes", sand: "#e4a466", sand2: "#a85430", spice: "#c4562a", props: ["plumes"], parts: "sand" },
@@ -2566,7 +2610,12 @@ function runDue(q, now) {
   }
 }
 var col3 = (c) => c == null ? B3.Color3.White() : typeof c === "number" ? B3.Color3.FromHexString("#" + c.toString(16).padStart(6, "0")) : c instanceof B3.Color3 ? c.clone() : B3.Color3.FromHexString(c.length === 4 ? "#" + c[1] + c[1] + c[2] + c[2] + c[3] + c[3] : c);
-var C3_CHARM = B3 && col3("#9fe8ff"), C3_SPICE = B3 && col3("#e8913f"), C3_TGT = B3 && col3("#d9604f");
+var C3_CHARM = null, C3_SPICE = null, C3_TGT = null;
+onB3(() => {
+  C3_CHARM = col3("#9fe8ff");
+  C3_SPICE = col3("#e8913f");
+  C3_TGT = col3("#d9604f");
+});
 var lerpC = (a, b, t) => B3.Color3.Lerp(a, b, t);
 function mat3(c, o = {}) {
   if (CTX.pbr) {
@@ -5199,7 +5248,14 @@ function mocap(name) {
   for (let i = 0; i < h16.length; i++) h[i] = h16[i] / 1e4;
   return CLIPC[name] = { n: R.n, fps: R.fps, dur: (R.n - 1) / R.fps, q, h, strikes: R.strikes || [] };
 }
-var MQ = Array.from({ length: 15 }, () => new B3.Quaternion()), MHP = new B3.Vector3(), _mq1 = new B3.Quaternion(), _mq2 = new B3.Quaternion(), _mqx = new B3.Quaternion();
+var MQ = null, MHP = null, _mq1 = null, _mq2 = null, _mqx = null;
+onB3(() => {
+  MQ = Array.from({ length: 15 }, () => new B3.Quaternion());
+  MHP = new B3.Vector3();
+  _mq1 = new B3.Quaternion();
+  _mq2 = new B3.Quaternion();
+  _mqx = new B3.Quaternion();
+});
 function clipSample(c, u) {
   u = Math.max(0, Math.min(1, u));
   const f = u * (c.n - 1), i0 = Math.floor(f), i1 = Math.min(c.n - 1, i0 + 1), a = f - i0;
@@ -5792,9 +5848,14 @@ var HeroStage = class extends Stage3D {
 };
 var HERO_STAGE = null, HERO_SNAP = null;
 function mountHeroStage(id) {
-  if (!HAS3D) return;
   const host = document.querySelector("#overlay .cfig");
   if (!host) return;
+  if (!HAS3D) {
+    if (HAS_GL) loadB3().then((ok) => {
+      if (ok && host.isConnected) mountHeroStage(id);
+    });
+    return;
+  }
   try {
     if (!HERO_STAGE || !HERO_STAGE.alive) HERO_STAGE = new HeroStage();
     const p = prog(id), d = CH[id];
@@ -6035,10 +6096,40 @@ var CampStage = class extends Stage3D {
 var S_FLAG = () => "#4c6b4e";
 var cols4 = (arr, c) => arr.push(c.r, c.g, c.b, 1);
 var CAMP_STAGE = null;
-function mountCampStage() {
-  if (!HAS3D) return false;
+var B3_WAIT = 250, B3_FADE = 320;
+function mountCampStage(fallback) {
   const host = document.querySelector(".lobby");
   if (!host) return false;
+  if (!HAS3D) {
+    if (!HAS_GL) return false;
+    let shown = false;
+    const t = setTimeout(() => {
+      if (!host.isConnected || HAS3D) return;
+      shown = true;
+      if (fallback) fallback();
+      host.classList.add("b3wait");
+    }, B3_WAIT);
+    loadB3().then((ok) => {
+      clearTimeout(t);
+      host.classList.remove("b3wait");
+      if (!host.isConnected) return;
+      if (!ok || !campMount(host)) {
+        if (!shown && fallback) fallback();
+        return;
+      }
+      if (!shown) return;
+      host.classList.add("b3fade");
+      setTimeout(() => {
+        host.classList.remove("b3fade");
+        const bg = host.querySelector("#lobbybg");
+        if (bg) bg.remove();
+      }, B3_FADE);
+    });
+    return true;
+  }
+  return campMount(host);
+}
+function campMount(host) {
   try {
     if (!CAMP_STAGE || !CAMP_STAGE.alive) CAMP_STAGE = new CampStage();
     CAMP_STAGE.setSquad(S.squad.slice(0, 5));
@@ -6203,7 +6294,7 @@ var Baker = class {
   }
 };
 async function bakePortraits() {
-  if (!HAS3D || typeof indexedDB === "undefined") return;
+  if (typeof indexedDB === "undefined" || !await loadB3()) return;
   const db = await bakeDB(), ids = CHARS.filter((c) => !c.boss).map((c) => c.id), todo = [];
   for (const id of ids) {
     const r = await idbGet(db, BAKE_V + ":" + id);
@@ -8849,7 +8940,10 @@ function renderLobby() {
     return `<button class="lfig" data-v="squad" data-hid="${id}" style="left:${f[0]}%;top:${f[1]}%;--s:${f[2]};z-index:${f[1]}" aria-label="${CH[id].n}">${figureSVG(CH[id], true)}<span>${CH[id].sn}</span></button>`;
   }).join("")}
   </div>`;
-  if (!mountCampStage()) new SceneBG($("#lobbybg"), "lobby", 0);
+  {
+    const bg = () => new SceneBG($("#lobbybg"), "lobby", 0);
+    if (!mountCampStage(bg)) bg();
+  }
   renderRes();
 }
 
@@ -8886,7 +8980,19 @@ function startBattle(i) {
   const n = NODES[i];
   launch({ mode: "camp", dlg: !!n.dlg && !S.skipDlg && !S.seenDlg[i], scene: NODE_SCENES[i], i, title: nodeTitle(i), desert: n.desert, squad: sq, enemy: n.enemy.map((id) => enemyProg(id, n.lvl, n.m === 9)) });
 }
+var LAUNCH_WAIT = false, B3_TRIED = false;
 function launch(cfg) {
+  if (!HAS3D && HAS_GL && !B3_TRIED) {
+    if (LAUNCH_WAIT) return;
+    LAUNCH_WAIT = true;
+    $("#overlay").innerHTML = `<div class="battle b3load"><div class="b3spin">Загрузка 3D…</div></div>`;
+    loadB3().then(() => {
+      LAUNCH_WAIT = false;
+      B3_TRIED = true;
+      launch(cfg);
+    });
+    return;
+  }
   set_SQ(null);
   closeInfo(true);
   {

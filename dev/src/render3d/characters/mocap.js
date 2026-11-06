@@ -3,7 +3,7 @@ import { MOCAP } from '../../assets/mocap-data.js';
 import { ANIM3 } from './pose-duncan.js';
 import { b64bytes } from './authored.js';
 import { HERO3 } from './rig.js';
-import { B3 } from '../base.js';
+import { B3, onB3 } from '../base.js';
 import { CHARS } from '../../data/chars.js';
 
 const MOCAP_OK = !!MOCAP;
@@ -17,7 +17,8 @@ function mocap(name) {
   for (let i = 0; i < h16.length; i++) h[i] = h16[i] / 10000;
   return (CLIPC[name] = { n: R.n, fps: R.fps, dur: (R.n - 1) / R.fps, q, h, strikes: R.strikes || [] });
 }
-const MQ = Array.from({ length: 15 }, () => new B3.Quaternion()), MHP = new B3.Vector3(), _mq1 = new B3.Quaternion(), _mq2 = new B3.Quaternion(), _mqx = new B3.Quaternion();
+let MQ = null, MHP = null, _mq1 = null, _mq2 = null, _mqx = null;   // фаза 4: создаются при загрузке чанка Babylon
+onB3(() => { MQ = Array.from({ length: 15 }, () => new B3.Quaternion()); MHP = new B3.Vector3(); _mq1 = new B3.Quaternion(); _mq2 = new B3.Quaternion(); _mqx = new B3.Quaternion(); });
 function clipSample(c, u) {
   u = Math.max(0, Math.min(1, u)); const f = u * (c.n - 1), i0 = Math.floor(f), i1 = Math.min(c.n - 1, i0 + 1), a = f - i0;
   for (let b = 0; b < 15; b++) {

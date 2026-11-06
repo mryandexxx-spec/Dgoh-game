@@ -11,7 +11,7 @@ import { engineHost } from '../engine-host.js';
 import { poseHuman } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
 import { V3, col3 } from '../materials.js';
-import { B3, HAS3D } from '../base.js';
+import { B3, HAS3D, loadB3 } from '../base.js';
 import { figureSVG, set_figureSVG } from '../../render2d/figures.js';
 import { CH, CHARS } from '../../data/chars.js';
 import { $ } from '../../core/dom.js';
@@ -76,7 +76,7 @@ class Baker {
   dispose() { if (!this.alive) return; this.alive = false; try { if (this.rt) this.rt.dispose(); this.scene.dispose(); } catch (e) {} this.host.forget(this); this.cv.width = this.cv.height = 0; }
 }
 async function bakePortraits() {
-  if (!HAS3D || typeof indexedDB === 'undefined') return;
+  if (typeof indexedDB === 'undefined' || !(await loadB3())) return;   // фаза 4: ждёт чанк Babylon
   const db = await bakeDB(), ids = CHARS.filter(c => !c.boss).map(c => c.id), todo = [];
   for (const id of ids) { const r = await idbGet(db, BAKE_V + ':' + id); if (r && r.full && r.face) BAKED[id] = { full: URL.createObjectURL(r.full), face: URL.createObjectURL(r.face) }; else todo.push(id); }
   if (Object.keys(BAKED).length) bakeRefresh();

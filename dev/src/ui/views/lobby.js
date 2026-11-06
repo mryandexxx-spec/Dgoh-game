@@ -54,7 +54,7 @@ function renderLobby() {
     ${spots.map(s => `<button class="spot ${s.hot ? 'hot' : ''}" data-v="${s.v}" style="--x:${s.x}%;--y:${s.y}%;--mx:${s.mx}%;--my:${s.my}%;--lx:${s.lx}%;--ly:${s.ly}%"><span class="sicon"><svg viewBox="0 0 24 24" aria-hidden="true">${SPOT_ICONS[s.i]}</svg></span><span class="slabel">${s.n}</span>${s.b ? `<span class="sbadge">${s.b}</span>` : ''}</button>`).join('')}
     ${S.squad.map((id, k) => { const f = LF[k]; return `<button class="lfig" data-v="squad" data-hid="${id}" style="left:${f[0]}%;top:${f[1]}%;--s:${f[2]};z-index:${f[1]}" aria-label="${CH[id].n}">${figureSVG(CH[id], true)}<span>${CH[id].sn}</span></button>`; }).join('')}
   </div>`;
-  if (!mountCampStage()) new SceneBG($('#lobbybg'), 'lobby', 0);
+  { const bg = () => new SceneBG($('#lobbybg'), 'lobby', 0); if (!mountCampStage(bg)) bg(); }
   renderRes();
 }
 

@@ -18,7 +18,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const [html, ...rest] = argv();
 const opt = k => { const i = rest.indexOf(k); return i >= 0 ? rest[i + 1] : null; };
 const babylon = opt('--babylon') || [path.join(path.dirname(path.resolve(html)), 'babylon.min.js'), path.join(HERE, '..', 'vendor', 'babylon.min.js')].find(f => fs.existsSync(f));
-if (!babylon) { console.error('нужен babylon.min.js 9.30.0: --babylon <путь> (лежит в dune-pwa-flat.zip)'); process.exit(2); }
+// фаза 4: babylon.min.js нужен только старым сборкам (до чанка babylon3d.js); новые без WebGL Babylon не грузят
 const shots = opt('--shots');
 const LATE = fs.readFileSync(path.join(HERE, '..', 'fixtures', 'saves', '03-late.json'), 'utf8');
 
@@ -53,7 +53,7 @@ for (const [name, save, code, wait = 1500] of SCREENS) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: 'ru-RU', timezoneId: 'Europe/Moscow', reducedMotion: 'reduce' });
   await ctx.route('**/*', r => {
     const u = r.request().url();
-    if (/babylon(\.min)?\.js$/.test(u)) return r.fulfill({ path: babylon, contentType: 'text/javascript' });
+    if (babylon && /babylon(\.min)?\.js$/.test(u)) return r.fulfill({ path: babylon, contentType: 'text/javascript' });
     if (u.startsWith('file:') || u.startsWith('data:') || u.startsWith('blob:')) return r.continue();
     return r.abort();
   });

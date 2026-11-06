@@ -2,9 +2,31 @@
 import '../render2d/fx-layer.js'; // порядок исполнения
 
 // ===== 3D battle arena (Babylon.js engine) =====
-// B3 — чанк render3d/babylon.js (globalThis.__B3); BABYLON — заглушка Node-тестов (tests/lib/load.mjs)
-const B3 = globalThis.__B3 || (typeof BABYLON !== 'undefined' ? BABYLON : null);
-const HAS3D = (() => { try { if (!B3) return false; const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();
+// Фаза 4: Babylon — отдельный чанк render3d/babylon.js (babylon3d.js), грузится лениво после первого экрана.
+// B3 и HAS3D — живые привязки: до загрузки null/false, loadB3() заполняет их и вызывает подписчиков onB3.
+// BABYLON — только заглушка Node-тестов (tests/lib/load.mjs). HAS_GL — WebGL есть (3D будет после загрузки чанка).
+const B3_URL = 'babylon3d.js';
+let B3 = globalThis.__B3 || (typeof BABYLON !== 'undefined' ? BABYLON : null);
+const HAS_GL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } })();
+let HAS3D = !!B3 && HAS_GL;
+const B3_SUBS = [];
+function onB3(fn) { if (HAS3D) fn(); else B3_SUBS.push(fn); }
+let B3_P = null;
+function loadB3() {   // Promise<boolean>: true — 3D готово; повторные вызовы получают тот же Promise
+  if (HAS3D) return Promise.resolve(true);
+  if (!HAS_GL) return Promise.resolve(false);
+  return B3_P || (B3_P = new Promise(res => {
+    const done = ok => {
+      if (ok && globalThis.__B3) { B3 = globalThis.__B3; HAS3D = true; for (const f of B3_SUBS.splice(0)) try { f(); } catch (e) { console.warn('onB3', e); } }
+      else { console.warn('чанк Babylon не загрузился'); B3_P = null; }   // следующий вызов попробует снова
+      res(HAS3D);
+    };
+    const s = document.createElement('script'), inl = document.getElementById('b3src');
+    if (inl) { setTimeout(() => { s.textContent = inl.textContent; try { document.head.appendChild(s); } catch (e) {} done(true); }, 0); return; }   // артефакт: чанк в <script type="text/plain">, исполняется инлайном
+    s.src = B3_URL; s.onload = () => done(true); s.onerror = () => done(false);
+    document.head.appendChild(s);
+  }));
+}
 
 const ENV3 = {
   desert:     { ground: 'dunes', sand: '#e2ae6c', sand2: '#b07440', props: ['farrocks'], parts: 'sand' },
@@ -25,4 +47,4 @@ const ENV3 = {
 const SLOT3 = [[-3.6, .4], [-6.6, -3.4], [-2.6, -4.4], [-7.4, 3.6], [-2.2, 4.6]];
 
 
-export { B3, HAS3D, ENV3, SLOT3 };
+export { B3, HAS3D, HAS_GL, loadB3, onB3, ENV3, SLOT3 };

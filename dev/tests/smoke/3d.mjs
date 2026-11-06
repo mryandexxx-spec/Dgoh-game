@@ -78,7 +78,7 @@ const effKeys = (prev = null) => page.evaluate(prev => {
     return { shader: nm, mats: [...new Set(mats)].slice(0, 6), meshes: [...new Set(meshes)].slice(0, 6), defs: best ? { add: best.add.slice(0, 12), del: best.del.slice(0, 12) } : null };
   });
 }, prev);
-const has3d = async () => page.evaluate(() => typeof HAS3D !== 'undefined' && HAS3D);
+const has3d = async () => page.evaluate(async () => typeof loadB3 === 'function' ? await loadB3() : typeof HAS3D !== 'undefined' && HAS3D);   // фаза 4: чанк Babylon ленивый
 await page.goto(pathToFileURL(path.resolve(html)).href, { waitUntil: 'load' });
 await sleep(3000);
 if (!await has3d()) { console.error('HAS3D = false — WebGL недоступен в Chrome'); await browser.close(); process.exit(2); }
