@@ -64,6 +64,20 @@ const run = code => page.evaluate(c => { (0, eval)(c); }, code);
 const until = async (expr, max = 15000) => { const t0 = Date.now(); while (Date.now() - t0 < max) { if (await page.evaluate(c => { try { return !!(0, eval)(c); } catch (e) { return false; } }, expr)) return Date.now() - t0; await sleep(20); } return -1; };
 const frameOf = v => `(${v} && ${v}.scene && ${v}.scene.getFrameId && ${v}.scene.getFrameId()) || 0`;
 
+// ключи кэша эффектов движка; с аргументом — только новые относительно снимка
+const effKeys = (prev = null) => page.evaluate(prev => {
+  const E = ((window.BABYLON && BABYLON.EngineStore && BABYLON.EngineStore.Instances) || []).find(e => !e.isDisposed), C = E ? E._compiledEffects || {} : {}, k = Object.keys(C);
+  if (!prev) return k;
+  // новые эффекты: имя шейдера, материалы и меши, которые им рисуются, и defines, отличные от ближайшего уже бывшего эффекта того же шейдера
+  return k.filter(x => !prev.includes(x)).map(x => {
+    const ef = C[x], nm = x.split('@')[0], df = new Set((x.split('@')[1] || '').split('\n').map(t => t.trim()).filter(Boolean));
+    const mats = [], meshes = [];
+    for (const sc of E.scenes || []) { for (const m of sc.materials) { try { if (m.getEffect && m.getEffect() === ef) mats.push(m.name); } catch (e) {} }
+      for (const me of sc.meshes) for (const sm of me.subMeshes || []) if (sm.effect === ef) meshes.push(me.name); }
+    let best = null; for (const y of prev) { if (y.split('@')[0] !== nm) continue; const d2 = new Set((y.split('@')[1] || '').split('\n').map(t => t.trim()).filter(Boolean)); const a = [...df].filter(t => !d2.has(t)), b = [...d2].filter(t => !df.has(t)); if (!best || a.length + b.length < best.n) best = { n: a.length + b.length, add: a, del: b }; }
+    return { shader: nm, mats: [...new Set(mats)].slice(0, 6), meshes: [...new Set(meshes)].slice(0, 6), defs: best ? { add: best.add.slice(0, 12), del: best.del.slice(0, 12) } : null };
+  });
+}, prev);
 const has3d = async () => page.evaluate(() => typeof HAS3D !== 'undefined' && HAS3D);
 await page.goto(pathToFileURL(path.resolve(html)).href, { waitUntil: 'load' });
 await sleep(3000);
@@ -86,21 +100,23 @@ for (let c = 0; c < CYCLES; c++) {
   C.enterSyncMs = await page.evaluate(() => Math.round(performance.now() - window.__t0));
   C.enterMs = await until(frameOf('BT.arena') + ' > 0') + C.enterSyncMs;
   await sleep(500); // «wake» + первый кадр с эффектами
-  const l0 = (await probe()).link;
+  const l0 = (await probe()).link, fx0 = await effKeys();
   await sleep(+opt('--battle-ms', 6000));
   C.battle = await probe(); C.compilesAfterWake = C.battle.link - l0;
+  if (C.compilesAfterWake) C.newEffects = await effKeys(fx0); // какие эффекты скомпилированы после wake (имя@defines, усечено)
   C.log = await page.evaluate(() => (BT && BT.B && BT.B.log && BT.B.log.length) || 0);
   if (SHOTS && c === 0) await page.screenshot({ path: path.join(SHOTS, `arena${PHONE ? '-phone' : ''}.png`) });
   // выход: от leaveBattle до кадра лагеря
+  const fxX = await effKeys();
   const f0 = await page.evaluate(c => { try { return (0, eval)(c); } catch (e) { return 0; } }, frameOf('CAMP_STAGE'));
   await page.evaluate(() => { window.__t0 = performance.now(); });
   await run(`leaveBattle(); ${LOBBY}`);
   const syncX = await page.evaluate(() => Math.round(performance.now() - window.__t0));
   const w = await until(`(${frameOf('CAMP_STAGE')}) > ${f0}`);
-  C.exitMs = w < 0 ? -1 : w + syncX;
-  await sleep(600); C.after = await probe();
+  C.exitMs = w < 0 ? -1 : w + syncX; C.exitSyncMs = syncX;
+  await sleep(600); C.after = await probe(); C.exitLinks = C.after.link - C.battle.link; if (C.exitLinks) C.exitEffects = await effKeys(fxX);
   cycles.push(C);
-  process.stdout.write(`цикл ${C.n}: контекстов ${C.after.contexts} [${C.after.canv}] (в бою ${C.battle.contexts} [${C.battle.canv}]), meshes ${C.after.meshes}, tex ${C.after.textures} (gpu ${C.after.gpuTex}, в бою ${C.battle.gpuTex}), mat ${C.after.materials}, вход ${C.enterMs} мс, выход ${C.exitMs} мс, компиляций после wake ${C.compilesAfterWake} (журнал боя ${C.log})\n`);
+  process.stdout.write(`цикл ${C.n}: контекстов ${C.after.contexts} [${C.after.canv}] (в бою ${C.battle.contexts} [${C.battle.canv}]), meshes ${C.after.meshes}, tex ${C.after.textures} (gpu ${C.after.gpuTex}, в бою ${C.battle.gpuTex}), mat ${C.after.materials}, вход ${C.enterMs} мс, выход ${C.exitMs} мс (синхронно ${C.exitSyncMs}), компиляций после wake ${C.compilesAfterWake}, при выходе ${C.exitLinks} (журнал боя ${C.log})\n`);
 }
 await browser.close();
 

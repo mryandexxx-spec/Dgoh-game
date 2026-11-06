@@ -1,7 +1,7 @@
 // render3d/scenes/camp.js — строки 2504–2585 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { BT, S } from '../../core/state.js';
 import { HERO_STAGE } from './hero.js';
-import { Stage3D } from './base-scene.js';
+import { SAVE_LOW, Stage3D } from './base-scene.js';
 import { poseHuman } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
 import { buildEnv, staticNoCast } from '../env/build-env.js';
@@ -80,6 +80,8 @@ class CampStage extends Stage3D {
       if (!(Math.abs(h - el._hh) <= 1)) { el._hh = h; el.style.height = h + 'px'; } }
   }
   paused() { return !!(BT && BT.B) || !!document.querySelector('#overlay .detail, #overlay .sqsel'); }
+  // шаг 6: лагерь — фоновая сцена, 30 fps (20 в упрощённой графике); флаг перечитывается раз в секунду
+  idleMode(now) { if (!(now - this._lowAt < 1000)) { this._low = SAVE_LOW(); this._lowAt = now; } return this._low ? 'idleLow' : 'idle'; }
   slashFX() {} muzzleFX() {} voiceFX() {} castFX() {}
 }
 const S_FLAG = () => '#4c6b4e';

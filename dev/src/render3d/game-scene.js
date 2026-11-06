@@ -16,7 +16,7 @@ class GameScene {
   place(el, o) { if (el) { this._el = el; this._mo = o || {}; } if (!this.alive || !this._el) return false; this.host.mount(this, this._el, this._mo); return true; }
   wake(el, o) {
     if (!this.alive || !this.place(el, o)) return false;
-    const was = this.state; this.state = 'awake';
+    const was = this.state; this.state = 'awake'; this.wakeT = performance.now();
     if (was !== 'awake' && this.onWake) this.onWake(was);
     return true;
   }
@@ -26,6 +26,8 @@ class GameScene {
     if (this.state === 'awake') { this.state = 'asleep'; this.host.release(this); }
     if (this.onSleep) this.onSleep(o || {});
   }
+  // режим планировщика кадров EngineHost (шаг 6): active | idle | idleLow | static | paused
+  mode() { return 'active'; }
   frame() { if (this.state === 'awake') this.update(performance.now()); }
   update() {}
   onDetach() { this.sleep(); }

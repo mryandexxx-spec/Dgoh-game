@@ -52,6 +52,12 @@ class Stage3D extends GameScene {
     this.scene.render(); this.post && this.post(now);
   }
   paused() { return !!(BT && BT.B); }
+  // шаг 6: перекрыта/бой → paused; ресайз и 0,8 с после wake → active; дальше idleMode() подкласса (по умолчанию active — окно героя на 60)
+  mode(now) {
+    if (this.paused()) return 'paused';
+    if (this.cv.clientWidth !== this.w || this.cv.clientHeight !== this.h || now - (this.wakeT || 0) < 800) return 'active';
+    return this.idleMode ? this.idleMode(now) : 'active';
+  }
   fade(mesh, life, upd) { this.tr.push({ mesh, t0: performance.now(), life, upd }); }
 }
 

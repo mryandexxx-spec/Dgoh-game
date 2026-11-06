@@ -38,7 +38,7 @@ class Arena3D extends GameScene {
     if (B.units.some(u => u.def && u.def.gl)) { this.glLight = new B3.PointLight('gll', V3(0, 6, 2), S); this.glLight.diffuse = col3('#ffc860'); this.glLight.range = 40; this.glLight.intensity = 0; } // perf step 6: no idle extra light in every shader
     });
     if (B.units.some(u => u.def && u.def.gl)) try { this.wormKit(true); } catch (e) { errLog('wormkit', e); }
-    this.resize(); this.wake();
+    this.resize(); this.wake(); this.warmFX();
   }
   update() { this.loop(); }
   onDetach() { this.dispose(); }
@@ -175,10 +175,26 @@ class Arena3D extends GameScene {
   }
   at(t, fn) { (this.fxq ||= []).push({ t, fn }); }
   fade(mesh, life, upd) { (this.tr ||= []).push({ mesh, t0: performance.now(), life, upd }); }
+  // фаза 3b, шаг 7: пул FX. Слот — меш со своим материалом (alpha у каждого слота своя); ключ — геометрия места вызова.
+  // После fade слот выключается и ждёт следующего fx(), вместо dispose меша, материала и его UBO. Освобождается вместе со сценой.
+  fx(key, make, c, alpha, x, y, z) {
+    const L = (this.fxp ||= {})[key] ||= []; let m = L.pop();
+    if (m) { m.setEnabled(true); m.rotationQuaternion = null; m.rotation.setAll(0); m.scaling.setAll(1); m.material.emissiveColor.copyFrom(col3(c)); }
+    else { m = mk(make(), basic3(c, { add: true }), 0, 0, 0, false); m._fxk = key; }
+    m.material.alpha = alpha; m.position.set(x, y, z); return m;
+  }
+  // шаг 7: прогрев вариантов шейдера FX до первого хода — два невидимых (alpha .001, аддитивно) слота в точке взгляда камеры,
+  // с равномерным и неравномерным масштабом (define NONUNIFORMSCALING); через 0,2 с уходят в пул. Дымовые частицы — сразу (раньше создавались при первом stealth)
+  warmFX() {
+    try { withCtx({ scene: this.scene }, () => { const L = this.look;
+      for (const sc of [1, 1.3]) { const m = this.fx('flash', () => bSph(.09, 10), '#ffffff', .001, L.x, L.y, L.z); m.scaling.y = sc; this.fade(m, 200, () => {}); } });
+      this.smokeFX(null); } catch (e) { errLog('warm-fx', e); }
+  }
+  fxFree(m) { if (m.isDisposed()) return; m.setEnabled(false); (this.fxp[m._fxk] ||= []).push(m); }
   wpos(node, local) { node.computeWorldMatrix(true); return B3.Vector3.TransformCoordinates(local || V3(), node.getWorldMatrix()); }
   muzzleFX(o, a) {
     withCtx({ scene: this.scene }, () => { const from = this.wpos(o.wpn, o.root._muzzle), c = a.dt === 'laser' ? '#7fe0ff' : a.dt === 'poison' ? '#9ae06a' : '#ffd890';
-    const fl = mk(bSph(.09, 10), basic3(c, { add: true, alpha: 1 }), from.x, from.y, from.z, false); this.fade(fl, 110, (m, k) => { m.scaling.setAll(1 + k * 1.5); m.material.alpha = 1 - k; });
+    const fl = this.fx('flash', () => bSph(.09, 10), c, 1, from.x, from.y, from.z); this.fade(fl, 110, (m, k) => { m.scaling.setAll(1 + k * 1.5); m.material.alpha = 1 - k; });
     for (const t of a.tg) {
       const b = t.base.add(V3(0, t.boss ? 3 : 1.1, 0)), ln = MB().CreateTube('tr', { path: [from, b], radius: a.dt === 'laser' ? .045 : .022, tessellation: 6 }, CTX.scene);
       ln.material = basic3(c, { add: true, alpha: .95 }); ln.isPickable = false; this.fade(ln, a.dt === 'laser' ? 320 : 200, (m, k) => { m.material.alpha = .95 * (1 - k); });
@@ -195,7 +211,7 @@ class Arena3D extends GameScene {
   voiceFX(o, a) {
     withCtx({ scene: this.scene }, () => { const from = o.base.add(V3(0, 1.62, 0));
     for (const t of a.tg) for (let n = 0; n < 3; n++) {
-      const ring = mk(bTorus(.22, .02, 24), basic3('#c8a0ff', { add: true, alpha: 0 }), from.x, from.y, from.z, false), to = t.base.add(V3(0, 1.3, 0)), dir = to.subtract(from);
+      const ring = this.fx('voice', () => bTorus(.22, .02, 24), '#c8a0ff', 0, from.x, from.y, from.z), to = t.base.add(V3(0, 1.3, 0)), dir = to.subtract(from);
       const q = new B3.Quaternion(); B3.Quaternion.FromUnitVectorsToRef(V3(0, 0, 1), dir.normalizeToNew(), q); ring.rotationQuaternion = q;
       const d0 = n * 90; this.fade(ring, 420 + d0, (m, k) => { const kk = Math.max(0, (k * (420 + d0) - d0) / 420); m.position.copyFrom(B3.Vector3.Lerp(from, to, kk)); m.scaling.setAll(1 + kk * 3); m.material.alpha = kk > 0 ? .8 * (1 - kk) : 0; });
     }
@@ -203,8 +219,8 @@ class Arena3D extends GameScene {
   }
   castFX(o) {
     withCtx({ scene: this.scene }, () => { const c = o.side === 'A' ? '#ffd27a' : '#ff7a6a', p = o.base;
-    const ring = mk(bTorus(.5, .04, 32), basic3(c, { add: true, alpha: .9 }), p.x, p.y + .06, p.z, false); ring.rotation.x = Math.PI / 2; this.fade(ring, 650, (m, k) => { m.scaling.set(1 + k * 2.2, 1 + k * 2.2, 1); m.material.alpha = .9 * (1 - k); });
-    const col = mk(bCyl(.5, .6, 3, 24, true), basic3(c, { add: true, alpha: .4 }), p.x, p.y + 1.5, p.z, false); this.fade(col, 650, (m, k) => { m.material.alpha = .4 * Math.sin(k * Math.PI); m.scaling.set(1 - k * .4, 1 + k * .3, 1 - k * .4); });
+    const ring = this.fx('castR', () => bTorus(.5, .04, 32), c, .9, p.x, p.y + .06, p.z); ring.rotation.x = Math.PI / 2; this.fade(ring, 650, (m, k) => { m.scaling.set(1 + k * 2.2, 1 + k * 2.2, 1); m.material.alpha = .9 * (1 - k); });
+    const col = this.fx('castC', () => bCyl(.5, .6, 3, 24, true), c, .4, p.x, p.y + 1.5, p.z); this.fade(col, 650, (m, k) => { m.material.alpha = .4 * Math.sin(k * Math.PI); m.scaling.set(1 - k * .4, 1 + k * .3, 1 - k * .4); });
     });
   }
   sparkFX(o, power) {
@@ -233,44 +249,44 @@ class Arena3D extends GameScene {
     if (ab.tm && ab.tm.enemies < 0) on(foes, x => this.ringFX(x, '#8a7aff', .5));
   }
   domeFX(x, c, k = 1) {
-    withCtx({ scene: this.scene }, () => { const p = x.root.position, d = mk(bSph(.95 * k, 24, 1, .5), basic3(c, { add: true, alpha: 0 }), p.x, p.y, p.z, false); d.scaling.y = 1.3; d.material.backFaceCulling = false;
+    withCtx({ scene: this.scene }, () => { const p = x.root.position, d = this.fx('dome' + k, () => bSph(.95 * k, 24, 1, .5), c, 0, p.x, p.y, p.z); d.scaling.y = 1.3; d.material.backFaceCulling = false;
     this.fade(d, 1300, (m, kk) => { m.position.copyFrom(x.root.position); m.material.alpha = .75 * Math.sin(Math.min(1, kk * 1.6) * Math.PI * .5) * (1 - kk); m.scaling.set(.6 + kk * .5, (.6 + kk * .5) * 1.3, .6 + kk * .5); });
     this.ringFX(x, c, .9);
     });
   }
   ringFX(x, c, r = .7) {
-    withCtx({ scene: this.scene }, () => { const p = x.root.position, m0 = mk(bTorus(r, .06, 32), basic3(c, { add: true, alpha: 1 }), p.x, p.y + .05, p.z, false);
+    withCtx({ scene: this.scene }, () => { const p = x.root.position, m0 = this.fx('ring' + r, () => bTorus(r, .06, 32), c, 1, p.x, p.y + .05, p.z);
     this.fade(m0, 1000, (m, k) => { m.scaling.set(1 + k * 1.2, 1, 1 + k * 1.2); m.position.y = p.y + .05 + k * 1.6; m.material.alpha = 1 - k; });
     });
   }
   swirlFX(x, c) {
     withCtx({ scene: this.scene }, () => { const p = x.root.position;
-    for (let n = 0; n < 3; n++) { const m0 = mk(bTorus(.55, .022, 28, .6), basic3(c, { add: true, alpha: .8 }), p.x, p.y + .3, p.z, false);
+    for (let n = 0; n < 3; n++) { const m0 = this.fx('swirl', () => bTorus(.55, .022, 28, .6), c, .8, p.x, p.y + .3, p.z);
       this.fade(m0, 800, (m, k) => { m.position.copyFrom(x.root.position); m.position.y += .3 + k * 1.5 + n * .25; m.rotation.y = k * 9 + n * 2; m.material.alpha = .8 * Math.sin(k * Math.PI); m.scaling.setAll(1 - k * .4); }); }
     });
   }
   speedFX(x) {
     withCtx({ scene: this.scene }, () => { const p = x.root.position;
-    for (let n = 0; n < 6; n++) { const a = n / 6 * Math.PI * 2, m0 = mk(bBox(.025, .7, .025), basic3('#ffe08a', { add: true, alpha: .9 }), p.x + Math.cos(a) * .55, p.y, p.z + Math.sin(a) * .55, false);
+    for (let n = 0; n < 6; n++) { const a = n / 6 * Math.PI * 2, m0 = this.fx('speed', () => bBox(.025, .7, .025), '#ffe08a', .9, p.x + Math.cos(a) * .55, p.y, p.z + Math.sin(a) * .55);
       this.fade(m0, 520, (m, k) => { m.position.y = x.root.position.y + k * 2.4; m.material.alpha = .9 * (1 - k); }); }
     });
   }
   tauntFX(x) {
     withCtx({ scene: this.scene }, () => { const p = x.root.position;
-    for (let n = 0; n < 3; n++) { const m0 = mk(bTorus(.4, .05, 32), basic3('#ff5a3a', { add: true, alpha: 0 }), p.x, p.y + 1.2, p.z, false); m0.rotation.x = Math.PI / 2;
+    for (let n = 0; n < 3; n++) { const m0 = this.fx('tauntR', () => bTorus(.4, .05, 32), '#ff5a3a', 0, p.x, p.y + 1.2, p.z); m0.rotation.x = Math.PI / 2;
       const yaw = x.root.rotation.y; m0.rotation.y = yaw; const d0 = n * 140;
       this.fade(m0, 700 + d0, (m, k) => { const kk = Math.max(0, (k * (700 + d0) - d0) / 700); m.scaling.setAll(1 + kk * 3.2); m.material.alpha = kk > 0 ? .85 * (1 - kk) : 0; }); }
-    const col = mk(bCyl(.45, .55, 2.4, 24, true), basic3('#ff4a2a', { add: true, alpha: 0 }), p.x, p.y + 1.2, p.z, false);
+    const col = this.fx('tauntC', () => bCyl(.45, .55, 2.4, 24, true), '#ff4a2a', 0, p.x, p.y + 1.2, p.z);
     this.fade(col, 900, (m, k) => { m.material.alpha = .35 * Math.sin(k * Math.PI); m.scaling.set(1 + k * .3, 1, 1 + k * .3); });
     this.shakeT = performance.now();
     });
   }
   smokeFX(x) {
     if (!this.smoke) { const S = this.scene; const t = glowTex({ scene: S }); const ps = this.smoke = new B3.ParticleSystem('smoke', 300, S); ps.particleTexture = t; ps.emitter = V3(0, -50, 0); ps.minEmitBox = V3(-.4, 0, -.4); ps.maxEmitBox = V3(.4, 1.6, .4); ps.direction1 = V3(-.4, .3, -.4); ps.direction2 = V3(.4, .9, .4); ps.minLifeTime = .7; ps.maxLifeTime = 1.3; ps.minSize = .4; ps.maxSize = .9; ps.color1 = new B3.Color4(.75, .65, .5, .5); ps.color2 = new B3.Color4(.55, .45, .35, .4); ps.colorDead = new B3.Color4(.4, .3, .2, 0); ps.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD; ps.emitRate = 0; ps.manualEmitCount = 0; ps.start(); }
-    const p = x.root.position; this.smoke.emitter = V3(p.x, p.y, p.z); this.smoke.manualEmitCount = 90;
+    if (!x) return; const p = x.root.position; this.smoke.emitter = V3(p.x, p.y, p.z); this.smoke.manualEmitCount = 90;
   }
   miasmaFX(x, c) {
-    withCtx({ scene: this.scene }, () => { const p = x.root.position, m0 = mk(bSph(.7, 18), basic3(c, { add: true, alpha: 0 }), p.x, p.y + 1, p.z, false);
+    withCtx({ scene: this.scene }, () => { const p = x.root.position, m0 = this.fx('miasma', () => bSph(.7, 18), c, 0, p.x, p.y + 1, p.z);
     this.fade(m0, 800, (m, k) => { m.material.alpha = .4 * Math.sin(k * Math.PI); m.scaling.set(1 + k * .6, 1.4 + k * .4, 1 + k * .6); m.position.y = p.y + 1 + k * .3; });
     this.ringFX(x, c, .5);
     });
@@ -300,17 +316,17 @@ class Arena3D extends GameScene {
   }
   loop() {
     if (this.lost || !this.alive) return;
-    if (this.skipFrame(performance.now())) return;
     try { this._loop(); } catch (e) { errLog('arena-loop', e); }
   }
-  // perf step 3: 60 fps only while something moves; 30 fps while waiting for input / dialog / popup; stop ~1.2 s after the result screen
-  skipFrame(now) {
+  // шаг 6 (было perf step 3, skipFrame): active, пока что-то движется; idle (30 fps) — ждём ввода / диалог / оверлей; static через 1,2 с после результата
+  mode(now) {
+    if (this.lost || !this.alive) return 'static';
     const bt = typeof BT !== 'undefined' && BT, cv = this.cv;
-    if (!bt || !cv.isConnected || (cv.clientWidth || innerWidth) !== this.w || (cv.clientHeight || innerHeight) !== this.h) { this.lastR = now; return false; }
+    if (!bt || !cv.isConnected || (cv.clientWidth || innerWidth) !== this.w || (cv.clientHeight || innerHeight) !== this.h) return 'active';
     const busy = !!(this.cine || this.summons.length || (this.fxq && this.fxq.length) || (this.tr && this.tr.length) || (this.glT && now - this.glT < 1600) || (this.shakeT && now - this.shakeT < 300));
-    if (bt.done && !busy) { if (!this.doneT) this.doneT = now; if (now - this.doneT > 1200) return true; } else this.doneT = 0;
-    if (!busy) { const ov = document.getElementById('overlay'); if (bt.waiting || bt.done || (typeof DLG !== 'undefined' && DLG && DLG.inBattle) || (ov && ov.childElementCount)) { if (now - (this.lastR || 0) < 29) return true; } }
-    this.lastR = now; return false;
+    if (bt.done && !busy) { if (!this.doneT) this.doneT = now; if (now - this.doneT > 1200) return 'static'; } else this.doneT = 0;
+    if (!busy) { const ov = document.getElementById('overlay'); if (bt.waiting || bt.done || (typeof DLG !== 'undefined' && DLG && DLG.inBattle) || (ov && ov.childElementCount)) return 'idle'; }
+    return 'active';
   }
   _loop() {
     const now = performance.now();
@@ -367,7 +383,7 @@ class Arena3D extends GameScene {
     }
     if (this.summons.length) inPlaceKeep(this.summons, W => !W.done);
     if (this.fxq && this.fxq.length) runDue(this.fxq, now);
-    if (this.tr && this.tr.length) inPlaceKeep(this.tr, T => { const k = (now - T.t0) / T.life; if (k >= 1) { T.mesh.dispose(false, true); return false; } T.upd(T.mesh, k); return true; });
+    if (this.tr && this.tr.length) inPlaceKeep(this.tr, T => { const k = (now - T.t0) / T.life; if (k >= 1) { if (T.mesh._fxk) this.fxFree(T.mesh); else T.mesh.dispose(false, true); return false; } T.upd(T.mesh, k); return true; });
     this.scene.render();
     this.placeHud();
   }
