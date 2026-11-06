@@ -59,7 +59,7 @@ async function shots(html, tag) {
   out.bake = await page.evaluate(async () => { const bk = new Baker(); const r = await bk.bake(CH.paul); bk.dispose(); const rd = b => new Promise(res => { const f = new FileReader(); f.onload = () => res(f.result); f.readAsDataURL(b); }); return r.full ? rd(r.full) : null; });
   out.bake = out.bake ? Buffer.from(out.bake.split(',')[1], 'base64') : null;
   for (const [k, v] of Object.entries(out)) if (v) fs.writeFileSync(path.join(OUT, `${k}-${tag}${PHONE ? '-phone' : ''}.png`), v);
-  await page.close();
+  await page.close(); await srv.close();
   return out;
 }
 const a = await shots(A, 'A'), b = await shots(B, 'B');

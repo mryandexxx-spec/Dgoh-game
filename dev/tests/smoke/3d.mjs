@@ -172,4 +172,5 @@ console.log(`\n${res.mode}: контекстов макс ${maxCtx}; meshes ${fi
 for (const [k, v] of Object.entries(crit)) console.log(`${v ? 'PASS' : 'FAIL'} ${k}`);
 if (errors.length) console.log(errors.slice(0, 5).join('\n'));
 if (OUT) { fs.mkdirSync(path.dirname(OUT), { recursive: true }); fs.writeFileSync(OUT, JSON.stringify(res, null, 1)); }
+await browser.close(); await SRV.close();   // фаза 5: иначе HTTP-сервер держит процесс
 if (has('--strict') && Object.values(crit).some(v => !v)) process.exit(1);
