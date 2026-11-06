@@ -1,7 +1,7 @@
 // render2d/scenes.js — строки 805–1081 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import './figures.js'; // порядок исполнения
 import { ghash } from '../data/looks.js';
-import { sRng } from '../core/util.js';
+import { sRng } from '../core/rng.js';
 
 // ---------- scenes ----------
 const SCENES = {

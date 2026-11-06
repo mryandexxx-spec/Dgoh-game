@@ -2,7 +2,7 @@
 import './legend.js'; // порядок исполнения
 import { cqShopView } from './conq.js';
 import { RES_INFO } from '../overlays/info.js';
-import { $, getRes, prog, sRng } from '../../core/util.js';
+import { getRes, prog } from '../../logic/progress.js';
 import { S } from '../../core/state.js';
 import { FRAG_NEED, ITEMS, SHOP_FRAG, TIER_COL, gearPlan, itemIcon } from '../../logic/gear.js';
 import { ROSTER_IDS, RW_NAME, todayKey } from '../../logic/economy.js';
@@ -10,6 +10,8 @@ import { portrait } from '../../render2d/figures.js';
 import { ghash } from '../../data/looks.js';
 import { CH } from '../../data/chars.js';
 import { amt, ic } from '../../core/format.js';
+import { $ } from '../../core/dom.js';
+import { sRng } from '../../core/rng.js';
 
 const SHOPS = {
   post: { n: 'Торговый пост', d: 'Обычный магазин Империума: солярии и кристаллы. Ассортимент осколков обновляется каждый день.' },

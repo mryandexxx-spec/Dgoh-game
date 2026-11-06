@@ -1,10 +1,10 @@
 // ui/hero-window.js — строки 4648–4680 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { openBattleSettings } from './overlays/battle-settings.js';
 import '../core/boot.js'; // порядок исполнения
+import { openBattleSettings } from './overlays/battle-settings.js';
 import { doAct, renderBattle } from './battle/battle-ui.js';
 import { detailCid, openDetail } from './overlays/detail.js';
 import { rosterList } from './views/squad.js';
-import { $, prog } from '../core/util.js';
+import { prog } from '../logic/progress.js';
 import { BT } from '../core/state.js';
 import { WORM_IMG } from '../assets/models.js';
 import { CAMP_STAGE, set_CAMP_STAGE } from '../render3d/scenes/camp.js';
@@ -12,6 +12,7 @@ import { HERO_SNAP, HERO_STAGE, set_HERO_SNAP, set_HERO_STAGE } from '../render3
 import { aiPlan } from '../logic/battle/ai.js';
 import { unitPower, unitStats } from '../logic/battle/stats.js';
 import { CH } from '../data/chars.js';
+import { $ } from '../core/dom.js';
 
 // ===== hero window helpers: snapshot for upgrade popups, prev/next navigation, swipe =====
 function heroSnap(id) { const d = CH[id], p = prog(id), s = unitStats(d, p); return { hp: s.maxHp, sh: s.maxShield, dmg: s.dmg, spd: s.spd, pw: unitPower(d, p) }; }

@@ -11,13 +11,12 @@ import { trialFinish } from '../views/trials.js';
 import { WORM_BADGE, freeStages } from '../hero-window.js';
 import { raidPct, raidReward } from '../views/raid.js';
 import { SQ, grantShards, openSquadSel, set_SQ } from '../overlays/squad-select.js';
-import { quest } from '../views/daily.js';
 import { closeInfo, openInfo, wormIco } from '../overlays/info.js';
 import { abDescLv, closeOverlay } from '../overlays/detail.js';
 import { render } from '../router.js';
-import { toast } from '../common.js';
+import { glyph, starStr, toast } from '../common.js';
 import { battleMark, errLog } from '../../core/errlog.js';
-import { $, campSquad, enGet, enRefund, enSpend, glyph, prog, sideOk, starStr } from '../../core/util.js';
+import { campSquad, enGet, enRefund, enSpend, prog, sideOk } from '../../logic/progress.js';
 import { BT, S, set_BT, tickWater } from '../../core/state.js';
 import { persist } from '../../core/save.js';
 import { TIER_COL, fragLines, grantFrags, raidFrags } from '../../logic/gear.js';
@@ -41,6 +40,8 @@ import { CH, MENTAT } from '../../data/chars.js';
 import { FACTIONS, FX, ROLES } from '../../data/fx.js';
 import { accXP } from '../rewards.js';
 import { amt, fmt } from '../../core/format.js';
+import { $ } from '../../core/dom.js';
+import { quest } from '../../logic/daily.js';
 
 // ===== battle UI =====
 function startBattle(i) {

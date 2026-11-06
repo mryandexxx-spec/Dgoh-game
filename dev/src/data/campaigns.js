@@ -1,10 +1,10 @@
 // data/campaigns.js — строки 2729–2892 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import { STORY } from './story.js';
 import { S } from '../core/state.js';
 import { BATTLE_WATER, CANDLE_COST } from '../logic/economy.js';
-import { STORY } from './story.js';
 import { ghash } from './looks.js';
 import { CH } from './chars.js';
-import { sRng } from '../core/util.js';
+import { sRng } from '../core/rng.js';
 
 // ===== Campaigns: Light, Dark, Chronicles (original retelling, no quotations) =====
 // mission: [title, fragment, dialogue?]; dialogue lines: [speaker, text, side] — speaker may be a hero id or a plain name

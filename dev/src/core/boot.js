@@ -5,14 +5,15 @@ import { noteSnap } from '../ui/notifications.js';
 import { metaFill } from '../ui/wiring.js';
 import { RING_RATE } from '../ui/overlays/squad-select.js';
 import { loginCan, openCalendar } from '../ui/overlays/calendar.js';
-import { dly } from '../ui/views/daily.js';
 import { render } from '../ui/router.js';
 import { renderRes, toast } from '../ui/common.js';
-import { $, LAND_MQ, prog } from './util.js';
+import { prog } from '../logic/progress.js';
 import { BT, S, set_S, tickWater, view } from './state.js';
 import { loadSave, newSave, persist } from './save.js';
 import { ROSTER_IDS } from '../logic/economy.js';
 import { amt } from './format.js';
+import { $, LAND_MQ } from './dom.js';
+import { dly } from '../logic/daily.js';
 
 function splashOff() {
   const sp = document.getElementById('splash'); if (!sp || sp.classList.contains('off') || sp._t) return;

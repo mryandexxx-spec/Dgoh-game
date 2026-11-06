@@ -4,8 +4,8 @@ import { S } from '../core/state.js';
 import { ROMAN } from './economy.js';
 import { CAMP_KEYS, NODES, campNodes } from '../data/campaigns.js';
 import { ghash } from '../data/looks.js';
-import { sRng } from '../core/util.js';
 import { amt } from '../core/format.js';
+import { sRng } from '../core/rng.js';
 
 // ===== gear =====
 const ITEM_KINDS = [['mask', 'Фильтр-маска'], ['boots', 'Сапоги-песчаники'], ['belt', 'Пояс-разгрузка'], ['knife', 'Боевой нож'], ['cloak', 'Пустынный плащ'], ['ring', 'Перстень-печать'],

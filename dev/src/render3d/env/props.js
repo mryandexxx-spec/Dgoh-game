@@ -3,7 +3,7 @@ import { heightAt } from './build-env.js';
 import { MB, add, bBox, bCyl, bDisc, bPlane, bRock, bSph, bTorus, grp } from '../geometry.js';
 import { SC, V3, basic3, col3, mat3, mk } from '../materials.js';
 import { B3 } from '../base.js';
-import { sRng } from '../../core/util.js';
+import { sRng } from '../../core/rng.js';
 
 const PROPS3 = {
   farrocks(A, E) { const m = mat3(E.sand2, { flatShading: true }); const r = sRng(11); for (let i = 0; i < 9; i++) { const a = Math.PI * (1.08 + r() * .84), d = 95 + r() * 40, rk = mk(bRock(i, 1), m, Math.cos(a) * d, -2, Math.sin(a) * d, false); rk.scaling.set(10 + r() * 16, 5 + r() * 9, 8 + r() * 12); } },

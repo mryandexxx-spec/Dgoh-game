@@ -3,12 +3,12 @@ import { EMBLEMS, FRAMES, TITLES } from '../../data/cosmetics.js';
 import { METRIC } from '../../logic/stats.js';
 import { giveRewards, rewardWin, rewardsHtml } from '../rewards.js';
 import { render } from '../router.js';
-import { $ } from '../../core/util.js';
 import { S } from '../../core/state.js';
 import { persist } from '../../core/save.js';
 import { ROMAN } from '../../logic/economy.js';
 import { avatarHtml } from '../overlays/profile.js';
 import { fmt } from '../../core/format.js';
+import { $ } from '../../core/dom.js';
 
 // ===================== feats =====================
 const FEATS = [

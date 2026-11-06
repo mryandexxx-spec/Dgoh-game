@@ -9,8 +9,8 @@ import { grantShards, openSquadSel } from '../overlays/squad-select.js';
 import { addRes, giveRewards } from '../rewards.js';
 import { openInfo } from '../overlays/info.js';
 import { render } from '../router.js';
-import { renderRes, toast } from '../common.js';
-import { $, getRes, isLandPhone, prog, sRng, starStr, unlockedIds } from '../../core/util.js';
+import { renderRes, starStr, toast } from '../common.js';
+import { getRes, prog, unlockedIds } from '../../logic/progress.js';
 import { S, set_view, view } from '../../core/state.js';
 import { persist } from '../../core/save.js';
 import { TIER_COL } from '../../logic/gear.js';
@@ -22,6 +22,8 @@ import { computeIntents } from '../../logic/battle/ai.js';
 import { unitPower } from '../../logic/battle/stats.js';
 import { CH } from '../../data/chars.js';
 import { amt, fmt, ic } from '../../core/format.js';
+import { $, isLandPhone } from '../../core/dom.js';
+import { sRng } from '../../core/rng.js';
 
 // ---- battle hooks ----
 function cqApply(B, cfg) {

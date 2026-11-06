@@ -10,7 +10,7 @@ export const SPLIT = [
   [2333, 'assets/mocap-data.js'], [2337, 'render3d/characters/mocap.js'], [2381, 'assets/env-hdr.js'], [2384, 'render3d/scenes/base-scene.js'],
   [2427, 'render3d/scenes/hero.js'], [2504, 'render3d/scenes/camp.js'], [2586, 'render3d/scenes/baker.js'], [2668, 'assets/models.js'],
   [2671, 'data/story.js'], [2729, 'data/campaigns.js'], [2893, 'data/glyphs.js'], [3023, 'data/journeys.js'], [3057, 'logic/economy.js'],
-  [3078, 'logic/relics.js'], [3087, 'logic/gear.js'], [3151, 'core/format.js'], [3151, 'core/save.js'], [3202, 'core/state.js'], [3210, 'core/util.js'], [3234, 'core/errlog.js'],
+  [3078, 'logic/relics.js'], [3087, 'logic/gear.js'], [3151, 'core/format.js'], [3151, 'core/save.js'], [3202, 'core/state.js'], [3210, 'logic/daily.js'], [3210, 'core/dom.js'], [3210, 'core/rng.js'], [3210, 'logic/progress.js'], [3234, 'core/errlog.js'],
   [3252, 'ui/common.js'], [3272, 'ui/router.js'], [3282, 'ui/views/camp.js'], [3330, 'ui/views/squad.js'], [3365, 'ui/overlays/detail.js'],
   [3550, 'ui/overlays/info.js'], [3668, 'ui/overlays/sim.js'], [3761, 'ui/rewards.js'], [3779, 'ui/views/daily.js'], [3826, 'ui/overlays/calendar.js'],
   [3859, 'ui/overlays/squad-select.js'], [3951, 'ui/views/raid.js'], [3992, 'ui/views/legend.js'], [4020, 'ui/views/shop.js'], [4072, 'ui/views/lobby.js'],

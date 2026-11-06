@@ -1,6 +1,6 @@
 // ui/wiring.js — строки 4934–4965 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { accFill } from '../logic/account.js';
 import { openProfile } from './overlays/profile.js';
+import { accFill } from '../logic/account.js';
 import { featClaim } from './views/feats.js';
 import { unlocked } from '../data/cosmetics.js';
 import { trialGo, trialMulti, trialSimClick } from './views/trials.js';
@@ -9,10 +9,10 @@ import { SPOT_ICONS } from './views/lobby.js';
 import { closeInfo } from './overlays/info.js';
 import { render } from './router.js';
 import { toast } from './common.js';
-import { $ } from '../core/util.js';
 import { BT, S, set_S, set_view, view } from '../core/state.js';
 import { fillSave, persist } from '../core/save.js';
 import { todayKey } from '../logic/economy.js';
+import { $ } from '../core/dom.js';
 
 // ===================== wiring =====================
 function metaFill(s) {

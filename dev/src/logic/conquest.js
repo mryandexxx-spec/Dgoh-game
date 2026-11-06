@@ -5,8 +5,9 @@ import { S } from '../core/state.js';
 import { RW_NAME, enemyProg } from './economy.js';
 import { ghash } from '../data/looks.js';
 import { CH } from '../data/chars.js';
-import { sRng, unlockedIds } from '../core/util.js';
+import { unlockedIds } from './progress.js';
 import { amt } from '../core/format.js';
+import { sRng } from '../core/rng.js';
 
 const cqWeek = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toDateString(); };
 function cq() {

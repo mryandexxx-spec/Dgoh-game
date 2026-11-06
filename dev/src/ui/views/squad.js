@@ -1,6 +1,6 @@
 // ui/views/squad.js — строки 3330–3364 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import './camp.js'; // порядок исполнения
-import { $, prog, squadPower, starStr } from '../../core/util.js';
+import { prog, squadPower } from '../../logic/progress.js';
 import { S, filter } from '../../core/state.js';
 import { TIER_COL } from '../../logic/gear.js';
 import { ringCol, sideName, unlockNeed } from '../../logic/relics.js';
@@ -10,6 +10,8 @@ import { unitPower } from '../../logic/battle/stats.js';
 import { CH, CHARS } from '../../data/chars.js';
 import { FACTIONS, ROLES } from '../../data/fx.js';
 import { fmt } from '../../core/format.js';
+import { $ } from '../../core/dom.js';
+import { starStr } from '../common.js';
 
 function nextShards(p) { return SHARDS_NEXT[p.stars] ?? null; }
 const canStar = id => { const p = prog(id), n = nextShards(p); return !!(p.stars && n && p.shards >= n); };

@@ -4,13 +4,13 @@ import { CQ_SECT } from '../data/conquest-data.js';
 import { showCeleb } from './overlays/celebrate.js';
 import { FEATS, featRw, featStep } from './views/feats.js';
 import { METRIC } from '../logic/stats.js';
-import { DAILY, qState } from './views/daily.js';
 import { rewardsHtml } from './rewards.js';
-import { $ } from '../core/util.js';
 import { BT, NOTES, S } from '../core/state.js';
-import { persist0 } from '../core/save.js';
+import { onPersist, persist0 } from '../core/save.js';
 import { ROMAN, todayKey } from '../logic/economy.js';
 import { fmt } from '../core/format.js';
+import { $ } from '../core/dom.js';
+import { DAILY, qState } from '../logic/daily.js';
 
 // ===================== corner notifications (daily quests / feats) =====================
 function noteSnap(init) {
@@ -58,5 +58,7 @@ const noteDrop = id => { const i = NOTES.findIndex(n => n.id === id); if (i >= 0
   document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
 })();
 
+
+onPersist(notePoll);
 
 export { noteSnap, notePoll, noteHtml, renderNotes, noteDrop };

@@ -1,6 +1,6 @@
 // ui/views/camp.js — строки 3282–3329 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import '../router.js'; // порядок исполнения
-import { $, campSquad, enGet, isLandPhone, nodePower, prog, reqText, sideOk, starStr } from '../../core/util.js';
+import { campSquad, enGet, nodePower, prog, reqText, sideOk } from '../../logic/progress.js';
 import { S } from '../../core/state.js';
 import { ITEMS, NODE_ITEMS, TIER_COL, itemIcon } from '../../logic/gear.js';
 import { ROMAN, campReward, enemyProg } from '../../logic/economy.js';
@@ -9,6 +9,8 @@ import { portrait } from '../../render2d/figures.js';
 import { unitPower } from '../../logic/battle/stats.js';
 import { CH } from '../../data/chars.js';
 import { amt, fmt, ic } from '../../core/format.js';
+import { $, isLandPhone } from '../../core/dom.js';
+import { starStr } from '../common.js';
 
 let campSel = null;
 function chapStars(ck, c) { return chapNodes(ck, c).reduce((a, i) => a + (S.cleared[i] || 0), 0); }

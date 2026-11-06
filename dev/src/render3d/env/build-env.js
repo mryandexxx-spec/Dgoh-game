@@ -1,11 +1,11 @@
 // render3d/env/build-env.js — строки 1295–1351 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import { MB, dynTex, glowSprite, groundCanvas } from '../geometry.js';
 import { addParticles3 } from './particles.js';
 import { PROPS3 } from './props.js';
-import { MB, dynTex, glowSprite, groundCanvas } from '../geometry.js';
 import { SC, SHG, V3, basic3, col3, lerpC, mat3, set_SHG } from '../materials.js';
 import { B3, ENV3 } from '../base.js';
 import { NZ, SCN, sstep } from '../../render2d/scenes.js';
-import { sRng } from '../../core/util.js';
+import { sRng } from '../../core/rng.js';
 
 // ---------- environment ----------
 // perf step 5 (agreed compromise): scenery keeps casting, the sun shadow map is refreshed every 2nd frame

@@ -5,7 +5,6 @@ import { statInc } from '../../logic/stats.js';
 import { openSquadSel } from '../overlays/squad-select.js';
 import { accXP, giveRewards, rewardWin } from '../rewards.js';
 import { render } from '../router.js';
-import { $, starStr } from '../../core/util.js';
 import { S } from '../../core/state.js';
 import { persist } from '../../core/save.js';
 import { fragLines, grantFrags } from '../../logic/gear.js';
@@ -15,6 +14,8 @@ import { living } from '../../logic/battle/engine.js';
 import { CH } from '../../data/chars.js';
 import { TR, TRIALS, TRIAL_LVL, TRIAL_RUNS, TRIAL_ST, tierOpen, trialBest3, trialLeft, trialOpen, trialRoll, trialRunsToday, trialStars } from '../../logic/trials.js';
 import { fmt, ic } from '../../core/format.js';
+import { $ } from '../../core/dom.js';
+import { starStr } from '../common.js';
 
 // ===================== META: trials, profile, feats =====================
 const DAYS_RU = ['Вс.', 'Пн.', 'Вт.', 'Ср.', 'Чт.', 'Пт.', 'Сб.'];

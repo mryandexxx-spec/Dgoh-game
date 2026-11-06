@@ -1,12 +1,11 @@
 // render3d/scenes/baker.js — строки 2586–2667 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import './camp.js'; // порядок исполнения
 import { SQ } from '../../ui/overlays/squad-select.js';
 import { detailCid, openDetail } from '../../ui/overlays/detail.js';
 import { render } from '../../ui/router.js';
 import { toast } from '../../ui/common.js';
 import { errLog } from '../../core/errlog.js';
-import { $ } from '../../core/util.js';
 import { BT, S } from '../../core/state.js';
-import './camp.js'; // порядок исполнения
 import { SAVE_LOW, freeCanvas } from './base-scene.js';
 import { poseHuman } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
@@ -14,6 +13,7 @@ import { PBR_ON, SC, SHG, V3, col3, set_PBR_ON, set_SC, set_SHG } from '../mater
 import { B3, HAS3D } from '../base.js';
 import { figureSVG, set_figureSVG } from '../../render2d/figures.js';
 import { CH, CHARS } from '../../data/chars.js';
+import { $ } from '../../core/dom.js';
 
 // ---------- portraits & figures baked from the 3D models (replace the old 2D drawings everywhere: rewards, dialogs, roster) ----------
 const BAKE_V = 'b9', BAKED = {};

@@ -1,6 +1,6 @@
 // ui/views/legend.js — строки 3992–4019 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import './raid.js'; // порядок исполнения
-import { $, glyph, prog } from '../../core/util.js';
+import { prog } from '../../logic/progress.js';
 import { S } from '../../core/state.js';
 import { MEM, ringCol } from '../../logic/relics.js';
 import { MAX_GEAR, ROMAN, thumb } from '../../logic/economy.js';
@@ -9,6 +9,8 @@ import { portrait } from '../../render2d/figures.js';
 import { CH } from '../../data/chars.js';
 import { FACTIONS } from '../../data/fx.js';
 import { amt } from '../../core/format.js';
+import { $ } from '../../core/dom.js';
+import { glyph } from '../common.js';
 
 function journeyReady(t) { return jReady(JK(), t); }
 function renderLegend() {

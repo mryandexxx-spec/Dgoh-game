@@ -2,7 +2,9 @@
 import '../core/errlog.js'; // порядок исполнения
 import { S, tickWater } from '../core/state.js';
 import { CMAX, WATER_SEC, WMAX } from '../logic/economy.js';
-import { fmt, ic } from '../core/format.js';
+import { fc, fmt, ic } from '../core/format.js';
+import { SPOT_ICONS } from './views/lobby.js';
+import { figureSVG } from '../render2d/figures.js';
 
 function toast(t) {
   document.querySelectorAll('.toast').forEach(x => x.remove());
@@ -23,6 +25,8 @@ function renderRes() {
     <div class="pill" data-info="rid"><span>Ридулиан</span><b>${ic('rid')}${fmt(S.rid)}</b></div>`;
   document.querySelectorAll('.resbox').forEach(el => el.innerHTML = html);
 }
+const starStr = (n, max = 7) => '★'.repeat(n) + `<i>${'★'.repeat(max - n)}</i>`;
+const glyph = (def, extra = '') => def.boss ? `<span class="gl ${extra}" style="--fc:var(--worm);color:var(--worm)" aria-hidden="true"><svg viewBox="0 0 24 24">${SPOT_ICONS.worm}</svg></span>` : `<span class="gl face ${extra}" style="--fc:${fc(def)}" aria-hidden="true">${figureSVG(def)}</span>`;
 
 
-export { toast, renderRes };
+export { toast, renderRes, starStr, glyph };

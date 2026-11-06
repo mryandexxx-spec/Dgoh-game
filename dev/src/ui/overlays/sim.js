@@ -3,12 +3,11 @@ import { infoKey, openInfo } from './info.js';
 import { MOUSE_SVG } from '../mouse.js';
 import { statInc } from '../../logic/stats.js';
 import { grantShards } from './squad-select.js';
-import { quest } from '../views/daily.js';
 import { accXP, rewardWin } from '../rewards.js';
 import { detailCid, itemCtx, openDetail, openItem, slotState } from './detail.js';
 import { render } from '../router.js';
-import { toast } from '../common.js';
-import { $, enGet, enSpend, starStr } from '../../core/util.js';
+import { starStr, toast } from '../common.js';
+import { enGet, enSpend } from '../../logic/progress.js';
 import { S, tickWater } from '../../core/state.js';
 import { persist } from '../../core/save.js';
 import { ITEMS, fragLines, grantFrags } from '../../logic/gear.js';
@@ -17,6 +16,8 @@ import { NODES, NODE_SCENES, nodeCost, nodeEn, nodeTitle } from '../../data/camp
 import { sceneThumb } from '../../render2d/scenes.js';
 import { CH } from '../../data/chars.js';
 import { amt } from '../../core/format.js';
+import { $ } from '../../core/dom.js';
+import { quest } from '../../logic/daily.js';
 
 function refreshAll() {
   render();

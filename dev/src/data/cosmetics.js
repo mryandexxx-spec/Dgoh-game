@@ -1,6 +1,6 @@
 // data/cosmetics.js — строки 4826–4855 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import '../logic/stats.js'; // порядок исполнения
-import { prog } from '../core/util.js';
+import { prog } from '../logic/progress.js';
 import { S } from '../core/state.js';
 import { WORM_IMG } from '../assets/models.js';
 import { CH } from './chars.js';

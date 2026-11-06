@@ -1,6 +1,6 @@
 // logic/stats.js — строки 4810–4825 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import '../ui/views/trials.js'; // порядок исполнения
-import { prog } from '../core/util.js';
+import { prog } from './progress.js';
 import { S } from '../core/state.js';
 import { ROSTER_IDS } from './economy.js';
 import { campNodes } from '../data/campaigns.js';

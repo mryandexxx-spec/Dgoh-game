@@ -5,10 +5,9 @@ import { profileChip } from '../overlays/profile.js';
 import { featMax, featRank, featsReady } from './feats.js';
 import { raidPct } from './raid.js';
 import { loginCan } from '../overlays/calendar.js';
-import { dailyReady } from './daily.js';
 import { nextShards } from './squad.js';
 import { renderRes } from '../common.js';
-import { $, prog, squadPower, unlockedIds } from '../../core/util.js';
+import { prog, squadPower, unlockedIds } from '../../logic/progress.js';
 import { S } from '../../core/state.js';
 import { JOURNEYS, JP, JR, jReady } from '../../data/journeys.js';
 import { NODES, campNodes } from '../../data/campaigns.js';
@@ -18,6 +17,8 @@ import { figureSVG } from '../../render2d/figures.js';
 import { CH } from '../../data/chars.js';
 import { TRIALS, trialBest3, trialLeft, trialOpen } from '../../logic/trials.js';
 import { amt, fmt } from '../../core/format.js';
+import { $ } from '../../core/dom.js';
+import { dailyReady } from '../../logic/daily.js';
 
 const SPOT_ICONS = {
   map: '<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 4v14M15 6v14" stroke="currentColor" stroke-width="1.8"/>',

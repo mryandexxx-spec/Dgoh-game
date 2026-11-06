@@ -1,12 +1,14 @@
 // ui/views/raid.js — строки 3951–3991 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import '../overlays/squad-select.js'; // порядок исполнения
-import { $, glyph, unlockedIds } from '../../core/util.js';
+import { unlockedIds } from '../../logic/progress.js';
 import { S } from '../../core/state.js';
 import { RAID_FRAGS } from '../../logic/gear.js';
 import { RAID_REWARD, RAID_SCENES, thumb } from '../../logic/economy.js';
 import { RAID_TIERS } from '../../data/boss.js';
 import { CH } from '../../data/chars.js';
 import { amt, fmt } from '../../core/format.js';
+import { $ } from '../../core/dom.js';
+import { glyph } from '../common.js';
 
 function raidPct() { return S.raid ? 1 - S.raid.hp / S.raid.maxHp : 0; }
 function raidReward(tier, pct, killed) {

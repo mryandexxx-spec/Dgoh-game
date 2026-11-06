@@ -3,10 +3,10 @@ import '../fx-text.js'; // порядок исполнения
 import { rwGrid } from '../reward-tiles.js';
 import { ACC_UPS } from '../../logic/account.js';
 import { renderRes } from '../common.js';
-import { $ } from '../../core/util.js';
 import { BT } from '../../core/state.js';
 import { MAX_LVL } from '../../logic/economy.js';
 import { ic } from '../../core/format.js';
+import { $ } from '../../core/dom.js';
 
 // ===================== level-up window =====================
 function showLevelUp() {

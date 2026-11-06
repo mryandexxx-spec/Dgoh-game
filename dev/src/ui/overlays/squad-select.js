@@ -7,8 +7,8 @@ import { trialOfSQ } from '../views/trials.js';
 import { launch, startBattle } from '../battle/battle-ui.js';
 import { SPOT_ICONS } from '../views/lobby.js';
 import { openInfo } from './info.js';
-import { renderRes, toast } from '../common.js';
-import { $, campSquad, enGet, glyph, nodePower, prog, reqFacOk, reqMissing, reqText, sideOk, unlockedIds } from '../../core/util.js';
+import { glyph, renderRes, toast } from '../common.js';
+import { campSquad, enGet, nodePower, prog, reqFacOk, reqMissing, reqText, sideOk, unlockedIds } from '../../logic/progress.js';
 import { S, tickWater } from '../../core/state.js';
 import { persist } from '../../core/save.js';
 import { TIER_COL } from '../../logic/gear.js';
@@ -24,6 +24,7 @@ import { CH } from '../../data/chars.js';
 import { FACTIONS } from '../../data/fx.js';
 import { TRIALS, TRIAL_SQ, trialFoes, trialOk } from '../../logic/trials.js';
 import { amt, fmt } from '../../core/format.js';
+import { $ } from '../../core/dom.js';
 
 // ===== squad select =====
 let SQ = null;

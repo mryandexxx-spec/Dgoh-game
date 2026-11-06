@@ -8,13 +8,13 @@ import { bPop, bPopClose, doAct, finish, launch, leaveBattle, renderBattle } fro
 import { closeInfo } from './info.js';
 import { render } from '../router.js';
 import { toast } from '../common.js';
-import { $ } from '../../core/util.js';
 import { BT, NOTES, S, set_BT, set_view, view } from '../../core/state.js';
 import { persist } from '../../core/save.js';
 import { GLYPH } from '../../data/glyphs.js';
 import { SAVE_LOW } from '../../render3d/scenes/base-scene.js';
 import { aiPlan } from '../../logic/battle/ai.js';
 import { fmt } from '../../core/format.js';
+import { $ } from '../../core/dom.js';
 
 // ===================== battle settings (gear) =====================
 function openBattleSettings() {

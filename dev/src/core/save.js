@@ -1,5 +1,4 @@
 // core/save.js — строки 3151–3201 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { notePoll } from '../ui/notifications.js';
 import { S } from './state.js';
 import './format.js'; // порядок исполнения
 import { CMAX, WMAX } from '../logic/economy.js';
@@ -33,7 +32,9 @@ function loadSave() {
 }
 function persist0() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
 let notePend = 0;
-function persist() { persist0(); if (!notePend) notePend = setTimeout(() => { notePend = 0; if (typeof notePoll === 'function') notePoll(); }, 60); }
+function persist() { persist0(); if (!notePend) notePend = setTimeout(() => { notePend = 0; if (persistHook) persistHook(); }, 60); }
+let persistHook = null; // ui/notifications подписывает notePoll (core не импортирует ui)
+const onPersist = f => { persistHook = f; };
 
 
-export { SAVE_KEY, newSave, fillSave, loadSave, persist0, notePend, persist };
+export { SAVE_KEY, newSave, fillSave, loadSave, persist0, notePend, persist, onPersist };

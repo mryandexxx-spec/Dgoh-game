@@ -2,7 +2,7 @@
 import { SC, V3, basic3, mk } from './materials.js';
 import { B3 } from './base.js';
 import { NZ } from '../render2d/scenes.js';
-import { sRng } from '../core/util.js';
+import { sRng } from '../core/rng.js';
 
 const grp = (parent, x = 0, y = 0, z = 0) => { const g = new B3.TransformNode('g', SC); if (parent) g.parent = parent; g.position.set(x, y, z); return g; };
 const add = (p, c) => { c.parent = p; return c; };

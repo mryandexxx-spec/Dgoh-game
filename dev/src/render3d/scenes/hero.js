@@ -1,5 +1,5 @@
 // render3d/scenes/hero.js — строки 2427–2503 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { prog } from '../../core/util.js';
+import { prog } from '../../logic/progress.js';
 import { TIER_COL } from '../../logic/gear.js';
 import { Stage3D } from './base-scene.js';
 import { ENV_HDR } from '../../assets/env-hdr.js';

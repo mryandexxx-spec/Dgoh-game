@@ -11,7 +11,7 @@ import { buysToday, findShopItem, shopLeft } from './views/shop.js';
 import { raidPct, raidReward } from './views/raid.js';
 import { SQ, grantShards, openSquadSel, renderSquadSel, set_SQ, sqArr, sqGo } from './overlays/squad-select.js';
 import { claimLogin, openCalendar } from './overlays/calendar.js';
-import { DAILY, claimChest, claimQuest, qState, quest } from './views/daily.js';
+import { claimChest, claimQuest } from './views/daily.js';
 import { addRes, rewardWin } from './rewards.js';
 import { doRefill, doXSim, openSim, refreshAll, runSim, simCore, updSim } from './overlays/sim.js';
 import { RES_INFO, closeInfo, infoKey, openInfo } from './overlays/info.js';
@@ -20,7 +20,7 @@ import { nextShards } from './views/squad.js';
 import { campSel, set_campSel } from './views/camp.js';
 import { render } from './router.js';
 import { toast } from './common.js';
-import { $, getRes, prog } from '../core/util.js';
+import { getRes, prog } from '../logic/progress.js';
 import { BT, S, filter, set_filter, set_view, tickWater, view } from '../core/state.js';
 import { persist } from '../core/save.js';
 import { CRAFT, GEAR_UP_SOL, ITEMS, SHOP_FRAG, fragLines, grantFrags, raidFrags } from '../logic/gear.js';
@@ -35,6 +35,8 @@ import { RAID_TIERS } from '../data/boss.js';
 import { skMax } from '../logic/battle/skills.js';
 import { CH } from '../data/chars.js';
 import { amt } from '../core/format.js';
+import { $ } from '../core/dom.js';
+import { DAILY, qState, quest } from '../logic/daily.js';
 
 // ===== events =====
 document.addEventListener('click', e => {

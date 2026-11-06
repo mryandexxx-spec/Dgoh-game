@@ -3,13 +3,13 @@ import './overlays/sim.js'; // порядок исполнения
 import { rwGrid } from './reward-tiles.js';
 import { MOUSE_SVG } from './mouse.js';
 import { grantShards } from './overlays/squad-select.js';
-import { $ } from '../core/util.js';
 import { S } from '../core/state.js';
 import { CH } from '../data/chars.js';
 import { ACC_MAX, ACC_UPS, GEAR_CAP_AT, accNeed, accReward } from '../logic/account.js';
 import { CANDLE_BASE, CMAX, MAX_LVL, ROMAN, RW_NAME, WATER_BASE, WMAX } from '../logic/economy.js';
 import { RELIC_AT } from '../logic/relics.js';
 import { amt } from '../core/format.js';
+import { $ } from '../core/dom.js';
 
 // ===== rewards helper =====
 function rewardWin(title, lines, o = {}) {

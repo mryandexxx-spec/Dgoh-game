@@ -1,33 +1,14 @@
 // ui/views/daily.js — строки 3779–3825 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { MONTHS, loginCan, monthHero } from '../overlays/calendar.js';
 import { accXP, giveRewards, rewardWin, rewardsHtml } from '../rewards.js';
+import { MONTHS, loginCan, monthHero } from '../overlays/calendar.js';
 import { refreshAll } from '../overlays/sim.js';
-import { $ } from '../../core/util.js';
-import { S } from '../../core/state.js';
 import { persist } from '../../core/save.js';
-import { todayKey } from '../../logic/economy.js';
 import { portrait } from '../../render2d/figures.js';
 import { CH } from '../../data/chars.js';
+import { $ } from '../../core/dom.js';
+import { CHEST_CRY, CHEST_NEED, CHEST_RW, DAILY, dailyGot, dly, qState } from '../../logic/daily.js';
 
 // ===== daily quests =====
-const DAILY = [
-  { k: 'login', n: 'Зайти в игру', need: 1, rw: [['cry', 20]] },
-  { k: 'water', n: 'Потратить 120 Воды', need: 120, rw: [['cry', 30], ['sol', 2000]], go: 'camp' },
-  { k: 'camp', n: 'Провести 8 боёв кампании (симуляции считаются)', need: 8, rw: [['folio', 3], ['sol', 3000]], go: 'camp' },
-  { k: 'chron', n: 'Провести 3 боя в Хрониках Дюны (симуляции считаются)', need: 3, rw: [['rid', 20], ['cry', 20]], go: 'chron' },
-  { k: 'shop', n: 'Совершить 3 покупки в Лавке сиетча', need: 3, rw: [['pl', 5], ['cry', 20]], go: 'shop' },
-  { k: 'raid', n: 'Атаковать Шаи-Хулуда', need: 1, rw: [['teeth', 60]], go: 'raid' },
-  { k: 'ult', n: 'Применить мощное умение 3 раза', need: 3, rw: [['folio', 2]], go: 'camp' },
-  { k: 'skill', n: 'Повысить умение героя', need: 1, rw: [['sol', 1500]], go: 'squad' },
-  { k: 'craft', n: 'Собрать предмет снаряжения', need: 1, rw: [['pl', 3]], go: 'squad' },
-  { k: 'lvl', n: 'Повысить уровень героев 3 раза', need: 3, rw: [['sol', 1500]], go: 'squad' },
-];
-const CHEST_NEED = 7, CHEST_RW = [['seal', 1], ['cry', '50–300'], ['sol', 5000]], CHEST_CRY = [50, 300];
-function dly() { if (S.daily.d !== todayKey()) S.daily = { d: todayKey(), c: {}, got: {}, chest: false }; return S.daily; }
-function quest(k, n = 1) { if (!S) return; const D = dly(); D.c[k] = Math.max(0, (D.c[k] || 0) + n); }
-function qState(q) { const D = dly(); return D.got[q.k] ? 'got' : (D.c[q.k] || 0) >= q.need ? 'done' : 'prog'; }
-const dailyGot = () => DAILY.filter(q => dly().got[q.k]).length;
-const dailyReady = () => DAILY.filter(q => qState(q) === 'done').length + (dailyGot() >= CHEST_NEED && !dly().chest ? 1 : 0);
 function claimQuest(k, silent) {
   const q = DAILY.find(x => x.k === k); if (!q || qState(q) !== 'done') return;
   dly().got[k] = true; const lines = giveRewards(q.rw); lines.push(...accXP(10)); persist();
@@ -57,4 +38,4 @@ function renderDaily() {
     <div class="calcard"><div>${portrait(CH[monthHero()], 56, '#e0a83a')}</div><div><b>Календарь входа</b><span>${MONTHS[new Date().getMonth()]} — месяц героя ${CH[monthHero()].n}. ${loginCan() ? 'Сегодняшняя награда ждёт!' : 'Сегодняшняя награда получена.'}</span></div><button class="btn ${loginCan() ? 'go' : ''}" data-cal="1">Открыть</button></div>`;
 }
 
-export { DAILY, CHEST_NEED, CHEST_RW, CHEST_CRY, dly, quest, qState, dailyGot, dailyReady, claimQuest, claimChest, renderDaily };
+export { claimQuest, claimChest, renderDaily };

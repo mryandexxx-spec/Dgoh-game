@@ -6,7 +6,7 @@ import { SHOPS, shopItems, shopLeft } from '../views/shop.js';
 import { RING_RATE } from './squad-select.js';
 import { crefillCost, crefillN } from './sim.js';
 import { nextShards } from '../views/squad.js';
-import { $, enGet, getRes, prog, starStr } from '../../core/util.js';
+import { enGet, getRes, prog } from '../../logic/progress.js';
 import { S, tickWater } from '../../core/state.js';
 import { CRAFT, FRAG_NEED, ITEMS, NODE_ITEMS, RAID_FRAGS, SHOP_FRAG, TIER_COL, TIER_NAME, gearPlan, itemIcon, nodeChance } from '../../logic/gear.js';
 import { unlockNeed } from '../../logic/relics.js';
@@ -19,6 +19,8 @@ import { figureSVG, portrait } from '../../render2d/figures.js';
 import { CH } from '../../data/chars.js';
 import { FACTIONS, ROLES } from '../../data/fx.js';
 import { amt, fmt, ic } from '../../core/format.js';
+import { $ } from '../../core/dom.js';
+import { starStr } from '../common.js';
 
 // ===== info popups =====
 function campRow(i, note) {

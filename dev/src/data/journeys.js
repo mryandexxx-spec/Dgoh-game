@@ -1,5 +1,5 @@
 // data/journeys.js — строки 3023–3056 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { prog } from '../core/util.js';
+import { prog } from '../logic/progress.js';
 import { S } from '../core/state.js';
 import { MAX_GEAR } from '../logic/economy.js';
 import './glyphs.js'; // порядок исполнения
