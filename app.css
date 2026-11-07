@@ -305,6 +305,7 @@ body:has(#battle) .appver { left: 50%; transform: translateX(-50%); }   /* в б
 .hb { height: 6px; background: rgb(0 0 0 / .6); border: 1px solid rgb(0 0 0 / .7); border-radius: 2px; overflow: hidden; }
 .hb i { display: block; height: 100%; }   /* фаза 7, шаг 5: без перехода width — узлы HUD теперь живут между ходами, раньше переход не срабатывал; плавность — шаг 5б (scaleX) */
 .hud .hb.hp i { background: linear-gradient(#a6e690, #5aa84a); }
+.hud .hb.hp i, .hud .hb.sh i { width: 100%; transform: scaleX(var(--p)); transform-origin: 0 50%; transition: transform calc(.3s / var(--bs, 1)) ease-out; }   /* фаза 7, шаг 5б: полосы без layout, переход на композиторе */
 .side-B .hud .hb.hp i { background: linear-gradient(#ff9a86, #c9473a); }
 .hud .hb.sh { height: 4px; } .hud .hb.sh i { background: linear-gradient(#cfe9ff, #5aa0e0); }
 .hud .hb.tm { height: 3px; } .hud .hb.tm i { background: #f0e0b0; transition: none; }
