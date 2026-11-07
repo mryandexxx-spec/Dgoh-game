@@ -2,8 +2,7 @@
 import '../core/boot.js'; // порядок исполнения
 import { openBattleSettings } from './overlays/battle-settings.js';
 import { doAct, renderBattle } from './battle/battle-ui.js';
-import { detailCid, openDetail } from './overlays/detail.js';
-import { rosterList } from './views/squad.js';
+import { detailCid, heroNavList, openDetail } from './hero-card.js';
 import { prog } from '../logic/progress.js';
 import { BT } from '../core/state.js';
 import { WORM_IMG } from '../assets/models.js';
@@ -14,18 +13,12 @@ import { $ } from '../core/dom.js';
 
 // ===== hero window helpers: snapshot for upgrade popups, prev/next navigation, swipe =====
 function heroSnap(id) { const d = CH[id], p = prog(id), s = unitStats(d, p); return { hp: s.maxHp, sh: s.maxShield, dmg: s.dmg, spd: s.spd, pw: unitPower(d, p) }; }
+// листание карточки героя ‹ › (пакет 5: без свайпа; порядок — heroNavList). Без перестройки DOM и без чтения layout: openDetail обновляет зоны.
 function detailNav(dir) {
-  const L = rosterList().map(x => x.id), i = L.indexOf(detailCid); if (i < 0 || L.length < 2) return;
-  const sh = $('#overlay .csheet'); if (sh) { sh.classList.remove('swl', 'swr'); void sh.offsetWidth; }
+  const L = heroNavList(detailCid), i = L.indexOf(detailCid); if (i < 0 || L.length < 2) return;
   openDetail(L[(i + dir + L.length) % L.length]);
-  const s2 = $('#overlay .csheet'); if (s2) s2.classList.add(dir > 0 ? 'swl' : 'swr');
 }
-(() => {
-  let sx = 0, sy = 0, t0 = 0, ok = false;
-  document.addEventListener('touchstart', e => { const sh = e.target.closest && e.target.closest('#overlay .csheet'); ok = !!sh && !e.target.closest('.cfig, input, .skbar, .stage3d, #overlay2 *'); if (!ok) return; const t = e.touches[0]; sx = t.clientX; sy = t.clientY; t0 = performance.now(); }, { passive: true });
-  document.addEventListener('touchend', e => { if (!ok || $('#overlay2').innerHTML || $('#celeb')) return; ok = false; const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; if (Math.abs(dx) > 60 && Math.abs(dy) < Math.abs(dx) * .6 && performance.now() - t0 < 700) detailNav(dx < 0 ? 1 : -1); }, { passive: true });
-  document.addEventListener('keydown', e => { if (!$('#overlay .csheet') || $('#overlay2').innerHTML || $('#celeb') || (e.target && e.target.tagName === 'INPUT')) return; if (e.key === 'ArrowRight') detailNav(1); else if (e.key === 'ArrowLeft') detailNav(-1); });
-})();
+document.addEventListener('keydown', e => { if (!$('#overlay .csheet') || $('#overlay2').innerHTML || $('#celeb') || (e.target && e.target.tagName === 'INPUT')) return; if (e.key === 'ArrowRight') detailNav(1); else if (e.key === 'ArrowLeft') detailNav(-1); });
 // battle controls react on pointerdown: the HUD is re-rendered every step and a plain click could be lost under auto-battle
 (() => {
   let last = 0;

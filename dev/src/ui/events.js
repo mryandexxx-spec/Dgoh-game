@@ -15,7 +15,8 @@ import { claimChest, claimQuest } from './views/daily.js';
 import { fragLines, rewardWin } from './rewards.js';
 import { doRefill, doXSim, openSim, refreshAll, runSim, simCore, updSim } from './overlays/sim.js';
 import { RES_INFO, closeInfo, infoKey, openInfo } from './overlays/info.js';
-import { DETAIL_BACK, closeOverlay, detailSk, itemCtx, lackKey, lvlCost, openDetail, openItem, set_DETAIL_BACK, set_detailSk, skCost, slotState, updLvl } from './overlays/detail.js';
+import { DETAIL_BACK, closeOverlay, itemCtx, lackKey, lvlCost, openItem, set_DETAIL_BACK, skCost, slotState } from './overlays/detail.js';
+import { detailSk, hcMem, hcSkill, hcStat, openDetail, set_detailSk, updLvl } from './hero-card.js';
 import { nextShards, rosterClick } from './views/squad.js';
 import { campSel, set_campSel } from './views/camp.js';
 import { render } from './router.js';
@@ -108,6 +109,9 @@ document.addEventListener('click', e => {
   if (d.gup) { const p = prog(d.gup); if (p.gear < MAX_GEAR && p.gear < gearCap() && p.eq.every(Boolean) && S.solari >= GEAR_UP_SOL(p.gear)) { const s0 = heroSnap(d.gup); S.solari -= GEAR_UP_SOL(p.gear); p.gear++; p.eq = [false, false, false, false, false, false]; persist(); celebQueue({ type: 'hup', kind: 'gear', id: d.gup, from: ROMAN[p.gear - 1], to: ROMAN[p.gear], s0 }); } render(); return openDetail(d.gup); }
   if (d.relic) { const id = d.relic, p = prog(id), rn = (p.relic || 0) + 1; if (rn > RELIC_MAX || rn > relicCap() || !relicReady(p)) return; if ((S.core || 0) < RELIC_CORES[rn]) return openInfo('core'); if (S.solari < RELIC_SOL(rn)) return openInfo('sol'); const s0 = heroSnap(id); S.core -= RELIC_CORES[rn]; S.solari -= RELIC_SOL(rn); p.relic = rn; persist(); celebQueue({ type: 'hup', kind: 'relic', id, from: MEM(rn - 1), to: MEM(rn), s0 }); render(); return openDetail(id); }
   if (d.dnav) return detailNav(+d.dnav);
+  if (d.hcsk) return hcSkill(d.hcsk);
+  if (d.hcmem) return hcMem(d.hcmem);
+  if (d.hcstat) return hcStat();
   if (d.isim) { return doXSim(d.isim); }
   if (false) {
     const [i, kk] = d.isim.split(':').map(Number), cost = kk * BATTLE_WATER; tickWater();

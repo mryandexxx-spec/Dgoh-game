@@ -1,7 +1,7 @@
 // render3d/scenes/baker.js — строки 2586–2667 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import './camp.js'; // порядок исполнения
 import { SQ } from '../../ui/overlays/squad-select.js';
-import { detailCid, openDetail } from '../../ui/overlays/detail.js';
+import { detailCid, openDetail } from '../../ui/hero-card.js';
 import { render } from '../../ui/router.js';
 import { toast } from '../../ui/common.js';
 import { errLog } from '../../core/errlog.js';

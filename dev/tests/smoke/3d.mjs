@@ -131,6 +131,11 @@ for (let c = 0; c < CYCLES; c++) {
   const C = { n: c + 1 };
   await run(LOBBY); await sleep(800); C.camp = await probe();
   await run(`openDetail('paul');`); await sleep(1200); C.hero = await probe();
+  // пакет 5: листание карточки по всему ростеру ‹ › — смена модели без компиляций (сцена и холст те же)
+  // смена: компиляции в момент листания (0,3 с) — критерий; прогрев соседей в покое — отдельно, для сведения
+  { const h0 = (await probe()).link, hfx = await effKeys(), n = await page.evaluate(() => { try { return (0, eval)('heroNavList(detailCid).length'); } catch (e) { return 0; } }); let sw = 0;
+    for (let k = 0; k < n; k++) { const a = (await probe()).link; await run(`detailNav(1);`); await sleep(300); sw += (await probe()).link - a; await until('HERO_STAGE.pfIdle()', 6000); }
+    C.heroNav = await probe(); C.heroNavN = n; C.heroNavCompiles = sw; C.heroWarm = C.heroNav.link - h0 - sw; if (sw) C.heroNavEffects = await effKeys(hfx); }
   await run(`closeInfo(true); closeOverlay(); view = 'lobby';`);
   // вход в бой: от вызова до первого кадра арены
   await page.evaluate(() => { window.__t0 = performance.now(); });
@@ -158,7 +163,7 @@ for (let c = 0; c < CYCLES; c++) {
   C.exitMs = w < 0 ? -1 : w + syncX; C.exitSyncMs = syncX;
   await sleep(600); C.after = await probe(); C.exitLinks = C.after.link - C.battle.link; if (C.exitLinks) C.exitEffects = await effKeys(fxX);
   cycles.push(C);
-  process.stdout.write(`цикл ${C.n}: контекстов ${C.after.contexts} [${C.after.canv}] (в бою ${C.battle.contexts} [${C.battle.canv}]), meshes ${C.after.meshes}, tex ${C.after.textures} (gpu ${C.after.gpuTex}, в бою ${C.battle.gpuTex}), mat ${C.after.materials}, вход ${C.enterMs} мс, выход ${C.exitMs} мс (синхронно ${C.exitSyncMs}), компиляций после wake ${C.compilesAfterWake}, при выходе ${C.exitLinks} (журнал боя ${C.log})\n`);
+  process.stdout.write(`цикл ${C.n}: листание ${C.heroNavN} героев — компиляций при смене ${C.heroNavCompiles}, прогрев в покое ${C.heroWarm}; контекстов ${C.after.contexts} [${C.after.canv}] (в бою ${C.battle.contexts} [${C.battle.canv}]), meshes ${C.after.meshes}, tex ${C.after.textures} (gpu ${C.after.gpuTex}, в бою ${C.battle.gpuTex}), mat ${C.after.materials}, вход ${C.enterMs} мс, выход ${C.exitMs} мс (синхронно ${C.exitSyncMs}), компиляций после wake ${C.compilesAfterWake}, при выходе ${C.exitLinks} (журнал боя ${C.log})\n`);
 }
 await browser.close();
 
@@ -167,6 +172,7 @@ const maxCtx = Math.max(...cycles.flatMap(c => [c.camp.contexts, c.hero.contexts
 const crit = {
   'один WebGL-контекст': maxCtx <= 1,
   'нет компиляций после wake': cycles.every(c => c.compilesAfterWake === 0),
+  'листание героев без компиляций': cycles.every(c => !c.heroNavCompiles),
   'лагерь ↔ бой ≤ 400 мс': cycles.every(c => c.enterMs >= 0 && c.enterMs <= 400 && c.exitMs >= 0 && c.exitMs <= 400),
   'нет роста meshes/textures': cycles.length < 2 || (last.after.meshes <= cycles[1].after.meshes && last.after.textures <= cycles[1].after.textures),
   'нет ошибок консоли': errors.length === 0,

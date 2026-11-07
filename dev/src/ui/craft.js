@@ -1,6 +1,7 @@
 // ui/craft.js — строки 5105–5117 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import './mouse.js'; // порядок исполнения
-import { openDetail, slotState } from './overlays/detail.js';
+import { slotState } from './overlays/detail.js';
+import { openDetail } from './hero-card.js';
 import { render } from './router.js';
 import { toast } from './common.js';
 import { prog } from '../logic/progress.js';

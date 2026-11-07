@@ -1,5 +1,6 @@
 // ui/overlays/info.js — строки 3550–3667 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { detailCid, itemCtx, openDetail, openItem } from './detail.js';
+import { detailCid, openDetail } from '../hero-card.js';
+import { itemCtx, openItem } from './detail.js';
 import { renderNotes } from '../notifications.js';
 import { SPOT_ICONS } from '../views/lobby.js';
 import { SHOPS, shopItems, shopLeft } from '../views/shop.js';

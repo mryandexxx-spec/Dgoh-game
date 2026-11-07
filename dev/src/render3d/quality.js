@@ -16,10 +16,12 @@ const HIGH = {
   dof: true, dofBlur: ['med', 'low'],
   ssao: true, ssaoRatio: [.75, .5], ssaoSamples: [16, 8], ssaoExpBlur: [true, false], // expensiveBlur задаёт только арена
   shadowSize: [2048, 1024], shadowRefresh: 2, // refresh — сцены окружения (арена, лагерь); окно героя — каждый кадр
+  heroShadow: [2048, 1024],         // пакет 5: карта теней окна героя (свет ортогональный 4×4 м — хватает и меньших карт)
   probe: { arena: [128, 64], hero: 64, camp: 64 },
   groundSeg: [170, 120],
   particles: 1,                     // множитель фоновых частиц окружения
   fps: { active: 60, idle: 30, idleLow: 20, static: 0 }, campIdle: 'idle',
+  heroIdle: 'active',               // пакет 5: окно героя в покое (после интро/вспышки/вращения): HIGH 60, MED idle 30, LOW idle 20
   bake: false,                      // запечь тени/AO статичных пропсов в землю и убрать их из карты теней
   glowSel: false,                   // glow только по светящимся мешам (без неба и фона)
   glowKernel: 32,                   // blurKernelSize GlowLayer
@@ -29,12 +31,12 @@ const HIGH = {
 };
 const PROFILES = {
   high: HIGH,
-  med: { ...HIGH, dpr: { arena: [1.5, 1.25], hero: [1.75, 1.5], camp: [1.5, 1.25] }, msaa: 1,
-    grain: false, chromatic: false, sharpen: false, dof: 'hero', ssao: false, shadowSize: 1024, bake: true, glowSel: true, wormSmall: .5 },
+  med: { ...HIGH, dpr: { arena: [1.5, 1.25], hero: [1.75, 1.25], camp: [1.5, 1.25] }, msaa: 1, heroIdle: 'idle',
+    grain: false, chromatic: false, sharpen: false, dof: 'hero', ssao: false, shadowSize: 1024, heroShadow: [1024, 512], bake: true, glowSel: true, wormSmall: .5 },
 };
 // шаг 5: LOW — от MED вниз: без DoF и bloom, glow дешевле, тени 512 (PCF low), ниже dpr, пробники, сетка земли, частицы, кадр в покое
-PROFILES.low = { ...PROFILES.med, dpr: { arena: 1.25, hero: [1.5, 1.25], camp: 1.25 }, dof: false, bloom: false,
-  glowRatio: [.35, .25], glowKernel: 16, shadowSize: 512, shadowQ: 'low',
+PROFILES.low = { ...PROFILES.med, dpr: { arena: 1.25, hero: [1.5, 1], camp: 1.25 }, dof: false, bloom: false,
+  glowRatio: [.35, .25], glowKernel: 16, shadowSize: 512, heroShadow: [512, 256], shadowQ: 'low',
   probe: { arena: 32, hero: 32, camp: 32 }, groundSeg: [100, 80], particles: .5,
   fps: { active: 60, idle: 20, idleLow: 15, static: 0 }, campIdle: 'idleLow', wormSmall: 0 };
 // шаг 6: ступени auto; low30 — LOW с 30 fps в бою, только для авто (ручного выбора нет)

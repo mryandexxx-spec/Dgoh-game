@@ -3,7 +3,7 @@ import '../reward-tiles.js'; // порядок исполнения
 import { MOUSE_SVG } from '../mouse.js';
 import { renderNotes } from '../notifications.js';
 import { heroSnap } from '../hero-window.js';
-import { openDetail } from './detail.js';
+import { openDetail } from '../hero-card.js';
 import { render } from '../router.js';
 import { prog } from '../../logic/progress.js';
 import { BT, set_view, view } from '../../core/state.js';
