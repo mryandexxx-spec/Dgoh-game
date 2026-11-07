@@ -516,7 +516,8 @@ function finish() {
   if (!won && !btns.includes('data-toroster')) btns += `<button class="btn" data-toroster="1">К персонажам<small>усилить отряд</small></button>`;
   el.className = 'result ' + (won ? 'won' : 'lost');
   el.innerHTML = `<div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${MOUSE_SVG(!won)}</div>${html}<div class="acts" style="justify-content:center">${btns}</div></div>`;
-  $('#battle').appendChild(el);
+  const bt = $('#battle'); bt.classList.add('fin');   // фаза 7, шаг 7: пауза бесконечных анимаций под результатом (#battle пересоздаётся в launch)
+  bt.appendChild(el);
 }
 function leaveBattle() { battleMark(null); if (BT) clearTimeout(BT.timer); if (BT && BT.arena) BT.arena.dispose(); const pref = BT && { autoPref: BT.autoPref, speedPref: BT.speedPref }; set_BT(pref); closeOverlay(); render(); }
 

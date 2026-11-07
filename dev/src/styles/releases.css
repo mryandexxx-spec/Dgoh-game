@@ -71,3 +71,5 @@ nav.tabs .vname { font-family: var(--f-display); font-size: 20px; letter-spacing
 .abpop .mono { font-size: 11px; color: var(--dust); }
 /* slower 2D lunge */
 .unit.lunge.side-A .fig { animation-duration: .55s; } .unit.lunge.side-B .fig { animation-duration: .55s; }
+/* фаза 7, шаг 7: под экраном результатов — пауза только бесконечных анимаций (цифры урона, встряска, смерть доигрывают) */
+.battle.fin .tcur i, .battle.fin .abil.gl.full, .battle.fin .abil.gl.full::after, .battle.fin .abil.ult::after, .battle.fin .hud .hb.glm.full i, .battle.fin .hud .hb.spm.full i, .battle.fin .hglass .hgs, .battle.fin .hglass.full svg { animation-play-state: paused; }
