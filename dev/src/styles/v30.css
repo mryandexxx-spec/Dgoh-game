@@ -1,17 +1,4 @@
 /* ===== v30: roster level, gear pips, star-up highlight ===== */
-.rctop { display: flex; align-items: center; gap: 10px; }
-.rclv { display: grid; justify-items: start; line-height: 1; }
-.rclv b { font-family: var(--f-display); font-size: 30px; font-weight: 400; color: #ffe6b0; text-shadow: 0 2px 6px #000; }
-.rclv small { font-family: var(--f-mono); font-size: 9px; letter-spacing: .14em; color: var(--dust); text-transform: uppercase; }
-.rcrel { align-self: flex-start; margin-left: auto; margin-right: 34px; font-family: var(--f-mono); font-size: 11px; font-weight: 700; color: #ffe0c8; background: linear-gradient(180deg, #ff6a3a, #9a2a1a); border-radius: 3px; padding: 2px 6px; box-shadow: 0 0 10px rgb(255 106 58 / .5); }
-.gpips { display: inline-flex; align-items: center; gap: 3px; }
-.gpips i { width: 7px; height: 7px; border-radius: 2px; background: #2a1e14; border: 1px solid color-mix(in srgb, var(--tc) 60%, #000); transform: rotate(45deg); }
-.gpips i.on { background: var(--tc); box-shadow: 0 0 6px var(--tc); border-color: var(--tc); }
-.gpips b { margin-left: 4px; font-size: 11px; color: #f4e7cf; }
-.rc.canstar { box-shadow: 0 0 0 2px #ffd27a, 0 0 22px rgb(255 200 90 / .75) !important; animation: canstar 1.6s ease-in-out infinite; }
-.rc.canstar .pt { box-shadow: 0 0 0 3px #ffd27a, 0 0 18px #ffb040; }
-@keyframes canstar { 50% { box-shadow: 0 0 0 3px #fff0b0, 0 0 34px rgb(255 210 110 / .95) !important; } }
-.csbadge { position: absolute; left: 50%; top: -9px; transform: translateX(-50%); z-index: 3; white-space: nowrap; font-family: var(--f-mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: #2a1806; background: linear-gradient(90deg, #ffe08a, #ffb040); padding: 2px 8px; border-radius: 10px; box-shadow: 0 0 12px #ffb040; }
 .ncstars i { color: rgb(255 255 255 / .16); font-style: normal; }
 /* red text when a resource is missing */
 .btn.lack, .btn.lack small, .btn.lack small .amt { color: #ff6a5a !important; }

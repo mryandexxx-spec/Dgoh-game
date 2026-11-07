@@ -7,8 +7,8 @@ h2, .brand, .ccenter h3, .result h3 { background: linear-gradient(180deg, #fbf1d
 .btn { background: linear-gradient(180deg, #3a2a1c, #20160e); box-shadow: inset 0 1px 0 rgb(255 255 255 / .06), 0 2px 6px rgb(0 0 0 / .35); }
 .btn.go { background: linear-gradient(180deg, #f6a95e, #d97a32 60%, #b8601f); color: #1d0f05; border-color: #f0a05a; text-shadow: 0 1px 0 rgb(255 220 180 / .4); box-shadow: inset 0 1px 0 rgb(255 240 210 / .5), 0 3px 10px rgb(228 138 60 / .25); }
 .btn.go:disabled { box-shadow: none; }
-.node, .panel, .rc, .tier, .item, .src, .slot.filled { background: linear-gradient(180deg, #2c2016, var(--dune) 40%); box-shadow: inset 0 1px 0 rgb(255 255 255 / .04), 0 4px 14px rgb(0 0 0 / .25); }
-.node:hover, .rc:hover, .tier:hover { border-color: #64503a; }
+.node, .panel, .tier, .item, .src { background: linear-gradient(180deg, #2c2016, var(--dune) 40%); box-shadow: inset 0 1px 0 rgb(255 255 255 / .04), 0 4px 14px rgb(0 0 0 / .25); }
+.node:hover, .tier:hover { border-color: #64503a; }
 .sheet { background: linear-gradient(180deg, #2e2217, var(--dune) 30%); box-shadow: 0 -10px 40px rgb(0 0 0 / .5), inset 0 1px 0 rgb(255 255 255 / .05); position: relative; }
 .sheet::before { content: ""; position: absolute; left: 10%; right: 10%; top: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--spice), transparent); opacity: .7; }
 .result .box { background: linear-gradient(180deg, #33251a, var(--dune) 40%); box-shadow: 0 20px 60px rgb(0 0 0 / .6), inset 0 1px 0 rgb(255 255 255 / .06); border-color: #5e472f; }
@@ -38,8 +38,8 @@ h2, .brand, .ccenter h3, .result h3 { background: linear-gradient(180deg, #fbf1d
 
 /* ===== sand palette & ornaments ===== */
 body { background: radial-gradient(120% 70% at 50% -10%, #3a2616 0%, var(--night) 60%) fixed, var(--night); }
-.node, .panel, .tier, .rc, .item, .src { position: relative; border-radius: 2px; }
-.node::before, .panel::before, .tier::before, .rc::before, .item::before, .src::before, .result .box::before {
+.node, .panel, .tier, .item, .src { position: relative; border-radius: 2px; }
+.node::before, .panel::before, .tier::before, .item::before, .src::before, .result .box::before {
   content: ""; position: absolute; inset: -1px; pointer-events: none; opacity: .6;
   background: linear-gradient(var(--spice), var(--spice)) top left / 12px 2px no-repeat, linear-gradient(var(--spice), var(--spice)) top left / 2px 12px no-repeat,
     linear-gradient(var(--spice), var(--spice)) top right / 12px 2px no-repeat, linear-gradient(var(--spice), var(--spice)) top right / 2px 12px no-repeat,

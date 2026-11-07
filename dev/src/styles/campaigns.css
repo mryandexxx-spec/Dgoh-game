@@ -16,10 +16,6 @@
 .cmap.ck-L { box-shadow: inset 0 3px 0 rgb(79 143 224 / .5), inset 0 10px 30px rgb(0 0 0 / .45); }
 .cmap.ck-D { box-shadow: inset 0 3px 0 rgb(208 71 58 / .5), inset 0 10px 30px rgb(0 0 0 / .45); }
 .cmap.ck-C { box-shadow: inset 0 3px 0 rgb(42 154 138 / .55), inset 0 10px 30px rgb(0 0 0 / .45); }
-.rc.side-light:not(.legend) { border-color: #3a6aa8; box-shadow: inset 0 0 0 1px rgb(79 143 224 / .35), 0 4px 14px rgb(0 0 0 / .25); }
-.rc.side-dark:not(.legend) { border-color: #9a3a2e; box-shadow: inset 0 0 0 1px rgb(208 71 58 / .35), 0 4px 14px rgb(0 0 0 / .25); }
-.rc.side-light:not(.legend)::before { background: linear-gradient(var(--light), var(--light)) top left / 12px 2px no-repeat, linear-gradient(var(--light), var(--light)) top left / 2px 12px no-repeat, linear-gradient(var(--light), var(--light)) top right / 12px 2px no-repeat, linear-gradient(var(--light), var(--light)) top right / 2px 12px no-repeat, linear-gradient(var(--light), var(--light)) bottom left / 12px 2px no-repeat, linear-gradient(var(--light), var(--light)) bottom left / 2px 12px no-repeat, linear-gradient(var(--light), var(--light)) bottom right / 12px 2px no-repeat, linear-gradient(var(--light), var(--light)) bottom right / 2px 12px no-repeat; }
-.rc.side-dark:not(.legend)::before { background: linear-gradient(var(--dark), var(--dark)) top left / 12px 2px no-repeat, linear-gradient(var(--dark), var(--dark)) top left / 2px 12px no-repeat, linear-gradient(var(--dark), var(--dark)) top right / 12px 2px no-repeat, linear-gradient(var(--dark), var(--dark)) top right / 2px 12px no-repeat, linear-gradient(var(--dark), var(--dark)) bottom left / 12px 2px no-repeat, linear-gradient(var(--dark), var(--dark)) bottom left / 2px 12px no-repeat, linear-gradient(var(--dark), var(--dark)) bottom right / 12px 2px no-repeat, linear-gradient(var(--dark), var(--dark)) bottom right / 2px 12px no-repeat; }
 .sqcard.side-light:not(.legend):not(.on) { border-color: #3a6aa8; } .sqcard.side-dark:not(.legend):not(.on) { border-color: #9a3a2e; }
 .item.side-light { border-color: #3a6aa8; } .item.side-dark { border-color: #9a3a2e; }
 .sidetag { font-family: var(--f-mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; padding: 1px 5px; border-radius: 2px; }
@@ -30,17 +26,13 @@
 .btn.dim { opacity: .65; }
 
 /* ===== legend, GL ultimate, rotate ===== */
-.rc.legend, .sqcard.legend { border: 2px solid transparent; background: linear-gradient(180deg, #3a2610, #1e1408) padding-box; box-shadow: 0 0 18px rgb(255 200 100 / .35); isolation: isolate; }
 /* фаза 7, шаг 4: вращение рамки — transform слоя .lring (было @property --ga → перерисовка карточки каждый кадр); conic вокруг центра ≡ повёрнутый квадрат с conic */
+.sqcard.legend { border: 2px solid transparent; background: linear-gradient(180deg, #3a2610, #1e1408) padding-box; box-shadow: 0 0 18px rgb(255 200 100 / .35); isolation: isolate; }
+.sqcard.legend::before { opacity: 1; background: linear-gradient(#fff0b0, #fff0b0) top left / 16px 3px no-repeat, linear-gradient(#fff0b0, #fff0b0) top left / 3px 16px no-repeat, linear-gradient(#fff0b0, #fff0b0) top right / 16px 3px no-repeat, linear-gradient(#fff0b0, #fff0b0) top right / 3px 16px no-repeat, linear-gradient(#fff0b0, #fff0b0) bottom left / 16px 3px no-repeat, linear-gradient(#fff0b0, #fff0b0) bottom left / 3px 16px no-repeat, linear-gradient(#fff0b0, #fff0b0) bottom right / 16px 3px no-repeat, linear-gradient(#fff0b0, #fff0b0) bottom right / 3px 16px no-repeat; }
 .lring { position: absolute; inset: -2px; border-radius: inherit; overflow: hidden; pointer-events: none; z-index: -1; }
 .lring::before { content: ""; position: absolute; left: 50%; top: 50%; width: 300%; aspect-ratio: 1; background: conic-gradient(#ffe08a, #b8862e, #fff2c0, #c06a28, #ffe08a); transform: translate(-50%, -50%); animation: legspin 4s linear infinite; }
 .lring::after { content: ""; position: absolute; inset: 2px; border-radius: 2px; background: linear-gradient(180deg, #3a2610, #1e1408); }
-.rc.legend::before, .sqcard.legend::before { opacity: 1; background: linear-gradient(#fff0b0, #fff0b0) top left / 16px 3px no-repeat, linear-gradient(#fff0b0, #fff0b0) top left / 3px 16px no-repeat, linear-gradient(#fff0b0, #fff0b0) top right / 16px 3px no-repeat, linear-gradient(#fff0b0, #fff0b0) top right / 3px 16px no-repeat, linear-gradient(#fff0b0, #fff0b0) bottom left / 16px 3px no-repeat, linear-gradient(#fff0b0, #fff0b0) bottom left / 3px 16px no-repeat, linear-gradient(#fff0b0, #fff0b0) bottom right / 16px 3px no-repeat, linear-gradient(#fff0b0, #fff0b0) bottom right / 3px 16px no-repeat; }
 @keyframes legspin { to { transform: translate(-50%, -50%) rotate(360deg); } }
-.rc.legend .pt { box-shadow: 0 0 0 2px #ffe08a, 0 0 16px rgb(255 210 120 / .8); }
-.lgrib { position: absolute; top: 8px; right: -1px; z-index: 2; font-family: var(--f-mono); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: #2a1806; background: linear-gradient(90deg, #ffe08a, #d4a040); padding: 2px 8px 2px 10px; clip-path: polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%); }
-.rc.legend.insq::after { top: 26px; }
-.rc.legend.lockd .lring::before { animation: none; }
 .sqslot.legend { border-color: #ffe08a; box-shadow: 0 0 22px rgb(255 210 120 / .5), inset 0 0 30px rgb(255 200 100 / .15); }
 .glcard { border: 1px solid #b8862e; border-radius: 3px; padding: 10px 12px; background: linear-gradient(135deg, rgb(120 80 20 / .35), transparent 60%); margin-bottom: 4px; }
 .glcard h4 { color: #ffe08a; }

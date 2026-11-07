@@ -94,6 +94,11 @@ for (const diff of ['easy', 'normal', 'hard']) {
   C('ИИ: страж — первая цель', 'const b = createBattle([q("duncan"), q("paul")], [q("gurney")], { seed: 7 }); b.units[0].fx = {}; const p = aiPlan(b, b.units[2]); return [name, p.target && p.target.def.id];');
 }
 
+// ---- пакет 4: ростер — фильтр и сортировка (logic/roster.js) ----
+for (const o of [{}, { s: 'lvl' }, { s: 'st' }, { s: 'nm' }, { s: 'bad' }, { f: 'light' }, { f: 'dark' }, { f: 'mach' }, { f: 'frem' }, { f: 'bg', r: 'sup' }, { r: 'tank' }, { f: 'hark', r: 'heal' }])
+  V('pkg4', `rosterView(${JSON.stringify(o)})`);
+V('pkg4', '(() => { const pg = id => ({ ...prog(id), stars: ["paul", "baron"].includes(id) ? 3 : 0, shards: { gurney: 9, liet: 300, erasmus: 30, kynes: 9 }[id] || 0, lvl: id === "baron" ? 50 : 10 }); return ["pw", "lvl", "nm"].map(s => rosterView({ s }, pg)); })()');
+
 const out = { n: cases.length, cases };
 console.log('случаев:', cases.length, 'исключений:', cases.filter(c => c.out && c.out.throws).length);
 for (const c of cases.filter(c => c.out && c.out.throws).slice(0, 5)) console.log('  throws:', c.f, JSON.stringify(c.a || ''), c.out.throws);
