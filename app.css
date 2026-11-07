@@ -303,7 +303,7 @@ body:has(#battle) .appver { left: 50%; transform: translateX(-50%); }   /* в б
 .unit.boss .hud { width: 55%; }
 .hud .lead { position: absolute; left: -15px; top: -2px; width: 13px; height: 13px; display: grid; place-items: center; font-family: var(--f-mono); font-size: 9px; font-weight: 600; color: #1a1008; background: var(--spice); border-radius: 2px; }
 .hb { height: 6px; background: rgb(0 0 0 / .6); border: 1px solid rgb(0 0 0 / .7); border-radius: 2px; overflow: hidden; }
-.hb i { display: block; height: 100%; transition: width .3s; }
+.hb i { display: block; height: 100%; }   /* фаза 7, шаг 5: без перехода width — узлы HUD теперь живут между ходами, раньше переход не срабатывал; плавность — шаг 5б (scaleX) */
 .hud .hb.hp i { background: linear-gradient(#a6e690, #5aa84a); }
 .side-B .hud .hb.hp i { background: linear-gradient(#ff9a86, #c9473a); }
 .hud .hb.sh { height: 4px; } .hud .hb.sh i { background: linear-gradient(#cfe9ff, #5aa0e0); }
