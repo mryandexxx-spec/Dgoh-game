@@ -2,7 +2,8 @@
 import '../views/squad.js'; // порядок исполнения
 import { renderNotes } from '../notifications.js';
 import { fxText } from '../fx-text.js';
-import { itemSourceRows } from './info.js';
+import { itemSourceRows, set_INFO_ON_CLOSE, set_infoKey } from './info.js';
+import { heroHold } from '../../render3d/scenes/hero.js';
 import { prog } from '../../logic/progress.js';
 import { S } from '../../core/state.js';
 import { CRAFT, FRAG_NEED, ITEMS, TIER_COL, TIER_NAME, gearPlan } from '../../logic/gear.js';
@@ -52,7 +53,10 @@ function openItem(cid, k) {
   else if (s.have >= s.need) craft = `<button class="btn go" data-craft="1" ${S.solari >= c.sol && S.plast >= c.pl && p.stars ? '' : 'disabled'}>${p.stars ? 'Собрать и надеть' : 'Персонаж не открыт'}<small>${amt('frag', s.need)} ${amt('sol', c.sol)} ${amt('pl', c.pl)}</small></button>`;
   else craft = `<button class="btn" disabled>Не хватает ${s.need - s.have}<small>${amt('frag', s.have + '/' + s.need)}</small></button>`;
   const rows = itemSourceRows(it);
-  $('#overlay').innerHTML = `<div class="detail" data-close="1"><div class="sheet isheet" role="dialog" aria-modal="true" aria-labelledby="it-name">
+  // v73: над карточкой героя — слоем в #overlay2 (карточка и её 3D остаются под окном, кадр на паузе); без карточки — как раньше, в #overlay
+  const top = !!$('#overlay .csheet'), host = top ? '#overlay2' : '#overlay';
+  if (top) { set_infoKey(null); heroHold(true); set_INFO_ON_CLOSE(() => heroHold(false)); }
+  $(host).innerHTML = `<div class="detail${top ? ' info-layer' : ''}" ${top ? 'data-iclose' : 'data-close'}="1"><div class="sheet isheet" role="dialog" aria-modal="true" aria-labelledby="it-name">
     <button class="btn mini back" data-iback="${cid}">← ${CH[cid].sn}</button>
     <div class="ihead">${itemIcon(it, 72)}<div><h3 id="it-name">${it.n}</h3>
       <div style="color:${TIER_COL[it.t]};font-size:12px;text-transform:uppercase;letter-spacing:.12em">${TIER_NAME[it.t]} · уровень ${ROMAN[it.t]}</div>
@@ -62,7 +66,7 @@ function openItem(cid, k) {
     <p class="chap" style="margin-top:18px">Где найти</p>
     <div class="srcs">${rows.join('') || '<p class="sub">Источников пока нет.</p>'}</div>
   </div></div>`;
-  document.querySelectorAll('#overlay canvas[data-scene]').forEach(sceneThumb);
+  document.querySelectorAll(host + ' canvas[data-scene]').forEach(sceneThumb);
 }
 function closeOverlay() { DETAIL_BACK = null; $('#overlay').innerHTML = ''; if (typeof renderNotes === 'function') setTimeout(renderNotes, 0); }
 

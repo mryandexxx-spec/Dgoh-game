@@ -366,6 +366,8 @@ function hudSync(bw, P, B, ctx) {
     const a = els[i], keep = hc.f[uid] === fi, b = hudUnitEl(keep && fi ? h.replace(fi + bb, '') : h);
     hc.u[uid] = h; hc.f[uid] = fi;
     if (a._ss !== b._ss) { a.replaceWith(keep ? hudUnitEl(h) : b); continue; }   // сменился style (позиция, ярус) — новый узел, placeHud его инициализирует
+    // v73: style тот же — живой style (transform/--fh/--w от placeHud) не трогаем, иначе полосы «убегают» к исходным left/top%, а кэш _hx/_fh не даёт их вернуть
+    if (a.hasAttribute('style')) b.setAttribute('style', a.getAttribute('style'));
     let kf = null;
     if (keep) { kf = a.querySelector(':scope > .fig'); if (kf) { kf._kept = true; b.querySelector(':scope > .fig')._src = kf; } }
     // событие (удар, выпад, гибель) повторилось на живом узле — перезапуск его анимаций, как при пересоздании
