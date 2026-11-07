@@ -1,4 +1,5 @@
 // ui/overlays/info.js — строки 3550–3667 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import '../memory-screen.js'; // порядок исполнения
 import { detailCid, openDetail } from '../hero-card.js';
 import { itemCtx, openItem } from './detail.js';
 import { renderNotes } from '../notifications.js';
@@ -44,6 +45,12 @@ function itemSourceRows(it) {
   return rows;
 }
 let infoKey = null;
+// пакет 6: окно поиска, открытое из окна умения / «Другой памяти», возвращает к нему (кнопка «‹» и закрытие)
+let INFO_BACK = null;      // { label, open }
+let INFO_ON_CLOSE = null;  // однократный хук закрытия слоя #overlay2 (снять паузу 3D под «Другой памятью»)
+function set_INFO_BACK(v) { return INFO_BACK = v; }
+function set_INFO_ON_CLOSE(v) { return INFO_ON_CLOSE = v; }
+function infoBack() { const b = INFO_BACK; INFO_BACK = null; infoKey = null; if (b) b.open(); }
 const RES_INFO = {
   wring: { n: 'Водяные кольца', n2: 'водяных колец', d: 'Фрименская мера воды: кольца отмечают, сколько воды племени принадлежит владельцу. Каждый осколок героя, уже поднятого до 7★, превращается в 10 колец. Валюта Водохранилища в Лавках: осколки героев, Печати, Вода жизни, Другая память.' },
   jt: { n: 'Трофеи Джихада', n2: 'трофеев Джихада', d: 'Знаки побед в Джихаде: даются за первую победу на каждой точке (10 / 20 / 40 за бой, элиту и босса, × множитель сложности) и на шкале наград. Тратятся в магазине Джихада (Лавки) на аптечки и редкие диски.' },
@@ -58,7 +65,7 @@ const RES_INFO = {
   teeth: { n: 'Зубы червя', d: 'Трофеи рейда «Шаи-Хулуд». Валюта Лавки сиетча: осколки героев, фрагменты редкого снаряжения, материалы.' },
   cry: { n: 'Кристаллы пряности', d: 'Редкая валюта. Тратится на пополнение Воды и Свечей: 50 за пополнение, цена удваивается после каждого третьего (50 → 100 → 200 → 400 → 800), не больше 15 пополнений каждого вида в день; в полночь цена сбрасывается.' },
   shard: { n: 'Осколки персонажей', d: '10 осколков открывают обычного персонажа (легенды и герои Джихада открываются сразу на 7★ за 330), дальше осколки повышают звёзды: 15, 25, 30, 65, 85 и 100 до 7★. У каждого героя свои осколки; где их искать, видно в карточке героя по кнопке «Найти осколки».' },
-  core: { n: 'Другая память', n2: 'Другой памяти', d: 'Голоса предков, пробуждённые пряностью. Нужна, чтобы открывать уровни Другой памяти (ДП1–ДП7) — усиление героев сверх снаряжения XIII. Требуется 7★ и полное снаряжение XIII; уровни открываются с уровнем аккаунта 52, 56, 60, 65, 70, 75 и 80. Каждый уровень: +8% ко всем характеристикам и +3 скорости.' },
+  core: { n: 'Голоса предков', n2: 'Голосов предков', d: 'Голоса предков, пробуждённые пряностью. Нужны, чтобы открывать уровни Другой памяти (ДП1–ДП7) — усиление героев сверх снаряжения XIII. Требуется 7★ и полное снаряжение XIII; уровни открываются с уровнем аккаунта 52, 56, 60, 65, 70, 75 и 80. Каждый уровень: +8% ко всем характеристикам и +3 скорости.' },
   frag: { n: 'Фрагменты снаряжения', d: 'Из фрагментов собираются предметы для шести ячеек снаряжения. Уровней снаряжения 13; чем выше уровень предмета, тем больше фрагментов нужно — от 2 на уровне I до 25 на уровне XIII. После XIII героя усиливает Другая память.' },
 };
 function openInfo(key, keepScroll) {
@@ -130,7 +137,7 @@ function openInfo(key, keepScroll) {
   }
   const prev = $('#overlay2 .sheet') ? $('#overlay2 .sheet').scrollTop : 0;
   $('#overlay2').innerHTML = `<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true">
-    ${head}${body}
+    ${INFO_BACK ? `<button class="ibk" data-ibk="1">‹ ${INFO_BACK.label}</button>` : ''}${head}${body}
     ${rows.length ? `<p class="chap" style="margin-top:18px">${kind === 'bio' ? 'Подробнее' : kind === 'shard' && id || kind === 'frag' && id ? 'Где найти' : 'Где взять'}</p><div class="srcs">${rows.join('')}</div>` : ''}
     <div class="acts"><button class="btn" data-iclose="1" style="margin-left:auto">Закрыть</button></div>
   </div></div>`;
@@ -138,9 +145,11 @@ function openInfo(key, keepScroll) {
   if (keepScroll) $('#overlay2 .sheet').scrollTop = prev;
 }
 function closeInfo(silent) {
+  const back = INFO_BACK, h = INFO_ON_CLOSE; INFO_BACK = null; INFO_ON_CLOSE = null; if (h) h();
+  if (back && !silent) { infoKey = null; return back.open(); }
   infoKey = null; $('#overlay2').innerHTML = ''; if (typeof renderNotes === 'function') setTimeout(renderNotes, 0);
   if (!silent) { if ($('#overlay .csheet') && detailCid) openDetail(detailCid); else if ($('#overlay .isheet') && itemCtx) openItem(itemCtx.cid, itemCtx.k); }
 }
 
 function set_infoKey(v) { return infoKey = v; }
-export { campRow, pickSrc, goLeg, navRow, wormIco, go, itemSourceRows, infoKey, RES_INFO, openInfo, closeInfo, set_infoKey };
+export { campRow, pickSrc, goLeg, navRow, wormIco, go, itemSourceRows, infoKey, RES_INFO, openInfo, closeInfo, set_infoKey, infoBack, set_INFO_BACK, set_INFO_ON_CLOSE };

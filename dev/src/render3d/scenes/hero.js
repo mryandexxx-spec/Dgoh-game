@@ -87,6 +87,8 @@ class HeroStage extends Stage3D {
   }
   warmEnd(o) { if (!this.warm || this.warm.o !== o) return; o.root.setEnabled(false); o.root.scaling.copyFrom(o.sc0); o.root.getChildMeshes().forEach(m => { m.alwaysSelectAsActiveMesh = false; }); this.warm = null; }
   pfIdle() { return !this.warm && !(this.want || []).some(x => !this.pool.has(x.id)); }
+  // пакет 6: под полноэкранной «Другой памятью» фигура не видна — кадр не рисуем (режим paused)
+  paused() { return HERO_HOLD || super.paused(); }
   // пакет 5: в покое — профильная частота (MED idle 30, LOW idle 20); active — интро, вспышка, вращение пальцем и его инерция
   idleMode(now) { return this.quiet(now) && !this.warm ? gfx(this.small).heroIdle : 'active'; }
   celebrate(kind) { const b = this.burst; b.manualEmitCount = kind === 'star' ? 420 : 220; this.flashT = performance.now(); this.flashKind = kind; }
@@ -105,7 +107,8 @@ class HeroStage extends Stage3D {
   slashFX() {} muzzleFX() {} voiceFX() {} castFX() {}
   dustFX(o, where) { const H = o.h, r = o.root.rotation.y, off = where === 'shoulder' ? V3(.28, H * .74, .05) : where === 'cape' ? V3(-.1, H * .5, -.3) : V3(-.05, H * .66, .14); const c = Math.cos(r), s = Math.sin(r); this.dustP.emitter = V3(off.x * c + off.z * s, off.y, -off.x * s + off.z * c); this.dustP.manualEmitCount = where === 'cape' ? 140 : 40; }
 }
-let HERO_STAGE = null, HERO_SNAP = null;
+let HERO_STAGE = null, HERO_SNAP = null, HERO_HOLD = false;
+function heroHold(on) { HERO_HOLD = !!on; }
 function mountHeroStage(id, near) {
   const host = document.querySelector('#overlay .hcfig'); if (!host) return;
   if (!HAS3D) { if (HAS_GL) loadB3().then(ok => { if (ok && host.isConnected) mountHeroStage(id, near); }); return; }   // фаза 4: пока грузится чанк — 2D-фигура
@@ -122,4 +125,4 @@ function mountHeroStage(id, near) {
 
 function set_HERO_STAGE(v) { return HERO_STAGE = v; }
 function set_HERO_SNAP(v) { return HERO_SNAP = v; }
-export { HeroStage, HERO_STAGE, HERO_SNAP, mountHeroStage, set_HERO_STAGE, set_HERO_SNAP };
+export { HeroStage, HERO_STAGE, HERO_SNAP, mountHeroStage, heroHold, set_HERO_STAGE, set_HERO_SNAP };

@@ -99,6 +99,13 @@ for (const o of [{}, { s: 'lvl' }, { s: 'st' }, { s: 'nm' }, { s: 'bad' }, { f: 
   V('pkg4', `rosterView(${JSON.stringify(o)})`);
 V('pkg4', '(() => { const pg = id => ({ ...prog(id), stars: ["paul", "baron"].includes(id) ? 3 : 0, shards: { gurney: 9, liet: 300, erasmus: 30, kynes: 9 }[id] || 0, lvl: id === "baron" ? 50 : 10 }); return ["pw", "lvl", "nm"].map(s => rosterView({ s }, pg)); })()');
 
+// ---- пакет 6: окно умения (logic/skill-up.js) и «Другая память» (logic/relics.js memView) ----
+for (const [id, k, sk, st] of [['duncan', 'passive', 5, 7], ['duncan', 'basic', 6, 7], ['muaddib', 'leader', 7, 7], ['paul', 'special', 1, 0], ['gurney', 'ult', 3, 5]])
+  V('pkg6', `skLevelView(CH.${id}, ${JSON.stringify(k)}, { stars: ${st}, sk: { ${k}: ${sk} } })`);
+V('pkg6', `[2, 3, 6, 7].map(l => { const c = skCost(l); return [l, skMat(c)]; })`);
+for (const [rl, acc, gear, eq] of [[0, 68, 13, 6], [3, 68, 13, 6], [4, 68, 13, 6], [7, 90, 13, 6], [0, 68, 11, 4], [0, 40, 13, 6]])
+  V('pkg6', `(() => { const a0 = S.acc.lvl; S.acc.lvl = ${acc}; try { return memView(CH.duncan, { ...prog('duncan'), lvl: 85, stars: 7, gear: ${gear}, eq: [1, 1, 1, 1, 1, 1].map((x, i) => i < ${eq}), relic: ${rl}, sk: {} }); } finally { S.acc.lvl = a0; } })()`);
+
 const out = { n: cases.length, cases };
 console.log('случаев:', cases.length, 'исключений:', cases.filter(c => c.out && c.out.throws).length);
 for (const c of cases.filter(c => c.out && c.out.throws).slice(0, 5)) console.log('  throws:', c.f, JSON.stringify(c.a || ''), c.out.throws);

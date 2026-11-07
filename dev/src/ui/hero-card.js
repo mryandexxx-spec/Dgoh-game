@@ -1,7 +1,8 @@
 // ui/hero-card.js — карточка героя (пакет 5, E1): каркас строится один раз; листание ‹ › и действия обновляют зоны точечно
 // (зона перерисовывается, только если её разметка изменилась), холст 3D остаётся на месте — меняется модель.
 import './overlays/detail.js'; // порядок исполнения
-import { SK_NAME, hasCost, lvlAffordMax, lvlCost, skCost, skDetailHtml, skIcon, slotState } from './overlays/detail.js';
+import { SK_NAME, lvlAffordMax, lvlCost, skIcon, slotState } from './overlays/detail.js';
+import { hasCost, skCost } from '../logic/skill-up.js';
 import { nextShards, rosterList } from './views/squad.js';
 import { craftAllPlan } from './craft.js';
 import { ROSTER_DEF, rosterView } from '../logic/roster.js';
@@ -9,7 +10,7 @@ import { GEAR_CAP_AT, gearCap, heroCap } from '../logic/account.js';
 import { getRes, prog } from '../logic/progress.js';
 import { S } from '../core/state.js';
 import { GEAR_UP_SOL, TIER_COL } from '../logic/gear.js';
-import { MEM, RELIC_AT, RELIC_CORES, RELIC_MAX, RELIC_SOL, relicCap, relicReady, sideName, unlockNeed } from '../logic/relics.js';
+import { RELIC_MAX, relicReady, sideName, unlockNeed } from '../logic/relics.js';
 import { MAX_GEAR, MAX_LVL, ROMAN, STAR_COST } from '../logic/economy.js';
 import { mountHeroStage } from '../render3d/scenes/hero.js';
 import { figureSVG } from '../render2d/figures.js';
@@ -24,7 +25,8 @@ import { ptShards } from './portrait.js';
 
 let detailCid = null;
 let detailSk = 'basic';
-let HC_STAT = false;   // открыта ли панель характеристик (состояние окна, не сохранения)
+let HC_STAT = false;
+const HC_REFRESH = [];   // пакет 6: окна поверх карточки обновляются после действий и листания   // открыта ли панель характеристик (состояние окна, не сохранения)
 const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10.5" rx="2" fill="currentColor"/><path d="M8 10.5V8a4 4 0 018 0v2.5" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>';
 const IC = {
   back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -140,27 +142,13 @@ function openDetail(id) {
   const hc = $('#overlay .hc'); hc.dataset.cid = id; hc.classList.toggle('locked', !p.stars);
   updLvl();
   mountHeroStage(id, near);
-  hcModalRefresh(id);
+  for (const f of HC_REFRESH) f(id);   // открытые окно умения / «Другая память» (пакет 6)
 }
 
 function updLvl() { const r = $('#lvlr'); if (!r) return; const p = prog(detailCid), to = +r.value, c = lvlCost(p.lvl, to); $('#lvlv').textContent = to; $('#lvlc').innerHTML = amt('sol', c); const b = $('#lvlgo'); b.disabled = S.solari < c; b.classList.toggle('go', S.solari >= c); }
 
 function hcStat() { HC_STAT = !HC_STAT; const hc = $('#overlay .hc'); if (!hc) return; hc.classList.toggle('stat', HC_STAT); const b = hc.querySelector('[data-hcstat]'); if (b) { b.classList.toggle('on', HC_STAT); b.setAttribute('aria-pressed', HC_STAT); } const z = hc.querySelector('.hctop'); if (z) z._h = null; }
 
-// модалки E1 (до пакетов 6–7): окно умения и «Другая память» — в #overlay2, поверх карточки
-function relicHtml(id) {
-  const p = prog(id), rl = p.relic || 0, rcap = relicCap(), rn = rl + 1;
-  const act = rl >= RELIC_MAX ? '<span class="mono">максимум</span>' : !relicReady(p) ? '<span class="lockd">нужны 7★ и снаряжение XIII 6/6</span>' : rn > rcap ? `<span class="lockd">${MEM(rn)} с ур. аккаунта ${RELIC_AT[rn]}</span>`
-    : `<button class="btn ${(S.core || 0) >= RELIC_CORES[rn] && S.solari >= RELIC_SOL(rn) ? 'go' : 'lack'}" data-relic="${id}">Пробудить ${MEM(rn)}<small>${amt('core', RELIC_CORES[rn])} ${amt('sol', RELIC_SOL(rn))}</small></button>`;
-  return `<h3>Другая память</h3><div class="relbar"><span class="rtier">Уровень ${rl || '—'}</span><span class="mono">потолок ${MEM(rcap)}</span>${act}</div>`;
-}
-function hcModal(kind, id, k) {
-  const body = kind === 'mem' ? relicHtml(id) : skDetailHtml(id, k);
-  $('#overlay2').innerHTML = `<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet hcmod" role="dialog" aria-modal="true" data-kind="${kind}" data-k="${k || ''}">${body}<div class="acts"><button class="btn" data-iclose="1" style="margin-left:auto">Закрыть</button></div></div></div>`;
-}
-function hcModalRefresh(id) { const m = $('#overlay2 .hcmod'); if (m) hcModal(m.dataset.kind, id, m.dataset.k); }
-function hcSkill(v) { const [id, k] = v.split(':'); detailSk = k; hcModal('sk', id, k); }
-function hcMem(id) { if (prog(id).stars) hcModal('mem', id); }
 
 function set_detailSk(v) { return detailSk = v; }
-export { detailCid, detailSk, heroNavList, openDetail, updLvl, hcStat, hcSkill, hcMem, set_detailSk };
+export { detailCid, detailSk, heroNavList, openDetail, updLvl, hcStat, set_detailSk, HC_REFRESH, skKeys };

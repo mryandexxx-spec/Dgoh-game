@@ -13,7 +13,8 @@ import { sleepStages } from '../../render3d/scenes/camp.js';
 import { raidPct, raidReward } from '../views/raid.js';
 import { SQ, openSquadSel, set_SQ } from '../overlays/squad-select.js';
 import { closeInfo, openInfo, wormIco } from '../overlays/info.js';
-import { abDescLv, closeOverlay } from '../overlays/detail.js';
+import { closeOverlay } from '../overlays/detail.js';
+import { abDescLv } from '../../logic/skill-up.js';
 import { render } from '../router.js';
 import { glyph, skillSvg, starStr, toast } from '../common.js';
 import { battleMark, errLog } from '../../core/errlog.js';
@@ -474,7 +475,7 @@ function finish() {
       const rw = raidReward(R.tier, 1, true); S.teeth += rw.teeth; S.plast += rw.pl; S.solari += rw.sol; S.cry += rw.cry; S.folio += rw.folio; S.seal += rw.seal; S.wol += rw.wol; S.raidKills[R.tier] = true; statInc('raidKills'); if (R.tier === 2) S.unlocks.title.raid3 = 1; S.raid = null;
       const rf = raidFrags(R.tier, 1); grantFrags(rf);
       const cr = [5, 12, 25][R.tier]; S.core = (S.core || 0) + cr;
-      html = `${WORM_BADGE}<h3>Червь повержен</h3><ul><li>+${amt('core', cr)} Другой памяти</li><li>Урон этой попытки: ${fmt(dmg)}</li><li>+${amt('teeth', rw.teeth)} зубов червя</li><li>+${amt('pl', rw.pl)} +${amt('sol', rw.sol)} +${amt('cry', rw.cry)}</li><li>+${amt('folio', rw.folio)} +${amt('seal', rw.seal)}${rw.wol ? ` +${amt('wol', rw.wol)} Вода жизни!` : ''}</li>${fragLines(rf).map(l => `<li>${l}</li>`).join('')}${R.tier < 2 ? `<li>Открыт ярус Т${R.tier + 2}</li>` : ''}</ul>`;
+      html = `${WORM_BADGE}<h3>Червь повержен</h3><ul><li>+${amt('core', cr)} голосов предков</li><li>Урон этой попытки: ${fmt(dmg)}</li><li>+${amt('teeth', rw.teeth)} зубов червя</li><li>+${amt('pl', rw.pl)} +${amt('sol', rw.sol)} +${amt('cry', rw.cry)}</li><li>+${amt('folio', rw.folio)} +${amt('seal', rw.seal)}${rw.wol ? ` +${amt('wol', rw.wol)} Вода жизни!` : ''}</li>${fragLines(rf).map(l => `<li>${l}</li>`).join('')}${R.tier < 2 ? `<li>Открыт ярус Т${R.tier + 2}</li>` : ''}</ul>`;
     } else html = `<h3>${dmg ? 'Червь ушёл в песок' : 'Отряд поглощён'}</h3><ul><li>Урон: ${fmt(dmg)} (${(dmg / R.maxHp * 100).toFixed(1)}% рейда)</li><li>Осталось: ${fmt(R.hp)} здоровья, пройдено ${(raidPct() * 100).toFixed(1)}%</li><li>Эти бойцы больше не атакуют в этом рейде.</li></ul>`;
     btns = `<button class="btn go" data-leave="1">К рейду</button>`;
   } else if (cfg.mode === 'journey') {
@@ -498,7 +499,7 @@ function finish() {
       S.solari += sol; S.plast += pl; S.cleared[i] = Math.max(S.cleared[i] || 0, st); grantFrags(items);
       let cry = CRY_WIN, sealT = seal; if (st === 3 && !S.cryClaim[i]) { S.cryClaim[i] = 1; cry += CRY_3STAR; } if (st === 3 && !S.sealClaim[i]) { S.sealClaim[i] = 1; sealT += 1; } S.cry += cry; S.folio += folio; S.seal += sealT;
       const lines = [`+${amt('sol', sol)} соляриев`, `+${amt('pl', pl)} пластали`, `+${amt('cry', cry)} кристаллов${cry > CRY_WIN ? ' (первые 3★)' : ''}`];
-      lines.push(`+${amt('folio', folio)} фолиантов`); if (rid) lines.push(`+${amt('rid', rid)} ридулианских кристаллов`); if (core) lines.push(`+${amt('core', core)} Другой памяти`); if (sealT) lines.push(`+${amt('seal', sealT)} Печать Ландсраада`);
+      lines.push(`+${amt('folio', folio)} фолиантов`); if (rid) lines.push(`+${amt('rid', rid)} ридулианских кристаллов`); if (core) lines.push(`+${amt('core', core)} голосов предков`); if (sealT) lines.push(`+${amt('seal', sealT)} Печать Ландсраада`);
       for (const [id, k] of drops) lines.push(`+${amt('shard', k, 'shard:' + id)} ${CH[id].sn}${grantShards(id, k) ? ' — персонаж открыт!' : ''}`);
       lines.push(...fragLines(items));
       html = `<h3>Победа</h3><div class="stars">${starStr(st, 3)}</div><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul>`;

@@ -14,9 +14,12 @@ import { claimLogin, openCalendar } from './overlays/calendar.js';
 import { claimChest, claimQuest } from './views/daily.js';
 import { fragLines, rewardWin } from './rewards.js';
 import { doRefill, doXSim, openSim, refreshAll, runSim, simCore, updSim } from './overlays/sim.js';
-import { RES_INFO, closeInfo, infoKey, openInfo } from './overlays/info.js';
-import { DETAIL_BACK, closeOverlay, itemCtx, lackKey, lvlCost, openItem, set_DETAIL_BACK, skCost, slotState } from './overlays/detail.js';
-import { detailSk, hcMem, hcSkill, hcStat, openDetail, set_detailSk, updLvl } from './hero-card.js';
+import { RES_INFO, closeInfo, infoBack, infoKey, openInfo } from './overlays/info.js';
+import { DETAIL_BACK, closeOverlay, itemCtx, lvlCost, openItem, set_DETAIL_BACK, slotState } from './overlays/detail.js';
+import { lackKey, skCost } from '../logic/skill-up.js';
+import { detailSk, hcStat, openDetail, set_detailSk, updLvl } from './hero-card.js';
+import { hcFind, hcSkill, skTab } from './skill-window.js';
+import { hcMem } from './memory-screen.js';
 import { nextShards, rosterClick } from './views/squad.js';
 import { campSel, set_campSel } from './views/camp.js';
 import { render } from './router.js';
@@ -61,7 +64,7 @@ document.addEventListener('click', e => {
   if (d.refill) return doRefill(d.refill);
   if (d.shfind) return openInfo('shard:' + d.shfind);
   if (d.bio) return openInfo('bio:' + d.bio);
-  if (d.glopen) { const p = prog(d.glopen); if (!p.stars) return toast('Сначала откройте персонажа'); if (S.wol < 1) return openInfo('wol'); S.wol -= 1; p.gl = true; persist(); toast('Ультимативная способность открыта!'); render(); return openDetail(d.glopen); }
+  if (d.glopen) { const p = prog(d.glopen); if (!p.stars) return toast('Сначала откройте персонажа'); if (S.wol < 1) return hcFind('wol'); S.wol -= 1; p.gl = true; persist(); toast('Ультимативная способность открыта!'); render(); return openDetail(d.glopen); }
   if (d.rotok) { try { sessionStorage.setItem('rotok', '1'); } catch (e) {} $('#rotate').hidden = true; return; }
   if (d.fullscr) { const el = document.documentElement; Promise.resolve(el.requestFullscreen && el.requestFullscreen()).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {}).finally(() => { $('#rotate').hidden = true; }); return; }
   if (d.cal) return openCalendar();
@@ -77,7 +80,7 @@ document.addEventListener('click', e => {
   if (d.skup) {
     const [cid, k] = d.skup.split(':'), p = prog(cid), lv = p.sk[k] || 1;
     if (!p.stars || lv >= skMax(CH[cid], k)) return;
-    const c = skCost(lv + 1), lack = lackKey(c); if (lack) return openInfo(lack);
+    const c = skCost(lv + 1), lack = lackKey(c); if (lack) return hcFind(lack);
     S.solari -= c.sol; S.folio -= c.folio || 0; S.seal -= c.seal || 0; S.wol -= c.wol || 0; p.sk[k] = lv + 1; quest('skill');
     persist(); toast(`${CH[cid].sn}: умение повышено до ${lv + 1}`); render(); return openDetail(cid);
   }
@@ -107,11 +110,14 @@ document.addEventListener('click', e => {
     render(); return openDetail(cid);
   }
   if (d.gup) { const p = prog(d.gup); if (p.gear < MAX_GEAR && p.gear < gearCap() && p.eq.every(Boolean) && S.solari >= GEAR_UP_SOL(p.gear)) { const s0 = heroSnap(d.gup); S.solari -= GEAR_UP_SOL(p.gear); p.gear++; p.eq = [false, false, false, false, false, false]; persist(); celebQueue({ type: 'hup', kind: 'gear', id: d.gup, from: ROMAN[p.gear - 1], to: ROMAN[p.gear], s0 }); } render(); return openDetail(d.gup); }
-  if (d.relic) { const id = d.relic, p = prog(id), rn = (p.relic || 0) + 1; if (rn > RELIC_MAX || rn > relicCap() || !relicReady(p)) return; if ((S.core || 0) < RELIC_CORES[rn]) return openInfo('core'); if (S.solari < RELIC_SOL(rn)) return openInfo('sol'); const s0 = heroSnap(id); S.core -= RELIC_CORES[rn]; S.solari -= RELIC_SOL(rn); p.relic = rn; persist(); celebQueue({ type: 'hup', kind: 'relic', id, from: MEM(rn - 1), to: MEM(rn), s0 }); render(); return openDetail(id); }
+  if (d.relic) { const id = d.relic, p = prog(id), rn = (p.relic || 0) + 1; if (rn > RELIC_MAX || rn > relicCap() || !relicReady(p)) return; if ((S.core || 0) < RELIC_CORES[rn]) return hcFind('core'); if (S.solari < RELIC_SOL(rn)) return hcFind('sol'); const s0 = heroSnap(id); S.core -= RELIC_CORES[rn]; S.solari -= RELIC_SOL(rn); p.relic = rn; persist(); celebQueue({ type: 'hup', kind: 'relic', id, from: MEM(rn - 1), to: MEM(rn), s0 }); render(); return openDetail(id); }
   if (d.dnav) return detailNav(+d.dnav);
   if (d.hcsk) return hcSkill(d.hcsk);
   if (d.hcmem) return hcMem(d.hcmem);
   if (d.hcstat) return hcStat();
+  if (d.skt) return skTab(+d.skt);
+  if (d.hcfind) return hcFind(d.hcfind);
+  if (d.ibk) return infoBack();
   if (d.isim) { return doXSim(d.isim); }
   if (false) {
     const [i, kk] = d.isim.split(':').map(Number), cost = kk * BATTLE_WATER; tickWater();
@@ -147,7 +153,7 @@ document.addEventListener('click', e => {
   if (d.raidend && S.raid) {
     if (t.dataset.confirm !== '1') { t.dataset.confirm = '1'; t.textContent = 'Точно закончить? Нажмите ещё раз'; return; }
     const pct = raidPct(), tier = S.raid.tier, rw = raidReward(tier, pct, false), rf = raidFrags(tier, pct), cr = Math.floor([5, 12, 25][tier] * pct * .6); S.teeth += rw.teeth; S.plast += rw.pl; S.solari += rw.sol; S.cry += rw.cry; S.folio += rw.folio; S.seal += rw.seal; S.core = (S.core || 0) + cr; grantFrags(rf); S.raid = null; persist(); render();
-    const lines = [`+${amt('teeth', rw.teeth)} зубов червя`, `+${amt('sol', rw.sol)} соляриев`, `+${amt('pl', rw.pl)} пластали`, `+${amt('cry', rw.cry)} кристаллов`, `+${amt('folio', rw.folio)} фолиантов`, ...(rw.seal ? [`+${amt('seal', rw.seal)} Печать Ландсраада`] : []), ...(cr ? [`+${amt('core', cr)} Другой памяти`] : []), ...fragLines(rf)];
+    const lines = [`+${amt('teeth', rw.teeth)} зубов червя`, `+${amt('sol', rw.sol)} соляриев`, `+${amt('pl', rw.pl)} пластали`, `+${amt('cry', rw.cry)} кристаллов`, `+${amt('folio', rw.folio)} фолиантов`, ...(rw.seal ? [`+${amt('seal', rw.seal)} Печать Ландсраада`] : []), ...(cr ? [`+${amt('core', cr)} голосов предков`] : []), ...fragLines(rf)];
     $('#overlay').innerHTML = `<div class="result won raidres"><div class="box" role="dialog" aria-modal="true">${WORM_BADGE}<h3>Награда рейда</h3><p class="sub" style="margin:0">${RAID_TIERS[tier].n} · снято ${(pct * 100).toFixed(1)}% здоровья червя</p><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><div class="acts" style="justify-content:center"><button class="btn go" data-close="1">Забрать</button><button class="btn" data-toroster="1">Персонажи</button></div></div></div>`;
     return;
   }

@@ -25,7 +25,7 @@ const GEAR_COST = g => ({ sol: g * 1000, pl: g * 3 });
 const MAX_LVL = 85, MAX_GEAR = 13, WATER_BASE = 150, WATER_SEC = 20, BATTLE_WATER = 6, CANDLE_BASE = 120, CANDLE_SEC = 30, CANDLE_COST = 8, CANDLE_REFILL = 100;
 const enCapStep = () => Math.floor((S && S.acc ? S.acc.lvl : 1) / 10), WMAX = () => WATER_BASE + 15 * enCapStep(), CMAX = () => CANDLE_BASE + 10 * enCapStep();
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII'];
-const RW_NAME = { wring: 'водяных колец', jt: 'трофеев Джихада', core: 'Другой памяти', rid: 'ридулианских кристаллов', candle: 'Свечей хроник', sol: 'соляриев', cry: 'кристаллов', folio: 'фолиантов', seal: 'Печать Ландсраада', wol: 'Вода жизни', pl: 'пластали', teeth: 'зубов червя', water: 'Воды' };
+const RW_NAME = { wring: 'водяных колец', jt: 'трофеев Джихада', core: 'голосов предков', rid: 'ридулианских кристаллов', candle: 'Свечей хроник', sol: 'соляриев', cry: 'кристаллов', folio: 'фолиантов', seal: 'Печать Ландсраада', wol: 'Вода жизни', pl: 'пластали', teeth: 'зубов червя', water: 'Воды' };
 function rollShards(n, ch) {   // never more than 2 shards per attempt
   const r = Math.random(), a = r < (ch ? .4 : .5) ? 0 : r < (ch ? .78 : .8) ? 1 : 2, b = a < 2 && Math.random() < .3 ? 1 : 0;
   return [[n.drops[0], a], [n.drops[1], b]].filter(x => x[1] > 0);

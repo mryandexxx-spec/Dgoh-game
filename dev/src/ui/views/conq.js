@@ -50,7 +50,7 @@ function cqFinish(B, cfg, won) {
     if (!prev) {
       S.solari += sol; lines.push(`+${amt('sol', sol)} соляриев`);
       { const tr = (CQ_TROPHY[a.type] || 0) * m; if (tr) { S.jt = (S.jt || 0) + tr; lines.push(`+${amt('jt', tr)} трофеев Джихада`); } }
-      if (a.type === 'boss' || a.type === 'elite') { const c = (a.type === 'boss' ? 2 : 1) * m; S.core = (S.core || 0) + c; lines.push(`+${amt('core', c)} Другой памяти`); }
+      if (a.type === 'boss' || a.type === 'elite') { const c = (a.type === 'boss' ? 2 : 1) * m; S.core = (S.core || 0) + c; lines.push(`+${amt('core', c)} голосов предков`); }
       if (a.s === 4 && Math.random() < .5) { const id = Math.random() < .5 ? 'robot' : 'cymek', q = m; lines.push(`+${amt('shard', q, 'shard:' + id)} ${CH[id].sn}${grantShards(id, q) ? ' — персонаж открыт!' : ''}`); }
       if (a.type === 'boss') { if (a.s < 4) { C.open = Math.max(C.open, a.s + 1); C.sec = a.s + 1; lines.push(`Открыт сектор ${a.s + 2}: ${CQ_SECT[a.s + 1].n}`); } else lines.push('Джихад завершён! Эразм признаёт силу вашего Дома.'); }
     } else lines.push('Повторная победа: звёзды улучшены, награда за точку уже получена.');

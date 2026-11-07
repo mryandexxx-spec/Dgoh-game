@@ -91,4 +91,3 @@
 .hclnk { justify-self: start; padding: 0; font-size: 11px; color: #f6a95e; background: none; border: 0; text-decoration: underline; text-underline-offset: 2px; display: inline-flex; align-items: center; gap: 4px; }
 .hc.locked .hcfig canvas { filter: grayscale(1) brightness(.4); }
 /* модалки E1 поверх карточки */
-.hcmod { width: min(560px, 100%); }

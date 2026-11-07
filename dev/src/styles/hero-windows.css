@@ -1,0 +1,110 @@
+/* пакет 6: окно умения (E2) и экран «Другой памяти» (E4) — по UI-киту; без бесконечных анимаций */
+.detail.swwrap { place-items: center; padding: 8px max(10px, env(safe-area-inset-right, 0px)) 8px max(10px, env(safe-area-inset-left, 0px)); }
+.swin, .memscr { --mem: #ff6a3a; --mem-hi: #ffd2b8; --ok: var(--hp); --no: var(--foe); }
+.detail .sheet.swin { width: min(780px, 100%); height: min(360px, 100%); max-height: none; padding: 0; overflow: hidden; border-radius: 3px; border-color: #5e472f; display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+  background: linear-gradient(180deg, #33251a, var(--dune) 40%); box-shadow: 0 20px 60px rgb(0 0 0 / .6), inset 0 1px 0 rgb(255 255 255 / .06); }
+.swhd { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 12px; border-bottom: 1px solid var(--line); background: linear-gradient(90deg, rgb(232 145 63 / .14), transparent 70%); }
+.swhd .skico { width: 40px; height: 40px; flex: none; }
+.swhd .skico.gl { border-color: #ffe08a; color: #fff2c0; }
+.swt { min-width: 0; display: grid; }
+.swt h3 { font-size: 21px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.swt span { font-size: 11px; color: var(--dust); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.swlv { margin-left: auto; text-align: right; font: 600 15px/1.1 var(--f-mono); white-space: nowrap; }
+.swlv small { display: block; font: 400 9px var(--f-mono); letter-spacing: .14em; color: var(--dust); text-transform: uppercase; }
+.swbd { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); min-height: 0; }
+.swbd.one { grid-template-columns: minmax(0, 1fr); }
+.swdesc { padding: 8px 12px; overflow-y: auto; overscroll-behavior: contain; min-height: 0; border-right: 1px solid var(--line); }
+.swdesc p { margin: 4px 0 6px; font-size: 12.5px; line-height: 1.45; color: #e6d6ba; }
+.swdesc ins { text-decoration: none; color: #b8e59c; background: rgb(127 187 108 / .12); border-radius: 2px; padding: 0 2px; }
+.swdesc p.fut { color: #8e7a62; font-size: 11.5px; }
+.swdesc p.swgain { color: var(--sand); font: 600 11.5px var(--f-mono); }
+.swside { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; padding: 8px 10px 6px; min-height: 0; }
+.swtabs { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 3px; }
+.swtabs button { position: relative; height: 32px; padding: 0; border: 1px solid var(--line); background: var(--ridge); color: var(--dust); border-radius: 2px; font: 600 13px var(--f-mono); }
+.swtabs button.got { color: var(--ok); } .swtabs button.got::after { content: "✓"; position: absolute; right: 2px; top: -1px; font-size: 9px; }
+.swtabs button.next { color: var(--bone); box-shadow: inset 0 0 0 1px var(--spice-dim); }
+.swtabs button.lock { color: #6f5c46; } .swtabs button.lock::after { content: ""; position: absolute; right: 3px; top: 3px; width: 6px; height: 7px; border-radius: 1px; background: #6f5c46; }
+.swtabs button.p7:not(.lock) { color: #f2b24c; }
+.swtabs button[aria-selected="true"] { border-color: var(--spice); color: var(--bone); background: #3a2716; box-shadow: 0 2px 0 var(--spice); }
+.swtbl { overflow-y: auto; overscroll-behavior: contain; min-height: 0; background: rgb(18 12 7 / .7); box-shadow: inset 0 2px 8px rgb(0 0 0 / .5); border-radius: 2px; }
+.swtbl > div { display: grid; grid-template-columns: 22px 1fr; gap: 6px; padding: 4px 8px; font-size: 11.5px; line-height: 1.3; color: var(--dust); border-bottom: 1px solid rgb(78 58 38 / .5); }
+.swtbl b { font: 600 11px var(--f-mono); }
+.swtbl > div.got { color: #cdbb98; } .swtbl > div.got b { color: var(--ok); }
+.swtbl > div.sel { background: linear-gradient(90deg, rgb(232 145 63 / .2), transparent); color: var(--bone); } .swtbl > div.sel b { color: #f6a95e; }
+.swft { display: flex; align-items: center; gap: 10px; padding: 7px 10px; padding-bottom: max(7px, env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: rgb(18 12 7 / .35); min-height: 62px; }
+.swft .swok { margin-left: auto; min-width: 104px; min-height: 44px; }
+.swft .btn.ghost { margin-left: auto; background: none; box-shadow: none; border-color: transparent; color: var(--dust); min-height: 44px; }
+.swnote { font-size: 12px; color: var(--dust); }
+.swmats { display: flex; align-items: center; gap: 10px; }
+.swmats .swcap { max-width: 74px; line-height: 1.2; }
+.swmat { position: relative; width: 44px; height: 44px; padding: 0; flex: none; border-radius: 6px; display: grid; place-items: center; border: 2px solid #e0a83a; background: radial-gradient(circle at 50% 25%, #6a4a24, #150e09 80%); }
+.swmat .swmi .ico { width: 24px; height: 24px; }
+.swmat .q { position: absolute; left: -8px; right: -8px; bottom: -14px; text-align: center; font: 600 10px var(--f-mono); }
+.swmat .q.ok { color: var(--ok); } .swmat .q.no { color: var(--no); }
+.swmat.lack { border-color: var(--no); box-shadow: 0 0 0 2px rgb(217 96 79 / .35); }
+.swmat.lack::after { content: "Найти"; position: absolute; top: -8px; right: -12px; padding: 2px 3px; border-radius: 3px; background: var(--no); color: #fff; font: 600 8px/1 var(--f-body); letter-spacing: .06em; text-transform: uppercase; }
+.btn.swup { min-width: 124px; min-height: 44px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; font-size: 12px; }
+.btn.swup small { display: inline-flex; gap: 4px; align-items: center; justify-content: center; text-transform: none; letter-spacing: 0; font-size: 11px; }
+.btn.swup.buy { background: linear-gradient(180deg, #8fd86a, #3f8a2e); border-color: #9ae07a; color: #0c1a06; }
+.btn.swup.lack { background: linear-gradient(180deg, #f0705a, #9a2a1e); border-color: #ff8a70; color: #fff; }
+.btn.swup small.lackc { color: #ffe0d8; font-weight: 600; }
+.swft .btn.ghost + .btn.swup, .membuy .btn.swup { margin-left: 0; }
+.ibk { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; margin-bottom: 8px; border-radius: 16px; border: 1px solid #6a4c30; background: #1a120a; color: var(--sand, #e8c98e); font: 500 12px var(--f-body); }
+
+/* ===== E4: «Другая память», полный экран ===== */
+.detail.memwrap { place-items: stretch; background: #110b07; }
+.detail .sheet.memscr { width: 100%; height: 100%; max-height: none; border: 0; border-radius: 0; padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); overflow: hidden; display: grid; grid-template-rows: 46px minmax(0, 1fr);
+  background: radial-gradient(70% 90% at 20% 55%, rgb(255 106 58 / .16), transparent 60%), radial-gradient(100% 100% at 50% 110%, #3a2214, #160e09 70%); }
+.memtop { display: flex; align-items: center; gap: 10px; padding: 0 10px; border-bottom: 1px solid rgb(232 145 63 / .2); background: linear-gradient(180deg, rgb(18 12 7 / .92), rgb(18 12 7 / .55)); }
+.memt { display: grid; min-width: 0; } .memt h3 { font-size: 21px; } .memt span { font-size: 11px; color: var(--dust); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.memres { margin-left: auto; display: flex; gap: 6px; }
+.memchip { display: flex; align-items: center; gap: 5px; height: 28px; padding: 0 9px 0 6px; border-radius: 14px; border: 1px solid #5a4028; background: linear-gradient(180deg, #2e2116, #1a120a); color: var(--bone); font: 600 12px var(--f-mono); }
+.memchip .ico { width: 16px; height: 16px; }
+.membody { display: grid; grid-template-columns: minmax(180px, 30%) minmax(0, 1fr) minmax(170px, 25%); min-height: 0; }
+.memring { display: grid; place-items: center; align-content: center; gap: 6px; padding: 6px 10px; }
+.mring { position: relative; width: min(190px, 36vh, 100%); aspect-ratio: 1; }
+.mring svg { width: 100%; height: 100%; display: block; }
+.mring circle { fill: none; }
+.mrbg { stroke: #1a110b; stroke-width: 16; } .mrin { stroke: var(--line); stroke-width: 1; }
+.mrs { stroke: #3a2c20; stroke-width: 12; } .mrs.got { stroke: var(--mem); } .mrs.nx { stroke: var(--mem-hi); } .mrs.lk { stroke: #3a3028; }
+.mrc { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; text-align: center; }
+.mrc small { font: 9px var(--f-mono); letter-spacing: .18em; color: var(--dust); text-transform: uppercase; }
+.mrc b { font: 400 46px/1 var(--f-display); color: var(--mem-hi); text-shadow: 0 0 18px rgb(255 106 58 / .55); }
+.mrc span { font: 600 11px var(--f-mono); color: var(--dust); }
+.mrlock svg { width: 34px; height: 34px; color: #d8c8a8; }
+.memcap { font-size: 11px; color: var(--dust); text-align: center; max-width: 230px; line-height: 1.3; }
+.memmid { display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; gap: 6px; padding: 8px 12px; border-left: 1px solid var(--line); border-right: 1px solid var(--line); min-height: 0; min-width: 0; }
+.memmid > .swcap { color: var(--spice); }
+.memna { display: grid; grid-template-columns: 1fr auto 14px auto; gap: 3px 10px; align-items: baseline; align-content: start; overflow-y: auto; padding: 8px 10px; border-radius: 2px; background: rgb(18 12 7 / .7); box-shadow: inset 0 2px 8px rgb(0 0 0 / .5); font-size: 12px; }
+.memna.one { grid-template-columns: 1fr auto; }
+.memna span { color: var(--dust); } .memna b { font: 600 13px var(--f-mono); text-align: right; font-variant-numeric: tabular-nums; } .memna b.up { color: var(--ok); }
+.memna i { font-style: normal; color: var(--spice); text-align: center; }
+.memna .hd2 { font: 9px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; } .memna .hd2.r { text-align: right; }
+.memna .tot { padding-top: 4px; border-top: 1px solid var(--line); }
+.memlore { margin: 0; font-size: 12px; font-style: italic; color: #e6c8b0; }
+.membuy { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 12px; }
+.memnote { font-size: 11.5px; color: var(--dust); line-height: 1.3; } .memnote.lk { color: #c9a07a; }
+.memreq { display: grid; gap: 6px; align-content: start; padding: 10px; border-radius: 2px; background: rgb(18 12 7 / .7); box-shadow: inset 0 2px 8px rgb(0 0 0 / .5); }
+.memreq > div { display: grid; grid-template-columns: 16px 1fr auto; gap: 8px; align-items: center; font-size: 12px; }
+.memreq i { font-style: normal; } .memreq .ok i, .memreq .ok b { color: var(--ok); } .memreq .no i, .memreq .no b { color: var(--no); }
+.memreq b { font: 600 12px var(--f-mono); }
+.memsteps { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; padding: 8px 10px; min-height: 0; }
+.memsteps ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; align-content: start; overflow-y: auto; overscroll-behavior: contain; }
+.memsteps li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 3px 6px; border: 1px solid transparent; border-radius: 2px; font-size: 11.5px; color: var(--dust); }
+.memsteps .hx { width: 24px; height: 27px; display: grid; place-items: center; font: 600 11px var(--f-mono); color: #fff; background: #3a2c20; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.memsteps .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.memsteps .r { font: 10px var(--f-mono); color: #8e7a62; white-space: nowrap; }
+.memsteps li.got { color: #d8c4a4; } .memsteps li.got .hx { background: linear-gradient(180deg, #ff9a5a, var(--mem) 55%, #8a2a12); } .memsteps li.got .r { color: var(--ok); }
+.memsteps li.next { border-color: var(--spice); background: rgb(232 145 63 / .12); color: var(--bone); } .memsteps li.next .hx { background: linear-gradient(180deg, var(--mem-hi), #ff9a5a); color: #3a1206; }
+/* узкий альбом (SE 667): колонки уже */
+@media (max-width: 700px) {
+  .membody { grid-template-columns: 170px minmax(0, 1fr) 160px; }
+  .mrc b { font-size: 38px; }
+  .swtabs button { height: 30px; font-size: 12px; }
+  .swhd .skico { width: 34px; height: 34px; } .swt h3 { font-size: 18px; }
+  .btn.swup { min-width: 112px; }
+}
+.swcap { display: block; font: 9px/1.2 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--dust); }
+.swdesc > .swcap { color: var(--spice); margin-bottom: 2px; }
+.btn.swup { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+.membuy .btn { white-space: nowrap; flex: none; }

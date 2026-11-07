@@ -65,7 +65,7 @@ const CQ_GOODS = [
   { n: 'Осколки Эразма', mk: m => ({ cost: ['cry', 200 + 100 * m], rw: [['shard', 3 * m, 'erasmus']] }) },
   { n: 'Осколки робота', mk: m => ({ cost: ['cry', 90], rw: [['shard', 5 * m, 'robot']] }) },
   { n: 'Осколки кимека', mk: m => ({ cost: ['cry', 90], rw: [['shard', 5 * m, 'cymek']] }) },
-  { n: 'Другая память', mk: m => ({ cost: ['sol', 40000 * m], rw: [['core', 3 * m]] }) },
+  { n: 'Голоса предков', mk: m => ({ cost: ['sol', 40000 * m], rw: [['core', 3 * m]] }) },
   { n: 'Печать Ландсраада', mk: m => ({ cost: ['cry', 220], rw: [['seal', 1]] }) },
   { n: 'Фолианты ментата', mk: m => ({ cost: ['sol', 20000], rw: [['folio', 4 * m]] }) },
   { n: 'Ящик контрабандиста', d: 'Случайный диск, которого у вас ещё нет: 15% — легендарный, 45% — редкий.', ico: 'disk', mk: m => ({ cost: ['cry', 300], use: () => { const k = cqDiskPick('buy' + cq().disks.length, cqDropW('crate', cq().sec || 0), 1)[0]; if (!k) return 'Все диски уже собраны'; cqAddDisk(k); return `${cqRar(k).n} диск «${CQ_DISKS[k].n}»`; } }) },

@@ -95,7 +95,7 @@ function simCore(i, k) {
   S.solari += sol; S.plast += pl; grantFrags(items); S.cry += CRY_WIN * k; S.folio += folio; S.seal += seal; S.rid += rid; S.core = (S.core || 0) + core;
   const lines = [`+${amt('sol', sol)} соляриев`, `+${amt('pl', pl)} пластали`, `+${amt('cry', CRY_WIN * k)} кристаллов`, `+${amt('folio', folio)} фолиантов`];
   if (rid) lines.push(`+${amt('rid', rid)} ридулианских кристаллов`);
-  if (core) lines.push(`+${amt('core', core)} Другой памяти`);
+  if (core) lines.push(`+${amt('core', core)} голосов предков`);
   if (seal) lines.push(`+${amt('seal', seal)} Печать Ландсраада!`);
   for (const [id, q] of Object.entries(sh)) lines.push(`+${amt('shard', q, 'shard:' + id)} ${CH[id].sn}${grantShards(id, q) ? ' — персонаж открыт!' : ''}`);
   lines.push(...fragLines(items));
