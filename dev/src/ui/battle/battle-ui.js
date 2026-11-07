@@ -204,7 +204,7 @@ function actShow(u, key, B) {
   if (BT.arena) BT.arena.actMs = 0;
   renderBattle();
   if (B.flash === 'gl' && B.glKind === 'devour' && !BT.arena) { const tg = B.glTarget && B.units.find(x => x.uid === B.glTarget), el = tg && document.querySelector(`.unit[data-uid="${tg.uid}"]`); if (el) { el.classList.add('devoured'); if (BT._hc) BT._hc.u[tg.uid] = null; } }
-  if (B.flash) { const f = $('#flash'); f.className = 'flash ' + B.flash; if (B.flash === 'worm') { replayAnim($('#battle'), 'quake'); } }
+  if (B.flash) { const f = $('#flash'); f.className = 'flash ' + B.flash; if (B.flash === 'worm' || B.flash === 'wormSmall') { replayAnim($('#battle'), 'quake'); } }
   const cw = BT.arena && BT.arena.actMs ? BT.arena.actMs + 180 : 0;
   later(step, Math.max(cw, B.flash === 'gl' ? 4200 : B.flash ? 1300 : 800));
 }

@@ -37,7 +37,7 @@ class Arena3D extends GameScene {
     this.setupFX();
     if (B.units.some(u => u.def && u.def.gl)) { this.glLight = new B3.PointLight('gll', V3(0, 6, 2), S); this.glLight.diffuse = col3('#ffc860'); this.glLight.range = 40; this.glLight.intensity = 0; } // perf step 6: no idle extra light in every shader
     });
-    if (B.units.some(u => u.def && u.def.gl)) try { this.wormKit(true); } catch (e) { errLog('wormkit', e); }
+    if (B.units.some(u => u.def && (u.def.gl || (u.def.ult && u.def.ult.wormSmall)))) try { this.wormKit(true); } catch (e) { errLog('wormkit', e); }
     this.resize(); this.wake(); this.warmFX();
   }
   update() { this.loop(); }
@@ -163,11 +163,12 @@ class Arena3D extends GameScene {
       o.active = B.active === u; o.tgt = targets.has(u.uid); o.charm = !!u.charmed;
       o.shieldK = u.maxShield ? u.shield / u.maxShield : 0; o.stealth = !!u.fx.stealth; o.phaseN = u.phase || 1;
     }
-    if (B.flash === 'worm' || B.flash === 'holtz' || B.flash === 'gl') this.shakeT = now;
+    if (B.flash === 'worm' || B.flash === 'wormSmall' || B.flash === 'holtz' || B.flash === 'gl') this.shakeT = now;
+    if (B.flash === 'wormSmall') this.wormSmall(B, now);
     if (B.flash === 'gl') {
       const delay = 1500, foes = B.units.filter(x => x.side !== (B.units.find(y => y.uid === B.glCast) || {}).side && !x.def.boss);
       if (B.glKind === 'mirror') { for (const x of B.units) { const v = this.units[x.uid]; if (v && !v.boss && x.side !== (B.units.find(y => y.uid === B.glCast) || {}).side || (v && x.charmed)) { this.at(now + 500, () => this.ringFX(v, '#9fe8ff', 1.3)); this.at(now + 900, () => this.sparkFX(v, 2)); } } }
-      else if (B.glKind === 'devour' && B.glTarget && this.units[B.glTarget]) { const v = this.units[B.glTarget]; this.summon(v.base.x, v.base.z, v.boss ? 1.5 : 1, now + delay, v.boss ? null : v); }
+      else if ((B.glKind === 'devour' || B.glKind === 'prophecy') && B.glTarget && this.units[B.glTarget]) { const v = this.units[B.glTarget], tu = B.units.find(x => x.uid === B.glTarget); this.summon(v.base.x, v.base.z, v.boss ? 1.5 : 1, now + delay, v.boss || (tu && tu.alive) ? null : v); }
       else { let c = V3(this.raid ? 0 : 5, 0, this.raid ? -6 : 0); const os = foes.map(x => this.units[x.uid]).filter(Boolean); if (os.length) { c = V3(); for (const o of os) c.addInPlace(o.base); c.scaleInPlace(1 / os.length); } this.summon(c.x, c.z, 1.45, now + delay, null); }
       this.glT = (typeof CINE_OFF === 'function' && CINE_OFF()) ? 0 : now; if (!this.glLight) { this.glLight = new B3.PointLight('gll', V3(0, 6, 2), this.scene); this.glLight.diffuse = col3('#ffc860'); this.glLight.range = 40; this.glLight.intensity = 0; }
     }
@@ -377,13 +378,14 @@ class Arena3D extends GameScene {
       const k = (now - W.t0) / W.dur;
       if (k < 0) { W.g.setEnabled(false); continue; }
       W.g.setEnabled(true);
-      const rise = k < .32 ? 1 - Math.pow(1 - k / .32, 3) : k < .62 ? 1 : Math.max(0, 1 - (k - .62) / .38);
-      W.col.position.y = (-3 + rise * 7) * W.s; W.col.rotation.x = .42 * rise; W.col.rotation.z = Math.sin(t * 1.7) * .07 * rise; W.mouth.rotation.y = t * .8;
+      const A = W.arc, rise = A ? Math.max(0, Math.sin(k * Math.PI * 3)) : k < .32 ? 1 - Math.pow(1 - k / .32, 3) : k < .62 ? 1 : Math.max(0, 1 - (k - .62) / .38);
+      if (A) { W.g.position.x = A.x0 + (A.x1 - A.x0) * k; W.g.position.z = A.z0 + (A.z1 - A.z0) * k; const e = (k * 3) % 2; if (e < 1 && A.n !== Math.floor(k * 3) && W.burst && A.pc) { A.n = Math.floor(k * 3); W.burst.emitter = V3(W.g.position.x, W.g.position.y + .3, W.g.position.z); W.burst.manualEmitCount = A.pc; W.burst.start(); } }
+      W.col.position.y = (-3 + rise * 7) * W.s; W.col.rotation.x = A ? Math.cos(k * Math.PI * 3) * .9 : .42 * rise; W.col.rotation.z = Math.sin(t * 1.7) * .07 * rise; W.mouth.rotation.y = t * .8;
       const open = k < .25 ? .6 + k * 2 : k < .45 ? 1.1 - (k - .25) * 3 : .5; W.mouth.scaling.set(open, 1, open);
       for (const [m, a] of W.rocks) { const e = k < .1 ? k / .1 : k < .7 ? 1 : Math.max(0, 1 - (k - .7) / .3); m.position.set(Math.cos(a) * (2.2 + e * 1.4) * W.s, -.2 + Math.sin(e * Math.PI) * 1.4 * W.s, Math.sin(a) * (2.2 + e * 1.4) * W.s); m.rotation.x += dt * 3; m.setEnabled(e > 0); }
       W.dust.material.alpha = Math.sin(Math.min(1, k * 1.4) * Math.PI) * .55; W.dust.scaling.setAll((1 + k * 2.4) * W.s);
       if (W.victim && k > .2 && !W.hid) { W.hid = true; W.victim.root.setEnabled(false); }
-      if (!W.shook && k > .05) { W.shook = true; this.shakeT = now; if (W.burst) W.burst.start(); }
+      if (!W.shook && k > .05) { W.shook = true; this.shakeT = now; if (W.burst && !W.arc) W.burst.start(); }
       if (k > 1) { if (this.glow) this.glow.removeExcludedMesh(W.dust); W.g.dispose(false, false); W.done = true; }
     }
     if (this.summons.length) inPlaceKeep(this.summons, W => !W.done);
@@ -411,7 +413,18 @@ class Arena3D extends GameScene {
     return (this._wk = K);
     });
   }
-  summon(x, z, s, t0, victim) {
+  // «Наездник червя» (пакет 3): малый червь дугой под рядом врагов — нырок, выход, нырок. Профиль: gfx().wormSmall — 0 (LOW) песчаные всплески без меша, иначе доля частиц
+  wormSmall(B, now) {
+    const cast = B.units.find(x => x.uid === B.actor); if (!cast) return;
+    const os = B.units.filter(x => x.side !== cast.side && !x.def.boss).map(x => this.units[x.uid]).filter(Boolean).sort((a, b) => a.base.x - b.base.x);
+    if (!os.length) return;
+    const q = gfx(this.small).wormSmall;
+    if (!q) { os.forEach((o, i) => this.at(now + 250 + i * 160, () => { this.ringFX(o, '#d8a868', 1.1); this.sparkFX(o, 1); })); return; }
+    const a = os[0].base, b = os[os.length - 1].base, dx = b.x - a.x, dz = b.z - a.z, L = Math.hypot(dx, dz) || 1, ux = dx / L, uz = dz / L;
+    const arc = { x0: a.x - ux * 2.5, z0: a.z - uz * 2.5, x1: b.x + ux * 2.5, z1: b.z + uz * 2.5, pc: Math.round(260 * q), n: -1 };
+    this.summon(arc.x0, arc.z0, .55, now + 150, null, arc);
+  }
+  summon(x, z, s, t0, victim, arc) {
     const K = this.wormKit();
     withCtx({ scene: this.scene, shadows: this.shadows }, () => {
     const y = this.heightAt(x, z), g = grp(null, x, y, z); g.setEnabled(false);
@@ -429,10 +442,11 @@ class Arena3D extends GameScene {
     }
     col.scaling.setAll(s);
     const rocks = [];
-    for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2, m = add(g, mk(bRock(i + 60, 0), K.sand)); m.scaling.setAll(.45 + (i % 3) * .15); rocks.push([m, a]); }
+    for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2, m = add(g, mk(bRock(i + 60, 0), K.sand)); m.scaling.setAll((.45 + (i % 3) * .15) * (arc ? .6 : 1)); rocks.push([m, a]); }
     const dust = add(g, mk(bDisc(3, 32), K.dm, 0, .1, 0, false)); dust.rotation.x = -Math.PI / 2; if (this.glow) this.glow.addExcludedMesh(dust);
     const burst = K.burst; burst.emitter = V3(x, y + .3, z); burst.minEmitBox = V3(-1.2 * s, 0, -1.2 * s); burst.maxEmitBox = V3(1.2 * s, .5, 1.2 * s); burst.manualEmitCount = 380;
-    this.summons.push({ g, col, mouth, rocks, dust, s, t0, dur: 2600, victim, burst });
+    if (arc) g.rotation.y = Math.atan2(arc.x1 - arc.x0, arc.z1 - arc.z0);
+    this.summons.push({ g, col, mouth, rocks, dust, s, t0, dur: arc ? 1900 : 2600, victim, burst, arc });
     });
   }
   // dispose — GameScene: scene.dispose + host.forget (канвас уходит предыдущему хосту или паркуется)
