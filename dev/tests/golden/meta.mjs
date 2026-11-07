@@ -79,6 +79,21 @@ for (const diff of ['easy', 'normal', 'hard']) {
   V('cq:' + diff, 'Object.keys(CQ_BMOD).map(m => cqModD(m))');
 }
 
+// ---- пакет 3: способности Муад'Диба и Дункана (табличные случаи боя) ----
+{
+  const P3 = '(() => { const q = (id, o = {}) => ({ id, lvl: 60, stars: 7, gear: 10, ...o }), st = b => b.units.map(u => [u.def.id, u.side, u.alive, u.hp, !!u.noRev, !!u.pendingRevive, Object.keys(u.fx).sort().join("|")]);';
+  const C = (name, body) => V('pkg3', P3 + ` const name = ${JSON.stringify(name)}; ${body} })()`);
+  const HARK = 'CHARS.find(c => !c.boss && c.f.includes("hark")).id';
+  C('ГЛ: казнь не-босса и оглушение', 'const b = createBattle([q("muaddib", { gl: true })], [q("gurney"), q("thufir")], { seed: 7 }); const u = b.units[0]; glAct(b, u, b.units[1].uid); return [name, b.glTarget, st(b), b.spice.A];');
+  C('ГЛ: по боссу — удар', 'const b = createBattle([q("muaddib", { gl: true })], [], { seed: 7, boss: { tier: 0, maxHp: 1e7, hp: 1e7 } }); const w = b.units.find(x => x.def.boss); glAct(b, b.units[0], w.uid); return [name, w.alive, w.maxHp - w.hp > 0];');
+  C('ГЛ врага: чан не воскрешает', 'const b = createBattle([q("gurney"), q("thufir")], [q("muaddib", { gl: true })], { seed: 7 }); b.cqGhola = 1; glAct(b, b.units[2], b.units[0].uid); return [name, st(b), b.cqGhola];');
+  C('Дункан: 1 здоровья, пока жив', 'const b = createBattle([q("duncan"), q("paul")], [q("gurney")], { seed: 7 }); const [d, p, e] = b.units; p.hp = 10; hit(b, e, p, "voice", 50); const a1 = [p.alive, p.hp]; d.noRev = true; kill(b, d, e); p.hp = 10; hit(b, e, p, "voice", 50); return [name, a1, [p.alive, p.hp]];');
+  C('Лидерка ур.6/7: бонус и иммунитеты', `const h = ${HARK}; const b = createBattle([q("muaddib", { sk: { basic: 6, special: 6, ult: 6, passive: 6, leader: 7 } }), q("gurney")], [q("liet", { gl: true }), q(h)], { seed: 7 }); const [m, g] = b.units; const r = [resist(b, b.units[2], g, "fear"), m.vsFac, g.immune]; glAct(b, b.units[2], m.uid); return [name, r, st(b)];`);
+  C('Лидерка ур.5: без апгрейдов', 'const b = createBattle([q("muaddib", { sk: { basic: 5, special: 5, ult: 5, passive: 5, leader: 5 } }), q("gurney")], [q("gurney")], { seed: 7 }); return [name, b.units.map(u => [u.vsFac || null, u.immune || null])];');
+  C('Наездник: без пряности, кд 6', 'const b = createBattle([q("muaddib")], [q("gurney"), q("thufir")], { seed: 7 }); const u = b.units[0]; b.spice.A = 0; startTurn(b, u); act(b, u, "ult"); return [name, b.flash, u.cd.ult, b.spice.A, st(b)];');
+  C('ИИ: страж — первая цель', 'const b = createBattle([q("duncan"), q("paul")], [q("gurney")], { seed: 7 }); b.units[0].fx = {}; const p = aiPlan(b, b.units[2]); return [name, p.target && p.target.def.id];');
+}
+
 const out = { n: cases.length, cases };
 console.log('случаев:', cases.length, 'исключений:', cases.filter(c => c.out && c.out.throws).length);
 for (const c of cases.filter(c => c.out && c.out.throws).slice(0, 5)) console.log('  throws:', c.f, JSON.stringify(c.a || ''), c.out.throws);

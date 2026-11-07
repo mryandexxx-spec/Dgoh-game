@@ -1,7 +1,7 @@
 // logic/battle/turns.js — строки 434–583 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { computeIntents } from './ai.js';
 import { bossTurn, wormFrenzy } from './raid.js';
-import { applyFx, checkOver, damageRaw, ev, foe, has, hit, kill, living, log, validTargets } from './engine.js';
+import { applyFx, checkOver, damageRaw, ev, foe, has, hit, kill, living, log, stunFx, validTargets } from './engine.js';
 import { abFor, dunBuff, dunGuard, skLv, skMult } from './skills.js';
 import { FX } from '../../data/fx.js';
 
@@ -9,8 +9,8 @@ import { FX } from '../../data/fx.js';
 // returns {skip} ; handles ticks & forced actions
 function startTurn(B, u) {
   B.active = u; B.events = []; B.flash = null; B.shots = []; B.actor = null;
-  if (u.fx.poison) { const d = Math.round(u.maxHp * .08); u.hp -= d; ev(B, u, '−' + d, 'poison'); log(B, `Яд терзает ${u.def.sn}: −${d}.`); if (u.hp <= 0) { kill(B, u, null); return { skip: true }; } dunGuard(B, u); }
-  if (u.fx.bleed) { const n = u.bleedN || 1, d = Math.round(u.maxHp * .04 * n); u.hp -= d; ev(B, u, '−' + d, 'poison'); log(B, `Кровотечение${n > 1 ? ' ×' + n : ''}: ${u.def.sn} −${d}.`); if (u.hp <= 0) { kill(B, u, null); return { skip: true }; } dunGuard(B, u); }
+  if (u.fx.poison) { const d = Math.round(u.maxHp * .08); u.hp -= d; ev(B, u, '−' + d, 'poison'); log(B, `Яд терзает ${u.def.sn}: −${d}.`); if (u.hp <= 0) { kill(B, u, null); if (!u.alive) return { skip: true }; } dunGuard(B, u); }
+  if (u.fx.bleed) { const n = u.bleedN || 1, d = Math.round(u.maxHp * .04 * n); u.hp -= d; ev(B, u, '−' + d, 'poison'); log(B, `Кровотечение${n > 1 ? ' ×' + n : ''}: ${u.def.sn} −${d}.`); if (u.hp <= 0) { kill(B, u, null); if (!u.alive) return { skip: true }; } dunGuard(B, u); }
   if (u.regen && u.hp < u.maxHp) { const h = Math.min(u.maxHp - u.hp, Math.round(u.maxHp * u.regen)); u.hp += h; if (h) ev(B, u, '+' + h, 'heal'); }
   if (u.def.shRegen && u.maxShield) { u.shield = Math.min(u.maxShield, u.shield + Math.round(u.maxShield * u.def.shRegen)); }
   for (const k in u.cd) if (u.cd[k] > 0) u.cd[k]--;
@@ -38,16 +38,7 @@ function glCharge(B, src, n) { for (const x of B.units) if (x.alive && x.glOn &&
 function glAct(B, u, tuid) {
   u.glUsed = true; u.ultM = 0; B.flash = 'gl'; B.glCast = u.uid; B.glKind = u.def.gl.kind || 'prophecy'; B.glTarget = null;
   if (B.glKind === 'devour') {
-    const foes = living(B, foe(u.side)), sm = 1 + .04 * ((u.sk && u.sk.ult) || 1);
-    const t = foes.find(x => x.uid === tuid) || foes.find(x => x.def.boss) || foes.slice().sort((a, b) => (b.dmg * (b.def.leader ? 1.3 : 1)) - (a.dmg * (a.def.leader ? 1.3 : 1)))[0];
-    log(B, `${u.def.sn}: «${u.def.gl.n}»`, u.side === 'A' ? 'actA' : 'actB');
-    if (!t) return;
-    B.glTarget = t.uid;
-    log(B, `Песок расступается под ${t.def.sn} — Шаи-Хулуд пришёл на зов!`, 'worm');
-    if (t.def.boss) hit(B, u, t, 'voice', 8 * sm);
-    else { t.shield = 0; ev(B, t, 'ПОГЛОЩЁН', 'crit'); log(B, `Червь поглощает ${t.def.sn}!`, 'death'); kill(B, t, u); }
-    for (const e of living(B, foe(u.side))) if (!e.def.boss) { e.fx.stun = 1; ev(B, e, 'Оглушение', 'debuff'); }
-    if (living(B, foe(u.side)).some(e => !e.def.boss)) log(B, 'Сотрясение песка оглушает остальных врагов.', 'ctrl');
+    if (!glExec(B, u, tuid, GL_EXEC.devour)) return;
     for (const a of living(B, u.side)) if (a !== u) a.tm = Math.min(999, a.tm + 500);
     B.spice[u.side] = Math.min(100, B.spice[u.side] + 20);
     return;
@@ -56,18 +47,34 @@ function glAct(B, u, tuid) {
     const sm = 1 + .04 * ((u.sk && u.sk.ult) || 1);
     log(B, `${u.def.sn}: «${u.def.gl.n}»`, u.side === 'A' ? 'actA' : 'actB');
     log(B, 'Зеркальное лицо Эразма отражает каждого врага — их воля переписана.', 'ctrl');
-    for (const e of living(B, foe(u.side))) { if (e.def.boss) { hit(B, u, e, 'voice', 10 * sm); if (B.over) break; continue; } damageRaw(B, e, .5); if (e.alive) { for (const k in e.fx) if (!FX[k].bad) delete e.fx[k]; e.shield = 0; e.fx.stun = 1; ev(B, e, 'Оглушение', 'debuff'); } if (B.over) break; }
+    for (const e of living(B, foe(u.side))) { if (e.def.boss) { hit(B, u, e, 'voice', 10 * sm); if (B.over) break; continue; } damageRaw(B, e, .5); if (e.alive) { for (const k in e.fx) if (!FX[k].bad) delete e.fx[k]; e.shield = 0; stunFx(B, e); } if (B.over) break; }
     const rest = living(B, foe(u.side)).filter(e => !e.def.boss);
     if (!B.over && rest.length > 1) { const t = rest.sort((a, b) => b.dmg * (b.hp / b.maxHp) - a.dmg * (a.hp / a.maxHp))[0]; t.side = u.side; t.charmed = true; delete t.fx.stun; for (const k in t.fx) if (FX[k].bad) delete t.fx[k]; t.tm = 999; B.glTarget = t.uid; ev(B, t, 'ПЕРЕПРОГРАММИРОВАН', 'crit'); log(B, `${t.def.sn} перепрограммирован и сражается за ${u.def.sn}!`, 'death'); }
     for (const a of living(B, u.side)) if (a !== u) a.tm = Math.min(999, a.tm + 300);
     checkOver(B); return;
   }
+  // prophecy (Муад'Диб, пакет 3): казнь выбранного врага без воскрешения + оглушение остальных; союзникам — исцеление и защита
+  glExec(B, u, tuid, GL_EXEC.prophecy);
+  for (const a of living(B, u.side)) { const h = Math.min(a.maxHp - a.hp, Math.round(a.maxHp * .4)); a.hp += h; if (h) ev(B, a, '+' + h, 'heal'); delete a.fx.poison; delete a.fx.fear; delete a.fx.voiced; a.fx.defUp = 3; a.fx.evaUp = 3; }
+  B.spice[u.side] = Math.min(100, B.spice[u.side] + 30);
+}
+// общий путь ульт «казнь + оглушение»: цель — выбранный враг (по умолчанию босс, иначе сильнейший); босса бьёт Голосом
+const GL_EXEC = {
+  devour: { boss: 8, noRev: false, pre: t => `Песок расступается под ${t.def.sn} — Шаи-Хулуд пришёл на зов!`, end: t => `Червь поглощает ${t.def.sn}!` },
+  prophecy: { boss: 6, noRev: true, pre: t => `Великий червь поднимается из песка под ${t.def.sn} по воле пророка!`, end: t => `${t.def.sn} исчезает в пасти червя — возврата нет.` },
+};
+function glExec(B, u, tuid, P) {
+  const foes = living(B, foe(u.side)), sm = 1 + .04 * ((u.sk && u.sk.ult) || 1);
+  const t = foes.find(x => x.uid === tuid) || foes.find(x => x.def.boss) || foes.slice().sort((a, b) => (b.dmg * (b.def.leader ? 1.3 : 1)) - (a.dmg * (a.def.leader ? 1.3 : 1)))[0];
   log(B, `${u.def.sn}: «${u.def.gl.n}»`, u.side === 'A' ? 'actA' : 'actB');
-  log(B, 'Великий червь поднимается из песка по воле пророка!', 'worm');
-  const sm = 1 + .04 * ((u.sk && u.sk.ult) || 1);
-  for (const e of living(B, foe(u.side))) { if (e.def.boss) hit(B, u, e, 'voice', 6 * sm); else { damageRaw(B, e, .45); if (e.alive) applyFx(B, u, e, 'fear', 1); } if (B.over) break; }
-  for (const a of living(B, u.side)) { const h = Math.min(a.maxHp - a.hp, Math.round(a.maxHp * .4)); a.hp += h; if (h) ev(B, a, '+' + h, 'heal'); delete a.fx.poison; delete a.fx.fear; delete a.fx.voiced; a.fx.defUp = 3; a.fx.evaUp = 3; if (a !== u) a.tm = 999; }
-  u.tmBonus = 999; B.spice[u.side] = Math.min(100, B.spice[u.side] + 30);
+  if (!t) return null;
+  B.glTarget = t.uid;
+  log(B, P.pre(t), 'worm');
+  if (t.def.boss) hit(B, u, t, 'voice', P.boss * sm);
+  else { t.shield = 0; if (P.noRev) t.noRev = true; ev(B, t, 'ПОГЛОЩЁН', 'crit'); log(B, P.end(t), 'death'); kill(B, t, u); }
+  for (const e of living(B, foe(u.side))) if (!e.def.boss) stunFx(B, e);
+  if (living(B, foe(u.side)).some(e => !e.def.boss)) log(B, 'Сотрясение песка оглушает остальных врагов.', 'ctrl');
+  return t;
 }
 function act(B, u, key, targetUid) {
   B.actor = u.uid; B.glCast = null; B.lastKey = key;
@@ -91,7 +98,7 @@ function act(B, u, key, targetUid) {
     lastTarget = t;
     let alive = true;
     if (ab.execute && !t.def.boss && t.hp / t.maxHp < ab.execute) {
-      log(B, `Гом джаббар: ${t.def.sn} не выдерживает испытания.`, 'death'); ev(B, t, 'КАЗНЬ', 'crit'); kill(B, t, u); alive = false;
+      log(B, `Гом джаббар: ${t.def.sn} не выдерживает испытания.`, 'death'); ev(B, t, 'КАЗНЬ', 'crit'); kill(B, t, u); alive = t.alive;
     } else if (damaging) { const o = { bonusDebuffed: ab.bonusDebuffed, fromStealth, noRev: ab.noRev };
       alive = hit(B, u, t, ab.dt, ab.m * sm, o);
       for (let h = 1; h < (ab.hits || 1) && alive && t.alive && !B.over; h++) { log(B, `${u.def.sn} бьёт снова!`); alive = hit(B, u, t, ab.dt, ab.m * sm, o); } }
@@ -102,7 +109,7 @@ function act(B, u, key, targetUid) {
     if (B.over) break;
   }
   if (ab.wormCall && !B.over) {
-    B.flash = 'worm'; B.rhythm = 0;
+    B.flash = ab.wormSmall ? 'wormSmall' : 'worm'; B.rhythm = 0;
     log(B, `${u.def.sn} встаёт на крючья: червь идёт по его воле!`, 'worm');
     for (const e of living(B, foe(u.side))) { if (e.def.boss) hit(B, u, e, 'voice', 3 * sm); else damageRaw(B, e, ab.wormCall * sm); }
   }

@@ -26,6 +26,7 @@ function aiPlan(B, u) {
   if (ab.tgt === 'enemy') {
     let vt = validTargets(B, u, ab);
     if (ab.dt === 'laser') { const ns = vt.filter(t => t.shield <= 0); if (ns.length) vt = ns; }
+    { const gd = vt.filter(t => t.def.guards && living(B, t.side).some(x => x !== t && t.def.guards.includes(x.def.id))); if (gd.length) vt = gd; } // страж (Дункан) — первым
     if (ab.execute) { const ex = vt.filter(t => t.hp / t.maxHp < ab.execute); if (ex.length) vt = ex; }
     const score = t => (t.hp + (ab.dt === 'voice' || ab.dt === 'poison' ? 0 : t.shield)) / (t.maxHp + t.maxShield);
     target = vt.slice().sort((a, b) => score(a) - score(b) || a.idx - b.idx)[0] || null;

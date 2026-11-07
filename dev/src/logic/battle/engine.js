@@ -5,6 +5,7 @@ import { unitStats } from './stats.js';
 import { RAID_TIERS, WORM, phaseOf } from '../../data/boss.js';
 import { autoSk, dunGuard, dunShielded, leadBonus, pasMult, skLv } from './skills.js';
 import { CH, MENTAT } from '../../data/chars.js';
+import { LEAD_MODS } from '../../data/skill-ups.js';
 import { FX } from '../../data/fx.js';
 
 function mkRng(seed) {
@@ -39,7 +40,9 @@ function createBattle(squadA, squadB, opts = {}) {
   }
   for (const side of ['A', 'B']) {
     const team = B.units.filter(x => x.side === side), ld = team.find(x => x.idx === 0 && x.def.id === B.leader[side]);
-    if (ld) { const lb = leadBonus(skLv(ld, 'leader')); if (lb) for (const a of team) if (a.def.f.some(f => ld.def.f.includes(f))) { a.dmgBonus += lb; a.maxHp = Math.round(a.maxHp * (1 + lb)); a.hp = a.maxHp; } }
+    if (ld) { const lb = leadBonus(skLv(ld, 'leader')); if (lb) for (const a of team) if (a.def.f.some(f => ld.def.f.includes(f))) { a.dmgBonus += lb; a.maxHp = Math.round(a.maxHp * (1 + lb)); a.hp = a.maxHp; }
+      const lm = LEAD_MODS[ld.def.id];   // уровни-апгрейды лидерки (data/skill-ups.js)
+      if (lm) { const l = skLv(ld, 'leader'); for (const a of team) if (lm.f.some(f => has(a, f))) for (const lv in lm.lv) if (l >= +lv) { const m = lm.lv[lv]; if (m.vsFac) a.vsFac = { ...(a.vsFac || {}), ...m.vsFac }; if (m.immune) a.immune = [...(a.immune || []), ...m.immune]; } } }
     for (const src of team) {
       if (src.def.teamShield) for (const a of team) if (a.maxShield) { a.maxShield = Math.round(a.maxShield * (1 + src.def.teamShield)); a.shield = a.maxShield; }
       if (src.def.teamTen) for (const a of team) a.ten += src.def.teamTen;
@@ -91,7 +94,11 @@ function damageRaw(B, u, pct, why) {
   u.hp -= d; ev(B, u, '−' + d, 'raw');
   if (u.hp <= 0) kill(B, u, null, why); else dunGuard(B, u);
 }
+// страж (def.guards): пока жив, подзащитные союзники не погибают — остаются с 1 здоровья
+const guardOf = (B, u) => B.units.find(d => d.alive && d !== u && d.side === u.side && d.def.guards && d.def.guards.includes(u.def.id));
 function kill(B, u, by) {
+  const g = !B.over && u.alive && guardOf(B, u);
+  if (g) { u.hp = 1; ev(B, u, '1 ОЗ', 'buff'); log(B, `${g.def.sn} не даёт ${u.def.sn} пасть: 1 здоровья.`, 'ctrl'); return; }
   u.hp = 0; u.alive = false; u.fx = {}; u.shield = 0; ev(B, u, '', 'death');
   if (u.def.id === 'duncan' && !u.revived && !u.noRev && skLv(u, 'passive') >= 7) { u.revived = true; u.pendingRevive = true; log(B, `${u.def.sn} падает… но гхола не умирает дважды.`, 'death'); return; }
   if (u.side === 'A' && B.cqGhola && !u.revived && !u.charmed && !u.noRev) { B.cqGhola = 0; u.revived = true; u.pendingRevive = true; u.revHp = .5; log(B, `${u.def.sn} падает… но аксолотлевый чан вернёт его в бой.`, 'death'); return; }
@@ -128,6 +135,7 @@ function hit(B, att, tgt, dt, m, opts = {}) {
   if (att.def.boss && tgt.shield > 0) d *= 1.3;
   if (att.cqExec && tgt.hp / tgt.maxHp < .5) d *= 1 + att.cqExec;
   if (att.cqFury) d *= 1 + att.cqFury * B.units.filter(x => x.side === att.side && !x.alive).length;
+  if (att.vsFac) for (const f of tgt.def.f) if (att.vsFac[f]) d *= 1 + att.vsFac[f];
   const crit = B.rng() < att.crit; if (crit) d *= att.fx.critDown ? 1.25 : 1.5;
 
   if (dt === 'laser' && tgt.shield > 0) {
@@ -153,13 +161,14 @@ function hit(B, att, tgt, dt, m, opts = {}) {
   log(B, `${att.def.sn} → ${tgt.def.sn}: ${what}${crit ? ', крит' : ''}${dt === 'fast' && toShield && !toHp ? ' — щит остановил пулю' : ''}.`);
   if (toHp && B.leader[tgt.side] === 'leto' && has(tgt, 'atr')) for (const a of living(B, tgt.side)) if (a !== tgt && has(a, 'atr')) a.tm = Math.min(999, a.tm + 50);
   if (toHp && att.cqLeech && att.alive) { const h = Math.min(att.maxHp - att.hp, Math.round(toHp * att.cqLeech)); if (h > 0) { att.hp += h; ev(B, att, '+' + h, 'heal'); } }
-  if (tgt.hp <= 0) { if (opts.noRev) tgt.noRev = true; kill(B, tgt, att); return false; }
+  if (tgt.hp <= 0) { const nr = tgt.noRev; if (opts.noRev) tgt.noRev = true; kill(B, tgt, att); if (!tgt.alive) return false; tgt.noRev = nr; }
   dunGuard(B, tgt);
   return true;
 }
 
 function resist(B, att, tgt, k) {
   if (tgt.def.immune && tgt.def.immune.includes(k)) return true;
+  if (tgt.immune && tgt.immune.includes(k)) return true;
   if (k === 'fear' && tgt.fearImmune) return true;
   if (k === 'voiced' && has(tgt, 'bg')) return true;
   const ch = Math.min(.95, Math.max(.15, .6 + att.pot - tgt.ten));
@@ -177,6 +186,11 @@ function applyFx(B, att, tgt, k, n, chance = 1) {
   if (FX[k].bad && att && att.side !== tgt.side && B.leader[att.side] === 'erasmus' && (has(att, 'mach') || MENTAT(att))) for (const a of living(B, att.side)) if (has(a, 'mach') || MENTAT(a)) a.tm = Math.min(999, a.tm + 80);
 }
 
+// прямое оглушение (ульты): без сопротивления, но с учётом иммунитета
+function stunFx(B, e) {
+  if (e.immune && e.immune.includes('stun')) { ev(B, e, 'Иммун.', 'miss'); return false; }
+  e.fx.stun = 1; ev(B, e, 'Оглушение', 'debuff'); return true;
+}
 function validTargets(B, u, ab) {
   if (ab.tgt !== 'enemy') return [];
   let ts = living(B, foe(u.side));
@@ -196,4 +210,4 @@ function abilityReady(B, u, key) {
 }
 
 
-export { mkRng, createBattle, has, living, foe, isDebuffed, log, ev, nextActor, previewOrder, damageRaw, kill, checkOver, hit, resist, applyFx, validTargets, abilityReady };
+export { mkRng, createBattle, has, living, foe, isDebuffed, log, ev, nextActor, previewOrder, damageRaw, guardOf, kill, checkOver, hit, resist, applyFx, stunFx, validTargets, abilityReady };
