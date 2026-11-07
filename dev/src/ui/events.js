@@ -16,12 +16,12 @@ import { fragLines, rewardWin } from './rewards.js';
 import { doRefill, doXSim, openSim, refreshAll, runSim, simCore, updSim } from './overlays/sim.js';
 import { RES_INFO, closeInfo, infoKey, openInfo } from './overlays/info.js';
 import { DETAIL_BACK, closeOverlay, detailSk, itemCtx, lackKey, lvlCost, openDetail, openItem, set_DETAIL_BACK, set_detailSk, skCost, slotState, updLvl } from './overlays/detail.js';
-import { nextShards } from './views/squad.js';
+import { nextShards, rosterClick } from './views/squad.js';
 import { campSel, set_campSel } from './views/camp.js';
 import { render } from './router.js';
 import { toast } from './common.js';
 import { getRes, prog } from '../logic/progress.js';
-import { BT, S, filter, set_filter, set_view, tickWater, view } from '../core/state.js';
+import { BT, S, set_view, tickWater, view } from '../core/state.js';
 import { persist } from '../core/save.js';
 import { CRAFT, GEAR_UP_SOL, ITEMS, SHOP_FRAG, grantFrags, raidFrags } from '../logic/gear.js';
 import { MEM, RELIC_CORES, RELIC_MAX, RELIC_SOL, isLegend, relicCap, relicReady } from '../logic/relics.js';
@@ -95,7 +95,7 @@ document.addEventListener('click', e => {
   if (d.node) { closeInfo(true); if (BT && BT.B) leaveBattle(); return openSquadSel('camp', +d.node); }
   if (d.sim) return openSim(+d.sim);
   if (d.simgo) return runSim();
-  if (d.filter) { set_filter(d.filter); render(); return; }
+  if (rosterClick(d)) return;
   if (d.open) return openDetail(d.open);
   if (d.slot) { const [cid, k] = d.slot.split(':'); return openItem(cid, +k); }
   if (d.iback) return openDetail(d.iback);

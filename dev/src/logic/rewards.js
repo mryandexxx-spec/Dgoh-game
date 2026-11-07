@@ -1,5 +1,5 @@
 // logic/rewards.js — начисление наград без DOM (фаза 3a). Показ — ui/rewards; побочные эффекты UI — через rewardHooks.
-import './progress.js'; // порядок исполнения
+import './roster.js'; // порядок исполнения
 import { S } from '../core/state.js';
 import { prog } from './progress.js';
 import { RELIC_AT, unlockNeed } from './relics.js';

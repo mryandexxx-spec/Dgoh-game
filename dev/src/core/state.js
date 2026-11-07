@@ -2,7 +2,7 @@
 import './save.js'; // порядок исполнения
 import { CANDLE_SEC, CMAX, WATER_SEC, WMAX } from '../logic/economy.js';
 
-let S, view = 'lobby', filter = 'all', BT = null;
+let S, view = 'lobby', BT = null;
 function tickWater() {
   const now = Date.now();
   if (S.candle >= CMAX()) S.candleTs = now; else { const g = Math.floor((now - S.candleTs) / (CANDLE_SEC * 1000)); if (g > 0) { S.candle = Math.min(CMAX(), S.candle + g); S.candleTs += g * CANDLE_SEC * 1000; if (S.candle >= CMAX()) S.candleTs = now; } }
@@ -13,9 +13,8 @@ function tickWater() {
 
 function set_BT(v) { return BT = v; }
 function set_view(v) { return view = v; }
-function set_filter(v) { return filter = v; }
 function set_S(v) { return S = v; }
 const NOTES = [];
 
 
-export { S, view, filter, BT, tickWater, set_BT, set_view, set_filter, set_S, NOTES };
+export { S, view, BT, tickWater, set_BT, set_view, set_S, NOTES };
