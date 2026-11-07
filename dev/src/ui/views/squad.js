@@ -34,7 +34,7 @@ function renderSquad() {
   const list = rosterList();
   for (const d of list) {
     const p = prog(d.id), locked = p.stars === 0, need = locked ? unlockNeed(d) : nextShards(p), cs = canStar(d.id), eqN = p.eq.filter(Boolean).length;
-    html += `<button class="rc side-${d.side} ${d.legendary ? 'legend' : ''} ${locked ? 'lockd' : ''} ${S.squad.includes(d.id) ? 'insq' : ''} ${cs ? 'canstar' : ''}" data-open="${d.id}">${d.legendary ? `<span class="lgrib">${d.conquest ? 'Джихад' : 'Легенда'}</span>` : ''}${cs ? '<span class="csbadge">★ Повысить</span>' : ''}
+    html += `<button class="rc side-${d.side} ${d.legendary ? 'legend' : ''} ${locked ? 'lockd' : ''} ${S.squad.includes(d.id) ? 'insq' : ''} ${cs ? 'canstar' : ''}" data-open="${d.id}">${d.legendary ? `<i class="lring"></i><span class="lgrib">${d.conquest ? 'Джихад' : 'Легенда'}</span>` : ''}${cs ? '<span class="csbadge">★ Повысить</span>' : ''}
       <span class="rctop">${portrait(d, 58, p.stars ? ringCol(p) : null)}${locked ? '' : `<span class="rclv"><b>${p.lvl}</b><small>ур.</small></span>${p.relic ? `<span class="rcrel">ДП${p.relic}</span>` : ''}`}</span>
       <span class="nm">${d.n}</span>
       <span class="rl"><span class="sidetag ${d.side}">${sideName(d)}</span> ${ROLES[d.role]}${d.leader ? ' · лидер' : ''}${d.prof ? ' · ' + d.prof : ''}</span>

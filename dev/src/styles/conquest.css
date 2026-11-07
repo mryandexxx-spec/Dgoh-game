@@ -20,12 +20,12 @@
 .cqn { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; border: 2px solid #5e472f; background: #1a110a; color: #a08060; display: grid; place-items: center; cursor: pointer; padding: 0; }
 .cqn svg { width: 24px; height: 24px; }
 .cqn.t-elite { border-color: #a46be0; color: #c8a0ff; } .cqn.t-boss { width: 58px; height: 58px; margin: -29px 0 0 -29px; border-color: #c0402a; color: #ffb090; } .cqn.t-cache { border-color: #4a9a6a; color: #9ee2b8; }
-.cqn.open { background: #3a2410; box-shadow: 0 0 0 3px rgb(255 190 90 / .35), 0 0 16px rgb(255 170 60 / .55); animation: cqpulse 1.5s ease-in-out infinite; color: #ffe0a0; }
+.cqn.open { background: #3a2410; box-shadow: 0 0 0 3px rgb(255 190 90 / .35), 0 0 16px rgb(255 170 60 / .55); color: #ffe0a0; }
+.cqn.open::before { content: ""; position: absolute; inset: -2px; border-radius: 50%; pointer-events: none; box-shadow: 0 0 0 5px rgb(255 190 90 / .2), 0 0 24px rgb(255 170 60 / .8); opacity: 0; animation: glowop 1.5s ease-in-out infinite; }   /* фаза 7: было cqpulse (box-shadow) */
 .cqn.done { background: #2a3a1a; color: #d8f0b0; }
 .cqn.locked { opacity: .45; }
 .cqn.sel { outline: 2px solid #fff2c0; outline-offset: 3px; }
 .cqns { position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #ffcc55; white-space: nowrap; letter-spacing: 1px; }
-@keyframes cqpulse { 50% { box-shadow: 0 0 0 5px rgb(255 190 90 / .2), 0 0 24px rgb(255 170 60 / .8); } }
 .tag.mod { border-color: #8a3a2e; color: #ffb4a0; }
 .cqheroes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
 .cqh { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto; column-gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid #4e3a26; border-radius: 4px; background: rgb(0 0 0 / .25); font-size: 11px; }
