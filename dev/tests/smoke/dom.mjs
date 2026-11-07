@@ -2,6 +2,7 @@
 //   node tests/smoke/dom.mjs <game.html> [--phone] [--dpr 1] [--win 3000] [--only lobby,squad] [--out f.json] [--stacks]   (из dev/)
 //   Экраны: lobby, squad (ростер), hero (окно героя), bwait (бой, ожидание хода), bact (бой, авто-ходы), result (экран результатов).
 //   layout/style/paint — число событий трассы за окно; paintMpx — Σ площадей Paint, Мпикс; forced — Layout со стеком JS (принудительный).
+//   --inval — топ причин инвалидации layout/стиля (узел и причина).
 //   SwiftShader: абсолютные мс ненадёжны, сравнивать только счётчики и площади между сборками.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -52,7 +53,7 @@ for (const [name, code, ready, pause, after, pause2] of SCREENS) {
   let layers = null;
   cdp.on('LayerTree.layerTreeDidChange', e => { if (e.layers) layers = e.layers; });
   await cdp.send('LayerTree.enable');
-  await page.tracing.start({ categories: ['devtools.timeline', 'disabled-by-default-devtools.timeline', 'disabled-by-default-devtools.timeline.stack', 'blink', 'cc'] });
+  await page.tracing.start({ categories: ['devtools.timeline', 'disabled-by-default-devtools.timeline', 'disabled-by-default-devtools.timeline.stack', 'blink', 'cc', ...(has('--inval') ? ['disabled-by-default-devtools.timeline.invalidationTracking'] : [])] });
   await sleep(WIN);
   const tr = JSON.parse(Buffer.from(await page.tracing.stop()).toString());
   await sleep(200);
@@ -80,6 +81,11 @@ for (const [name, code, ready, pause, after, pause2] of SCREENS) {
   r.paintMpx = +(P.reduce((s, e) => s + area(e.args && e.args.data && e.args.data.clip), 0) / 1e6).toFixed(2);
   out.screens[name] = r;
   console.log(`${name.padEnd(7)} layout ${String(r.layout).padStart(4)} (${r.layoutMs} мс)  style ${String(r.style).padStart(4)}  paint ${String(r.paint).padStart(4)} / ${r.paintMpx} Мпкс  forced ${r.forced}  слоёв ${r.layers} / ${r.layersMpx} Мпкс`);
+  if (has('--inval')) {   // кто грязнит layout/стиль: причина + узел
+    const inv = {};
+    for (const e of tr.traceEvents) if (/^(LayoutInvalidationTracking|StyleRecalcInvalidationTracking|ScheduleStyleInvalidationTracking)$/.test(e.name)) { const d = e.args && e.args.data || {}; const k = `${e.name.replace('InvalidationTracking', '')}: ${d.reason || d.invalidationSet || ''} ${d.nodeName || ''}`; inv[k] = (inv[k] || 0) + 1; }
+    for (const [k, v] of Object.entries(inv).sort((a, b) => b[1] - a[1]).slice(0, 8)) console.log(`    inval ${v}× ${k}`.slice(0, 200));
+  }
   if (has('--stacks')) { for (const s of r.stacks) console.log('   ', s); console.log('    paint:', r.topPaint.join('; ')); console.log('    anim:', JSON.stringify(r.anims)); }
   await page.close();
 }

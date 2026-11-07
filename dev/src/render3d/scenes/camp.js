@@ -61,7 +61,7 @@ class CampStage extends Stage3D {
   tick(now, t) {
     const f = .85 + Math.sin(t * 9) * .08 + Math.sin(t * 23) * .06 + Math.sin(t * 3.1) * .05; this.fireL.intensity = 2.6 * f; this.fireL.position.x = this.fire.x + Math.sin(t * 7) * .04;
     for (const o of Object.values(this.units)) poseHuman(this, o, now, t, 1);
-    const a = Math.sin(t * .05) * .28, R = 7, asp = (this.cv.clientWidth || 1) / (this.cv.clientHeight || 1), rr = R;
+    const a = Math.sin(t * .05) * .28, R = 7, asp = (this.w || 1) / (this.h || 1), rr = R;
     this.camera.position.set(Math.sin(a) * rr, 2.6 + Math.sin(t * .11) * .15, this.fire.z + Math.cos(a) * rr); this.camera.setTarget(this._tg || (this._tg = V3(0, 1.1, .3))); this.camera.fov = .82;
     if (this.flag) this.flag.forEach((fl, i) => { fl.rotation.y = Math.sin(t * 1.3 + i) * .25; });
   }
@@ -72,7 +72,7 @@ class CampStage extends Stage3D {
     if (this._lf && this._lf.length && !this._lf[0].isConnected) this._lm = 0;
     if (now - (this._lm || 0) > 500) { const vr = view.getBoundingClientRect(), cr = this.cv.getBoundingClientRect(); this._ldx = cr.left - vr.left; this._ldy = cr.top - vr.top; this._lm = now; this._lf = view.querySelectorAll('.lfig[data-hid]'); }
     const M = this.scene.getTransformMatrix(), vp = this._vp || (this._vp = new B3.Viewport(0, 0, 1, 1)), T = this._pt || (this._pt = V3()), pa = this._pa || (this._pa = V3()), pb = this._pb || (this._pb = V3());
-    vp.width = this.cv.clientWidth; vp.height = this.cv.clientHeight;
+    vp.width = this.w; vp.height = this.h;
     for (const el of this._lf) { const o = this.units[el.dataset.hid]; if (!o) continue; const p = o.root.position;
       B3.Vector3.ProjectToRef(p, B3.Matrix.IdentityReadOnly, M, vp, pa); T.set(p.x, p.y + o.h, p.z); B3.Vector3.ProjectToRef(T, B3.Matrix.IdentityReadOnly, M, vp, pb);
       const x = this._ldx + pa.x, y = this._ldy + pa.y, h = Math.max(20, pa.y - pb.y);

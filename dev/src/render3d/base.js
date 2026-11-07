@@ -49,4 +49,22 @@ const ENV3 = {
 const SLOT3 = [[-3.6, .4], [-6.6, -3.4], [-2.6, -4.4], [-7.4, 3.6], [-2.2, 4.6]];
 
 
-export { B3, HAS3D, HAS_GL, loadB3, onB3, b3Pre, ENV3, SLOT3 };
+// фаза 7, шаг 2: размер канваса без принудительного layout. clientWidth в каждом кадре синхронно пересчитывал layout,
+// если DOM грязный (экран результатов: 58 раз/с). Кэш обновляет ResizeObserver (колбэк — после layout кадра);
+// первый вызов и fresh (после wake) читают clientWidth напрямую. Отсоединённый канвас RO сообщает как 0×0, как и clientWidth.
+const CV_SZ = new WeakMap();
+let CV_RO = null;
+function cvSize(cv, fresh) {
+  let s = CV_SZ.get(cv);
+  if (!s || fresh) {
+    if (!s) s = { w: 0, h: 0 };
+    s.w = cv.clientWidth; s.h = cv.clientHeight;
+    if (typeof ResizeObserver === 'undefined' || CV_SZ.has(cv)) return s;
+    CV_SZ.set(cv, s);
+    CV_RO = CV_RO || new ResizeObserver(es => { for (const e of es) { const z = CV_SZ.get(e.target); if (z) { z.w = e.target.clientWidth; z.h = e.target.clientHeight; } } });
+    CV_RO.observe(cv);
+  }
+  return s;
+}
+
+export { B3, HAS3D, HAS_GL, loadB3, onB3, b3Pre, ENV3, SLOT3, cvSize };

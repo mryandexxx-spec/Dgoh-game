@@ -2,7 +2,7 @@
 import { BT } from '../../core/state.js';
 import { engineHost } from '../engine-host.js';
 import { V3, inPlaceKeep } from '../materials.js';
-import { B3 } from '../base.js';
+import { B3, cvSize } from '../base.js';
 import { GameScene } from '../game-scene.js';
 import { gfx, SAVE_LOW, dofOn, glowOnly } from '../quality.js';
 
@@ -44,12 +44,13 @@ class Stage3D extends GameScene {
     try { this.pipe.dispose(); } catch (e) {} try { this.glow && this.glow.dispose(); } catch (e) {}
     this.pipe = this.glow = this.ssao = null; this._light = true;
   }
-  onWake() { if (this._light) { this._light = false; this.look(this._look || {}); } fitDepth(this.scene); }
+  onWake() { cvSize(this.cv, true); if (this._light) { this._light = false; this.look(this._look || {}); } fitDepth(this.scene); }
   attach(host, first) { if (host) this.wake(host, { cls: this.cls, dpr: gfx(this.small).dpr[this.kind], first }); }
   isCur() { return this.host.isCur(this); }
   update() {
     if (this.paused()) return;
-    if (this.cv.clientWidth !== this.w || this.cv.clientHeight !== this.h) { this.w = this.cv.clientWidth; this.h = this.cv.clientHeight; this.engine.resize(); fitDepth(this.scene); this.onResize && this.onResize(); }
+    const z = cvSize(this.cv);
+    if (z.w !== this.w || z.h !== this.h) { this.w = z.w; this.h = z.h; this.engine.resize(); fitDepth(this.scene); this.onResize && this.onResize(); }
     const now = performance.now(); this.tick(now, now / 1000);
     if (this.tr.length) inPlaceKeep(this.tr, T => { const k = (now - T.t0) / T.life; if (k >= 1) { T.mesh.dispose(false, true); return false; } T.upd(T.mesh, k); return true; });
     this.scene.render(); this.post && this.post(now);
@@ -58,7 +59,8 @@ class Stage3D extends GameScene {
   // шаг 6: перекрыта/бой → paused; ресайз и 0,8 с после wake → active; дальше idleMode() подкласса (по умолчанию active — окно героя на 60)
   mode(now) {
     if (this.paused()) return 'paused';
-    if (this.cv.clientWidth !== this.w || this.cv.clientHeight !== this.h || now - (this.wakeT || 0) < 800) return 'active';
+    const z = cvSize(this.cv);
+    if (z.w !== this.w || z.h !== this.h || now - (this.wakeT || 0) < 800) return 'active';
     return this.idleMode ? this.idleMode(now) : 'active';
   }
   fade(mesh, life, upd) { this.tr.push({ mesh, t0: performance.now(), life, upd }); }

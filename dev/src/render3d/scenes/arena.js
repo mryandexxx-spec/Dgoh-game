@@ -15,7 +15,7 @@ import { bakeStatic, buildEnv } from '../env/build-env.js';
 import { MB, add, bBox, bCone, bCyl, bDisc, bRock, bSph, bTorus, glowTex, grp } from '../geometry.js';
 import { C3_CHARM, C3_SPICE, C3_TGT, V3, basic3, col3, inPlaceKeep, mat3, mk, runDue } from '../materials.js';
 import { CTX, withCtx } from '../ctx.js';
-import { B3, SLOT3 } from '../base.js';
+import { B3, SLOT3, cvSize } from '../base.js';
 import { FX } from '../../data/fx.js';
 import { GameScene } from '../game-scene.js';
 
@@ -108,7 +108,7 @@ class Arena3D extends GameScene {
   }
   relayout() { for (const uid in this.units) { const o = this.units[uid]; if (!o.slot) continue; const [x, y, z] = this.slotPos(o.slot); o.base.set(x, y, z); o.ring.position.set(x, y + .05, z); if (o.pool) o.pool.position.set(x, y + .04, z); } }
   resize() {
-    const w = this.cv.clientWidth || innerWidth, h = this.cv.clientHeight || innerHeight;
+    const z = cvSize(this.cv), w = z.w || innerWidth, h = z.h || innerHeight;
     const relay = this.w && this.raid && (w !== this.w || h !== this.h);
     this.w = w; this.h = h; this.engine.resize(); this._hm = 0;
     const a = w / h; let fov = a > 1.9 ? 30 : 33;
@@ -321,7 +321,8 @@ class Arena3D extends GameScene {
   mode(now) {
     if (this.lost || !this.alive) return 'static';
     const bt = typeof BT !== 'undefined' && BT, cv = this.cv;
-    if (!bt || !cv.isConnected || (cv.clientWidth || innerWidth) !== this.w || (cv.clientHeight || innerHeight) !== this.h) return 'active';
+    const z = cvSize(cv);
+    if (!bt || !cv.isConnected || (z.w || innerWidth) !== this.w || (z.h || innerHeight) !== this.h) return 'active';
     const busy = !!(this.cine || this.summons.length || (this.fxq && this.fxq.length) || (this.tr && this.tr.length) || (this.glT && now - this.glT < 1600) || (this.shakeT && now - this.shakeT < 300));
     if (bt.done && !busy) { if (!this.doneT) this.doneT = now; if (now - this.doneT > 1200) return 'static'; } else this.doneT = 0;
     if (!busy) { const ov = document.getElementById('overlay'); if (bt.waiting || bt.done || (typeof DLG !== 'undefined' && DLG && DLG.inBattle) || (ov && ov.childElementCount)) return 'idle'; }
@@ -330,7 +331,8 @@ class Arena3D extends GameScene {
   _loop() {
     const now = performance.now();
     if (!this.cv.isConnected) { this.dispose(); return; }
-    if ((this.cv.clientWidth || innerWidth) !== this.w || (this.cv.clientHeight || innerHeight) !== this.h) this.resize();
+    const z = cvSize(this.cv);
+    if ((z.w || innerWidth) !== this.w || (z.h || innerHeight) !== this.h) this.resize();
     const t = now / 1000, dt = Math.min(.05, (now - (this.last || now)) / 1000); this.last = now;
     const sp = Math.max(1, this.speed);
     // camera
