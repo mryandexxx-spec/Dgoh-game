@@ -41,7 +41,7 @@ class Arena3D extends GameScene {
     this.resize(); this.wake(); this.warmFX();
   }
   update() { this.loop(); }
-  onDetach() { this.dispose(); }
+  onDetach() { if (this._hro) { this._hro.disconnect(); this._hro = null; } this.dispose(); }
   contextLost() { if (!this.alive) return; this.lost = true; if (this.onLost) setTimeout(() => this.onLost && this.onLost(), 0); }
   setupFX() {
     const S = this.scene, Q = gfx(this.small);
@@ -294,12 +294,16 @@ class Arena3D extends GameScene {
   // perf step 9: no per-frame layout reads — rects are measured after a DOM rebuild / resize / every 0.5 s; units move via transform; --fh/--w only on >1 px change
   placeHud() {
     const field = document.getElementById('field'); if (!field) return;
-    const now = performance.now();
-    if (field !== this._hf || now - (this._hm || 0) > 500) {
-      const fr = field.getBoundingClientRect(), cr = this.cv.getBoundingClientRect();
-      this._hdx = cr.left - fr.left; this._hdy = cr.top - fr.top; this._hm = now;
-      if (field !== this._hf) { this._hf = field; this._he = {}; for (const el of field.querySelectorAll('.unit[data-uid]')) this._he[el.dataset.uid] = el; }
+    // фаза 7, шаг 5: смещение канвас↔поле меряет ResizeObserver (колбэк — после layout кадра), а не вызов после правки DOM;
+    // синхронный замер — только для нового поля до первого колбэка и после resize движка (_hm = 0)
+    const meas = () => { const fr = field.getBoundingClientRect(), cr = this.cv.getBoundingClientRect(); this._hdx = cr.left - fr.left; this._hdy = cr.top - fr.top; this._hm = 1; };
+    if (field !== this._hf) {
+      this._hf = field; this._he = {}; for (const el of field.querySelectorAll('.unit[data-uid]')) this._he[el.dataset.uid] = el;
+      if (this._hro) this._hro.disconnect();
+      if (typeof ResizeObserver !== 'undefined') { this._hro = new ResizeObserver(() => { if (this._hf && this._hf.isConnected) meas.call(this); }); this._hro.observe(field); this._hro.observe(this.cv); }
+      this._hm = 0;
     }
+    if (!this._hm) meas();
     const M = this.scene.getTransformMatrix(), vp = this._vp || (this._vp = new B3.Viewport(0, 0, 1, 1)), F = this._pf || (this._pf = V3()), Hd = this._ph || (this._ph = V3()), pa = this._pa || (this._pa = V3()), pb = this._pb || (this._pb = V3());
     vp.width = this.w; vp.height = this.h;
     for (const uid in this.units) {
