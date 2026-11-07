@@ -269,8 +269,8 @@ function unitHtml(u, B, ctx, fig = figSvg(u) + figBubble(u)) {
     <div class="hud">
       ${u.alive && Object.keys(u.fx).length ? `<div class="fxs" data-fxu="${u.uid}" role="button" tabindex="0" aria-label="Эффекты: ${Object.keys(u.fx).map(k => FX[k].n).join(', ')}">${Object.keys(u.fx).map(k => fxIcon(k, u.fx[k])).join('')}</div>` : ''}
       ${u.idx === 0 && B.leader[u.side] ? '<span class="lead" title="Лидер">Л</span>' : ''}
-      <div class="hb hp"><i style="width:${pct(u.hp, u.maxHp)}%"></i></div>
-      ${u.maxShield ? `<div class="hb sh"><i style="width:${pct(u.shield, u.maxShield)}%"></i></div>` : ''}
+      <div class="hb hp"><i style="--p:${(pct(u.hp, u.maxHp) / 100).toFixed(4)}"></i></div>
+      ${u.maxShield ? `<div class="hb sh"><i style="--p:${(pct(u.shield, u.maxShield) / 100).toFixed(4)}"></i></div>` : ''}
       <div class="hb tm"><i style="width:${Math.min(100, u.tm / 10)}%"></i></div>
       ${u.glOn && !u.glUsed ? `<div class="hb glm ${glMeter(BT.B, u) >= 100 ? 'full' : ''}"><i style="width:${glMeter(BT.B, u)}%"></i></div>` : ''}
       ${!u.def.boss && spiceUser(u.def) && u.glOn ? `<div class="hb spm ${B.spice[u.side] >= 100 ? 'full' : ''}" title="Меланж ${B.spice[u.side]}%"><i style="width:${Math.min(100, B.spice[u.side])}%"></i></div>` : ''}
@@ -417,6 +417,7 @@ function renderBattle() {
     tail: `
       ${BT.showLog ? `<div class="logpop" aria-live="polite">${B.log.slice(-14).map(l => `<div class="${l.kind}">${l.text}</div>`).join('')}</div>` : ''}
     `, bot: `<div class="bbot">${bot}</div>` };
+  const bte = $('#battle'), bs = BT.speed === 1 ? '' : String(BT.speed); if (bte && bte.style.getPropertyValue('--bs') !== bs) { if (bs) bte.style.setProperty('--bs', bs); else bte.style.removeProperty('--bs'); }   // фаза 7, шаг 5б: длительность перехода полос HP/защиты
   hudSync($('#bwrap'), P, B, ctx);
   for (const e of B.events) {
     const c = document.querySelector(`.unit[data-uid="${e.uid}"]`); if (!c) continue;
