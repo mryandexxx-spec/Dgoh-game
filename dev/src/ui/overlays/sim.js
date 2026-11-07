@@ -22,8 +22,9 @@ import { grantShards } from '../../logic/rewards.js';
 
 function refreshAll() {
   render();
-  if ($('#overlay .csheet') && detailCid) openDetail(detailCid); else if ($('#overlay .isheet') && itemCtx) openItem(itemCtx.cid, itemCtx.k);
-  if (infoKey) openInfo(infoKey, true);
+  const it2 = !!$('#overlay2 .isheet');   // v73: окно предмета слоем над карточкой
+  if ($('#overlay .csheet') && detailCid) openDetail(detailCid);
+  if (($('#overlay .isheet') || it2) && itemCtx) openItem(itemCtx.cid, itemCtx.k); else if (infoKey) openInfo(infoKey, true);
 }
 function crefillN() { return S.crefills.d === todayKey() ? S.crefills.n : 0; }
 function crefillCost() { return refillPrice(crefillN()); }
@@ -45,7 +46,7 @@ function doXSim(spec) {
   const [kind, id] = (infoKey || '').split(':');
   if (kind === 'shard' && id) focus = ` · ${CH[id].sn}: +${amt('shard', r.sh[id] || 0)}`;
   else if (kind === 'frag' && id) focus = ` · +${amt('frag', r.fr[id] || 0)} ${ITEMS[id].n}`;
-  else if (!infoKey && itemCtx && $('#overlay .isheet')) { const it = slotState(itemCtx.cid, itemCtx.k).it; focus = ` · +${amt('frag', r.fr[it.id] || 0)} ${it.n}`; }
+  else if (!infoKey && itemCtx && $('#overlay .isheet, #overlay2 .isheet')) { const it = slotState(itemCtx.cid, itemCtx.k).it; focus = ` · +${amt('frag', r.fr[it.id] || 0)} ${it.n}`; }
   refreshAll();
   const more = enGet(en) >= cost;
   rewardWin(`Симуляция ×${kk}`, r.lines, { sub: `${nodeTitle(i)} · потрачено ${amt(en, cost)}${focus}`, ok: 'Готово',

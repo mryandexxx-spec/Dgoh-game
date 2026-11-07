@@ -102,11 +102,12 @@ document.addEventListener('click', e => {
   if (rosterClick(d)) return;
   if (d.open) return openDetail(d.open);
   if (d.slot) { const [cid, k] = d.slot.split(':'); return openItem(cid, +k); }
-  if (d.iback) return openDetail(d.iback);
+  if (d.iback) { if ($('#overlay2 .isheet')) closeInfo(true); return openDetail(d.iback); }
   if (d.goraid) { closeOverlay(); set_view('raid'); render(); return; }
   if (d.craft && itemCtx) {
     const { cid, k } = itemCtx, s = slotState(cid, k), c = CRAFT(s.it.t), p = prog(cid);
     if (!p.eq[k] && p.stars && s.have >= s.need && S.solari >= c.sol && S.plast >= c.pl) { S.inv[s.it.id] -= s.need; S.solari -= c.sol; S.plast -= c.pl; p.eq[k] = true; quest('craft'); persist(); toast(`${s.it.n} надет: ${CH[cid].sn}`); }
+    if ($('#overlay2 .isheet')) closeInfo(true);
     render(); return openDetail(cid);
   }
   if (d.gup) { const p = prog(d.gup); if (p.gear < MAX_GEAR && p.gear < gearCap() && p.eq.every(Boolean) && S.solari >= GEAR_UP_SOL(p.gear)) { const s0 = heroSnap(d.gup); S.solari -= GEAR_UP_SOL(p.gear); p.gear++; p.eq = [false, false, false, false, false, false]; persist(); celebQueue({ type: 'hup', kind: 'gear', id: d.gup, from: ROMAN[p.gear - 1], to: ROMAN[p.gear], s0 }); } render(); return openDetail(d.gup); }
