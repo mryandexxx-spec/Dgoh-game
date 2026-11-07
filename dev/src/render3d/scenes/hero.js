@@ -26,7 +26,7 @@ class HeroStage extends Stage3D {
     key.autoUpdateExtends = false; key.orthoLeft = -2; key.orthoRight = 2; key.orthoTop = 3; key.orthoBottom = -1; key.shadowMinZ = .5; key.shadowMaxZ = 20;
     const rim = this.rim = new B3.SpotLight('rim', V3(-2.5, 3.2, -2.5), V3(.6, -.5, .6), Math.PI / 3, 2, S); rim.intensity = 1.6; rim.diffuse = col3('#8fc0ff');
     const rim2 = this.rim2 = new B3.SpotLight('rim2', V3(2.6, 2.6, -2.2), V3(-.6, -.4, .6), Math.PI / 3, 2, S); rim2.intensity = 1.1; rim2.diffuse = col3('#ffa860');
-    CTX.shadows = this.shadows = new B3.ShadowGenerator(gfx(this.small).shadowSize, key, undefined, undefined, true); CTX.shadows.bias = .0006; CTX.shadows.normalBias = .01; CTX.shadows.darkness = .2;
+    CTX.shadows = this.shadows = new B3.ShadowGenerator(gfx(this.small).heroShadow, key, undefined, undefined, true); CTX.shadows.bias = .0006; CTX.shadows.normalBias = .01; CTX.shadows.darkness = .2;
     CTX.shadows.usePercentageCloserFiltering = this.engine.webGLVersion >= 2; // perf step 5: PCF instead of PCSS (contact hardening)
     CTX.shadows.filteringQuality = gfx(this.small).shadowQ === 'low' ? B3.ShadowGenerator.QUALITY_LOW : B3.ShadowGenerator.QUALITY_MEDIUM;
     // podium: sand-stone disc with glowing tier ring
@@ -51,22 +51,52 @@ class HeroStage extends Stage3D {
     cv.addEventListener('pointermove', e => { if (!this.drag || !this.isCur()) return; const nx = this.yaw; this.yaw = this.drag.y0 + (e.clientX - this.drag.x) * .012; this.yawV = (this.yaw - nx) * 60; });
     const up = () => { if (this.drag) { this.drag = null; this.resumeT = performance.now() + 3000; } }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   }
-  setHero(def, prog0) {
-    if (this.def === def && this.o) return;
-    if (this.o) this.o.root.dispose(false, true);
-    const o = makeHuman3(def, { scene: this.scene, shadows: this.shadows, pbr: true });
-    o.base = V3(0, 0, 0); o.face = 0; o.side = 'A'; o.phase = 0; o.def = def; this.o = o; this.def = def; this.yaw = -.35; this.auto = true;
-    const tc = col3(TIER_COL[(prog0 || {}).gear || 1] || '#e8913f'); this.ring.material.emissiveColor = tc; this.rim.diffuse = def.side === 'dark' ? col3('#ff6a5a') : col3('#8fc0ff');
-    this.intro = performance.now();
+  // пакет 5: модели героев — пул (текущая + соседи ‹ ›). Смена — включение готовой модели; соседи строятся и прогреваются
+  // в покое (шейдеры, тени, глубина компилируются заранее); остальное освобождается целиком.
+  buildHero(def) {
+    const S = this.scene, m0 = new Set(S.materials), k0 = new Set(S.skeletons), t0 = new Set(S.textures);
+    const o = makeHuman3(def, { scene: S, shadows: this.shadows, pbr: true });
+    o.own = { mats: S.materials.filter(m => !m0.has(m)), sks: S.skeletons.filter(x => !k0.has(x)), tex: S.textures.filter(x => !t0.has(x)) };
+    o.base = V3(0, 0, 0); o.face = 0; o.side = 'A'; o.phase = 0; o.def = def; return o;
   }
+  dropHero(o) {
+    const S = this.scene; try { o.root.dispose(false, true); } catch (e) {}
+    for (const m of o.own.mats) if (S.materials.includes(m)) m.dispose(false, true);
+    for (const x of o.own.sks) if (S.skeletons.includes(x)) x.dispose();
+    for (const x of o.own.tex) if (S.textures.includes(x)) x.dispose();
+  }
+  setHero(def, prog0, near) {
+    this.pool = this.pool || new Map(); this.want = (near || []).filter(d => d && d !== def);
+    if (this.def !== def || !this.o) {
+      if (this.o) this.o.root.setEnabled(false);
+      let o = this.pool.get(def.id); if (!o) { o = this.buildHero(def); this.pool.set(def.id, o); }
+      this.warmEnd(o); o.root.setEnabled(true); this.o = o; this.def = def; this.yaw = -.35; this.auto = true; this.intro = performance.now();
+    }
+    const keep = new Set([def.id, ...this.want.map(d => d.id)]);
+    for (const [id, o] of this.pool) if (!keep.has(id)) { this.dropHero(o); this.pool.delete(id); }
+    const tc = col3(TIER_COL[(prog0 || {}).gear || 1] || '#e8913f'); this.ring.material.emissiveColor = tc; this.rim.diffuse = def.side === 'dark' ? col3('#ff6a5a') : col3('#8fc0ff');
+  }
+  quiet(now) { return !(this.drag || Math.abs(this.yawV) > .02 || now - (this.intro || 0) < 1400 || (this.flashT && now - this.flashT < 1900)); }
+  // прогрев соседа: два кадра на месте героя в масштабе 0,001 (тот же свет и тени → те же шейдеры, на экране не видно), затем выключить
+  prefetch(now) {
+    if (this.warm) { if (--this.warm.n <= 0) this.warmEnd(this.warm.o); return; }
+    if (!this.want || !this.quiet(now) || now - (this.pfT || 0) < 300) return;
+    const d = this.want.find(x => !this.pool.has(x.id)); if (!d) return;
+    this.pfT = now; const o = this.buildHero(d); this.pool.set(d.id, o);
+    o.sc0 = o.root.scaling.clone(); o.root.scaling.scaleInPlace(.001); o.root.getChildMeshes().forEach(m => { m.alwaysSelectAsActiveMesh = true; }); o.root.setEnabled(true); this.warm = { o, n: 2 };
+  }
+  warmEnd(o) { if (!this.warm || this.warm.o !== o) return; o.root.setEnabled(false); o.root.scaling.copyFrom(o.sc0); o.root.getChildMeshes().forEach(m => { m.alwaysSelectAsActiveMesh = false; }); this.warm = null; }
+  pfIdle() { return !this.warm && !(this.want || []).some(x => !this.pool.has(x.id)); }
+  // пакет 5: в покое — профильная частота (MED idle 30, LOW idle 20); active — интро, вспышка, вращение пальцем и его инерция
+  idleMode(now) { return this.quiet(now) && !this.warm ? gfx(this.small).heroIdle : 'active'; }
   celebrate(kind) { const b = this.burst; b.manualEmitCount = kind === 'star' ? 420 : 220; this.flashT = performance.now(); this.flashKind = kind; }
   tick(now, t) {
-    const o = this.o; if (!o) return;
+    const o = this.o; if (!o) return; this.prefetch(now);
     if (this.auto && !this.drag && (!this.resumeT || now > this.resumeT)) this.yaw += Math.sin(t * .35) * .0025;
     if (!this.drag) { this.yaw += this.yawV / 60; this.yawV *= .92; }
     poseHuman(this, o, now, t, 1); o.root.rotation.y = this.yaw;
     const H = o.h, ik = this.intro ? Math.min(1, (now - this.intro) / 1100) : 1, e = 1 - (1 - ik) ** 3;
-    const asp = (this.w || 1) / (this.h || 1), dist = (H * 1.35 + .6) / Math.min(1, asp * 1.9);
+    const asp = (this.w || 1) / (this.h || 1), dist = (H * 1.35 + .6) / Math.min(1, asp * 1.9) * 1.14;   // пакет 5: холст шире — запас под подиум
     this.camera.position.set(Math.sin(.25) * dist * (1.25 - .25 * e), H * .62 + .25 * (1 - e), Math.cos(.25) * dist * (1.25 - .25 * e)); this.camera.setTarget((this._tg || (this._tg = V3())).set(0, H * .52, 0)); this.camera.fov = .75;
     if (this.pipe.depthOfFieldEnabled) this.pipe.depthOfField.focusDistance = dist * 1000;
     const fk = this.flashT ? Math.max(0, 1 - (now - this.flashT) / 900) : 0;
@@ -76,13 +106,13 @@ class HeroStage extends Stage3D {
   dustFX(o, where) { const H = o.h, r = o.root.rotation.y, off = where === 'shoulder' ? V3(.28, H * .74, .05) : where === 'cape' ? V3(-.1, H * .5, -.3) : V3(-.05, H * .66, .14); const c = Math.cos(r), s = Math.sin(r); this.dustP.emitter = V3(off.x * c + off.z * s, off.y, -off.x * s + off.z * c); this.dustP.manualEmitCount = where === 'cape' ? 140 : 40; }
 }
 let HERO_STAGE = null, HERO_SNAP = null;
-function mountHeroStage(id) {
-  const host = document.querySelector('#overlay .cfig'); if (!host) return;
-  if (!HAS3D) { if (HAS_GL) loadB3().then(ok => { if (ok && host.isConnected) mountHeroStage(id); }); return; }   // фаза 4: пока грузится чанк — 2D-фигура
+function mountHeroStage(id, near) {
+  const host = document.querySelector('#overlay .hcfig'); if (!host) return;
+  if (!HAS3D) { if (HAS_GL) loadB3().then(ok => { if (ok && host.isConnected) mountHeroStage(id, near); }); return; }   // фаза 4: пока грузится чанк — 2D-фигура
   try {
     if (!HERO_STAGE || !HERO_STAGE.alive) HERO_STAGE = new HeroStage();
     const p = prog(id), d = CH[id];
-    host.classList.add('has3d'); HERO_STAGE.setHero(d, p); HERO_STAGE.attach(host);
+    host.classList.add('has3d'); HERO_STAGE.setHero(d, p, (near || []).map(x => CH[x])); HERO_STAGE.attach(host);
     const snap = { id, stars: p.stars, gear: p.gear, eq: p.eq.filter(Boolean).length, lvl: p.lvl, sk: JSON.stringify(p.sk) };
     if (HERO_SNAP && HERO_SNAP.id === id) { if (snap.stars > HERO_SNAP.stars || snap.gear > HERO_SNAP.gear) HERO_STAGE.celebrate('star'); else if (snap.eq > HERO_SNAP.eq || snap.lvl > HERO_SNAP.lvl || snap.sk !== HERO_SNAP.sk) HERO_STAGE.celebrate('up'); }
     HERO_SNAP = snap;

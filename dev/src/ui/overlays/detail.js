@@ -1,26 +1,20 @@
 // ui/overlays/detail.js — строки 3365–3549 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { nextShards, rosterList } from '../views/squad.js';
-import { craftAllPlan } from '../craft.js';
+import '../views/squad.js'; // порядок исполнения
 import { renderNotes } from '../notifications.js';
 import { fxText } from '../fx-text.js';
-import { GEAR_CAP_AT, gearCap, heroCap } from '../../logic/account.js';
 import { itemSourceRows } from './info.js';
-import { getRes, prog } from '../../logic/progress.js';
+import { prog } from '../../logic/progress.js';
 import { S } from '../../core/state.js';
-import { CRAFT, FRAG_NEED, GEAR_UP_SOL, ITEMS, TIER_COL, TIER_NAME, gearPlan } from '../../logic/gear.js';
-import { MEM, RELIC_AT, RELIC_CORES, RELIC_MAX, RELIC_SOL, isLegend, relicCap, relicReady, sideName, unlockNeed } from '../../logic/relics.js';
-import { LVL_COST, MAX_GEAR, MAX_LVL, ROMAN, STAR_COST } from '../../logic/economy.js';
-import { mountHeroStage } from '../../render3d/scenes/hero.js';
+import { CRAFT, FRAG_NEED, ITEMS, TIER_COL, TIER_NAME, gearPlan } from '../../logic/gear.js';
+import { LVL_COST, ROMAN } from '../../logic/economy.js';
 import { sceneThumb } from '../../render2d/scenes.js';
-import { figureSVG } from '../../render2d/figures.js';
-import { unitPower, unitStats } from '../../logic/battle/stats.js';
 import { SK_KEYS, leadBonus, pasMult, skMax, skMult } from '../../logic/battle/skills.js';
 import { SK_MLV, SK_UPS } from '../../data/skill-ups.js';
 import { CH } from '../../data/chars.js';
-import { DT, FACTIONS, ROLES } from '../../data/fx.js';
-import { amt, fmt, ic } from '../../core/format.js';
+import { DT } from '../../data/fx.js';
+import { amt, fmt } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
-import { itemIcon, skillSvg, starStr } from '../common.js';
+import { itemIcon, skillSvg } from '../common.js';
 
 const SK_NAME = { basic: 'базовая', special: 'особая', ult: 'мощная', passive: 'пассивная', leader: 'лидерка' };
 function skCost(next) {
@@ -99,9 +93,7 @@ function slotBtn(cid, k) {
     ${s.st !== 'eq' ? `<span class="gprog"><i style="width:${Math.min(100, s.have / s.need * 100)}%"></i></span>` : ''}
   </button>`;
 }
-let detailCid = null;
 let DETAIL_BACK = null, SQ_LP = 0;
-let detailSk = 'basic';
 const SKI = { passive: '<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>', leader: '<path d="M4 18h16l-1.5-9-4 3.5L12 6l-2.5 6.5-4-3.5z" fill="currentColor"/><rect x="4" y="19" width="16" height="2" rx="1" fill="currentColor"/>' };
 function skIcon(d, k) { return skillSvg(d, k); }
 function skDetailHtml(id, k) {
@@ -121,70 +113,6 @@ function skDetailHtml(id, k) {
 }
 function lvlCost(from, to) { let c = 0; for (let l = from; l < to; l++) c += LVL_COST(l); return c; }
 function lvlAffordMax(p, cap) { let l = p.lvl, sol = S.solari; while (l < cap && sol >= LVL_COST(l)) { sol -= LVL_COST(l); l++; } return l; }
-function updLvl() { const r = $('#lvlr'); if (!r) return; const p = prog(detailCid), to = +r.value, c = lvlCost(p.lvl, to); $('#lvlv').innerHTML = `до <b>${to}</b> · ${amt('sol', c)}`; const b = $('#lvlgo'); b.disabled = S.solari < c; b.classList.toggle('go', S.solari >= c); }
-function openDetail(id) {
-  if (detailCid !== id) detailSk = 'basic';
-  detailCid = id;
-  const d = CH[id], p = prog(id), locked = p.stars === 0;
-  const st = unitStats(d, locked ? { ...p, stars: 1 } : p);
-  const inSq = S.squad.includes(id), need = nextShards(p), uNeed = unlockNeed(d), rl = p.relic || 0, rcap = relicCap(), rn = rl + 1;
-  const RL = rosterList().map(x => x.id), navOk = RL.includes(id) && RL.length > 1;
-  const relicBar = locked ? '' : `<div class="relbar"><span class="rtier">Другая память ${rl ? rl : '—'}</span><span class="mono">потолок ${MEM(rcap)}</span>${rl >= RELIC_MAX ? '<span class="mono">максимум</span>' : !relicReady(p) ? '<span class="lockd">нужны 7★ и снаряжение XIII 6/6</span>' : rn > rcap ? `<span class="lockd">${MEM(rn)} с ур. аккаунта ${RELIC_AT[rn]}</span>` : `<button class="btn ${(S.core || 0) >= RELIC_CORES[rn] && S.solari >= RELIC_SOL(rn) ? 'go' : 'lack'}" data-relic="${id}">Пробудить ${MEM(rn)}<small>${amt('core', RELIC_CORES[rn])} ${amt('sol', RELIC_SOL(rn))}</small></button>`}</div>`;
-  const filled = p.eq.filter(Boolean).length, full = filled === 6, gcap = gearCap(), hcap = heroCap();
-  const keys = [...(d.gl ? ['gl'] : []), ...SK_KEYS.filter(k => k !== 'leader' || d.leader)];
-  if (!keys.includes(detailSk)) detailSk = keys[0];
-  const lvMax = k => k === 'gl' ? '' : `${p.sk[k] || 1}`;
-  const gearNeedL = GEAR_CAP_AT[p.gear + 1];
-  const gearBtn = locked ? '' : p.gear >= MAX_GEAR ? (full ? '<span class="mono">максимум</span>' : '') : p.gear >= gcap ? `<button class="btn" disabled>Снаряжение ${ROMAN[p.gear + 1]}<small>нужен ур. аккаунта ${gearNeedL}</small></button>` :
-    `<button class="btn ${full ? 'go' : ''}" data-gup="${id}" ${full && S.solari >= GEAR_UP_SOL(p.gear) ? '' : 'disabled'}>Повысить до ${ROMAN[p.gear + 1]}<small>${full ? amt('sol', GEAR_UP_SOL(p.gear)) : 'заполните 6 ячеек'}</small></button>`;
-  const am = lvlAffordMax(p, hcap);
-  const lvlRow = locked ? '' : p.lvl >= MAX_LVL ? `<div class="lvlrow"><span>Уровень героя <b>${p.lvl}</b> — максимум</span></div>` : p.lvl >= hcap ? `<div class="lvlrow"><span>Уровень героя <b>${p.lvl}</b> / ${hcap}</span><span class="lockd">Потолок — уровень аккаунта ${S.acc.lvl}. Поднимайте аккаунт в боях.</span></div>` :
-    `<div class="lvlrow"><span>Уровень героя <b>${p.lvl}</b> / ${hcap}</span><input type="range" id="lvlr" min="${p.lvl + 1}" max="${hcap}" value="${Math.max(p.lvl + 1, am)}" aria-label="Целевой уровень"><span id="lvlv" class="mono"></span><button class="btn" id="lvlgo" data-lvlto="${id}">Поднять</button></div>`;
-  $('#overlay').innerHTML = `<div class="detail" data-close="1"><div class="sheet csheet cs2" role="dialog" aria-modal="true" aria-labelledby="dt-name">
-    <button class="btn mini dback" data-dback="1" aria-label="Назад">← Назад</button>
-    <div class="cgrid">
-    <div class="cleft">
-    <div class="chead">
-      <div class="gcol">${[0, 1, 2].map(k => slotBtn(id, k)).join('')}</div>
-      <div class="ccenter" style="--tc:${TIER_COL[p.gear]}">
-        ${navOk ? '<button class="dnav prev" data-dnav="-1" aria-label="Предыдущий персонаж">‹</button><button class="dnav next" data-dnav="1" aria-label="Следующий персонаж">›</button>' : ''}
-        <div class="cfig">${figureSVG(d, true)}</div>
-        <h3 id="dt-name">${d.n}</h3>
-        <button class="btn mini biob" data-bio="${id}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 10.5v6M12 7v.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>Биография</button>
-        <div class="crole"><span class="sidetag ${d.side}">${sideName(d)}</span> ${d.f.map(f => FACTIONS[f].n).join(' · ')} · ${ROLES[d.role]}${d.prof ? ' · ' + d.prof : ''}</div>
-        ${locked ? `<div class="mono" style="font-size:12px">${amt('shard', p.shards + '/' + uNeed, 'shard:' + id)} — ${uNeed > 10 ? 'откроется сразу на 7★' : 'персонаж не открыт'}</div>`
-          : `<div class="stars">${starStr(p.stars)}</div><div class="mono cmeta">ур. ${p.lvl}${rl ? ` · <b class="relt">${MEM(rl)}</b>` : ''} · мощь ${fmt(unitPower(d, p))}${need ? ` · ${amt('shard', p.shards + '/' + need, 'shard:' + id)}` : ''}</div>`}
-        ${need || locked ? `<button class="btn mini shfind" data-shfind="${id}">${ic('shard')} Найти осколки</button>` : ''}
-        ${lvlRow}
-      </div>
-      <div class="gcol">${[3, 4, 5].map(k => slotBtn(id, k)).join('')}</div>
-    </div>
-    <div class="gearbar" style="--tc:${TIER_COL[p.gear]}"><span class="gtier">Снаряжение ${ROMAN[p.gear]}</span><span class="mono">${filled}/6 · потолок ${ROMAN[gcap]}</span>${(n => locked || full ? '' : `<button class="btn ${n ? 'go' : ''}" data-craftall="${id}" ${n ? '' : 'disabled'}>Собрать и надеть всё<small>${n ? `готово предметов: ${n}` : 'нечего собрать'}</small></button>`)(craftAllPlan(id).length)}${gearBtn}</div>
-    ${relicBar}
-    </div>
-    <div class="cright">
-    <div class="dres">${['sol', 'pl', 'folio', 'seal', 'wol', 'core'].map(k => amt(k, getRes(k))).join('')}</div>
-    <div class="statgrid">
-      <div><span>Здоровье</span><b>${fmt(st.maxHp)}</b></div><div><span>Щит</span><b>${st.maxShield ? fmt(st.maxShield) : 'нет'}</b></div>
-      <div><span>Скорость</span><b>${st.spd}</b></div><div><span>Урон</span><b>${fmt(st.dmg)}</b></div>
-      <div><span>Броня</span><b>${Math.round(st.arm * 100)}%</b></div><div><span>Крит</span><b>${Math.round(st.crit * 100)}%</b></div>
-      <div><span>Уклонение</span><b>${Math.round(st.eva * 100)}%</b></div><div><span>Эффективн.</span><b>${Math.round(st.pot * 100)}%</b></div>
-    </div>
-    <div class="skhead"><p class="chap" style="margin:4px 0 6px">Умения</p><span class="skmats">${amt('folio', S.folio)} ${amt('seal', S.seal)} ${amt('wol', S.wol)}</span></div>
-    <div class="skbar">${keys.map(k => { const ab = k === 'gl' ? d.gl : d[k]; return `<button class="skb2 ${k === detailSk ? 'on' : ''} ${k === 'gl' ? 'gl' : ''}" data-sksel="${id}:${k}" aria-pressed="${k === detailSk}" title="${ab.n}"><span class="skico">${skIcon(d, k)}${k === 'gl' ? '' : `<b>${lvMax(k)}</b>`}</span><span class="sknm">${ab.n}</span></button>`; }).join('')}</div>
-    ${skDetailHtml(id, detailSk)}
-    </div></div>
-    <div class="acts">
-      ${locked ? '' : `
-      <button class="btn ${inSq ? '' : 'go'}" data-sq="${id}" ${!inSq && S.squad.length >= 5 ? 'disabled' : ''}>${inSq ? 'Убрать из отряда' : S.squad.length >= 5 ? 'Отряд полон' : d.legendary && S.squad.some(isLegend) ? 'В отряде уже есть легенда' : 'В отряд'}</button>
-      ${inSq && S.squad[0] !== id ? `<button class="btn" data-lead="${id}">Сделать лидером</button>` : ''}
-      ${need ? `<button class="btn ${p.shards >= need && S.solari >= STAR_COST(p.stars) ? 'go' : 'lack'}" data-star="${id}">Повысить до ${p.stars + 1}★<small>${amt('shard', p.shards + '/' + need)} ${amt('sol', STAR_COST(p.stars))}</small></button>` : '<button class="btn" disabled>7★<small>максимум</small></button>'}`}
-      <button class="btn" data-close="1" style="margin-left:auto">Закрыть</button>
-    </div>
-  </div></div>`;
-  updLvl();
-  mountHeroStage(id);
-}
 let itemCtx = null;
 function openItem(cid, k) {
   itemCtx = { cid, k };
@@ -209,6 +137,5 @@ function openItem(cid, k) {
 function closeOverlay() { DETAIL_BACK = null; $('#overlay').innerHTML = ''; if (typeof renderNotes === 'function') setTimeout(renderNotes, 0); }
 
 function set_DETAIL_BACK(v) { return DETAIL_BACK = v; }
-function set_detailSk(v) { return detailSk = v; }
 function set_SQ_LP(v) { return SQ_LP = v; }
-export { SK_NAME, skCost, skBonus, skLvLines, abDescLv, costHtml, hasCost, lackKey, glCardHtml, skillsHtml, abilityHtml, slotState, slotBtn, detailCid, DETAIL_BACK, SQ_LP, detailSk, SKI, skIcon, skDetailHtml, lvlCost, lvlAffordMax, updLvl, openDetail, itemCtx, openItem, closeOverlay, set_DETAIL_BACK, set_detailSk, set_SQ_LP };
+export { SK_NAME, skCost, skBonus, skLvLines, abDescLv, costHtml, hasCost, lackKey, glCardHtml, skillsHtml, abilityHtml, slotState, slotBtn, DETAIL_BACK, SQ_LP, SKI, skIcon, skDetailHtml, lvlCost, lvlAffordMax, itemCtx, openItem, closeOverlay, set_DETAIL_BACK, set_SQ_LP };

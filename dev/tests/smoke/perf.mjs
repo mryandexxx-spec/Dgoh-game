@@ -90,7 +90,7 @@ const cost = (stageExpr, ms = 4000) => page.evaluate(async (stageExpr, ms) => {
 const out = {};
 await run(LOBBY); await sleep(2500);
 out.camp = { cost: await cost('CAMP_STAGE'), vram: await vram(), bakeMs: await page.evaluate(() => CAMP_STAGE.bakeMs) };
-await run(`openDetail('paul');`); await sleep(3000);
+await run(`openDetail('paul');`); await sleep(3000); await page.evaluate(async () => { for (let i = 0; i < 100 && window.HERO_STAGE && HERO_STAGE.pfIdle && !HERO_STAGE.pfIdle(); i++) await new Promise(r => setTimeout(r, 50)); });   // пакет 5: после прогрева соседей
 out.hero = { cost: await cost('HERO_STAGE'), vram: await vram() };
 await run(`closeInfo(true); closeOverlay(); view = 'lobby';`);
 await run(BATTLE); await sleep(4000);
