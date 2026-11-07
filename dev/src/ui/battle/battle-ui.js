@@ -193,7 +193,7 @@ function doAct(u, key, tuid) {
   act(B, u, key, tuid); endTurn(B, u);
   if (key === 'gl' && u.side === 'A') { statInc('gl'); const tg = B.glTarget && B.units.find(x => x.uid === B.glTarget); if (B.glKind === 'devour' && tg && !tg.alive) statInc('devour'); }
   if (B.flash === 'gl') {                       // 1) the hero's cinematic, 2) after it ends — the strike on the field
-    BT.hold = true; const ab = $('#bwrap .abils'); if (ab) ab.style.visibility = 'hidden';
+    BT.hold = true; const ab = $('#bwrap .abils'); if (ab) { ab.style.visibility = 'hidden'; if (BT._hc) BT._hc.bot = null; }
     const ms = ultCinematic(u, B);
     setTimeout(() => { if (!BT || BT.B !== B || BT.done) return; BT.hold = false; safeRun(() => actShow(u, key, B)); }, ms);
     return;
@@ -203,8 +203,8 @@ function doAct(u, key, tuid) {
 function actShow(u, key, B) {
   if (BT.arena) BT.arena.actMs = 0;
   renderBattle();
-  if (B.flash === 'gl' && B.glKind === 'devour' && !BT.arena) { const tg = B.glTarget && B.units.find(x => x.uid === B.glTarget), el = tg && document.querySelector(`.unit[data-uid="${tg.uid}"]`); if (el) el.classList.add('devoured'); }
-  if (B.flash) { const f = $('#flash'); f.className = 'flash ' + B.flash; if (B.flash === 'worm') { $('#battle').classList.remove('quake'); void f.offsetWidth; $('#battle').classList.add('quake'); } }
+  if (B.flash === 'gl' && B.glKind === 'devour' && !BT.arena) { const tg = B.glTarget && B.units.find(x => x.uid === B.glTarget), el = tg && document.querySelector(`.unit[data-uid="${tg.uid}"]`); if (el) { el.classList.add('devoured'); if (BT._hc) BT._hc.u[tg.uid] = null; } }
+  if (B.flash) { const f = $('#flash'); f.className = 'flash ' + B.flash; if (B.flash === 'worm') { replayAnim($('#battle'), 'quake'); } }
   const cw = BT.arena && BT.arena.actMs ? BT.arena.actMs + 180 : 0;
   later(step, Math.max(cw, B.flash === 'gl' ? 4200 : B.flash ? 1300 : 800));
 }
@@ -242,7 +242,15 @@ function iconFor(ab) {
   if (fx.includes('stealth')) return 'stealth'; if (fx.includes('taunt') || fx.includes('defUp')) return 'shield';
   if (fx.includes('poison')) return 'poison'; if (fx.includes('armDown')) return 'down'; return 'chev';
 }
-function unitHtml(u, B, ctx) {
+// тело .fig отдельно: фигура 2D детерминирована по def — кэш на бой (BT._fig)
+function figSvg(u) {
+  if (BT.arena) return '';
+  const m = BT._fig || (BT._fig = new Map()), k = u.def.boss ? '#boss' : u.def.id;
+  let f = m.get(k); if (f === undefined) m.set(k, f = u.def.boss ? wormSVG() : figureSVG(u.def, true));
+  return f;
+}
+const figBubble = u => !BT.arena && u.alive && u.shield > 0 ? `<span class="bubble" style="opacity:${(.3 + .7 * u.shield / u.maxShield).toFixed(2)}"></span>` : '';
+function unitHtml(u, B, ctx, fig = figSvg(u) + figBubble(u)) {
   let pos;
   if (u.def.boss) pos = [73, 94, 1];
   else { const f = FORM[u.idx] || FORM[0]; pos = [(u.charmed ? u.side !== 'A' : u.side === 'A') ? f[0] : 100 - f[0], f[1], f[2] * (u.def.legendary ? 1.5 : 1)]; }
@@ -268,10 +276,110 @@ function unitHtml(u, B, ctx) {
       ${!u.def.boss && spiceUser(u.def) && u.glOn ? `<div class="hb spm ${B.spice[u.side] >= 100 ? 'full' : ''}" title="Меланж ${B.spice[u.side]}%"><i style="width:${Math.min(100, B.spice[u.side])}%"></i></div>` : ''}
     </div>
     ${intent ? `<div class="intent">${intent}</div>` : ''}
-    <div class="fig ${u.side === 'B' ? 'flip' : ''}">${BT.arena ? '' : u.def.boss ? wormSVG() : figureSVG(u.def, true)}${!BT.arena && u.alive && u.shield > 0 ? `<span class="bubble" style="opacity:${(.3 + .7 * u.shield / u.maxShield).toFixed(2)}"></span>` : ''}</div>
+    <div class="fig ${u.side === 'B' ? 'flip' : ''}">${fig}</div>
     <div class="shadow"></div>
     <div class="uname">${u.def.sn}${u.def.boss ? ` · фаза ${u.phase}: ${PHASES[u.phase]}` : ''}</div>
   </div>`;
+}
+// фаза 7, шаг 5: HUD боя точечно. Каркас #bwrap — полной сборкой при launch / смене 2D↔3D; дальше секции (верх, тикер,
+// юниты, хвост поля с журналом, низ) сравниваются со строками прошлого вызова, изменившиеся парсятся и морфятся в живой DOM.
+// Итоговый innerHTML совпадает с полной сборкой (порядок атрибутов тоже). Юнит с hit/lunge/dying или сменой style
+// заменяется целиком: CSS-анимации .fig стартуют заново, как при полной сборке, placeHud инициализирует новый узел.
+const HUD_T = document.createElement('template');
+function hudParse(html) { HUD_T.innerHTML = html; return HUD_T.content.firstElementChild; }
+function hudFull(P) { return `
+    ${P.top}
+    ${P.ticker}
+    <div class="field ${P.three}" id="field">
+      ${P.units.map(x => x[1]).join('')}${P.tail}</div>
+    ${P.bot}`; }
+function morphAttrs(a, b) {
+  const A = a.attributes, Bt = b.attributes; let same = A.length === Bt.length;
+  if (same) for (let i = 0; i < A.length; i++) if (A[i].name !== Bt[i].name) { same = false; break; }
+  if (same) { for (let i = 0; i < A.length; i++) if (A[i].value !== Bt[i].value) A[i].value = Bt[i].value; return; }
+  while (A.length) a.removeAttributeNode(A[0]);
+  for (const t of Array.from(Bt)) a.setAttributeNode(t.cloneNode());
+}
+function morph(a, b) {
+  if (a.nodeType !== b.nodeType || a.nodeName !== b.nodeName) { a.replaceWith(b); return; }
+  if (a.nodeType !== 1) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return; }
+  morphAttrs(a, b);
+  // y._src — живой узел, чьё содержимое не менялось (.fig с SVG): переносится на место y целиком, по позиции не сопоставляется
+  let x = a.firstChild, y = b.firstChild;
+  while (y) {
+    const ny = y.nextSibling;
+    if (y._src) { const k = y._src; while (x && x !== k) { const nx = x.nextSibling; x.remove(); x = nx; } if (x === k) x = k.nextSibling; else a.appendChild(k); morphAttrs(k, y); k._kept = false; }
+    else if (!x) a.appendChild(y);
+    else if (x._kept) a.insertBefore(y, x);
+    else { const nx = x.nextSibling; morph(x, y); x = nx; }
+    y = ny;
+  }
+  while (x) { const nx = x.nextSibling; x.remove(); x = nx; }
+}
+const HUD_EV = /\b(hit|lunge|dying)\b/g, HUD_ANIM = new Set(['shake', 'hitflash', 'lungeR', 'lungeL', 'fall', 'fallR']);
+function hudUnitEl(html) { const el = hudParse(html); el._ss = el.getAttribute('style'); return el; }
+// верхняя панель по частям; глифы порядка ходов сдвигаются каждый ход — переиспользуются по строке, а не по позиции
+function hudTop(el, o, n, gp) {
+  const ti = el.children[0], ord = ti.children[1];
+  if (o.h3 !== n.h3) morph(ti.children[0], hudParse(n.h3));
+  if (o.order.join('') !== n.order.join('')) {
+    const pool = new Map(), old = Array.from(ord.children).slice(0, -1);
+    o.order.forEach((h, i) => { const l = pool.get(h); if (l) l.push(old[i]); else pool.set(h, [old[i]]); });
+    const blog = ord.lastElementChild;
+    const E = n.order.map(h => { const l = pool.get(h), e = l && l.length ? l.shift() : gp.has(h) ? gp.get(h) : hudParse(h); gp.delete(h); return e; }), used = new Set(E);
+    // перемещаем только то, что не на месте: перенос SVG с <defs id> инвалидирует url(#…) во всех фигурах
+    let cur = ord.firstElementChild;
+    for (const e of E) { while (cur !== blog && !used.has(cur)) cur = cur.nextElementSibling; if (e === cur) cur = cur.nextElementSibling; else ord.insertBefore(e, cur); }
+    for (const [h, l] of pool) for (const e of l) { e.remove(); gp.set(h, e); }   // ушедший глиф вернётся в конец очереди — держим узел
+    if (gp.size > 24) gp.delete(gp.keys().next().value);
+  }
+  if (o.blog !== n.blog) morph(ord.lastElementChild, hudParse(n.blog));
+  if (o.gauges !== n.gauges) morph(el.children[1], hudParse(n.gauges));
+  if (o.ctl !== n.ctl) morph(el.children[2], hudParse(n.ctl));
+}
+function hudSync(bw, P, B, ctx) {
+  if (!bw) return;
+  const hc = BT._hc;
+  const field = hc && hc.bw === bw && hc.three === P.three && bw.children[2];
+  let ok = !!field;
+  if (ok) {
+    for (const f of field.querySelectorAll('.float')) f.remove();
+    const els = field.children;
+    if (els.length < P.units.length) ok = false;
+    else for (let i = 0; i < P.units.length; i++) if (els[i].dataset.uid !== P.units[i][0]) { ok = false; break; }
+  }
+  if (!ok) {
+    bw.innerHTML = hudFull(P);
+    const u = {}; for (const [uid, h] of P.units) u[uid] = h;
+    const f = {}; for (const x of P.units) f[x[0]] = x[2];
+    for (const el of bw.querySelectorAll('#field > .unit')) el._ss = el.getAttribute('style');
+    BT._hc = { bw, three: P.three, top: P.top, T: P.T, ticker: P.ticker, tail: P.tail, bot: P.bot, u, f };
+    return;
+  }
+  const [eTop, eTick, , eBot] = bw.children;
+  if (hc.top !== P.top) { hudTop(eTop, hc.T, P.T, hc.gp || (hc.gp = new Map())); hc.top = P.top; hc.T = P.T; }
+  if (hc.ticker !== P.ticker) { morph(eTick, hudParse(P.ticker)); hc.ticker = P.ticker; }
+  const els = Array.from(field.children);
+  for (let i = 0; i < P.units.length; i++) {
+    const [uid, h, fi, u, bb] = P.units[i]; if (hc.u[uid] === h) continue;
+    const a = els[i], keep = hc.f[uid] === fi, b = hudUnitEl(keep && fi ? h.replace(fi + bb, '') : h);
+    hc.u[uid] = h; hc.f[uid] = fi;
+    if (a._ss !== b._ss) { a.replaceWith(keep ? hudUnitEl(h) : b); continue; }   // сменился style (позиция, ярус) — новый узел, placeHud его инициализирует
+    let kf = null;
+    if (keep) { kf = a.querySelector(':scope > .fig'); if (kf) { kf._kept = true; b.querySelector(':scope > .fig')._src = kf; } }
+    // событие (удар, выпад, гибель) повторилось на живом узле — перезапуск его анимаций, как при пересоздании
+    const ev = b.className.match(HUD_EV), again = ev && ev.some(c => a.classList.contains(c));
+    morph(a, b);
+    if (kf) { const ob = kf.querySelector(':scope > .bubble'), nb = bb && hudParse(bb); if (ob && nb) morph(ob, nb); else if (ob) ob.remove(); else if (nb) kf.appendChild(nb); }   // пузырь щита — вне кэша SVG
+    if (again && !BT.arena) { const fg = a.querySelector('.fig'); if (fg) for (const an of fg.getAnimations({ subtree: true })) if (HUD_ANIM.has(an.animationName)) { an.currentTime = 0; an.play(); } }
+  }
+  if (hc.tail !== P.tail) {
+    const last = field.children[P.units.length - 1];
+    while (last.nextSibling) last.nextSibling.remove();
+    HUD_T.innerHTML = P.tail; field.appendChild(HUD_T.content);
+    hc.tail = P.tail;
+  }
+  if (hc.bot !== P.bot) { morph(eBot, hudParse(P.bot)); hc.bot = P.bot; }
 }
 function renderBattle() {
   if (!BT || BT.hold) return;
@@ -293,18 +401,23 @@ function renderBattle() {
     bot = `<div class="who dim">${a && a.side === 'B' ? `<span class="ptw">${a.def.boss ? '' : portrait(a.def, 40)}</span><span>Ходит противник: <b>${a.def.sn}</b></span>` : BT.auto && !B.over ? '<span>Отряд под управлением ИИ</span>' : ''}</div>`;
   }
   const g = (lab, v, cls, gz) => `<button class="bgz ${cls} ${v >= 100 ? 'full' : ''}" data-gz="${gz}"><span>${lab}</span><div class="hb"><i style="width:${Math.min(100, v)}%"></i></div><b>${v}</b></button>`;
-  $('#bwrap').innerHTML = `
-    <div class="btop">
-      <div class="btitle"><h3>${BT.cfg.title}${B.raid ? (bb => bb ? ` · фаза ${bb.phase}: ${PHASES[bb.phase]}` : '')(B.units.find(x => x.def.boss)) : ''}</h3><div class="order" aria-label="Порядок ходов">${order.map(u => glyph(u.def, u.side === 'B' ? 'e' : '')).join('')}<button class="blog ${BT.showLog ? 'on' : ''}" data-log="1" aria-pressed="${!!BT.showLog}" aria-label="Журнал боя" title="Журнал">${LOG_SVG}</button></div></div>
-      <div class="bgauges">${B.desert ? g(B.raid ? 'БЕШЕНСТВО' : 'РИТМ', Math.min(100, B.rhythm), 'worm', 'rhythm') : ''}${B.raid ? `<button class="bgz" data-gz="dmg"><span>УРОН</span><b>${fmt(B.bossStartHp - Math.max(0, B.units.find(x => x.def.boss).hp))}</b></button>` : ''}${ctx.presc ? '<button class="bgz presc" data-gz="presc">ПРОЗРЕНИЕ</button>' : ''}</div>
-      <div class="bctl"><button class="btn bcb ${BT.auto ? 'on' : ''}" data-auto="1" aria-pressed="${BT.auto}">Авто</button><button class="btn bcb" data-speed="1" aria-label="Скорость">×${BT.speed}</button><button class="btn bci" data-bset="1" aria-label="Настройки боя" title="Настройки">${GEAR_SVG}</button></div>
-    </div>
-    <div class="ticker">${B.log.slice(-2).map(l => `<div class="${l.kind}">${l.text}</div>`).join('')}</div>
-    <div class="field ${BT.arena ? 'three' : ''}" id="field">
-      ${B.units.map(u => unitHtml(u, B, ctx)).join('')}
+  const T = {
+    h3: `<h3>${BT.cfg.title}${B.raid ? (bb => bb ? ` · фаза ${bb.phase}: ${PHASES[bb.phase]}` : '')(B.units.find(x => x.def.boss)) : ''}</h3>`,
+    order: order.map(u => glyph(u.def, u.side === 'B' ? 'e' : '')),
+    blog: `<button class="blog ${BT.showLog ? 'on' : ''}" data-log="1" aria-pressed="${!!BT.showLog}" aria-label="Журнал боя" title="Журнал">${LOG_SVG}</button>`,
+    gauges: `<div class="bgauges">${B.desert ? g(B.raid ? 'БЕШЕНСТВО' : 'РИТМ', Math.min(100, B.rhythm), 'worm', 'rhythm') : ''}${B.raid ? `<button class="bgz" data-gz="dmg"><span>УРОН</span><b>${fmt(B.bossStartHp - Math.max(0, B.units.find(x => x.def.boss).hp))}</b></button>` : ''}${ctx.presc ? '<button class="bgz presc" data-gz="presc">ПРОЗРЕНИЕ</button>' : ''}</div>`,
+    ctl: `<div class="bctl"><button class="btn bcb ${BT.auto ? 'on' : ''}" data-auto="1" aria-pressed="${BT.auto}">Авто</button><button class="btn bcb" data-speed="1" aria-label="Скорость">×${BT.speed}</button><button class="btn bci" data-bset="1" aria-label="Настройки боя" title="Настройки">${GEAR_SVG}</button></div>` };
+  const top = `<div class="btop">
+      <div class="btitle">${T.h3}<div class="order" aria-label="Порядок ходов">${T.order.join('')}${T.blog}</div></div>
+      ${T.gauges}
+      ${T.ctl}
+    </div>`;
+  const P = { three: BT.arena ? 'three' : '', top, T, ticker: `<div class="ticker">${B.log.slice(-2).map(l => `<div class="${l.kind}">${l.text}</div>`).join('')}</div>`,
+    units: B.units.map(u => { const f = figSvg(u), bb = figBubble(u); return [u.uid, unitHtml(u, B, ctx, f + bb), f, u, bb]; }),
+    tail: `
       ${BT.showLog ? `<div class="logpop" aria-live="polite">${B.log.slice(-14).map(l => `<div class="${l.kind}">${l.text}</div>`).join('')}</div>` : ''}
-    </div>
-    <div class="bbot">${bot}</div>`;
+    `, bot: `<div class="bbot">${bot}</div>` };
+  hudSync($('#bwrap'), P, B, ctx);
   for (const e of B.events) {
     const c = document.querySelector(`.unit[data-uid="${e.uid}"]`); if (!c) continue;
     if (!e.text) continue;
@@ -317,20 +430,32 @@ function renderBattle() {
   playFX(B);
   B.events = [];
 }
+// перезапуск CSS-анимации без принудительного layout: класс уже стоит → currentTime = 0 (только пересчёт стилей)
+function replayAnim(el, cls) {
+  if (!el) return;
+  if (!el.classList.contains(cls)) { el.classList.add(cls); return; }
+  for (const a of el.getAnimations({ subtree: true })) if (a.animationName === cls) { a.currentTime = 0; a.play(); }
+}
 function playFX(B) {
   if (!BT || !BT.fx || reduceMotion()) { B.shots = []; return; }
-  const ctr = uid => { const el = document.querySelector(`.unit[data-uid="${uid}"] .fig`); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height * .45 }; };
-  const sp = Math.min(BT.speed, 4);
-  (BT.arena ? [] : B.shots || []).forEach((s, i) => {
-    const a = ctr(s.a), b = ctr(s.t); if (!a || !b) return;
-    const att = B.units.find(u => u.uid === s.a), type = att && att.def.boss ? 'maw' : s.dt;
-    const dur = (type === 'laser' ? 420 : type === 'blade' ? 320 : 380) / sp, delay = i * 70 / sp;
-    BT.fx.add({ type, x1: a.x, y1: a.y, x2: b.x, y2: b.y, dur, delay });
-    BT.fx.add({ type: 'impact', x1: b.x, y1: b.y, x2: b.x, y2: b.y, dur: 360 / sp, delay: delay + dur * (type === 'blade' ? .2 : .8), seed: i, col: { fast: '#ffd28a', blade: '#ffffff', laser: '#ff6d86', voice: '#cbb6f0', poison: '#8be07a', maw: '#e8dcc0' }[type] || '#fff' });
-  });
-  if (B.events.some(e => e.kind === 'crit')) { const bw = $('#bwrap'); bw.classList.remove('jolt'); void bw.offsetWidth; bw.classList.add('jolt'); }
-  for (const e of B.events) if (e.kind === 'heal') { const b = ctr(e.uid); if (b) BT.fx.add({ type: 'heal', x1: b.x, y1: b.y, x2: b.x, y2: b.y, dur: 600 / sp }); }
+  if (B.events.some(e => e.kind === 'crit')) replayAnim($('#bwrap'), 'jolt');
+  const shots = BT.arena ? [] : B.shots || [], heals = B.events.filter(e => e.kind === 'heal').map(e => e.uid), bt = BT;
   B.shots = [];
+  if (!shots.length && !heals.length) return;
+  // фаза 7, шаг 5: геометрия читается в ближайшем кадре (layout там идёт всё равно), а не сразу после правки DOM — без принудительного layout
+  requestAnimationFrame(() => {
+    if (BT !== bt || !BT.fx) return;
+    const ctr = uid => { const el = document.querySelector(`.unit[data-uid="${uid}"] .fig`); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height * .45 }; };
+    const sp = Math.min(BT.speed, 4);
+    shots.forEach((s, i) => {
+      const a = ctr(s.a), b = ctr(s.t); if (!a || !b) return;
+      const att = B.units.find(u => u.uid === s.a), type = att && att.def.boss ? 'maw' : s.dt;
+      const dur = (type === 'laser' ? 420 : type === 'blade' ? 320 : 380) / sp, delay = i * 70 / sp;
+      BT.fx.add({ type, x1: a.x, y1: a.y, x2: b.x, y2: b.y, dur, delay });
+      BT.fx.add({ type: 'impact', x1: b.x, y1: b.y, x2: b.x, y2: b.y, dur: 360 / sp, delay: delay + dur * (type === 'blade' ? .2 : .8), seed: i, col: { fast: '#ffd28a', blade: '#ffffff', laser: '#ff6d86', voice: '#cbb6f0', poison: '#8be07a', maw: '#e8dcc0' }[type] || '#fff' });
+    });
+    for (const uid of heals) { const b = ctr(uid); if (b) BT.fx.add({ type: 'heal', x1: b.x, y1: b.y, x2: b.x, y2: b.y, dur: 600 / sp }); }
+  });
 }
 function finish() {
   if (!BT || BT.done) return; BT.done = true; clearTimeout(BT.timer);
