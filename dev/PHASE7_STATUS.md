@@ -133,7 +133,7 @@ DOM-golden переснят (screens, sha 2b421bc462cca3c7) — отличие �
 - CSS (releases.css): `.battle.fin` → `animation-play-state: paused` только для `.tcur i`, `.abil.gl.full` (+`::after`), `.abil.ult::after`, glbar (`.hb.glm.full i`, `.hb.spm.full i`), `.hglass .hgs`, `.hglass.full svg`. `.unit .fig`/`.shadow`, цифры урона, встряска, смерть — не паузятся.
 - Уточнения разбора: мышь результатов идёт дольше ~2 с (через 5,6 с ещё играет — итерации 3/6); `glowop` у `.spot.hot .sicon::after` в лобби под оверлеем — на композиторе, style не даёт (пауза 180→180), не трогаем.
 - A/B (согласовано 07.11): desktop и --phone landscape визуально без отличий — окно результата перекрывает поле, застывший маркер цели не виден.
-- Замеры: dom.mjs result, окно 6 с — style 358→133, layout ~120 (мышь); телефон, окно с +2,6 с — style 181→8. bwait/bact — forced 0, без изменений. golden (вкл. DOM) — совпадает без --update; 3D-смоук desktop/--phone — как база.
+- Замеры: dom.mjs result, окно 6 с — style 358→133, layout ~120 (мышь); телефон, окно с +2,6 с — style 181→8. bwait/bact — forced 0, без изменений. golden (вкл. DOM, artifact.html и pwa) — совпадает без --update; 3D-смоук desktop/--phone — как база (FAIL «лагерь ↔ бой» и «компиляции после wake» — песочница). PWA: кэш SW dune-goh-e13d434f96.
 
 ## Выкатка v68 (07.11)
 Шаг 7. Номер в футере — v68.
