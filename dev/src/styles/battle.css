@@ -72,3 +72,6 @@
 .result ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; font-size: 13px; color: var(--dust); }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ridge); border: 1px solid var(--spice-dim); padding: 8px 14px; border-radius: 4px; z-index: 50; font-size: 13px; }
 
+/* фаза 7, шаг 3: под боем (.battle непрозрачен, inset 0) лобби/экран не видны — не считаем и не анимируем их */
+body:has(#overlay > .battle) :is(#view, header.top) { content-visibility: hidden; }
+body:has(#overlay > .battle) :is(#view, header.top) * { animation-play-state: paused !important; }
