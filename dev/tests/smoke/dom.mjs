@@ -25,6 +25,8 @@ const SCREENS = [
   ['lobby', V('lobby'), 'true', 2500],
   ['squad', V('squad'), 'true', 2000],
   ['hero', `${V('squad')} openDetail('paul');`, 'true', 3500],
+  ['item', `${V('squad')} { const p=prog('paul'); p.gear=8; p.eq=[false,false,false,false,false,false]; } openDetail('paul'); openItem('paul',0);`, 'true', 2500],
+  ['itempart', `${V('squad')} { const p=prog('paul'); p.gear=8; p.eq=[false,false,false,false,false,false]; } openDetail('paul'); openItem('paul',0,recipeFor(slotState('paul',0).it.id).parts[0].id);`, 'true', 2500],
   ['skill', `${V('squad')} openDetail('paul'); hcSkill('paul:special');`, 'true', 2500],   // пакет 6: окно умения поверх карточки
   ['memory', `${V('squad')} { const p = prog('paul'); p.stars = 7; } openDetail('paul'); hcMem('paul');`, 'true', 2500],   // пакет 6: «Другая память», 3D на паузе
   ['bwait', BATTLE(false), '!!(BT && BT.waiting)', 1500],
