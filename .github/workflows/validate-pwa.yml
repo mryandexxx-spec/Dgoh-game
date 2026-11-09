@@ -22,11 +22,17 @@ jobs:
         run: |
           for n in $(seq 1 18); do
             echo "=== Deployment audit attempt $n ==="
-            gh api "repos/$GITHUB_REPOSITORY/actions/runs?per_page=50" \
-              --jq '.workflow_runs[] | select(.head_sha == env.DEPLOYED_SHA) | [.id,.name,.status,.conclusion,.head_sha] | @tsv'
-            STATUS=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?per_page=50" \
-              --jq '[.workflow_runs[] | select(.head_sha == env.DEPLOYED_SHA and (.name | ascii_downcase | contains("pages")) and .conclusion == "success")] | length')
-            if test "$STATUS" -gt 0; then
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs?per_page=50" > "$RUNNER_TEMP/runs.json"
+            if python3 - <<'PY'
+          import json, os, sys
+          runs = json.load(open(os.environ['RUNNER_TEMP'] + '/runs.json'))['workflow_runs']
+          sha = os.environ['DEPLOYED_SHA']
+          matches = [r for r in runs if r.get('head_sha') == sha]
+          for r in matches:
+              print(r['id'], r['name'], r['status'], r['conclusion'], r['head_sha'])
+          sys.exit(0 if any('pages' in r['name'].lower() and r['conclusion'] == 'success' for r in matches) else 1)
+          PY
+            then
               echo "SUCCESS: GitHub Pages deployed exact v76 commit $DEPLOYED_SHA"
               exit 0
             fi
