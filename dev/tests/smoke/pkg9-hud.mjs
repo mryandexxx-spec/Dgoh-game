@@ -59,10 +59,11 @@ try {
     await page.click('.pkg9-dhead [data-bdrawer]');
     const closed = await page.$('.pkg9-drawer') === null;
     await page.click('[data-hud]');
+    const hidden = await page.$eval('#battle', e => e.classList.contains('hud-hidden'));
     const compact = await page.$eval('#battle', e => e.classList.contains('compact-world-hud'));
-    const good = pass && open && closed && compact !== a.compact && errors.length===0;
+    const good = pass && open && closed && hidden && compact === a.compact && errors.length===0;
     console.log((good?'PASS':'FAIL')+' package9 HUD '+width+'x'+height+' / '+gfx+' actions='+a.abilities.length+' drawer='+open+'/'+closed+' errors='+errors.length);
-    if (!good) {console.log(JSON.stringify({a,open,closed,compact,errors}));errorsCount++;}
+    if (!good) {console.log(JSON.stringify({a,open,closed,hidden,compact,errors}));errorsCount++;}
     await page.close();
   }
 } finally {await browser.close();await srv.close();}
