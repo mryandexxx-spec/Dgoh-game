@@ -34,6 +34,28 @@ function craftRequirements(id, inventory, partsStock = {}, currencies = {}) {
     ready: missing.length === 0, ownedFragments };
 }
 
+// Атомарная автосборка: сначала проверяем весь маршрут на копиях,
+// затем применяем списание только если предмет действительно можно надеть.
+function craftAndEquip(itemId, inventory, partsStock, currencies) {
+  const recipe = recipeFor(itemId);
+  if (!recipe) return { ok: false, reason: 'item' };
+  const inv = { ...inventory }, parts = { ...partsStock }, cash = { ...currencies };
+  const steps = [];
+  for (const part of recipe.parts || []) {
+    if (partStock(parts, part.id)) continue;
+    const res = buildPart(itemId, part.id, inv, parts, cash);
+    if (!res.ok) return { ok: false, reason: res.reason, part: part.id };
+    steps.push(part.id);
+  }
+  const result = consumeRecipe(itemId, inv, parts, cash);
+  if (!result.ok) return result;
+  // Применяем только известные ключи, удалений/перезаписи других ресурсов нет.
+  inventory[itemId] = inv[itemId] || 0;
+  for (const part of recipe.parts || []) partsStock[part.id] = parts[part.id] || 0;
+  currencies.sol = cash.sol; currencies.pl = cash.pl;
+  return { ok: true, steps };
+}
+
 // Создать только выбранную деталь. Изменения выполняются атомарно после проверки.
 function buildPart(itemId, partId, inventory, partStockMap, currencies) {
   const recipe = recipeFor(itemId);
@@ -68,4 +90,4 @@ function consumeRecipe(itemId, inventory, partStockMap, currencies) {
   currencies.pl -= recipe.cost.pl;
   return { ok: true };
 }
-export { recipeFor, craftRequirements, buildPart, consumeRecipe };
+export { recipeFor, craftRequirements, buildPart, consumeRecipe, craftAndEquip };
