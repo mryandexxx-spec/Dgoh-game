@@ -40,3 +40,10 @@ body:has(#battle) .appver { left: 50%; transform: translateX(-50%); }   /* в б
 .lobby .topbtns {flex-shrink:0}
 .lobby .lhouse {bottom:calc(45px + env(safe-area-inset-bottom,0px))}
 @media(max-width:700px){.lobby .sicon{width:54px;height:54px}.lobby .slabel{font-size:14px}.lobby .ltop{gap:6px;padding-top:5px}}
+
+/* 2D fallback canvas spans the three snap positions; only the background moves. */
+.lobby:not(.has3d) .bgc {width:300%;max-width:none;transition:transform .24s ease-out}
+.lobby:not(.has3d)[data-lzone="0"] .bgc {transform:translateX(0)}
+.lobby:not(.has3d)[data-lzone="1"] .bgc {transform:translateX(-33.3333%)}
+.lobby:not(.has3d)[data-lzone="2"] .bgc {transform:translateX(-66.6667%)}
+.lobby:not(.has3d)[data-lzone="0"] .spot[data-zone="0"],.lobby:not(.has3d)[data-lzone="2"] .spot[data-zone="2"] {left:var(--mx);top:var(--my)}
