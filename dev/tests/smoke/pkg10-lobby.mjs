@@ -49,7 +49,16 @@ try {
     // The approved relocated navigation must remain reachable in the profile.
     await page.click('.pchip');
     const profile=await page.$('#overlay2 [data-v="rules"]');
-    if(!profile){console.error('FAIL B1 rules not found in profile');fail++;}
+    if(!profile){
+      const debug=await page.evaluate(()=>{
+        const p=document.querySelector('.pchip'), r=p?.getBoundingClientRect();
+        return {profile:!!document.querySelector('#overlay2 .profsheet'),
+          overlay2:(document.querySelector('#overlay2')?.innerHTML||'').slice(0,220),
+          clickable:r?document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.outerHTML.slice(0,180):null,
+          view:document.querySelector('.lobby')?.dataset.lzone};
+      });
+      console.error('FAIL B1 rules not found in profile '+JSON.stringify(debug));fail++;
+    }
     if(errors.length){console.error('FAIL B1 JS errors '+JSON.stringify(errors));fail++;}
     await page.close();
   }
