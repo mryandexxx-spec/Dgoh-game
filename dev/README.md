@@ -14,9 +14,9 @@ git add -A && git commit && git push  # в main
 ```
 Перед выкаткой поднять номер в `version.json` (в лобби выводится «v<номер> · <хеш сборки>», хеш = версия кэша SW). Затем dist/artifact.html публикуется в артефакт. `--static <dune-pwa-flat.zip>` — взять статику из архива вместо корня.
 JS-инструменты (`tools/`): `build.mjs`; `move-decl.mjs` — перенос объявлений между модулями с починкой импортов и цепочки порядка; `extract-pass1.mjs`, `modularize.mjs` + `split.config.mjs` + `scope.mjs`, `split-css.mjs` — разрезание монолита (выполнено, повторно не запускать: src/ правится вручную); `check-bundle.mjs`; `check-deps.mjs` — правило зависимостей §2; `pack.mjs` — упаковка src/ в текст (запасной вариант).
-Python/Blender-скрипты моделей лежат в документах проекта dune-tools/.
+Python/Blender-скрипты моделей и FBX Mixamo — `models/` (см. `models/README.md`). Брифы, планы и UI-кит — `docs/` (см. `docs/README.md`).
 
-## Golden-тесты (tests/) — фаза 0 REFACTOR_PLAN §6.1–6.4
+## Golden-тесты (tests/) — фаза 0 `docs/REFACTOR_PLAN.md` §6.1–6.4
 Эталоны сняты 2026-11-05 с артефакта v45 (= index.html PWA `dune-goh-b19cf011b1`). В фазе 2 не менялись: сборки из src/ (артефакт и PWA) совпадают с ними. Нужны Node ≥ 20; для DOM — Playwright + Chromium.
 
 ```
