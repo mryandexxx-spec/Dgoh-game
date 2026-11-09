@@ -74,8 +74,8 @@ class CampStage extends Stage3D {
     this.railX += (desired - this.railX) * Math.min(1, Math.max(0, (now - (this._railNow || now)) / 180));
     this._railNow = now;
     this.camera.position.set(this.railX, 2.6, this.fire.z + 7);
-    this.camera.setTarget(this._tg || (this._tg = V3(0, 1.1, .3)));
-    this._tg.set(this.railX, 1.1, .3); this.camera.fov = .82;
+    if (!this._tg) this._tg = V3(0, 1.1, .3);
+    this._tg.set(this.railX, 1.1, .3); this.camera.setTarget(this._tg); this.camera.fov = .82;
     if (this.flag) this.flag.forEach((fl, i) => { fl.rotation.y = Math.sin(t * 1.3 + i) * .25; });
   }
   post() {
@@ -83,12 +83,12 @@ class CampStage extends Stage3D {
     const now = performance.now(); let view = this._lv;
     if (!view || !view.isConnected) { view = this._lv = document.querySelector('.lobby'); this._lm = 0; this._lf = null; if (!view) return; }
     if (this._lf && this._lf.length && !this._lf[0].isConnected) this._lm = 0;
-    if (now - (this._lm || 0) > 500) { const vr = view.getBoundingClientRect(), cr = this.cv.getBoundingClientRect(); this._ldx = cr.left - vr.left; this._ldy = cr.top - vr.top; this._lm = now; this._lf = view.querySelectorAll('.lfig[data-hid]'); }
+    if (now - (this._lm || 0) > 500) { const vr = view.getBoundingClientRect(), cr = this.cv.getBoundingClientRect(); this._ldx = cr.left - vr.left; this._ldy = cr.top - vr.top; this._lm = now; this._lf = view.querySelectorAll('.lfig[data-hid]'); this._spots = view.querySelectorAll('.spot[data-wx]'); }
     const M = this.scene.getTransformMatrix(), vp = this._vp || (this._vp = new B3.Viewport(0, 0, 1, 1)), T = this._pt || (this._pt = V3()), pa = this._pa || (this._pa = V3()), pb = this._pb || (this._pb = V3());
     vp.width = this.w; vp.height = this.h;
     // Project menu buttons from world-space bases, like the A2 world HUD.
     // Cache offsets on resize/rebuild; transforms are the only per-frame layout writes.
-    const markers = view.querySelectorAll('.spot[data-wx]');
+    const markers = this._spots || [];
     for (const el of markers) {
       const xw = Number(el.dataset.wx), zw = Number(el.dataset.wz);
       T.set(xw, this.heightAt(xw, zw) + 1.1, zw);
