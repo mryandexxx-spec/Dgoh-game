@@ -496,6 +496,58 @@ nav.tabs button[aria-selected="true"] { color: #fbe9c8; }
 .field.three .unit.tgt .fig { box-shadow: none; }
 .battle.raid3d .field.three .unit.boss .uname { display: none; }
 
+
+/* Пакет 8 A2 — SWGOH-like world HUD. Только обычная 3D-арена; рейд и 2D не затронуты. */
+.battle.squad3d .field.three .unit { pointer-events: auto; }
+.battle.squad3d .field.three .unit .hud {
+  width: clamp(46px, 7.6vw, 68px);
+  min-width: 0;
+  max-width: 68px;
+  gap: 1px;
+  margin-bottom: 3px;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / .8));
+}
+.battle.squad3d .field.three .unit .hud .hb.hp { height: 5px; }
+.battle.squad3d .field.three .unit .hud .hb.sh { height: 3px; }
+.battle.squad3d .field.three .unit .hud .hb.tm { height: 2px; }
+.battle.squad3d .field.three .unit .hud .hb.glm,
+.battle.squad3d .field.three .unit .hud .hb.spm { height: 2px; }
+.battle.squad3d .field.three .unit .uname { display: none; }
+.battle.squad3d .field.three .unit .intent {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 8px;
+}
+.battle.squad3d .field.three .unit .fxs {
+  display: flex;
+  width: max-content;
+  max-width: 96px;
+  align-self: center;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  gap: 1px;
+  margin-bottom: 1px;
+}
+.battle.squad3d .field.three .unit .fxi {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+}
+.battle.squad3d .field.three .unit .fxi svg {
+  width: 10px;
+  height: 10px;
+}
+.battle.squad3d .field.three .unit .lead { left: -12px; top: 0; }
+.battle.compact-world-hud .field.three .unit .hud { width: 48px; }
+.battle.compact-world-hud .field.three .unit .fxs { max-width: 55px; }
+.battle.compact-world-hud .field.three .unit .fxi:nth-child(n+4) { display: none; }
+.battle.compact-world-hud .field.three .unit .intent { display: none; }
+@media (orientation: landscape) and (max-width: 700px) {
+  .battle.squad3d .field.three .unit .hud { width: 48px; }
+  .battle.squad3d .field.three .unit .fxs { max-width: 62px; }
+  .battle.squad3d .field.three .unit .fxi:nth-child(n+5) { display: none; }
+}
 /* ===== info popups ===== */
 .info-layer { z-index: 56; }
 .toast { z-index: 70; }
