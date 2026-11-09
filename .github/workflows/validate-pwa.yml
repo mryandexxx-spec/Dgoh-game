@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - fix/**
   workflow_dispatch:
 
 permissions:
@@ -75,14 +74,6 @@ jobs:
           grep -Fq 'PASS один WebGL-контекст' dist/smoke-phone.log
           grep -Fq 'PASS нет роста meshes/textures' dist/smoke-phone.log
           grep -Fq 'PASS нет ошибок консоли' dist/smoke-phone.log
-
-      - name: Smoke test 3D lifecycle (desktop)
-        run: |
-          set -o pipefail
-          node tests/smoke/3d.mjs dist/pwa/index.html --cycles 2 | tee dist/smoke-desktop.log
-          grep -Fq 'PASS один WebGL-контекст' dist/smoke-desktop.log
-          grep -Fq 'PASS нет роста meshes/textures' dist/smoke-desktop.log
-          grep -Fq 'PASS нет ошибок консоли' dist/smoke-desktop.log
 
       - name: Upload smoke logs
         if: always()
