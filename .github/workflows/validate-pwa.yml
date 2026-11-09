@@ -171,10 +171,35 @@ jobs:
           grep -Fq 'PASS один WebGL-контекст' dist/smoke-phone.log
           grep -Fq 'PASS нет роста meshes/textures' dist/smoke-phone.log
           grep -Fq 'PASS нет ошибок консоли' dist/smoke-phone.log
-      - name: Package 9 SwiftShader budgets (MED/LOW phone)
+      - name: Compare v76 / v77 SwiftShader budgets (MED/LOW phone)
         run: |
+          node tests/smoke/perf.mjs ../index.html --phone --dpr 3 --gfx med --out dist/perf-v76-med.json
           node tests/smoke/perf.mjs dist/pwa/index.html --phone --dpr 3 --gfx med --out dist/perf-med.json
+          node tests/smoke/perf.mjs ../index.html --phone --dpr 3 --gfx low --out dist/perf-v76-low.json
           node tests/smoke/perf.mjs dist/pwa/index.html --phone --dpr 3 --gfx low --out dist/perf-low.json
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          let failed = false;
+          const fmt = x => Number(x.toFixed(2));
+          for (const gfx of ['med','low']) {
+            const a = JSON.parse(fs.readFileSync('dist/perf-v76-'+gfx+'.json'));
+            const b = JSON.parse(fs.readFileSync('dist/perf-'+gfx+'.json'));
+            const rt = x => x.battle.vram.rows.filter(v => v.rt).reduce((sum,v)=>sum+v.mb,0)
+              + x.battle.vram.depthMB + x.battle.vram.backbufMB;
+            const entries = [
+              ['draws',a.battle.cost.draws,b.battle.cost.draws],
+              ['passes',a.battle.cost.passes,b.battle.cost.passes],
+              ['mpx',a.battle.cost.mpx,b.battle.cost.mpx],
+              ['RT+backbuffer MB',rt(a),rt(b)],
+            ];
+            for (const [metric,before,after] of entries) {
+              const delta=100*(after/before-1);
+              console.log(gfx.toUpperCase(),metric,fmt(before),'→',fmt(after),fmt(delta)+'%');
+              if (delta>10) {console.error('REGRESSION > 10%:',gfx,metric);failed=true;}
+            }
+          }
+          if (failed) process.exitCode=1;
+          JS
       - name: Upload performance diagnostics
         if: always()
         uses: actions/upload-artifact@v4
