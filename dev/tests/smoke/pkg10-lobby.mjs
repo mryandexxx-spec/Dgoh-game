@@ -31,6 +31,10 @@ try {
     },SAVE,gfx);
     await page.goto(srv.url(path.basename(html)),{waitUntil:'load'});
     await page.waitForSelector('.lobby.has3d',{timeout:25000});
+    // The late-save fixture opens a daily-login calendar on startup.
+    // Dismiss it before measuring the lobby's actual buttons and camera.
+    await page.evaluate(() => closeInfo(true));
+    await new Promise(r=>setTimeout(r,350));
     for(let zone=0;zone<3;zone++){
       await page.evaluate(z=>document.querySelector('[data-lnav="'+z+'"]').click(),zone);
       await new Promise(r=>setTimeout(r,1200));
