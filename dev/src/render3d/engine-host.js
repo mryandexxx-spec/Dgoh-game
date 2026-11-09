@@ -7,7 +7,7 @@
 import '../assets/env-hdr.js'; // порядок исполнения
 import { errLog } from '../core/errlog.js';
 import { B3 } from './base.js';
-import { gfx, gfxReport } from './quality.js';
+import { gfx, gfxReport, readBattleFps } from './quality.js';
 
 // фаза 3b, шаг 6: планировщик кадров. Каждый кадр rAF хост спрашивает у верхней сцены режим mode(now) и решает, рисовать ли:
 //   active — до 60 fps (движение, ввод, первые 0,8 с после wake/ресайза); idle — 30 fps (лагерь, ожидание ввода в бою);
@@ -16,6 +16,11 @@ import { gfx, gfxReport } from './quality.js';
 // Throttle по времени, а не пропуском rAF: на 120 Гц частоты те же. Допуск 3 мс на дрожание rAF.
 // базовые частоты (профиль HIGH); фактические берутся из gfx().fps (профиль графики, render3d/quality.js)
 const FPS = { active: 60, idle: 30, idleLow: 20, static: 0 };
+// Только active в арене; ожидание, лагерь и окно героя сохраняют прежнюю частоту.
+const targetFps = (mode, owner, Q) =>
+  mode === 'active' && owner && owner.isArena
+    ? (readBattleFps() ?? (Q.arenaActive || Q.fps.active))
+    : (Q.fps[mode] ?? 60);
 let HOST = null;
 class EngineHost {
   constructor() {
@@ -64,7 +69,7 @@ class EngineHost {
     const R = this.ring, now = performance.now(), iv = [], ct = []; let n = 0;
     for (let j = 0; j < R.n; j++) { const i = (R.i - 1 - j + 128) % 128; if (now - R.t[i] > 1000) break; n++; if (R.iv[i]) iv.push(R.iv[i]); ct.push(R.ct[i]); }
     iv.sort((x, y) => x - y); const Q = gfx(), o = this.cur && this.cur.owner, E = this.engine;
-    const tgt = (this.mode === 'active' && o && o.isArena && Q.arenaActive) || (Q.fps[this.mode] ?? 60);
+    const tgt = targetFps(this.mode, o, Q);
     return { fps: n, target: tgt, iv: iv.length ? iv.reduce((s, x) => s + x, 0) / iv.length : 0, p95: iv.length ? iv[Math.min(iv.length - 1, Math.floor(iv.length * .95))] : 0,
       late: iv.length ? iv.filter(x => x > 1500 / (tgt || 60)).length / iv.length : 0, cpu: ct.length ? ct.reduce((s, x) => s + x, 0) / ct.length : 0,
       mode: this.mode, step: Q.level, dpr: E ? 1 / E.getHardwareScalingLevel() : 0, mpx: E ? E.getRenderWidth() * E.getRenderHeight() / 1e6 : 0,
@@ -112,7 +117,7 @@ class EngineHost {
     let m = 'active'; try { if (o.mode) m = o.mode(now) || 'active'; } catch (err) { errLog('mode', err); }
     this.mode = m; this.modeN[m] = (this.modeN[m] || 0) + 1;
     if (m === 'paused') { this.stop(); return; }
-    const Q = gfx(), fps = (m === 'active' && o.isArena && Q.arenaActive) || (Q.fps[m] ?? 60);
+    const Q = gfx(), fps = targetFps(m, o, Q);
     const tick = this.lastT ? now - this.lastT : 0; this.lastT = now;
     if (!fps || now - this.lastR < 1000 / fps - 3) {
       if (!this.rendPrev && tick > 0 && tick < 200) { this.disp.push(tick); if (this.disp.length > 30) this.disp.shift(); }
