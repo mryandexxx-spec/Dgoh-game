@@ -105,12 +105,22 @@ jobs:
         run: node tests/smoke/pkg8-layout.mjs ../index.html dist/pkg8-shots --baseline
       - name: Package 8 real WebGL camera and formation (844/667)
         run: node tests/smoke/pkg8-layout.mjs dist/pwa/index.html dist/pkg8-shots
+      - name: Package 10 B1 real panorama (844/667, MED/LOW, three zones)
+        run: node tests/smoke/pkg10-lobby.mjs dist/pwa/index.html dist/pkg10-shots
       - name: Package 9 HUD interactive phone check (844/667)
         run: node tests/smoke/pkg9-hud.mjs dist/pwa/index.html dist/pkg9-shots
       - name: Package 9 idle DOM (phone + desktop)
         run: |
           node tests/smoke/dom.mjs dist/pwa/index.html --phone --only bwait --win 800
           node tests/smoke/dom.mjs dist/pwa/index.html --only bwait --win 800
+      - name: Upload package 10 B1 panorama screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-pkg10-lobby-${{ github.run_number }}
+          path: dev/dist/pkg10-shots/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Upload package 9 real HUD screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -199,6 +209,27 @@ jobs:
             }
           }
           if (failed) process.exitCode=1;
+          JS
+      - name: Package 10 camp frame budget vs deployed v77 (MED/LOW phone)
+        run: |
+          node tests/smoke/perf.mjs ../index.html --phone --dpr 3 --gfx med --out dist/perf-b1-base-med.json
+          node tests/smoke/perf.mjs dist/pwa/index.html --phone --dpr 3 --gfx med --out dist/perf-b1-med.json
+          node tests/smoke/perf.mjs ../index.html --phone --dpr 3 --gfx low --out dist/perf-b1-base-low.json
+          node tests/smoke/perf.mjs dist/pwa/index.html --phone --dpr 3 --gfx low --out dist/perf-b1-low.json
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          let bad=false;
+          for(const p of ['med','low']) {
+            const a=JSON.parse(fs.readFileSync('dist/perf-b1-base-'+p+'.json')).camp;
+            const b=JSON.parse(fs.readFileSync('dist/perf-b1-'+p+'.json')).camp;
+            const rt=x=>x.vram.rows.filter(v=>v.rt).reduce((sum,v)=>sum+v.mb,0)+x.vram.depthMB+x.vram.backbufMB;
+            for(const [k,v0,v1] of [['draws',a.cost.draws,b.cost.draws],['passes',a.cost.passes,b.cost.passes],['mpx',a.cost.mpx,b.cost.mpx],['RT MB',rt(a),rt(b)]]) {
+              const delta=v0?100*(v1/v0-1):0;
+              console.log('B1',p,k,v0,'→',v1,delta.toFixed(1)+'%');
+              if(delta>10){ console.error('B1 REGRESSION >10%',p,k);bad=true; }
+            }
+          }
+          if(bad) process.exit(1);
           JS
       - name: Upload performance diagnostics
         if: always()
