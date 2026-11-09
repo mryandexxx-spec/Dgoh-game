@@ -45,6 +45,11 @@ class CampStage extends Stage3D {
     for (const [x, z] of [[4.6, -1.5], [5.2, -1.1], [-4.4, -2.2]]) mk(bBox(.6, .5, .6), crateM, x, this.heightAt(x, z) + .25, z).rotation.y = x;
     const pole = mat3('#4a3420'), flag = mat3(S_FLAG(), { side: 'double', roughness: .9 });
     for (const x of [-3.6, 3.6]) { const z = -2.8, y = this.heightAt(x, z); mk(bCyl(.04, .05, 3.6, 8), pole, x, y + 1.8, z); this.flag = this.flag || []; const f = mk(bPlane(.9, 1.3), flag, x + .48, y + 3, z); this.flag.push(f); }
+    // B1: low-poly navigation bases, not the themed B2 mode totems. No additional shadows.
+    const navM = mat3('#5b4432', { roughness: 1 });
+    const navBases = [[-9.3, -1.5], [-5.5, -1.5], [0, -2.7], [5.0, -1.5],
+      [7.7, -2.7], [9.8, -1.5], [11.7, -2.7]];
+    for (const [x, z] of navBases) mk(bCyl(.65, .85, .15, 8), navM, x, this.heightAt(x, z) + .08, z, false);
     staticNoCast(this); bakeStatic(this);
     });
     this.look({ dof: { f: 50, stop: 2.4, d: 9000 }, exposure: 1.25, ssao: .9, bloomT: .7, bloomW: .45, vig: 2.6 });
@@ -80,6 +85,20 @@ class CampStage extends Stage3D {
     if (now - (this._lm || 0) > 500) { const vr = view.getBoundingClientRect(), cr = this.cv.getBoundingClientRect(); this._ldx = cr.left - vr.left; this._ldy = cr.top - vr.top; this._lm = now; this._lf = view.querySelectorAll('.lfig[data-hid]'); }
     const M = this.scene.getTransformMatrix(), vp = this._vp || (this._vp = new B3.Viewport(0, 0, 1, 1)), T = this._pt || (this._pt = V3()), pa = this._pa || (this._pa = V3()), pb = this._pb || (this._pb = V3());
     vp.width = this.w; vp.height = this.h;
+    // Project menu buttons from world-space bases, like the A2 world HUD.
+    // Cache offsets on resize/rebuild; transforms are the only per-frame layout writes.
+    const markers = view.querySelectorAll('.spot[data-wx]');
+    for (const el of markers) {
+      const xw = Number(el.dataset.wx), zw = Number(el.dataset.wz);
+      T.set(xw, this.heightAt(xw, zw) + 1.1, zw);
+      B3.Vector3.ProjectToRef(T, B3.Matrix.IdentityReadOnly, M, vp, pa);
+      const x = this._ldx + pa.x, y = this._ldy + pa.y;
+      if (!el._world) { el._world = true; el.style.left = '0px'; el.style.top = '0px'; }
+      if (!(Math.abs(x - el._wx) < .25 && Math.abs(y - el._wy) < .25)) {
+        el._wx = x; el._wy = y;
+        el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -50%)`;
+      }
+    }
     for (const el of this._lf) { const o = this.units[el.dataset.hid]; if (!o) continue; const p = o.root.position;
       B3.Vector3.ProjectToRef(p, B3.Matrix.IdentityReadOnly, M, vp, pa); T.set(p.x, p.y + o.h, p.z); B3.Vector3.ProjectToRef(T, B3.Matrix.IdentityReadOnly, M, vp, pb);
       const x = this._ldx + pa.x, y = this._ldy + pa.y, h = Math.max(20, pa.y - pb.y);
