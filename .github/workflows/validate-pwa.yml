@@ -105,6 +105,20 @@ jobs:
         run: node tests/smoke/pkg8-layout.mjs ../index.html dist/pkg8-shots --baseline
       - name: Package 8 real WebGL camera and formation (844/667)
         run: node tests/smoke/pkg8-layout.mjs dist/pwa/index.html dist/pkg8-shots
+      - name: Package 9 HUD interactive phone check (844/667)
+        run: node tests/smoke/pkg9-hud.mjs dist/pwa/index.html dist/pkg9-shots
+      - name: Package 9 idle DOM (phone + desktop)
+        run: |
+          node tests/smoke/dom.mjs dist/pwa/index.html --phone --only bwait --win 800
+          node tests/smoke/dom.mjs dist/pwa/index.html --only bwait --win 800
+      - name: Upload package 9 real HUD screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-pkg9-hud-${{ github.run_number }}
+          path: dev/dist/pkg9-shots/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Upload package 8 screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -157,6 +171,18 @@ jobs:
           grep -Fq 'PASS один WebGL-контекст' dist/smoke-phone.log
           grep -Fq 'PASS нет роста meshes/textures' dist/smoke-phone.log
           grep -Fq 'PASS нет ошибок консоли' dist/smoke-phone.log
+      - name: Package 9 SwiftShader budgets (MED/LOW phone)
+        run: |
+          node tests/smoke/perf.mjs dist/pwa/index.html --phone --dpr 3 --gfx med --out dist/perf-med.json
+          node tests/smoke/perf.mjs dist/pwa/index.html --phone --dpr 3 --gfx low --out dist/perf-low.json
+      - name: Upload performance diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-pkg9-perf-${{ github.run_number }}
+          path: dev/dist/perf-*.json
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Upload 3D diagnostics
         if: always()
         uses: actions/upload-artifact@v4
