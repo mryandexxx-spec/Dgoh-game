@@ -68,7 +68,7 @@
 .battle.pkg9 .bwrap { position: absolute; inset: 0; width: 100%; max-width: none; height: 100%; padding: 0; margin: 0; display: block; }
 .battle.pkg9 .btop { position: absolute; inset: 0 0 auto; height: 54px; z-index: 20; pointer-events: none; display: block; }
 .battle.pkg9 .btitle, .battle.pkg9 .ticker { display: none; }
-.battle.pkg9 .field.three { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; pointer-events: none; }
+.battle.pkg9 .field.three { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; z-index: 5; pointer-events: none; }
 .battle.pkg9 .field.three .unit { pointer-events: auto; }
 .battle.pkg9 .bbot { position: absolute; inset: auto 0 0; height: 106px; min-height: 0; z-index: 21; pointer-events: none; display: block; }
 .battle.pkg9 .bbot button, .battle.pkg9 .btop button { pointer-events: auto; }
@@ -78,7 +78,7 @@
 .battle.pkg9 .pkg9-enemy-info b { max-width: 112px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 10px; line-height: 1.1; font-weight: 600; text-shadow: 0 1px 3px #000; }
 .battle.pkg9 .pkg9-enemy-info .hb { width: 108px; height: 5px; }
 .battle.pkg9 .pkg9-enemy-info .hb i { background: var(--foe); }
-.battle.pkg9 .bctl.pkg9-controls { position: absolute; top: max(8px, env(safe-area-inset-top, 0px)); left: max(10px, env(safe-area-inset-left, 0px)); display: flex; gap: 6px; flex-wrap: nowrap; pointer-events: auto; }
+.battle.pkg9 .bctl.pkg9-controls { position: fixed; z-index: 30; top: max(8px, env(safe-area-inset-top, 0px)); left: max(10px, env(safe-area-inset-left, 0px)); display: flex; gap: 6px; flex-wrap: nowrap; pointer-events: auto; }
 .battle.pkg9 .pkg9-control { width: 43px; height: 43px; border: 2px solid #866a48; border-radius: 50%; background: radial-gradient(circle at 40% 24%, #5c503f, #1a140d 76%); box-shadow: 0 2px 8px rgb(0 0 0 / .6); color: var(--bone); padding: 0; font: 600 10px var(--f-mono); cursor: pointer; display: grid; place-items: center; }
 .battle.pkg9 .pkg9-control svg { width: 21px; height: 21px; }
 .battle.pkg9 .pkg9-control[aria-pressed="true"], .battle.pkg9 .pkg9-control.on { border-color: var(--spice); color: var(--spice-hi); }
