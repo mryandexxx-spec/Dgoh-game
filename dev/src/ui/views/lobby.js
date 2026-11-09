@@ -68,15 +68,26 @@ function renderLobby() {
   lobby.querySelectorAll('[data-lnav]').forEach(b => b.addEventListener('click', () => zone(+b.dataset.lnav)));
   lobby.addEventListener('pointerdown', e => {
     if (e.target.closest('button, .ltop, .lhouse')) return;
-    start = { x: e.clientX, y: e.clientY, t: performance.now() };
+    start = { x: e.clientX, y: e.clientY, t: performance.now(), zone: +lobby.dataset.lzone };
+  }, { passive: true });
+  lobby.addEventListener('pointermove', e => {
+    if (!start) return;
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
+    if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      // The camera follows the finger; no extra RAF or engine.
+      lobby.dataset.lrail = String(Math.max(0, Math.min(2, start.zone - dx / Math.max(1, lobby.clientWidth))));
+    }
   }, { passive: true });
   lobby.addEventListener('pointerup', e => {
     if (!start) return;
-    const dx = e.clientX - start.x, dy = e.clientY - start.y; start = null;
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
+    const elapsed = Math.max(1, performance.now() - start.t), from = start.zone;
+    start = null; delete lobby.dataset.lrail;
     if (Math.abs(dx) < 35 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
-    zone(+lobby.dataset.lzone + (dx < 0 ? 1 : -1));
+    const delta = Math.abs(dx) > lobby.clientWidth * .33 || Math.abs(dx) / elapsed > .45 ? 1 : 0;
+    zone(from + (dx < 0 ? delta : -delta));
   }, { passive: true });
-  lobby.addEventListener('pointercancel', () => { start = null; });
+  lobby.addEventListener('pointercancel', () => { start = null; delete lobby.dataset.lrail; });
   { const bg = () => new SceneBG($('#lobbybg'), 'lobby', 0); if (!mountCampStage(bg)) bg(); }
   renderRes();
 }
