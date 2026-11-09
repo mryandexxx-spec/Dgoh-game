@@ -5,7 +5,30 @@ import { BASE } from '../../data/fx.js';
 import { gearBonus } from '../../data/gear-bonuses.js';
 // Поздний модуль gear.js регистрирует детерминированный план ячеек.
 let getEquippedPlan = null;
-function setGearStatProvider(fn) { getEquippedPlan = fn; }
+const ZERO_GEAR_BONUS = Object.freeze({ hp: 0, shield: 0, dmg: 0, spd: 0, crit: 0 });
+const GEAR_BONUS_CACHE = new Map(); // ограниченный кэш 512 вариантов, не хранит ссылки на героя
+function setGearStatProvider(fn) { getEquippedPlan = fn; GEAR_BONUS_CACHE.clear(); }
+function equippedBonus(def, p) {
+  if (!Array.isArray(p.eq) || !getEquippedPlan) return ZERO_GEAR_BONUS;
+  let mask = 0;
+  for (let k = 0; k < Math.min(6, p.eq.length); k++) if (p.eq[k]) mask |= 1 << k;
+  if (!mask) return ZERO_GEAR_BONUS;
+  const key = def.id + ':' + p.gear + ':' + mask;
+  const cached = GEAR_BONUS_CACHE.get(key);
+  if (cached) return cached;
+  const bonus = { hp: 0, shield: 0, dmg: 0, spd: 0, crit: 0 };
+  const plan = getEquippedPlan(def.id, p.gear);
+  for (let k = 0; k < 6; k++) {
+    if (!(mask & (1 << k))) continue;
+    const m = /^([a-z]+)[0-9]+$/.exec(plan[k] || '');
+    const w = m && gearBonus(m[1]);
+    if (!w) continue;
+    for (const stat of Object.keys(bonus)) bonus[stat] += w[stat];
+  }
+  if (GEAR_BONUS_CACHE.size >= 512) GEAR_BONUS_CACHE.clear();
+  GEAR_BONUS_CACHE.set(key, bonus);
+  return bonus;
+}
 
 function unitStats(def, p) {
   const b = BASE[def.role];
@@ -14,17 +37,7 @@ function unitStats(def, p) {
   // +7%/6 ко всем статам каждая надетая ячейка даёт свой профиль.
   const base = (1 + 0.07 * (p.lvl - 1)) * STAR_MULT[p.stars] *
     (1 + 0.07 * (p.gear - 1)) * (def.pow || 1) * (1 + 0.08 * rl) * (p.pow || 1);
-  const bonus = { hp: 0, shield: 0, dmg: 0, spd: 0, crit: 0 };
-  if (Array.isArray(p.eq)) {
-    const plan = getEquippedPlan ? getEquippedPlan(def.id, p.gear) : [];
-    for (let k = 0; k < Math.min(6, p.eq.length); k++) {
-      if (!p.eq[k]) continue;
-      const m = /^([a-z]+)\d+$/.exec(plan[k] || '');
-      const w = m && gearBonus(m[1]);
-      if (!w) continue;
-      for (const key of Object.keys(bonus)) bonus[key] += w[key];
-    }
-  }
+  const bonus = equippedBonus(def, p);
   return {
     maxHp: Math.round(b.hp * base * (1 + bonus.hp)),
     maxShield: def.noShield ? 0 : Math.round(b.sh * base * (1 + bonus.shield)),
