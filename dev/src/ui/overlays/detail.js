@@ -2,7 +2,9 @@
 import '../views/squad.js'; // порядок исполнения
 import { renderNotes } from '../notifications.js';
 import { fxText } from '../fx-text.js';
-import { itemSourceRows, set_INFO_ON_CLOSE, set_infoKey } from './info.js';
+import { itemSourceRows, set_INFO_ON_CLOSE, set_INFO_BACK, set_infoKey } from './info.js';
+import { recipeFor, craftRequirements } from '../../logic/gear-crafting.js';
+import { gearBonus } from '../../data/gear-bonuses.js';
 import { heroHold } from '../../render3d/scenes/hero.js';
 import { prog } from '../../logic/progress.js';
 import { S } from '../../core/state.js';
@@ -26,11 +28,15 @@ function abilityHtml(ab, kind) {
   return `<div class="ab"><h4>${ab.n}<span class="tag">${meta.join(' · ')}</span></h4><p>${fxText(ab.d)}</p></div>`;
 }
 function slotState(cid, k) {
-  const p = prog(cid), it = ITEMS[gearPlan(cid, p.gear)[k]], have = S.inv[it.id] || 0, need = FRAG_NEED[it.t], c = CRAFT(it.t);
-  if (p.eq[k]) return { it, st: 'eq', have, need };
-  if (have >= need) return { it, st: S.solari >= c.sol && S.plast >= c.pl ? 'ready' : 'frags', have, need };
-  return { it, st: have ? 'part' : 'none', have, need };
+  const p = prog(cid), it = ITEMS[gearPlan(cid, p.gear)[k]];
+  const have = S.inv[it.id] || 0, need = FRAG_NEED[it.t];
+  const r = craftRequirements(it.id, S.inv, S.gearParts || {}, { sol: S.solari, pl: S.plast });
+  if (p.eq[k]) return { it, st: 'eq', have, need, recipe: r };
+  if (r?.ready) return { it, st: 'ready', have, need, recipe: r };
+  if (have >= need || r?.needs.some(n => (S.gearParts || {})[n.id])) return { it, st: 'frags', have, need, recipe: r };
+  return { it, st: have ? 'part' : 'none', have, need, recipe: r };
 }
+
 function slotBtn(cid, k) {
   const s = slotState(cid, k);
   const badge = s.st === 'eq' ? '<span class="sb ok">✓</span>' : s.st === 'ready' ? '<span class="sb go">+</span>' : '';
@@ -45,29 +51,49 @@ function skIcon(d, k) { return skillSvg(d, k); }
 function lvlCost(from, to) { let c = 0; for (let l = from; l < to; l++) c += LVL_COST(l); return c; }
 function lvlAffordMax(p, cap) { let l = p.lvl, sol = S.solari; while (l < cap && sol >= LVL_COST(l)) { sol -= LVL_COST(l); l++; } return l; }
 let itemCtx = null;
-function openItem(cid, k) {
-  itemCtx = { cid, k };
-  const p = prog(cid), s = slotState(cid, k), it = s.it, c = CRAFT(it.t);
-  let craft;
-  if (s.st === 'eq') craft = `<button class="btn" disabled>Надето</button>`;
-  else if (s.have >= s.need) craft = `<button class="btn go" data-craft="1" ${S.solari >= c.sol && S.plast >= c.pl && p.stars ? '' : 'disabled'}>${p.stars ? 'Собрать и надеть' : 'Персонаж не открыт'}<small>${amt('frag', s.need)} ${amt('sol', c.sol)} ${amt('pl', c.pl)}</small></button>`;
-  else craft = `<button class="btn" disabled>Не хватает ${s.need - s.have}<small>${amt('frag', s.have + '/' + s.need)}</small></button>`;
-  const rows = itemSourceRows(it);
-  // v73: над карточкой героя — слоем в #overlay2 (карточка и её 3D остаются под окном, кадр на паузе); без карточки — как раньше, в #overlay
+const pct = n => (n * 100).toFixed(2).replace(/0+$/, '').replace(/\\.$/, '') + '%';
+const statNames = { hp: 'Здоровье', shield: 'Щит', dmg: 'Урон', spd: 'Скорость', crit: 'Крит. шанс' };
+function itemBonusHtml(it) {
+  const bonus = gearBonus(it.kind) || {};
+  return Object.entries(bonus).filter(([,v]) => v > 0).map(([k,v]) =>
+    `<div><span>${statNames[k]}</span><b>+${k === 'spd' ? v.toFixed(2) : pct(v)}</b></div>`).join('');
+}
+function openItem(cid, k, partId = null) {
+  itemCtx = { cid, k, partId };
+  const p = prog(cid), s = slotState(cid, k), it = s.it;
+  const recipe = recipeFor(it.id), needs = craftRequirements(it.id, S.inv, S.gearParts || {},
+    { sol: S.solari, pl: S.plast }), part = partId ? recipe.parts?.find(x => x.id === partId) : null;
   const top = !!$('#overlay .csheet'), host = top ? '#overlay2' : '#overlay';
   if (top) { set_infoKey(null); heroHold(true); set_INFO_ON_CLOSE(() => heroHold(false)); }
-  $(host).innerHTML = `<div class="detail${top ? ' info-layer' : ''}" ${top ? 'data-iclose' : 'data-close'}="1"><div class="sheet isheet" role="dialog" aria-modal="true" aria-labelledby="it-name">
-    <button class="btn mini back" data-iback="${cid}">← ${CH[cid].sn}</button>
-    <div class="ihead">${itemIcon(it, 72)}<div><h3 id="it-name">${it.n}</h3>
-      <div style="color:${TIER_COL[it.t]};font-size:12px;text-transform:uppercase;letter-spacing:.12em">${TIER_NAME[it.t]} · уровень ${ROMAN[it.t]}</div>
-      <div style="color:var(--dust);font-size:12px">Ячейка ${k + 1} · даёт 1/6 прибавки снаряжения ${ROMAN[p.gear]} (≈+1,2% ко всем характеристикам)</div></div></div>
-    <div class="fbar"><span>Фрагменты</span><div class="gprog big"><i style="width:${Math.min(100, s.have / s.need * 100)}%"></i></div><b class="mono">${amt('frag', s.have + '/' + s.need)}</b></div>
-    <div class="acts" style="margin-top:8px">${craft}</div>
-    <p class="chap" style="margin-top:18px">Где найти</p>
-    <div class="srcs">${rows.join('') || '<p class="sub">Источников пока нет.</p>'}</div>
-  </div></div>`;
+  const haveFrag = S.inv[it.id] || 0;
+  const pieces = (S.gearParts || {});
+  const requirements = part
+    ? `<div class="e3mat"><b>Фрагменты ${it.n}</b><span class="${haveFrag >= part.materials[0].count ? 'okc' : 'lackc'}">${haveFrag}/${part.materials[0].count}</span></div>`
+    : recipe.parts
+      ? recipe.parts.map(x => `<button class="e3mat" data-gearpart="${x.id}"><span>${x.name}</span><span class="${pieces[x.id] ? 'okc' : 'lackc'}">${pieces[x.id] || 0}/1</span><b>›</b></button>`).join('')
+      : `<div class="e3mat"><b>Фрагменты</b><span class="${haveFrag >= s.need ? 'okc' : 'lackc'}">${haveFrag}/${s.need}</span></div>`;
+  const cost = part ? part.cost : recipe.cost;
+  const affordable = part ? haveFrag >= part.materials[0].count && S.solari >= cost.sol && S.plast >= cost.pl : needs.ready;
+  const action = s.st === 'eq' && !part ? '<button class="btn" disabled>Надето</button>'
+    : part ? `<button class="btn ${affordable ? 'buy' : 'lack'}" data-buildpart="${part.id}" ${affordable ? '' : 'disabled'}>Создать компонент</button>`
+    : `<button class="btn ${affordable ? 'buy' : 'lack'}" data-craft="1" ${affordable && p.stars ? '' : 'disabled'}>${p.stars ? 'Создать и надеть' : 'Герой не открыт'}</button>`;
+  const rows = itemSourceRows(it);
+  $(host).innerHTML = `<div class="detail${top ? ' info-layer' : ''}" ${top ? 'data-iclose' : 'data-close'}="1"><div class="sheet isheet e3sheet" role="dialog" aria-modal="true" aria-labelledby="it-name">
+    <div class="e3crumb"><button class="btn mini back" data-iback="${cid}">‹ ${CH[cid].sn}</button>${part ? `<button class="btn mini" data-gearroot="1">› ${it.n}</button><span>› ${part.name}</span>` : '<span>› Снаряжение</span>'}</div>
+    <div class="ihead">${itemIcon(it, 58)}<div><h3 id="it-name">${part ? part.name : it.n}</h3>
+      <div style="color:${TIER_COL[it.t]};font-size:12px">${TIER_NAME[it.t]} · уровень ${ROMAN[it.t]}</div>
+      <small>Ячейка ${k + 1} · ${part ? 'компонент рецепта' : 'индивидуальные бонусы снаряжения'}</small></div></div>
+    <div class="e3grid"><div class="e3left">
+      ${part ? '' : `<p class="chap">Характеристики</p><div class="e3stats">${itemBonusHtml(it)}</div>`}
+      <p class="chap">Рецепт</p><div class="e3materials">${requirements}</div>
+      <div class="e3cost"><span>Сборка</span><b class="${S.solari < cost.sol ? 'lackc' : ''}">${amt('sol', cost.sol)}</b><b class="${S.plast < cost.pl ? 'lackc' : ''}">${amt('pl', cost.pl)}</b></div>
+      <div class="acts">${action}<button class="btn" data-gearfind="1">Найти</button></div>
+    </div><div class="e3right"><p class="chap">Можно получить в</p>
+      <div class="srcs">${rows.join('') || '<p class="sub">Источников пока нет.</p>'}</div>
+    </div></div></div></div>`;
   document.querySelectorAll(host + ' canvas[data-scene]').forEach(sceneThumb);
 }
+
 function closeOverlay() { DETAIL_BACK = null; $('#overlay').innerHTML = ''; if (typeof renderNotes === 'function') setTimeout(renderNotes, 0); }
 
 function set_DETAIL_BACK(v) { return DETAIL_BACK = v; }
