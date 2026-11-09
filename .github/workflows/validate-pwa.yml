@@ -16,43 +16,6 @@ concurrency:
 
 jobs:
 
-  # Временная операция для явно согласованной пересъёмки E3.
-  # Только внутренняя ветка pkg7-wip и явный маркер в заголовке PR; запуск вручную разрешён владельцем.
-  update-e3-golden:
-    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'pkg7-wip' && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.title, '[E3-UPDATE-GOLDEN]') }}
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-    defaults:
-      run:
-        working-directory: dev
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: pkg7-wip
-          fetch-depth: 1
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: dev/package-lock.json
-      - run: npm ci
-      - run: |
-          npm install --no-save --package-lock=false playwright@1.56.1
-          npx playwright install --with-deps chromium
-      - run: node tools/build.mjs
-      - name: Re-record four approved E3 golden suites
-        run: node tests/run.mjs dist/pwa/index.html --update
-      - name: Verify artifact with updated golden snapshots
-        run: node tests/run.mjs dist/artifact.html
-      - name: Commit only golden snapshots to working branch
-        run: |
-          git config user.name "dune-ci[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tests/golden/data/
-          git diff --cached --stat
-          git diff --cached --quiet || git commit -m "test(pkg7): update approved E3 golden snapshots"
-          git push origin HEAD:refs/heads/pkg7-wip
   build-and-test:
     name: Build, golden tests and 3D smoke
     runs-on: ubuntu-24.04
