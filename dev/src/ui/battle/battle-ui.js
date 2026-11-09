@@ -87,6 +87,7 @@ function launch(cfg) {
   BT.pkg9 = !!(BT.arena && !B.raid && !B.units.some(u => u.def.boss));
   BT.drawerOpen = false;
   BT.hudCompact = gfxLevel() === 'low';
+  BT.hudVisible = true;
   if (BT.pkg9) $('#battle').classList.add('pkg9');
   BT.fx = new FXLayer($('#fxc'));
   if (typeof renderNotes === 'function') renderNotes();
@@ -457,7 +458,7 @@ function renderBattle() {
   if (p9) {
     const enemy = B.units.find(u => u.side === 'B' && u.alive && u.idx === 0) || B.units.find(u => u.side === 'B' && u.alive);
     T.gauges = '<div class="bgauges pkg9-enemy">' + (enemy ? '<span class="pkg9-enemy-pt">' + portrait(enemy.def, 35) + '</span><span class="pkg9-enemy-info"><b>' + enemy.def.sn + '</b><span class="hb hp"><i style="width:' + Math.round(Math.max(0, enemy.hp) / enemy.maxHp * 100) + '%"></i></span></span>' : '') + '</div>';
-    T.ctl = '<div class="bctl pkg9-controls"><button class="pkg9-control" data-bset="1" aria-label="Настройки боя">' + GEAR_SVG + '</button><button class="pkg9-control" data-hud="1" aria-pressed="' + !BT.hudCompact + '" title="Плотность мирового HUD">▣</button><button class="pkg9-control ' + (BT.auto ? 'on' : '') + '" data-auto="1" aria-pressed="' + BT.auto + '">АВТО</button><button class="pkg9-control" data-speed="1" aria-label="Скорость боя">×' + BT.speed + '</button><button class="pkg9-dtoggle" data-bdrawer="1" aria-expanded="' + !!BT.drawerOpen + '" aria-label="Сведения о бое">❯</button></div>';
+    T.ctl = '<div class="bctl pkg9-controls"><button class="pkg9-control" data-bset="1" aria-label="Настройки боя">' + GEAR_SVG + '</button><button class="pkg9-control" data-hud="1" aria-pressed="' + BT.hudVisible + '" title="Показать/скрыть мировой HUD">▣</button><button class="pkg9-control ' + (BT.auto ? 'on' : '') + '" data-auto="1" aria-pressed="' + BT.auto + '">АВТО</button><button class="pkg9-control" data-speed="1" aria-label="Скорость боя">×' + BT.speed + '</button><button class="pkg9-dtoggle" data-bdrawer="1" aria-expanded="' + !!BT.drawerOpen + '" aria-label="Сведения о бое">❯</button></div>';
   }
   const top = `<div class="btop">
       <div class="btitle">${T.h3}<div class="order" aria-label="Порядок ходов">${T.order.join('')}${T.blog}</div></div>
@@ -470,7 +471,7 @@ function renderBattle() {
       ${drawer}${!p9 && BT.showLog ? `<div class="logpop" aria-live="polite">${B.log.slice(-14).map(l => `<div class="${l.kind}">${l.text}</div>`).join('')}</div>` : ''}
     `, bot: `<div class="bbot">${bot}</div>` };
   const bte = $('#battle'), bs = BT.speed === 1 ? '' : String(BT.speed);
-  if (p9 && bte) bte.classList.toggle('compact-world-hud', !!BT.hudCompact); if (bte && bte.style.getPropertyValue('--bs') !== bs) { if (bs) bte.style.setProperty('--bs', bs); else bte.style.removeProperty('--bs'); }   // фаза 7, шаг 5б: длительность перехода полос HP/защиты
+  if (p9 && bte) { bte.classList.toggle('compact-world-hud', !!BT.hudCompact); bte.classList.toggle('hud-hidden', !BT.hudVisible); } if (bte && bte.style.getPropertyValue('--bs') !== bs) { if (bs) bte.style.setProperty('--bs', bs); else bte.style.removeProperty('--bs'); }   // фаза 7, шаг 5б: длительность перехода полос HP/защиты
   hudSync($('#bwrap'), P, B, ctx);
   for (const e of B.events) {
     const c = document.querySelector(`.unit[data-uid="${e.uid}"]`); if (!c) continue;
