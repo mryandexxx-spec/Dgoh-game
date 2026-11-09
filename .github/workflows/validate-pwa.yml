@@ -67,7 +67,7 @@ jobs:
         run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
 
       - name: Smoke test DOM layout (phone)
-        run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only hero,skill,memory --win 800
+        run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
 
       # The smoke script's --strict mode also enforces 400 ms transitions and
       # zero warm-up shader compilations, which are nondeterministic on shared
