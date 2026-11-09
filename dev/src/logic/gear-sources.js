@@ -1,5 +1,6 @@
 // E3: детерминированный индекс мест получения фрагментов.
 // Вычисляется из существующих таблиц наград; без DOM, без копии списка миссий.
+import './gear-crafting.js'; // порядок исполнения
 import { NODES } from '../data/campaigns.js';
 import { ITEMS, NODE_ITEMS, SHOP_FRAG, RAID_FRAGS, nodeChance } from './gear.js';
 
