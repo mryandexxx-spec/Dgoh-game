@@ -47,3 +47,12 @@ body:has(#battle) .appver { left: 50%; transform: translateX(-50%); }   /* в б
 .lobby:not(.has3d)[data-lzone="1"] .bgc {transform:translateX(-33.3333%)}
 .lobby:not(.has3d)[data-lzone="2"] .bgc {transform:translateX(-66.6667%)}
 .lobby:not(.has3d)[data-lzone="0"] .spot[data-zone="0"],.lobby:not(.has3d)[data-lzone="2"] .spot[data-zone="2"] {left:var(--mx);top:var(--my)}
+
+/* True native scroll-snap fallback: one 3-screen canvas, 3 snap targets. */
+.lobby-scroll2d {position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;z-index:0}
+.lobby-scroll2d::-webkit-scrollbar {display:none}
+.lobby-scrollworld {position:relative;width:300%;height:100%}
+.lobby-scrollworld .bgc {position:absolute;inset:0;width:100%;height:100%;transform:none!important;transition:none!important}
+.lobby-snap-points {position:absolute;inset:0;display:flex;pointer-events:none}
+.lobby-snap-points span {display:block;width:33.33333%;height:100%;flex:none;scroll-snap-align:center}
+.lobby.has3d .lobby-scroll2d {display:none}
