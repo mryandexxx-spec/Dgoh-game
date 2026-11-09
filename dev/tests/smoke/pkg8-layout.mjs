@@ -42,6 +42,8 @@ try {
       if(!BT.arena) throw Error('Arena3D not mounted');
       // Замеряем геометрию самой сцены, без CSS-имитации и без сортировки по DOM.
       const A=BT.arena;
+      for (let i=0; i<100 && A.scene.getFrameId()<2; i++) await new Promise(r=>setTimeout(r,30));
+      if (A.scene.getFrameId()<2) throw Error('Arena did not render');
       const arr=Object.values(A.units).map(o=>{
         const p=A.project(o.base.add(new __B3.Vector3(0,o.h*.65,0)));
         return {side:o.side,x:p[0],y:p[1],z:o.base.z,worldX:o.base.x};
