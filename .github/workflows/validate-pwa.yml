@@ -17,7 +17,7 @@ concurrency:
 jobs:
 
   # Временная операция для явно согласованной пересъёмки E3.
-  # Только внутренняя ветка pkg7-wip и явный маркер в заголовке PR.
+  # Только внутренняя ветка pkg7-wip и явный маркер в заголовке PR; запуск вручную разрешён владельцем.
   update-e3-golden:
     if: ${{ github.event_name == 'pull_request' && github.head_ref == 'pkg7-wip' && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.title, '[E3-UPDATE-GOLDEN]') }}
     runs-on: ubuntu-24.04
