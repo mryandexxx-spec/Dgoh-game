@@ -2,19 +2,52 @@
 import { STAR_MULT } from '../../data/boss.js';
 import { SK_KEYS, autoSk } from './skills.js';
 import { BASE } from '../../data/fx.js';
+import { gearBonus } from '../../data/gear-bonuses.js';
+// Поздний модуль gear.js регистрирует детерминированный план ячеек.
+let getEquippedPlan = null;
+const ZERO_GEAR_BONUS = Object.freeze({ hp: 0, shield: 0, dmg: 0, spd: 0, crit: 0 });
+const GEAR_BONUS_CACHE = new Map(); // ограниченный кэш 512 вариантов, не хранит ссылки на героя
+function setGearStatProvider(fn) { getEquippedPlan = fn; GEAR_BONUS_CACHE.clear(); }
+function equippedBonus(def, p) {
+  if (!Array.isArray(p.eq) || !getEquippedPlan) return ZERO_GEAR_BONUS;
+  let mask = 0;
+  for (let k = 0; k < Math.min(6, p.eq.length); k++) if (p.eq[k]) mask |= 1 << k;
+  if (!mask) return ZERO_GEAR_BONUS;
+  const key = def.id + ':' + p.gear + ':' + mask;
+  const cached = GEAR_BONUS_CACHE.get(key);
+  if (cached) return cached;
+  const bonus = { hp: 0, shield: 0, dmg: 0, spd: 0, crit: 0 };
+  const plan = getEquippedPlan(def.id, p.gear);
+  for (let k = 0; k < 6; k++) {
+    if (!(mask & (1 << k))) continue;
+    const m = /^([a-z]+)[0-9]+$/.exec(plan[k] || '');
+    const w = m && gearBonus(m[1]);
+    if (!w) continue;
+    for (const stat of Object.keys(bonus)) bonus[stat] += w[stat];
+  }
+  if (GEAR_BONUS_CACHE.size >= 512) GEAR_BONUS_CACHE.clear();
+  GEAR_BONUS_CACHE.set(key, bonus);
+  return bonus;
+}
 
 function unitStats(def, p) {
   const b = BASE[def.role];
-  const rl = p.relic || 0, mult = (1 + 0.07 * (p.lvl - 1)) * STAR_MULT[p.stars] * (1 + 0.07 * (p.gear - 1 + (p.eq ? p.eq.filter(Boolean).length / 6 : 0))) * (def.pow || 1) * (1 + 0.08 * rl) * (p.pow || 1);
+  const rl = p.relic || 0;
+  // Общая прибавка от уровня снаряжения сохранена. Вместо прежних
+  // +7%/6 ко всем статам каждая надетая ячейка даёт свой профиль.
+  const base = (1 + 0.07 * (p.lvl - 1)) * STAR_MULT[p.stars] *
+    (1 + 0.07 * (p.gear - 1)) * (def.pow || 1) * (1 + 0.08 * rl) * (p.pow || 1);
+  const bonus = equippedBonus(def, p);
   return {
-    maxHp: Math.round(b.hp * mult),
-    maxShield: def.noShield ? 0 : Math.round(b.sh * mult),
-    spd: Math.round(b.spd + (p.stars - 1) * 2 + (p.gear - 1) * 1.2 + (p.lvl - 1) * 0.5 + rl * 3),
-    dmg: Math.round(b.dmg * mult),
-    arm: b.arm, pot: b.pot, ten: b.ten, crit: b.crit,
+    maxHp: Math.round(b.hp * base * (1 + bonus.hp)),
+    maxShield: def.noShield ? 0 : Math.round(b.sh * base * (1 + bonus.shield)),
+    spd: Math.round(b.spd + (p.stars - 1) * 2 + (p.gear - 1) * 1.2 + (p.lvl - 1) * 0.5 + rl * 3 + bonus.spd),
+    dmg: Math.round(b.dmg * base * (1 + bonus.dmg)),
+    arm: b.arm, pot: b.pot, ten: b.ten, crit: b.crit + bonus.crit,
     eva: (def.noShield ? .12 : .05) + (def.eva || 0),
   };
 }
+
 function unitPower(def, p) {
   const s = unitStats(def, p), sk = p.sk || autoSk(p.lvl);
   const sum = SK_KEYS.reduce((a, k) => a + (k === 'leader' && !def.leader ? 0 : (sk[k] || 1) - 1), 0);
@@ -22,4 +55,4 @@ function unitPower(def, p) {
 }
 
 
-export { unitStats, unitPower };
+export { unitStats, unitPower, setGearStatProvider };

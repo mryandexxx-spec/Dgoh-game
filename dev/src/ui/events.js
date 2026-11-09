@@ -14,9 +14,10 @@ import { claimLogin, openCalendar } from './overlays/calendar.js';
 import { claimChest, claimQuest } from './views/daily.js';
 import { fragLines, rewardWin } from './rewards.js';
 import { doRefill, doXSim, openSim, refreshAll, runSim, simCore, updSim } from './overlays/sim.js';
-import { RES_INFO, closeInfo, infoBack, infoKey, openInfo } from './overlays/info.js';
+import { RES_INFO, closeInfo, infoBack, infoKey, openInfo, set_INFO_BACK } from './overlays/info.js';
 import { DETAIL_BACK, closeOverlay, itemCtx, lvlCost, openItem, set_DETAIL_BACK, slotState } from './overlays/detail.js';
 import { lackKey, skCost } from '../logic/skill-up.js';
+import { craftAndEquip, buildPart } from '../logic/gear-crafting.js';
 import { detailSk, hcStat, openDetail, set_detailSk, updLvl } from './hero-card.js';
 import { hcFind, hcSkill, skTab } from './skill-window.js';
 import { hcMem } from './memory-screen.js';
@@ -102,11 +103,33 @@ document.addEventListener('click', e => {
   if (rosterClick(d)) return;
   if (d.open) return openDetail(d.open);
   if (d.slot) { const [cid, k] = d.slot.split(':'); return openItem(cid, +k); }
+  if (d.gearpart && itemCtx) return openItem(itemCtx.cid, itemCtx.k, d.gearpart);
+  if (d.gearroot && itemCtx) return openItem(itemCtx.cid, itemCtx.k);
+  if (d.gearfind && itemCtx) {
+    const { cid, k, partId } = itemCtx, it = slotState(cid, k).it;
+    set_INFO_BACK({ label: 'К предмету', open: () => openItem(cid, k, partId) });
+    return openInfo('frag:' + it.id);
+  }
+  if (d.buildpart && itemCtx) {
+    const { cid, k } = itemCtx, it = slotState(cid, k).it;
+    const wallet = { sol: S.solari, pl: S.plast };
+    const res = buildPart(it.id, d.buildpart, S.inv, S.gearParts, wallet);
+    if (!res.ok) return toast('Недостаточно материалов');
+    S.solari = wallet.sol; S.plast = wallet.pl;
+    persist(); toast('Компонент создан');
+    render(); return openItem(cid, k);
+  }
   if (d.iback) { if ($('#overlay2 .isheet')) closeInfo(true); return openDetail(d.iback); }
   if (d.goraid) { closeOverlay(); set_view('raid'); render(); return; }
   if (d.craft && itemCtx) {
-    const { cid, k } = itemCtx, s = slotState(cid, k), c = CRAFT(s.it.t), p = prog(cid);
-    if (!p.eq[k] && p.stars && s.have >= s.need && S.solari >= c.sol && S.plast >= c.pl) { S.inv[s.it.id] -= s.need; S.solari -= c.sol; S.plast -= c.pl; p.eq[k] = true; quest('craft'); persist(); toast(`${s.it.n} надет: ${CH[cid].sn}`); }
+    const { cid, k } = itemCtx, s = slotState(cid, k), p = prog(cid);
+    if (p.eq[k] || !p.stars) return;
+    const wallet = { sol: S.solari, pl: S.plast };
+    const result = craftAndEquip(s.it.id, S.inv, S.gearParts, wallet);
+    if (!result.ok) return toast('Недостаточно материалов для сборки');
+    S.solari = wallet.sol; S.plast = wallet.pl;
+    p.eq[k] = true; quest('craft'); persist();
+    toast(`${s.it.n} надет: ${CH[cid].sn}`);
     if ($('#overlay2 .isheet')) closeInfo(true);
     render(); return openDetail(cid);
   }

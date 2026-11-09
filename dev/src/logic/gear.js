@@ -5,6 +5,7 @@ import { ROMAN } from './economy.js';
 import { CAMP_KEYS, NODES, campNodes } from '../data/campaigns.js';
 import { ghash } from '../data/looks.js';
 import { sRng } from '../core/rng.js';
+import { setGearStatProvider } from './battle/stats.js';
 
 // ===== gear =====
 const ITEM_KINDS = [['mask', 'Фильтр-маска'], ['boots', 'Сапоги-песчаники'], ['belt', 'Пояс-разгрузка'], ['knife', 'Боевой нож'], ['cloak', 'Пустынный плащ'], ['ring', 'Перстень-печать'],
@@ -24,6 +25,7 @@ function gearPlan(cid, t) {
   for (let i = kinds.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
   return kinds.slice(0, 6).map(k => k + t);
 }
+setGearStatProvider(gearPlan);
 const NODE_ITEMS = (() => {
   const m = NODES.map(() => []), band = i => Math.min(11, 1 + Math.floor(NODES[i].lvl / 7.4));
   for (const ck of CAMP_KEYS) {

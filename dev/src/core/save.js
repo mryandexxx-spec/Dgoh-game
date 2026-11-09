@@ -22,7 +22,7 @@ function fillSave(s) {
   s.folio ??= 10; s.seal ??= 0; s.wol ??= 0; s.seenDlg ??= {}; s.skipDlg ??= false; s.sealBuy ??= { d: '', n: 0 }; s.sealClaim ??= {};
   for (const id in s.roster) s.roster[id].sk ??= { basic: 1, special: 1, ult: 1, passive: 1, leader: 1 };
   s.cry ??= 200; s.cryClaim ??= {}; s.refills ??= { d: '', n: 0 };
-  s.inv ??= {}; for (const id in s.roster) s.roster[id].eq ??= [false, false, false, false, false, false];
+  s.inv ??= {}; s.gearParts ??= {}; for (const id in s.roster) s.roster[id].eq ??= [false, false, false, false, false, false];
   s.core ??= 0; s.teeth ??= 0; s.raid ??= null; s.raidKills ??= []; s.journey ??= {}; s.journeys ??= { muaddib: s.journey, liet: {} }; s.jKey ??= 'muaddib'; s.jPicks ??= { muaddib: s.jPick || [], liet: [] }; s.raidPick ??= []; s.jPick ??= [];
   return s;
 }

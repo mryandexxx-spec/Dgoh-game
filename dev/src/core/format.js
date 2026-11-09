@@ -1,5 +1,5 @@
 // core/format.js — форматирование чисел и иконки ресурсов (строки HTML без доступа к DOM), вынесены из core/save.js (фаза 2).
-import '../logic/gear.js'; // порядок исполнения
+import '../logic/gear-sources.js'; // порядок исполнения
 
 const fmt = n => n.toLocaleString('ru-RU');
 const ICONS_RES = {

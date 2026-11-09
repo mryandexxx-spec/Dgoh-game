@@ -23,6 +23,7 @@ import { amt, fmt, ic } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
 import { itemIcon, starStr, thumb } from '../common.js';
 import { RING_RATE } from '../../logic/rewards.js';
+import { gearSources } from '../../logic/gear-sources.js';
 
 // ===== info popups =====
 function campRow(i, note) {
@@ -37,13 +38,20 @@ const navRow = (icon, title, text, btns) => `<div class="src"><div class="srci">
 const wormIco = () => `<svg viewBox="0 0 24 24" style="color:var(--worm)">${SPOT_ICONS.worm}</svg>`;
 const go = (v, label) => `<button class="btn mini" data-goto="${v}">${label}</button>`;
 function itemSourceRows(it) {
-  const rows = pickSrc(NODES.map((n, i) => i).filter(i => NODE_ITEMS[i].includes(it.id))).map(i => campRow(i, `шанс ≈${Math.round(nodeChance(i) * 100)}% за бой`));
-  if (SHOP_FRAG[it.t]) rows.push(navRow(ic('teeth'), 'Лавка сиетча', `${amt('teeth', SHOP_FRAG[it.t])} за фрагмент · у вас ${amt('teeth', S.teeth)}`,
-    [1, 5].map(q => `<button class="btn mini" data-fbuy="${it.id}:${q}" ${S.teeth >= q * SHOP_FRAG[it.t] ? '' : 'disabled'}>Купить ${q}<small>${amt('teeth', q * SHOP_FRAG[it.t])}</small></button>`).join('')));
-  const raidT = RAID_FRAGS.map((r, t) => r.tiers.includes(it.t) ? t : -1).filter(t => t >= 0);
-  if (raidT.length) rows.push(navRow(wormIco(), 'Рейд «Шаи-Хулуд»', `Случайные фрагменты ${raidT.map(t => 'Т' + (t + 1)).join(', ')} в награде за урон`, go('raid', 'К рейду')));
+  const sources = gearSources(it.id);
+  const missions = pickSrc(sources.filter(s => s.type === 'mission').map(s => s.id));
+  const rows = missions.map(i => campRow(i, `шанс ≈${Math.round(nodeChance(i) * 100)}% за бой`));
+  const shop = sources.find(s => s.type === 'sietch');
+  if (shop) rows.push(navRow(ic('teeth'), 'Лавка сиетча',
+    `${amt('teeth', shop.price)} за фрагмент · у вас ${amt('teeth', S.teeth)}`,
+    [1, 5].map(q => `<button class="btn mini" data-fbuy="${it.id}:${q}" ${S.teeth >= q * shop.price ? '' : 'disabled'}>Купить ${q}<small>${amt('teeth', q * shop.price)}</small></button>`).join('')));
+  const raids = sources.filter(s => s.type === 'raid');
+  if (raids.length) rows.push(navRow(wormIco(), 'Рейд «Шаи-Хулуд»',
+    `Случайные фрагменты Т${raids.map(s => s.tier + 1).join(', Т')} в награде за урон`,
+    go('raid', 'К рейду')));
   return rows;
 }
+
 let infoKey = null;
 // пакет 6: окно поиска, открытое из окна умения / «Другой памяти», возвращает к нему (кнопка «‹» и закрытие)
 let INFO_BACK = null;      // { label, open }
