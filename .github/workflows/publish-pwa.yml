@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  pages: write
 
 concurrency:
   group: dune-goh-release
@@ -85,6 +86,14 @@ jobs:
             git commit -m "deploy: publish Dune GoH v${VERSION} PWA [skip ci]"
             git push origin HEAD:main
           fi
+
+      # A push made with GITHUB_TOKEN does not automatically trigger Pages.
+      # Request the branch-based Pages rebuild explicitly after updating main.
+      - name: Request GitHub Pages rebuild
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${{ github.repository }}/pages/builds"
 
       - name: Upload release PWA
         uses: actions/upload-artifact@v4
