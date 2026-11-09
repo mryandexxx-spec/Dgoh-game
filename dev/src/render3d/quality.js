@@ -43,6 +43,15 @@ PROFILES.low = { ...PROFILES.med, dpr: { arena: 1.25, hero: [1.5, 1], camp: 1.25
 PROFILES.low30 = { ...PROFILES.low, arenaActive: 30 };
 const ORDER = ['high', 'med', 'low'], STEPS = ['high', 'med', 'low', 'low30'];
 const KEY = 'dune-gfx';
+// Отдельный тестовый лимит FPS активного боя. null — профиль управляет FPS как раньше.
+const BATTLE_FPS_KEY = 'dune-battle-fps';
+function readBattleFps() {
+  try { const value = localStorage.getItem(BATTLE_FPS_KEY); return value === '30' ? 30 : value === '60' ? 60 : null; } catch (e) { return null; }
+}
+function setBattleFps(value) {
+  if (value !== 30 && value !== 60) return;
+  try { localStorage.setItem(BATTLE_FPS_KEY, String(value)); } catch (e) {}
+}
 let STORE = null; // прочитанное значение; пишется только через setGfx
 function readGfx() {
   if (STORE) return STORE;
@@ -112,4 +121,4 @@ function glowy(M) {
   const c = M.emissiveColor; return !!c && c.r + c.g + c.b > .02;
 }
 
-export { gfx, gfxLevel, gfxStep, readGfx, setGfx, gfxMemFallback, gfxReport, SAVE_LOW, dofOn, glowOnly };
+export { gfx, gfxLevel, gfxStep, readGfx, setGfx, gfxMemFallback, gfxReport, SAVE_LOW, dofOn, glowOnly, readBattleFps, setBattleFps };
