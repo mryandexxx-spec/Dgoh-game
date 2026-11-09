@@ -61,8 +61,15 @@ class CampStage extends Stage3D {
   tick(now, t) {
     const f = .85 + Math.sin(t * 9) * .08 + Math.sin(t * 23) * .06 + Math.sin(t * 3.1) * .05; this.fireL.intensity = 2.6 * f; this.fireL.position.x = this.fire.x + Math.sin(t * 7) * .04;
     for (const o of Object.values(this.units)) poseHuman(this, o, now, t, 1);
-    const a = Math.sin(t * .05) * .28, R = 7, asp = (this.w || 1) / (this.h || 1), rr = R;
-    this.camera.position.set(Math.sin(a) * rr, 2.6 + Math.sin(t * .11) * .15, this.fire.z + Math.cos(a) * rr); this.camera.setTarget(this._tg || (this._tg = V3(0, 1.1, .3))); this.camera.fov = .82;
+    // B1: camera translation on a rail. No autonomous rotation while idle.
+    const lobby = this._lv && this._lv.isConnected ? this._lv : document.querySelector('.lobby');
+    const desired = lobby ? (+lobby.dataset.lzone - 1) * 7.5 : 0;
+    if (!Number.isFinite(this.railX)) this.railX = 0;
+    this.railX += (desired - this.railX) * Math.min(1, Math.max(0, (now - (this._railNow || now)) / 180));
+    this._railNow = now;
+    this.camera.position.set(this.railX, 2.6, this.fire.z + 7);
+    this.camera.setTarget(this._tg || (this._tg = V3(0, 1.1, .3)));
+    this._tg.set(this.railX, 1.1, .3); this.camera.fov = .82;
     if (this.flag) this.flag.forEach((fl, i) => { fl.rotation.y = Math.sin(t * 1.3 + i) * .25; });
   }
   post() {
