@@ -108,3 +108,38 @@
 .swdesc > .swcap { color: var(--spice); margin-bottom: 2px; }
 .btn.swup { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
 .membuy .btn { white-space: nowrap; flex: none; }
+
+/* E3 — окно снаряжения: две прокручиваемые колонки, без анимаций layout. */
+.e3sheet { width: min(810px, calc(100vw - 24px)); max-width: 100%; max-height: calc(100dvh - 12px); overflow: hidden; display: flex; flex-direction: column; gap: 6px; padding: 9px 12px; }
+.e3crumb { display: flex; align-items: center; gap: 6px; min-height: 28px; color: var(--dust); font-size: 11px; white-space: nowrap; overflow: hidden; }
+.e3crumb .btn { flex: none; }
+.e3sheet .ihead { flex: none; margin: 0; gap: 10px; }
+.e3sheet .ihead h3 { margin: 0 0 2px; font-size: clamp(17px, 2.5vw, 23px); }
+.e3sheet .ihead small { color: var(--dust); font-size: 10px; }
+.e3grid { display: grid; grid-template-columns: minmax(230px, .95fr) minmax(0, 1.05fr); gap: 12px; min-height: 0; flex: 1; }
+.e3left, .e3right { min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; padding-right: 3px; }
+.e3sheet .chap { margin: 4px 0; font-size: 11px; letter-spacing: .08em; }
+.e3stats { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; margin-bottom: 5px; }
+.e3stats > div { display: flex; justify-content: space-between; gap: 4px; border-bottom: 1px solid var(--line); font-size: 11px; }
+.e3stats span { color: var(--dust); } .e3stats b { font: 600 10px var(--f-mono); }
+.e3materials { display: grid; gap: 4px; }
+.e3mat { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 29px; width: 100%; padding: 4px 7px; font: 11px var(--f-body); text-align: left; color: var(--bone); background: #241910; border: 1px solid var(--line); border-radius: 2px; }
+.e3mat > b { color: var(--spice); }
+.e3cost { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 6px; font-size: 10px; color: var(--dust); }
+.e3sheet .acts { margin: 6px 0 0; display: flex; flex-wrap: nowrap; gap: 6px; }
+.e3sheet .acts .btn { min-width: 0; flex: 1; padding: 5px 8px; font-size: 10px; }
+.e3right .srcs { display: grid; gap: 5px; }
+.e3right .src { margin: 0; min-height: 48px; }
+.e3right .srct { min-width: 0; }
+.e3right .srct b { font-size: 11px; }
+.e3right .srct span { font-size: 10px; }
+.e3right .srca { gap: 3px; }
+.e3right .btn.mini { padding: 3px 5px; font-size: 9px; }
+@media (max-width: 700px) {
+  .e3sheet { width: calc(100vw - 10px); max-height: calc(100dvh - 6px); padding: 6px 8px; gap: 3px; }
+  .e3grid { grid-template-columns: minmax(200px, .9fr) minmax(0, 1.1fr); gap: 6px; }
+  .e3sheet .ihead { gap: 6px; }
+  .e3sheet .ihead > :first-child { transform: scale(.85); transform-origin: left center; }
+  .e3sheet .acts .btn { font-size: 9px; padding: 4px; }
+  .e3right .srca { flex-wrap: wrap; }
+}
