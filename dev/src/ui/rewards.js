@@ -13,10 +13,17 @@ import { accGain, applyRewards } from '../logic/rewards.js';
 // ===== rewards helper =====
 function rewardWin(title, lines, o = {}) {
   const old = $('#rwwin'); if (old) old.remove();
+  const focus = o.focusItem && ITEMS[o.focusItem];
+  const focusHtml = focus ? `<div class="e3reward-focus" role="status">
+    ${itemIcon(focus, 26)} <span>Искомый предмет: <b>${focus.n}</b></span>
+    <span class="mono">В запасе ${(o.inv || {})[focus.id] || 0}</span></div>` : '';
+  const rewardLines = lines.map(l => focus && l.includes(focus.n)
+    ? `<li class="e3reward-hit">${l}</li>` : `<li>${l}</li>`).join('');
   const el = document.createElement('div'); el.id = 'rwwin'; el.className = 'result won rwwin' + (o.cls ? ' ' + o.cls : '');
-  el.innerHTML = `<div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${MOUSE_SVG(false)}</div><h3>${title}</h3>${o.sub ? `<div style="color:var(--dust)">${o.sub}</div>` : ''}<ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><div class="acts" style="justify-content:center">${o.btns || ''}<button class="btn ${o.btns ? '' : 'go'}" data-rwok="1">${o.ok || 'Забрать'}</button></div></div>`;
+  el.innerHTML = `<div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${MOUSE_SVG(false)}</div><h3>${title}</h3>${focusHtml}${o.sub ? `<div style="color:var(--dust)">${o.sub}</div>` : ''}<ul>${rewardLines}</ul><div class="acts" style="justify-content:center">${o.btns || ''}<button class="btn ${o.btns ? '' : 'go'}" data-rwok="1">${o.ok || 'Забрать'}</button></div></div>`;
   document.body.appendChild(el);
 }
+
 function giveRewards(list) {
   return applyRewards(list).map(r => r.k === 'shard' ? `+${amt('shard', r.q, 'shard:' + r.id)} ${CH[r.id].sn}${r.unlocked ? ' — персонаж открыт!' : ''}` : `+${amt(r.k, r.q)} ${RW_NAME[r.k]}`);
 }
