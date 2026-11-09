@@ -68,7 +68,8 @@ class CampStage extends Stage3D {
     for (const o of Object.values(this.units)) poseHuman(this, o, now, t, 1);
     // B1: camera translation on a rail. No autonomous rotation while idle.
     const lobby = this._lv && this._lv.isConnected ? this._lv : document.querySelector('.lobby');
-    const desired = lobby ? (+lobby.dataset.lzone - 1) * 7.5 : 0;
+    const rail = lobby && lobby.dataset.lrail !== undefined ? +lobby.dataset.lrail : (lobby ? +lobby.dataset.lzone : 1);
+    const desired = (rail - 1) * 7.5;
     if (!Number.isFinite(this.railX)) this.railX = 0;
     this.railX += (desired - this.railX) * Math.min(1, Math.max(0, (now - (this._railNow || now)) / 180));
     this._railNow = now;
@@ -108,7 +109,7 @@ class CampStage extends Stage3D {
   }
   paused() { return !!(BT && BT.B) || !!document.querySelector('#overlay .detail, #overlay .sqsel'); }
   // шаг 6: лагерь — фоновая сцена, 30 fps (20 в упрощённой графике); флаг перечитывается раз в секунду
-  idleMode(now) { if (!(now - this._lowAt < 1000)) { this._low = gfx(this.small).campIdle; this._lowAt = now; } return this._low; }
+  idleMode(now) { if (Math.abs((this.railX || 0) - (((this._lv && +this._lv.dataset.lzone) || 1) - 1) * 7.5) > .05 || (this._lv && this._lv.dataset.lrail !== undefined)) return 'active'; if (!(now - this._lowAt < 1000)) { this._low = gfx(this.small).campIdle; this._lowAt = now; } return this._low; }
   slashFX() {} muzzleFX() {} voiceFX() {} castFX() {}
 }
 const S_FLAG = () => '#4c6b4e';
