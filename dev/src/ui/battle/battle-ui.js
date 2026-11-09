@@ -76,7 +76,7 @@ function launch(cfg) {
   BT.arena = null;
   if (HAS3D) { try { BT.arena = new Arena3D($('#bgc'), cfg.scene || 'desert', B); } catch (e) { console.warn('3D недоступно', e); BT.arena = null; const nc = document.createElement('canvas'); nc.className = 'bgc'; nc.id = 'bgc'; $('#bgc').replaceWith(nc); } }
   if (!BT.arena) new SceneBG($('#bgc'), cfg.scene || 'desert', .36);
-  else { const A = BT.arena; A.onLost = () => { if (!BT || BT.arena !== A) return; BT.arena = null; try { A.dispose(); } catch (e) {} const nc = document.createElement('canvas'); nc.className = 'bgc'; nc.id = 'bgc'; const oc = $('#bgc'); if (oc) oc.replaceWith(nc); new SceneBG(nc, cfg.scene || 'desert', .36); const bt = $('#battle'); if (bt) bt.classList.remove('raid3d', 'squad3d', 'compact-world-hud'); try { renderBattle(); } catch (e) { errLog('2d', e); } toast('3D-графика сброшена системой — бой продолжается в упрощённом виде'); }; }
+  else { const A = BT.arena; A.onLost = () => { if (!BT || BT.arena !== A) return; BT.arena = null; try { A.dispose(); } catch (e) {} const nc = document.createElement('canvas'); nc.className = 'bgc'; nc.id = 'bgc'; const oc = $('#bgc'); if (oc) oc.replaceWith(nc); new SceneBG(nc, cfg.scene || 'desert', .36); const bt = $('#battle'); if (bt) bt.classList.remove('raid3d', 'squad3d', 'compact-world-hud', 'pkg9'); BT.pkg9 = false; BT.drawerOpen = false; try { renderBattle(); } catch (e) { errLog('2d', e); } toast('3D-графика сброшена системой — бой продолжается в упрощённом виде'); }; }
   battleMark(cfg);
   if (BT.arena && B.raid) $('#battle').classList.add('raid3d');
   // A2: только обычные 3D-бои. Рейд/босс и 2D fallback оставляют исходный HUD.
