@@ -101,6 +101,16 @@ jobs:
       - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
       - run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
       - run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
+      - name: Package 8 real WebGL camera and formation (844/667)
+        run: node tests/smoke/pkg8-layout.mjs dist/pwa/index.html dist/pkg8-shots
+      - name: Upload package 8 screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-pkg8-camera-${{ github.run_number }}
+          path: dev/dist/pkg8-shots/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Upload E3 screenshots
         if: always()
         uses: actions/upload-artifact@v4
