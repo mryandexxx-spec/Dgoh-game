@@ -50,7 +50,8 @@ function doXSim(spec) {
   refreshAll();
   const more = enGet(en) >= cost;
   rewardWin(`Симуляция ×${kk}`, r.lines, { sub: `${nodeTitle(i)} · потрачено ${amt(en, cost)}${focus}`, ok: 'Готово',
-    btns: `<button class="btn go ${more ? '' : 'lack'}" data-isim="${spec}" ${more ? '' : 'disabled'}>Ещё ×${kk}<small>${amt(en, cost)}</small></button>` });
+    btns: `<button class="btn go ${more ? '' : 'lack'}" data-isim="${spec}" ${more ? '' : 'disabled'}>Ещё ×${kk}<small>${amt(en, cost)}</small></button>`,
+    focusItem: itemCtx && ($('#overlay .isheet') || $('#overlay2 .isheet')) ? slotState(itemCtx.cid, itemCtx.k).it.id : (kind === 'frag' ? id : null), inv: S.inv });
 }
 
 let simNode = null;
