@@ -3,7 +3,9 @@ import { STAR_MULT } from '../../data/boss.js';
 import { SK_KEYS, autoSk } from './skills.js';
 import { BASE } from '../../data/fx.js';
 import { gearBonus } from '../../data/gear-bonuses.js';
-import { gearPlan } from '../gear.js';
+// Поздний модуль gear.js регистрирует детерминированный план ячеек.
+let getEquippedPlan = null;
+function setGearStatProvider(fn) { getEquippedPlan = fn; }
 
 function unitStats(def, p) {
   const b = BASE[def.role];
@@ -14,7 +16,7 @@ function unitStats(def, p) {
     (1 + 0.07 * (p.gear - 1)) * (def.pow || 1) * (1 + 0.08 * rl) * (p.pow || 1);
   const bonus = { hp: 0, shield: 0, dmg: 0, spd: 0, crit: 0 };
   if (Array.isArray(p.eq)) {
-    const plan = gearPlan(def.id, p.gear);
+    const plan = getEquippedPlan ? getEquippedPlan(def.id, p.gear) : [];
     for (let k = 0; k < Math.min(6, p.eq.length); k++) {
       if (!p.eq[k]) continue;
       const m = /^([a-z]+)\d+$/.exec(plan[k] || '');
@@ -40,4 +42,4 @@ function unitPower(def, p) {
 }
 
 
-export { unitStats, unitPower };
+export { unitStats, unitPower, setGearStatProvider };
