@@ -104,16 +104,24 @@ class Arena3D extends GameScene {
       const col = row ? (k === 1 ? -.5 : .5) : (k === 0 ? -1 : k === 2 ? 0 : 1), x = col * gap, z = row ? z0 - 3 : z0 + .8;
       return [x, this.heightAt(x, z), z];
     }
-    return [sx, this.heightAt(sx, sz), sz];
+    // Пакет 8: две шахматные формации 3+2 по линии взгляда, а не боковые шеренги.
+    // idx 0/2/4: ближняя к противнику тройка; 1/3: два бойца позади.
+    // z — физический интервал между моделями, x — глубина; размеры не зависят от CSS.
+    const ally = sx < 0, lane = [0, -2.5, 5, 2.5, -5][idx ?? 0] ?? 0;
+    // Из-за диагональной перспективы обычного интервала 2.4 м недостаточно:
+    // экранные силуэты начинают перекрываться. Разводим ряды вдоль оси атаки.
+    const rear = idx === 1 || idx === 3, x = ally ? (rear ? -10 : -6) : (rear ? 13 : 6);
+    return [x, this.heightAt(x, lane), lane];
   }
   relayout() { for (const uid in this.units) { const o = this.units[uid]; if (!o.slot) continue; const [x, y, z] = this.slotPos(o.slot); o.base.set(x, y, z); o.ring.position.set(x, y + .05, z); if (o.pool) o.pool.position.set(x, y + .04, z); } }
   resize() {
     const z = cvSize(this.cv), w = z.w || innerWidth, h = z.h || innerHeight;
     const relay = this.w && this.raid && (w !== this.w || h !== this.h);
     this.w = w; this.h = h; this.engine.resize(); this._hm = 0;
-    const a = w / h; let fov = a > 1.9 ? 30 : 33;
-    this.camDist = 18.5; this.camH = 11.5; this.look = V3(0, .55, -.6);
-    if (this.raid) { fov = a < .8 ? 58 : a < 1.2 ? 46 : 38; this.camDist = a < .8 ? 27 : 23; this.camH = 7.5; this.look = V3(0, a < .8 ? 5.5 : 5, -3); }
+    const a = w / h, C = gfx(this.small).battleCamera;
+    let fov = C.fov;
+    this.camX = C.x; this.camDist = C.z; this.camH = C.y; this.look = V3(0, C.lookY, 0);
+    if (this.raid) { fov = a < .8 ? 58 : a < 1.2 ? 46 : 38; this.camX = 0; this.camDist = a < .8 ? 27 : 23; this.camH = 7.5; this.look = V3(0, a < .8 ? 5.5 : 5, -3); }
     this.fovDeg = fov; this.camera.fov = fov * Math.PI / 180;
     if (relay || (this.raid && !this.laidOut)) { this.laidOut = true; this.relayout(); }
   }
@@ -315,7 +323,7 @@ class Arena3D extends GameScene {
       const fx = pa.x, fy = pa.y, hpx = Math.max(20, fy - pb.y), x = this._hdx + fx, y = this._hdy + fy;
       if (!el._hp) { el._hp = 1; el.style.left = '0px'; el.style.top = '0px'; el._hx = el._hy = NaN; }
       if (!(Math.abs(x - el._hx) < .25 && Math.abs(y - el._hy) < .25)) { el._hx = x; el._hy = y; el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -100%)`; }
-      if (!(Math.abs(hpx - el._fh) <= 1)) { el._fh = hpx; el.style.setProperty('--fh', hpx + 'px'); el.style.setProperty('--w', Math.max(44, hpx * (o.boss ? .9 : .5)) + 'px'); }
+      if (!(Math.abs(hpx - el._fh) <= 1)) { el._fh = hpx; el.style.setProperty('--fh', hpx + 'px'); el.style.setProperty('--w', this.raid ? Math.max(44, hpx * (o.boss ? .9 : .5)) + 'px' : Math.max(48, Math.min(66, hpx * .62)) + 'px'); }
     }
   }
   loop() {
@@ -341,8 +349,11 @@ class Arena3D extends GameScene {
     const t = now / 1000, dt = Math.min(.05, (now - (this.last || now)) / 1000); this.last = now;
     const sp = Math.max(1, this.speed);
     // camera
-    const cam = this.camera, sway = Math.sin(t * .13) * 1.1, LK = this.look;
-    const pos = this._cp || (this._cp = V3()), look = this._cl || (this._cl = V3()), T1 = this._ct || (this._ct = V3()); pos.set(sway, this.camH + Math.sin(t * .09) * .2, this.camDist); look.copyFrom(LK);
+    const cam = this.camera, sway = this.raid ? Math.sin(t * .13) * 1.1 : 0, LK = this.look;
+    const pos = this._cp || (this._cp = V3()), look = this._cl || (this._cl = V3()), T1 = this._ct || (this._ct = V3());
+    // Обычный бой: неподвижная диагональная камера — ни лишнего движения, ни постоянного параллакса HUD.
+    // Рейд: прежний ракурс и дыхание камеры без изменений.
+    pos.set((this.camX || 0) + sway, this.camH + (this.raid ? Math.sin(t * .09) * .2 : 0), this.camDist); look.copyFrom(LK);
     if (this.shakeT && now - this.shakeT < 300) { const k = 1 - (now - this.shakeT) / 300; pos.x += (Math.random() - .5) * .25 * k; pos.y += (Math.random() - .5) * .25 * k; }
     if (this.glT && now - this.glT < 1600) { const k = Math.sin(Math.min(1, (now - this.glT) / 1600) * Math.PI); T1.set(0, this.camH * .7, this.camDist * .72); B3.Vector3.LerpToRef(pos, T1, k * .5, pos); look.set(LK.x, LK.y + .35, LK.z); if (this.glLight) this.glLight.intensity = 4 * k; }
     else if (this.glLight) this.glLight.intensity = 0;
