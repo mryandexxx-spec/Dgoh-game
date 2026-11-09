@@ -8,6 +8,7 @@ const require = createRequire(import.meta.url);
 const puppeteer = require('puppeteer-core');
 const html = path.resolve(process.argv[2] || 'dist/pwa/index.html');
 const shots = path.resolve(process.argv[3] || 'dist/pkg8-shots');
+const baseline = process.argv.includes('--baseline');
 const chrome = process.env.CHROME_PATH || ['/usr/bin/google-chrome', '/usr/bin/chromium'].find(f => fs.existsSync(f));
 if (!chrome) throw Error('Chrome not found');
 const SAVE = fs.readFileSync('tests/fixtures/saves/03-late.json', 'utf8');
@@ -60,15 +61,15 @@ try {
         compact:document.getElementById('battle').classList.contains('compact-world-hud')};
     });
     await new Promise(r=>setTimeout(r,1200));
-    await page.screenshot({path:path.join(shots,`battle-${width}-${gfx}.png`)});
+    await page.screenshot({path:path.join(shots,`battle-${width}-${gfx}${baseline?'-v75':''}.png`)});
     const all=result.arr, ally=all.filter(o=>o.side==='A'), enemy=all.filter(o=>o.side==='B');
-    const valid= !errors.length && result.cam.x < -10 &&
+    const valid=baseline ? !errors.length && all.length===10 : !errors.length && result.cam.x < -10 &&
       ally.every(o=>o.worldX<0) && enemy.every(o=>o.worldX>0) &&
       result.allyMin >= 45 && result.enemyMin >= 43 &&
       Math.max(...ally.map(o=>o.x)) < Math.max(...enemy.map(o=>o.x)) &&
       result.compact === (gfx==='low') &&
       all.every(o=>o.x>=35&&o.x<=width-30&&o.y>=65&&o.y<=height-45);
-    console.log((valid?'PASS':'FAIL')+' camera + 5x5 spacing '+width+'×'+height+' '+gfx+
+    console.log((valid?'PASS':'FAIL')+(baseline?' v75 reference ':' camera + 5x5 spacing ')++width+'×'+height+' '+gfx+
       ' ally '+result.allyMin.toFixed(1)+'px enemy '+result.enemyMin.toFixed(1)+'px'+
       ' camera '+JSON.stringify(result.cam)+' errors '+errors.length);
     if(!valid){ console.log(JSON.stringify(result));failed++;}
