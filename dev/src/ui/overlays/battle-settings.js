@@ -11,7 +11,7 @@ import { toast } from '../common.js';
 import { BT, NOTES, S, set_BT, set_view, view } from '../../core/state.js';
 import { persist } from '../../core/save.js';
 import { GLYPH } from '../../data/glyphs.js';
-import { setGfx, readGfx, gfxStep } from '../../render3d/quality.js';
+import { setGfx, readGfx, gfxStep, readBattleFps, setBattleFps } from '../../render3d/quality.js';
 import { aiPlan } from '../../logic/battle/ai.js';
 import { fmt } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
@@ -27,6 +27,7 @@ function openBattleSettings() {
       <button class="btn bsb" data-bscine="1"><b>Наезд камеры</b><small>${CINE_OFF() ? 'выключен — камера неподвижна' : 'включён на особых и мощных умениях'}</small></button>
       <button class="btn bsb" data-bsdlg="1"><b>Диалоги перед боем</b><small>${S.skipDlg ? 'выключены' : 'включены'}</small></button>
       ${gfxRow()}
+      ${battleFpsRow()}
     </div>
     <div class="acts"><button class="btn" data-bsreplay="1">${GLYPH.march ? '' : ''}Переиграть<small>начать бой заново</small></button><button class="btn danger" data-bsquit="1">Отступить<small>засчитается поражение</small></button><button class="btn go" data-bpopx="1" style="margin-left:auto">Продолжить</button></div>`);
 }
@@ -40,6 +41,12 @@ function gfxRow() {
   return `<div class="bsgfx"><div class="bsgh"><b>Графика</b><small>сейчас: ${GFX_NOW[gfxStep()]}</small></div>
         <div class="bsseg" role="radiogroup" aria-label="Графика">${GFX_OPT.map(([k, t]) => `<button class="btn${k === p ? ' on' : ''}" role="radio" aria-checked="${k === p}" data-bsgfx="${k}">${t}</button>`).join('')}</div>
         <small>${GFX_CAP[p]} Применится со следующего боя.</small></div>`;
+}
+function battleFpsRow() {
+  const selected = readBattleFps() ?? (gfxStep() === 'low30' ? 30 : 60);
+  return `<div class="bsgfx"><div class="bsgh"><b>FPS в активном бою</b><small>графика не меняется</small></div>
+    <div class="bsseg" role="radiogroup" aria-label="FPS в бою">${[30, 60].map(n => `<button class="btn${n === selected ? ' on' : ''}" role="radio" aria-checked="${n === selected}" data-bsfps="${n}">${n} FPS</button>`).join('')}</div>
+    <small>Только активные анимации боя. Ожидание и остальные экраны без изменений.</small></div>`;
 }
 // шаг 6: адаптивное понижение (engine-host → quality.gfxReport) сообщает о смене ступени после боя
 const GFX_TOAST = { down: 'Графика снижена до «{l}» для плавности — можно изменить в настройках боя', up: 'Плавность в норме — графика повышена до «{l}»' };
@@ -62,6 +69,7 @@ function meta2Click(d) {
   if (d.bsspeed) { BT.speed = BT.speedPref = BT.speed >= 4 ? 1 : BT.speed * 2; $('#bpop').remove(); BT.pop = false; renderBattle(); openBattleSettings(); return true; }
   if (d.bslog) { BT.showLog = !BT.showLog; $('#bpop').remove(); BT.pop = false; renderBattle(); openBattleSettings(); return true; }
   if (d.bsgfx) { if (d.bsgfx !== readGfx().p) { setGfx(d.bsgfx); $('#bpop').remove(); BT.pop = false; openBattleSettings(); toast('Применится со следующего боя'); } return true; }
+  if (d.bsfps) { const n = Number(d.bsfps); if (n === 30 || n === 60) { setBattleFps(n); $('#bpop').remove(); BT.pop = false; openBattleSettings(); } return true; }
   if (d.bscine) { try { localStorage.setItem('dune-cine-off', JSON.stringify(!CINE_OFF())); } catch (e) {} $('#bpop').remove(); BT.pop = false; openBattleSettings(); return true; }
   if (d.bsdlg) { S.skipDlg = !S.skipDlg; persist(); $('#bpop').remove(); BT.pop = false; openBattleSettings(); return true; }
   if (d.bsreplay) { $('#bpop').remove(); BT.pop = false; BT.resume = null; replayBattle(); return true; }
