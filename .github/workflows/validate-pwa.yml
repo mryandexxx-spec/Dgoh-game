@@ -3,8 +3,7 @@ name: Validate Dune GoH PWA
 on:
   pull_request:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -15,76 +14,94 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
-    name: Build, golden tests and 3D smoke
+  build:
+    name: Build once + architecture + SHA-256 manifest
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 12
     defaults:
       run:
         working-directory: dev
-
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
           cache-dependency-path: dev/package-lock.json
+      - run: npm ci
+      - run: node tools/check-deps.mjs
+      - run: npm run build
+      - run: node tools/check-bundle.mjs dist/pwa/app.js
+      - run: node tests/smoke/gear-e3.mjs
+      - run: node tools/ci-artifact.mjs make
+      - name: Upload the only production build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-validated-build
+          path: dev/dist/
+          if-no-files-found: error
+          retention-days: 14
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Check module layering
-        run: node tools/check-deps.mjs
-
-      - name: Build PWA and artifact (without deploying)
-        run: npm run build
-
-      - name: Validate bundle order and exported names
-        run: node tools/check-bundle.mjs dist/pwa/app.js
-
-      - name: Install Playwright for DOM golden tests
-        run: |
+  golden:
+    name: Golden (200 battles, meta, saves, 41 screens; PWA + artifact)
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dune-validated-build
+          path: dev/dist
+      - run: node tools/ci-artifact.mjs verify
+      - name: Cache Playwright Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium-1.56.1
+      - run: |
           npm install --no-save --package-lock=false playwright@1.56.1
           npx playwright install --with-deps chromium
+      - run: npm test
 
-      - name: Install Chrome for DOM and WebGL smoke tests
+  ui:
+    name: E3 iPhone UI + DOM idle layout
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dune-validated-build
+          path: dev/dist
+      - run: node tools/ci-artifact.mjs verify
+      - uses: browser-actions/setup-chrome@v1
         id: chrome
-        uses: browser-actions/setup-chrome@v1
         with:
           chrome-version: stable
-
-      - name: Set Chrome path
-        run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
-
-      - name: Verify E3 recipes and crafting
-        run: node tests/smoke/gear-e3.mjs
-
-      - name: Smoke test E3 UI (844 and iPhone SE)
-        run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
-
-      - name: Smoke test DOM layout (phone)
-        run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
-
-      # The smoke script's --strict mode also enforces 400 ms transitions and
-      # zero warm-up shader compilations, which are nondeterministic on shared
-      # GitHub runners (SwiftShader). We gate resource safety and console errors,
-      # and retain full timings/compilation output as diagnostic artifacts.
-      - name: Smoke test 3D lifecycle (phone)
-        run: |
-          set -o pipefail
-          node tests/smoke/3d.mjs dist/pwa/index.html --cycles 2 --phone | tee dist/smoke-phone.log
-          grep -Fq 'PASS один WebGL-контекст' dist/smoke-phone.log
-          grep -Fq 'PASS нет роста meshes/textures' dist/smoke-phone.log
-          grep -Fq 'PASS нет ошибок консоли' dist/smoke-phone.log
-
-      - name: Run golden tests for PWA and artifact
-        run: npm test
-
-      - name: Upload E3 layout screenshots
+      - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+      - run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
+      - run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
+      - name: Upload E3 screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -93,7 +110,42 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Upload smoke logs
+  three-d:
+    name: 3D lifecycle + memory + WebGL console (phone)
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dune-validated-build
+          path: dev/dist
+      - run: node tools/ci-artifact.mjs verify
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          chrome-version: stable
+      - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+      # SwiftShader transition timings are diagnostics, not shared-runner gates.
+      - name: Phone 3D resource safety
+        shell: bash
+        run: |
+          set -o pipefail
+          node tests/smoke/3d.mjs dist/pwa/index.html --cycles 2 --phone | tee dist/smoke-phone.log
+          grep -Fq 'PASS один WebGL-контекст' dist/smoke-phone.log
+          grep -Fq 'PASS нет роста meshes/textures' dist/smoke-phone.log
+          grep -Fq 'PASS нет ошибок консоли' dist/smoke-phone.log
+      - name: Upload 3D diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -102,28 +154,36 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Upload testable PWA bundle
-        if: always()
-        uses: actions/upload-artifact@v4
+  gate:
+    name: All required checks passed
+    if: always()
+    needs: [build, golden, ui, three-d]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Reject any failed or skipped required check
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          jobs = json.loads(os.environ['RESULTS'])
+          bad = {key: value['result'] for key, value in jobs.items() if value['result'] != 'success'}
+          print('Required checks:', {key: value['result'] for key, value in jobs.items()})
+          if bad:
+              print('FAIL:', bad, file=sys.stderr)
+              sys.exit(1)
+          PY
+      - name: Rehearse publishing the exact CI build (no push)
+        uses: actions/checkout@v4
+      - name: Download the same validated build for deployment rehearsal
+        uses: actions/download-artifact@v4
         with:
-          name: dune-pwa-preview-${{ github.run_number }}
-          path: |
-            dev/dist/pwa/
-            dev/dist/dune-pwa-flat.zip
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Upload packaged artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dune-artifact-${{ github.run_number }}
-          path: |
-            dev/dist/artifact.html
-            dev/dist/artifact-files.json
-            dev/dist/app.js
-            dev/dist/app.css
-            dev/dist/babylon3d.js
-            dev/dist/assets/
-          if-no-files-found: warn
-          retention-days: 14
+          name: dune-validated-build
+          path: dev/dist
+      - name: Stage, verify bytes, and ensure no source changed
+        shell: bash
+        run: |
+          cd dev
+          node tools/ci-artifact.mjs stage
+          cd ..
+          git diff --exit-code -- dev
