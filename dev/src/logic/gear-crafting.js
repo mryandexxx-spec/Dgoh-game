@@ -1,4 +1,5 @@
 // E3: расчёт вложенной сборки и затрат. Не работает с DOM или сохранением.
+import './gear.js'; // порядок исполнения
 import { gearRecipe } from '../data/gear-recipes.js';
 import { CRAFT, FRAG_NEED, ITEMS } from './gear.js';
 
