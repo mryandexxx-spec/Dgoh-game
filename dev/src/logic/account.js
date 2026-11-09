@@ -21,7 +21,7 @@ const accReward = L => {
   return r;
 };
 const ACC_UPS = [];
-const CINE_OFF = () => { try { return !!JSON.parse(localStorage.getItem('dune-cine-off') || 'false'); } catch (e) { return false; } };
+const CINE_OFF = () => { try { return !!JSON.parse(localStorage.getItem('dune-cine-off') || 'true'); } catch (e) { return true; } };
 function accFill(s) {
   if (s.acc) return;
   const maxLvl = Math.max(1, ...Object.values(s.roster).map(r => r.lvl || 1)), maxGear = Math.max(1, ...Object.values(s.roster).map(r => r.gear || 1));
