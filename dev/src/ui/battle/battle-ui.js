@@ -26,6 +26,7 @@ import { RELIC_COL, isLegend } from '../../logic/relics.js';
 import { CRY_3STAR, CRY_JOURNEY, CRY_WIN, campReward, enemyProg } from '../../logic/economy.js';
 import { JK, JP, JR } from '../../data/journeys.js';
 import { NODES, NODE_SCENES, nodeCost, nodeEn, nodeOpen, nodeTitle } from '../../data/campaigns.js';
+import { gfxLevel } from '../../render3d/quality.js';
 import { Arena3D } from '../../render3d/scenes/arena.js';
 import { HAS3D, HAS_GL, loadB3 } from '../../render3d/base.js';
 import { FXLayer } from '../../render2d/fx-layer.js';
@@ -74,9 +75,14 @@ function launch(cfg) {
   BT.arena = null;
   if (HAS3D) { try { BT.arena = new Arena3D($('#bgc'), cfg.scene || 'desert', B); } catch (e) { console.warn('3D недоступно', e); BT.arena = null; const nc = document.createElement('canvas'); nc.className = 'bgc'; nc.id = 'bgc'; $('#bgc').replaceWith(nc); } }
   if (!BT.arena) new SceneBG($('#bgc'), cfg.scene || 'desert', .36);
-  else { const A = BT.arena; A.onLost = () => { if (!BT || BT.arena !== A) return; BT.arena = null; try { A.dispose(); } catch (e) {} const nc = document.createElement('canvas'); nc.className = 'bgc'; nc.id = 'bgc'; const oc = $('#bgc'); if (oc) oc.replaceWith(nc); new SceneBG(nc, cfg.scene || 'desert', .36); const bt = $('#battle'); if (bt) bt.classList.remove('raid3d'); try { renderBattle(); } catch (e) { errLog('2d', e); } toast('3D-графика сброшена системой — бой продолжается в упрощённом виде'); }; }
+  else { const A = BT.arena; A.onLost = () => { if (!BT || BT.arena !== A) return; BT.arena = null; try { A.dispose(); } catch (e) {} const nc = document.createElement('canvas'); nc.className = 'bgc'; nc.id = 'bgc'; const oc = $('#bgc'); if (oc) oc.replaceWith(nc); new SceneBG(nc, cfg.scene || 'desert', .36); const bt = $('#battle'); if (bt) bt.classList.remove('raid3d', 'squad3d', 'compact-world-hud'); try { renderBattle(); } catch (e) { errLog('2d', e); } toast('3D-графика сброшена системой — бой продолжается в упрощённом виде'); }; }
   battleMark(cfg);
   if (BT.arena && B.raid) $('#battle').classList.add('raid3d');
+  // A2: только обычные 3D-бои. Рейд/босс и 2D fallback оставляют исходный HUD.
+  if (BT.arena && !B.raid) {
+    $('#battle').classList.add('squad3d');
+    if (gfxLevel() === 'low') $('#battle').classList.add('compact-world-hud');
+  }
   BT.fx = new FXLayer($('#fxc'));
   if (typeof renderNotes === 'function') renderNotes();
   renderBattle();
