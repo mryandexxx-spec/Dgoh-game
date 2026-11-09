@@ -1,6 +1,7 @@
 // ui/battle/battle-ui.js — строки 4130–4472 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import '../views/rules.js'; // порядок исполнения
 import { hourglass, spiceUser } from '../../boot.js';
+import { ptRound } from '../portrait.js';
 import { cqApply, cqFinish } from '../views/conq.js';
 import { GEAR_SVG, LOG_SVG } from '../overlays/battle-settings.js';
 import { MOUSE_SVG } from '../mouse.js';
@@ -75,7 +76,7 @@ function launch(cfg) {
   BT.arena = null;
   if (HAS3D) { try { BT.arena = new Arena3D($('#bgc'), cfg.scene || 'desert', B); } catch (e) { console.warn('3D недоступно', e); BT.arena = null; const nc = document.createElement('canvas'); nc.className = 'bgc'; nc.id = 'bgc'; $('#bgc').replaceWith(nc); } }
   if (!BT.arena) new SceneBG($('#bgc'), cfg.scene || 'desert', .36);
-  else { const A = BT.arena; A.onLost = () => { if (!BT || BT.arena !== A) return; BT.arena = null; try { A.dispose(); } catch (e) {} const nc = document.createElement('canvas'); nc.className = 'bgc'; nc.id = 'bgc'; const oc = $('#bgc'); if (oc) oc.replaceWith(nc); new SceneBG(nc, cfg.scene || 'desert', .36); const bt = $('#battle'); if (bt) bt.classList.remove('raid3d', 'squad3d', 'compact-world-hud'); try { renderBattle(); } catch (e) { errLog('2d', e); } toast('3D-графика сброшена системой — бой продолжается в упрощённом виде'); }; }
+  else { const A = BT.arena; A.onLost = () => { if (!BT || BT.arena !== A) return; BT.arena = null; try { A.dispose(); } catch (e) {} const nc = document.createElement('canvas'); nc.className = 'bgc'; nc.id = 'bgc'; const oc = $('#bgc'); if (oc) oc.replaceWith(nc); new SceneBG(nc, cfg.scene || 'desert', .36); const bt = $('#battle'); if (bt) bt.classList.remove('raid3d', 'squad3d', 'compact-world-hud', 'pkg9'); BT.pkg9 = false; BT.drawerOpen = false; try { renderBattle(); } catch (e) { errLog('2d', e); } toast('3D-графика сброшена системой — бой продолжается в упрощённом виде'); }; }
   battleMark(cfg);
   if (BT.arena && B.raid) $('#battle').classList.add('raid3d');
   // A2: только обычные 3D-бои. Рейд/босс и 2D fallback оставляют исходный HUD.
@@ -83,6 +84,11 @@ function launch(cfg) {
     $('#battle').classList.add('squad3d');
     if (gfxLevel() === 'low') $('#battle').classList.add('compact-world-hud');
   }
+  BT.pkg9 = !!(BT.arena && !B.raid && !B.units.some(u => u.def.boss));
+  BT.drawerOpen = false;
+  BT.hudCompact = gfxLevel() === 'low';
+  BT.hudVisible = true;
+  if (BT.pkg9) $('#battle').classList.add('pkg9');
   BT.fx = new FXLayer($('#fxc'));
   if (typeof renderNotes === 'function') renderNotes();
   renderBattle();
@@ -398,6 +404,7 @@ function renderBattle() {
   const curAll = BT.curFlash && performance.now() < BT.curFlash.until ? new Set(BT.curFlash.uids) : null;
   const ctx = { presc: hasPrescience(B, 'A'), targets: valid, cur: w ? BT.cur : null, curAll };
   const order = previewOrder(B, 8);
+  const p9 = !!BT.pkg9;
   let bot;
   if (w) {
     const cu = BT.cur && B.units.find(x => x.uid === BT.cur);
@@ -409,6 +416,38 @@ function renderBattle() {
     const a = B.active;
     bot = `<div class="who dim">${a && a.side === 'B' ? `<span class="ptw">${a.def.boss ? '' : portrait(a.def, 40)}</span><span>Ходит противник: <b>${a.def.sn}</b></span>` : BT.auto && !B.over ? '<span>Отряд под управлением ИИ</span>' : ''}</div>`;
   }
+
+  // A3: existing ability keys and click semantics; 2D, bosses and raids use the old layout.
+  if (p9) {
+    if (w) {
+      const cu = BT.cur && B.units.find(x => x.uid === BT.cur);
+      const hero = '<span class="pkg9-pt" style="--s:54px">' + ptRound(w.def, prog(w.def.id)) + '</span>';
+      const abilities = ['basic', 'special', 'ult', 'gl']
+        .filter(k => w.def[k] && (k !== 'gl' || (w.glOn && !w.glUsed)))
+        .map(k => {
+          const a = w.def[k], ready = abilityReady(B, w, k), cd = w.cd[k] > 0 ? w.cd[k] : '';
+          const meter = k === 'gl' ? ' style="--m:' + glMeter(B, w) + '"' : '';
+          const badge = k === 'gl' ? '<span class="glpct">' + (ready ? 'УЛЬТА' : Math.floor(glMeter(B, w)) + '%') + '</span>' : (cd ? '<span class="cd">' + cd + '</span>' : '') + (a.spice ? '<span class="cost">' + a.spice + '</span>' : '');
+          return '<button class="abil ' + k + (ready ? '' : ' off') + '" data-ab="' + k + '" aria-disabled="' + !ready + '" title="' + a.n + '" aria-label="' + a.n + '"' + meter + '>' + skillSvg(w.def, k) + badge + '</button>';
+        }).join('');
+      const lead = leaderFor(B, w);
+      const passives = (lead ? '<span title="Лидер: ' + lead.def.sn + '"' + (lead.on ? '' : ' class="off"') + '>Л</span>' : '') + (w.def.passive ? '<span title="' + w.def.passive.n + '">✦</span>' : '');
+      bot = '<div class="pkg9-target">Цель: ' + (cu ? cu.def.sn : 'выберите противника') + '</div>' +
+        '<div class="pkg9-action"><div class="pkg9-actor">' + hero + '<span class="pkg9-name">' + w.def.sn + '</span></div>' +
+        '<div class="pkg9-skills"><div class="pkg9-passives">' + passives + '</div><div class="abils">' +
+        (spiceUser(w.def) && w.glOn ? hourglass(B.spice[w.side]) : '') + abilities + '</div></div></div>';
+    } else {
+      const a = B.active;
+      bot = '<div class="pkg9-turn">' + (BT.auto && !B.over ? 'АВТОБОЙ' : a && a.side === 'B' ? 'Ход: ' + a.def.sn : '') + '</div>';
+    }
+  }
+  // A4: do not construct battle-log DOM while the drawer is closed.
+  const drawer = p9 && BT.drawerOpen ?
+    '<div class="pkg9-drawer" role="region" aria-label="Сведения о бое"><div class="pkg9-dhead"><b>СВЕДЕНИЯ О БОЕ</b><button data-bdrawer="1" aria-label="Закрыть панель">×</button></div>' +
+    '<div class="pkg9-meters"><span>Пряность отряда <b>' + B.spice.A + '%</b></span><span>Пряность врагов <b>' + B.spice.B + '%</b></span>' +
+    (B.desert ? '<span>Ритм пустыни <b>' + Math.min(100, B.rhythm) + '%</b></span>' : '') + '</div>' +
+    '<div class="pkg9-dlabel">ПОРЯДОК ХОДОВ</div><div class="pkg9-order">' + order.map(u => glyph(u.def, u.side === 'B' ? 'e' : '')).join('') + '</div>' +
+    '<div class="pkg9-dlabel">ЖУРНАЛ</div><div class="pkg9-log">' + B.log.slice(-12).map(l => '<div class="' + l.kind + '">' + l.text + '</div>').join('') + '</div></div>' : '';
   const g = (lab, v, cls, gz) => `<button class="bgz ${cls} ${v >= 100 ? 'full' : ''}" data-gz="${gz}"><span>${lab}</span><div class="hb"><i style="width:${Math.min(100, v)}%"></i></div><b>${v}</b></button>`;
   const T = {
     h3: `<h3>${BT.cfg.title}${B.raid ? (bb => bb ? ` · фаза ${bb.phase}: ${PHASES[bb.phase]}` : '')(B.units.find(x => x.def.boss)) : ''}</h3>`,
@@ -416,6 +455,11 @@ function renderBattle() {
     blog: `<button class="blog ${BT.showLog ? 'on' : ''}" data-log="1" aria-pressed="${!!BT.showLog}" aria-label="Журнал боя" title="Журнал">${LOG_SVG}</button>`,
     gauges: `<div class="bgauges">${B.desert ? g(B.raid ? 'БЕШЕНСТВО' : 'РИТМ', Math.min(100, B.rhythm), 'worm', 'rhythm') : ''}${B.raid ? `<button class="bgz" data-gz="dmg"><span>УРОН</span><b>${fmt(B.bossStartHp - Math.max(0, B.units.find(x => x.def.boss).hp))}</b></button>` : ''}${ctx.presc ? '<button class="bgz presc" data-gz="presc">ПРОЗРЕНИЕ</button>' : ''}</div>`,
     ctl: `<div class="bctl"><button class="btn bcb ${BT.auto ? 'on' : ''}" data-auto="1" aria-pressed="${BT.auto}">Авто</button><button class="btn bcb" data-speed="1" aria-label="Скорость">×${BT.speed}</button><button class="btn bci" data-bset="1" aria-label="Настройки боя" title="Настройки">${GEAR_SVG}</button></div>` };
+  if (p9) {
+    const enemy = B.units.find(u => u.side === 'B' && u.alive && u.idx === 0) || B.units.find(u => u.side === 'B' && u.alive);
+    T.gauges = '<div class="bgauges pkg9-enemy">' + (enemy ? '<span class="pkg9-enemy-pt">' + portrait(enemy.def, 35) + '</span><span class="pkg9-enemy-info"><b>' + enemy.def.sn + '</b><span class="hb hp"><i style="width:' + Math.round(Math.max(0, enemy.hp) / enemy.maxHp * 100) + '%"></i></span></span>' : '') + '</div>';
+    T.ctl = '<div class="bctl pkg9-controls"><button class="pkg9-control" data-bset="1" aria-label="Настройки боя">' + GEAR_SVG + '</button><button class="pkg9-control" data-hud="1" aria-pressed="' + BT.hudVisible + '" title="Показать/скрыть мировой HUD">▣</button><button class="pkg9-control ' + (BT.auto ? 'on' : '') + '" data-auto="1" aria-pressed="' + BT.auto + '">АВТО</button><button class="pkg9-control" data-speed="1" aria-label="Скорость боя">×' + BT.speed + '</button><button class="pkg9-dtoggle" data-bdrawer="1" aria-expanded="' + !!BT.drawerOpen + '" aria-label="Сведения о бое">❯</button></div>';
+  }
   const top = `<div class="btop">
       <div class="btitle">${T.h3}<div class="order" aria-label="Порядок ходов">${T.order.join('')}${T.blog}</div></div>
       ${T.gauges}
@@ -424,9 +468,10 @@ function renderBattle() {
   const P = { three: BT.arena ? 'three' : '', top, T, ticker: `<div class="ticker">${B.log.slice(-2).map(l => `<div class="${l.kind}">${l.text}</div>`).join('')}</div>`,
     units: B.units.map(u => { const f = figSvg(u), bb = figBubble(u); return [u.uid, unitHtml(u, B, ctx, f + bb), f, u, bb]; }),
     tail: `
-      ${BT.showLog ? `<div class="logpop" aria-live="polite">${B.log.slice(-14).map(l => `<div class="${l.kind}">${l.text}</div>`).join('')}</div>` : ''}
+      ${drawer}${!p9 && BT.showLog ? `<div class="logpop" aria-live="polite">${B.log.slice(-14).map(l => `<div class="${l.kind}">${l.text}</div>`).join('')}</div>` : ''}
     `, bot: `<div class="bbot">${bot}</div>` };
-  const bte = $('#battle'), bs = BT.speed === 1 ? '' : String(BT.speed); if (bte && bte.style.getPropertyValue('--bs') !== bs) { if (bs) bte.style.setProperty('--bs', bs); else bte.style.removeProperty('--bs'); }   // фаза 7, шаг 5б: длительность перехода полос HP/защиты
+  const bte = $('#battle'), bs = BT.speed === 1 ? '' : String(BT.speed);
+  if (p9 && bte) { bte.classList.toggle('compact-world-hud', !!BT.hudCompact); bte.classList.toggle('hud-hidden', !BT.hudVisible); } if (bte && bte.style.getPropertyValue('--bs') !== bs) { if (bs) bte.style.setProperty('--bs', bs); else bte.style.removeProperty('--bs'); }   // фаза 7, шаг 5б: длительность перехода полос HP/защиты
   hudSync($('#bwrap'), P, B, ctx);
   for (const e of B.events) {
     const c = document.querySelector(`.unit[data-uid="${e.uid}"]`); if (!c) continue;

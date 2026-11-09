@@ -189,6 +189,8 @@ document.addEventListener('click', e => {
     persist(); refreshAll(); return; }
   if (!BT) return;
   if (d.auto) { BT.auto = BT.autoPref = !BT.auto; if (BT.auto && BT.waiting) { const u = BT.waiting; const p = aiPlan(BT.B, u); doAct(u, p.key, p.target && p.target.uid); } else renderBattle(); return; }
+  if (d.bdrawer && BT.pkg9) { BT.drawerOpen = !BT.drawerOpen; renderBattle(); return; }
+  if (d.hud && BT.pkg9) { BT.hudVisible = !BT.hudVisible; renderBattle(); return; }
   if (d.log) { BT.showLog = !BT.showLog; renderBattle(); return; }
   if (d.speed) { BT.speed = BT.speedPref = BT.speed >= 4 ? 1 : BT.speed * 2; renderBattle(); return; }
   if (d.quit) { clearTimeout(BT.timer); BT.B.over = 'B'; return finish(); }

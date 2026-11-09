@@ -105,6 +105,20 @@ jobs:
         run: node tests/smoke/pkg8-layout.mjs ../index.html dist/pkg8-shots --baseline
       - name: Package 8 real WebGL camera and formation (844/667)
         run: node tests/smoke/pkg8-layout.mjs dist/pwa/index.html dist/pkg8-shots
+      - name: Package 9 HUD interactive phone check (844/667)
+        run: node tests/smoke/pkg9-hud.mjs dist/pwa/index.html dist/pkg9-shots
+      - name: Package 9 idle DOM (phone + desktop)
+        run: |
+          node tests/smoke/dom.mjs dist/pwa/index.html --phone --only bwait --win 800
+          node tests/smoke/dom.mjs dist/pwa/index.html --only bwait --win 800
+      - name: Upload package 9 real HUD screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-pkg9-hud-${{ github.run_number }}
+          path: dev/dist/pkg9-shots/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Upload package 8 screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -157,6 +171,43 @@ jobs:
           grep -Fq 'PASS один WebGL-контекст' dist/smoke-phone.log
           grep -Fq 'PASS нет роста meshes/textures' dist/smoke-phone.log
           grep -Fq 'PASS нет ошибок консоли' dist/smoke-phone.log
+      - name: Compare v76 / v77 SwiftShader budgets (MED/LOW phone)
+        run: |
+          node tests/smoke/perf.mjs ../index.html --phone --dpr 3 --gfx med --out dist/perf-v76-med.json
+          node tests/smoke/perf.mjs dist/pwa/index.html --phone --dpr 3 --gfx med --out dist/perf-med.json
+          node tests/smoke/perf.mjs ../index.html --phone --dpr 3 --gfx low --out dist/perf-v76-low.json
+          node tests/smoke/perf.mjs dist/pwa/index.html --phone --dpr 3 --gfx low --out dist/perf-low.json
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          let failed = false;
+          const fmt = x => Number(x.toFixed(2));
+          for (const gfx of ['med','low']) {
+            const a = JSON.parse(fs.readFileSync('dist/perf-v76-'+gfx+'.json'));
+            const b = JSON.parse(fs.readFileSync('dist/perf-'+gfx+'.json'));
+            const rt = x => x.battle.vram.rows.filter(v => v.rt).reduce((sum,v)=>sum+v.mb,0)
+              + x.battle.vram.depthMB + x.battle.vram.backbufMB;
+            const entries = [
+              ['draws',a.battle.cost.draws,b.battle.cost.draws],
+              ['passes',a.battle.cost.passes,b.battle.cost.passes],
+              ['mpx',a.battle.cost.mpx,b.battle.cost.mpx],
+              ['RT+backbuffer MB',rt(a),rt(b)],
+            ];
+            for (const [metric,before,after] of entries) {
+              const delta=100*(after/before-1);
+              console.log(gfx.toUpperCase(),metric,fmt(before),'→',fmt(after),fmt(delta)+'%');
+              if (delta>10) {console.error('REGRESSION > 10%:',gfx,metric);failed=true;}
+            }
+          }
+          if (failed) process.exitCode=1;
+          JS
+      - name: Upload performance diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-pkg9-perf-${{ github.run_number }}
+          path: dev/dist/perf-*.json
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Upload 3D diagnostics
         if: always()
         uses: actions/upload-artifact@v4

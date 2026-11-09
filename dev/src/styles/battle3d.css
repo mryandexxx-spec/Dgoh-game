@@ -61,3 +61,73 @@
   .battle.squad3d .field.three .unit .fxs { max-width: 62px; }
   .battle.squad3d .field.three .unit .fxi:nth-child(n+5) { display: none; }
 }
+
+
+/* Пакет 9 — A3/A4. Только обычный 3D-бой; рейды, боссы и 2D без изменений.
+   Нет непрерывных CSS-анимаций, перерасхода 3D или layout в покое. */
+.battle.pkg9 .bwrap { position: absolute; inset: 0; width: 100%; max-width: none; height: 100%; padding: 0; margin: 0; display: block; }
+.battle.pkg9 .btop { position: absolute; inset: 0 0 auto; height: 54px; z-index: 20; pointer-events: none; display: block; }
+.battle.pkg9 .btitle, .battle.pkg9 .ticker { display: none; }
+.battle.pkg9 .field.three { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; z-index: 5; pointer-events: none; }
+.battle.pkg9 .field.three .unit { pointer-events: auto; }
+.battle.pkg9 .bbot { position: absolute; inset: auto 0 0; height: 106px; min-height: 0; z-index: 21; pointer-events: none; display: block; }
+.battle.pkg9 .bbot button, .battle.pkg9 .btop button { pointer-events: auto; }
+.battle.pkg9 .bgauges.pkg9-enemy { position: absolute; top: max(8px, env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; gap: 6px; max-width: 174px; padding: 4px 8px; border: 1px solid rgb(140 99 62 / .6); background: rgb(23 15 9 / .74); border-radius: 24px; }
+.battle.pkg9 .pkg9-enemy-pt { flex: none; width: 35px; height: 35px; }
+.battle.pkg9 .pkg9-enemy-info { min-width: 0; display: grid; gap: 4px; }
+.battle.pkg9 .pkg9-enemy-info b { max-width: 112px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 10px; line-height: 1.1; font-weight: 600; text-shadow: 0 1px 3px #000; }
+.battle.pkg9 .pkg9-enemy-info .hb { width: 108px; height: 5px; }
+.battle.pkg9 .pkg9-enemy-info .hb i { background: var(--foe); }
+.battle.pkg9 .bctl.pkg9-controls { position: fixed; z-index: 30; top: max(8px, env(safe-area-inset-top, 0px)); left: max(10px, env(safe-area-inset-left, 0px)); display: flex; gap: 6px; flex-wrap: nowrap; pointer-events: auto; }
+.battle.pkg9 .pkg9-control { width: 43px; height: 43px; border: 2px solid #866a48; border-radius: 50%; background: radial-gradient(circle at 40% 24%, #5c503f, #1a140d 76%); box-shadow: 0 2px 8px rgb(0 0 0 / .6); color: var(--bone); padding: 0; font: 600 10px var(--f-mono); cursor: pointer; display: grid; place-items: center; }
+.battle.pkg9 .pkg9-control svg { width: 21px; height: 21px; }
+.battle.pkg9 .pkg9-control[aria-pressed="true"], .battle.pkg9 .pkg9-control.on { border-color: var(--spice); color: var(--spice-hi); }
+.battle.pkg9 .pkg9-dtoggle { position: fixed; left: max(10px, env(safe-area-inset-left, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px)); width: 44px; height: 44px; border: 1px solid var(--spice-dim); border-radius: 4px; color: var(--sand); font: 23px var(--f-body); background: rgb(23 15 9 / .8); cursor: pointer; }
+.battle.pkg9 .pkg9-target { position: absolute; bottom: max(10px, env(safe-area-inset-bottom, 0px)); left: 72px; max-width: 165px; padding: 4px 8px; background: rgb(23 15 9 / .68); border: 1px solid rgb(133 98 60 / .45); border-radius: 3px; font-size: 11px; color: var(--sand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px #000; }
+.battle.pkg9 .pkg9-action { position: absolute; right: max(10px, env(safe-area-inset-right, 0px)); bottom: max(9px, env(safe-area-inset-bottom, 0px)); display: flex; gap: 12px; align-items: flex-end; pointer-events: auto; }
+.battle.pkg9 .pkg9-actor { display: grid; justify-items: center; align-content: end; gap: 5px; width: 66px; flex: none; }
+.battle.pkg9 .pkg9-pt { display: block; width: 54px; height: 54px; }
+.battle.pkg9 .pkg9-pt .hpt .stars { display: none; }
+.battle.pkg9 .pkg9-name { max-width: 72px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 600; text-shadow: 0 2px 4px #000; }
+.battle.pkg9 .pkg9-skills { display: grid; justify-items: center; gap: 5px; }
+.battle.pkg9 .pkg9-passives { height: 21px; display: flex; gap: 6px; justify-content: center; align-items: center; }
+.battle.pkg9 .pkg9-passives span { width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid var(--spice-dim); border-radius: 50%; background: rgb(30 20 11 / .85); color: var(--sand); font: 600 11px var(--f-body); }
+.battle.pkg9 .pkg9-passives span.off { opacity: .45; }
+.battle.pkg9 .abils { gap: 7px; align-items: center; }
+.battle.pkg9 .abil, .battle.pkg9 .abil.special { width: 57px; height: 57px; border-color: var(--spice-dim); box-shadow: 0 3px 12px rgb(0 0 0 / .65); background: radial-gradient(circle at 34% 25%, #55412b, #1a120a 72%); }
+.battle.pkg9 .abil.basic { border-color: var(--spice); }
+.battle.pkg9 .abil:focus-visible { outline: 2px solid var(--spice-hi); outline-offset: 3px; }
+.battle.pkg9 .abil.off { filter: grayscale(.85) brightness(.7); }
+.battle.pkg9 .abil .cd { font: 26px var(--f-display); }
+.battle.pkg9 .pkg9-turn { position: absolute; right: 16px; bottom: 12px; color: var(--dust); padding: 5px 10px; background: rgb(23 15 9 / .6); font: 11px var(--f-body); }
+.battle.pkg9 .pkg9-drawer { position: absolute; left: 0; top: 0; bottom: 0; width: min(255px, 42vw); padding: 12px 13px; overflow-y: auto; overscroll-behavior: contain; pointer-events: auto; z-index: 22; border-right: 1px solid var(--spice-dim); background: linear-gradient(90deg, rgb(23 15 9 / .97), rgb(35 24 16 / .94)); box-shadow: 8px 0 28px rgb(0 0 0 / .5); font-size: 11px; }
+.battle.pkg9 .pkg9-dhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: var(--sand); margin-bottom: 8px; font: 600 11px var(--f-mono); }
+.battle.pkg9 .pkg9-dhead button { border: 1px solid var(--line-hi); background: var(--dune); color: var(--bone); font-size: 18px; width: 32px; height: 32px; }
+.battle.pkg9 .pkg9-meters { display: grid; gap: 5px; color: var(--dust); }
+.battle.pkg9 .pkg9-meters span { display: flex; justify-content: space-between; gap: 6px; }
+.battle.pkg9 .pkg9-meters b { color: var(--spice); font-family: var(--f-mono); }
+.battle.pkg9 .pkg9-dlabel { margin: 13px 0 5px; color: var(--spice); font: 10px var(--f-mono); letter-spacing: .07em; }
+.battle.pkg9 .pkg9-order { display: flex; flex-wrap: wrap; gap: 4px; }
+.battle.pkg9 .pkg9-order .gl { width: 25px; height: 25px; }
+.battle.pkg9 .pkg9-log { display: grid; gap: 5px; }
+.battle.pkg9 .pkg9-log > div { color: var(--dust); border-bottom: 1px solid rgb(100 76 50 / .25); padding-bottom: 3px; }
+.battle.pkg9 .pkg9-log .actA { color: var(--bone); }
+.battle.pkg9 .pkg9-log .actB, .battle.pkg9 .pkg9-log .death { color: var(--foe); }
+@media (orientation: landscape) and (max-width: 700px) {
+ .battle.pkg9 .bctl.pkg9-controls { left: max(6px, env(safe-area-inset-left, 0px)); gap: 4px; }
+ .battle.pkg9 .pkg9-control { width: 38px; height: 38px; }
+ .battle.pkg9 .bgauges.pkg9-enemy { right: max(6px, env(safe-area-inset-right, 0px)); max-width: 150px; }
+ .battle.pkg9 .pkg9-enemy-info b { max-width: 83px; }
+ .battle.pkg9 .pkg9-enemy-info .hb { width: 78px; }
+ .battle.pkg9 .pkg9-action { right: max(6px, env(safe-area-inset-right, 0px)); gap: 7px; }
+ .battle.pkg9 .pkg9-actor { width: 52px; }
+ .battle.pkg9 .pkg9-pt, .battle.pkg9 .pkg9-pt .hpt { --s: 46px !important; width: 46px; height: 46px; }
+ .battle.pkg9 .abil, .battle.pkg9 .abil.special { width: 46px; height: 46px; }
+ .battle.pkg9 .abils { gap: 5px; }
+ .battle.pkg9 .pkg9-target { left: 57px; max-width: 100px; }
+ .battle.pkg9 .pkg9-dtoggle { left: max(6px, env(safe-area-inset-left, 0px)); }
+ .battle.pkg9 .pkg9-passives { height: 18px; }
+ .battle.pkg9 .pkg9-drawer { width: 232px; }
+}
+
+.battle.pkg9.hud-hidden .field.three .unit .hud { visibility: hidden; }
