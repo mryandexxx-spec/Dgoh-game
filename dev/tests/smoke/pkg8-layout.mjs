@@ -69,7 +69,7 @@ try {
       Math.max(...ally.map(o=>o.x)) < Math.max(...enemy.map(o=>o.x)) &&
       result.compact === (gfx==='low') &&
       all.every(o=>o.x>=35&&o.x<=width-30&&o.y>=65&&o.y<=height-45);
-    console.log((valid?'PASS':'FAIL')+(baseline?' v75 reference ':' camera + 5x5 spacing ')++width+'×'+height+' '+gfx+
+    console.log((valid?'PASS':'FAIL')+(baseline?' v75 reference ':' camera + 5x5 spacing ')+width+'×'+height+' '+gfx+
       ' ally '+result.allyMin.toFixed(1)+'px enemy '+result.enemyMin.toFixed(1)+'px'+
       ' camera '+JSON.stringify(result.cam)+' errors '+errors.length);
     if(!valid){ console.log(JSON.stringify(result));failed++;}
