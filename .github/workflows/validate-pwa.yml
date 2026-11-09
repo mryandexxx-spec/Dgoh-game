@@ -173,3 +173,17 @@ jobs:
               print('FAIL:', bad, file=sys.stderr)
               sys.exit(1)
           PY
+      - name: Rehearse publishing the exact CI build (no push)
+        uses: actions/checkout@v4
+      - name: Download the same validated build for deployment rehearsal
+        uses: actions/download-artifact@v4
+        with:
+          name: dune-validated-build
+          path: dev/dist
+      - name: Stage, verify bytes, and ensure no source changed
+        shell: bash
+        run: |
+          cd dev
+          node tools/ci-artifact.mjs stage
+          cd ..
+          git diff --exit-code -- dev
