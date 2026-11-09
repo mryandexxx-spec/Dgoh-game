@@ -56,3 +56,8 @@ body:has(#battle) .appver { left: 50%; transform: translateX(-50%); }   /* в б
 .lobby-snap-points {position:absolute;inset:0;display:flex;pointer-events:none}
 .lobby-snap-points span {display:block;width:33.33333%;height:100%;flex:none;scroll-snap-align:center}
 .lobby.has3d .lobby-scroll2d {display:none}
+
+/* B1: static reward highlight; no perpetual GPU animation in the lobby. */
+.lobby .spot.hot .sicon::after {animation:none;opacity:.32}
+.lobby .lzones button {width:44px;height:44px}
+@media(max-width:700px){.lobby .ltop .pchip > span:last-child{display:none}.lobby .ltop .topbtns .topb > span:not(.badge){display:none}}
