@@ -60,8 +60,11 @@ jobs:
       - name: Set Chrome path
         run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
 
-      - name: Run golden tests for PWA and artifact
-        run: npm test
+      - name: Verify E3 recipes and crafting
+        run: node tests/smoke/gear-e3.mjs
+
+      - name: Smoke test DOM layout (phone)
+        run: node tests/smoke/dom.mjs dist/pwa/index.html --phone
 
       # The smoke script's --strict mode also enforces 400 ms transitions and
       # zero warm-up shader compilations, which are nondeterministic on shared
@@ -74,6 +77,9 @@ jobs:
           grep -Fq 'PASS один WebGL-контекст' dist/smoke-phone.log
           grep -Fq 'PASS нет роста meshes/textures' dist/smoke-phone.log
           grep -Fq 'PASS нет ошибок консоли' dist/smoke-phone.log
+
+      - name: Run golden tests for PWA and artifact
+        run: npm test
 
       - name: Upload smoke logs
         if: always()
