@@ -6,7 +6,6 @@
 // сохранение — tests/fixtures/saves/03-late.json (всё открыто) и «без сохранения» для стартовых экранов.
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import zlib from 'node:zlib';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -89,16 +88,4 @@ for (const [name, save, code, wait = 1500] of SCREENS) {
 await browser.close();
 console.log('\nэкранов:', screens.length, 'с ошибками:', screens.filter(s => s.errors.length).map(s => s.name + ' → ' + s.errors[0]).join(' | ') || 'нет');
 const out = { n: screens.length, screens };
-if (rest.includes('--update')) writeGolden('screens', out);
-else {
-  const ok = compareGolden('screens', out);
-  // Branch-only golden transport; chunk to avoid GitHub's single-line log truncation.
-  if (!ok && process.env.CI) {
-    const candidate = fs.readFileSync(path.join(HERE, '..', 'golden', 'data', 'screens.actual.json'));
-    const b64 = zlib.gzipSync(candidate, { level: 9, mtime: 0 }).toString('base64');
-    console.log('B1_SCREEN_CHUNKS_BEGIN');
-    for (let i=0; i<b64.length; i+=2000) console.log('B1_CHUNK '+(i/2000)+' '+b64.slice(i,i+2000));
-    console.log('B1_SCREEN_CHUNKS_END');
-  }
-  process.exit(ok ? 0 : 1);
-}
+if (rest.includes('--update')) writeGolden('screens', out); else process.exit(compareGolden('screens', out) ? 0 : 1);
