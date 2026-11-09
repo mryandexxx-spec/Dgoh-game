@@ -101,6 +101,8 @@ jobs:
       - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
       - run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
       - run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
+      - name: Package 8 reference v75 screenshots (844/667)
+        run: node tests/smoke/pkg8-layout.mjs ../index.html dist/pkg8-shots --baseline
       - name: Package 8 real WebGL camera and formation (844/667)
         run: node tests/smoke/pkg8-layout.mjs dist/pwa/index.html dist/pkg8-shots
       - name: Upload package 8 screenshots
