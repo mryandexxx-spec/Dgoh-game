@@ -107,8 +107,10 @@ class Arena3D extends GameScene {
     // Пакет 8: две шахматные формации 3+2 по линии взгляда, а не боковые шеренги.
     // idx 0/2/4: ближняя к противнику тройка; 1/3: два бойца позади.
     // z — физический интервал между моделями, x — глубина; размеры не зависят от CSS.
-    const ally = sx < 0, lane = [0, -2.3, 4.6, 2.3, -4.6][idx ?? 0] ?? 0;
-    const rear = idx === 1 || idx === 3, x = ally ? (rear ? -8.4 : -6.0) : (rear ? 8.4 : 6.0);
+    const ally = sx < 0, lane = [0, -2.5, 5, 2.5, -5][idx ?? 0] ?? 0;
+    // Из-за диагональной перспективы обычного интервала 2.4 м недостаточно:
+    // экранные силуэты начинают перекрываться. Разводим ряды вдоль оси атаки.
+    const rear = idx === 1 || idx === 3, x = ally ? (rear ? -10 : -6) : (rear ? 13 : 6);
     return [x, this.heightAt(x, lane), lane];
   }
   relayout() { for (const uid in this.units) { const o = this.units[uid]; if (!o.slot) continue; const [x, y, z] = this.slotPos(o.slot); o.base.set(x, y, z); o.ring.position.set(x, y + .05, z); if (o.pool) o.pool.position.set(x, y + .04, z); } }
