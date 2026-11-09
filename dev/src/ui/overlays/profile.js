@@ -34,7 +34,7 @@ function openProfile() {
     <p class="chap">Сохранение</p>
     <p class="sub" style="margin:0 0 6px;font-size:12px">Прогресс хранится на этом устройстве. Сделайте резервную копию, чтобы перенести игру на другое устройство или не потерять её при очистке данных браузера.</p>
     <div class="acts" style="margin-top:0"><button class="btn" data-saveexp="1">Экспорт сохранения</button><button class="btn" data-saveimp="1">Импорт сохранения</button></div>
-    <div class="acts"><button class="btn" data-v="feats" data-iclose2="1">Подвиги</button><button class="btn" data-iclose="1" style="margin-left:auto">Закрыть</button></div>
+    <div class="acts"><button class="btn" data-v="rules" data-iclose2="1">Правила боя</button><button class="btn" data-v="feats" data-iclose2="1">Подвиги</button><button class="btn" data-iclose="1" style="margin-left:auto">Закрыть</button></div>
   </div></div>`;
 }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
