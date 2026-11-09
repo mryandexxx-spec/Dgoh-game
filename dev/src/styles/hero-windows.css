@@ -143,3 +143,9 @@
   .e3sheet .acts .btn { font-size: 9px; padding: 4px; }
   .e3right .srca { flex-wrap: wrap; }
 }
+
+/* E3: фокус добычи в экране наград без JS-анимации. */
+.e3reward-focus { display:flex; align-items:center; justify-content:center; gap:8px; padding:5px 8px; margin:5px auto; background:rgba(232,145,63,.12); border:1px solid var(--spice); font-size:11px; }
+.e3reward-focus b { color:var(--sand); }
+.e3reward-focus .mono { color:var(--dust); font-size:10px; }
+.rwwin li.e3reward-hit { outline:1px solid var(--spice); background:rgba(232,145,63,.12); }
