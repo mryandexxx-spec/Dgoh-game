@@ -1,0 +1,97 @@
+name: Publish Dune GoH PWA
+
+on:
+  workflow_run:
+    workflows:
+      - Validate Dune GoH PWA
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dune-goh-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       startsWith(github.event.workflow_run.head_commit.message, 'release:'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - name: Verify source is the validated commit
+        if: github.event_name == 'workflow_run'
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ github.event.workflow_run.head_sha }}" || {
+            echo "::error::main moved since validation; skip unsafe deployment"
+            exit 1
+          }
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+
+      - name: Install dependencies
+        working-directory: dev
+        run: npm ci
+
+      - name: Build and stage GitHub Pages files
+        working-directory: dev
+        run: |
+          node tools/build.mjs --deploy
+          node tools/check-bundle.mjs dist/pwa/app.js
+
+      - name: Verify published version and deployment contents
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const v = JSON.parse(fs.readFileSync('dev/version.json', 'utf8')).v;
+          const app = fs.readFileSync('app.js', 'utf8');
+          if (!app.includes('v' + v + ' · ')) throw new Error('Version absent from root app.js');
+          const sw = fs.readFileSync('sw.js', 'utf8');
+          if (!/const VER = '[a-f0-9]{10}'/.test(sw)) throw new Error('Service worker cache version not generated');
+          console.log('Verified release v' + v);
+          JS
+
+      - name: Commit built PWA files to main
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- index.html app.js app.css sw.js babylon3d.js assets
+          if git diff --cached --quiet; then
+            echo "Already deployed: generated PWA matches main"
+          else
+            VERSION=$(node -p "require('./dev/version.json').v")
+            git commit -m "deploy: publish Dune GoH v${VERSION} PWA [skip ci]"
+            git push origin HEAD:main
+          fi
+
+      - name: Upload release PWA
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-goh-published-pwa-${{ github.run_number }}
+          path: |
+            dev/dist/pwa/
+            dev/dist/dune-pwa-flat.zip
+          retention-days: 14
+          if-no-files-found: error
