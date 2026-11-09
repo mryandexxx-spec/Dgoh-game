@@ -51,7 +51,7 @@ function skIcon(d, k) { return skillSvg(d, k); }
 function lvlCost(from, to) { let c = 0; for (let l = from; l < to; l++) c += LVL_COST(l); return c; }
 function lvlAffordMax(p, cap) { let l = p.lvl, sol = S.solari; while (l < cap && sol >= LVL_COST(l)) { sol -= LVL_COST(l); l++; } return l; }
 let itemCtx = null;
-const pct = n => (n * 100).toFixed(2).replace(/0+$/, '').replace(/\\.$/, '') + '%';
+const pct = n => (n * 100).toFixed(2).replace(/0+$/, '').replace(/[.]$/, '') + '%';
 const statNames = { hp: 'Здоровье', shield: 'Щит', dmg: 'Урон', spd: 'Скорость', crit: 'Крит. шанс' };
 function itemBonusHtml(it) {
   const bonus = gearBonus(it.kind) || {};
