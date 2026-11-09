@@ -129,3 +129,5 @@
  .battle.pkg9 .pkg9-passives { height: 18px; }
  .battle.pkg9 .pkg9-drawer { width: 232px; }
 }
+
+.battle.pkg9.hud-hidden .field.three .unit .hud { visibility: hidden; }
