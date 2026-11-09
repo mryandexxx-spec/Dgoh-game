@@ -109,7 +109,7 @@ class CampStage extends Stage3D {
   }
   paused() { return !!(BT && BT.B) || !!document.querySelector('#overlay .detail, #overlay .sqsel'); }
   // шаг 6: лагерь — фоновая сцена, 30 fps (20 в упрощённой графике); флаг перечитывается раз в секунду
-  idleMode(now) { if (Math.abs((this.railX || 0) - (((this._lv && +this._lv.dataset.lzone) || 1) - 1) * 7.5) > .05 || (this._lv && this._lv.dataset.lrail !== undefined)) return 'active'; if (!(now - this._lowAt < 1000)) { this._low = gfx(this.small).campIdle; this._lowAt = now; } return this._low; }
+  idleMode(now) { if (Math.abs((this.railX || 0) - ((this._lv ? +this._lv.dataset.lzone : 1) - 1) * 7.5) > .05 || (this._lv && this._lv.dataset.lrail !== undefined)) return 'active'; if (!(now - this._lowAt < 1000)) { this._low = gfx(this.small).campIdle; this._lowAt = now; } return this._low; }
   slashFX() {} muzzleFX() {} voiceFX() {} castFX() {}
 }
 const S_FLAG = () => '#4c6b4e';
