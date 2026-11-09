@@ -2,200 +2,35 @@ name: Validate Dune GoH PWA
 
 on:
   pull_request:
-  push:
     branches: [main]
-  workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
 
-concurrency:
-  group: validate-pwa-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  build:
-    name: Build once + architecture + SHA-256 manifest
+  audit:
+    name: Read-only v76 Pages deployment audit (never merge)
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
-    defaults:
-      run:
-        working-directory: dev
+    timeout-minutes: 4
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: dev/package-lock.json
-      - run: npm ci
-      - run: node tools/check-deps.mjs
-      - run: npm run build
-      - run: node tools/check-bundle.mjs dist/pwa/app.js
-      - run: node tests/smoke/gear-e3.mjs
-      - run: node tools/ci-artifact.mjs make
-      - name: Upload the only production build
-        uses: actions/upload-artifact@v4
-        with:
-          name: dune-validated-build
-          path: dev/dist/
-          if-no-files-found: error
-          retention-days: 14
-
-  golden:
-    name: Golden (200 battles, meta, saves, 41 screens; PWA + artifact)
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 18
-    defaults:
-      run:
-        working-directory: dev
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: dev/package-lock.json
-      - run: npm ci
-      - uses: actions/download-artifact@v4
-        with:
-          name: dune-validated-build
-          path: dev/dist
-      - run: node tools/ci-artifact.mjs verify
-      - name: Cache Playwright Chromium
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-chromium-1.56.1
-      - run: |
-          npm install --no-save --package-lock=false playwright@1.56.1
-          npx playwright install --with-deps chromium
-      - run: npm test
-
-  ui:
-    name: E3 iPhone UI + DOM idle layout
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: dev
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: dev/package-lock.json
-      - run: npm ci
-      - uses: actions/download-artifact@v4
-        with:
-          name: dune-validated-build
-          path: dev/dist
-      - run: node tools/ci-artifact.mjs verify
-      - uses: browser-actions/setup-chrome@v1
-        id: chrome
-        with:
-          chrome-version: stable
-      - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
-      - run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
-      - run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
-      - name: Package 8 reference v75 screenshots (844/667)
-        run: node tests/smoke/pkg8-layout.mjs ../index.html dist/pkg8-shots --baseline
-      - name: Package 8 real WebGL camera and formation (844/667)
-        run: node tests/smoke/pkg8-layout.mjs dist/pwa/index.html dist/pkg8-shots
-      - name: Upload package 8 screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dune-pkg8-camera-${{ github.run_number }}
-          path: dev/dist/pkg8-shots/
-          if-no-files-found: ignore
-          retention-days: 14
-      - name: Upload E3 screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dune-e3-screens-${{ github.run_number }}
-          path: dev/dist/e3-*.png
-          if-no-files-found: ignore
-          retention-days: 14
-
-  three-d:
-    name: 3D lifecycle + memory + WebGL console (phone)
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 16
-    defaults:
-      run:
-        working-directory: dev
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: dev/package-lock.json
-      - run: npm ci
-      - uses: actions/download-artifact@v4
-        with:
-          name: dune-validated-build
-          path: dev/dist
-      - run: node tools/ci-artifact.mjs verify
-      - uses: browser-actions/setup-chrome@v1
-        id: chrome
-        with:
-          chrome-version: stable
-      - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
-      # SwiftShader transition timings are diagnostics, not shared-runner gates.
-      - name: Phone 3D resource safety
+      - name: Verify Pages deployment of exact v76 root commit
         shell: bash
-        run: |
-          set -o pipefail
-          node tests/smoke/3d.mjs dist/pwa/index.html --cycles 2 --phone | tee dist/smoke-phone.log
-          grep -Fq 'PASS один WebGL-контекст' dist/smoke-phone.log
-          grep -Fq 'PASS нет роста meshes/textures' dist/smoke-phone.log
-          grep -Fq 'PASS нет ошибок консоли' dist/smoke-phone.log
-      - name: Upload 3D diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dune-3d-smoke-${{ github.run_number }}
-          path: dev/dist/smoke-*.log
-          if-no-files-found: ignore
-          retention-days: 14
-
-  gate:
-    name: All required checks passed
-    if: always()
-    needs: [build, golden, ui, three-d]
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Reject any failed or skipped required check
         env:
-          RESULTS: ${{ toJSON(needs) }}
+          GH_TOKEN: ${{ github.token }}
+          DEPLOYED_SHA: 9c1d84bd8de4699575b6df67d46dc2e11a886e7e
         run: |
-          python3 - <<'PY'
-          import json, os, sys
-          jobs = json.loads(os.environ['RESULTS'])
-          bad = {key: value['result'] for key, value in jobs.items() if value['result'] != 'success'}
-          print('Required checks:', {key: value['result'] for key, value in jobs.items()})
-          if bad:
-              print('FAIL:', bad, file=sys.stderr)
-              sys.exit(1)
-          PY
-      - name: Rehearse publishing the exact CI build (no push)
-        uses: actions/checkout@v4
-      - name: Download the same validated build for deployment rehearsal
-        uses: actions/download-artifact@v4
-        with:
-          name: dune-validated-build
-          path: dev/dist
-      - name: Stage, verify bytes, and ensure no source changed
-        shell: bash
-        run: |
-          cd dev
-          node tools/ci-artifact.mjs stage
-          cd ..
-          git diff --exit-code -- dev
+          for n in $(seq 1 18); do
+            echo "=== Deployment audit attempt $n ==="
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs?per_page=50" \
+              --jq '.workflow_runs[] | select(.head_sha == env.DEPLOYED_SHA) | [.id,.name,.status,.conclusion,.head_sha] | @tsv'
+            STATUS=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?per_page=50" \
+              --jq '[.workflow_runs[] | select(.head_sha == env.DEPLOYED_SHA and (.name | ascii_downcase | contains("pages")) and .conclusion == "success")] | length')
+            if test "$STATUS" -gt 0; then
+              echo "SUCCESS: GitHub Pages deployed exact v76 commit $DEPLOYED_SHA"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::No successful Pages deployment found for $DEPLOYED_SHA"
+          exit 1
