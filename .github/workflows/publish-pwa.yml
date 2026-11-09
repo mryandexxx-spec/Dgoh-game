@@ -4,13 +4,11 @@ on:
   workflow_run:
     workflows:
       - Validate Dune GoH PWA
-    types:
-      - completed
-    branches:
-      - main
-  workflow_dispatch:
+    types: [completed]
+    branches: [main]
 
 permissions:
+  actions: read
   contents: write
   pages: write
 
@@ -20,87 +18,75 @@ concurrency:
 
 jobs:
   publish:
+    # No manual bypass: only a validated release commit on main is publishable.
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'main' &&
-       startsWith(github.event.workflow_run.head_commit.message, 'release:'))
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      startsWith(github.event.workflow_run.head_commit.message, 'release:')
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
-      - name: Check out main
+      - name: Check out exactly the validated source
         uses: actions/checkout@v4
         with:
           ref: main
           persist-credentials: true
-
-      - name: Verify source is the validated commit
-        if: github.event_name == 'workflow_run'
+      - name: Fail if main advanced after validation
         shell: bash
-        run: |
-          test "$(git rev-parse HEAD)" = "${{ github.event.workflow_run.head_sha }}" || {
-            echo "::error::main moved since validation; skip unsafe deployment"
-            exit 1
-          }
+        env:
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: test "$(git rev-parse HEAD)" = "$VALIDATED_SHA"
 
-      - name: Set up Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: dev/package-lock.json
-
-      - name: Install dependencies
-        working-directory: dev
-        run: npm ci
-
-      - name: Build and stage GitHub Pages files
-        working-directory: dev
-        run: |
-          node tools/build.mjs --deploy
-          node tools/check-bundle.mjs dist/pwa/app.js
-
-      - name: Verify published version and deployment contents
+      - name: Download CI artifact from the successful run (no rebuild)
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
-          node --input-type=module <<'JS'
-          import fs from 'node:fs';
-          const v = JSON.parse(fs.readFileSync('dev/version.json', 'utf8')).v;
-          const app = fs.readFileSync('app.js', 'utf8');
-          if (!app.includes('v' + v + ' · ')) throw new Error('Version absent from root app.js');
-          const sw = fs.readFileSync('sw.js', 'utf8');
-          if (!/const VER = '[a-f0-9]{10}'/.test(sw)) throw new Error('Service worker cache version not generated');
-          console.log('Verified release v' + v);
-          JS
+          mkdir -p dev/dist
+          gh run download "$RUN_ID" --repo "${{ github.repository }}" --name dune-validated-build --dir dev/dist
 
-      - name: Commit built PWA files to main
+      - name: Verify every artifact SHA-256 and stage exact tested bytes
+        working-directory: dev
+        run: node tools/ci-artifact.mjs stage
+
+      - name: Commit validated PWA to main
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A -- index.html app.js app.css sw.js babylon3d.js assets
           if git diff --cached --quiet; then
-            echo "Already deployed: generated PWA matches main"
+            echo "Already deployed: exact validated PWA matches main"
           else
             VERSION=$(node -p "require('./dev/version.json').v")
             git commit -m "deploy: publish Dune GoH v${VERSION} PWA [skip ci]"
             git push origin HEAD:main
           fi
 
-      # A push made with GITHUB_TOKEN does not automatically trigger Pages.
-      # Request the branch-based Pages rebuild explicitly after updating main.
-      - name: Request GitHub Pages rebuild
+      # GITHUB_TOKEN pushes do not trigger Pages automatically.
+      # Exactly one explicit branch-based Pages build request after staged files land.
+      - name: Request Pages rebuild once
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh api -X POST "repos/${{ github.repository }}/pages/builds"
 
-      - name: Upload release PWA
-        uses: actions/upload-artifact@v4
-        with:
-          name: dune-goh-published-pwa-${{ github.run_number }}
-          path: |
-            dev/dist/pwa/
-            dev/dist/dune-pwa-flat.zip
-          retention-days: 14
-          if-no-files-found: error
+      - name: Record the published version and tested build hash
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const m = JSON.parse(fs.readFileSync('dev/dist/ci-manifest.json', 'utf8'));
+          const text = [
+            '### PWA release verification',
+            '- Version: v' + m.version,
+            '- Cache: ' + m.cache,
+            '- Validated source: ${{ github.event.workflow_run.head_sha }}',
+            '- Validated workflow: ${{ github.event.workflow_run.id }}',
+            '- Verified SHA-256 files: ' + Object.keys(m.hashes).length,
+            '- Deployed root HEAD: ' + process.env.GITHUB_SHA,
+          ];
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text.join('\n') + '\n');
+          JS
