@@ -281,3 +281,36 @@ jobs:
           node tools/ci-artifact.mjs stage
           cd ..
           git diff --exit-code -- dev
+
+  deploy-pages:
+    name: Publish verified v78 PWA to GitHub Pages
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: gate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: dune-validated-build
+          path: dev/dist
+      - name: Verify exact validated release bits and SHA-256
+        run: node dev/tools/ci-artifact.mjs verify
+      - name: Prepare GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload exact tested PWA
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dev/dist/pwa
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
