@@ -40,7 +40,9 @@ class CampStage extends Stage3D {
     smk.minLifeTime = 3; smk.maxLifeTime = 5; smk.minSize = .4; smk.maxSize = .9; smk.addSizeGradient(0, .3); smk.addSizeGradient(1, 1.6); smk.color1 = new B3.Color4(.25, .2, .18, .25); smk.color2 = new B3.Color4(.2, .17, .15, .2); smk.colorDead = new B3.Color4(.1, .1, .1, 0); smk.emitRate = 14; smk.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD; smk.start();
     // tents & crates & banners
     const tentM = mat3('#8a6a4a', { roughness: .95, side: 'double' }), darkM = mat3('#3a2a1c');
-    for (const [x, z, r, s] of [[-6.5, -3.5, .6, 1.3], [6.8, -4.2, -.5, 1.5], [-9, 1, 1.2, 1.1]]) { const t = mk(bCyl(0, 1.6, 2, 4), tentM, x, this.heightAt(x, z) + 1, z); t.rotation.y = r; t.scaling.set(s, s, s * .8); mk(bBox(.5, 1, .05), darkM, x + Math.sin(r) * 1.05 * s, this.heightAt(x, z) + .5, z + Math.cos(r) * 1.05 * s).rotation.y = r; }
+    // v81: background tents previously stood directly in front of the 7 landmarks,
+    // obscuring the ornithopter and worm. The shop has its own dedicated tent.
+    // Keep the foreground and both side-zone sightlines clear.
     const crateM = mat3('#6a4a2a', { roughness: .8 });
     for (const [x, z] of [[4.6, -1.5], [5.2, -1.1], [-4.4, -2.2]]) mk(bBox(.6, .5, .6), crateM, x, this.heightAt(x, z) + .25, z).rotation.y = x;
     const pole = mat3('#4a3420'), flag = mat3(S_FLAG(), { side: 'double', roughness: .9 });
@@ -55,48 +57,63 @@ class CampStage extends Stage3D {
     const glow = q.campAccents ? basic3('#ffc16d') : mat3('#a17c46', { roughness: 1 });
     const place = (shape, material, x, z, up = 0, casts = false) =>
       mk(shape, material, x, this.heightAt(x, z) + up, z, casts);
-    // B2.1: recognisable silhouettes at phone scale; no animation, extra lights or casts.
-    // Left: a House archive with an elevated crest.
-    place(bBox(.8, 2.1, .68), rock, -10.4, -1.7, 1.05);
-    place(bBox(.68, .24, .74), bronze, -10.4, -1.7, 2.15);
-    if (rich) place(bBox(.53, .1, .55), ember, -10.4, -1.7, 2.31);
+    // v81: visible, deliberately front-facing silhouettes. Anchors stay put and
+    // static props live at +z (closer to camera), clear of the marker buttons.
+    // Earlier B2.1 meshes had been behind large B1 tents and under the UI labels.
+    const landmarkZ = .65, bright = q.campAccents ? basic3('#b88850') : mat3('#ad8658', { roughness: .78 });
+    const bone = mat3('#ddc28c', { roughness: .86 });
+    // Legends: tall House archive stele + unmistakable luminous crest.
+    place(bBox(1.0, 2.55, .7), rock, -10.4, landmarkZ, 1.28);
+    place(bBox(1.25, .24, .86), bronze, -10.4, landmarkZ, 2.66);
+    place(bBox(.66, .55, .13), bright, -10.4, landmarkZ + .42, 2.20);
+    if (rich) place(bBox(.25, .25, .18), ember, -10.4, landmarkZ + .53, 2.20);
 
-    // Trials: parked ornithopter. Its long split wings, tapered hull and raised tail
-    // are identifiable even in the LOW silhouette, unlike the old training dummy.
-    const craftX = -7.5, craftZ = -1.9;
-    place(bBox(2.35, .13, .64), rock, craftX, craftZ, .18); // landing pad
-    const hull = place(bCyl(.11, .29, 1.62, low ? 6 : 8), bronze, craftX, craftZ, .88);
-    hull.rotation.x = Math.PI / 2; // long nose points towards the camera
-    const leftWing = place(bBox(1.48, .055, .31), canvas, craftX - .88, craftZ, 1.02);
-    leftWing.rotation.z = -.16;
-    const rightWing = place(bBox(1.48, .055, .31), canvas, craftX + .88, craftZ, 1.02);
-    rightWing.rotation.z = .16;
+    // Trials: parked ornithopter viewed head-on, with an unmistakably wide
+    // pair of long wings and cockpit. Raised high enough to sit above the labels.
+    const craftX = -7.5, craftZ = landmarkZ;
+    place(bBox(2.8, .16, 1.05), rock, craftX, craftZ, .13); // landing pad
+    const hull = place(bBox(.56, .56, 2.35), bronze, craftX, craftZ, 1.47);
+    hull.rotation.x = -.10;
+    const wingLeft = place(bBox(1.62, .12, .44), bright, craftX - 1.05, craftZ + .02, 1.78);
+    wingLeft.rotation.z = -.20;
+    const wingRight = place(bBox(1.62, .12, .44), bright, craftX + 1.05, craftZ + .02, 1.78);
+    wingRight.rotation.z = .20;
+    place(bBox(.48, .3, .85), ink, craftX, craftZ + .55, 1.75); // glass cockpit
+    place(bBox(.22, .82, .34), canvas, craftX, craftZ - .85, 1.91); // tail fin
     if (!low) {
-      place(bBox(.34, .21, .43), ink, craftX, craftZ + .12, 1.03); // cockpit
-      place(bBox(.14, .5, .22), bronze, craftX, craftZ - .65, 1.17); // tail fin
+      const finL = place(bBox(.62, .09, 1.05), bronze, craftX - .54, craftZ - .62, 1.66);
+      finL.rotation.z = -.23;
+      const finR = place(bBox(.62, .09, 1.05), bronze, craftX + .54, craftZ - .62, 1.66);
+      finR.rotation.z = .23;
       if (rich) {
-        place(bBox(.52, .035, .16), ember, craftX - 1.24, craftZ, 1.11);
-        place(bBox(.52, .035, .16), ember, craftX + 1.24, craftZ, 1.11);
+        place(bBox(.14, .18, 1.32), ink, craftX - .43, craftZ, .62);
+        place(bBox(.14, .18, 1.32), ink, craftX + .43, craftZ, .62);
       }
     }
 
-    // Raid: Shai-Hulud bursting out of a dune, facing the player. Dark round
-    // maw and four prominent teeth read as a sandworm, not an obelisk.
-    const wormX = -4.8, wormZ = -1.7;
-    place(bCyl(.75, 1.04, .42, low ? 7 : 10), rock, wormX, wormZ, .2);
-    const worm = place(bCyl(.58, .39, 1.55, low ? 8 : 12), bronze, wormX, wormZ, 1.06);
-    worm.rotation.z = -.22;
-    const maw = place(bSph(.49, low ? 8 : 12), ink, wormX - .16, wormZ + .17, 1.87);
-    maw.scaling.set(1, 1, .43);
+    // Raid: Shai-Hulud emerging from sand. The front-facing dark circular maw
+    // with pale radial teeth is the dominant feature, not a thin slanted post.
+    const wormX = -4.8, wormZ = landmarkZ;
+    place(bCyl(1.12, 1.5, .56, low ? 8 : 12), rock, wormX, wormZ, .28);
+    const body = place(bCyl(.78, 1.00, 1.72, low ? 9 : 14), bronze, wormX, wormZ, 1.13);
+    body.rotation.z = -.12;
+    const neck = place(bCyl(.85, .71, .64, low ? 9 : 14), canvas, wormX - .12, wormZ + .14, 2.04);
+    neck.rotation.x = Math.PI / 2; // forward projecting head
+    const maw = place(bSph(.79, low ? 10 : 14), ink, wormX - .12, wormZ + .53, 2.14);
+    maw.scaling.set(1, 1, .26);
+    // Teeth extend in front of the mouth so they do not disappear in the shade.
     for (const side of [-1, 1]) {
-      const fang = place(bCyl(.015, .13, .42, low ? 4 : 6), glow, wormX - .16 + side * .31, wormZ + .34, 1.86);
-      fang.rotation.z = side * .42;
+      const fang = place(bCyl(.01, .16, .56, low ? 4 : 6), bone,
+        wormX - .12 + side * .54, wormZ + .73, 2.16);
+      fang.rotation.z = side * .55;
     }
+    const upperFang = place(bCyl(.01, .18, .55, low ? 4 : 6), bone,
+      wormX - .12, wormZ + .74, 2.56);
+    upperFang.rotation.z = Math.PI;
     if (!low) {
-      for (const side of [-1, 1]) {
-        const fang = place(bCyl(.015, .12, .35, 6), glow, wormX - .16 + side * .17, wormZ + .39, 1.64);
-        fang.rotation.z = -side * .22;
-      }
+      const lowerFang = place(bCyl(.01, .16, .45, 6), bone,
+        wormX - .12, wormZ + .74, 1.73);
+      lowerFang.rotation.z = 0;
     }
     // Centre: squad by the existing fire, adjacent illuminated Arrakis map table.
     // No mesh is placed on the heroes' formation or the campfire.
