@@ -53,6 +53,12 @@ run('cq().done["0-1-0"] = 3; cqCommitRoute(cqNode("0-1-0"));');
 assert.equal(run('cqOpen(cqNode("0-1-0"))'), true, 'chosen node replayable');
 assert.equal(run('cqOpen(cqNode("0-1-1"))'), false, 'alternative cannot be entered');
 assert.equal(run('cqRouteBlocked(cqNode("0-1-1"))'), true);
+
+assert.ok(run('cqDetail(cqNode("0-1-1"))').includes('Маршрут закрыт'),
+  'UI explains why the alternative is locked');
+assert.ok(run('cqDetail(cqNode("0-1-0"))').includes('Повторить бой'),
+  'a three-star chosen point exposes replay');
+
 run('cq().done["0-1-1"] = 3;');
 assert.equal(run('cqOpen(cqNode("0-1-1"))'), true, 'legacy completed node remains replayable');
 
