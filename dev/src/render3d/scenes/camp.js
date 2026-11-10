@@ -10,6 +10,7 @@ import { bBox, bCyl, bPlane, bSph } from '../geometry.js';
 import { V3, basic3, col3, mat3, mk } from '../materials.js';
 import { CTX, withCtx } from '../ctx.js';
 import { B3, HAS3D, HAS_GL, loadB3 } from '../base.js';
+import { wormData, wormMesh } from '../worm.js';
 import { hostKick } from '../engine-host.js';
 import { CH } from '../../data/chars.js';
 
@@ -92,23 +93,26 @@ class CampStage extends Stage3D {
     place(bCyl(1.12, 1.5, .56, low ? 8 : 12), rock, wormX, wormZ, .28);
     const body = place(bCyl(.78, 1.00, 1.72, low ? 9 : 14), bronze, wormX, wormZ, 1.13);
     body.rotation.z = -.12;
-    const neck = place(bCyl(.85, .71, .64, low ? 9 : 14), canvas, wormX - .12, wormZ + .14, 2.04);
-    neck.rotation.x = Math.PI / 2; // forward projecting head
-    const maw = place(bSph(.79, low ? 10 : 14), ink, wormX - .12, wormZ + .53, 2.14);
-    maw.scaling.set(1, 1, .26);
-    // Teeth extend in front of the mouth so they do not disappear in the shade.
-    for (const side of [-1, 1]) {
-      const fang = place(bCyl(.01, .16, .56, low ? 4 : 6), bone,
-        wormX - .12 + side * .54, wormZ + .73, 2.16);
-      fang.rotation.z = side * .55;
-    }
-    const upperFang = place(bCyl(.01, .18, .55, low ? 4 : 6), bone,
-      wormX - .12, wormZ + .74, 2.56);
-    upperFang.rotation.z = Math.PI;
-    if (!low) {
-      const lowerFang = place(bCyl(.01, .16, .45, 6), bone,
-        wormX - .12, wormZ + .74, 1.73);
-      lowerFang.rotation.z = 0;
+    // The raid already ships an authored, textured worm model. Reuse its mouth
+    // in the camp instead of approximating a famous silhouette with four cones.
+    // LOW and missing-asset browsers retain a compact procedural fallback.
+    const wormAsset = !low && wormData();
+    if (wormAsset) {
+      const mouth = wormMesh(wormAsset.mouth);
+      mouth.material = mat3('#dfb184', { roughness: .76, side: 'double' });
+      mouth.position.set(wormX - .1, this.heightAt(wormX, wormZ) + 2.15, wormZ + .76);
+      mouth.rotation.x = Math.PI / 2;
+      mouth.scaling.setAll(.72);
+    } else {
+      const neck = place(bCyl(.85, .71, .64, low ? 9 : 14), canvas, wormX - .12, wormZ + .14, 2.04);
+      neck.rotation.x = Math.PI / 2;
+      const maw = place(bSph(.79, low ? 10 : 14), ink, wormX - .12, wormZ + .53, 2.14);
+      maw.scaling.set(1, 1, .26);
+      for (const side of [-1, 1]) {
+        const fang = place(bCyl(.01, .16, .56, 5), bone,
+          wormX - .12 + side * .54, wormZ + .73, 2.16);
+        fang.rotation.z = side * .55;
+      }
     }
     // Centre: open headquarters formation; Arrakis tactical table stays off to the right.
     // No separate squad totem: the five heroes ARE the landmark.
