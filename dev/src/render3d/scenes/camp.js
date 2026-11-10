@@ -55,15 +55,49 @@ class CampStage extends Stage3D {
     const glow = q.campAccents ? basic3('#ffc16d') : mat3('#a17c46', { roughness: 1 });
     const place = (shape, material, x, z, up = 0, casts = false) =>
       mk(shape, material, x, this.heightAt(x, z) + up, z, casts);
-    // Left: House archives, training dummies, Shai-Hulud monument.
+    // B2.1: recognisable silhouettes at phone scale; no animation, extra lights or casts.
+    // Left: a House archive with an elevated crest.
     place(bBox(.8, 2.1, .68), rock, -10.4, -1.7, 1.05);
-    if (rich) place(bBox(.53, .1, .55), ember, -10.4, -1.7, 2.12);
-    place(bCyl(.09, .12, 1.5, 6), bronze, -7.5, -1.9, .75);
-    place(bBox(1, .16, .18), ink, -7.5, -1.9, 1.36);
-    place(bCyl(.62, .84, .32, low ? 6 : 10), rock, -4.8, -1.7, .16);
-    const worm = place(bCyl(.22, .48, 1.5, low ? 6 : 10), bronze, -4.8, -1.7, .91);
-    worm.rotation.z = -.28;
-    if (rich) place(bSph(.22, 8), ember, -4.8, -1.7, 1.75);
+    place(bBox(.68, .24, .74), bronze, -10.4, -1.7, 2.15);
+    if (rich) place(bBox(.53, .1, .55), ember, -10.4, -1.7, 2.31);
+
+    // Trials: parked ornithopter. Its long split wings, tapered hull and raised tail
+    // are identifiable even in the LOW silhouette, unlike the old training dummy.
+    const craftX = -7.5, craftZ = -1.9;
+    place(bBox(2.35, .13, .64), rock, craftX, craftZ, .18); // landing pad
+    const hull = place(bCyl(.11, .29, 1.62, low ? 6 : 8), bronze, craftX, craftZ, .88);
+    hull.rotation.x = Math.PI / 2; // long nose points towards the camera
+    const leftWing = place(bBox(1.48, .055, .31), canvas, craftX - .88, craftZ, 1.02);
+    leftWing.rotation.z = -.16;
+    const rightWing = place(bBox(1.48, .055, .31), canvas, craftX + .88, craftZ, 1.02);
+    rightWing.rotation.z = .16;
+    if (!low) {
+      place(bBox(.34, .21, .43), ink, craftX, craftZ + .12, 1.03); // cockpit
+      place(bBox(.14, .5, .22), bronze, craftX, craftZ - .65, 1.17); // tail fin
+      if (rich) {
+        place(bBox(.52, .035, .16), ember, craftX - 1.24, craftZ, 1.11);
+        place(bBox(.52, .035, .16), ember, craftX + 1.24, craftZ, 1.11);
+      }
+    }
+
+    // Raid: Shai-Hulud bursting out of a dune, facing the player. Dark round
+    // maw and four prominent teeth read as a sandworm, not an obelisk.
+    const wormX = -4.8, wormZ = -1.7;
+    place(bCyl(.75, 1.04, .42, low ? 7 : 10), rock, wormX, wormZ, .2);
+    const worm = place(bCyl(.58, .39, 1.55, low ? 8 : 12), bronze, wormX, wormZ, 1.06);
+    worm.rotation.z = -.22;
+    const maw = place(bSph(.49, low ? 8 : 12), ink, wormX - .16, wormZ + .17, 1.87);
+    maw.scaling.set(1, 1, .43);
+    for (const side of [-1, 1]) {
+      const fang = place(bCyl(.015, .13, .42, low ? 4 : 6), glow, wormX - .16 + side * .31, wormZ + .34, 1.86);
+      fang.rotation.z = side * .42;
+    }
+    if (!low) {
+      for (const side of [-1, 1]) {
+        const fang = place(bCyl(.015, .12, .35, 6), glow, wormX - .16 + side * .17, wormZ + .39, 1.64);
+        fang.rotation.z = -side * .22;
+      }
+    }
     // Centre: squad by the existing fire, adjacent illuminated Arrakis map table.
     // No mesh is placed on the heroes' formation or the campfire.
     if (rich) place(bCyl(.68, .75, .15, 8), rock, -2.4, -2.7, .08);
