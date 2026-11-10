@@ -33,7 +33,9 @@ try {
     `);
     await page.waitForSelector('.ixpage');
     const box=await page.$eval('.ixpage',el=>{const b=el.getBoundingClientRect();return {x:b.x,y:b.y,right:b.right,bottom:b.bottom};});
-    assert.ok(box.x>=-2 && box.right<=width+2 && box.y>=-2 && box.bottom<=height+2,width+': recycler viewport');
+    console.log('Ix viewport',width+'x'+height,JSON.stringify(box));
+    await page.screenshot({path:'dist/ix-debug-' + width + '.png'});
+    assert.ok(box.x>=-2 && box.right<=width+2 && box.y>=-2 && box.bottom<=height+2,width+': recycler viewport '+JSON.stringify(box));
     assert.ok(await page.$('[data-ixkind="ix_plate"]'),width+': categories');
     const initialPlate = await page.evaluate(() => (0,eval)('S.ix_plate'));
     await page.screenshot({path:'dist/ix-' + width + '.png'});
