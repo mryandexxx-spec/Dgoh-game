@@ -64,6 +64,18 @@ for matid in sorted(set(p.get('material',0) for m in doc['meshes'] for p in m['p
    # glTF UV starts at the top; DGM/JPEG uses Babylon invertY=true (bottom origin).
    uv[:,1]=1-uv[:,1]
    j=acc(attrs['JOINTS_0']).astype(np.uint8);w=acc(attrs['WEIGHTS_0']).astype(np.float32)
+   # The prototype's proximity weights accidentally bind coat corners to hands.
+   # Keep the complete garment (including trim/lining) on its dedicated cloth rig.
+   name=mesh_names[meshid]
+   cloth_names=('coattail_outer','coattail_lining','silver_coattail_edge','inner_red_tail','brocade_detail','hems_')
+   torso_names=('outer_black_coat_torso','burgundy_high_neck_tunic','chest_burgundy_front','coat_lapel_trim','other_lapel_outline')
+   belt_names=('waist_belt','ornate_buckle','buckle_inner','buckle_core')
+   if any(key in name for key in cloth_names):
+    upper,lower=J[16][1][1],J[17][1][1]
+    blend=np.clip((v[:,1]-lower)/(upper-lower),0,1)
+    j=np.zeros_like(j);w=np.zeros_like(w);j[:,0]=16;j[:,1]=17;w[:,0]=blend;w[:,1]=1-blend
+   elif any(key in name for key in torso_names+belt_names):
+    j=np.zeros_like(j);w=np.zeros_like(w);j[:,0]=0 if any(key in name for key in belt_names) else 1;w[:,0]=1
    ws=w.sum(axis=1,keepdims=True);w/=np.maximum(ws,1e-9);w=np.clip(np.rint(w*255),0,255).astype(np.uint8)
    # exact 255 total for each vertex
    for ww in w: ww[int(np.argmax(ww))]=max(0,min(255,int(ww[np.argmax(ww)])+255-int(ww.sum())))

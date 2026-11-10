@@ -34,7 +34,17 @@ try {
  for(const name of ['Idle','Attack','Hit','Death'])samples[name]=sample(name);
   const death=Array.from({length:11},(_,k)=>sample('Death',10000,1.3,k/10).min[1]);
   samples.revive=sample('Idle',12000,2.3);
-  return {samples,death,key:bakeKey('baron'),model:assetUrl('models/young-baron.dgm')};
+  // Isolated arm movement must not drag the lower coat or lining.
+  const cloth=o.root.getChildMeshes().filter(m=>/_part_0[456]$/.test(m.name));
+  const positions=()=>cloth.map(m=>{m.computeWorldMatrix(true);m.skeleton.prepare(true);return m.getPositionData(true,false).slice();});
+  const before=positions();
+  o.R.sh.rotationQuaternion=B3.Quaternion.FromEulerAngles(-1.2,0,.2);
+  o.R.el.rotationQuaternion=B3.Quaternion.FromEulerAngles(-.8,0,0);
+  o.Lf.sh.rotationQuaternion=B3.Quaternion.FromEulerAngles(-1,0,-.2);
+  o.Lf.el.rotationQuaternion=B3.Quaternion.FromEulerAngles(-.8,0,0);
+  const after=positions();let clothDrag=0,clothVertices=0;
+  cloth.forEach((m,k)=>{const rest=m.getVerticesData(B3.VertexBuffer.PositionKind);for(let i=0;i<rest.length;i+=3)if(rest[i+1]<1){clothVertices++;for(let c=0;c<3;c++)clothDrag=Math.max(clothDrag,Math.abs(after[k][i+c]-before[k][i+c]));}});
+  return {samples,death,clothDrag,clothVertices,key:bakeKey('baron'),model:assetUrl('models/young-baron.dgm')};
  })()`);
  console.log('Death floor',result.death);
  for(const name of ['Idle','Attack','Hit','Death']){
@@ -43,6 +53,7 @@ try {
   for(let k=0;k<3;k++)assert(s.max[k]>s.min[k]);
   assert(s.min[1]>-.08,'model fell through floor: '+name);
  }
+ assert(result.clothVertices>100 && result.clothDrag<.00001,'arm movement stretches the coat: '+result.clothDrag);
  assert(result.death.every(y=>y>-.08),'Death feet sink through floor');
  assert.notDeepEqual(result.samples.Idle.q,result.samples.Attack.q);
  assert.equal(result.samples.revive.clip,'Idle');
