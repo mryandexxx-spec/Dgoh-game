@@ -33,7 +33,7 @@ function buildEnv(A, key, day, ctx) { return withCtx(ctx, () => {
   CTX.shadows = new B3.ShadowGenerator(gfx(A.small).shadowSize, sun, undefined, undefined, true);
   if (A.engine.webGLVersion >= 2) { CTX.shadows.usePercentageCloserFiltering = true; CTX.shadows.filteringQuality = gfx(A.small).shadowQ === 'low' ? B3.ShadowGenerator.QUALITY_LOW : B3.ShadowGenerator.QUALITY_MEDIUM; } else CTX.shadows.usePoissonSampling = true;
   CTX.shadows.bias = .0008; CTX.shadows.normalBias = .02; CTX.shadows.darkness = .25; A.sun = sun; A.shadows = CTX.shadows;
-  if (S.sun) glowSprite(S.sun[3], 90, sunDir.x * 380, sunDir.y * 380, sunDir.z * 380);
+  if (S.sun && !A.campTwinSuns) glowSprite(S.sun[3], 90, sunDir.x * 380, sunDir.y * 380, sunDir.z * 380);
   if (E.night) {
     const n = 900, pos = [], r = sRng(3); for (let i = 0; i < n; i++) { const th = r() * Math.PI * 2, ph = Math.acos(r() * .95); pos.push(Math.sin(ph) * Math.cos(th) * 400, Math.cos(ph) * 400, Math.sin(ph) * Math.sin(th) * 400); }
     const stars = new B3.Mesh('stars', CTX.scene), vd = new B3.VertexData(); vd.positions = pos; vd.indices = Array.from({ length: n }, (_, i) => i); vd.applyToMesh(stars);
