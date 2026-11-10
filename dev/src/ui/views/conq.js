@@ -28,7 +28,7 @@ import { addRes, grantShards } from '../../logic/rewards.js';
 
 // ---- battle hooks ----
 function cqApply(B, cfg) {
-  const C = cq(), A = B.units.slice(0, cfg.squad.length), E = B.units.filter(u => u.side === 'B').slice(0, cfg.cq.idx.length), st = C.foe[cfg.cq.key];
+  const C = cq(), A = B.units.slice(0, cfg.squad.length), E = B.units.filter(u => u.side === 'B').slice(0, cfg.cq.idx.length), st = C.done[cfg.cq.key] ? null : C.foe[cfg.cq.key];
   for (const k of cqDiskOn()) if (CQ_DISKS[k]) CQ_DISKS[k].f(A, B);
   for (const u of A) { const p = cqStaPen(cqSta(u.def.id)); if (p.dmg > 0) { u.dmgBonus -= p.dmg; u.spd = Math.round(u.spd * (1 - p.spd)); } u.hp = u.maxHp; }   // full HP every node; stamina weakens
   for (const m of cfg.cq.mods) if (cqMod(m)) cqMod(m).f(E, cqK());
@@ -64,6 +64,9 @@ function cqFinish(B, cfg, won) {
     if (a.type === 'boss') { if (!prev) cqBump('boss', a.s, Object.keys(C.done).filter(k => k.endsWith(`-${CQ_LAST}-0`)).length, true); if (cfg.cq.fresh && !prev) cqBump('boss1', a.s); if (flaw) cqBump('bossflaw', a.s); }
     lines.push(`Очки Джихада: ${cqScore()} (звёзды ${C.stars} + подвиги ${C.pts || 0})`);
     html = `<h3>Победа</h3><div class="stars">${starStr(st, 3)}</div><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul>`;
+  } else if (C.done[a.key]) {
+    delete C.foe[a.key]; // a defeated replay never leaves a wounded farming target
+    html = '<h3>Поражение в повторном бою</h3><p>Лучший результат и полученные награды сохранены. В следующем повторе враги восстановятся полностью.</p>';
   } else {
     const all = cqFoes(a), st = C.foe[a.key] || all.map(() => ({ h: 1, s: 1 }));
     E.forEach((u, j) => { st[cfg.cq.idx[j]] = { h: u.alive && u.hp > 0 ? Math.max(.01, u.hp / u.maxHp) : 0, s: u.maxShield ? Math.max(0, u.shield) / u.maxShield : 1 }; });
