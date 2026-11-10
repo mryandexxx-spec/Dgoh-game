@@ -1441,6 +1441,15 @@ ul.cqrw { display: grid; gap: 4px; } ul.cqrw li { display: flex; align-items: ce
 .cqer { display: inline-flex; align-items: center; gap: 2px; font-family: var(--f-mono); font-size: 10px; color: #e0b0ff; }
 @media (orientation: landscape) and (max-height: 520px) { .cqn { width: 36px; height: 36px; margin: -18px 0 0 -18px; } .cqn.t-boss { width: 46px; height: 46px; margin: -23px 0 0 -23px; } .rclv b { font-size: 24px; } }
 
+
+/* J1: locked forks, reward clarity and repeat battles — static, low-cost styles. */
+.cqlines line.off { stroke: rgb(140 128 112 / .15); stroke-dasharray: 2 8; }
+.cqn.branchlocked { filter: grayscale(1); opacity: .28; box-shadow: none; }
+.cqn.branchlocked.sel { opacity: .53; }
+.cqroute-x { font-size: 25px; line-height: 1; color: #bd9c81; }
+.cqrequire { margin-top: 5px !important; min-height: 29px; color: #ce9a70 !important; font-size: 11px !important; }
+.cqrequire.ready { color: #a7d898 !important; }
+.cqrepeatnote { color: var(--dust); font: 11px/1.35 var(--f-body); display: block; max-width: 310px; margin-top: 5px; }
 /* ===== release A ===== */
 .cden .cdst, .cden .cdpw { color: var(--dust); font-size: 9px; white-space: nowrap; }
 .cden .cdpw { color: #e8c98e; }
