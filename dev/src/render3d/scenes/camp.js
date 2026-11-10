@@ -6,38 +6,146 @@ import { gfx } from '../quality.js';
 import { poseHuman } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
 import { bakeStatic, buildEnv, staticNoCast } from '../env/build-env.js';
-import { bBox, bCyl, bPlane, bRock, bSph, glowTex } from '../geometry.js';
+import { bBox, bCyl, bPlane, bSph } from '../geometry.js';
 import { V3, basic3, col3, mat3, mk } from '../materials.js';
 import { CTX, withCtx } from '../ctx.js';
 import { B3, HAS3D, HAS_GL, loadB3 } from '../base.js';
+import { wormData, wormMesh } from '../worm.js';
+import { assetUrl } from '../../assets/models.js';
 import { hostKick } from '../engine-host.js';
 import { CH } from '../../data/chars.js';
+
+// Small, dependency-free GLB reader for licensed static camp landmarks.
+// Uses existing Babylon core primitives; no separate loader chunk or WebGL engine.
+// Only glTF 2.0 triangles, float positions/normals/uvs, and JPEG base color
+// textures are required by the three verified/optimized v82 assets.
+async function importCampGlb(url, scene, parent, scale, style) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('camp glb HTTP ' + res.status);
+  // Build artifact stores non-web asset types as base64 text; PWA serves GLB bytes.
+  const bytes = url.endsWith('.txt')
+    ? Uint8Array.from(atob((await res.text()).trim()), c => c.charCodeAt(0)).buffer
+    : await res.arrayBuffer();
+  const view = new DataView(bytes);
+  if (view.getUint32(0, true) !== 0x46546c67 || view.getUint32(4, true) !== 2) throw new Error('not glTF 2.0');
+  const jsonSize = view.getUint32(12, true);
+  const doc = JSON.parse(new TextDecoder().decode(new Uint8Array(bytes, 20, jsonSize)));
+  const binAt = 20 + jsonSize + 8;
+  if (doc.buffers?.length !== 1) throw new Error('GLB multiple buffers unsupported');
+  const src = doc.bufferViews, acc = doc.accessors;
+  const data = id => {
+    const a = acc[id], v = src[a.bufferView], comps = ({SCALAR:1,VEC2:2,VEC3:3,VEC4:4})[a.type];
+    const Type = ({5121:Uint8Array,5123:Uint16Array,5125:Uint32Array,5126:Float32Array})[a.componentType];
+    if (!Type || !comps) throw new Error('unsupported glTF accessor');
+    const stride = v.byteStride || comps * Type.BYTES_PER_ELEMENT;
+    const start = binAt + (v.byteOffset || 0) + (a.byteOffset || 0);
+    if (stride === comps * Type.BYTES_PER_ELEMENT && start % Type.BYTES_PER_ELEMENT === 0)
+      return new Type(bytes, start, a.count * comps);
+    const out = new Type(a.count * comps), dv = new DataView(bytes);
+    const read = a.componentType === 5126 ? 'getFloat32' :
+      a.componentType === 5125 ? 'getUint32' : a.componentType === 5123 ? 'getUint16' : 'getUint8';
+    for (let i = 0; i < a.count; i++)
+      for (let k = 0; k < comps; k++)
+        out[i * comps + k] = dv[read](start + i * stride + k * Type.BYTES_PER_ELEMENT, true);
+    return out;
+  };
+  const materials = doc.materials.map((spec, idx) => {
+    const material = new B3.PBRMaterial('camp-asset-' + idx, scene);
+    const pbr = spec.pbrMetallicRoughness || {};
+    material.albedoColor = B3.Color3.FromArray((pbr.baseColorFactor || [1,1,1,1]).slice(0,3));
+    material.metallic = pbr.metallicFactor || 0;
+    material.roughness = pbr.roughnessFactor ?? .85;
+    material.backFaceCulling = !spec.doubleSided;
+    // Art direction: warm Arrakis cloth and readable flying surfaces.
+    if (style === 'tent') { material.albedoColor = B3.Color3.FromHexString('#ddad78'); material.roughness = .98; material.metallic = 0; }
+    if (style === 'craft') { material.emissiveColor = B3.Color3.FromHexString('#24180d'); material.roughness = .72; material.metallic = .08; }
+    const importTex = ref => {
+      if (!ref) return null;
+      const source = doc.images[doc.textures[ref.index].source], bv = src[source.bufferView];
+      const raw = new Uint8Array(bytes, binAt + (bv.byteOffset || 0), bv.byteLength);
+      const blobUrl = URL.createObjectURL(new Blob([raw], {type:source.mimeType || 'image/jpeg'}));
+      return new B3.Texture(blobUrl, scene, false, false, B3.Texture.TRILINEAR_SAMPLINGMODE,
+        () => URL.revokeObjectURL(blobUrl), () => URL.revokeObjectURL(blobUrl));
+    };
+    material.albedoTexture = importTex(pbr.baseColorTexture);
+    if (spec.emissiveTexture) {
+      material.emissiveTexture = importTex(spec.emissiveTexture);
+      material.emissiveColor = B3.Color3.FromArray(spec.emissiveFactor || [1,1,1]);
+    }
+    return material;
+  });
+  const root = new B3.TransformNode('camp-authored-landmark', scene);
+  root.parent = parent;
+  root.scaling.setAll(scale);
+  const nodes = doc.nodes.map((n, idx) => {
+    const obj = new B3.TransformNode('camp-asset-node-' + idx, scene);
+    // Sketchfab glTF nodes commonly use a matrix (centimeter conversion,
+    // axis rotation and parent transforms), rather than TRS properties.
+    // Applying it is mandatory: otherwise the tent and table are enormous.
+    if (n.matrix) {
+      obj.rotationQuaternion = new B3.Quaternion();
+      B3.Matrix.FromArray(n.matrix).decompose(obj.scaling, obj.rotationQuaternion, obj.position);
+    } else {
+      if (n.translation) obj.position.set(...n.translation);
+      if (n.scale) obj.scaling.set(...n.scale);
+      if (n.rotation) obj.rotationQuaternion = new B3.Quaternion(...n.rotation);
+    }
+    if (n.mesh !== undefined) doc.meshes[n.mesh].primitives.forEach((p, j) => {
+      if (p.mode !== undefined && p.mode !== 4) return;
+      const mesh = new B3.Mesh('camp-authored-part-' + j, scene);
+      const vd = new B3.VertexData();
+      vd.positions = data(p.attributes.POSITION);
+      if (p.attributes.NORMAL !== undefined) vd.normals = data(p.attributes.NORMAL);
+      if (p.attributes.TEXCOORD_0 !== undefined) vd.uvs = data(p.attributes.TEXCOORD_0);
+      vd.indices = data(p.indices);
+      vd.applyToMesh(mesh, false);
+      mesh.material = materials[p.material || 0];
+      mesh.isPickable = false;
+      mesh.parent = obj;
+    });
+    return obj;
+  });
+  doc.nodes.forEach((n, i) => (n.children || []).forEach(id => {nodes[id].parent = nodes[i];}));
+  const sceneRoots = doc.scenes?.[doc.scene || 0]?.nodes || [];
+  sceneRoots.forEach(i => nodes[i].parent = root);
+  return root;
+}
 
 // ---------- 3D camp lobby ----------
 class CampStage extends Stage3D {
   constructor() {
     super({ cls: 'stage3d camp3d', kind: 'camp' });
-    this.raid = false; this.units = {};
-    withCtx({ scene: this.scene, shadows: null }, () => { buildEnv(this, 'sietch'); CTX.shadows = this.shadows;
-    const S = this.scene; S.fogStart = 30; S.fogEnd = 120;
+    this.raid = false; this.units = {}; this.campTwinSuns = true;
+    withCtx({ scene: this.scene, shadows: null }, () => { buildEnv(this, 'desert'); CTX.shadows = this.shadows;
+    const S = this.scene; S.fogStart = 65; S.fogEnd = 190;
+    // A single 16x128 emissive sky gradient is stable on mobile Safari.
+    // The previous vertex-color-only sky rendered near-black in real phone
+    // screenshots; do not use the overexposed white emissive dome from v81.
+    const oldSkyMat = this.sky.material;
+    const skyMat = new B3.StandardMaterial('camp-sky-warm', S);
+    skyMat.disableLighting = true; skyMat.diffuseColor = B3.Color3.Black();
+    skyMat.emissiveColor = B3.Color3.White(); skyMat.specularColor = B3.Color3.Black();
+    skyMat.fogEnabled = false; skyMat.disableDepthWrite = true;
+    skyMat.backFaceCulling = false;
+    const grad = new B3.DynamicTexture('camp-sky-gradient', { width: 16, height: 128 }, S, false);
+    const cx = grad.getContext(), gr = cx.createLinearGradient(0, 0, 0, 128);
+    gr.addColorStop(0, '#99633f'); gr.addColorStop(.45, '#b97d4c');
+    gr.addColorStop(1, '#c99c65'); cx.fillStyle = gr; cx.fillRect(0, 0, 16, 128);
+    grad.update(false); skyMat.emissiveTexture = grad;
+    this.sky.material = skyMat; oldSkyMat.dispose();
+    // Arrakis daylight: two distant emissive sun discs; only the existing sun casts shadows.
+    // Distant spheres are never shadow casters, and do not introduce new render targets.
+    const sunA = mk(bSph(4.1, 12), basic3('#ffa43c', { fog: false }), -9, 10, -90, false);
+    const sunB = mk(bSph(3.0, 10), basic3('#ffe8a4', { fog: false }), 3, 12, -103, false);
+    sunA.isPickable = sunB.isPickable = false;
     const rp = new B3.ReflectionProbe('rp', gfx(this.small).probe.camp, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
-    // campfire: stones ring, logs, flickering light, flame + sparks particles
-    const fx = 0, fz = 1.2, fy = this.heightAt(fx, fz); this.fire = V3(fx, fy, fz);
-    const stoneM = mat3('#4a3a30', { roughness: .9, flatShading: true });
-    for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2, st = mk(bRock(i + 90, 0), stoneM, fx + Math.cos(a) * .55, fy + .05, fz + Math.sin(a) * .55); st.scaling.setAll(.16 + (i % 3) * .03); }
-    const logM = mat3('#3a2414', { roughness: .9 });
-    for (let i = 0; i < 4; i++) { const lg = mk(bCyl(.06, .07, .9, 8), logM, fx, fy + .12, fz); lg.rotation.z = Math.PI / 2 - .35; lg.rotation.y = i * Math.PI / 4; }
-    mk(bSph(.22, 12), basic3('#ff7a2a'), fx, fy + .12, fz, false).scaling.set(1, .4, 1);
-    const L = this.fireL = new B3.PointLight('fire', V3(fx, fy + .8, fz), S); L.diffuse = col3('#ff9a4a'); L.specular = col3('#ff8a3a'); L.intensity = 2.4; L.range = 14;
-    this.fireShadow = null; // perf step 5: campfire point light no longer renders a 6-face cube shadow map
-    const tx = glowTex();
-    const fl = new B3.ParticleSystem('flame', 400, S); fl.particleTexture = tx; fl.emitter = V3(fx, fy + .1, fz); fl.minEmitBox = V3(-.18, 0, -.18); fl.maxEmitBox = V3(.18, .05, .18);
-    fl.direction1 = V3(-.15, 1.4, -.15); fl.direction2 = V3(.15, 2.2, .15); fl.minLifeTime = .35; fl.maxLifeTime = .8; fl.minSize = .18; fl.maxSize = .42; fl.addSizeGradient(0, .3); fl.addSizeGradient(1, .05);
-    fl.addColorGradient(0, new B3.Color4(1, .9, .5, 1)); fl.addColorGradient(.4, new B3.Color4(1, .5, .15, .9)); fl.addColorGradient(1, new B3.Color4(.5, .1, .02, 0)); fl.emitRate = 260; fl.blendMode = B3.ParticleSystem.BLENDMODE_ADD; fl.start();
-    const sp = new B3.ParticleSystem('sparks', 120, S); sp.particleTexture = tx; sp.emitter = V3(fx, fy + .3, fz); sp.minEmitBox = V3(-.15, 0, -.15); sp.maxEmitBox = V3(.15, .2, .15); sp.direction1 = V3(-.5, 2, -.5); sp.direction2 = V3(.5, 4, .5);
-    sp.minLifeTime = 1; sp.maxLifeTime = 2.4; sp.minSize = .02; sp.maxSize = .05; sp.color1 = new B3.Color4(1, .7, .3, 1); sp.color2 = new B3.Color4(1, .5, .15, 1); sp.colorDead = new B3.Color4(1, .3, 0, 0); sp.emitRate = 18; sp.blendMode = B3.ParticleSystem.BLENDMODE_ADD; sp.start();
-    const smk = new B3.ParticleSystem('smoke', 120, S); smk.particleTexture = tx; smk.emitter = V3(fx, fy + 1.2, fz); smk.minEmitBox = V3(-.1, 0, -.1); smk.maxEmitBox = V3(.1, .2, .1); smk.direction1 = V3(.1, .8, -.1); smk.direction2 = V3(.4, 1.3, .1);
-    smk.minLifeTime = 3; smk.maxLifeTime = 5; smk.minSize = .4; smk.maxSize = .9; smk.addSizeGradient(0, .3); smk.addSizeGradient(1, 1.6); smk.color1 = new B3.Color4(.25, .2, .18, .25); smk.color2 = new B3.Color4(.2, .17, .15, .2); smk.colorDead = new B3.Color4(.1, .1, .1, 0); smk.emitRate = 14; smk.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD; smk.start();
+    // Daylight headquarters: five heroes on open sand. No campfire, flame,
+    // logs, smoke, sparks, or pulsing point light; this also saves phone GPU work.
+    this.fire = V3(0, this.heightAt(0, 1.2), 1.2);
+    this.fireL = null; this.fireShadow = null;
+    const plaza = mat3('#a17a53', { roughness: .98, noSheen: 1 });
+    const ring = mk(bCyl(2.7, 2.9, .085, 16), plaza, 0, this.heightAt(0, 0) + .045, 0, false);
+    ring.isPickable = false;
     // tents & crates & banners
     const tentM = mat3('#8a6a4a', { roughness: .95, side: 'double' }), darkM = mat3('#3a2a1c');
     // v81: background tents previously stood directly in front of the 7 landmarks,
@@ -51,8 +159,8 @@ class CampStage extends Stage3D {
     // materials; the clickable DOM anchors remain independent of these decorations.
     // The central fire and five heroes are intentionally unobstructed.
     const q = gfx(this.small), rich = q.campTotems === 'full', low = q.campTotems === 'low';
-    const rock = mat3('#49382e', { roughness: 1 }), bronze = mat3('#79502d', { roughness: .85 });
-    const canvas = mat3('#7a5030', { roughness: .95 }), ink = mat3('#312720', { roughness: 1 });
+    const rock = mat3('#ad825a', { roughness: 1 }), bronze = mat3('#705442', { roughness: .85 });
+    const canvas = mat3('#cfaa73', { roughness: .95 }), ink = mat3('#4b3428', { roughness: 1 });
     const ember = q.campAccents ? basic3('#ec8133') : mat3('#a15e32', { roughness: 1 });
     const glow = q.campAccents ? basic3('#ffc16d') : mat3('#a17c46', { roughness: 1 });
     const place = (shape, material, x, z, up = 0, casts = false) =>
@@ -60,18 +168,31 @@ class CampStage extends Stage3D {
     // v81: visible, deliberately front-facing silhouettes. Anchors stay put and
     // static props live at +z (closer to camera), clear of the marker buttons.
     // Earlier B2.1 meshes had been behind large B1 tents and under the UI labels.
-    const landmarkZ = .65, bright = q.campAccents ? basic3('#b88850') : mat3('#ad8658', { roughness: .78 });
+    const landmarkZ = .65, bright = q.campAccents ? basic3('#e5ba7b') : mat3('#c8a174', { roughness: .78 });
     const bone = mat3('#ddc28c', { roughness: .86 });
-    // Legends: tall House archive stele + unmistakable luminous crest.
-    place(bBox(1.0, 2.55, .7), rock, -10.4, landmarkZ, 1.28);
-    place(bBox(1.25, .24, .86), bronze, -10.4, landmarkZ, 2.66);
-    place(bBox(.66, .55, .13), bright, -10.4, landmarkZ + .42, 2.20);
-    if (rich) place(bBox(.25, .25, .18), ember, -10.4, landmarkZ + .53, 2.20);
-
+    // Legends: an open-air sandstone archive, stepped base, recessed stela
+    // and carved vertical lines rather than a flat upright shipping box.
+    const steleX = -10.4;
+    place(bBox(1.82, .22, 1.22), bronze, steleX, landmarkZ, .11);
+    place(bBox(1.52, .26, 1.02), rock, steleX, landmarkZ, .36);
+    place(bBox(1.18, 2.15, .64), rock, steleX, landmarkZ, 1.55);
+    place(bBox(1.35, .22, .81), bronze, steleX, landmarkZ, 2.73);
+    // An inset arch with warm metalwork faces the camera.
+    place(bBox(.88, 1.38, .09), ink, steleX, landmarkZ + .36, 1.76);
+    place(bBox(.72, 1.24, .11), canvas, steleX, landmarkZ + .42, 1.78);
+    place(bBox(.56, .22, .14), bronze, steleX, landmarkZ + .49, 2.34);
+    if (!low) {
+      for (const dx of [-.24, .24]) {
+        place(bBox(.075, .8, .12), bronze, steleX + dx, landmarkZ + .5, 1.65);
+      }
+      place(bBox(.55, .08, .12), ink, steleX, landmarkZ + .52, 1.21);
+      place(bBox(.55, .08, .12), ink, steleX, landmarkZ + .52, 1.07);
+    }
+    const fallbackOrnithopterAt = S.meshes.length;
     // Trials: parked ornithopter viewed head-on, with an unmistakably wide
     // pair of long wings and cockpit. Raised high enough to sit above the labels.
-    const craftX = -7.5, craftZ = landmarkZ;
-    place(bBox(2.8, .16, 1.05), rock, craftX, craftZ, .13); // landing pad
+    const craftX = -7.5, craftZ = landmarkZ + 1.15;
+    // Bare sand beneath landing gear; the oversized slab obscured the airframe in v82 previews.
     const hull = place(bBox(.56, .56, 2.35), bronze, craftX, craftZ, 1.47);
     hull.rotation.x = -.10;
     const wingLeft = place(bBox(1.62, .12, .44), bright, craftX - 1.05, craftZ + .02, 1.78);
@@ -91,58 +212,94 @@ class CampStage extends Stage3D {
       }
     }
 
+    const fallbackOrnithopter = S.meshes.slice(fallbackOrnithopterAt);
     // Raid: Shai-Hulud emerging from sand. The front-facing dark circular maw
     // with pale radial teeth is the dominant feature, not a thin slanted post.
     const wormX = -4.8, wormZ = landmarkZ;
     place(bCyl(1.12, 1.5, .56, low ? 8 : 12), rock, wormX, wormZ, .28);
     const body = place(bCyl(.78, 1.00, 1.72, low ? 9 : 14), bronze, wormX, wormZ, 1.13);
     body.rotation.z = -.12;
-    const neck = place(bCyl(.85, .71, .64, low ? 9 : 14), canvas, wormX - .12, wormZ + .14, 2.04);
-    neck.rotation.x = Math.PI / 2; // forward projecting head
-    const maw = place(bSph(.79, low ? 10 : 14), ink, wormX - .12, wormZ + .53, 2.14);
-    maw.scaling.set(1, 1, .26);
-    // Teeth extend in front of the mouth so they do not disappear in the shade.
-    for (const side of [-1, 1]) {
-      const fang = place(bCyl(.01, .16, .56, low ? 4 : 6), bone,
-        wormX - .12 + side * .54, wormZ + .73, 2.16);
-      fang.rotation.z = side * .55;
+    // The raid already ships an authored, textured worm model. Reuse its mouth
+    // in the camp instead of approximating a famous silhouette with four cones.
+    // LOW and missing-asset browsers retain a compact procedural fallback.
+    const wormAsset = !low && wormData();
+    if (wormAsset) {
+      const mouth = wormMesh(wormAsset.mouth);
+      mouth.material = mat3('#dfb184', { roughness: .76, side: 'double' });
+      mouth.position.set(wormX - .1, this.heightAt(wormX, wormZ) + 2.15, wormZ + .76);
+      mouth.rotation.x = Math.PI / 2;
+      mouth.scaling.setAll(.72);
+    } else {
+      const neck = place(bCyl(.85, .71, .64, low ? 9 : 14), canvas, wormX - .12, wormZ + .14, 2.04);
+      neck.rotation.x = Math.PI / 2;
+      const maw = place(bSph(.79, low ? 10 : 14), ink, wormX - .12, wormZ + .53, 2.14);
+      maw.scaling.set(1, 1, .26);
+      for (const side of [-1, 1]) {
+        const fang = place(bCyl(.01, .16, .56, 5), bone,
+          wormX - .12 + side * .54, wormZ + .73, 2.16);
+        fang.rotation.z = side * .55;
+      }
     }
-    const upperFang = place(bCyl(.01, .18, .55, low ? 4 : 6), bone,
-      wormX - .12, wormZ + .74, 2.56);
-    upperFang.rotation.z = Math.PI;
-    if (!low) {
-      const lowerFang = place(bCyl(.01, .16, .45, 6), bone,
-        wormX - .12, wormZ + .74, 1.73);
-      lowerFang.rotation.z = 0;
-    }
-    // Centre: squad by the existing fire, adjacent illuminated Arrakis map table.
-    // No mesh is placed on the heroes' formation or the campfire.
-    if (rich) place(bCyl(.68, .75, .15, 8), rock, -2.4, -2.7, .08);
+    const fallbackTableAt = S.meshes.length;
+    // Centre: open headquarters formation; Arrakis tactical table stays off to the right.
+    // No separate squad totem: the five heroes ARE the landmark.
     place(bBox(1.8, .16, 1.2), bronze, 2.8, -2.7, .94);
     place(bPlane(1.35, .8), glow, 2.8, -2.7, 1.035).rotation.x = Math.PI / 2;
     if (rich) {
       place(bCyl(.08, .09, .87, 6), ink, 2.1, -2.7, .46);
       place(bCyl(.08, .09, .87, 6), ink, 3.5, -2.7, .46);
     }
-    // Right: Jihad flight command and a larger warmly illuminated trading tent.
-    place(bBox(1.6, .22, 1.1), rock, 7.3, -1.9, .78);
-    const wing = place(bBox(2.2, .09, .38), bronze, 7.3, -1.9, 1.27);
-    wing.rotation.z = .13;
-    place(bCyl(0, 1.65, 2.65, 4), canvas, 10.5, -2.2, 1.33);
-    if (rich) place(bBox(.86, 1.32, .12), ink, 10.5, -1.31, .69);
-    place(bSph(.18, 8), glow, 10.5, -1.22, 1.66);
-    if (rich) {
-      // HIGH-only carved symbols, no extra shadow maps or postprocess targets.
-      place(bBox(.54, .1, .54), ember, 7.3, -1.9, 1.42);
-      place(bBox(.32, .34, .08), ember, -10.4, -1.27, 1.12);
+    const fallbackTable = S.meshes.slice(fallbackTableAt);
+    // Jihad: dedicated operations station (not another aircraft cross).
+    const warX = 7.3, warZ = -1.9;
+    place(bBox(2.15, .24, 1.2), rock, warX, warZ, .9);
+    place(bPlane(1.65, .81), glow, warX, warZ, 1.04).rotation.x = Math.PI / 2;
+    place(bCyl(.09, .1, 1.68, 6), bronze, warX + .9, warZ - .55, 1.05);
+    const insignia = place(bPlane(.82, .98), canvas, warX + .9, warZ - .53, 2.35);
+    insignia.rotation.y = .08;
+    if (!low) place(bBox(.12, .56, .09), ember, warX + .9, warZ - .47, 2.27);
+    const fallbackTentAt = S.meshes.length;
+    // Shops: an actual fabric market awning with open front, ridge, posts, stock
+    // and counter. Replace the old giant 4-sided solid pyramid.
+    const shopX = 10.5, shopZ = -2.2;
+    for (const sx of [-1, 1]) {
+      const roof = place(bBox(1.66, .095, 2.35), canvas,
+        shopX + sx * .73, shopZ, 2.14);
+      roof.rotation.z = -sx * .32;
+      place(bCyl(.065, .065, 2.1, 6), bronze, shopX + sx * 1.34, shopZ + .97, 1.05);
     }
-    if (q.campAccentLights) {
-      const tradeLight = new B3.PointLight('camp-trade', V3(10.5, this.heightAt(10.5, -2.2) + 1.9, -2.2), S);
-      tradeLight.diffuse = col3('#ff9440'); tradeLight.intensity = .7; tradeLight.range = 3.8;
+    place(bBox(2.5, 1.68, .11), ink, shopX, shopZ - 1.12, .94);
+    place(bBox(2.4, .74, .6), bronze, shopX, shopZ + .78, .42);
+    for (const [dx, dz, h] of [[-1.45,.45,.44],[1.46,.32,.66],[.86,1.12,.25]]) {
+      place(bBox(.48, h, .46), rock, shopX + dx, shopZ + dz, h / 2);
+    }
+    if (rich) {
+      place(bBox(.31, .33, .31), glow, shopX - .63, shopZ + .79, .97);
+      place(bBox(.32, .24, .32), ember, shopX + .5, shopZ + .79, .9);
+    }
+    // Keep the shop's stall counter and spice crates as foreground detail when the tent loads.
+    const fallbackTent = []; // retain raised awning and trade stalls around imported fabric tent
+    const authored = [
+      { file: 'ornithopter.glb', x: -7.5, z: landmarkZ + 1.15, y: .78, scale: 1.13, yaw: .3, style: 'craft', fallback: fallbackOrnithopter },
+      { file: 'hologram_table.glb', x: 2.8, z: -2.7, y: 0, scale: .82, fallback: fallbackTable },
+      { file: 'market_tent.glb', x: 10.5, z: -2.2, y: 0, scale: .76, style: 'tent', fallback: fallbackTent },
+    ];
+    // Optional until verified binary files are committed to dev/assets/models.
+    // When the model loads it atomically replaces its procedural placeholder.
+    for (const item of authored) {
+      const url = assetUrl('models/' + item.file);
+      if (!url) continue;
+      const origin = new B3.TransformNode('camp-model-anchor-' + item.file, S);
+      origin.position.set(item.x, this.heightAt(item.x, item.z) + (item.y || 0), item.z);
+      origin.rotation.y = item.yaw || 0;
+      importCampGlb(url, S, origin, item.scale, item.style).then(root => {
+        if (!this.alive) { root.dispose(false, true); origin.dispose(); return; }
+        item.fallback.forEach(mesh => mesh.dispose(false, false));
+      }).catch(e => { origin.dispose(); console.warn('camp asset fallback', item.file, e); });
     }
     staticNoCast(this); bakeStatic(this);
     });
-    this.look({ dof: { f: 50, stop: 2.4, d: 9000 }, exposure: 1.08, ssao: .9, bloomT: .7, bloomW: .45, vig: 2.6 });
+    this.look({ dof: { f: 50, stop: 2.4, d: 9000 }, exposure: 1.2, ssao: .55, bloomT: .9, bloomW: .25, vig: 1.25 });
     this.slots = [[0, -.7], [-1.45, -.3], [1.45, -.3], [-2.55, .6], [2.55, .6]];
   }
   setSquad(ids) {
@@ -154,7 +311,7 @@ class CampStage extends Stage3D {
     });
   }
   tick(now, t) {
-    const f = .85 + Math.sin(t * 9) * .08 + Math.sin(t * 23) * .06 + Math.sin(t * 3.1) * .05; this.fireL.intensity = 2.6 * f; this.fireL.position.x = this.fire.x + Math.sin(t * 7) * .04;
+    // Daylight has no flickering campfire.
     for (const o of Object.values(this.units)) poseHuman(this, o, now, t, 1);
     // B1: camera translation on a rail. No autonomous rotation while idle.
     const lobby = this._lv && this._lv.isConnected ? this._lv : document.querySelector('.lobby');
@@ -165,7 +322,7 @@ class CampStage extends Stage3D {
     this._railNow = now;
     this.camera.position.set(this.railX, 2.6, this.fire.z + 7);
     if (!this._tg) this._tg = V3(0, 1.1, .3);
-    this._tg.set(this.railX, 1.1, .3); this.camera.setTarget(this._tg); this.camera.fov = .82;
+    this._tg.set(this.railX, 1.62, .3); this.camera.setTarget(this._tg); this.camera.fov = .82;
     if (this.flag) this.flag.forEach((fl, i) => { fl.rotation.y = Math.sin(t * 1.3 + i) * .25; });
   }
   post() {
@@ -181,7 +338,7 @@ class CampStage extends Stage3D {
     const markers = this._spots || [];
     for (const el of markers) {
       const xw = Number(el.dataset.wx), zw = Number(el.dataset.wz);
-      T.set(xw, this.heightAt(xw, zw) + 1.1, zw);
+      T.set(xw, this.heightAt(xw, zw) + .23, zw);
       B3.Vector3.ProjectToRef(T, B3.Matrix.IdentityReadOnly, M, vp, pa);
       const x = this._ldx + pa.x, y = this._ldy + pa.y;
       if (!el._world) { el._world = true; el.style.left = '0px'; el.style.top = '0px'; }

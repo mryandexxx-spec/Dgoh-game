@@ -8,12 +8,17 @@ class SceneBG {
     const w = this.cv.clientWidth || innerWidth, h = this.cv.clientHeight || innerHeight;
     this.w = w; this.h = h; this.cv.width = w; this.cv.height = h;
     this.base = document.createElement('canvas'); this.base.width = w; this.base.height = h;
-    const c = this.base.getContext('2d'); drawScene(c, this.key, w, h);
+    const c = this.base.getContext('2d'); drawScene(c, this.key === 'lobby' ? 'desert' : this.key, w, h);
+    if (this.key === 'lobby') {
+      for (const [x, y, r, color] of [[.53,.2,.031,'#ffe2a0'],[.59,.14,.021,'#fff4c9']]) {
+        c.fillStyle = color; c.beginPath(); c.arc(w * x, h * y, Math.max(5, h * r), 0, Math.PI * 2); c.fill();
+      }
+    }
     if (this.dim) { c.fillStyle = `rgba(14,11,17,${this.dim})`; c.fillRect(0, 0, w, h); }
     const vg = c.createRadialGradient(w / 2, h * .55, Math.min(w, h) * .35, w / 2, h * .55, Math.hypot(w, h) * .62); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.55)'); c.fillStyle = vg; c.fillRect(0, 0, w, h);
-    this.fog = ['lobby', 'caladan', 'sietch', 'storm'].includes(this.key) ? Array.from({ length: 4 }, (_, i) => ({ x: Math.random() * w, y: h * (.55 + i * .1), r: Math.max(w, h) * (.25 + Math.random() * .2), v: .15 + Math.random() * .25 })) : [];
-    this.embers = this.key === 'lobby' ? Array.from({ length: 26 }, () => ({ x: 0, y: 0, life: Math.random() })) : [];
-    const type = (SCENES[this.key] || SCENES.desert).parts, r = Math.random;
+    this.fog = ['caladan', 'sietch', 'storm'].includes(this.key) ? Array.from({ length: 4 }, (_, i) => ({ x: Math.random() * w, y: h * (.55 + i * .1), r: Math.max(w, h) * (.25 + Math.random() * .2), v: .15 + Math.random() * .25 })) : [];
+    this.embers = []; // v82: no embers or campfire in daylight lobby
+    const type = (SCENES[this.key === 'lobby' ? 'desert' : this.key] || SCENES.desert).parts, r = Math.random;
     const n = { sand: w / 9, storm: w / 2.5, rain: w / 7, ember: w / 14, dust: w / 16, stars: 50 }[type] | 0;
     this.type = type;
     this.parts = Array.from({ length: n }, () => ({ x: r() * w, y: type === 'stars' ? r() * h * .55 : type === 'sand' ? h * (.45 + r() * .55) : r() * h, v: .5 + r(), l: 6 + r() * 14, a: .15 + r() * .35, ph: r() * 6 }));
@@ -30,13 +35,8 @@ class SceneBG {
       c.fillStyle = g; c.fillRect(f.x - f.r, f.y - f.r, f.r * 2, f.r * 2);
     }
     if (this.key === 'lobby') {
-      const fx = w * .5, fy = h * .71, s = Math.min(w, h * 1.6) * .019, fl = 1 + .08 * Math.sin(t * 9) + .05 * Math.sin(t * 13.7);
-      const gl = c.createRadialGradient(fx, fy - s, 0, fx, fy - s, s * 9 * fl); gl.addColorStop(0, 'rgba(255,170,80,.45)'); gl.addColorStop(1, 'rgba(255,120,40,0)'); c.fillStyle = gl; c.fillRect(fx - s * 10, fy - s * 10, s * 20, s * 20);
-      c.fillStyle = '#2a1a12'; c.fillRect(fx - s * 1.4, fy - s * .3, s * 2.8, s * .6);
-      const flame = (k, col, hgt, sway) => { c.fillStyle = col; c.beginPath(); c.moveTo(fx - s * k, fy); c.quadraticCurveTo(fx - s * k * .9, fy - s * hgt * .55, fx + Math.sin(t * 6 + sway) * s * .35, fy - s * hgt * fl); c.quadraticCurveTo(fx + s * k * .9, fy - s * hgt * .55, fx + s * k, fy); c.fill(); };
-      flame(1.1, 'rgba(230,90,30,.9)', 2.6, 0); flame(.8, 'rgba(255,160,60,.95)', 2.0, 1.3); flame(.45, 'rgba(255,235,170,.95)', 1.3, 2.1);
-      for (const e of this.embers) { e.life += .006 + Math.random() * .004; if (e.life > 1) { e.life = 0; e.x = fx + (Math.random() - .5) * s * 1.6; e.y = fy - s; }
-        if (!e.x) continue; e.y -= .7; e.x += Math.sin(t * 3 + e.life * 10) * .4; c.fillStyle = `rgba(255,${150 + 80 * (1 - e.life) | 0},70,${(1 - e.life) * .9})`; c.fillRect(e.x, e.y, 2, 2); }
+      // 2D offline fallback: two sun discs, no flames. Draw once per canvas
+      // through the retained backdrop instead of an animated effect.
     }
     for (const p of this.parts) {
       if (this.type === 'sand' || this.type === 'storm') {

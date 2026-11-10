@@ -51,7 +51,15 @@ try {
       if(!valid)fail++;
     }
     // The approved relocated navigation must remain reachable in the profile.
-    await page.click('.pchip');
+    // The lobby rerenders asynchronously after zone navigation; Puppeteer's
+    // actionability wait can hold a handle to a node that gets detached.
+    // Resolve and click the chip atomically in the page, still exercising
+    // the real browser event handler rather than bypassing navigation.
+    await page.evaluate(() => {
+      const chip = document.querySelector('.pchip');
+      if (!chip || !chip.isConnected) throw Error('profile chip missing');
+      chip.click();
+    });
     const profile=await page.$('#overlay2 [data-v="rules"]');
     if(!profile){
       const debug=await page.evaluate(()=>{
