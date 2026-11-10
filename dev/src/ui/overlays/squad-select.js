@@ -12,7 +12,7 @@ import { S, tickWater } from '../../core/state.js';
 import { persist } from '../../core/save.js';
 import { TIER_COL } from '../../logic/gear.js';
 import { RAID_SCENES, ROMAN, enemyProg } from '../../logic/economy.js';
-import { JK, JR, jFoes } from '../../data/journeys.js';
+import { JK, JR, jFoes, jSelectedReady } from '../../data/journeys.js';
 import { CAMP_DEF, NODES, NODE_SCENES, nodeCost, nodeEn, nodeTitle } from '../../data/campaigns.js';
 import { sceneThumb } from '../../render2d/scenes.js';
 import { figureSVG, portrait } from '../../render2d/figures.js';
@@ -40,7 +40,8 @@ function openSquadSel(mode, i) {
   SQ = { mode, i, f: 'all' };
   const a = sqArr(), pool = sqPool(), used = mode === 'raid' && S.raid ? new Set(S.raid.used) : new Set();
   for (let k = a.length - 1; k >= 0; k--) if (!pool.includes(a[k]) || used.has(a[k])) a.splice(k, 1);
-  if (mode !== 'camp' && !a.length) for (const id of (mode === 'raid' ? S.squad : pool)) if (a.length < 5 && pool.includes(id) && !used.has(id)) a.push(id);
+  if (mode === 'journey' && i >= 3 && a.length > 4) a.length = 4;
+  if (mode !== 'camp' && !a.length) for (const id of (mode === 'raid' ? S.squad : pool)) if (a.length < (mode === 'journey' && i >= 3 ? 4 : 5) && pool.includes(id) && !used.has(id)) a.push(id);
   renderSquadSel();
 }
 function sqEnemy() {
@@ -53,11 +54,13 @@ function sqEnemy() {
 function renderSquadSel() {
   if (!SQ) return;
   const a = sqArr(), pool = sqPool(), E = sqEnemy(), used = SQ.mode === 'raid' && S.raid ? new Set(S.raid.used) : new Set();
+  const scripted = SQ.mode === 'journey' && SQ.i >= 3;
   const pw = a.reduce((s, id) => s + unitPower(CH[id], prog(id)), 0), lead = a[0] && CH[a[0]];
   const leadersIn = a.filter(id => CH[id].leader);
   let warn = '';
-  if (!a.length) warn = 'Отряд пуст: выберите до 5 героев';
+  if (!a.length) warn = scripted ? 'Выберите четырёх героев пути' : 'Отряд пуст: выберите до 5 героев';
   else if (!lead.leader) warn = `${lead.sn} стоит лидером, но лидерской способности нет${leadersIn.length ? ` — сделайте лидером ${leadersIn.map(id => CH[id].sn).join(' или ')}` : ''}`;
+  if (scripted && !jSelectedReady(JK(), SQ.i, a)) warn = 'Нужно ровно 4 героя пути: каждый 7★, снаряжение XIII и нужная Другая память';
   if (SQ.mode === 'camp') { const miss = reqMissing(SQ.i, a); if (miss.length) warn = 'В отряде обязательно: ' + miss.map(id => CH[id].sn + (prog(id).stars ? '' : ' (не открыт)')).join(', '); }
   const facs = ['all', 'light', 'dark', ...Object.keys(FACTIONS)].filter(f => f === 'all' || pool.some(id => f === 'light' || f === 'dark' ? CH[id].side === f : CH[id].f.includes(f)));
   const facN = f => f === 'all' ? 'Все' : f === 'light' ? 'Светлые' : f === 'dark' ? 'Тёмные' : FACTIONS[f].n;
@@ -83,11 +86,11 @@ function renderSquadSel() {
         </div>
         <div class="sqright">
           <div class="sqfoe"><span class="lbl">Противник</span>${E.raid ? `<span class="sqworm"><svg viewBox="0 0 24 24" style="color:var(--worm)">${SPOT_ICONS.worm}</svg> Шаи-Хулуд · ${fmt(E.raid.hp)} / ${fmt(E.raid.maxHp)}</span>` : `<span class="chips">${E.foes.map(([id, ep]) => portrait(CH[id], 34, TIER_COL[ep.gear])).join('')}</span><span class="power ${E.pw > pw * 1.1 ? 'bad' : 'ok'}">мощь ${fmt(E.pw)}</span>`}</div>
-          <div class="sqslots">${[0, 1, 2, 3, 4].map(slot).join('')}</div>
+          <div class="sqslots">${scripted ? [0, 1, 2, 3].map(slot).join('') + `<div class="sqslot legend" aria-label="Сюжетный Муад’Диб"><span class="sqlab lab0">Сюжетный союзник</span><span class="sqfig">${figureSVG(CH.muaddib, true)}</span><span class="sqname">Муад’Диб</span><span class="sqpw mono">85 ур. · 7★ · XIII · ДП ${SQ.i === 3 ? 5 : 6}</span></div>` : [0, 1, 2, 3, 4].map(slot).join('')}</div>
 
         </div>
       </div>
-      <div class="sqfoot"><div class="sqbtns"><button class="btn" data-sqclear="1" ${a.length ? '' : 'disabled'}>Распустить отряд</button><button class="btn go sqgo" data-sqgo="1" ${a.length && !(SQ.mode === 'camp' && reqMissing(SQ.i, a).length) && !(SQ.mode === 'trial' && a.length < TRIAL_SQ) ? '' : 'disabled'}>${SQ.mode === 'raid' ? 'Атаковать' : SQ.mode === 'trial' && a.length < TRIAL_SQ ? `Нужно ${TRIAL_SQ} героев` : 'Бой'}${E.cost ? ` <span class="sqcost">${amt(E.en || 'water', E.cost)}</span>` : ''}</button></div></div>
+      <div class="sqfoot"><div class="sqbtns"><button class="btn" data-sqclear="1" ${a.length ? '' : 'disabled'}>Распустить отряд</button><button class="btn go sqgo" data-sqgo="1" ${a.length && !(SQ.mode === 'camp' && reqMissing(SQ.i, a).length) && !(SQ.mode === 'trial' && a.length < TRIAL_SQ) && !(scripted && !jSelectedReady(JK(), SQ.i, a)) ? '' : 'disabled'}>${SQ.mode === 'raid' ? 'Атаковать' : SQ.mode === 'trial' && a.length < TRIAL_SQ ? `Нужно ${TRIAL_SQ} героев` : 'Бой'}${E.cost ? ` <span class="sqcost">${amt(E.en || 'water', E.cost)}</span>` : ''}</button></div></div>
     </div></div>`;
   sceneThumb($('#overlay .sqbg')); renderRes();
 }
@@ -99,7 +102,7 @@ function sqGo() {
   if (mode === 'camp') { tickWater(); if (enGet(nodeEn(i)) < nodeCost(i)) return openInfo(`need:${nodeEn(i)}:${nodeCost(i)}`); return startBattle(i); }
   if (mode === 'conq') { const nd = cqNode(i), SE = CQ_SECT[nd.s], lv = cqLive(nd); if (!lv.foes.length) return; if (!cqEnSpend(CQ_EN.fight)) { toast(`Нужно ${CQ_EN.fight} Решимости. ${cqEnTxt()}`); return; } persist(); return launch({ mode: 'conq', i, scene: SE.scene, desert: !!SE.desert, title: `${SE.n} · ${nd.type === 'boss' ? 'босс' : nd.type === 'elite' ? 'элита' : 'бой'}`, squad: a.slice(), enemy: lv.foes, cq: { key: i, mods: nd.mods, idx: lv.idx, fresh: !lv.st } }); }
   if (mode === 'trial') { const { T, t } = trialOfSQ(i); return launch({ mode: 'trial', i, scene: T.scene, desert: !!T.desert, title: `${T.short} · ур. ${ROMAN[t + 1]}`, squad: a.slice(), enemy: trialFoes(T, t) }); }
-  if (mode === 'journey') { const t = JR().tiers[i]; return launch({ mode: 'journey', scene: JR().scenes[i], i, title: `Легенда ${i + 1}. ${t.n}`, desert: t.desert, squad: a.slice(), enemy: jFoes(JK(), i) }); }
+  if (mode === 'journey') { if (!jSelectedReady(JK(), i, a)) return toast('Проверьте требования к героям пути'); const t = JR().tiers[i]; return launch({ mode: 'journey', scene: JR().scenes[i], i, title: `Легенда ${i + 1}. ${t.n}`, desert: t.desert, squad: a.slice(), scriptedMuaddib: i >= 3, enemy: jFoes(JK(), i) }); }
   const R = S.raid; if (!R) return; return launch({ mode: 'raid', scene: RAID_SCENES[R.tier], title: 'Шаи-Хулуд · ' + RAID_TIERS[R.tier].n.split(' · ')[0], squad: a.slice(), boss: { tier: R.tier, hp: R.hp, maxHp: R.maxHp } });
 }
 let SHCONV = 0, SHCONV_T = 0;

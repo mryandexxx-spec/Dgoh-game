@@ -22,7 +22,7 @@ const FEATS = [
   { id: 'house', n: 'Великий Дом', d: 'Герои на 7★', m: 'stars7', at: [1, 3, 6, 10, 15], cos: { 2: { ava: 'lion' }, 4: { title: 'house', frame: 'house' } } },
   { id: 'trials', n: 'Испытанный пустыней', d: 'Уровни испытаний, пройденные на 3★', m: 'trials3', at: [3, 10, 20, 35, 48], cos: { 2: { ava: 'sietch' }, 4: { title: 'trial', frame: 'gold' } } },
   { id: 'gl', n: 'Сила пророчества', d: 'Применения ультимативных способностей легенд', m: 'gl', at: [1, 10, 30, 75], cos: { 3: { title: 'prophet' } } },
-  { id: 'devour', n: 'Зов Шаи-Хулуда', d: 'Враги, поглощённые червём Лиет-Кайнс', m: 'devour', at: [1, 10, 40], cos: { 2: { title: 'judge' } } },
+  { id: 'devour', n: 'Зов Шаи-Хулуда', d: 'Враги, поглощённые червём Муад’Диба', m: 'devour', at: [1, 10, 40], cos: { 2: { title: 'judge' } } },
   { id: 'skill', n: 'Великий ментат', d: 'Способности на 7-м уровне', m: 'skill7', at: [1, 5, 12, 25], cos: { 3: { title: 'mentat' } } },
   { id: 'days', n: 'Верность Дому', d: 'Дни в игре', m: 'days', at: [7, 30, 100, 365], cos: { 3: { title: 'loyal' } } },
   { id: 'cqmax', n: 'Покоритель Джихада', d: 'Недели Джихада, в которых открыт последний сундук шкалы (◆350)', m: 'cqMax', at: [1, 3, 6, 10, 20], cos: { 4: { title: 'jihad' } } },
@@ -33,7 +33,7 @@ const FEAT_RW = [[['cry', 50]], [['cry', 100], ['folio', 10]], [['seal', 1], ['c
 const featRw = (F, s) => FEAT_RW[Math.min(4, s + (5 - F.at.length))];
 const featStep = F => S.feats[F.id] || 0;
 const featReady = F => featStep(F) < F.at.length && METRIC[F.m]() >= F.at[featStep(F)];
-const featsReady = () => FEATS.filter(featReady).length;
+const featsReady = () => FEATS.reduce((total, F) => total + F.at.slice(featStep(F)).filter(goal => METRIC[F.m]() >= goal).length, 0);
 const featRank = () => FEATS.reduce((a, F) => a + featStep(F), 0), featMax = FEATS.reduce((a, F) => a + F.at.length, 0);
 const cosHtml = c => !c ? '' : [c.title ? `<span class="cosi t">Титул «${TITLES[c.title]}»</span>` : '', c.ava ? `<span class="cosi a">${avatarHtml('emb:' + c.ava, 'basic', 22)} Аватар «${EMBLEMS[c.ava].n}»</span>` : '', c.frame ? `<span class="cosi f">${avatarHtml(S.profile.ava, c.frame, 22)} Рамка «${FRAMES[c.frame].n}»</span>` : ''].join('');
 function featClaim(id) {
@@ -45,7 +45,7 @@ function featClaim(id) {
 }
 function renderFeats() {
   const fv = v => v >= 1e6 ? (v / 1e6).toFixed(v >= 1e7 ? 0 : 1).replace('.0', '') + ' млн' : v >= 1e4 ? Math.round(v / 1e3) + ' тыс.' : fmt(v);
-  const cards = FEATS.map(F => {
+  const cards = FEATS.slice().sort((a, b) => (featReady(b) ? 2 : featStep(b) < b.at.length ? 1 : 0) - (featReady(a) ? 2 : featStep(a) < a.at.length ? 1 : 0)).map(F => {
     const s = featStep(F), v = METRIC[F.m](), max = F.at.length, done = s >= max, goal = done ? F.at[max - 1] : F.at[s], prev = s ? F.at[s - 1] : 0;
     const pct = done ? 100 : Math.max(0, Math.min(100, (v - prev) / (goal - prev) * 100)), ready = featReady(F);
     return `<div class="feat ${done ? 'done' : ''} ${ready ? 'ready' : ''}">

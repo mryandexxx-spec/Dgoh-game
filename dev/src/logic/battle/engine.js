@@ -57,6 +57,11 @@ function createBattle(squadA, squadB, opts = {}) {
       tm: 0, cd: { special: 0 }, fx: {}, alive: true, intent: null, dmgBonus: 0, fearImmune: true, counterChance: 0, bossTurns: 0, phase: phaseOf(R.hp / R.maxHp), frenzy: 0 });
     B.bossStartHp = R.hp;
   }
+  if (Array.isArray(opts.waves) && opts.waves.length) {
+    if (opts.waves.length > 2 || opts.waves.some(w => !Array.isArray(w) || w.length < 1 || w.length > 5)) throw new Error('Недопустимая конфигурация волн');
+    B.wave = { current: 0, total: opts.waves.length + 1, remaining: opts.waves, seq: 0 };
+    B.wavePending = false;
+  }
   computeIntents(B);
   return B;
 }
@@ -112,8 +117,30 @@ function kill(B, u, by) {
 function checkOver(B) {
   if (B.over) return;
   const up = side => B.units.some(u => u.side === side && (u.alive || u.pendingRevive));
-  if (!up('B')) B.over = 'A';
+  if (!up('B')) {
+    if (B.wave && B.wave.remaining.length) B.wavePending = true;
+    else B.over = 'A';
+  }
   else if (!up('A')) B.over = 'B';
+}
+
+// Change wave after the current action has completed. Keep all allied unit objects
+// (HP, TM, cooldowns, effects, resurrection flags) and replace only enemies.
+function advanceWave(B) {
+  if (!B.wavePending || !B.wave || !B.wave.remaining.length || B.over) return false;
+  const roster = B.wave.remaining.shift();
+  const next = createBattle([], roster, { desert: B.desert, seed: Math.floor(B.rng() * 0x7fffffff) });
+  const enemies = next.units.filter(u => u.side === 'B');
+  const old = B.units.filter(u => u.side === 'B');
+  const seq = ++B.wave.seq;
+  for (const e of enemies) e.uid = 'w' + seq + '_' + e.uid;
+  B.units = B.units.filter(u => u.side === 'A').concat(enemies);
+  B.leader.B = next.leader.B;
+  B.active = null; B.actor = null; B.shots = []; B.flash = null;
+  B.wave.current++; B.wavePending = false;
+  log(B, 'Волна ' + (B.wave.current + 1) + '/' + B.wave.total, 'ctrl');
+  computeIntents(B);
+  return { old, enemies };
 }
 
 // returns true if target still alive & hit landed
@@ -210,4 +237,4 @@ function abilityReady(B, u, key) {
 }
 
 
-export { mkRng, createBattle, has, living, foe, isDebuffed, log, ev, nextActor, previewOrder, damageRaw, guardOf, kill, checkOver, hit, resist, applyFx, stunFx, validTargets, abilityReady };
+export { mkRng, createBattle, advanceWave, has, living, foe, isDebuffed, log, ev, nextActor, previewOrder, damageRaw, guardOf, kill, checkOver, hit, resist, applyFx, stunFx, validTargets, abilityReady };

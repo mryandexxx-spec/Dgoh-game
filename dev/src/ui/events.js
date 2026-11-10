@@ -80,7 +80,7 @@ document.addEventListener('click', e => {
   if (d.sqback) { set_SQ(null); closeOverlay(); render(); return; }
   if (d.sqclear) { sqArr().length = 0; persist(); return renderSquadSel(); }
   if (d.sqf) { SQ.f = d.sqf; return renderSquadSel(); }
-  if (d.sqadd) { const a = sqArr(), id = d.sqadd; if (a.includes(id)) a.splice(a.indexOf(id), 1); else if (isLegend(id) && a.some(isLegend)) { toast('В отряде может быть только одна легенда'); return; } else if (a.length < 5) a.push(id); else { toast('В отряде уже 5 бойцов: уберите кого-нибудь'); return; } persist(); return renderSquadSel(); }
+  if (d.sqadd) { const a = sqArr(), id = d.sqadd; if (a.includes(id)) a.splice(a.indexOf(id), 1); else if (isLegend(id) && a.some(isLegend)) { toast('В отряде может быть только одна легенда'); return; } else if (a.length < (SQ && SQ.mode === 'journey' && SQ.i >= 3 ? 4 : 5)) a.push(id); else { toast(SQ && SQ.mode === 'journey' && SQ.i >= 3 ? 'Можно выбрать только четырёх героев' : 'В отряде уже 5 бойцов: уберите кого-нибудь'); return; } persist(); return renderSquadSel(); }
   if (d.skup) {
     const [cid, k] = d.skup.split(':'), p = prog(cid), lv = p.sk[k] || 1;
     if (!p.stars || lv >= skMax(CH[cid], k)) return;
@@ -197,7 +197,7 @@ document.addEventListener('click', e => {
     if (it.kind === 'sh') { const un = grantShards(it.id, it.qty); toast(`+${amt('shard', it.qty, 'shard:' + it.id)} ${CH[it.id].sn}${un ? ' — открыт!' : ''}`); } else { addRes(it.kind, it.qty); toast(`+${amt(it.kind, it.qty)} ${RW_NAME[it.kind]}`); }
     persist(); refreshAll(); return; }
   if (!BT) return;
-  if (d.auto) { BT.auto = BT.autoPref = !BT.auto; if (BT.auto && BT.waiting) { const u = BT.waiting; const p = aiPlan(BT.B, u); doAct(u, p.key, p.target && p.target.uid); } else renderBattle(); return; }
+  if (d.auto) { BT.auto = BT.autoPref = !BT.auto; BT.autoTargetUid = null; if (BT.auto && BT.waiting) { const u = BT.waiting; const p = aiPlan(BT.B, u); doAct(u, p.key, p.target && p.target.uid); } else renderBattle(); return; }
   if (d.bdrawer && BT.pkg9) { BT.drawerOpen = !BT.drawerOpen; renderBattle(); return; }
   if (d.hud && BT.pkg9) { BT.hudVisible = !BT.hudVisible; renderBattle(); return; }
   if (d.log) { BT.showLog = !BT.showLog; renderBattle(); return; }
@@ -218,6 +218,11 @@ document.addEventListener('click', e => {
     return useAbil(u, k);
   }
   if (d.fxu && BT) return openFxPop(d.fxu);
+  if (t.classList.contains('tgt') && BT.auto && BT.B && !BT.B.over) {
+    BT.autoTargetUid = BT.autoTargetUid === t.dataset.uid ? null : t.dataset.uid;
+    BT.autoTaunts = BT.B.units.filter(u => u.side === 'B' && u.alive && u.fx.taunt).map(u => u.uid);
+    renderBattle(); return;
+  }
   if (t.classList.contains('tgt') && BT.waiting) { if (BT.cur !== t.dataset.uid) { BT.cur = t.dataset.uid; renderBattle(); } return; }
 });
 document.addEventListener('input', e => { if (e.target.id === 'simn') updSim(); });

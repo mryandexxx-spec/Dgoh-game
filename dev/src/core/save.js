@@ -30,6 +30,32 @@ function fillSave(s) {
   s.scrapCarry ??= {}; s.scrapLocks ??= {};
   for (const k of Object.keys(SCRAP)) s.scrapCarry[k] ??= 0;
   s.core ??= 0; s.teeth ??= 0; s.raid ??= null; s.raidKills ??= []; s.journey ??= {}; s.journeys ??= { muaddib: s.journey, liet: {} }; s.jKey ??= 'muaddib'; s.jPicks ??= { muaddib: s.jPick || [], liet: [] }; s.raidPick ??= []; s.jPick ??= [];
+  // v83: one-time retirement of legendary liet, no compensation; keep historical data reversible.
+  if (!s.migrations) s.migrations = {};
+  if (!s.migrations.retireLietV83) {
+    s.retiredLiet ??= { hero: s.roster.liet || null, journey: s.journeys.liet || null };
+    s.migrations.retireLietV83 = true;
+  }
+  delete s.roster.liet;
+  delete s.journeys.liet;
+  delete s.jPicks.liet;
+  if (s.jKey === 'liet') s.jKey = 'muaddib';
+  for (const name of ['squad', 'squadD', 'squadC', 'squadTr', 'raidPick', 'jPick', 'jPicks', 'squadByCamp', 'squadByNode']) {
+    const prune = v => {
+      if (Array.isArray(v)) return v.filter(id => id !== 'liet');
+      if (v && typeof v === 'object') for (const k of Object.keys(v)) v[k] = prune(v[k]);
+      return v;
+    };
+    if (s[name]) s[name] = prune(s[name]);
+  }
+  if (s.conq && typeof s.conq === 'object') {
+    const pruneCq = o => {
+      if (!o || typeof o !== 'object') return;
+      for (const k in o) if (k === 'squad' && Array.isArray(o[k])) o[k] = o[k].filter(id => id !== 'liet');
+      else if (o[k] && typeof o[k] === 'object') pruneCq(o[k]);
+    };
+    pruneCq(s.conq);
+  }
   return s;
 }
 function loadSave() {
