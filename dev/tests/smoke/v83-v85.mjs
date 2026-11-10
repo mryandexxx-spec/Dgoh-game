@@ -58,6 +58,7 @@ for (const id of run("JOURNEYS.muaddib.req")) {
 run("prog('duncan').relic = 0; prog('muaddib').stars = 7");
 assert.equal(run("jReady('muaddib', 0)"), true, 'already unlocked legend keeps replay access');
 assert.equal(run("jReady('muaddib', 4)"), true, 'already unlocked legend keeps replay access');
+assert.equal(run("jSelectedReady('muaddib', 4, JOURNEYS.muaddib.req.slice(0, 4))"), true, 'already unlocked legend keeps replay squad access');
 
 // v85: 2 -> 5 -> 1, all ally objects and HP survive, no early victory
 const unit = id => ({ id, lvl: 60, stars: 7, gear: 13 });
