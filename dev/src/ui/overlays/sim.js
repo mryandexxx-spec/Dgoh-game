@@ -75,7 +75,7 @@ function openSim(i) {
 }
 function updSim() {
   const el = $('#simn'); if (!el || simNode === null) return;
-  const k = +el.value, i = simNode, n = NODES[i], base = campReward(i, 3), en = nodeEn(i), ch = n.camp === 'C';
+  const k = +el.value, i = simNode, n = NODES[i], base = campReward(i, 3, true), en = nodeEn(i), ch = n.camp === 'C';
   $('#simv').textContent = '×' + k;
   $('#simc').innerHTML = amt(en, k * nodeCost(i)) + ` <span style="color:var(--dust)">из ${enGet(en)}</span>`;
   $('#sime').innerHTML = `${amt('sol', base.sol * k)} ${amt('pl', base.pl * k)} ${amt('folio', base.folio * k)}${ch ? ' ' + amt('rid', '≈' + Math.round(k * 11.5)) : ''}<br>${amt('shard', '≈' + Math.round(k * (ch ? .84 : .7)))} ${CH[n.drops[0]].sn} · ${amt('shard', '≈' + Math.round(k * .25))} ${CH[n.drops[1]].sn}<br>${amt('frag', '≈' + Math.round(k * 1.6))} фрагментов снаряжения`;
@@ -92,12 +92,12 @@ function runSim() {
 }
 function simCore(i, k) {
   quest('camp', k); if (NODES[i].camp === 'C') quest('chron', k); statInc('wins', k); const accL = accXP(k * nodeCost(i) * 3);
-  let sol = 0, pl = 0, folio = 0, seal = 0, rid = 0, core = 0; const sh = {}, items = [];
-  for (let r = 0; r < k; r++) { const rw = campReward(i, 3); sol += rw.sol; pl += rw.pl; folio += rw.folio; seal += rw.seal; rid += rw.rid; core += rw.core; items.push(...rw.items); for (const [id, q] of rw.drops) sh[id] = (sh[id] || 0) + q; }
-  S.solari += sol; S.plast += pl; grantFrags(items); S.cry += CRY_WIN * k; S.folio += folio; S.seal += seal; S.rid += rid; S.core = (S.core || 0) + core;
+  let sol = 0, pl = 0, folio = 0, seal = 0, rid = 0; const sh = {}, items = [], signals = {};
+  for (let r = 0; r < k; r++) { const rw = campReward(i, 3); sol += rw.sol; pl += rw.pl; folio += rw.folio; seal += rw.seal; rid += rw.rid; if (rw.signals) signals[rw.signals] = (signals[rw.signals] || 0) + 1; items.push(...rw.items); for (const [id, q] of rw.drops) sh[id] = (sh[id] || 0) + q; }
+  S.solari += sol; S.plast += pl; grantFrags(items); S.cry += CRY_WIN * k; S.folio += folio; S.seal += seal; S.rid += rid; for (const [key, n] of Object.entries(signals)) S[key] = (S[key] || 0) + n;
   const lines = [`+${amt('sol', sol)} соляриев`, `+${amt('pl', pl)} пластали`, `+${amt('cry', CRY_WIN * k)} кристаллов`, `+${amt('folio', folio)} фолиантов`];
   if (rid) lines.push(`+${amt('rid', rid)} ридулианских кристаллов`);
-  if (core) lines.push(`+${amt('core', core)} голосов предков`);
+  for (const [key, n] of Object.entries(signals)) lines.push(`+${amt(key, n)}`);
   if (seal) lines.push(`+${amt('seal', seal)} Печать Ландсраада!`);
   for (const [id, q] of Object.entries(sh)) lines.push(`+${amt('shard', q, 'shard:' + id)} ${CH[id].sn}${grantShards(id, q) ? ' — персонаж открыт!' : ''}`);
   lines.push(...fragLines(items));

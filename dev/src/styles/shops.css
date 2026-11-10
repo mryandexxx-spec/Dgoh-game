@@ -53,3 +53,6 @@
 .phase { font-family: var(--f-mono); font-size: 10px; letter-spacing: .12em; color: var(--worm); text-transform: uppercase; }
 .card.boss .nums { display: flex; }
 
+
+/* The Ix workshop is a focus surface: queue notifications instead of overlapping controls on SE. */
+body:has(.ixpage) .notes { display: none !important; }

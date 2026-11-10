@@ -17,6 +17,13 @@ const ICONS_RES = {
   candle: '<rect x="5.5" y="7" width="5" height="7.5" rx="1" fill="#e8d8b0"/><path d="M8 1.5c1.6 2 1.8 3.4 0 5-1.8-1.6-1.6-3 0-5z" fill="#ffb040"/><path d="M8 3.2c.7 1 .7 1.8 0 2.6-.7-.8-.7-1.6 0-2.6z" fill="#fff2b0"/><rect x="4" y="13.5" width="8" height="1.5" rx=".6" fill="#8a6a3a"/>',
   rid: '<path d="M8 1l5 4v6l-5 4-5-4V5z" fill="#2a9a8a"/><path d="M8 1l5 4-5 2.6L3 5z" fill="#7ae8d4"/><path d="M8 7.6V15" stroke="#bff8ec" stroke-width=".6" opacity=".7"/><path d="M3 5v6M13 5v6" stroke="#1a6a5e" stroke-width=".6"/>',
   core: '<path d="M8 1.2l5.6 3.3v6.9L8 14.8l-5.6-3.4V4.5z" fill="#7a1f2a"/><path d="M8 3.6l3.4 2v4.1L8 11.8 4.6 9.7V5.6z" fill="#ff6a3a"/><circle cx="8" cy="7.7" r="1.7" fill="#ffe0a0"/>',
+  ix_plate: '<rect x="2" y="3" width="12" height="10" rx="1" fill="#b78f4d"/><path d="M4 6h8M4 9h8" stroke="#efce91" stroke-width="1"/>',
+  holtz_conductor: '<path d="M4 2h8v12H4z" fill="#799ab1"/><path d="M8 3L5 9h3l-1 4 5-7H9l1-3" fill="#b9e9ff"/>',
+  tleilax_matrix: '<path d="M8 1L14 5v6l-6 4-6-4V5z" fill="#88558b"/><path d="M4 7l4-3 4 3-4 5z" fill="#d6a5db"/>',
+  null_cell: '<circle cx="8" cy="8" r="7" fill="#a78042"/><circle cx="8" cy="8" r="4" fill="#1a191c"/><path d="M8 3V1M8 15v-2M1 8h2M13 8h2" stroke="#f5d18a"/>',
+  blood_echo: '<circle cx="8" cy="8" r="6" fill="#bc5a38"/><path d="M8 2l4 6-4 6-4-6z" fill="#ffca9e"/>',
+  legacy_thread: '<path d="M2 12C4 3 12 3 14 12" stroke="#79b2c5" fill="none" stroke-width="2"/><circle cx="8" cy="8" r="3" fill="#cae9eb"/>',
+  age_resonance: '<circle cx="8" cy="8" r="7" fill="none" stroke="#c8b3ec" stroke-width="2"/><circle cx="8" cy="8" r="4" fill="none" stroke="#826abc" stroke-width="2"/><circle cx="8" cy="8" r="1.5" fill="#fff1d3"/>',
   frag: '<path d="M2.5 4.5h4a1.6 1.6 0 113.2 0h3.8v3.8a1.6 1.6 0 110 3.2v3.8h-11z" fill="#b9c3d4"/><path d="M2.5 4.5h4a1.6 1.6 0 113.2 0h3.8v3.8" fill="none" stroke="#7f8aa0" stroke-width=".8"/>',
 };
 const ic = k => `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true">${ICONS_RES[k]}</svg>`;

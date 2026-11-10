@@ -24,6 +24,7 @@ import { $ } from '../../core/dom.js';
 import { itemIcon, starStr, thumb } from '../common.js';
 import { RING_RATE } from '../../logic/rewards.js';
 import { gearSources } from '../../logic/gear-sources.js';
+import { MEM_MATS, SIGNAL_NODES } from '../../data/memory-scrap.js';
 
 // ===== info popups =====
 function campRow(i, note) {
@@ -73,7 +74,7 @@ const RES_INFO = {
   teeth: { n: 'Зубы червя', d: 'Трофеи рейда «Шаи-Хулуд». Валюта Лавки сиетча: осколки героев, фрагменты редкого снаряжения, материалы.' },
   cry: { n: 'Кристаллы пряности', d: 'Редкая валюта. Тратится на пополнение Воды и Свечей: 50 за пополнение, цена удваивается после каждого третьего (50 → 100 → 200 → 400 → 800), не больше 15 пополнений каждого вида в день; в полночь цена сбрасывается.' },
   shard: { n: 'Осколки персонажей', d: '10 осколков открывают обычного персонажа (легенды и герои Джихада открываются сразу на 7★ за 330), дальше осколки повышают звёзды: 15, 25, 30, 65, 85 и 100 до 7★. У каждого героя свои осколки; где их искать, видно в карточке героя по кнопке «Найти осколки».' },
-  core: { n: 'Голоса предков', n2: 'Голосов предков', d: 'Голоса предков, пробуждённые пряностью. Нужны, чтобы открывать уровни Другой памяти (ДП1–ДП7) — усиление героев сверх снаряжения XIII. Требуется 7★ и полное снаряжение XIII; уровни открываются с уровнем аккаунта 52, 56, 60, 65, 70, 75 и 80. Каждый уровень: +8% ко всем характеристикам и +3 скорости.' },
+  ...Object.fromEntries(Object.entries(MEM_MATS).map(([k,v]) => [k, { n: v.n, d: v.family === 'artifact' ? 'Артефакт для Другой памяти. Добывается в Утилизаторе Икса через переработку снаряжения, в рейде или в Лавках.' : 'Сигнальные данные для Другой памяти. Добываются повторяемыми боями кампании и Хроник, в Джихаде и Лавках.' }])),
   frag: { n: 'Фрагменты снаряжения', d: 'Из фрагментов собираются предметы для шести ячеек снаряжения. Уровней снаряжения 13; чем выше уровень предмета, тем больше фрагментов нужно — от 2 на уровне I до 25 на уровне XIII. После XIII героя усиливает Другая память.' },
 };
 function openInfo(key, keepScroll) {
@@ -116,7 +117,7 @@ function openInfo(key, keepScroll) {
     rows = itemSourceRows(it);
   } else {
     const R = RES_INFO[kind]; if (!R) return;
-    const bal = { core: S.core || 0, water: `${S.water}/${WMAX()}`, sol: S.solari, pl: S.plast, teeth: S.teeth, cry: S.cry, folio: S.folio, seal: S.seal, wol: S.wol, candle: `${S.candle}/${CMAX()}`, rid: S.rid }[kind];
+    const bal = { ...Object.fromEntries(Object.keys(MEM_MATS).map(k => [k, S[k] || 0])), water: `${S.water}/${WMAX()}`, sol: S.solari, pl: S.plast, teeth: S.teeth, cry: S.cry, folio: S.folio, seal: S.seal, wol: S.wol, candle: `${S.candle}/${CMAX()}`, rid: S.rid }[kind];
     head = `<div class="ihead"><span class="bigico">${ic(kind)}</span><div><h3>${R.n}</h3>${bal !== undefined ? `<div class="mono" style="font-size:15px">У вас: ${typeof bal === 'number' ? fmt(bal) : bal}</div>` : ''}</div></div>`;
     body = `<p class="sub" style="margin:12px 0 0">${R.d}</p>`;
     if (kind === 'candle') {
@@ -124,7 +125,20 @@ function openInfo(key, keepScroll) {
       body += `<div class="kv" style="margin-top:10px"><span>Пополнений сегодня</span><div>${crefillN()} из ${REFILL_MAX}</div></div><div class="acts" style="margin-top:10px">${lim ? '<span class="lockd">Лимит на сегодня исчерпан</span>' : `<button class="btn ${S.cry >= c ? 'go' : 'lack'}" data-refill="candle">Пополнить +${CANDLE_REFILL}<small>${amt('cry', c)}</small></button>`}</div>`;
       rows = [navRow(ic('candle'), 'Куда тратить', 'Бои и симуляции Хроник Дюны.', `<button class="btn mini" data-ctab="C">К хроникам</button>`)];
     }
-    if (kind === 'core') rows = [navRow(wormIco(), 'Рейд', 'За убийство червя: 5 на Т1, 12 на Т2, 25 на Т3; без убийства — по доле урона.', go('raid', 'К рейду')), navRow(ic('shard'), 'Джихад', 'Бои с боссами секторов и сундуки шкалы наград.', go('conq', 'К Джихаду')), navRow(ic('water'), 'Кампания', 'Миссии от 30 уровня: шанс 25%, финал главы — гарантированно.', go('camp', 'К кампании')), navRow(ic('teeth'), 'Лавки', 'Лавка сиетча и Лавка хроник — по несколько в день.', go('shop', 'В лавку'))];
+    if (MEM_MATS[kind]?.family === 'artifact') rows = [
+      navRow(ic('ix_plate'), 'Утилизатор Икса', 'Перерабатывайте доступное снаряжение в артефакты. Личные резервы экипировки защищены.', '<button class="btn mini" data-ixenter="1">В мастерскую</button>'),
+      navRow(wormIco(), 'Рейд Шаи-Хулуда', 'Артефакты за прохождение рейдов разных сложностей.', go('raid', 'К рейду')),
+      navRow(ic('teeth'), 'Лавки', 'Ограниченные наборы за зубы червя и водяные кольца.', go('shop', 'В лавку'))];
+    if (MEM_MATS[kind]?.family === 'signal') {
+      const cfg = SIGNAL_NODES[kind];
+      const missions = pickSrc(NODES.map((n, i) => i).filter(i => {
+        const n = NODES[i]; return cfg.camps.includes(n.camp) && n.lvl >= (cfg.minLvl || 0) &&
+          n.c + 1 >= (cfg.minChapter || 1) && n.c + 1 <= (cfg.maxChapter || 99);
+      }));
+      rows = missions.map(i => campRow(i, 'шанс '+ Math.round(cfg.chance*100)+'%, с гарантией после серии неудач'));
+      rows.push(navRow(ic('rid'), 'Лавка хроник', 'Ограниченная покупка за ридулианские кристаллы.', '<button class="btn mini" data-shoptab="chron">В лавку</button>'));
+      rows.push(navRow(ic('jt'), 'Джихад', 'Награды за элитных врагов и боссов.', go('conq','К Джихаду')));
+    }
     if (kind === 'rid') rows = [navRow(ic('candle'), 'Хроники Дюны', '8–15 за каждую победу и симуляцию.', `<button class="btn mini" data-ctab="C">К хроникам</button>`), navRow(ic('rid'), 'Где тратить', 'Лавка хроник.', `<button class="btn mini" data-shoptab="chron">В лавку хроник</button>`)];
     if (kind === 'water') {
       tickWater();

@@ -21,6 +21,7 @@ import { craftAndEquip, buildPart } from '../logic/gear-crafting.js';
 import { detailSk, hcStat, openDetail, set_detailSk, updLvl } from './hero-card.js';
 import { hcFind, hcSkill, skTab } from './skill-window.js';
 import { hcMem } from './memory-screen.js';
+import { recyclerClick } from './recycler-screen.js';
 import { nextShards, rosterClick } from './views/squad.js';
 import { campSel, set_campSel } from './views/camp.js';
 import { render } from './router.js';
@@ -29,7 +30,7 @@ import { getRes, prog } from '../logic/progress.js';
 import { BT, S, set_view, tickWater, view } from '../core/state.js';
 import { persist } from '../core/save.js';
 import { CRAFT, GEAR_UP_SOL, ITEMS, SHOP_FRAG, grantFrags, raidFrags } from '../logic/gear.js';
-import { MEM, RELIC_CORES, RELIC_MAX, RELIC_SOL, isLegend, relicCap, relicReady } from '../logic/relics.js';
+import { MEM, RELIC_MAX, isLegend, relicBuy } from '../logic/relics.js';
 import { BATTLE_WATER, GEAR_COST, LVL_COST, MAX_GEAR, MAX_LVL, RAID_SCENES, ROMAN, RW_NAME, STAR_COST, WMAX } from '../logic/economy.js';
 import { JK, JR } from '../data/journeys.js';
 import { NODES, campNodes, nodeOpen } from '../data/campaigns.js';
@@ -57,6 +58,8 @@ document.addEventListener('click', e => {
   if (!t) return;
   const d = t.dataset;
   if (d.rwok) { const w = $('#rwwin'); if (w) w.remove(); setTimeout(() => { showCeleb(); renderNotes(); }, 50); return; }
+  if (recyclerClick(d)) { e.stopImmediatePropagation(); if (d.ixback) render(); return; }
+  if (d.ixenter) { closeInfo(true); closeOverlay(); set_view('recycler'); render(); return; }
   if (metaClick(d) || meta2Click(d) || celebClick(d) || cqClick(d)) return;
   if (d.v) { set_view(d.v); render(); return; }
   if (d.csel !== undefined) { set_campSel(+d.csel); render(); return; }
@@ -134,7 +137,13 @@ document.addEventListener('click', e => {
     render(); return openDetail(cid);
   }
   if (d.gup) { const p = prog(d.gup); if (p.gear < MAX_GEAR && p.gear < gearCap() && p.eq.every(Boolean) && S.solari >= GEAR_UP_SOL(p.gear)) { const s0 = heroSnap(d.gup); S.solari -= GEAR_UP_SOL(p.gear); p.gear++; p.eq = [false, false, false, false, false, false]; persist(); celebQueue({ type: 'hup', kind: 'gear', id: d.gup, from: ROMAN[p.gear - 1], to: ROMAN[p.gear], s0 }); } render(); return openDetail(d.gup); }
-  if (d.relic) { const id = d.relic, p = prog(id), rn = (p.relic || 0) + 1; if (rn > RELIC_MAX || rn > relicCap() || !relicReady(p)) return; if ((S.core || 0) < RELIC_CORES[rn]) return hcFind('core'); if (S.solari < RELIC_SOL(rn)) return hcFind('sol'); const s0 = heroSnap(id); S.core -= RELIC_CORES[rn]; S.solari -= RELIC_SOL(rn); p.relic = rn; persist(); celebQueue({ type: 'hup', kind: 'relic', id, from: MEM(rn - 1), to: MEM(rn), s0 }); render(); return openDetail(id); }
+  if (d.relic) {
+    const id = d.relic, p = prog(id), s0 = heroSnap(id);
+    const result = relicBuy(S, id, p);
+    if (!result.ok) return result.reason === 'locked' ? null : hcFind(result.reason);
+    persist(); celebQueue({ type: 'hup', kind: 'relic', id, from: MEM(result.level - 1), to: MEM(result.level), s0 });
+    render(); return openDetail(id);
+  }
   if (d.dnav) return detailNav(+d.dnav);
   if (d.hcsk) return hcSkill(d.hcsk);
   if (d.hcmem) return hcMem(d.hcmem);
@@ -176,8 +185,8 @@ document.addEventListener('click', e => {
   if (false) { const R = S.raid; return launch({ mode: 'raid', scene: RAID_SCENES[R.tier], title: 'Шаи-Хулуд · ' + RAID_TIERS[R.tier].n.split(' · ')[0], squad: S.raidPick.slice(), boss: { tier: R.tier, hp: R.hp, maxHp: R.maxHp } }); }
   if (d.raidend && S.raid) {
     if (t.dataset.confirm !== '1') { t.dataset.confirm = '1'; t.textContent = 'Точно закончить? Нажмите ещё раз'; return; }
-    const pct = raidPct(), tier = S.raid.tier, rw = raidReward(tier, pct, false), rf = raidFrags(tier, pct), cr = Math.floor([5, 12, 25][tier] * pct * .6); S.teeth += rw.teeth; S.plast += rw.pl; S.solari += rw.sol; S.cry += rw.cry; S.folio += rw.folio; S.seal += rw.seal; S.core = (S.core || 0) + cr; grantFrags(rf); S.raid = null; persist(); render();
-    const lines = [`+${amt('teeth', rw.teeth)} зубов червя`, `+${amt('sol', rw.sol)} соляриев`, `+${amt('pl', rw.pl)} пластали`, `+${amt('cry', rw.cry)} кристаллов`, `+${amt('folio', rw.folio)} фолиантов`, ...(rw.seal ? [`+${amt('seal', rw.seal)} Печать Ландсраада`] : []), ...(cr ? [`+${amt('core', cr)} голосов предков`] : []), ...fragLines(rf)];
+    const pct = raidPct(), tier = S.raid.tier, rw = raidReward(tier, pct, false), rf = raidFrags(tier, pct), cr = Math.floor([5, 12, 25][tier] * pct * .6); S.teeth += rw.teeth; S.plast += rw.pl; S.solari += rw.sol; S.cry += rw.cry; S.folio += rw.folio; S.seal += rw.seal; S.ix_plate = (S.ix_plate || 0) + Math.floor(cr / 2); grantFrags(rf); S.raid = null; persist(); render();
+    const lines = [`+${amt('teeth', rw.teeth)} зубов червя`, `+${amt('sol', rw.sol)} соляриев`, `+${amt('pl', rw.pl)} пластали`, `+${amt('cry', rw.cry)} кристаллов`, `+${amt('folio', rw.folio)} фолиантов`, ...(rw.seal ? [`+${amt('seal', rw.seal)} Печать Ландсраада`] : []), ...(cr ? [`+${amt('ix_plate', Math.floor(cr / 2))} плат Икса`] : []), ...fragLines(rf)];
     $('#overlay').innerHTML = `<div class="result won raidres"><div class="box" role="dialog" aria-modal="true">${WORM_BADGE}<h3>Награда рейда</h3><p class="sub" style="margin:0">${RAID_TIERS[tier].n} · снято ${(pct * 100).toFixed(1)}% здоровья червя</p><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><div class="acts" style="justify-content:center"><button class="btn go" data-close="1">Забрать</button><button class="btn" data-toroster="1">Персонажи</button></div></div></div>`;
     return;
   }
