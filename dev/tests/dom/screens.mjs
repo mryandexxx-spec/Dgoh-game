@@ -6,7 +6,7 @@
 // сохранение — tests/fixtures/saves/03-late.json (всё открыто) и «без сохранения» для стартовых экранов.
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import assert from 'node:assert/strict';
+import assert, { isDeepStrictEqual } from 'node:assert/strict';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -129,10 +129,11 @@ else {
   validateV86Legend(out);
   const baseline = readGolden('screens');
   if (!baseline) throw new Error('screens golden baseline missing');
-  const want = normalizeApprovedV86(JSON.parse(baseline));
+  const parsed = JSON.parse(baseline);
+  const want = normalizeApprovedV86({ ...parsed.meta, screens: parsed.screens });
   const got = normalizeApprovedV86(out);
-  if (JSON.stringify(want) !== JSON.stringify(got)) {
-    const changed = want.screens.filter((v, i) => JSON.stringify(v) !== JSON.stringify(got.screens[i])).map(x => x.name);
+  if (!isDeepStrictEqual(want, got)) {
+    const changed = want.screens.filter((v, i) => !isDeepStrictEqual(v, got.screens[i])).map(x => x.name);
     console.error('Unapproved golden screen differences:', changed.join(', '));
     process.exitCode = 1;
   } else console.log('OK screens: unchanged views match golden; approved v86 legend changes validated separately');
