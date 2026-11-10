@@ -32,8 +32,11 @@ function renderLegend() {
   <div class="panel"><h3>Герои пути · ${readyIds.length}/${J.req.length}</h3>
     <div style="height:7px;border:1px solid var(--line);background:var(--night);border-radius:5px;overflow:hidden;margin:8px 0"><div style="height:100%;width:${Math.round(100*readyIds.length/J.req.length)}%;background:var(--spice)"></div></div>
     <p class="sub" style="margin:0">${mp.stars ? "Муад’Диб открыт — доступ сохранён." : jGateReady(lk) ? "Все 11 требований выполнены." : "Бои заблокированы до подготовки всех 11 героев."}</p>
-    ${groups.map(g => `<div class="jreq-group"><h4 style="margin:10px 0 5px;color:var(--sand);font-size:13px">${g.title} · ${g.ids.filter(id => readyIds.includes(id)).length}/${g.ids.length}</h4><div class="req">${g.ids.map(id => { const p = prog(id), R = (JREQ[lk] || {})[id] || 0, s7 = p.stars >= 7, g5 = p.gear >= MAX_GEAR, rOk = (p.relic || 0) >= R;
-    return `<div class="reqh ${s7 && g5 && rOk ? 'full' : ''}" data-info="shard:${id}" role="button" tabindex="0" title="Где найти осколки">${portrait(CH[id], 48, p.stars ? ringCol(p) : null)}<span>${CH[id].sn}<br><span class="rqc"><i class="${s7 ? 'ok' : 'no'}">${p.stars || 0}/7★</i><i class="${g5 ? 'ok' : 'no'}">сн. ${ROMAN[p.gear] || 'I'}/XIII</i><i class="${rOk ? 'ok' : 'no'}">ДП ${p.relic || 0}/${R}</i></span></span></div></div>`).join("")}
+    ${groups.map(g => `<div class="jreq-group"><h4 style="margin:10px 0 5px;color:var(--sand);font-size:13px">${g.title} · ${g.ids.filter(id => readyIds.includes(id)).length}/${g.ids.length}</h4><div class="req">${g.ids.map(id => {
+      const p = prog(id), R = (JREQ[lk] || {})[id] || 0;
+      const s7 = p.stars >= 7, g13 = p.gear >= MAX_GEAR, rOk = (p.relic || 0) >= R;
+      return `<div class="reqh ${s7 && g13 && rOk ? 'full' : ''}" data-info="shard:${id}" role="button" tabindex="0" title="Где найти осколки">${portrait(CH[id], 48, p.stars ? ringCol(p) : null)}<span>${CH[id].sn}<br><span class="rqc"><i class="${s7 ? 'ok' : 'no'}">${p.stars || 0}/7★</i><i class="${g13 ? 'ok' : 'no'}">сн. ${ROMAN[p.gear] || 'I'}/XIII</i><i class="${rOk ? 'ok' : 'no'}">ДП ${p.relic || 0}/${R}</i></span></span></div>`;
+    }).join('')}</div></div>`).join('')}
     <p class="sub" style="margin:8px 0 0">Для IV–V выберите четырёх подготовленных героев; пятый — сюжетный Муад’Диб.</p>  </div></div>
   <p class="chap">Ярусы</p><div class="tiers">`;
   JR().tiers.forEach((t, i) => { const ok = journeyReady(i), open = i === 0 || JP()[i - 1];
