@@ -33,12 +33,31 @@ assert.equal(migrated.squad.includes('liet'), false);
 assert.equal(migrated.jKey, 'muaddib');
 assert.ok(migrated.retiredLiet.hero);
 
-// v84: 4 selected heroes must be individually qualified for tier 4
+// v86: all 11 heroes must qualify before any legend fight; tier IV–V still select four
 run("S = newSave()");
+assert.equal(run("JOURNEYS.muaddib.req.length"), 11);
+assert.equal(run("JREQ.muaddib.duncan"), 5);
+assert.equal(run("JREQ.muaddib.leto"), 4);
+assert.equal(run("JREQ.muaddib.mohiam"), 4);
+assert.equal(run("JREQ.muaddib.baron"), 3);
+assert.equal(run("JREQ.muaddib.shaddam"), 3);
 run("for (const id of JOURNEYS.muaddib.req.slice(0, 4)) Object.assign(prog(id), { stars: 7, gear: 13, relic: 7 })");
+assert.equal(run("jReady('muaddib', 0)"), false);
+assert.equal(run("jReady('muaddib', 3)"), false);
+run("for (const id of JOURNEYS.muaddib.req) Object.assign(prog(id), { stars: 7, gear: 13, relic: 7 })");
+assert.equal(run("jReady('muaddib', 0)"), true);
 assert.equal(run("jReady('muaddib', 3)"), true);
 assert.equal(run("jSelectedReady('muaddib', 3, JOURNEYS.muaddib.req.slice(0, 4))"), true);
 assert.equal(run("jSelectedReady('muaddib', 3, JOURNEYS.muaddib.req.slice(0, 3))"), false);
+for (const id of run("JOURNEYS.muaddib.req")) {
+  run(`prog('${id}').relic = JREQ.muaddib['${id}'] - 1`);
+  assert.equal(run("jReady('muaddib', 0)"), false, id + ': tier I must be locked');
+  assert.equal(run("jReady('muaddib', 4)"), false, id + ': tier V must be locked');
+  run(`prog('${id}').relic = 7`);
+}
+run("prog('duncan').relic = 0; prog('muaddib').stars = 7");
+assert.equal(run("jReady('muaddib', 0)"), true, 'already unlocked legend keeps replay access');
+assert.equal(run("jReady('muaddib', 4)"), true, 'already unlocked legend keeps replay access');
 
 // v85: 2 -> 5 -> 1, all ally objects and HP survive, no early victory
 const unit = id => ({ id, lvl: 60, stars: 7, gear: 13 });
