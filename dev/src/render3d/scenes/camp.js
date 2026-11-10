@@ -175,7 +175,7 @@ class CampStage extends Stage3D {
     const markers = this._spots || [];
     for (const el of markers) {
       const xw = Number(el.dataset.wx), zw = Number(el.dataset.wz);
-      T.set(xw, this.heightAt(xw, zw) + 1.1, zw);
+      T.set(xw, this.heightAt(xw, zw) + .23, zw);
       B3.Vector3.ProjectToRef(T, B3.Matrix.IdentityReadOnly, M, vp, pa);
       const x = this._ldx + pa.x, y = this._ldy + pa.y;
       if (!el._world) { el._world = true; el.style.left = '0px'; el.style.top = '0px'; }
