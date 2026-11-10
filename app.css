@@ -250,6 +250,39 @@ body:has(#battle) .appver { left: 50%; transform: translateX(-50%); }   /* в б
 #perfov div { display: flex; justify-content: space-between; gap: 10px; } #perfov i { font-style: normal; color: #9a958a; } #perfov b { font-weight: 600; }
 #perfov .ok { color: #8fd18f; } #perfov .warn { color: #e0b45a; } #perfov .bad { color: #ef7a6a; }
 #perfov svg { display: block; margin-top: 3px; } #perfov polyline { fill: none; stroke: #8fd18f; stroke-width: 1.2; } #perfov .lim { stroke: #e0b45a; stroke-dasharray: 2 3; stroke-width: .8; }
+
+/* Package 10 B1: three camera zones, fixed service navigation. */
+.lzones {position:absolute;bottom:calc(13px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);display:flex;gap:14px;z-index:119}
+.lzones button {width:30px;height:30px;border:0;background:transparent;color:#786044;font-size:19px;cursor:pointer}
+.lobby[data-lzone="0"] .lzones button:nth-child(1),.lobby[data-lzone="1"] .lzones button:nth-child(2),.lobby[data-lzone="2"] .lzones button:nth-child(3){color:var(--spice-hi)}
+.lobby .spot[data-zone] {visibility:hidden;pointer-events:none}
+.lobby[data-lzone="0"] .spot[data-zone="0"],.lobby[data-lzone="1"] .spot[data-zone="1"],.lobby[data-lzone="2"] .spot[data-zone="2"] {visibility:visible;pointer-events:auto}
+.lobby[data-lzone="0"] .lfig,.lobby[data-lzone="2"] .lfig {visibility:hidden;pointer-events:none}
+.lobby .ltop {flex-wrap:nowrap}
+.lobby .topbtns {flex-shrink:0}
+.lobby .lhouse {bottom:calc(45px + env(safe-area-inset-bottom,0px))}
+@media(max-width:700px){.lobby .sicon{width:54px;height:54px}.lobby .slabel{font-size:14px}.lobby .ltop{gap:6px;padding-top:5px}}
+
+/* 2D fallback canvas spans the three snap positions; only the background moves. */
+.lobby:not(.has3d) .bgc {width:300%;max-width:none;transition:transform .24s ease-out}
+.lobby:not(.has3d)[data-lzone="0"] .bgc {transform:translateX(0)}
+.lobby:not(.has3d)[data-lzone="1"] .bgc {transform:translateX(-33.3333%)}
+.lobby:not(.has3d)[data-lzone="2"] .bgc {transform:translateX(-66.6667%)}
+.lobby:not(.has3d)[data-lzone="0"] .spot[data-zone="0"],.lobby:not(.has3d)[data-lzone="2"] .spot[data-zone="2"] {left:var(--mx);top:var(--my)}
+
+/* True native scroll-snap fallback: one 3-screen canvas, 3 snap targets. */
+.lobby-scroll2d {position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;z-index:0}
+.lobby-scroll2d::-webkit-scrollbar {display:none}
+.lobby-scrollworld {position:relative;width:300%;height:100%}
+.lobby-scrollworld .bgc {position:absolute;inset:0;width:100%;height:100%;transform:none!important;transition:none!important}
+.lobby-snap-points {position:absolute;inset:0;display:flex;pointer-events:none}
+.lobby-snap-points span {display:block;width:33.33333%;height:100%;flex:none;scroll-snap-align:center}
+.lobby.has3d .lobby-scroll2d {display:none}
+
+/* B1: static reward highlight; no perpetual GPU animation in the lobby. */
+.lobby .spot.hot .sicon::after {animation:none;opacity:.32}
+.lobby .lzones button {width:44px;height:44px}
+@media(max-width:700px){.lobby .ltop .pchip > span:last-child{display:none}.lobby .ltop .topbtns .topb > span:not(.badge){display:none}}
 /* ===== side-view battle ===== */
 .battle { overflow: hidden; }
 .bwrap { max-width: none; height: 100%; padding-block: 8px; gap: 6px; }
