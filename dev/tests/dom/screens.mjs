@@ -102,7 +102,8 @@ function normalizeApprovedV86(s) {
       screen.view = screen.view
         .replace(/<p class="sub">[^<]*<\/p>(?=\s*<div class="grid2">)/, '<p class="sub">[approved legend introduction]</p>')
         .replace(/<div class="panel"><h3>Герои пути[\s\S]*?(?=\s*<p class="chap">)/, '<div class="panel">[approved eleven-hero requirements]</div></div>')
-        .replace(/<span class="[^"]*">7★ · [^<]*<\/span>/g, '<span class="approved-legend-gate">[approved tier requirement]</span>');
+        .replace(/<span class="[^"]*">7★ · [^<]*<\/span>/g, '<span class="approved-legend-gate">[approved tier requirement]</span>')
+        .replace(/(<button class="btn go" data-jgo="\d+")(?: disabled="")?/g, '$1');
     }
     if (screen.view && (screen.name === 'view:lobby' || screen.name === 'fresh:lobby')) {
       screen.view = screen.view.replace(/<button class="spot (?:hot)?[^>]*data-v="legend"[^>]*>[\s\S]*?<\/button>/g,
