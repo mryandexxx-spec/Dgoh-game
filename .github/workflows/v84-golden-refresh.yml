@@ -40,7 +40,7 @@ jobs:
           for (const n of ['battles','meta','saves','screens']) {
             const p = base+n+'.json.gz.b64';
             const json = JSON.parse(zlib.gunzipSync(Buffer.from(fs.readFileSync(p,'utf8').replace(/\s/g,''),'base64')));
-            const values=json[n] || json.cases || json.saves || json.screens;
+            const values=n==='meta' ? json.cases : (json[n] || json.cases || json.saves || json.screens);
             const size=values?.length ?? 0;
             if ((n==='battles' && size!==200) || (n==='meta' && size<1000) || (n==='saves' && size!==4) || (n==='screens' && size<35)) throw Error(n+' invalid count '+size);
             if (n==='saves' && values.some(x=>x.startError)) throw Error('save migration startup errors');
