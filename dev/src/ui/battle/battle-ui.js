@@ -36,7 +36,7 @@ import { figureSVG, portrait, wormSVG } from '../../render2d/figures.js';
 import { ghash } from '../../data/looks.js';
 import { aiPlan, hasPrescience } from '../../logic/battle/ai.js';
 import { act, endTurn, glMeter, startTurn } from '../../logic/battle/turns.js';
-import { abilityReady, createBattle, foe, living, nextActor, previewOrder, validTargets } from '../../logic/battle/engine.js';
+import { abilityReady, createBattle, advanceWave, foe, living, nextActor, previewOrder, validTargets } from '../../logic/battle/engine.js';
 import { MOVES, PHASES } from '../../data/boss.js';
 import { skLv } from '../../logic/battle/skills.js';
 import { CH, MENTAT } from '../../data/chars.js';
@@ -71,7 +71,8 @@ function launch(cfg) {
   sleepStages();
   const squadData = cfg.squad.map(id => ({ id, ...prog(id) }));
   if (cfg.scriptedMuaddib && cfg.mode === 'journey' && cfg.i >= 3) squadData.push({ id: 'muaddib', lvl: 85, stars: 7, gear: 13, relic: cfg.i === 3 ? 5 : 6, gl: false });
-  const B = createBattle(squadData, cfg.enemy || [], { desert: cfg.desert, seed: Date.now() & 0xffffff, boss: cfg.boss });
+  const waves = Array.isArray(cfg.waves) && cfg.waves.length ? cfg.waves : null;
+  const B = createBattle(squadData, waves ? waves[0] : cfg.enemy || [], { desert: cfg.desert, seed: Date.now() & 0xffffff, boss: cfg.boss, waves: waves ? waves.slice(1) : null });
   if (cfg.mode === 'conq' && typeof cqApply === 'function') cqApply(B, cfg);
   set_BT({ B, cfg, i: cfg.i, auto: BT?.autoPref ?? false, autoPref: BT?.autoPref ?? false, speed: Math.min(4, BT?.speedPref ?? 1), speedPref: Math.min(4, BT?.speedPref ?? 1), timer: null, waiting: null, sel: 'basic', autoTargetUid: null, autoTaunts: [], done: false });
   $('#overlay').innerHTML = `<div class="battle ${B.desert ? 'desert' : ''}" id="battle"><canvas class="bgc" id="bgc"></canvas><div class="bwrap" id="bwrap"></div><canvas class="fxc" id="fxc"></canvas><div class="flash" id="flash"></div></div>`;
@@ -176,6 +177,16 @@ function openUnitPop(uid) {
 function step() {
   const B = BT.B;
   if (B.over) return finish();
+  if (B.wavePending) {
+    const change = advanceWave(B);
+    if (change) {
+      BT.autoTargetUid = null; BT.autoTaunts = [];
+      if (BT.arena) BT.arena.switchWave(change.old, change.enemies);
+      BT._hc = null; // rebuild HUD once for the changed number of enemies
+      renderBattle();
+      return later(step, 650);
+    }
+  }
   const u = nextActor(B);
   const r = startTurn(B, u);
   renderBattle();
@@ -466,7 +477,7 @@ function renderBattle() {
     '<div class="pkg9-dlabel">ЖУРНАЛ</div><div class="pkg9-log">' + B.log.slice(-12).map(l => '<div class="' + l.kind + '">' + l.text + '</div>').join('') + '</div></div>' : '';
   const g = (lab, v, cls, gz) => `<button class="bgz ${cls} ${v >= 100 ? 'full' : ''}" data-gz="${gz}"><span>${lab}</span><div class="hb"><i style="width:${Math.min(100, v)}%"></i></div><b>${v}</b></button>`;
   const T = {
-    h3: `<h3>${BT.cfg.title}${B.raid ? (bb => bb ? ` · фаза ${bb.phase}: ${PHASES[bb.phase]}` : '')(B.units.find(x => x.def.boss)) : ''}</h3>`,
+    h3: `<h3>${BT.cfg.title}${B.wave ? ` · Волна ${B.wave.current + 1}/${B.wave.total}` : ''}${B.raid ? (bb => bb ? ` · фаза ${bb.phase}: ${PHASES[bb.phase]}` : '')(B.units.find(x => x.def.boss)) : ''}</h3>`,
     order: order.map(u => glyph(u.def, u.side === 'B' ? 'e' : '')),
     blog: `<button class="blog ${BT.showLog ? 'on' : ''}" data-log="1" aria-pressed="${!!BT.showLog}" aria-label="Журнал боя" title="Журнал">${LOG_SVG}</button>`,
     gauges: `<div class="bgauges">${B.desert ? g(B.raid ? 'БЕШЕНСТВО' : 'РИТМ', Math.min(100, B.rhythm), 'worm', 'rhythm') : ''}${B.raid ? `<button class="bgz" data-gz="dmg"><span>УРОН</span><b>${fmt(B.bossStartHp - Math.max(0, B.units.find(x => x.def.boss).hp))}</b></button>` : ''}${ctx.presc ? '<button class="bgz presc" data-gz="presc">ПРОЗРЕНИЕ</button>' : ''}</div>`,
