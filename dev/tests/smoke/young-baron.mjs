@@ -14,7 +14,7 @@ try {
  for (const [tag,file] of [['before',before],['after',html]]) {
   const srv = await serve(path.dirname(file));
   try {
-   for (const [width,height,quality] of [[844,390,'med'],[667,375,'low']]) {
+   for (const [width,height,quality] of [[844,390,'med'],[667,375,'low'],[844,390,'high']]) {
     const p=await browser.newPage(), errors=[];
     p.on('pageerror',e=>errors.push(e.message));
     await p.setViewport({width,height,deviceScaleFactor:1,isMobile:true,hasTouch:true,isLandscape:true});
@@ -97,5 +97,5 @@ try {
    }
   } finally {await srv.close();}
  }
- console.log('PASS BH4 source clips, versioned portrait cache, A/B screenshots (MED/LOW)');
+ console.log('PASS BH4 source clips, versioned portrait cache, A/B screenshots (HIGH/MED/LOW)');
 }finally{await browser.close();}
