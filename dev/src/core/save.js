@@ -3,6 +3,7 @@ import { S } from './state.js';
 import './format.js'; // порядок исполнения
 import { CMAX, WMAX } from '../logic/economy.js';
 import { CHARS } from '../data/chars.js';
+import { MEM_MATS, SCRAP } from '../data/memory-scrap.js';
 
 const SAVE_KEY = 'dune-goh-v1';
 
@@ -23,6 +24,11 @@ function fillSave(s) {
   for (const id in s.roster) s.roster[id].sk ??= { basic: 1, special: 1, ult: 1, passive: 1, leader: 1 };
   s.cry ??= 200; s.cryClaim ??= {}; s.refills ??= { d: '', n: 0 };
   s.inv ??= {}; s.gearParts ??= {}; for (const id in s.roster) s.roster[id].eq ??= [false, false, false, false, false, false];
+  // Однократная миграция Голосов предков в Платы Икса. Старые уровни ДП не меняются.
+  if (!s.memoryEconomyV2) { s.ix_plate = (s.ix_plate || 0) + (s.core || 0); s.core = 0; s.memoryEconomyV2 = 1; }
+  for (const k of Object.keys(MEM_MATS)) s[k] ??= 0;
+  s.scrapCarry ??= {}; s.scrapLocks ??= {};
+  for (const k of Object.keys(SCRAP)) s.scrapCarry[k] ??= 0;
   s.core ??= 0; s.teeth ??= 0; s.raid ??= null; s.raidKills ??= []; s.journey ??= {}; s.journeys ??= { muaddib: s.journey, liet: {} }; s.jKey ??= 'muaddib'; s.jPicks ??= { muaddib: s.jPick || [], liet: [] }; s.raidPick ??= []; s.jPick ??= [];
   return s;
 }
