@@ -16,20 +16,9 @@ const JOURNEYS = {
     { n: 'Буря над Арракином', stars: 6, lvl: 26, el: 24, desert: true, enemy: ['shaddam', 'fenring', 'bashar', 'legion', 'mohiam'], sh: 120 },
   ],
  },
- liet: {
-  t: 'Путь Судьи Перехода', scenes: ['spicefield', 'saltflat', 'canyon', 'arrakeen', 'storm'],
-  req: ['kynes', 'stilgar', 'chani', 'fedaykin', 'duncan', 'jessica'],
-  tiers: [
-    { n: 'Ботаническая станция', stars: 2, lvl: 8, el: 8, desert: true, enemy: ['piter', 'trooper', 'trooper', 'trooper'], sh: 20 },
-    { n: 'Испытательная станция', stars: 3, lvl: 12, el: 12, enemy: ['legion', 'bashar', 'trooper', 'trooper', 'piter'], sh: 40 },
-    { n: 'Сардаукары в глубокой пустыне', stars: 4, lvl: 16, el: 14, desert: true, enemy: ['bashar', 'legion', 'legion', 'fenring'], sh: 60 },
-    { n: 'Измена в Арракине', stars: 5, lvl: 20, el: 17, enemy: ['baron', 'piter', 'rabban', 'feyd', 'trooper'], sh: 90 },
-    { n: 'Суд пустыни', stars: 6, lvl: 26, el: 24, desert: true, enemy: ['shaddam', 'fenring', 'mohiam', 'legion', 'bashar'], sh: 120 },
-  ],
- },
 };
 // Legend requirements: all six heroes of the path at 7★ and gear V; relic levels grow tier by tier up to the targets below
-const JREQ = { muaddib: { paul: 5, jessica: 5, stilgar: 4, chani: 4, gurney: 3, kynes: 3 }, liet: { kynes: 5, stilgar: 5, chani: 4, duncan: 4, fedaykin: 3, jessica: 3 } };
+const JREQ = { muaddib: { paul: 5, jessica: 5, stilgar: 4, chani: 4, gurney: 3, kynes: 3 } };
 for (const J of Object.values(JOURNEYS)) J.tiers.forEach((t, i) => { t.el = [70, 75, 80, 85, 85][i]; t.lvl = t.el; t.erl = [2, 3, 4, 6, 7][i]; t.epow = [1.05, 1.1, 1.15, 1.2, 1.3][i]; });
 const jRelic = (k, id, t) => Math.ceil(((JREQ[k] || {})[id] || 0) * t / 4);
 const jHeroOk = (k, id, t) => { const p = prog(id); return p.stars >= 7 && p.gear >= MAX_GEAR && (p.relic || 0) >= jRelic(k, id, t); };
