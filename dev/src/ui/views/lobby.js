@@ -24,6 +24,7 @@ import { $ } from '../../core/dom.js';
 import { dailyReady } from '../../logic/daily.js';
 import { cqBadge } from './conq.js';
 
+let lobbyZone = 1; // remember the rail when the lobby DOM is refreshed
 const SPOT_ICONS = {
   map: '<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 4v14M15 6v14" stroke="currentColor" stroke-width="1.8"/>',
   worm: '<path d="M3 18c3 0 3-5 6-5s3 5 6 5 3-9 6-9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="20" cy="7" r="2.6" fill="currentColor"/>',
@@ -49,14 +50,62 @@ function renderLobby() {
     { v: 'conq', n: 'Джихад', i: 'conq', x: 71, y: 30, mx: 50, my: 35, lx: 50, ly: 22, b: typeof cqBadge === 'function' ? cqBadge() : '', hot: typeof cqHot === 'function' && cqHot() },
     { v: 'feats', n: 'Подвиги', i: 'feat', x: 11, y: 55, mx: 20, my: 47, lx: 22, ly: 47, b: featsReady() ? `${featsReady()} к получению` : `${featRank()}/${featMax}`, hot: featsReady() > 0 },
   ];
+  // Fixed world anchors for the B1 navigation; coordinate pairs are echoed in CampStage.
+  const ANCHORS = { camp: [-9.3, -1.5], legend: [-5.5, -1.5], squad: [0, -2.7],
+    raid: [5.0, -1.5], conq: [7.7, -2.7], trials: [9.8, -1.5], shop: [11.7, -2.7] };
   const LF = [[50, 90, 1.2], [39, 82, .95], [61, 82, .95], [29, 92, 1], [71, 92, 1]];
-  $('#view').innerHTML = `<div class="lobby">
-    <canvas class="bgc" id="lobbybg"></canvas>
-    <div class="ltop">${profileChip()}<div class="res resbox"></div><div class="topbtns"><button class="topb" data-v="daily"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.5 9l1.5 1.5 3-3M8.5 15l1.5 1.5 3-3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>Задания</span>${dailyReady() ? `<b class="badge">${dailyReady()}</b>` : ''}</button><button class="topb" data-cal="1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2"/></svg><span>Вход</span>${loginCan() ? '<b class="badge">!</b>' : ''}</button></div></div>
+  $('#view').innerHTML = `<div class="lobby" data-lzone="${lobbyZone}">
+    <div class="lobby-scroll2d" aria-hidden="true"><div class="lobby-scrollworld"><canvas class="bgc" id="lobbybg"></canvas><div class="lobby-snap-points"><span></span><span></span><span></span></div></div></div>
+    <div class="ltop">${profileChip()}<div class="res resbox"></div><div class="topbtns"><button class="topb" data-v="feats" aria-label="Подвиги" title="Подвиги">★${featsReady() ? `<b class="badge">${featsReady()}</b>` : ""}</button><button class="topb" data-v="daily"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.5 9l1.5 1.5 3-3M8.5 15l1.5 1.5 3-3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>Задания</span>${dailyReady() ? `<b class="badge">${dailyReady()}</b>` : ''}</button><button class="topb" data-cal="1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2"/></svg><span>Вход</span>${loginCan() ? '<b class="badge">!</b>' : ''}</button></div></div>
     <div class="lhouse"><span>Ваш Малый Дом</span><b class="mono">Мощь отряда ${fmt(sp)}</b></div>
-    ${spots.map(s => `<button class="spot ${s.hot ? 'hot' : ''}" data-v="${s.v}" style="--x:${s.x}%;--y:${s.y}%;--mx:${s.mx}%;--my:${s.my}%;--lx:${s.lx}%;--ly:${s.ly}%"><span class="sicon"><svg viewBox="0 0 24 24" aria-hidden="true">${SPOT_ICONS[s.i]}</svg></span><span class="slabel">${s.n}</span>${s.b ? `<span class="sbadge">${s.b}</span>` : ''}</button>`).join('')}
+    ${spots.filter(s => s.v !== "rules" && s.v !== "feats").map(s => `<button class="spot ${s.hot ? 'hot' : ''}" data-zone="${s.v === "squad" ? 1 : ["camp", "legend"].includes(s.v) ? 0 : 2}" data-wx="${ANCHORS[s.v][0]}" data-wz="${ANCHORS[s.v][1]}" data-v="${s.v}" style="--x:${s.x}%;--y:${s.y}%;--mx:${s.mx}%;--my:${s.my}%;--lx:${s.lx}%;--ly:${s.ly}%"><span class="sicon"><svg viewBox="0 0 24 24" aria-hidden="true">${SPOT_ICONS[s.i]}</svg></span><span class="slabel">${s.n}</span>${s.b ? `<span class="sbadge">${s.b}</span>` : ''}</button>`).join('')}
+    <div class="lzones" aria-label="Зоны лагеря"><button data-lnav="0" aria-label="Кампания и легенды">●</button><button data-lnav="1" aria-label="Персонажи">●</button><button data-lnav="2" aria-label="Рейд и режимы">●</button></div>
     ${S.squad.map((id, k) => { const f = LF[k]; return `<button class="lfig" data-v="squad" data-hid="${id}" style="left:${f[0]}%;top:${f[1]}%;--s:${f[2]};z-index:${f[1]}" aria-label="${CH[id].n}">${figureSVG(CH[id], true)}<span>${CH[id].sn}</span></button>`; }).join('')}
   </div>`;
+  const lobby = document.querySelector('.lobby');
+  // Package B1: gesture only on the backdrop; buttons keep their native tap behaviour.
+  let start = null;
+  const scroll2d = lobby.querySelector('.lobby-scroll2d');
+  const zone = n => {
+    const next = Math.max(0, Math.min(2, n));
+    lobbyZone = next; lobby.dataset.lzone = String(next);
+    if (scroll2d && !lobby.classList.contains('has3d')) {
+      scroll2d.scrollTo({ left: next * scroll2d.clientWidth, behavior: 'smooth' });
+    }
+  };
+  // Native scroll-snap fallback when WebGL is unavailable.
+  if (scroll2d) {
+    scroll2d.scrollLeft = lobbyZone * scroll2d.clientWidth; // restore last zone
+    scroll2d.addEventListener('scroll', () => {
+      if (lobby.classList.contains('has3d')) return;
+      lobbyZone = Math.max(0, Math.min(2,
+        Math.round(scroll2d.scrollLeft / Math.max(1, scroll2d.clientWidth))));
+      lobby.dataset.lzone = String(lobbyZone);
+    }, { passive: true });
+  }
+  lobby.querySelectorAll('[data-lnav]').forEach(b => b.addEventListener('click', () => zone(+b.dataset.lnav)));
+  lobby.addEventListener('pointerdown', e => {
+    if (!lobby.classList.contains('has3d') || e.target.closest('button, .ltop, .lhouse')) return;
+    start = { x: e.clientX, y: e.clientY, t: performance.now(), zone: +lobby.dataset.lzone };
+  }, { passive: true });
+  lobby.addEventListener('pointermove', e => {
+    if (!start) return;
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
+    if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      // The camera follows the finger; no extra RAF or engine.
+      lobby.dataset.lrail = String(Math.max(0, Math.min(2, start.zone - dx / Math.max(1, lobby.clientWidth))));
+    }
+  }, { passive: true });
+  lobby.addEventListener('pointerup', e => {
+    if (!start) return;
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
+    const elapsed = Math.max(1, performance.now() - start.t), from = start.zone;
+    start = null; delete lobby.dataset.lrail;
+    if (Math.abs(dx) < 35 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    const delta = Math.abs(dx) > lobby.clientWidth * .33 || Math.abs(dx) / elapsed > .45 ? 1 : 0;
+    zone(from + (dx < 0 ? delta : -delta));
+  }, { passive: true });
+  lobby.addEventListener('pointercancel', () => { start = null; delete lobby.dataset.lrail; });
   { const bg = () => new SceneBG($('#lobbybg'), 'lobby', 0); if (!mountCampStage(bg)) bg(); }
   renderRes();
 }

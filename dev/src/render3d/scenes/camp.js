@@ -45,6 +45,11 @@ class CampStage extends Stage3D {
     for (const [x, z] of [[4.6, -1.5], [5.2, -1.1], [-4.4, -2.2]]) mk(bBox(.6, .5, .6), crateM, x, this.heightAt(x, z) + .25, z).rotation.y = x;
     const pole = mat3('#4a3420'), flag = mat3(S_FLAG(), { side: 'double', roughness: .9 });
     for (const x of [-3.6, 3.6]) { const z = -2.8, y = this.heightAt(x, z); mk(bCyl(.04, .05, 3.6, 8), pole, x, y + 1.8, z); this.flag = this.flag || []; const f = mk(bPlane(.9, 1.3), flag, x + .48, y + 3, z); this.flag.push(f); }
+    // B1: low-poly navigation bases, not the themed B2 mode totems. No additional shadows.
+    const navM = mat3('#5b4432', { roughness: 1 });
+    const navBases = [[-9.3, -1.5], [-5.5, -1.5], [0, -2.7], [5.0, -1.5],
+      [7.7, -2.7], [9.8, -1.5], [11.7, -2.7]];
+    for (const [x, z] of navBases) mk(bCyl(.65, .85, .15, 8), navM, x, this.heightAt(x, z) + .08, z, false);
     staticNoCast(this); bakeStatic(this);
     });
     this.look({ dof: { f: 50, stop: 2.4, d: 9000 }, exposure: 1.25, ssao: .9, bloomT: .7, bloomW: .45, vig: 2.6 });
@@ -61,8 +66,16 @@ class CampStage extends Stage3D {
   tick(now, t) {
     const f = .85 + Math.sin(t * 9) * .08 + Math.sin(t * 23) * .06 + Math.sin(t * 3.1) * .05; this.fireL.intensity = 2.6 * f; this.fireL.position.x = this.fire.x + Math.sin(t * 7) * .04;
     for (const o of Object.values(this.units)) poseHuman(this, o, now, t, 1);
-    const a = Math.sin(t * .05) * .28, R = 7, asp = (this.w || 1) / (this.h || 1), rr = R;
-    this.camera.position.set(Math.sin(a) * rr, 2.6 + Math.sin(t * .11) * .15, this.fire.z + Math.cos(a) * rr); this.camera.setTarget(this._tg || (this._tg = V3(0, 1.1, .3))); this.camera.fov = .82;
+    // B1: camera translation on a rail. No autonomous rotation while idle.
+    const lobby = this._lv && this._lv.isConnected ? this._lv : document.querySelector('.lobby');
+    const rail = lobby && lobby.dataset.lrail !== undefined ? +lobby.dataset.lrail : (lobby ? +lobby.dataset.lzone : 1);
+    const desired = (rail - 1) * 7.5;
+    if (!Number.isFinite(this.railX)) this.railX = 0;
+    this.railX += (desired - this.railX) * Math.min(1, Math.max(0, (now - (this._railNow || now)) / 180));
+    this._railNow = now;
+    this.camera.position.set(this.railX, 2.6, this.fire.z + 7);
+    if (!this._tg) this._tg = V3(0, 1.1, .3);
+    this._tg.set(this.railX, 1.1, .3); this.camera.setTarget(this._tg); this.camera.fov = .82;
     if (this.flag) this.flag.forEach((fl, i) => { fl.rotation.y = Math.sin(t * 1.3 + i) * .25; });
   }
   post() {
@@ -70,9 +83,23 @@ class CampStage extends Stage3D {
     const now = performance.now(); let view = this._lv;
     if (!view || !view.isConnected) { view = this._lv = document.querySelector('.lobby'); this._lm = 0; this._lf = null; if (!view) return; }
     if (this._lf && this._lf.length && !this._lf[0].isConnected) this._lm = 0;
-    if (now - (this._lm || 0) > 500) { const vr = view.getBoundingClientRect(), cr = this.cv.getBoundingClientRect(); this._ldx = cr.left - vr.left; this._ldy = cr.top - vr.top; this._lm = now; this._lf = view.querySelectorAll('.lfig[data-hid]'); }
+    if (now - (this._lm || 0) > 500) { const vr = view.getBoundingClientRect(), cr = this.cv.getBoundingClientRect(); this._ldx = cr.left - vr.left; this._ldy = cr.top - vr.top; this._lm = now; this._lf = view.querySelectorAll('.lfig[data-hid]'); this._spots = view.querySelectorAll('.spot[data-wx]'); }
     const M = this.scene.getTransformMatrix(), vp = this._vp || (this._vp = new B3.Viewport(0, 0, 1, 1)), T = this._pt || (this._pt = V3()), pa = this._pa || (this._pa = V3()), pb = this._pb || (this._pb = V3());
     vp.width = this.w; vp.height = this.h;
+    // Project menu buttons from world-space bases, like the A2 world HUD.
+    // Cache offsets on resize/rebuild; transforms are the only per-frame layout writes.
+    const markers = this._spots || [];
+    for (const el of markers) {
+      const xw = Number(el.dataset.wx), zw = Number(el.dataset.wz);
+      T.set(xw, this.heightAt(xw, zw) + 1.1, zw);
+      B3.Vector3.ProjectToRef(T, B3.Matrix.IdentityReadOnly, M, vp, pa);
+      const x = this._ldx + pa.x, y = this._ldy + pa.y;
+      if (!el._world) { el._world = true; el.style.left = '0px'; el.style.top = '0px'; }
+      if (!(Math.abs(x - el._wx) < .25 && Math.abs(y - el._wy) < .25)) {
+        el._wx = x; el._wy = y;
+        el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -50%)`;
+      }
+    }
     for (const el of this._lf) { const o = this.units[el.dataset.hid]; if (!o) continue; const p = o.root.position;
       B3.Vector3.ProjectToRef(p, B3.Matrix.IdentityReadOnly, M, vp, pa); T.set(p.x, p.y + o.h, p.z); B3.Vector3.ProjectToRef(T, B3.Matrix.IdentityReadOnly, M, vp, pb);
       const x = this._ldx + pa.x, y = this._ldy + pa.y, h = Math.max(20, pa.y - pb.y);
@@ -82,7 +109,7 @@ class CampStage extends Stage3D {
   }
   paused() { return !!(BT && BT.B) || !!document.querySelector('#overlay .detail, #overlay .sqsel'); }
   // шаг 6: лагерь — фоновая сцена, 30 fps (20 в упрощённой графике); флаг перечитывается раз в секунду
-  idleMode(now) { if (!(now - this._lowAt < 1000)) { this._low = gfx(this.small).campIdle; this._lowAt = now; } return this._low; }
+  idleMode(now) { if (Math.abs((this.railX || 0) - ((this._lv ? +this._lv.dataset.lzone : 1) - 1) * 7.5) > .05 || (this._lv && this._lv.dataset.lrail !== undefined)) return 'active'; if (!(now - this._lowAt < 1000)) { this._low = gfx(this.small).campIdle; this._lowAt = now; } return this._low; }
   slashFX() {} muzzleFX() {} voiceFX() {} castFX() {}
 }
 const S_FLAG = () => '#4c6b4e';
