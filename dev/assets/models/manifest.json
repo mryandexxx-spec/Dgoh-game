@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "source": "Sketchfab user-provided originals",
+  "assets": [
+    {
+      "asset": "ornithopter",
+      "bytes": 170444,
+      "source_zip_bytes": 13895007,
+      "triangles": 3302,
+      "sha256": "2c5ef16790a16dc5107e076e68630c39f42e10efb787e6a24ba3b66a5120db7c",
+      "license": "ornithopter.license.txt",
+      "file": "ornithopter.glb"
+    },
+    {
+      "asset": "market_tent",
+      "bytes": 413992,
+      "source_zip_bytes": 13638808,
+      "triangles": 8506,
+      "sha256": "44a8818860eca0de6ebf275d2affb581767741c5cf7d63641a9c714f09cc4e67",
+      "license": "market_tent.license.txt",
+      "file": "market_tent.glb"
+    },
+    {
+      "asset": "hologram_table",
+      "bytes": 736184,
+      "source_zip_bytes": 16558487,
+      "triangles": 15416,
+      "sha256": "f4d73f5a79c0d15f48e786bed19175c82df4980b1fdeb81f9f500c526e88031c",
+      "license": "hologram_table.license.txt",
+      "file": "hologram_table.glb"
+    }
+  ]
+}
