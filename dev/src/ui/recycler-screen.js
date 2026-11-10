@@ -10,7 +10,7 @@ import { toast } from './common.js';
 const kinds = Object.keys(SCRAP);
 let tab = 'work', kind = 'ix_plate', basket = [], selected = null;
 const styled = `<style>
-.ixpage{height:100%;max-height:100%;display:flex;flex-direction:column;gap:7px;overflow:hidden;color:var(--bone)}
+.ixpage{height:calc(100dvh - 102px);max-height:calc(100dvh - 102px);display:flex;flex-direction:column;gap:7px;overflow:hidden;color:var(--bone)}
 .ixhead{display:flex;align-items:center;gap:10px}.ixhead h2{font:24px var(--f-display);margin:0}
 .ixhead .sub{margin:0}.ixhead .btn{padding:5px 9px}.ixtabs{display:flex;gap:5px}
 .ixgrid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:9px;min-height:0;flex:1}
@@ -23,7 +23,7 @@ const styled = `<style>
 .ixprog{height:8px;border:1px solid var(--line-hi);background:var(--night);border-radius:6px;overflow:hidden}
 .ixprog i{display:block;background:var(--spice);height:100%}.ixnum{font:600 19px var(--f-mono)}
 .ixactions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.ixactions button{padding:6px 8px}
-.ixrates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;overflow:auto}
+.ixrates{flex:1;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;overflow:auto}
 .ixrate{padding:10px;border:1px solid var(--line);background:var(--ridge)}.ixrate b{color:var(--sand)}
 .ixfoot{display:flex;align-items:center;gap:10px}.ixbadge{background:var(--dune);border:1px solid var(--line);padding:5px 8px}
 .ixmodal{position:fixed;inset:0;z-index:9999;background:#000b;display:grid;place-items:center}
