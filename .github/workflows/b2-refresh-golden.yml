@@ -1,0 +1,56 @@
+name: One-time approved B2 lobby golden refresh
+on:
+  push:
+    branches: [feature/pkg11-b2-camp-totems]
+    paths: [.github/workflows/b2-refresh-golden.yml]
+permissions:
+  contents: write
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/pkg11-b2-camp-totems
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+        working-directory: dev
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+        working-directory: dev
+      - run: npm run build
+        working-directory: dev
+      - name: Refresh screens only and verify the five approved lobby snapshots
+        working-directory: dev
+        shell: bash
+        run: |
+          node tests/lib/golden.mjs unpack screens
+          cp tests/golden/data/screens.json /tmp/b2-before.json
+          node tests/dom/screens.mjs dist/pwa/index.html --update
+          node tests/lib/golden.mjs unpack screens
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const old=JSON.parse(fs.readFileSync('/tmp/b2-before.json','utf8'));
+          const now=JSON.parse(fs.readFileSync('tests/golden/data/screens.json','utf8'));
+          const a=old.screens,b=now.screens;
+          const names=new Set(['fresh:lobby','view:lobby','calendar','profile','battle-settings']);
+          const changed=a.filter((s,i)=>JSON.stringify(s)!==JSON.stringify(b[i])).map(s=>s.name);
+          console.log('Updated snapshot names:',changed);
+          if(a.length!==41||b.length!==41||!changed.length||changed.some(x=>!names.has(x))||
+             b.some(s=>s.errors.length)){throw Error('Unexpected golden change, refusing update');}
+          JS
+          rm -f tests/golden/data/screens.json
+      - name: Commit only reviewed-scope screen golden
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add dev/tests/golden/data/screens.json.gz.b64
+          git diff --cached --stat
+          git commit -m 'test: refresh five approved B2 lobby screen goldens'
+          git push origin HEAD:feature/pkg11-b2-camp-totems
