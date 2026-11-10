@@ -11,13 +11,14 @@ import { sRng } from '../core/rng.js';
 const cqWeek = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toDateString(); };
 function cq() {
   const wk = cqWeek();
-  if (!S.conq || S.conq.wk !== wk) S.conq = { v: 2, wk, diff: null, open: 0, done: {}, sta: {}, foe: {}, disks: [], pick: null, dpick: {}, buy: {}, stars: 0, got: {}, rest: 0, sel: null, sec: 0, squad: [], en: CQ_EN.max, enTs: Date.now(), v3: 1, pts: 0, fp: {}, fd: {}, tk: {} };
+  if (!S.conq || S.conq.wk !== wk) S.conq = { v: 2, wk, diff: null, open: 0, done: {}, sta: {}, foe: {}, disks: [], pick: null, dpick: {}, buy: {}, stars: 0, got: {}, rest: 0, sel: null, sec: 0, squad: [], en: CQ_EN.max, enTs: Date.now(), v3: 1, pts: 0, fp: {}, fd: {}, tk: {}, route: {} };
   const C = S.conq;
   if (C.v !== 2) {        // v1 → v2: new map layout, stamina instead of shared HP/fatigue, equipable disks
     Object.assign(C, { v: 2, done: {}, open: 0, sec: 0, sel: null, sta: {}, foe: {}, dpick: {}, buy: {}, rest: 0, en: CQ_EN.max, enTs: Date.now(), disks: (C.disks || []).map(k => typeof k === 'string' ? { k: k === 'leech' ? 'stam' : k, on: 1 } : k) });
     for (const k of ['hp', 'fat', 'med', 'stim', 'regroup']) delete C[k];
   }
   if (!C.v3) { Object.assign(C, { v3: 1, pts: 0, fp: {}, fd: {}, tk: {} }); delete C.got; CQ_MEMO_CLR(); }     // v3: feats + new reward track, boss modifiers
+  C.route ??= {}; // J1: week-scoped chosen nodes, never persisted as permanent progress
   return C;
 }
 // ---- Решимость (energy of the mode) ----
@@ -110,11 +111,45 @@ function cqLayout(s) {
 const cqNode = key => cqLayout(+key.split('-')[0]).find(n => n.key === key);
 const cqFoes = a => a.enemy.map(id => ({ ...enemyProg(id, a.lvl), relic: a.relic, pow: a.pow, gl: a.type === 'boss' && id === 'erasmus' && cq().diff !== 'easy' }));
 // enemies still standing at a node (with their remembered HP / shield), and their indices in the full line-up
-function cqLive(a) { const st = cq().foe[a.key], all = cqFoes(a), idx = all.map((_, k) => k).filter(k => !st || !st[k] || st[k].h > 0); return { all, idx, foes: idx.map(k => all[k]), st }; }
+function cqLive(a) { const C = cq(), st = C.done[a.key] ? null : C.foe[a.key], all = cqFoes(a), idx = all.map((_, k) => k).filter(k => !st || !st[k] || st[k].h > 0); return { all, idx, foes: idx.map(k => all[k]), st }; }
+// J1: unlocks belong to the account; a final boss victory opens the NEXT week's selection.
+function cqDifficultyAccess(diff) {
+  const D = CQ_DIFF[diff], lvl = S.acc?.lvl || 0;
+  if (!D || lvl < D.acc) return false;
+  if (diff === 'easy') return true;
+  const prerequisite = diff === 'normal' ? 'easy' : 'normal';
+  const completedWeek = S.cqUnlock?.[prerequisite];
+  return !!completedWeek && completedWeek !== cqWeek();
+}
+function cqRecordFinalBoss(a) {
+  if (!a || a.s !== 4 || a.L !== CQ_LAST || a.type !== 'boss') return false;
+  const C = cq();
+  if (C.diff !== 'easy' && C.diff !== 'normal') return false;
+  S.cqUnlock ??= {};
+  S.cqUnlock[C.diff] ??= C.wk; // earliest qualifying victory is permanent
+  return true;
+}
+// Only one newly completed node per layer can commit a route. Legacy completed
+// nodes remain replayable; a committed route cannot be bypassed at a merge.
+const cqRoute = s => cq().route[s] || {};
+const cqRouteBlocked = a => {
+  const C = cq(), selected = cqRoute(a.s)[a.L];
+  return !!selected && selected !== a.key && !C.done[a.key];
+};
+function cqCommitRoute(a) {
+  const C = cq();
+  const path = (C.route[a.s] ??= {});
+  path[a.L] ??= a.key;
+}
 function cqOpen(a) {
-  const C = cq(); if (!C.diff || C.pick || a.s > C.open) return false;
+  const C = cq();
+  if (!a || !C.diff || C.pick || a.s > C.open) return false;
+  if (C.done[a.key]) return true; // also preserves replay of pre-J1 completed paths
+  if (cqRouteBlocked(a)) return false;
   if (a.L === 0) return true;
-  return cqLayout(a.s).some(p => p.next.includes(a.key) && C.done[p.key]);
+  const route = cqRoute(a.s);
+  return cqLayout(a.s).some(p => p.L === a.L - 1 && p.next.includes(a.key) &&
+    C.done[p.key] && (!route[p.L] || route[p.L] === p.key));
 }
 const cqTypeN = t => ({ boss: 'Босс сектора', elite: 'Элита', cache: 'Тайник контрабандистов', disk: 'Тайник с дисками', fight: 'Бой' })[t];
 function cqTrack() {       // [{at, kind: 'st'|'chest', i}] — 4 промежуточные награды перед каждым сундуком
@@ -140,4 +175,4 @@ const cqStReady = () => cqTrack().filter(x => x.kind === 'st' && cqStCan(x.i)).l
 const cqHot = () => { if (!S) return false; const C = cq(); return S.acc.lvl >= CQ_DIFF.easy.acc && (!C.diff || !!C.pick || CQ_CHESTS.some((t, i) => cqCanClaim(i)) || cqStReady() > 0); };
 
 
-export { cqWeek, cq, cqEn, cqEnSpend, cqEnNext, cqEnTxt, cqSta, cqStaSet, cqStaPen, cqStaCol, cqDiskOn, CQ_DROP, cqDropW, cqDiskPick, cqLegOn, cqCanOn, cqAddDisk, cqNodeDisks, CQ_GOODS, cqGoods, CQ_MEMO, CQ_MEMO_CLR, cqLayout, cqNode, cqFoes, cqLive, cqOpen, cqTypeN, cqTrack, cqStatic, cqChest, cqCanClaim, cqSyncTrack, cqStCan, cqStReady, cqHot };
+export { cqWeek, cq, cqEn, cqEnSpend, cqEnNext, cqEnTxt, cqSta, cqStaSet, cqStaPen, cqStaCol, cqDiskOn, CQ_DROP, cqDropW, cqDiskPick, cqLegOn, cqCanOn, cqAddDisk, cqNodeDisks, CQ_GOODS, cqGoods, CQ_MEMO, CQ_MEMO_CLR, cqLayout, cqNode, cqFoes, cqLive, cqDifficultyAccess, cqRecordFinalBoss, cqRoute, cqRouteBlocked, cqCommitRoute, cqOpen, cqTypeN, cqTrack, cqStatic, cqChest, cqCanClaim, cqSyncTrack, cqStCan, cqStReady, cqHot };

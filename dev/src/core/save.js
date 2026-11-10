@@ -56,6 +56,18 @@ function fillSave(s) {
     };
     pruneCq(s.conq);
   }
+  // J1: permanent difficulty unlocks survive the weekly S.conq reset.
+  // Grandfather previously selected normal/hard to avoid revoking old access.
+  s.cqUnlock ??= {};
+  if (!s.migrations.jihadJ1) {
+    const C = s.conq;
+    if (C?.diff === 'normal' || C?.diff === 'hard') s.cqUnlock.easy ??= 'legacy';
+    if (C?.diff === 'hard') s.cqUnlock.normal ??= 'legacy';
+    // A finished fifth sector from before this update also counts.
+    if (C?.done?.['4-11-0'] && (C.diff === 'easy' || C.diff === 'normal'))
+      s.cqUnlock[C.diff] ??= C.wk || 'legacy';
+    s.migrations.jihadJ1 = 1;
+  }
   return s;
 }
 function loadSave() {

@@ -1,5 +1,5 @@
 // ui/views/conq.js — строки 5531–5728 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { cq, cqAddDisk, cqCanClaim, cqCanOn, cqChest, cqDiskOn, cqDiskPick, cqEn, cqEnSpend, cqEnTxt, cqFoes, cqGoods, cqLayout, cqLive, cqNode, cqNodeDisks, cqOpen, cqStCan, cqStReady, cqSta, cqStaCol, cqStaPen, cqStaSet, cqStatic, cqSyncTrack, cqTrack, cqTypeN } from '../../logic/conquest.js';
+import { cq, cqAddDisk, cqCanClaim, cqCanOn, cqChest, cqDiskOn, cqDiskPick, cqEn, cqEnSpend, cqEnTxt, cqFoes, cqGoods, cqLayout, cqLive, cqNode, cqNodeDisks, cqDifficultyAccess, cqRecordFinalBoss, cqRoute, cqRouteBlocked, cqCommitRoute, cqOpen, cqStCan, cqStReady, cqSta, cqStaCol, cqStaPen, cqStaSet, cqStatic, cqSyncTrack, cqTrack, cqTypeN } from '../../logic/conquest.js';
 import { CQ_CHESTS, CQ_DIFF, CQ_DISKS, CQ_DMAX, CQ_EN, CQ_ICON, CQ_LAST, CQ_LAYERS, CQ_LFAC, CQ_LMAX, CQ_MED, CQ_RF, CQ_SECT, CQ_STA, CQ_TROPHY, cqBump, cqFeats, cqK, cqMod, cqModD, cqRar, cqRfCost, cqRfN, cqScore } from '../../data/conquest-data.js';
 import { MOUSE_SVG } from '../mouse.js';
 import { statInc } from '../../logic/stats.js';
@@ -28,7 +28,7 @@ import { addRes, grantShards } from '../../logic/rewards.js';
 
 // ---- battle hooks ----
 function cqApply(B, cfg) {
-  const C = cq(), A = B.units.slice(0, cfg.squad.length), E = B.units.filter(u => u.side === 'B').slice(0, cfg.cq.idx.length), st = C.foe[cfg.cq.key];
+  const C = cq(), A = B.units.slice(0, cfg.squad.length), E = B.units.filter(u => u.side === 'B').slice(0, cfg.cq.idx.length), st = C.done[cfg.cq.key] ? null : C.foe[cfg.cq.key];
   for (const k of cqDiskOn()) if (CQ_DISKS[k]) CQ_DISKS[k].f(A, B);
   for (const u of A) { const p = cqStaPen(cqSta(u.def.id)); if (p.dmg > 0) { u.dmgBonus -= p.dmg; u.spd = Math.round(u.spd * (1 - p.spd)); } u.hp = u.maxHp; }   // full HP every node; stamina weakens
   for (const m of cfg.cq.mods) if (cqMod(m)) cqMod(m).f(E, cqK());
@@ -46,6 +46,8 @@ function cqFinish(B, cfg, won) {
     delete C.foe[a.key];
     const surv = mine.filter(u => u.alive).length, st = surv === mine.length ? 3 : surv >= Math.ceil(mine.length / 2) ? 2 : 1, prev = C.done[a.key] || 0;
     if (st > prev) { C.stars += st - prev; C.done[a.key] = st; }
+    if (!prev) cqCommitRoute(a); // A new victory commits the chosen branch
+    if (a.type === 'boss') cqRecordFinalBoss(a);
     const m = (CQ_DIFF[C.diff] || CQ_DIFF.easy).mult, sol = Math.round((1500 + a.lvl * 40) * m);
     if (!prev) {
       S.solari += sol; lines.push(`+${amt('sol', sol)} соляриев`);
@@ -53,15 +55,18 @@ function cqFinish(B, cfg, won) {
       if (a.type === 'boss' || a.type === 'elite') { const c = (a.type === 'boss' ? 2 : 1) * m; const key = a.type === 'boss' ? 'legacy_thread' : 'blood_echo'; S[key] = (S[key] || 0) + c; lines.push(`+${amt(key, c)} сигналов памяти`); }
       if (a.s === 4 && Math.random() < .5) { const id = Math.random() < .5 ? 'robot' : 'cymek', q = m; lines.push(`+${amt('shard', q, 'shard:' + id)} ${CH[id].sn}${grantShards(id, q) ? ' — персонаж открыт!' : ''}`); }
       if (a.type === 'boss') { if (a.s < 4) { C.open = Math.max(C.open, a.s + 1); C.sec = a.s + 1; lines.push(`Открыт сектор ${a.s + 2}: ${CQ_SECT[a.s + 1].n}`); } else lines.push('Джихад завершён! Эразм признаёт силу вашего Дома.'); }
-    } else lines.push('Повторная победа: звёзды улучшены, награда за точку уже получена.');
+    } else lines.push('Повторная победа: лучший результат сохранён, разовые награды уже получены. Подвиги засчитываются.');
     const fac = CQ_LFAC[a.s], few = mine.length <= 3, flaw = surv === mine.length, sq = mine.map(u => u.def);
     cqBump('win', a.s); if (flaw) cqBump('flaw', a.s); if (few) cqBump('few', a.s);
     for (const f of ['atr', 'hark', 'frem']) if (sq.every(d => d.f.includes(f))) cqBump('only:' + f, a.s);
     if (sq.filter(d => d.f.includes(fac[0])).length >= fac[1]) cqBump('fac', a.s);
     if (a.type === 'elite' && flaw) cqBump('eliteflaw', a.s);
-    if (a.type === 'boss') { if (!prev) cqBump('boss', a.s, Object.keys(C.done).filter(k => k.endsWith(`-${CQ_LAST}-0`)).length, true); if (cfg.cq.fresh) cqBump('boss1', a.s); if (flaw) cqBump('bossflaw', a.s); }
+    if (a.type === 'boss') { if (!prev) cqBump('boss', a.s, Object.keys(C.done).filter(k => k.endsWith(`-${CQ_LAST}-0`)).length, true); if (cfg.cq.fresh && !prev) cqBump('boss1', a.s); if (flaw) cqBump('bossflaw', a.s); }
     lines.push(`Очки Джихада: ${cqScore()} (звёзды ${C.stars} + подвиги ${C.pts || 0})`);
     html = `<h3>Победа</h3><div class="stars">${starStr(st, 3)}</div><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul>`;
+  } else if (C.done[a.key]) {
+    delete C.foe[a.key]; // a defeated replay never leaves a wounded farming target
+    html = '<h3>Поражение в повторном бою</h3><p>Лучший результат и полученные награды сохранены. В следующем повторе враги восстановятся полностью.</p>';
   } else {
     const all = cqFoes(a), st = C.foe[a.key] || all.map(() => ({ h: 1, s: 1 }));
     E.forEach((u, j) => { st[cfg.cq.idx[j]] = { h: u.alive && u.hp > 0 ? Math.max(.01, u.hp / u.maxHp) : 0, s: u.maxShield ? Math.max(0, u.shield) / u.maxShield : 1 }; });
@@ -79,10 +84,10 @@ function cqFoeCard(p, k, r, lead) {
   return `<div class="cden ${dead ? 'dead' : ''}">${portrait(d, 46, p.relic ? RELIC_COL : TIER_COL[p.gear])}<span>${d.sn}${lead ? ' · лидер' : ''}</span><span class="mono cdst">ур. ${p.lvl} · сн. ${ROMAN[p.gear]}${p.relic ? ' · ' + MEM(p.relic) : ''}</span><span class="mono cdpw">мощь ${fmt(unitPower(d, p))}</span>${dead ? '<span class="cqdead">повержен</span>' : r ? `<span class="cqfb"><i style="width:${Math.round(r.h * 100)}%"></i></span>${CH[p.id] && r.s < 1 ? `<span class="cqfb sh"><i style="width:${Math.round(r.s * 100)}%"></i></span>` : ''}<span class="mono cqfp">${Math.round(r.h * 100)}% ОЗ</span>` : ''}</div>`;
 }
 function cqDetail(a) {
-  const C = cq(), op = cqOpen(a), dn = C.done[a.key] || 0, m = CQ_DIFF[C.diff].mult;
+  const C = cq(), op = cqOpen(a), dn = C.done[a.key] || 0, blocked = cqRouteBlocked(a), m = CQ_DIFF[C.diff].mult;
   let body = '', acts = '';
   if (a.type === 'cache') {
-    if (!op && !dn) body = `<p class="lockd">Доберитесь до тайника по карте — после этого лавка будет доступна до конца недели.</p>`;
+    if (!op && !dn) body = `<p class="lockd">${blocked ? 'Маршрут закрыт: выбрана другая ветка.' : 'Доберитесь до тайника по карте — после этого лавка будет доступна до конца недели.'}</p>`;
     else {
       const got = C.buy[a.key] || [];
       body = `<p class="sub" style="margin:0 0 6px">Контрабандисты торгуют редким товаром. Каждый лот — один раз; заглядывать можно в любое время, пока идёт Джихад.</p><div class="cqgoods">${cqGoods(a.key).map((g, k) => { const sold = got.includes(k), [ck, cn] = g.cost, can = !sold && getRes(ck) >= cn;
@@ -90,7 +95,7 @@ function cqDetail(a) {
     }
   } else if (a.type === 'disk') {
     if (dn) body = '<span class="qok">✓ Диск из этого тайника уже получен</span>';
-    else if (!op) body = `<p class="lockd">${C.pick ? 'Сначала выберите стартовый диск' : 'Пройдите соседнюю точку слева'}</p>`;
+    else if (!op) body = `<p class="lockd">${blocked ? 'Маршрут закрыт: выбрана другая ветка' : C.pick ? 'Сначала выберите стартовый диск' : 'Пройдите соседнюю точку слева'}</p>`;
     else { const ks = cqNodeDisks(a); body = ks.length ? `<p class="sub" style="margin:0 0 6px">Выберите один диск из трёх. Если надето уже ${CQ_DMAX} (или ${CQ_LMAX} легендарных), новый ляжет в запас.</p><div class="cqdiffs">${ks.map(k => cqDiskCard(k, `<button class="btn go" data-cqnd="${a.key}:${k}">Взять</button>`)).join('')}</div>` : `<p class="sub">Все диски уже собраны.</p><button class="btn go" data-cqnd="${a.key}:">Дальше</button>`; }
   } else {
     const { all, st } = cqLive(a), pw = all.reduce((x, p, k) => x + (st && st[k] && st[k].h <= 0 ? 0 : unitPower(CH[p.id], p)), 0), left = st ? st.filter(x => x.h > 0).length : all.length;
@@ -98,7 +103,7 @@ function cqDetail(a) {
       <div class="cdrow"><span class="lbl">Условия</span><div class="cdtags"><span class="power">мощь врага ${fmt(pw)}</span>${CQ_SECT[a.s].desert ? '<span class="tag desert">Пустыня · червь</span>' : ''}${a.type === 'boss' ? '' : a.mods.map(k => `<span class="tag mod">${cqMod(k).n}: ${cqModD(k)}</span>`).join('') || '<span class="tag">без модификаторов</span>'}</div></div>
       ${a.type === 'boss' ? `<div class="cdrow"><span class="lbl">Синергия отряда</span><p class="cqsyn">${CQ_SECT[a.s].syn}. Босс сражается сыгранной командой своей фракции, и Джихад усиливает её:</p><div class="cqbm">${a.mods.map(k => `<div class="cqbmi"><b>${cqMod(k).n}</b><span>${cqModD(k)}</span></div>`).join('')}</div></div><div class="cdrow"><span class="lbl">Подвиги босса</span><div class="cdtags">${cqFeats(a.s).filter(F => F.boss).map(F => `<span class="tag ${C.fd[F.key] ? 'cqok' : ''}">${C.fd[F.key] ? '✓ ' : ''}${F.n} · +${F.pts} оч.</span>`).join('')}</div></div>` : ''}
       <div class="cdrow"><span class="lbl">Награда</span><div class="cdtags">${amt('sol', Math.round((1500 + a.lvl * 40) * m))}${a.type === 'boss' ? ' ' + amt('legacy_thread', 2 * m) + ' · открывает следующий сектор' : a.type === 'elite' ? ' ' + amt('blood_echo', m) : ''} ${amt('jt', (CQ_TROPHY[a.type] || 0) * m)} за первую победу · до 3 звёзд</div></div>`;
-    acts = dn === 3 ? '<span class="qok">✓ Пройдено на 3★</span>' : op ? `<button class="btn go" data-cqgo="${a.key}">${dn ? 'Улучшить результат' : st ? 'Продолжить бой' : 'В бой'}<small>−${CQ_EN.fight} Решимости · −${CQ_STA.loss}% выносливости за победу</small></button>` : `<span class="lockd">${C.pick ? 'Сначала выберите диск' : 'Пройдите соседнюю точку слева'}</span>`;
+    acts = op ? `${dn ? '<span class="qok">✓ Лучший результат: ' + dn + '★ · разовая награда получена</span>' : ''}<button class="btn go" data-cqgo="${a.key}">${dn === 3 ? 'Повторить бой' : dn ? 'Улучшить результат' : st ? 'Продолжить бой' : 'В бой'}<small>−${CQ_EN.fight} Решимости · −${CQ_STA.loss}% выносливости за победу</small></button>${dn ? '<small class="cqrepeatnote">Повторные разовые награды не выдаются. Подвиги засчитываются.</small>' : ''}` : `<span class="lockd">${blocked ? 'Маршрут закрыт: выбрана другая ветка' : C.pick ? 'Сначала выберите диск' : 'Пройдите соседнюю точку слева'}</span>`;
   }
   return `<div class="cdetail cqdet"><div class="cdinfo"><div class="cdrow"><span class="lbl">${cqTypeN(a.type)} · шаг ${a.L + 1}/${CQ_LAYERS.length}</span></div>${body}${acts ? `<div class="acts">${acts}</div>` : ''}</div></div>`;
 }
@@ -107,7 +112,7 @@ function renderConq() {
   let html = `<h2 class="lshide">Джихад</h2><p class="sub">Еженедельная священная война: пять секторов с ветвящимися картами. Бои идут за <b>Решимость</b>; каждый бой отнимает у участников 10% <b>выносливости</b> — уставшие бьют слабее и медленнее, но восстанавливаются со временем. Здоровье героев полное на каждой новой точке, а раненые враги не лечатся между заходами. Звёзды двигают шкалу наград; главный приз — <b>Эразм</b>, чьи осколки есть только здесь. Сброс через ${dd} д ${hh} ч.</p>`;
   if (L < CQ_DIFF.easy.acc) { $('#view').innerHTML = html + `<div class="panel"><p class="lockd">Джихад откроется с ${CQ_DIFF.easy.acc} уровня аккаунта.</p></div>`; return; }
   if (!C.diff) {
-    html += `<div class="cqdiffs">${Object.entries(CQ_DIFF).map(([k, D]) => { const ok = L >= D.acc; return `<div class="cqdiff d-${k} ${ok ? '' : 'locked'}"><h3>${D.n}</h3><span class="mono">враги ур. ${D.lvl[0]}–${D.lvl[1]}${D.relic[1] ? ` · Другая память до ${D.relic[1]}` : ''}</span><p>Награды ×${D.mult}. Эразм: до ${D.er.reduce((a, b) => a + b, 0)} осколков за неделю.</p><button class="btn ${ok ? 'go' : ''}" data-cqdiff="${k}" ${ok ? '' : 'disabled'}>${ok ? 'Выбрать' : `С ур. аккаунта ${D.acc}`}</button></div>`; }).join('')}</div><p class="sub">Сложность выбирается один раз на неделю.</p>`;
+    html += `<div class="cqdiffs">${Object.entries(CQ_DIFF).map(([k, D]) => { const ok = cqDifficultyAccess(k), prerequisite = k === 'normal' ? 'лёгкой' : 'средней', prev = k === 'normal' ? 'easy' : 'normal'; const why = L < D.acc ? `Нужен уровень аккаунта ${D.acc}` : !S.cqUnlock?.[prev] ? `Победите босса сектора 5 на ${prerequisite} сложности` : 'Откроется для выбора на следующей неделе'; return `<div class="cqdiff d-${k} ${ok ? '' : 'locked'}"><h3>${D.n}</h3><span class="mono">враги ур. ${D.lvl[0]}–${D.lvl[1]}${D.relic[1] ? ` · Другая память до ${D.relic[1]}` : ''}</span><p>Награды ×${D.mult}. Эразм: до ${D.er.reduce((a, b) => a + b, 0)} осколков за неделю.</p>${ok ? '<p class="cqrequire ready">✓ Доступно к выбору</p>' : `<p class="cqrequire">🔒 ${why}</p>`}<button class="btn ${ok ? 'go' : ''}" data-cqdiff="${k}" ${ok ? '' : 'disabled'}>${ok ? 'Выбрать' : 'Закрыто'}</button></div>`; }).join('')}</div><p class="sub">Сложность выбирается один раз на неделю.</p>`;
     $('#view').innerHTML = html; return;
   }
   const s = Math.min(C.sec ?? 0, C.open), nodes = cqLayout(s), SE = CQ_SECT[s], en = cqEn(), nOn = cqDiskOn().length;
@@ -122,10 +127,10 @@ function renderConq() {
   html += `<div class="ctabs">${CQ_SECT.map((x, k) => `<button class="ctab ${k === s ? 'on' : ''}" data-cqsec="${k}" ${k <= C.open ? '' : 'disabled'}>${k + 1}. ${x.n}<small>${C.done[`${k}-${CQ_LAST}-0`] ? 'зачищен' : k <= C.open ? 'открыт' : 'закрыт'}</small></button>`).join('')}</div>
     <p class="sub">${SE.d}</p>`;
   const LS = isLandPhone(), CW = LS ? 72 : 88, H0 = LS ? 210 : 280, W0 = 60 + CQ_LAST * CW + 60, px = a => 46 + a.L * CW, py = a => 22 + a.y * (H0 - 44);
-  const lines = nodes.flatMap(a => a.next.map(k => { const b = nodes.find(x => x.key === k), on = C.done[a.key]; return `<line x1="${px(a)}" y1="${py(a)}" x2="${px(b)}" y2="${py(b)}" class="${on ? 'on' : ''}"/>`; })).join('');
+  const route = cqRoute(s); const lines = nodes.flatMap(a => a.next.map(k => { const b = nodes.find(x => x.key === k), selected = (!route[a.L] || route[a.L] === a.key) && (!route[b.L] || route[b.L] === b.key), on = selected && C.done[a.key] && C.done[b.key]; return `<line x1="${px(a)}" y1="${py(a)}" x2="${px(b)}" y2="${py(b)}" class="${on ? 'on' : !selected ? 'off' : 'pending'}"/>`; })).join('');
   if (!C.sel || !nodes.some(a => a.key === C.sel)) C.sel = (nodes.find(a => cqOpen(a) && !C.done[a.key]) || nodes[0]).key;
-  const btns = nodes.map(a => { const op = cqOpen(a), dn = C.done[a.key] || 0, hurt = a.fight && !dn && C.foe[a.key];
-    return `<button class="cqn t-${a.type} ${dn ? 'done' : op ? 'open' : 'locked'} ${hurt ? 'hurt' : ''} ${a.key === C.sel ? 'sel' : ''}" data-cqnode="${a.key}" style="left:${px(a)}px;top:${py(a)}px" aria-label="${cqTypeN(a.type)}">${cqI(a.type)}${dn && a.fight ? `<span class="cqns">${'★'.repeat(dn)}</span>` : ''}</button>`; }).join('');
+  const btns = nodes.map(a => { const op = cqOpen(a), dn = C.done[a.key] || 0, blocked = cqRouteBlocked(a), hurt = a.fight && !dn && C.foe[a.key];
+    return `<button class="cqn t-${a.type} ${dn ? 'done' : op ? 'open' : 'locked'} ${hurt ? 'hurt' : ''} ${blocked ? 'branchlocked' : ''} ${a.key === C.sel ? 'sel' : ''}" data-cqnode="${a.key}" style="left:${px(a)}px;top:${py(a)}px" aria-label="${cqTypeN(a.type)}">${blocked ? '<span class="cqroute-x">×</span>' : cqI(a.type)}${dn && a.fight ? `<span class="cqns">${'★'.repeat(dn)}</span>` : ''}</button>`; }).join('');
   html += `<div class="cqmap" id="cqmap"><div class="cqtrack" style="width:${W0}px;height:${H0}px"><svg class="cqlines" width="${W0}" height="${H0}">${lines}</svg>${btns}</div></div>`;
   const a = cqNode(C.sel);
   html += cqDetail(a);
@@ -167,7 +172,7 @@ function cqShopItems() {
     { key: 'med', n: 'Аптечка', d: `+${CQ_MED}% выносливости одному герою. Применяется на карте Джихада.`, ico: 'med', price: 30, buy: () => { S.cqMed = (S.cqMed || 0) + 1; return 'Аптечка в запасе'; } },
     { key: 'med3', n: 'Набор из 3 аптечек', d: `Три аптечки по +${CQ_MED}% выносливости.`, ico: 'med', price: 80, buy: () => { S.cqMed = (S.cqMed || 0) + 3; return '+3 аптечки'; } },
     ...disks.map(k => ({ key: 'd:' + k, n: CQ_DISKS[k].n, d: CQ_DISKS[k].d, ico: 'disk', rar: CQ_DISKS[k].r, price: CQ_PRICE[CQ_DISKS[k].r], sold: !!b['d:' + k] || own.has(k), lim: 1,
-      buy: () => { mark()['d:' + k] = 1; if (!C.diff) { C.diff = 'easy'; } cqAddDisk(k); return `Диск «${CQ_DISKS[k].n}» — ${C.disks.find(x => x.k === k).on ? 'надет' : 'в запасе'}`; } })),
+      buy: () => { mark()['d:' + k] = 1; cqAddDisk(k); return `Диск «${CQ_DISKS[k].n}» — ${C.disks.find(x => x.k === k).on ? 'надет' : 'в запасе'}`; } })),
   ];
 }
 function cqShopView() {
@@ -194,13 +199,13 @@ function cqFeatWin(s) {
     <div class="acts" style="justify-content:center"><button class="btn go" data-close="1">Закрыть</button></div></div></div>`;
 }
 function cqClick(d) {
-  if (d.cqdiff) { const C = cq(); if (C.diff || S.acc.lvl < CQ_DIFF[d.cqdiff].acc) return true; C.diff = d.cqdiff; C.pick = cqDiskPick('start'); persist(); render(); return true; }
+  if (d.cqdiff) { const C = cq(); if (C.diff || !cqDifficultyAccess(d.cqdiff)) return true; C.diff = d.cqdiff; C.pick = cqDiskPick('start'); persist(); render(); return true; }
   if (d.cqdisk) { const C = cq(); if (!C.pick || !C.pick.includes(d.cqdisk)) return true; cqAddDisk(d.cqdisk); C.pick = null; persist(); toast(`${cqRar(d.cqdisk).n} диск «${CQ_DISKS[d.cqdisk].n}» установлен`); render(); return true; }
   if (d.cqnd !== undefined) { const [key, k] = d.cqnd.split(':'), C = cq(), a = cqNode(key); if (!a || a.type !== 'disk' || C.done[key] || !cqOpen(a)) return true;
     if (k) { if (!cqNodeDisks(a).includes(k)) return true; cqAddDisk(k); toast(`${cqRar(k).n} диск «${CQ_DISKS[k].n}» ${C.disks.find(x => x.k === k).on ? 'надет' : 'отправлен в запас'}`); }
-    C.done[key] = 1; persist(); render(); return true; }
+    C.done[key] = 1; cqCommitRoute(a); persist(); render(); return true; }
   if (d.cqsec !== undefined) { const C = cq(); C.sec = Math.min(+d.cqsec, C.open); C.sel = null; persist(); render(); return true; }
-  if (d.cqnode) { const C = cq(), a = cqNode(d.cqnode); C.sel = d.cqnode; if (a && a.type === 'cache' && !C.done[a.key] && cqOpen(a)) { C.done[a.key] = 1; persist(); } render(); return true; }
+  if (d.cqnode) { const C = cq(), a = cqNode(d.cqnode); C.sel = d.cqnode; if (a && a.type === 'cache' && !C.done[a.key] && cqOpen(a)) { C.done[a.key] = 1; cqCommitRoute(a); persist(); } render(); return true; }
   if (d.cqgo) { const a = cqNode(d.cqgo); if (!a || !cqOpen(a)) return true; if (cqEn() < CQ_EN.fight) { cqResWin(CQ_EN.fight); return true; } openSquadSel('conq', d.cqgo); return true; }
   if (d.cqbuy) { const [key, k] = d.cqbuy.split(':'), C = cq(), a = cqNode(key); if (!a || a.type !== 'cache' || !C.done[key]) return true; const got = (C.buy[key] ??= []); if (got.includes(+k)) return true;
     const g = cqGoods(key)[+k], [ck, cn] = g.cost; if (getRes(ck) < cn) { openInfo(ck); return true; }
