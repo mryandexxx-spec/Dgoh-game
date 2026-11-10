@@ -42,7 +42,7 @@ function itemPool() {
     for (const partId of ids) if (scrapPoint(kind, it.id, partId)) out.push({
       id: it.id, partId, label: it.n + ' · готовая деталь', tier: it.t,
       p: scrapPoint(kind, it.id, partId), total: S.gearParts[partId] || 0,
-      safe: scrapAvailable(S, it.id, partId), held: 0,
+      safe: scrapAvailable(S, it.id, partId), held: reserve[partId] || 0,
     });
   }
   return out.filter(x => x.total > 0).sort((a, b) => (b.safe > 0) - (a.safe > 0) || a.tier - b.tier || a.label.localeCompare(b.label));
