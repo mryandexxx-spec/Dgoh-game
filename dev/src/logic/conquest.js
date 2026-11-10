@@ -111,7 +111,7 @@ function cqLayout(s) {
 const cqNode = key => cqLayout(+key.split('-')[0]).find(n => n.key === key);
 const cqFoes = a => a.enemy.map(id => ({ ...enemyProg(id, a.lvl), relic: a.relic, pow: a.pow, gl: a.type === 'boss' && id === 'erasmus' && cq().diff !== 'easy' }));
 // enemies still standing at a node (with their remembered HP / shield), and their indices in the full line-up
-function cqLive(a) { const st = cq().foe[a.key], all = cqFoes(a), idx = all.map((_, k) => k).filter(k => !st || !st[k] || st[k].h > 0); return { all, idx, foes: idx.map(k => all[k]), st }; }
+function cqLive(a) { const C = cq(), st = C.done[a.key] ? null : C.foe[a.key], all = cqFoes(a), idx = all.map((_, k) => k).filter(k => !st || !st[k] || st[k].h > 0); return { all, idx, foes: idx.map(k => all[k]), st }; }
 // J1: unlocks belong to the account; a final boss victory opens the NEXT week's selection.
 function cqDifficultyAccess(diff) {
   const D = CQ_DIFF[diff], lvl = S.acc?.lvl || 0;
