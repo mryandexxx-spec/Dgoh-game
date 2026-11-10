@@ -135,15 +135,15 @@ class CampStage extends Stage3D {
     this.sky.material = skyMat; oldSkyMat.dispose();
     // Arrakis daylight: two distant emissive sun discs; only the existing sun casts shadows.
     // Distant spheres are never shadow casters, and do not introduce new render targets.
-    const sunA = mk(bSph(3.5, 12), basic3('#ffc370', { fog: false }), -16, 13, -90, false);
-    const sunB = mk(bSph(2.3, 10), basic3('#ffe2a2', { fog: false }), 22, 17, -103, false);
+    const sunA = mk(bSph(3.5, 12), basic3('#ffc370', { fog: false }), -16, 8, -90, false);
+    const sunB = mk(bSph(2.3, 10), basic3('#ffe2a2', { fog: false }), 22, 11, -103, false);
     sunA.isPickable = sunB.isPickable = false;
     const rp = new B3.ReflectionProbe('rp', gfx(this.small).probe.camp, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
     // Daylight headquarters: five heroes on open sand. No campfire, flame,
     // logs, smoke, sparks, or pulsing point light; this also saves phone GPU work.
     this.fire = V3(0, this.heightAt(0, 1.2), 1.2);
     this.fireL = null; this.fireShadow = null;
-    const plaza = mat3('#c59259', { roughness: .95 });
+    const plaza = mat3('#a17a53', { roughness: .98, noSheen: 1 });
     const ring = mk(bCyl(2.7, 2.9, .085, 16), plaza, 0, this.heightAt(0, 0) + .045, 0, false);
     ring.isPickable = false;
     // tents & crates & banners
@@ -170,12 +170,24 @@ class CampStage extends Stage3D {
     // Earlier B2.1 meshes had been behind large B1 tents and under the UI labels.
     const landmarkZ = .65, bright = q.campAccents ? basic3('#e5ba7b') : mat3('#c8a174', { roughness: .78 });
     const bone = mat3('#ddc28c', { roughness: .86 });
-    // Legends: tall House archive stele + unmistakable luminous crest.
-    place(bBox(1.0, 2.55, .7), rock, -10.4, landmarkZ, 1.28);
-    place(bBox(1.25, .24, .86), bronze, -10.4, landmarkZ, 2.66);
-    place(bBox(.66, .55, .13), bright, -10.4, landmarkZ + .42, 2.20);
-    if (rich) place(bBox(.25, .25, .18), ember, -10.4, landmarkZ + .53, 2.20);
-
+    // Legends: an open-air sandstone archive, stepped base, recessed stela
+    // and carved vertical lines rather than a flat upright shipping box.
+    const steleX = -10.4;
+    place(bBox(1.82, .22, 1.22), bronze, steleX, landmarkZ, .11);
+    place(bBox(1.52, .26, 1.02), rock, steleX, landmarkZ, .36);
+    place(bBox(1.18, 2.15, .64), rock, steleX, landmarkZ, 1.55);
+    place(bBox(1.35, .22, .81), bronze, steleX, landmarkZ, 2.73);
+    // An inset arch with warm metalwork faces the camera.
+    place(bBox(.88, 1.38, .09), ink, steleX, landmarkZ + .36, 1.76);
+    place(bBox(.72, 1.24, .11), canvas, steleX, landmarkZ + .42, 1.78);
+    place(bBox(.56, .22, .14), bronze, steleX, landmarkZ + .49, 2.34);
+    if (!low) {
+      for (const dx of [-.24, .24]) {
+        place(bBox(.075, .8, .12), bronze, steleX + dx, landmarkZ + .5, 1.65);
+      }
+      place(bBox(.55, .08, .12), ink, steleX, landmarkZ + .52, 1.21);
+      place(bBox(.55, .08, .12), ink, steleX, landmarkZ + .52, 1.07);
+    }
     const fallbackOrnithopterAt = S.meshes.length;
     // Trials: parked ornithopter viewed head-on, with an unmistakably wide
     // pair of long wings and cockpit. Raised high enough to sit above the labels.
