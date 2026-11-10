@@ -5,7 +5,12 @@ import { loadGame } from '../lib/load.mjs';
 
 const html = process.argv[2];
 if (!html) throw new Error('Usage: node tests/smoke/v83-v85.mjs dist/pwa/index.html');
-const g = loadGame(html), R = g.run;
+let g;
+try { g = loadGame(html); } catch (error) {
+  console.error('VM compilation failed:', error.name, error.message);
+  process.exit(1);
+}
+const R = g.run;
 const run = expr => R(expr);
 run('S = newSave()');
 
