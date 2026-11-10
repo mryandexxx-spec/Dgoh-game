@@ -18,7 +18,7 @@ import { $ } from '../core/dom.js';
 let SKW = null;   // { id, k, sel, lv } — состояние открытого окна (не сохранение)
 let WIN = null;   // { label, open } — окно, к которому вернётся окно поиска
 const XI = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
-const RES_N = { folio: 'Фолианты ментата', seal: 'Печать Ландсраада', wol: 'Вода жизни', core: 'Голоса предков', sol: 'Солярии' };
+const RES_N = { ix_plate: 'Платы Икса', holtz_conductor: 'Проводники Холцмана', tleilax_matrix: 'Геноматрицы Тлейлаксу', null_cell: 'Нуль-ячейки', blood_echo: 'Отголоски крови', legacy_thread: 'Нити наследия', age_resonance: 'Резонанс веков', folio: 'Фолианты ментата', seal: 'Печать Ландсраада', wol: 'Вода жизни', core: 'Голоса предков', sol: 'Солярии' };
 const have = k => k === 'sol' ? S.solari : (S[k] || 0);
 
 function set_WIN(v) { return WIN = v; }
