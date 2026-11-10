@@ -75,7 +75,7 @@ function openSim(i) {
 }
 function updSim() {
   const el = $('#simn'); if (!el || simNode === null) return;
-  const k = +el.value, i = simNode, n = NODES[i], base = campReward(i, 3), en = nodeEn(i), ch = n.camp === 'C';
+  const k = +el.value, i = simNode, n = NODES[i], base = campReward(i, 3, true), en = nodeEn(i), ch = n.camp === 'C';
   $('#simv').textContent = '×' + k;
   $('#simc').innerHTML = amt(en, k * nodeCost(i)) + ` <span style="color:var(--dust)">из ${enGet(en)}</span>`;
   $('#sime').innerHTML = `${amt('sol', base.sol * k)} ${amt('pl', base.pl * k)} ${amt('folio', base.folio * k)}${ch ? ' ' + amt('rid', '≈' + Math.round(k * 11.5)) : ''}<br>${amt('shard', '≈' + Math.round(k * (ch ? .84 : .7)))} ${CH[n.drops[0]].sn} · ${amt('shard', '≈' + Math.round(k * .25))} ${CH[n.drops[1]].sn}<br>${amt('frag', '≈' + Math.round(k * 1.6))} фрагментов снаряжения`;
