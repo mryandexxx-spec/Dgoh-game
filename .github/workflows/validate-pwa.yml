@@ -73,6 +73,13 @@ jobs:
           npm install --no-save --package-lock=false playwright@1.56.1
           npx playwright install --with-deps chromium
       - run: npm test
+      - name: Integration-only capture of reconciled screen golden (diagnostic)
+        if: failure()
+        run: |
+          node tests/dom/screens.mjs dist/pwa/index.html --update
+          echo 'BEGIN_RECONCILED_SCREENS_GOLDEN'
+          cat tests/golden/data/screens.json.gz.b64
+          echo 'END_RECONCILED_SCREENS_GOLDEN'
 
   ui:
     name: E3 iPhone UI + DOM idle layout
