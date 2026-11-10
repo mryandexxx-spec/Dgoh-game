@@ -122,7 +122,10 @@ function validateV86Legend(s) {
   const html = legend.view;
   assert.ok(html.includes('Герои пути ·'), '11-hero readiness heading is visible');
   assert.ok(html.includes('Дом Атрейдесов') && html.includes('Союзники и противники'), 'both groups are rendered');
-  assert.equal((html.match(/data-info="shard:/g) || []).length, 11, 'exactly eleven required hero cards');
+  const reqHtml = html.slice(html.indexOf('<h3>Герои пути'), html.indexOf('<p class="chap">'));
+  const requiredIds = [...new Set([...reqHtml.matchAll(/data-info="shard:([^"]+)"/g)].map(m => m[1]))].sort();
+  assert.deepEqual(requiredIds, ['paul','duncan','leto','jessica','gurney','stilgar','chani','kynes','mohiam','baron','shaddam'].sort(),
+    'all eleven required hero cards exist in the requirements panel');
   assert.ok(html.includes('Бои заблокированы') || html.includes('Муад’Диб открыт') || html.includes('Все 11 требований выполнены'), 'gate status is explained');
 }
 if (rest.includes('--update')) writeGolden('screens', out);
