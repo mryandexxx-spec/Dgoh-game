@@ -6,7 +6,8 @@
 // сохранение — tests/fixtures/saves/03-late.json (всё открыто) и «без сохранения» для стартовых экранов.
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import assert, { isDeepStrictEqual } from 'node:assert/strict';
+import assert from 'node:assert/strict';
+import { isDeepStrictEqual } from 'node:util';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
