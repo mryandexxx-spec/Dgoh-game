@@ -1,5 +1,6 @@
 // ui/views/shop.js — строки 4020–4071 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import './legend.js'; // порядок исполнения
+import { renderRecycler } from '../recycler-screen.js';
 import { cqShopView } from './conq.js';
 import { RES_INFO } from '../overlays/info.js';
 import { getRes, prog } from '../../logic/progress.js';
@@ -68,4 +69,4 @@ function renderShop() {
 }
 
 
-export { SHOPS, buysToday, shopLeft, dailyHeroes, shopItems, findShopItem, shopFragsHtml, renderShop };
+export { SHOPS, buysToday, shopLeft, dailyHeroes, shopItems, findShopItem, shopFragsHtml, renderShop, renderRecycler };
