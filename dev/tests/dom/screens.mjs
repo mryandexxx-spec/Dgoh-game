@@ -139,6 +139,12 @@ else {
   if (!isDeepStrictEqual(want, got)) {
     const changed = want.screens.filter((v, i) => !isDeepStrictEqual(v, got.screens[i])).map(x => x.name);
     console.error('Unapproved golden screen differences:', changed.join(', '));
+    for (const name of changed.slice(0, 2)) {
+      const a = JSON.stringify(want.screens.find(x => x.name === name));
+      const b = JSON.stringify(got.screens.find(x => x.name === name));
+      let i = 0; while (i < Math.min(a.length, b.length) && a[i] === b[i]) i++;
+      console.error('First divergent text:', name, 'at', i, 'expected', a.slice(Math.max(0,i-120),i+210), 'actual', b.slice(Math.max(0,i-120),i+210));
+    }
     process.exitCode = 1;
   } else console.log('OK screens: unchanged views match golden; approved v86 legend changes validated separately');
 }
