@@ -44,11 +44,11 @@ function signalDrop(n) {
   S.signalPity[key] = got ? 0 : misses + 1;
   return got ? key : null;
 }
-function campReward(i, st) {
+function campReward(i, st, preview = false) {
   const n = NODES[i], ch = n.camp === 'C', L = n.lvl;
   return { sol: ch ? 300 + L * 60 : 400 + L * 110, pl: 1 + (st === 3 ? 1 : 0) + (L >= 14 ? 1 : 0), folio: ch ? 2 + (L >= 20 ? 1 : 0) : 1 + (L >= 14 ? 1 : 0),
     seal: Math.random() < (ch ? .08 : L >= 8 ? .04 : 0) ? 1 : 0, rid: ch ? 8 + Math.floor(Math.random() * 8) : 0,
-    core: 0, signals: signalDrop(n), drops: rollShards(n, ch), items: rollItems(i) };
+    core: 0, signals: preview ? null : signalDrop(n), drops: rollShards(n, ch), items: rollItems(i) };
 }
 
 
