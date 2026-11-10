@@ -45,14 +45,53 @@ class CampStage extends Stage3D {
     for (const [x, z] of [[4.6, -1.5], [5.2, -1.1], [-4.4, -2.2]]) mk(bBox(.6, .5, .6), crateM, x, this.heightAt(x, z) + .25, z).rotation.y = x;
     const pole = mat3('#4a3420'), flag = mat3(S_FLAG(), { side: 'double', roughness: .9 });
     for (const x of [-3.6, 3.6]) { const z = -2.8, y = this.heightAt(x, z); mk(bCyl(.04, .05, 3.6, 8), pole, x, y + 1.8, z); this.flag = this.flag || []; const f = mk(bPlane(.9, 1.3), flag, x + .48, y + 3, z); this.flag.push(f); }
-    // B1: low-poly navigation bases, not the themed B2 mode totems. No additional shadows.
-    const navM = mat3('#5b4432', { roughness: 1 });
-    const navBases = [[-9.3, -1.5], [-5.5, -1.5], [0, -2.7], [5.0, -1.5],
-      [7.7, -2.7], [9.8, -1.5], [11.7, -2.7]];
-    for (const [x, z] of navBases) mk(bCyl(.65, .85, .15, 8), navM, x, this.heightAt(x, z) + .08, z, false);
+    // B2: seven distinct mode landmarks. Each uses a few static meshes and shared
+    // materials; the clickable DOM anchors remain independent of these decorations.
+    // The central fire and five heroes are intentionally unobstructed.
+    const q = gfx(this.small), rich = q.campTotems === 'full', low = q.campTotems === 'low';
+    const rock = mat3('#49382e', { roughness: 1 }), bronze = mat3('#79502d', { roughness: .85 });
+    const canvas = mat3('#7a5030', { roughness: .95 }), ink = mat3('#312720', { roughness: 1 });
+    const ember = q.campAccents ? basic3('#ec8133') : mat3('#a15e32', { roughness: 1 });
+    const glow = q.campAccents ? basic3('#ffc16d') : mat3('#a17c46', { roughness: 1 });
+    const place = (shape, material, x, z, up = 0, casts = false) =>
+      mk(shape, material, x, this.heightAt(x, z) + up, z, casts);
+    // Left: House archives, training dummies, Shai-Hulud monument.
+    place(bBox(.8, 2.1, .68), rock, -10.4, -1.7, 1.05);
+    if (rich) place(bBox(.53, .1, .55), ember, -10.4, -1.7, 2.12);
+    place(bCyl(.09, .12, 1.5, 6), bronze, -7.5, -1.9, .75);
+    place(bBox(1, .16, .18), ink, -7.5, -1.9, 1.36);
+    place(bCyl(.62, .84, .32, low ? 6 : 10), rock, -4.8, -1.7, .16);
+    const worm = place(bCyl(.22, .48, 1.5, low ? 6 : 10), bronze, -4.8, -1.7, .91);
+    worm.rotation.z = -.28;
+    if (rich) place(bSph(.22, 8), ember, -4.8, -1.7, 1.75);
+    // Centre: squad by the existing fire, adjacent illuminated Arrakis map table.
+    // No mesh is placed on the heroes' formation or the campfire.
+    if (rich) place(bCyl(.68, .75, .15, 8), rock, -2.4, -2.7, .08);
+    place(bBox(1.8, .16, 1.2), bronze, 2.8, -2.7, .94);
+    place(bPlane(1.35, .8), glow, 2.8, -2.7, 1.035).rotation.x = Math.PI / 2;
+    if (rich) {
+      place(bCyl(.08, .09, .87, 6), ink, 2.1, -2.7, .46);
+      place(bCyl(.08, .09, .87, 6), ink, 3.5, -2.7, .46);
+    }
+    // Right: Jihad flight command and a larger warmly illuminated trading tent.
+    place(bBox(1.6, .22, 1.1), rock, 7.3, -1.9, .78);
+    const wing = place(bBox(2.2, .09, .38), bronze, 7.3, -1.9, 1.27);
+    wing.rotation.z = .13;
+    place(bCyl(0, 1.65, 2.65, 4), canvas, 10.5, -2.2, 1.33);
+    if (rich) place(bBox(.86, 1.32, .12), ink, 10.5, -1.31, .69);
+    place(bSph(.18, 8), glow, 10.5, -1.22, 1.66);
+    if (rich) {
+      // HIGH-only carved symbols, no extra shadow maps or postprocess targets.
+      place(bBox(.54, .1, .54), ember, 7.3, -1.9, 1.42);
+      place(bBox(.32, .34, .08), ember, -10.4, -1.27, 1.12);
+    }
+    if (q.campAccentLights) {
+      const tradeLight = new B3.PointLight('camp-trade', V3(10.5, this.heightAt(10.5, -2.2) + 1.9, -2.2), S);
+      tradeLight.diffuse = col3('#ff9440'); tradeLight.intensity = .7; tradeLight.range = 3.8;
+    }
     staticNoCast(this); bakeStatic(this);
     });
-    this.look({ dof: { f: 50, stop: 2.4, d: 9000 }, exposure: 1.25, ssao: .9, bloomT: .7, bloomW: .45, vig: 2.6 });
+    this.look({ dof: { f: 50, stop: 2.4, d: 9000 }, exposure: 1.08, ssao: .9, bloomT: .7, bloomW: .45, vig: 2.6 });
     this.slots = [[0, -.7], [-1.45, -.3], [1.45, -.3], [-2.55, .6], [2.55, .6]];
   }
   setSquad(ids) {

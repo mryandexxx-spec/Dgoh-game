@@ -14,7 +14,7 @@ const browser=await puppeteer.launch({executablePath:chrome,headless:true,
   args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
 const srv=await serve(path.dirname(html));
 fs.mkdirSync(shots,{recursive:true});
-const expected=[['camp','legend'],['squad'],['raid','shop','trials','conq']];
+const expected=[['legend','trials','raid'],['squad','camp'],['conq','shop']];
 let fail=0;
 try {
   for(const [width,height,gfx] of [[844,390,'med'],[667,375,'low']]){
@@ -47,7 +47,7 @@ try {
       const valid=result.zone===zone&&result.figures===5&&result.projected&&
         expected[zone].every(name=>result.entries.includes(name))&&result.entries.length===expected[zone].length;
       await page.screenshot({path:path.join(shots,'lobby-'+width+'-'+gfx+'-zone'+zone+'.png')});
-      console.log((valid?'PASS':'FAIL')+' B1 '+width+'x'+height+' zone '+zone+' '+JSON.stringify(result));
+      console.log((valid?'PASS':'FAIL')+' B2 '+width+'x'+height+' zone '+zone+' '+JSON.stringify(result));
       if(!valid)fail++;
     }
     // The approved relocated navigation must remain reachable in the profile.
