@@ -122,21 +122,31 @@ class CampStage extends Stage3D {
       place(bCyl(.08, .09, .87, 6), ink, 2.1, -2.7, .46);
       place(bCyl(.08, .09, .87, 6), ink, 3.5, -2.7, .46);
     }
-    // Right: Jihad flight command and a larger warmly illuminated trading tent.
-    place(bBox(1.6, .22, 1.1), rock, 7.3, -1.9, .78);
-    const wing = place(bBox(2.2, .09, .38), bronze, 7.3, -1.9, 1.27);
-    wing.rotation.z = .13;
-    place(bCyl(0, 1.65, 2.65, 4), canvas, 10.5, -2.2, 1.33);
-    if (rich) place(bBox(.86, 1.32, .12), ink, 10.5, -1.31, .69);
-    place(bSph(.18, 8), glow, 10.5, -1.22, 1.66);
-    if (rich) {
-      // HIGH-only carved symbols, no extra shadow maps or postprocess targets.
-      place(bBox(.54, .1, .54), ember, 7.3, -1.9, 1.42);
-      place(bBox(.32, .34, .08), ember, -10.4, -1.27, 1.12);
+    // Jihad: dedicated operations station (not another aircraft cross).
+    const warX = 7.3, warZ = -1.9;
+    place(bBox(2.15, .24, 1.2), rock, warX, warZ, .9);
+    place(bPlane(1.65, .81), glow, warX, warZ, 1.04).rotation.x = Math.PI / 2;
+    place(bCyl(.09, .1, 1.68, 6), bronze, warX + .9, warZ - .55, 1.05);
+    const insignia = place(bPlane(.82, .98), canvas, warX + .9, warZ - .53, 2.35);
+    insignia.rotation.y = .08;
+    if (!low) place(bBox(.12, .56, .09), ember, warX + .9, warZ - .47, 2.27);
+    // Shops: an actual fabric market awning with open front, ridge, posts, stock
+    // and counter. Replace the old giant 4-sided solid pyramid.
+    const shopX = 10.5, shopZ = -2.2;
+    for (const sx of [-1, 1]) {
+      const roof = place(bBox(1.66, .095, 2.35), canvas,
+        shopX + sx * .73, shopZ, 2.14);
+      roof.rotation.z = -sx * .32;
+      place(bCyl(.065, .065, 2.1, 6), bronze, shopX + sx * 1.34, shopZ + .97, 1.05);
     }
-    if (q.campAccentLights) {
-      const tradeLight = new B3.PointLight('camp-trade', V3(10.5, this.heightAt(10.5, -2.2) + 1.9, -2.2), S);
-      tradeLight.diffuse = col3('#ff9440'); tradeLight.intensity = .7; tradeLight.range = 3.8;
+    place(bBox(2.5, 1.68, .11), ink, shopX, shopZ - 1.12, .94);
+    place(bBox(2.4, .74, .6), bronze, shopX, shopZ + .78, .42);
+    for (const [dx, dz, h] of [[-1.45,.45,.44],[1.46,.32,.66],[.86,1.12,.25]]) {
+      place(bBox(.48, h, .46), rock, shopX + dx, shopZ + dz, h / 2);
+    }
+    if (rich) {
+      place(bBox(.31, .33, .31), glow, shopX - .63, shopZ + .79, .97);
+      place(bBox(.32, .24, .32), ember, shopX + .5, shopZ + .79, .9);
     }
     staticNoCast(this); bakeStatic(this);
     });
