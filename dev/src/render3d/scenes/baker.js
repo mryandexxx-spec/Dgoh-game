@@ -16,9 +16,13 @@ import { B3, HAS3D, loadB3 } from '../base.js';
 import { figureSVG, set_figureSVG } from '../../render2d/figures.js';
 import { CH, CHARS } from '../../data/chars.js';
 import { $ } from '../../core/dom.js';
+import { assetUrl, MODEL_DATA } from '../../assets/models.js';
 
 // ---------- portraits & figures baked from the 3D models (replace the old 2D drawings everywhere: rewards, dialogs, roster) ----------
 const BAKE_V = 'b9', BAKED = {};
+// Invalidate only the changed model's portraits. Existing installations must
+// never reuse the old procedural Baron, or persist a temporary fallback.
+function bakeKey(id) { return BAKE_V + ':' + id + (id === 'baron' ? ':' + assetUrl('models/young-baron.dgm') : ''); }
 const figureSVG2D = figureSVG;
 set_figureSVG(function (def, full) {
   const b = def && BAKED[def.id];
@@ -52,8 +56,8 @@ class Baker {
     if (!this.alive) return null;
     const rt = this.target(w, h); this.camera.outputRenderTarget = rt;
     this.camera.fov = fov; this.camera.position.copyFrom(pos); this.camera.setTarget(target);
-    for (let k = 0; k < 30 && !this.scene.isReady(); k++) await bakeSleep(16);
-    if (!this.alive) return null;
+    for (let k = 0; k < 180 && this.alive && !this.scene.isReady(); k++) await bakeSleep(16);
+    if (!this.alive || !this.scene.isReady()) return null;
     this.scene.render(); this.scene.render();
     const px = await rt.readPixels(0, 0, null, true);
     // GPU pixels are now in CPU memory. The MSAA target (and its depth RB)
@@ -89,16 +93,17 @@ class Baker {
 async function bakePortraits() {
   if (typeof indexedDB === 'undefined' || !(await loadB3())) return;   // фаза 4: ждёт чанк Babylon
   const db = await bakeDB(), ids = CHARS.filter(c => !c.boss).map(c => c.id), todo = [];
-  for (const id of ids) { const r = await idbGet(db, BAKE_V + ':' + id); if (r && r.full && r.face) BAKED[id] = { full: URL.createObjectURL(r.full), face: URL.createObjectURL(r.face) }; else todo.push(id); }
+  for (const id of ids) { const r = await idbGet(db, bakeKey(id)); if (r && r.full && r.face) BAKED[id] = { full: URL.createObjectURL(r.full), face: URL.createObjectURL(r.face) }; else todo.push(id); }
   if (Object.keys(BAKED).length) bakeRefresh();
   if (!todo.length) return;
   let bk = null;
   try {
     for (const id of todo) {
+      if (id === 'baron' && assetUrl('models/young-baron.dgm') && !MODEL_DATA.baron) continue;
       while (BT && BT.B) { if (bk) { bk.dispose(); bk = null; } await bakeSleep(1500); }
       if (!bk || !bk.alive) bk = new Baker();
       const r = await bk.bake(CH[id]); if (!r.full || !r.face) continue;
-      await idbPut(db, BAKE_V + ':' + id, r);
+      await idbPut(db, bakeKey(id), r);
       BAKED[id] = { full: URL.createObjectURL(r.full), face: URL.createObjectURL(r.face) };
       await bakeSleep(30);
     }
@@ -122,4 +127,4 @@ setTimeout(() => {
 
 // Authored 3D models (Blender → compact meshes + baked textures). Sources: blender/duncan3.py, blender/worm.py
 
-export { BAKE_V, BAKED, figureSVG2D, bakeSleep, bakeDB, idbGet, idbPut, Baker, bakePortraits, bakeRefresh };
+export { BAKE_V, BAKED, bakeKey, figureSVG2D, bakeSleep, bakeDB, idbGet, idbPut, Baker, bakePortraits, bakeRefresh };

@@ -4,6 +4,7 @@ import { seg } from './pose-duncan.js';
 import './procedural.js'; // порядок исполнения
 import { V3, addScaled } from '../materials.js';
 import { B3 } from '../base.js';
+import { poseModelClip } from './authored.js';
 
 const ease = k => k < 0 ? 0 : k > 1 ? 1 : k * k * (3 - 2 * k);
 const ANIM_SLOW = 1.5;   // ability animations at x1 are 1.5× slower than the original timing
@@ -64,7 +65,7 @@ function poseHuman(A, o, now, t, sp) {
   o.root.position.copyFrom(pos); if (o.float) o.root.position.y += o.float + Math.sin(t * 1.6 + ph) * .03;
   o.root.rotation.y = yaw;
   o.body.rotation.set(fall, 0, 0); o.body.position.set(0, 0, fallZ); o.body.scaling.y = 1;
-  o.hips.position.set(hipX, .95 + hipY, 0); o.hips.rotation.y = twist * .25;
+  o.hips.position.set(hipX, (o.hipY0 || .95) + hipY, 0); o.hips.rotation.y = twist * .25;
   o.spine.rotation.set(lean, twist, 0); o.spine.scaling.y = 1 + br * .006;
   o.head.rotation.set(headX, headY, 0);
   o.LL.hip.rotation.x = -lx - (o.dead ? 0 : lk * .45); o.LL.knee.rotation.x = lk; o.LL.ank.rotation.x = -lk * .5 + lx * .3;
@@ -85,6 +86,7 @@ function poseHuman(A, o, now, t, sp) {
     const k = remapK((now - a.t0) / a.dur, a), w = seg(k, .22, .3) * (1 - seg(k, .66, .74));
     if (w > 0) layerClip(o, 'slash', .14 + (k - .26) / .44 * .68, w);
   }
+  poseModelClip(o, now, t, sp);
 }
 
 
