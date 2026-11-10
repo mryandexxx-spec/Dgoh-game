@@ -204,7 +204,7 @@ function doAct(u, key, tuid) {
   if (u.side === 'A' && BT.auto) BT.usedAuto = true;
   const B = BT.B; BT.waiting = null; B.events = [];
   act(B, u, key, tuid); endTurn(B, u);
-  if (key === 'gl' && u.side === 'A') { statInc('gl'); const tg = B.glTarget && B.units.find(x => x.uid === B.glTarget); if (B.glKind === 'devour' && tg && !tg.alive) statInc('devour'); }
+  if (key === 'gl' && u.side === 'A') { statInc('gl'); const tg = B.glTarget && B.units.find(x => x.uid === B.glTarget); if ((B.glKind === 'devour' || B.glKind === 'prophecy') && tg && !tg.alive) statInc('devour'); }
   if (B.flash === 'gl') {                       // 1) the hero's cinematic, 2) after it ends — the strike on the field
     BT.hold = true; const ab = $('#bwrap .abils'); if (ab) { ab.style.visibility = 'hidden'; if (BT._hc) BT._hc.bot = null; }
     const ms = ultCinematic(u, B);
