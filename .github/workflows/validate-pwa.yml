@@ -107,6 +107,16 @@ jobs:
       - run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
       - name: Package 8 reference v75 screenshots (844/667)
         run: node tests/smoke/pkg8-layout.mjs ../index.html dist/pkg8-shots --baseline
+      - name: Young Baron source clips, portrait cache and A/B (844/667 MED/LOW)
+        run: node tests/smoke/young-baron.mjs dist/pwa/index.html ../index.html
+      - name: Upload Young Baron visual regression screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-young-baron-${{ github.run_number }}
+          path: dev/dist/young-baron-shots/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Package 8 real WebGL camera and formation (844/667)
         run: node tests/smoke/pkg8-layout.mjs dist/pwa/index.html dist/pkg8-shots
       - name: Package 10 B1 real panorama (844/667, MED/LOW, three zones)
