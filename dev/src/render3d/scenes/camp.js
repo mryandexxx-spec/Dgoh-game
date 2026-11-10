@@ -76,9 +76,17 @@ async function importCampGlb(url, scene, parent, scale) {
   root.scaling.setAll(scale);
   const nodes = doc.nodes.map((n, idx) => {
     const obj = new B3.TransformNode('camp-asset-node-' + idx, scene);
-    if (n.translation) obj.position.set(...n.translation);
-    if (n.scale) obj.scaling.set(...n.scale);
-    if (n.rotation) obj.rotationQuaternion = new B3.Quaternion(...n.rotation);
+    // Sketchfab glTF nodes commonly use a matrix (centimeter conversion,
+    // axis rotation and parent transforms), rather than TRS properties.
+    // Applying it is mandatory: otherwise the tent and table are enormous.
+    if (n.matrix) {
+      obj.rotationQuaternion = new B3.Quaternion();
+      B3.Matrix.FromArray(n.matrix).decompose(obj.scaling, obj.rotationQuaternion, obj.position);
+    } else {
+      if (n.translation) obj.position.set(...n.translation);
+      if (n.scale) obj.scaling.set(...n.scale);
+      if (n.rotation) obj.rotationQuaternion = new B3.Quaternion(...n.rotation);
+    }
     if (n.mesh !== undefined) doc.meshes[n.mesh].primitives.forEach((p, j) => {
       if (p.mode !== undefined && p.mode !== 4) return;
       const mesh = new B3.Mesh('camp-authored-part-' + j, scene);
