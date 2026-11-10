@@ -40,6 +40,7 @@ try {
     const initialPlate = await page.evaluate(() => (0,eval)('S.ix_plate'));
     await page.screenshot({path:'dist/ix-' + width + '.png'});
     await page.click('[data-ixselect="mask2"]');
+    console.log('ix click modal',await page.evaluate(() => ({html:document.querySelector('#overlay2')?.innerHTML.slice(0,1200),errors:document.querySelectorAll('.toast').length, current:document.querySelector('[data-ixselect="mask2"]')?.outerHTML}))); 
     assert.ok(await page.$('[data-ixadd="10"]'),width+': selection modal');
     await page.click('[data-ixadd="10"]');
     assert.ok(await page.$('[data-ixconfirm]'),width+': quote');
