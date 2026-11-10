@@ -6,7 +6,7 @@ import { gfx } from '../quality.js';
 import { poseHuman } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
 import { bakeStatic, buildEnv, staticNoCast } from '../env/build-env.js';
-import { bBox, bCyl, bPlane, bRock, bSph, glowTex } from '../geometry.js';
+import { bBox, bCyl, bPlane, bSph } from '../geometry.js';
 import { V3, basic3, col3, mat3, mk } from '../materials.js';
 import { CTX, withCtx } from '../ctx.js';
 import { B3, HAS3D, HAS_GL, loadB3 } from '../base.js';
@@ -18,26 +18,21 @@ class CampStage extends Stage3D {
   constructor() {
     super({ cls: 'stage3d camp3d', kind: 'camp' });
     this.raid = false; this.units = {};
-    withCtx({ scene: this.scene, shadows: null }, () => { buildEnv(this, 'sietch'); CTX.shadows = this.shadows;
-    const S = this.scene; S.fogStart = 30; S.fogEnd = 120;
+    withCtx({ scene: this.scene, shadows: null }, () => { buildEnv(this, 'desert'); CTX.shadows = this.shadows;
+    const S = this.scene; S.fogStart = 65; S.fogEnd = 190;
+    // Arrakis daylight: two distant emissive sun discs; only the existing sun casts shadows.
+    // Distant spheres are never shadow casters, and do not introduce new render targets.
+    const sunA = mk(bSph(4.6, 12), basic3('#ffe8a0', { fog: false }), 17, 34, -87, false);
+    const sunB = mk(bSph(2.8, 10), basic3('#fff1ba', { fog: false }), 29, 45, -103, false);
+    sunA.isPickable = sunB.isPickable = false;
     const rp = new B3.ReflectionProbe('rp', gfx(this.small).probe.camp, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
-    // campfire: stones ring, logs, flickering light, flame + sparks particles
-    const fx = 0, fz = 1.2, fy = this.heightAt(fx, fz); this.fire = V3(fx, fy, fz);
-    const stoneM = mat3('#4a3a30', { roughness: .9, flatShading: true });
-    for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2, st = mk(bRock(i + 90, 0), stoneM, fx + Math.cos(a) * .55, fy + .05, fz + Math.sin(a) * .55); st.scaling.setAll(.16 + (i % 3) * .03); }
-    const logM = mat3('#3a2414', { roughness: .9 });
-    for (let i = 0; i < 4; i++) { const lg = mk(bCyl(.06, .07, .9, 8), logM, fx, fy + .12, fz); lg.rotation.z = Math.PI / 2 - .35; lg.rotation.y = i * Math.PI / 4; }
-    mk(bSph(.22, 12), basic3('#ff7a2a'), fx, fy + .12, fz, false).scaling.set(1, .4, 1);
-    const L = this.fireL = new B3.PointLight('fire', V3(fx, fy + .8, fz), S); L.diffuse = col3('#ff9a4a'); L.specular = col3('#ff8a3a'); L.intensity = 2.4; L.range = 14;
-    this.fireShadow = null; // perf step 5: campfire point light no longer renders a 6-face cube shadow map
-    const tx = glowTex();
-    const fl = new B3.ParticleSystem('flame', 400, S); fl.particleTexture = tx; fl.emitter = V3(fx, fy + .1, fz); fl.minEmitBox = V3(-.18, 0, -.18); fl.maxEmitBox = V3(.18, .05, .18);
-    fl.direction1 = V3(-.15, 1.4, -.15); fl.direction2 = V3(.15, 2.2, .15); fl.minLifeTime = .35; fl.maxLifeTime = .8; fl.minSize = .18; fl.maxSize = .42; fl.addSizeGradient(0, .3); fl.addSizeGradient(1, .05);
-    fl.addColorGradient(0, new B3.Color4(1, .9, .5, 1)); fl.addColorGradient(.4, new B3.Color4(1, .5, .15, .9)); fl.addColorGradient(1, new B3.Color4(.5, .1, .02, 0)); fl.emitRate = 260; fl.blendMode = B3.ParticleSystem.BLENDMODE_ADD; fl.start();
-    const sp = new B3.ParticleSystem('sparks', 120, S); sp.particleTexture = tx; sp.emitter = V3(fx, fy + .3, fz); sp.minEmitBox = V3(-.15, 0, -.15); sp.maxEmitBox = V3(.15, .2, .15); sp.direction1 = V3(-.5, 2, -.5); sp.direction2 = V3(.5, 4, .5);
-    sp.minLifeTime = 1; sp.maxLifeTime = 2.4; sp.minSize = .02; sp.maxSize = .05; sp.color1 = new B3.Color4(1, .7, .3, 1); sp.color2 = new B3.Color4(1, .5, .15, 1); sp.colorDead = new B3.Color4(1, .3, 0, 0); sp.emitRate = 18; sp.blendMode = B3.ParticleSystem.BLENDMODE_ADD; sp.start();
-    const smk = new B3.ParticleSystem('smoke', 120, S); smk.particleTexture = tx; smk.emitter = V3(fx, fy + 1.2, fz); smk.minEmitBox = V3(-.1, 0, -.1); smk.maxEmitBox = V3(.1, .2, .1); smk.direction1 = V3(.1, .8, -.1); smk.direction2 = V3(.4, 1.3, .1);
-    smk.minLifeTime = 3; smk.maxLifeTime = 5; smk.minSize = .4; smk.maxSize = .9; smk.addSizeGradient(0, .3); smk.addSizeGradient(1, 1.6); smk.color1 = new B3.Color4(.25, .2, .18, .25); smk.color2 = new B3.Color4(.2, .17, .15, .2); smk.colorDead = new B3.Color4(.1, .1, .1, 0); smk.emitRate = 14; smk.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD; smk.start();
+    // Daylight headquarters: five heroes on open sand. No campfire, flame,
+    // logs, smoke, sparks, or pulsing point light; this also saves phone GPU work.
+    this.fire = V3(0, this.heightAt(0, 1.2), 1.2);
+    this.fireL = null; this.fireShadow = null;
+    const plaza = mat3('#c59259', { roughness: .95 });
+    const ring = mk(bCyl(2.7, 2.9, .085, 16), plaza, 0, this.heightAt(0, 0) + .045, 0, false);
+    ring.isPickable = false;
     // tents & crates & banners
     const tentM = mat3('#8a6a4a', { roughness: .95, side: 'double' }), darkM = mat3('#3a2a1c');
     // v81: background tents previously stood directly in front of the 7 landmarks,
@@ -51,8 +46,8 @@ class CampStage extends Stage3D {
     // materials; the clickable DOM anchors remain independent of these decorations.
     // The central fire and five heroes are intentionally unobstructed.
     const q = gfx(this.small), rich = q.campTotems === 'full', low = q.campTotems === 'low';
-    const rock = mat3('#49382e', { roughness: 1 }), bronze = mat3('#79502d', { roughness: .85 });
-    const canvas = mat3('#7a5030', { roughness: .95 }), ink = mat3('#312720', { roughness: 1 });
+    const rock = mat3('#ad825a', { roughness: 1 }), bronze = mat3('#705442', { roughness: .85 });
+    const canvas = mat3('#cfaa73', { roughness: .95 }), ink = mat3('#4b3428', { roughness: 1 });
     const ember = q.campAccents ? basic3('#ec8133') : mat3('#a15e32', { roughness: 1 });
     const glow = q.campAccents ? basic3('#ffc16d') : mat3('#a17c46', { roughness: 1 });
     const place = (shape, material, x, z, up = 0, casts = false) =>
@@ -60,7 +55,7 @@ class CampStage extends Stage3D {
     // v81: visible, deliberately front-facing silhouettes. Anchors stay put and
     // static props live at +z (closer to camera), clear of the marker buttons.
     // Earlier B2.1 meshes had been behind large B1 tents and under the UI labels.
-    const landmarkZ = .65, bright = q.campAccents ? basic3('#b88850') : mat3('#ad8658', { roughness: .78 });
+    const landmarkZ = .65, bright = q.campAccents ? basic3('#e5ba7b') : mat3('#c8a174', { roughness: .78 });
     const bone = mat3('#ddc28c', { roughness: .86 });
     // Legends: tall House archive stele + unmistakable luminous crest.
     place(bBox(1.0, 2.55, .7), rock, -10.4, landmarkZ, 1.28);
@@ -115,9 +110,8 @@ class CampStage extends Stage3D {
         wormX - .12, wormZ + .74, 1.73);
       lowerFang.rotation.z = 0;
     }
-    // Centre: squad by the existing fire, adjacent illuminated Arrakis map table.
-    // No mesh is placed on the heroes' formation or the campfire.
-    if (rich) place(bCyl(.68, .75, .15, 8), rock, -2.4, -2.7, .08);
+    // Centre: open headquarters formation; Arrakis tactical table stays off to the right.
+    // No separate squad totem: the five heroes ARE the landmark.
     place(bBox(1.8, .16, 1.2), bronze, 2.8, -2.7, .94);
     place(bPlane(1.35, .8), glow, 2.8, -2.7, 1.035).rotation.x = Math.PI / 2;
     if (rich) {
@@ -142,7 +136,7 @@ class CampStage extends Stage3D {
     }
     staticNoCast(this); bakeStatic(this);
     });
-    this.look({ dof: { f: 50, stop: 2.4, d: 9000 }, exposure: 1.08, ssao: .9, bloomT: .7, bloomW: .45, vig: 2.6 });
+    this.look({ dof: { f: 50, stop: 2.4, d: 9000 }, exposure: 1.2, ssao: .55, bloomT: .9, bloomW: .25, vig: 1.25 });
     this.slots = [[0, -.7], [-1.45, -.3], [1.45, -.3], [-2.55, .6], [2.55, .6]];
   }
   setSquad(ids) {
@@ -154,7 +148,7 @@ class CampStage extends Stage3D {
     });
   }
   tick(now, t) {
-    const f = .85 + Math.sin(t * 9) * .08 + Math.sin(t * 23) * .06 + Math.sin(t * 3.1) * .05; this.fireL.intensity = 2.6 * f; this.fireL.position.x = this.fire.x + Math.sin(t * 7) * .04;
+    // Daylight has no flickering campfire.
     for (const o of Object.values(this.units)) poseHuman(this, o, now, t, 1);
     // B1: camera translation on a rail. No autonomous rotation while idle.
     const lobby = this._lv && this._lv.isConnected ? this._lv : document.querySelector('.lobby');
