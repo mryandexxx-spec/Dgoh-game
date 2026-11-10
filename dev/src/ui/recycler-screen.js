@@ -10,6 +10,8 @@ import { toast } from './common.js';
 const kinds = Object.keys(SCRAP);
 let tab = 'work', kind = 'ix_plate', basket = [], selected = null;
 const styled = `<style>
+/* The full-screen workshop owns its touch surface. Queue notifications until return to shops. */
+body:has(.ixpage) .notes { display:none !important; }
 .ixpage{height:calc(100dvh - 102px);max-height:calc(100dvh - 102px);display:flex;flex-direction:column;gap:7px;overflow:hidden;color:var(--bone)}
 .ixhead{display:flex;align-items:center;gap:10px}.ixhead h2{font:24px var(--f-display);margin:0}
 .ixhead .sub{margin:0}.ixhead .btn{padding:5px 9px}.ixtabs{display:flex;gap:5px}
