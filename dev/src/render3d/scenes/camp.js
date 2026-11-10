@@ -22,7 +22,11 @@ import { CH } from '../../data/chars.js';
 async function importCampGlb(url, scene, parent, scale) {
   const res = await fetch(url);
   if (!res.ok) throw new Error('camp glb HTTP ' + res.status);
-  const bytes = await res.arrayBuffer(), view = new DataView(bytes);
+  // Build artifact stores non-web asset types as base64 text; PWA serves GLB bytes.
+  const bytes = url.endsWith('.txt')
+    ? Uint8Array.from(atob((await res.text()).trim()), c => c.charCodeAt(0)).buffer
+    : await res.arrayBuffer();
+  const view = new DataView(bytes);
   if (view.getUint32(0, true) !== 0x46546c67 || view.getUint32(4, true) !== 2) throw new Error('not glTF 2.0');
   const jsonSize = view.getUint32(12, true);
   const doc = JSON.parse(new TextDecoder().decode(new Uint8Array(bytes, 20, jsonSize)));
