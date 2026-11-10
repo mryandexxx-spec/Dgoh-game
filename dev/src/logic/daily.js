@@ -13,12 +13,13 @@ const DAILY = [
   { k: 'craft', n: 'Собрать предмет снаряжения', need: 1, rw: [['pl', 3]], go: 'squad' },
   { k: 'lvl', n: 'Повысить уровень героев 3 раза', need: 3, rw: [['sol', 1500]], go: 'squad' },
 ];
+const activeDaily = () => DAILY.filter(q => q.k !== 'skill' || S.acc.lvl <= 50);
 const CHEST_NEED = 7, CHEST_RW = [['seal', 1], ['cry', '50–300'], ['sol', 5000]], CHEST_CRY = [50, 300];
 function dly() { if (S.daily.d !== todayKey()) S.daily = { d: todayKey(), c: {}, got: {}, chest: false }; return S.daily; }
-function quest(k, n = 1) { if (!S) return; const D = dly(); D.c[k] = Math.max(0, (D.c[k] || 0) + n); }
+function quest(k, n = 1) { if (!S || (k === 'skill' && S.acc.lvl > 50)) return; const D = dly(); D.c[k] = Math.max(0, (D.c[k] || 0) + n); }
 function qState(q) { const D = dly(); return D.got[q.k] ? 'got' : (D.c[q.k] || 0) >= q.need ? 'done' : 'prog'; }
 const dailyGot = () => DAILY.filter(q => dly().got[q.k]).length;
-const dailyReady = () => DAILY.filter(q => qState(q) === 'done').length + (dailyGot() >= CHEST_NEED && !dly().chest ? 1 : 0);
+const dailyReady = () => activeDaily().filter(q => qState(q) === 'done').length + (dailyGot() >= CHEST_NEED && !dly().chest ? 1 : 0);
 
 
-export { DAILY, CHEST_NEED, CHEST_RW, CHEST_CRY, dly, quest, qState, dailyGot, dailyReady };
+export { DAILY, activeDaily, CHEST_NEED, CHEST_RW, CHEST_CRY, dly, quest, qState, dailyGot, dailyReady };
