@@ -117,6 +117,28 @@ function normalizeApprovedV86(s) {
   }
   return copy;
 }
+// BH4: compare every DOM field to the established golden while allowing only
+// the approved display-name change and the corresponding position of Baron's
+// card among otherwise unchanged roster cards.
+function normalizeApprovedBH4(s) {
+  const copy = structuredClone(s);
+  const card = /<button class="hc[^"]*"[^>]*data-open="[^"]+"[^>]*>[\\s\\S]*?<\\/button>/g;
+  for (const screen of copy.screens) for (const key of ['header', 'view', 'overlay', 'overlay2']) {
+    if (typeof screen[key] !== 'string') continue;
+    screen[key] = screen[key]
+      .replaceAll('Барон Владимир Харконнен', '[BH4 approved Baron name]')
+      .replaceAll('Молодой Барон Владимир', '[BH4 approved Baron name]');
+    // Only move the Baron card, never reorder unrelated heroes. Preserves
+    // complete HTML of every card, gear, stars, badges and action controls.
+    screen[key] = screen[key].replace(/(?:<button class="hc[^"]*"[^>]*data-open="[^"]+"[^>]*>[\\s\\S]*?<\\/button>)+/g, run => {
+      const cards = run.match(card);
+      if (!cards || cards.length < 2) return run;
+      const baron = cards.filter(v => /data-open="baron"/.test(v));
+      return baron.length ? cards.filter(v => !/data-open="baron"/.test(v)).concat(baron).join('') : run;
+    });
+  }
+  return copy;
+}
 function validateV86Legend(s) {
   const legend = s.screens.find(x => x.name === 'view:legend');
   assert.ok(legend && !legend.errors.length, 'legend screen renders without errors');
@@ -135,8 +157,8 @@ else {
   const baseline = readGolden('screens');
   if (!baseline) throw new Error('screens golden baseline missing');
   const parsed = JSON.parse(baseline);
-  const want = normalizeApprovedV86({ ...parsed.meta, screens: parsed.screens });
-  const got = normalizeApprovedV86(out);
+  const want = normalizeApprovedBH4(normalizeApprovedV86({ ...parsed.meta, screens: parsed.screens }));
+  const got = normalizeApprovedBH4(normalizeApprovedV86(out));
   if (!isDeepStrictEqual(want, got)) {
     const changed = want.screens.filter((v, i) => !isDeepStrictEqual(v, got.screens[i])).map(x => x.name);
     console.error('Unapproved golden screen differences:', changed.join(', '));
