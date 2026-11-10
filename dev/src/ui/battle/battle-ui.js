@@ -69,9 +69,11 @@ function launch(cfg) {
   closeInfo(true);
   { let lg = 0; cfg.squad = cfg.squad.filter(id => !isLegend(id) || !lg++); }
   sleepStages();
-  const B = createBattle(cfg.squad.map(id => ({ id, ...prog(id) })), cfg.enemy || [], { desert: cfg.desert, seed: Date.now() & 0xffffff, boss: cfg.boss });
+  const squadData = cfg.squad.map(id => ({ id, ...prog(id) }));
+  if (cfg.scriptedMuaddib && cfg.mode === 'journey' && cfg.i >= 3) squadData.push({ id: 'muaddib', lvl: 85, stars: 7, gear: 13, relic: cfg.i === 3 ? 5 : 6, gl: false });
+  const B = createBattle(squadData, cfg.enemy || [], { desert: cfg.desert, seed: Date.now() & 0xffffff, boss: cfg.boss });
   if (cfg.mode === 'conq' && typeof cqApply === 'function') cqApply(B, cfg);
-  set_BT({ B, cfg, i: cfg.i, auto: BT?.autoPref ?? false, autoPref: BT?.autoPref ?? false, speed: Math.min(4, BT?.speedPref ?? 1), speedPref: Math.min(4, BT?.speedPref ?? 1), timer: null, waiting: null, sel: 'basic', done: false });
+  set_BT({ B, cfg, i: cfg.i, auto: BT?.autoPref ?? false, autoPref: BT?.autoPref ?? false, speed: Math.min(4, BT?.speedPref ?? 1), speedPref: Math.min(4, BT?.speedPref ?? 1), timer: null, waiting: null, sel: 'basic', autoTargetUid: null, autoTaunts: [], done: false });
   $('#overlay').innerHTML = `<div class="battle ${B.desert ? 'desert' : ''}" id="battle"><canvas class="bgc" id="bgc"></canvas><div class="bwrap" id="bwrap"></div><canvas class="fxc" id="fxc"></canvas><div class="flash" id="flash"></div></div>`;
   BT.arena = null;
   if (HAS3D) { try { BT.arena = new Arena3D($('#bgc'), cfg.scene || 'desert', B); } catch (e) { console.warn('3D недоступно', e); BT.arena = null; const nc = document.createElement('canvas'); nc.className = 'bgc'; nc.id = 'bgc'; $('#bgc').replaceWith(nc); } }
@@ -180,7 +182,14 @@ function step() {
   if (B.over) return later(finish, 900);
   if (r.skip) { endTurn(B, u); return later(step); }
   if (u.side === 'A' && !BT.auto && !u.charmed) { BT.waiting = u; BT.sel = 'basic'; ensureCur(B, u); renderBattle(); return; }
-  later(() => { const p = aiPlan(B, u); doAct(u, p.key, p.target && p.target.uid); });
+  later(() => {
+    const p = aiPlan(B, u);
+    if (BT.auto && u.side === 'A' && BT.autoTargetUid && u.def[p.key] && u.def[p.key].tgt === 'enemy') {
+      const chosen = validTargets(B, u, u.def[p.key]).find(t => t.uid === BT.autoTargetUid);
+      if (chosen) p.target = chosen;
+    }
+    doAct(u, p.key, p.target && p.target.uid);
+  });
 }
 // target cursor: one enemy under the cursor; under taunt only the taunting enemies can hold it
 function curTargets(B, u) { const b = u.def.basic && u.def.basic.tgt === 'enemy' ? u.def.basic : { tgt: 'enemy' }; return validTargets(B, u, b); }
@@ -400,9 +409,16 @@ function renderBattle() {
   if (!BT || BT.hold) return;
   const B = BT.B, w = BT.waiting;
   const targets = new Set(), valid = new Set();
+  if (BT.autoTargetUid) {
+    const target = B.units.find(u => u.uid === BT.autoTargetUid);
+    const taunts = B.units.filter(u => u.alive && u.side === 'B' && u.fx.taunt).map(u => u.uid);
+    if (!target || !target.alive || target.side !== 'B' || taunts.some(uid => !(BT.autoTaunts || []).includes(uid))) BT.autoTargetUid = null;
+    BT.autoTaunts = taunts;
+  }
+  if (BT.auto && !B.over) for (const u of living(B, 'B')) valid.add(u.uid);
   if (w) { ensureCur(B, w).forEach(t => valid.add(t.uid)); if (BT.cur) targets.add(BT.cur); }
   const curAll = BT.curFlash && performance.now() < BT.curFlash.until ? new Set(BT.curFlash.uids) : null;
-  const ctx = { presc: hasPrescience(B, 'A'), targets: valid, cur: w ? BT.cur : null, curAll };
+  const ctx = { presc: hasPrescience(B, 'A'), targets: valid, cur: BT.auto ? BT.autoTargetUid : w ? BT.cur : null, curAll };
   const order = previewOrder(B, 8);
   const p9 = !!BT.pkg9;
   let bot;
@@ -438,7 +454,7 @@ function renderBattle() {
         (spiceUser(w.def) && w.glOn ? hourglass(B.spice[w.side]) : '') + abilities + '</div></div></div>';
     } else {
       const a = B.active;
-      bot = '<div class="pkg9-turn">' + (BT.auto && !B.over ? 'АВТОБОЙ' : a && a.side === 'B' ? 'Ход: ' + a.def.sn : '') + '</div>';
+      bot = '<div class="pkg9-turn">' + (BT.auto && !B.over ? 'АВТОБОЙ' + (BT.autoTargetUid ? ' · ЦЕЛЬ ЗАКРЕПЛЕНА' : ' · тап по врагу для цели') : a && a.side === 'B' ? 'Ход: ' + a.def.sn : '') + '</div>';
     }
   }
   // A4: do not construct battle-log DOM while the drawer is closed.
