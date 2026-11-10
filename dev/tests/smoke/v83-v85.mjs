@@ -1,6 +1,7 @@
 // Targeted smoke: node tests/smoke/v83-v85.mjs dist/pwa/index.html
 // No golden regeneration; verifies approved mechanics with the existing VM loader.
 import assert from 'node:assert/strict';
+process.on('uncaughtException', e => { console.error('FOCUSED SMOKE ERROR:', e.name, e.message, e.stack?.split('\n').slice(0,3).join(' | ')); process.exitCode = 1; });
 import { loadGame } from '../lib/load.mjs';
 
 const html = process.argv[2];
