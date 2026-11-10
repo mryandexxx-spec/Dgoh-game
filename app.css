@@ -283,6 +283,14 @@ body:has(#battle) .appver { left: 50%; transform: translateX(-50%); }   /* в б
 .lobby .spot.hot .sicon::after {animation:none;opacity:.32}
 .lobby .lzones button {width:44px;height:44px}
 @media(max-width:700px){.lobby .ltop .pchip > span:last-child{display:none}.lobby .ltop .topbtns .topb > span:not(.badge){display:none}}
+
+/* B2: objects carry the visual identity; compact interactive captions keep
+   the centre readable and avoid a second animated glow over the 3D landmarks. */
+.lobby .spot[data-zone] .sicon {width:42px;height:42px;border-width:1px;background:radial-gradient(circle,#4c2b18,#20140d 72%);box-shadow:0 0 12px rgba(226,117,42,.24)}
+.lobby .spot[data-zone] .slabel {font-size:13px;padding:2px 7px}
+.lobby .spot[data-zone] .sbadge {font-size:9px}
+.lobby .spot[data-v="squad"] .sicon,.lobby .spot[data-v="camp"] .sicon {width:52px;height:52px}
+@media(max-width:700px){.lobby .spot[data-zone] .sicon{width:34px;height:34px}.lobby .spot[data-zone] .slabel{font-size:11px;padding:2px 5px}.lobby .spot[data-v="squad"] .sicon,.lobby .spot[data-v="camp"] .sicon{width:44px;height:44px}}
 /* ===== side-view battle ===== */
 .battle { overflow: hidden; }
 .bwrap { max-width: none; height: 100%; padding-block: 8px; gap: 6px; }
