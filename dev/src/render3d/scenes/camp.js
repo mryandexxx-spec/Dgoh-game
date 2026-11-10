@@ -135,8 +135,8 @@ class CampStage extends Stage3D {
     this.sky.material = skyMat; oldSkyMat.dispose();
     // Arrakis daylight: two distant emissive sun discs; only the existing sun casts shadows.
     // Distant spheres are never shadow casters, and do not introduce new render targets.
-    const sunA = mk(bSph(4.1, 12), basic3('#ffb953', { fog: false }), -16, 8, -90, false);
-    const sunB = mk(bSph(2.9, 10), basic3('#f9d489', { fog: false }), 22, 11, -103, false);
+    const sunA = mk(bSph(4.1, 12), basic3('#ffa43c', { fog: false }), -9, 10, -90, false);
+    const sunB = mk(bSph(3.0, 10), basic3('#ffe8a4', { fog: false }), 3, 12, -103, false);
     sunA.isPickable = sunB.isPickable = false;
     const rp = new B3.ReflectionProbe('rp', gfx(this.small).probe.camp, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
     // Daylight headquarters: five heroes on open sand. No campfire, flame,
