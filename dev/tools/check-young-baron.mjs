@@ -1,7 +1,8 @@
 // BH4 model validation — run: node tools/check-young-baron.mjs
 import fs from 'node:fs';
 import path from 'node:path';
-const root = path.resolve(import.meta.dirname, '..');
+import { fileURLToPath } from 'node:url';
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const f = path.join(root, 'assets/models/young-baron.dgm');
 const fail = s => { throw Error('BH4 DGM: ' + s); };
 const check = (v, s) => { if (!v) fail(s); };
@@ -30,7 +31,7 @@ for (const [group,p] of Object.entries(d.parts)) {
   if(p.uv) check(bytes(p,'uv').length===p.n*4, group + ' uv');
   for(const channel of ['alb','nrm','orm']) if(p[channel]) {
     const t=p[channel]['@t'];
-    check(/^tex\\/young-baron-[0-9]+\\.jpg$/.test(t) && fs.existsSync(path.join(root,'assets',t)), group + ' texture ' + channel);
+    check(typeof t === 'string' && /^tex[/]young-baron-[0-9]+[.]jpg$/.test(t) && fs.existsSync(path.join(root,'assets',t)), group + ' texture ' + channel);
     tex++;
   }
   vertices += p.n;
