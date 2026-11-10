@@ -36,3 +36,22 @@
 5. Проверить лимит прироста MED/LOW ≤10% к v81 и реальные iPhone-скриншоты. Не публиковать v82 по одним только зелёным smoke-тестам.
 
 **Важно:** карточка с CC BY и «Download» — предварительное указание лицензии, а не уже полученный ассет. На текущем этапе не были выполнены покупки и скачивания моделей в игру.
+
+## Проверка фактического получения (10.11.2026)
+
+**Статус интеграции: blocked on source download, бинарные GLB ещё НЕ добавлены.** Сами Sketchfab-карточки подтверждают CC BY и наличие кнопки Download:
+- https://sketchfab.com/3d-models/ornithopter-flycatcher-fantasy-plane-828eb683e95d412aa5da8e5b13699a67 — Bársh, CC Attribution, 3.3k triangles.
+- https://sketchfab.com/3d-models/military-tent-desert-2a0fd34c43394a509e347302cea15df2 — Mehdi Shahsavan, CC Attribution, 8.5k triangles.
+- https://sketchfab.com/3d-models/hologram-table-game-ready-asset-ea2c5ed437284a44a8878a2cc49b2270 — ROHIT3DMODELS, CC Attribution, 15.4k triangles.
+
+**Официальный Sketchfab Download API требует OAuth2-авторизации** (https://sketchfab.com/developers/download-api/downloading-models). Прямые URL архивов получаются только после авторизованного запроса, имеют короткий срок действия. Не использовать сторонние ripping-сервисы, не обходить логин и права. Факт CC BY не подтверждает свободу от вторичных кинематографических прав (важно для фан-моделей).
+
+**CC0-резерв, не требующий Sketchfab OAuth:**
+- Автор Kenney, оригинальные наборы: https://kenney.nl/assets/space-kit (153 моделей, отдельные корабли/станции) и https://kenney.nl/assets/modular-space-kit, лицензия CC0.
+- Открытый обзор исходных CC0 GLB: https://github.com/Hidencod/tge-assets , каталог `catalog.json`, в том числе `packs/graveyard-kit/pillar-obelisk.glb`, `packs/space-kit/craft-speederb.glb`, `packs/nature-kit/rock-largea.glb`. Эти модели не идентичны утверждённому концепту и могут использоваться лишь для вспомогательных деталей, не как замена орнитоптера.
+- Подтверждённые CC0 текстуры: https://polyhaven.com/a/sand_01 и https://polyhaven.com/a/sandstone_cracks.
+
+**Ограничение текущего программного доступа:** GitHub connector позволяет читать UTF-8 текст и метаданные, но выдача бинарных GLB завершилась ошибкой декодирования UTF-8. Попытка прямой загрузки файлов из сети в контейнер не прошла из-за DNS, а Sketchfab без OAuth не отдаёт исходный архив. Поэтому нельзя достоверно заявить «скачал и встроил». Ни одного файла модели не было заменено фиктивной геометрией под видом утверждённого ассета.
+
+### Подготовка файлов к интеграции
+При доступности официальных ZIP/GLB: `incoming/v82/` (локально, до проверки лицензии) → проверить метаданные/хеш → Blender/glTF inspector → LOD и атрибуция → `dev/assets/models/` или `dev/assets-src/` с соблюдением лицензии. Встроить по правилам `dev/docs/GRAPHICS_ASSETS_ROADMAP.md`. Не коммитить коммерческие исходники в публичный репозиторий.
