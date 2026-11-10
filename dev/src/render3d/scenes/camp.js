@@ -11,8 +11,86 @@ import { V3, basic3, col3, mat3, mk } from '../materials.js';
 import { CTX, withCtx } from '../ctx.js';
 import { B3, HAS3D, HAS_GL, loadB3 } from '../base.js';
 import { wormData, wormMesh } from '../worm.js';
+import { assetUrl } from '../../assets/models.js';
 import { hostKick } from '../engine-host.js';
 import { CH } from '../../data/chars.js';
+
+// Small, dependency-free GLB reader for licensed static camp landmarks.
+// Uses existing Babylon core primitives; no separate loader chunk or WebGL engine.
+// Only glTF 2.0 triangles, float positions/normals/uvs, and JPEG base color
+// textures are required by the three verified/optimized v82 assets.
+async function importCampGlb(url, scene, parent, scale) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('camp glb HTTP ' + res.status);
+  const bytes = await res.arrayBuffer(), view = new DataView(bytes);
+  if (view.getUint32(0, true) !== 0x46546c67 || view.getUint32(4, true) !== 2) throw new Error('not glTF 2.0');
+  const jsonSize = view.getUint32(12, true);
+  const doc = JSON.parse(new TextDecoder().decode(new Uint8Array(bytes, 20, jsonSize)));
+  const binAt = 20 + jsonSize + 8;
+  if (doc.buffers?.length !== 1) throw new Error('GLB multiple buffers unsupported');
+  const src = doc.bufferViews, acc = doc.accessors;
+  const data = id => {
+    const a = acc[id], v = src[a.bufferView], comps = ({SCALAR:1,VEC2:2,VEC3:3,VEC4:4})[a.type];
+    const Type = ({5121:Uint8Array,5123:Uint16Array,5125:Uint32Array,5126:Float32Array})[a.componentType];
+    if (!Type || !comps) throw new Error('unsupported glTF accessor');
+    const stride = v.byteStride || comps * Type.BYTES_PER_ELEMENT;
+    const start = binAt + (v.byteOffset || 0) + (a.byteOffset || 0);
+    if (stride === comps * Type.BYTES_PER_ELEMENT && start % Type.BYTES_PER_ELEMENT === 0)
+      return new Type(bytes, start, a.count * comps);
+    const out = new Type(a.count * comps), dv = new DataView(bytes);
+    const read = a.componentType === 5126 ? 'getFloat32' :
+      a.componentType === 5125 ? 'getUint32' : a.componentType === 5123 ? 'getUint16' : 'getUint8';
+    for (let i = 0; i < a.count; i++)
+      for (let k = 0; k < comps; k++)
+        out[i * comps + k] = dv[read](start + i * stride + k * Type.BYTES_PER_ELEMENT, true);
+    return out;
+  };
+  const materials = doc.materials.map((spec, idx) => {
+    const material = new B3.PBRMaterial('camp-asset-' + idx, scene);
+    const pbr = spec.pbrMetallicRoughness || {};
+    material.albedoColor = B3.Color3.FromArray((pbr.baseColorFactor || [1,1,1,1]).slice(0,3));
+    material.metallic = pbr.metallicFactor || 0;
+    material.roughness = pbr.roughnessFactor ?? .85;
+    material.backFaceCulling = !spec.doubleSided;
+    const tex = pbr.baseColorTexture;
+    if (tex) {
+      const source = doc.images[doc.textures[tex.index].source], bv = src[source.bufferView];
+      const raw = new Uint8Array(bytes, binAt + (bv.byteOffset || 0), bv.byteLength);
+      const blobUrl = URL.createObjectURL(new Blob([raw], {type:source.mimeType || 'image/jpeg'}));
+      const texture = new B3.Texture(blobUrl, scene, false, false, B3.Texture.TRILINEAR_SAMPLINGMODE,
+        () => URL.revokeObjectURL(blobUrl), () => URL.revokeObjectURL(blobUrl));
+      material.albedoTexture = texture;
+    }
+    return material;
+  });
+  const root = new B3.TransformNode('camp-authored-landmark', scene);
+  root.parent = parent;
+  root.scaling.setAll(scale);
+  const nodes = doc.nodes.map((n, idx) => {
+    const obj = new B3.TransformNode('camp-asset-node-' + idx, scene);
+    if (n.translation) obj.position.set(...n.translation);
+    if (n.scale) obj.scaling.set(...n.scale);
+    if (n.rotation) obj.rotationQuaternion = new B3.Quaternion(...n.rotation);
+    if (n.mesh !== undefined) doc.meshes[n.mesh].primitives.forEach((p, j) => {
+      if (p.mode !== undefined && p.mode !== 4) return;
+      const mesh = new B3.Mesh('camp-authored-part-' + j, scene);
+      const vd = new B3.VertexData();
+      vd.positions = data(p.attributes.POSITION);
+      if (p.attributes.NORMAL !== undefined) vd.normals = data(p.attributes.NORMAL);
+      if (p.attributes.TEXCOORD_0 !== undefined) vd.uvs = data(p.attributes.TEXCOORD_0);
+      vd.indices = data(p.indices);
+      vd.applyToMesh(mesh, false);
+      mesh.material = materials[p.material || 0];
+      mesh.isPickable = false;
+      mesh.parent = obj;
+    });
+    return obj;
+  });
+  doc.nodes.forEach((n, i) => (n.children || []).forEach(id => {nodes[id].parent = nodes[i];}));
+  const sceneRoots = doc.scenes?.[doc.scene || 0]?.nodes || [];
+  sceneRoots.forEach(i => nodes[i].parent = root);
+  return root;
+}
 
 // ---------- 3D camp lobby ----------
 class CampStage extends Stage3D {
@@ -74,6 +152,7 @@ class CampStage extends Stage3D {
     place(bBox(.66, .55, .13), bright, -10.4, landmarkZ + .42, 2.20);
     if (rich) place(bBox(.25, .25, .18), ember, -10.4, landmarkZ + .53, 2.20);
 
+    const fallbackOrnithopterAt = S.meshes.length;
     // Trials: parked ornithopter viewed head-on, with an unmistakably wide
     // pair of long wings and cockpit. Raised high enough to sit above the labels.
     const craftX = -7.5, craftZ = landmarkZ;
@@ -97,6 +176,7 @@ class CampStage extends Stage3D {
       }
     }
 
+    const fallbackOrnithopter = S.meshes.slice(fallbackOrnithopterAt);
     // Raid: Shai-Hulud emerging from sand. The front-facing dark circular maw
     // with pale radial teeth is the dominant feature, not a thin slanted post.
     const wormX = -4.8, wormZ = landmarkZ;
@@ -124,6 +204,7 @@ class CampStage extends Stage3D {
         fang.rotation.z = side * .55;
       }
     }
+    const fallbackTableAt = S.meshes.length;
     // Centre: open headquarters formation; Arrakis tactical table stays off to the right.
     // No separate squad totem: the five heroes ARE the landmark.
     place(bBox(1.8, .16, 1.2), bronze, 2.8, -2.7, .94);
@@ -132,6 +213,7 @@ class CampStage extends Stage3D {
       place(bCyl(.08, .09, .87, 6), ink, 2.1, -2.7, .46);
       place(bCyl(.08, .09, .87, 6), ink, 3.5, -2.7, .46);
     }
+    const fallbackTable = S.meshes.slice(fallbackTableAt);
     // Jihad: dedicated operations station (not another aircraft cross).
     const warX = 7.3, warZ = -1.9;
     place(bBox(2.15, .24, 1.2), rock, warX, warZ, .9);
@@ -140,6 +222,7 @@ class CampStage extends Stage3D {
     const insignia = place(bPlane(.82, .98), canvas, warX + .9, warZ - .53, 2.35);
     insignia.rotation.y = .08;
     if (!low) place(bBox(.12, .56, .09), ember, warX + .9, warZ - .47, 2.27);
+    const fallbackTentAt = S.meshes.length;
     // Shops: an actual fabric market awning with open front, ridge, posts, stock
     // and counter. Replace the old giant 4-sided solid pyramid.
     const shopX = 10.5, shopZ = -2.2;
@@ -157,6 +240,24 @@ class CampStage extends Stage3D {
     if (rich) {
       place(bBox(.31, .33, .31), glow, shopX - .63, shopZ + .79, .97);
       place(bBox(.32, .24, .32), ember, shopX + .5, shopZ + .79, .9);
+    }
+    const fallbackTent = S.meshes.slice(fallbackTentAt);
+    const authored = [
+      { file: 'ornithopter.glb', x: -7.5, z: landmarkZ, scale: .78, fallback: fallbackOrnithopter },
+      { file: 'hologram_table.glb', x: 2.8, z: -2.7, scale: .69, fallback: fallbackTable },
+      { file: 'market_tent.glb', x: 10.5, z: -2.2, scale: .68, fallback: fallbackTent },
+    ];
+    // Optional until verified binary files are committed to dev/assets/models.
+    // When the model loads it atomically replaces its procedural placeholder.
+    for (const item of authored) {
+      const url = assetUrl('models/' + item.file);
+      if (!url) continue;
+      const origin = new B3.TransformNode('camp-model-anchor-' + item.file, S);
+      origin.position.set(item.x, this.heightAt(item.x, item.z), item.z);
+      importCampGlb(url, S, origin, item.scale).then(root => {
+        if (!this.alive) { root.dispose(false, true); origin.dispose(); return; }
+        item.fallback.forEach(mesh => mesh.dispose(false, false));
+      }).catch(e => { origin.dispose(); console.warn('camp asset fallback', item.file, e); });
     }
     staticNoCast(this); bakeStatic(this);
     });
