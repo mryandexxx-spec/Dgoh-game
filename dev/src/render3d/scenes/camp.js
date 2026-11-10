@@ -19,7 +19,7 @@ import { CH } from '../../data/chars.js';
 // Uses existing Babylon core primitives; no separate loader chunk or WebGL engine.
 // Only glTF 2.0 triangles, float positions/normals/uvs, and JPEG base color
 // textures are required by the three verified/optimized v82 assets.
-async function importCampGlb(url, scene, parent, scale) {
+async function importCampGlb(url, scene, parent, scale, style) {
   const res = await fetch(url);
   if (!res.ok) throw new Error('camp glb HTTP ' + res.status);
   // Build artifact stores non-web asset types as base64 text; PWA serves GLB bytes.
@@ -56,6 +56,9 @@ async function importCampGlb(url, scene, parent, scale) {
     material.metallic = pbr.metallicFactor || 0;
     material.roughness = pbr.roughnessFactor ?? .85;
     material.backFaceCulling = !spec.doubleSided;
+    // Art direction: warm Arrakis cloth and readable flying surfaces.
+    if (style === 'tent') { material.albedoColor = B3.Color3.FromHexString('#ddad78'); material.roughness = .98; material.metallic = 0; }
+    if (style === 'craft') { material.emissiveColor = B3.Color3.FromHexString('#24180d'); material.roughness = .72; material.metallic = .08; }
     const importTex = ref => {
       if (!ref) return null;
       const source = doc.images[doc.textures[ref.index].source], bv = src[source.bufferView];
@@ -126,14 +129,14 @@ class CampStage extends Stage3D {
     skyMat.backFaceCulling = false;
     const grad = new B3.DynamicTexture('camp-sky-gradient', { width: 16, height: 128 }, S, false);
     const cx = grad.getContext(), gr = cx.createLinearGradient(0, 0, 0, 128);
-    gr.addColorStop(0, '#9a633c'); gr.addColorStop(.45, '#cb8952');
-    gr.addColorStop(1, '#e6b67b'); cx.fillStyle = gr; cx.fillRect(0, 0, 16, 128);
+    gr.addColorStop(0, '#99633f'); gr.addColorStop(.45, '#b97d4c');
+    gr.addColorStop(1, '#c99c65'); cx.fillStyle = gr; cx.fillRect(0, 0, 16, 128);
     grad.update(false); skyMat.emissiveTexture = grad;
     this.sky.material = skyMat; oldSkyMat.dispose();
     // Arrakis daylight: two distant emissive sun discs; only the existing sun casts shadows.
     // Distant spheres are never shadow casters, and do not introduce new render targets.
-    const sunA = mk(bSph(2.5, 12), basic3('#eed1a0', { fog: false }), -16, 9, -90, false);
-    const sunB = mk(bSph(1.7, 10), basic3('#f6deb0', { fog: false }), 22, 12, -103, false);
+    const sunA = mk(bSph(3.5, 12), basic3('#ffc370', { fog: false }), -16, 13, -90, false);
+    const sunB = mk(bSph(2.3, 10), basic3('#ffe2a2', { fog: false }), 22, 17, -103, false);
     sunA.isPickable = sunB.isPickable = false;
     const rp = new B3.ReflectionProbe('rp', gfx(this.small).probe.camp, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
     // Daylight headquarters: five heroes on open sand. No campfire, flame,
@@ -176,7 +179,7 @@ class CampStage extends Stage3D {
     const fallbackOrnithopterAt = S.meshes.length;
     // Trials: parked ornithopter viewed head-on, with an unmistakably wide
     // pair of long wings and cockpit. Raised high enough to sit above the labels.
-    const craftX = -7.5, craftZ = landmarkZ;
+    const craftX = -7.5, craftZ = landmarkZ + 1.15;
     place(bBox(2.8, .16, 1.05), rock, craftX, craftZ, .13); // landing pad
     const hull = place(bBox(.56, .56, 2.35), bronze, craftX, craftZ, 1.47);
     hull.rotation.x = -.10;
@@ -197,7 +200,7 @@ class CampStage extends Stage3D {
       }
     }
 
-    const fallbackOrnithopter = S.meshes.slice(fallbackOrnithopterAt);
+    const fallbackOrnithopter = S.meshes.slice(fallbackOrnithopterAt + 1); // preserve the landing pad
     // Raid: Shai-Hulud emerging from sand. The front-facing dark circular maw
     // with pale radial teeth is the dominant feature, not a thin slanted post.
     const wormX = -4.8, wormZ = landmarkZ;
@@ -263,11 +266,11 @@ class CampStage extends Stage3D {
       place(bBox(.32, .24, .32), ember, shopX + .5, shopZ + .79, .9);
     }
     // Keep the shop's stall counter and spice crates as foreground detail when the tent loads.
-    const fallbackTent = S.meshes.slice(fallbackTentAt, fallbackTentAt + 5);
+    const fallbackTent = []; // retain raised awning and trade stalls around imported fabric tent
     const authored = [
-      { file: 'ornithopter.glb', x: -7.5, z: landmarkZ + 1.15, y: .62, scale: .98, yaw: .3, fallback: fallbackOrnithopter },
+      { file: 'ornithopter.glb', x: -7.5, z: landmarkZ + 1.15, y: .62, scale: .98, yaw: .3, style: 'craft', fallback: fallbackOrnithopter },
       { file: 'hologram_table.glb', x: 2.8, z: -2.7, y: 0, scale: .82, fallback: fallbackTable },
-      { file: 'market_tent.glb', x: 10.5, z: -2.2, y: 0, scale: .76, fallback: fallbackTent },
+      { file: 'market_tent.glb', x: 10.5, z: -2.2, y: 0, scale: .76, style: 'tent', fallback: fallbackTent },
     ];
     // Optional until verified binary files are committed to dev/assets/models.
     // When the model loads it atomically replaces its procedural placeholder.
@@ -277,7 +280,7 @@ class CampStage extends Stage3D {
       const origin = new B3.TransformNode('camp-model-anchor-' + item.file, S);
       origin.position.set(item.x, this.heightAt(item.x, item.z) + (item.y || 0), item.z);
       origin.rotation.y = item.yaw || 0;
-      importCampGlb(url, S, origin, item.scale).then(root => {
+      importCampGlb(url, S, origin, item.scale, item.style).then(root => {
         if (!this.alive) { root.dispose(false, true); origin.dispose(); return; }
         item.fallback.forEach(mesh => mesh.dispose(false, false));
       }).catch(e => { origin.dispose(); console.warn('camp asset fallback', item.file, e); });
