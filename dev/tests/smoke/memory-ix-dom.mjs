@@ -48,6 +48,7 @@ try {
     await page.click('[data-ixadd="10"]');
     assert.ok(await page.$('[data-ixconfirm]'),width+': quote');
     await page.click('[data-ixconfirm]');
+    console.log('ix confirm dialog',width, await page.evaluate(() => ({html: document.querySelector('#overlay2')?.innerHTML.slice(0,900), quote:scrapQuote(S,'ix_plate',[{id:'mask2',count:10}])})));
     assert.ok(await page.$('[data-ixdo]'),width+': confirmation');
     await page.click('[data-ixdo]');
     const after=await page.evaluate(()=>(0,eval)('([S.ix_plate,S.scrapCarry.ix_plate,S.inv.mask2])'));
