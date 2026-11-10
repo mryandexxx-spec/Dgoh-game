@@ -16,7 +16,7 @@ function scrapPoint(kind, id, partId) {
 // Резерв под шесть ячеек каждого уникального героя во всех активных отрядах.
 // Готовые детали учитываются, чтобы не резервировать их фрагменты дважды.
 function protectedStock(state) {
-  const needs = {}, done = new Set();
+  const needs = {}, pendingParts = {}, done = new Set();
   const squads = [state.squad, state.squadD, state.squadC, state.raidPick];
   for (const id of squads.flat()) {
     if (!id || done.has(id)) continue;
@@ -29,10 +29,19 @@ function protectedStock(state) {
       const it = ITEMS[plan[slot]];
       if (!it) continue;
       const recipe = gearRecipe(it, FRAG_NEED, () => ({ sol: 0, pl: 0 }));
-      const required = recipe.parts ? recipe.parts.reduce((n, part) =>
-        n + (stock(state.gearParts, part.id) ? 0 : part.materials[0].count), 0) : FRAG_NEED[it.t];
-      needs[it.id] = (needs[it.id] || 0) + required;
+      if (recipe.parts) {
+        for (const part of recipe.parts) {
+          const entry = pendingParts[part.id] ??= { id: it.id, fragments: part.materials[0].count, count: 0 };
+          entry.count++;
+        }
+      } else needs[it.id] = (needs[it.id] || 0) + FRAG_NEED[it.t];
     }
+  }
+  // Allocate finished details once across all heroes; unfulfilled demand reserves fragments.
+  for (const [partId, p] of Object.entries(pendingParts)) {
+    const allocated = Math.min(stock(state.gearParts, partId), p.count);
+    needs[partId] = allocated;
+    needs[p.id] = (needs[p.id] || 0) + (p.count - allocated) * p.fragments;
   }
   return needs;
 }
@@ -40,7 +49,7 @@ function scrapAvailable(state, id, partId, reserve) {
   const key = partId || id;
   const owned = partId ? stock(state.gearParts, partId) : stock(state.inv, id);
   if (state.scrapLocks?.[key]) return 0;
-  const held = partId ? 0 : Math.max(0, (reserve || protectedStock(state))[id] || 0);
+  const held = Math.max(0, (reserve || protectedStock(state))[key] || 0);
   return Math.max(0, owned - held);
 }
 function scrapQuote(state, kind, entries) {
