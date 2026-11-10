@@ -26,7 +26,10 @@ try {
     },fixture);
     await page.goto(server.url(path.basename(html)),{waitUntil:'load'});
     await page.waitForFunction(()=>!!document.querySelector('#overlay'),{timeout:30000});
+    // Boot may schedule the login calendar over the recycler; dismiss it after its scheduled entry.
+    await new Promise(resolve => setTimeout(resolve, 3100));
     await page.evaluate(code=>(0,eval)(code), `
+      closeInfo(true); closeOverlay();
       S.squad=[];S.squadC=[];S.squadD=[];S.raidPick=[]; S.inv.mask2=100;
       S.scrapCarry.ix_plate=5;S.scrapLocks.mask2=false;
       view='recycler';render();
