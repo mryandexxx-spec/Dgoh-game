@@ -55,7 +55,12 @@ class Baker {
     for (let k = 0; k < 30 && !this.scene.isReady(); k++) await bakeSleep(16);
     if (!this.alive) return null;
     this.scene.render(); this.scene.render();
-    const px = await rt.readPixels(0, 0, null, true); if (!px || !this.alive) return null;
+    const px = await rt.readPixels(0, 0, null, true);
+    // GPU pixels are now in CPU memory. The MSAA target (and its depth RB)
+    // must not remain live during the much slower asynchronous PNG encoding.
+    this.camera.outputRenderTarget = null;
+    if (this.rt === rt) { this.rt.dispose(); this.rt = null; this.rw = this.rh = 0; }
+    if (!px || !this.alive) return null;
     const cv = this.cv; cv.width = w; cv.height = h; const g = cv.getContext('2d'), img = g.createImageData(w, h), row = w * 4, src = new Uint8Array(px.buffer, px.byteOffset, w * h * 4);
     for (let y = 0; y < h; y++) img.data.set(src.subarray((h - 1 - y) * row, (h - y) * row), y * row); // GL rows are bottom-up
     g.putImageData(img, 0, 0);
