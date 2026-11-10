@@ -135,8 +135,8 @@ class CampStage extends Stage3D {
     this.sky.material = skyMat; oldSkyMat.dispose();
     // Arrakis daylight: two distant emissive sun discs; only the existing sun casts shadows.
     // Distant spheres are never shadow casters, and do not introduce new render targets.
-    const sunA = mk(bSph(3.5, 12), basic3('#ffc370', { fog: false }), -16, 8, -90, false);
-    const sunB = mk(bSph(2.3, 10), basic3('#ffe2a2', { fog: false }), 22, 11, -103, false);
+    const sunA = mk(bSph(4.1, 12), basic3('#ffb953', { fog: false }), -16, 8, -90, false);
+    const sunB = mk(bSph(2.9, 10), basic3('#f9d489', { fog: false }), 22, 11, -103, false);
     sunA.isPickable = sunB.isPickable = false;
     const rp = new B3.ReflectionProbe('rp', gfx(this.small).probe.camp, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
     // Daylight headquarters: five heroes on open sand. No campfire, flame,
@@ -192,7 +192,7 @@ class CampStage extends Stage3D {
     // Trials: parked ornithopter viewed head-on, with an unmistakably wide
     // pair of long wings and cockpit. Raised high enough to sit above the labels.
     const craftX = -7.5, craftZ = landmarkZ + 1.15;
-    place(bBox(2.8, .16, 1.05), rock, craftX, craftZ, .13); // landing pad
+    // Bare sand beneath landing gear; the oversized slab obscured the airframe in v82 previews.
     const hull = place(bBox(.56, .56, 2.35), bronze, craftX, craftZ, 1.47);
     hull.rotation.x = -.10;
     const wingLeft = place(bBox(1.62, .12, .44), bright, craftX - 1.05, craftZ + .02, 1.78);
@@ -212,7 +212,7 @@ class CampStage extends Stage3D {
       }
     }
 
-    const fallbackOrnithopter = S.meshes.slice(fallbackOrnithopterAt + 1); // preserve the landing pad
+    const fallbackOrnithopter = S.meshes.slice(fallbackOrnithopterAt);
     // Raid: Shai-Hulud emerging from sand. The front-facing dark circular maw
     // with pale radial teeth is the dominant feature, not a thin slanted post.
     const wormX = -4.8, wormZ = landmarkZ;
@@ -280,7 +280,7 @@ class CampStage extends Stage3D {
     // Keep the shop's stall counter and spice crates as foreground detail when the tent loads.
     const fallbackTent = []; // retain raised awning and trade stalls around imported fabric tent
     const authored = [
-      { file: 'ornithopter.glb', x: -7.5, z: landmarkZ + 1.15, y: .62, scale: .98, yaw: .3, style: 'craft', fallback: fallbackOrnithopter },
+      { file: 'ornithopter.glb', x: -7.5, z: landmarkZ + 1.15, y: .78, scale: 1.13, yaw: .3, style: 'craft', fallback: fallbackOrnithopter },
       { file: 'hologram_table.glb', x: 2.8, z: -2.7, y: 0, scale: .82, fallback: fallbackTable },
       { file: 'market_tent.glb', x: 10.5, z: -2.2, y: 0, scale: .76, style: 'tent', fallback: fallbackTent },
     ];
@@ -322,7 +322,7 @@ class CampStage extends Stage3D {
     this._railNow = now;
     this.camera.position.set(this.railX, 2.6, this.fire.z + 7);
     if (!this._tg) this._tg = V3(0, 1.1, .3);
-    this._tg.set(this.railX, 1.1, .3); this.camera.setTarget(this._tg); this.camera.fov = .82;
+    this._tg.set(this.railX, 1.62, .3); this.camera.setTarget(this._tg); this.camera.fov = .82;
     if (this.flag) this.flag.forEach((fl, i) => { fl.rotation.y = Math.sin(t * 1.3 + i) * .25; });
   }
   post() {
