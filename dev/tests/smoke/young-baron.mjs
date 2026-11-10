@@ -24,7 +24,7 @@ try {
       try {Object.defineProperty(navigator,'serviceWorker',{value:undefined});}catch{}
     },save,quality);
     await p.goto(srv.url(path.basename(file)),{waitUntil:'load'});
-    await p.evaluate(async()=>{window.bakePortraits=()=>{};await loadB3();closeInfo(true);closeOverlay();openDetail('baron');});
+    await p.evaluate(async()=>{window.openCalendar=()=>{};window.__bakePortraits=bakePortraits;window.bakePortraits=()=>{};await loadB3();closeInfo(true);closeOverlay();openDetail('baron');});
     await new Promise(r=>setTimeout(r,2500));
     const summary=await p.evaluate(async tag=>{
       const o=HERO_STAGE.o;HERO_STAGE.auto=false;HERO_STAGE.yaw=-.3;
@@ -55,17 +55,11 @@ try {
         await p.evaluate(name=>window.__baronSample(name),name);
         await p.screenshot({path:path.join(out,`${tag}-${width}-${quality}-${name}.png`)});
       }
-      // Restart must read the new key, even if a previous install cached b9:baron.
-      await p.evaluate(async()=>{
-        const db=await bakeDB();
-        await idbPut(db,'b9:baron',{full:new Blob(['old']),face:new Blob(['old'])});
-        db.close();
-      });
     }
     await p.evaluate(()=>{window.__baronSample('Idle');heroHold(false);});
     const portrait=await p.evaluate(async()=>{
       const bk=new Baker();try {
-        const r=await bk.bake(CH.baron);
+        const r=await bk.bake(CH.baron);window.__baronBaked=r;
         const asData=b=>new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.readAsDataURL(b);});
         if(!r.face || !r.full)throw Error('Portrait textures did not become ready');
         return {face:await asData(r.face),full:await asData(r.full)};
@@ -73,11 +67,31 @@ try {
     });
     for(const [key,data]of Object.entries(portrait))fs.writeFileSync(path.join(out,`${tag}-${width}-${quality}-${key}.png`),Buffer.from(data.split(',')[1],'base64'));
     if(tag==='after'){
+      const upgraded=await p.evaluate(async()=>{
+        const db=await bakeDB(), original={...BAKED};
+        // An installation where all portraits already exist under the old keys.
+        for(const c of CHARS.filter(c=>!c.boss && c.id!=='baron'))await idbPut(db,bakeKey(c.id),window.__baronBaked);
+        await idbPut(db,'b9:baron',{full:new Blob(['old']),face:new Blob(['old'])});
+        await window.__bakePortraits();
+        const fresh=await idbGet(db,bakeKey('baron'));db.close();
+        for(const id of Object.keys(BAKED))if(id!=='baron'){delete BAKED[id];if(original[id])BAKED[id]=original[id];}
+        return {bytes:fresh?.face?.size,key:bakeKey('baron')};
+      });
+      assert(upgraded.bytes>1000,'old install did not regenerate the Baron portrait');
       await p.evaluate(portrait=>{
         BAKED.baron=portrait;closeInfo(true);closeOverlay();view='squad';render();
       },portrait);
       await p.screenshot({path:path.join(out,`${tag}-${width}-${quality}-roster.png`)});
     }
+    await p.evaluate(()=>{
+      closeInfo(true);closeOverlay();view='lobby';render();S.skipDlg=true;
+      launch({mode:'camp',dlg:false,scene:'court',i:0,title:'Молодой Барон — проверка 3D',
+        desert:false,squad:['baron','duncan','leto','paul','gurney'],enemy:['baron','rabban','piter','trooper','feyd'].map(id=>enemyProg(id,65,false))});
+      clearTimeout(BT.timer);
+    });
+    await new Promise(r=>setTimeout(r,1800));
+    await p.screenshot({path:path.join(out,`${tag}-${width}-${quality}-battle.png`)});
+    assert.equal(await p.evaluate(()=>!!Object.values(BT.arena.units).find(o=>o.def.id==='baron' && o.side==='A' && o.root._authored)),true);
     assert.equal(errors.length,0,errors.join('\n'));console.log('BH4',tag,width,quality,JSON.stringify(summary));
     await p.close();
    }

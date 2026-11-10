@@ -32,6 +32,7 @@ jobs:
       - run: node tools/check-deps.mjs
       - run: npm run build
       - run: node tools/check-bundle.mjs dist/pwa/app.js
+      - run: node tests/smoke/young-baron-cpu.mjs dist/pwa/index.html
       - run: node tests/smoke/gear-e3.mjs
       - run: node tests/smoke/memory-ix.mjs dist/pwa/index.html
       - run: node tests/smoke/v83-v85.mjs dist/pwa/index.html
@@ -109,6 +110,8 @@ jobs:
         run: node tests/smoke/pkg8-layout.mjs ../index.html dist/pkg8-shots --baseline
       - name: Young Baron source clips, portrait cache and A/B (844/667 MED/LOW)
         run: node tests/smoke/young-baron.mjs dist/pwa/index.html ../index.html
+      - name: PWA update and offline assets
+        run: node tests/smoke/sw.mjs .. dist/pwa
       - name: Upload Young Baron visual regression screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -195,6 +198,14 @@ jobs:
           grep -Fq 'PASS один WebGL-контекст' dist/smoke-phone.log
           grep -Fq 'PASS нет роста meshes/textures' dist/smoke-phone.log
           grep -Fq 'PASS нет ошибок консоли' dist/smoke-phone.log
+      - name: Desktop 3D resource safety
+        shell: bash
+        run: |
+          set -o pipefail
+          node tests/smoke/3d.mjs dist/pwa/index.html --cycles 2 | tee dist/smoke-desktop.log
+          grep -Fq 'PASS один WebGL-контекст' dist/smoke-desktop.log
+          grep -Fq 'PASS нет роста meshes/textures' dist/smoke-desktop.log
+          grep -Fq 'PASS нет ошибок консоли' dist/smoke-desktop.log
       - name: Compare v76 / v77 SwiftShader budgets (MED/LOW phone)
         run: |
           node tests/smoke/perf.mjs ../index.html --phone --dpr 3 --gfx med --out dist/perf-v76-med.json

@@ -39,6 +39,16 @@ for (const [group,p] of Object.entries(d.parts)) {
     check(w[i]+w[i+1]+w[i+2]+w[i+3] === 255, group + ' weights');
   }
   if(p.uv) check(bytes(p,'uv').length===p.n*4, group + ' uv');
+  if (group === 'part_10') {
+    const uv=bytes(p,'uv'); let z=0, top=0, bottom=0, nt=0, nb=0;
+    for(let i=0;i<p.n;i++) {
+      z+=nrm.readInt8(i*3+2);
+      const y=pos.readInt16LE(i*6+2), v=uv.readUInt16LE(i*4+2);
+      if(y>19000){top+=v;nt++;} if(y<17200){bottom+=v;nb++;}
+    }
+    check(z>0,'face must point toward +Z camera, not into the head');
+    check(nt>0 && nb>0 && top/nt > bottom/nb,'face UV upside down');
+  }
   // Babylon DGM winds triangles clockwise. Outward normals must therefore
   // oppose the cross product; the old converter accidentally pointed inward.
   let outward = 0, inward = 0;

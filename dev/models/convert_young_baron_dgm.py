@@ -37,14 +37,20 @@ images=[]
 for i,im in enumerate(doc['images']):
  v=doc['bufferViews'][im['bufferView']];start=v.get('byteOffset',0);blob=bytes(BIN[start:start+v['byteLength']]);img=Image.open(io.BytesIO(blob)).convert('RGB'); path=OUT/f'young-baron-{i}.jpg';img.save(path,'JPEG',quality=84,optimize=True);images.append(path)
 
+# These open surfaces were authored with inward winding in the prototype GLB.
+# Repair before generating normals and converting to Babylon's CW indices.
+mesh_names={node['mesh']:node.get('name','') for node in nodes if 'mesh' in node}
+inward_surfaces=('UV_textured_real_3d_face','coattail_outer','inner_red_tail','red_collared_neck')
 parts={}; vertexCount=0; triCount=0
 for matid in sorted(set(p.get('material',0) for m in doc['meshes'] for p in m['primitives'])):
  position=[];normals=[];color=[];uvs=[];ji=[];weights=[];inds=[]
- for mesh in doc['meshes']:
+ for meshid,mesh in enumerate(doc['meshes']):
   for p in mesh['primitives']:
    if p.get('material',0)!=matid:continue
    attrs=p['attributes'];v=acc(attrs['POSITION']).astype(np.float32)*SCALE;ix=acc(p['indices']).reshape(-1).astype(np.int64)
    assert (ix.max()<len(v))
+   if any(name in mesh_names[meshid] for name in inward_surfaces):
+    ix=ix.reshape(-1,3)[:,[0,2,1]].reshape(-1)
    # Babylon authored materials use opposite winding to the original glTF export.
    source_ix=ix.copy()
    ix=ix.reshape(-1,3)[:,[0,2,1]].reshape(-1)
@@ -74,7 +80,7 @@ for matid in sorted(set(p.get('material',0) for m in doc['meshes'] for p in m['p
  'i':np.array(inds,dtype='<u2' if n<65536 else '<u4').tobytes(),'i32':n>=65536}
  mr=mat.get('pbrMetallicRoughness',{})
  P['material']={'roughness':mr.get('roughnessFactor',1),'metalness':mr.get('metallicFactor',1),'noSheen':1}
- if mat.get('doubleSided'):P['material']['side']='double'
+ if mat.get('doubleSided') or matid in (4,5,6):P['material']['side']='double'
  tex=mr.get('baseColorTexture')
  if tex is not None:
   ti=doc['textures'][tex['index']]['source'];P['alb']={'@t':f'tex/young-baron-{ti}.jpg'}
