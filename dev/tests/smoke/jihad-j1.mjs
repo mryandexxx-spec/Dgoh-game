@@ -75,6 +75,20 @@ assert.equal(repeat.done,3);
 assert.ok(repeat.live > 0, 'completed point spawns fresh opponents for replay');
 assert.equal(repeat.route, '0-0-0');
 
+const replayLoss = json(`(() => {
+ const C=cq(), a=cqNode('0-0-0'), cfg={squad:['leto'],cq:{key:a.key,idx:[0],mods:[],fresh:false}};
+ C.foe[a.key]=[{h:0.2,s:0}];
+ const B={units:[{side:'A',def:CH.leto,alive:false},{side:'B',def:CH.trooper,alive:true,hp:50,maxHp:100,maxShield:0}]};
+ const before=[S.solari,S.jt,C.done[a.key]];
+ cqFinish(B,cfg,false);
+ const after=[S.solari,S.jt,C.done[a.key]];
+ return [before,after,C.foe[a.key] || null,cqLive(a).st || null];
+})()`);
+assert.deepEqual(replayLoss[0], replayLoss[1], 'defeated replay preserves best result and resources');
+assert.equal(replayLoss[2],null, 'defeated replay cannot bank enemy wounds');
+assert.equal(replayLoss[3],null, 'next replay starts from full health');
+
+
 const bossFeat = json(`(() => {
  S = newSave(); metaFill(S); S.acc.lvl = 85;
  const C=cq(); C.diff='easy'; C.open=4; C.sec=4; C.pick=null;
