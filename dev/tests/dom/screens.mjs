@@ -122,7 +122,7 @@ function normalizeApprovedV86(s) {
 // card among otherwise unchanged roster cards.
 function normalizeApprovedBH4(s) {
   const copy = structuredClone(s);
-  const card = /<button class="hc[^"]*"[^>]*data-open="[^"]+"[^>]*>[\\s\\S]*?<\\/button>/g;
+  const card = /<button class="hc[^"]*"[^>]*data-open="[^"]+"[^>]*>[^]*?<\/button>/g;
   for (const screen of copy.screens) for (const key of ['header', 'view', 'overlay', 'overlay2']) {
     if (typeof screen[key] !== 'string') continue;
     screen[key] = screen[key]
@@ -130,7 +130,7 @@ function normalizeApprovedBH4(s) {
       .replaceAll('Молодой Барон Владимир', '[BH4 approved Baron name]');
     // Only move the Baron card, never reorder unrelated heroes. Preserves
     // complete HTML of every card, gear, stars, badges and action controls.
-    screen[key] = screen[key].replace(/(?:<button class="hc[^"]*"[^>]*data-open="[^"]+"[^>]*>[\\s\\S]*?<\\/button>)+/g, run => {
+    screen[key] = screen[key].replace(/(?:<button class="hc[^"]*"[^>]*data-open="[^"]+"[^>]*>[^]*?<\/button>)+/g, run => {
       const cards = run.match(card);
       if (!cards || cards.length < 2) return run;
       const baron = cards.filter(v => /data-open="baron"/.test(v));
