@@ -15,14 +15,14 @@ const CQ_DIFF = {
 const CQ_SECT = [
   { n: 'Гиеди Прайм', syn: 'Харконнены: Барон, Фейд-Раута, Раббан, Питер де Фриз', scene: 'giedi', pool: ['trooper', 'trooper', 'rabban', 'piter', 'feyd'], boss: ['baron', 'feyd', 'rabban', 'piter', 'trooper'], d: 'Крепость Харконненов: яды, численность и жестокость.' },
   { n: 'Салуса Секундус', syn: 'Коррино: Шаддам IV, граф Фенринг, Мохиам, башар', scene: 'saltflat', pool: ['legion', 'legion', 'bashar', 'fenring', 'mohiam'], boss: ['shaddam', 'fenring', 'mohiam', 'bashar', 'legion'], d: 'Мир-тюрьма сардаукаров: броня и дисциплина.' },
-  { n: 'Глубокая пустыня', syn: 'Фримены: Лиет-Кайнс, Стилгар, Чани, федайкины', scene: 'desert', desert: true, pool: ['fedaykin', 'fedaykin', 'chani', 'stilgar', 'kynes'], boss: ['liet', 'stilgar', 'chani', 'fedaykin', 'fedaykin'], d: 'Песок, червь и фримены, которые не признают чужаков.' },
+  { n: 'Глубокая пустыня', syn: 'Фримены: Лиет-Кайнс, Стилгар, Чани, федайкины', scene: 'desert', desert: true, pool: ['fedaykin', 'fedaykin', 'chani', 'stilgar', 'kynes'], boss: ['kynes', 'stilgar', 'chani', 'fedaykin', 'fedaykin'], d: 'Песок, червь и фримены, которые не признают чужаков.' },
   { n: 'Каладан', syn: 'Атрейдесы: герцог Лето, Дункан, Гурни, Суфир, Джессика', scene: 'caladan', pool: ['atrguard', 'atrguard', 'duncan', 'gurney', 'thufir'], boss: ['leto', 'duncan', 'gurney', 'thufir', 'jessica'], d: 'Родовой мир Атрейдесов защищают лучшие мечи Империума.' },
   { n: 'Коррин', syn: 'Мыслящие машины: Эразм, кимеки, роботы', scene: 'ruins', pool: ['robot', 'robot', 'cymek', 'robot', 'cymek'], boss: ['erasmus', 'cymek', 'cymek', 'robot', 'robot'], d: 'Мир машин. В его сердце ждёт Эразм — и проверяет, достойны ли вы.' },
 ];
 // path: 4 fights → disk → fight → cache → 3 fights → disk → boss (9 battles per sector)
 const CQ_LAYERS = [1, 2, 3, 2, 1, 2, 1, 3, 2, 2, 1, 1], CQ_LAST = CQ_LAYERS.length - 1;
 const CQ_LTYPE = { 4: 'disk', 6: 'cache', 10: 'disk', [CQ_LAST]: 'boss' };
-const CQ_CHESTS = [25, 60, 100, 150, 210, 280, 350];      // 7 сундуков; между соседними — 4 промежуточные награды
+const CQ_CHESTS = [25, 60, 100, 150, 210, 280, 320];      // 7 сундуков; между соседними — 4 промежуточные награды
 const CQ_ERI = [1, 3, 4, 5, 6];                          // сундуки с осколками Эразма (по CQ_DIFF.er)
 const cqK = () => ({ easy: 1, normal: 1.25, hard: 1.5 })[cq().diff] || 1;
 const pcs = x => Math.round(x * 100) + '%';
