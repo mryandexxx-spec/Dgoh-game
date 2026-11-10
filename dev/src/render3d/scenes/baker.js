@@ -72,6 +72,11 @@ class Baker {
     const fh = .64 * (H / 1.95), dH = (fh / 2) / Math.tan(fv / 2);
     const face = await this.shot(192, 192, fv, V3(hp.x + .05, hp.y + .03, hp.z + dH), V3(hp.x, hp.y - .02, hp.z));
     o.root.dispose(false, true);
+    // Portrait PNGs are now in CPU blobs. Release the temporary MSAA render
+    // target immediately instead of retaining its color/depth buffers during
+    // idle time and between heroes (notably +2.7 MB on iPhone LOW).
+    this.camera.outputRenderTarget = null;
+    if (this.rt) { this.rt.dispose(); this.rt = null; this.rw = this.rh = 0; }
     return { full, face };
   }
   dispose() { if (!this.alive) return; this.alive = false; try { if (this.rt) this.rt.dispose(); this.scene.dispose(); } catch (e) {} this.host.forget(this); this.cv.width = this.cv.height = 0; }
