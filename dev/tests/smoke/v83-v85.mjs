@@ -13,7 +13,7 @@ try { g = loadGame(html); } catch (error) {
 }
 const R = g.run;
 const run = expr => R(expr);
-run('S = newSave()');
+run('S = newSave(); metaFill(S)');
 
 // v83: retired hero cannot appear in active roster or journeys
 assert.equal(run("!!CH.liet"), false);
