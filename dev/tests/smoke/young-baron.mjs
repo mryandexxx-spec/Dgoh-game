@@ -24,7 +24,7 @@ try {
       try {Object.defineProperty(navigator,'serviceWorker',{value:undefined});}catch{}
     },save,quality);
     await p.goto(srv.url(path.basename(file)),{waitUntil:'load'});
-    await p.evaluate(async()=>{window.openCalendar=()=>{};window.__bakePortraits=bakePortraits;window.bakePortraits=()=>{};await loadB3();closeInfo(true);closeOverlay();openDetail('baron');});
+    await p.evaluate(async()=>{window.openCalendar=()=>{};window.toast=()=>{};window.renderNotes=()=>{};window.__bakePortraits=bakePortraits;window.bakePortraits=()=>{};await loadB3();closeInfo(true);closeOverlay();openDetail('baron');});
     await new Promise(r=>setTimeout(r,2500));
     const summary=await p.evaluate(async tag=>{
       const o=HERO_STAGE.o;HERO_STAGE.auto=false;HERO_STAGE.yaw=-.3;
@@ -79,7 +79,7 @@ try {
       });
       assert(upgraded.bytes>1000,'old install did not regenerate the Baron portrait');
       await p.evaluate(portrait=>{
-        BAKED.baron=portrait;closeInfo(true);closeOverlay();view='squad';render();
+        BAKED.baron=portrait;closeInfo(true);closeOverlay();RO.f='hark';view='squad';render();
       },portrait);
       await p.screenshot({path:path.join(out,`${tag}-${width}-${quality}-roster.png`)});
     }

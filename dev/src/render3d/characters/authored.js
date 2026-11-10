@@ -127,9 +127,18 @@ function poseModelClip(o, now, t, sp) {
     let i = 0; while (i < tr.times.length - 2 && time > tr.times[i + 1]) i++;
     const j = Math.min(i + 1, tr.times.length - 1), span = tr.times[j] - tr.times[i];
     const n = tr.node; if (!n) continue;
+
     const q = n.rotationQuaternion || (n.rotationQuaternion = B3.Quaternion.Identity());
     B3.Quaternion.SlerpToRef(tr.rotations[i], tr.rotations[j], span ? Math.max(0, Math.min(1, (time - tr.times[i]) / span)) : 0, q);
     q.normalize();
+  }
+  if (name === 'Death') {
+    // The clip supplies its own leg/pelvis pose: don't add the generic squat.
+    // Retain a smaller whole-body fall to bring this standing source clip down.
+    o.hips.position.y = o.hipY0;
+    o.body.rotation.x *= .6;
+    const k = Math.max(0, Math.min(1, (u - .7) / .3));
+    o.body.position.y = -.1 * k * k * (3 - 2 * k);
   }
   o.root._clip = name;
 }

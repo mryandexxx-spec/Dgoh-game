@@ -20,7 +20,10 @@ class HeroStage extends Stage3D {
     S.clearColor = new B3.Color4(.07, .045, .03, 1); S.ambientColor = B3.Color3.Black();
     // backdrop: soft radial gradient sphere + floor podium
     const bg = MB().CreateSphere('bg', { diameter: 60, segments: 16, sideOrientation: B3.Mesh.BACKSIDE }, S); bg.material = basic3('#0e0906', { fog: false }); bg.isPickable = false; this.bg = bg;
-    const halo = mk(bPlane(7, 7), null, 0, 1.4, -3, false); const hm = basic3('#3a2210', { fog: false, add: true }); const htx = glowTex(); hm.emissiveTexture = htx; hm.opacityTexture = htx; hm.disableDepthWrite = true; halo.material = hm; this.halo = halo;
+    // StandardMaterial adds emissiveTexture RGB to the emissive tint, turning
+    // the white radial sprite into a glaring white backdrop. Diffuse texture
+    // modulates the existing warm emissive tint instead.
+    const halo = mk(bPlane(7, 7), null, 0, 1.4, -3, false); const hm = basic3('#3a2210', { fog: false, add: true }); const htx = glowTex(); hm.diffuseTexture = htx; hm.opacityTexture = htx; hm.disableDepthWrite = true; halo.material = hm; this.halo = halo;
     const hemi = new B3.HemisphericLight('h', V3(0, 1, 0), S); hemi.intensity = .35; hemi.diffuse = col3('#c8b090'); hemi.groundColor = col3('#2a1a10'); hemi.specular = B3.Color3.Black();
     const key = this.key = new B3.DirectionalLight('key', V3(-.5, -.8, -.6), S); key.position = V3(4, 7, 6); key.intensity = 1.7; key.diffuse = col3('#ffe2b8');
     key.autoUpdateExtends = false; key.orthoLeft = -2; key.orthoRight = 2; key.orthoTop = 3; key.orthoBottom = -1; key.shadowMinZ = .5; key.shadowMaxZ = 20;
