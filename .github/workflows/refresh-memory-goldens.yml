@@ -1,0 +1,49 @@
+name: Refresh Package 12 Golden Snapshots (temporary)
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/refresh-memory-goldens.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    if: github.head_ref == 'feature/memory-ix-economy-v82' || github.ref_name == 'feature/memory-ix-economy-v82'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/memory-ix-economy-v82
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: npm ci
+        working-directory: dev
+      - run: node tools/build.mjs
+        working-directory: dev
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+        working-directory: dev
+      - run: node tests/golden/meta.mjs dist/pwa/index.html --update
+        working-directory: dev
+      - run: node tests/golden/saves.mjs dist/pwa/index.html --update
+        working-directory: dev
+      - run: node tests/dom/screens.mjs dist/pwa/index.html --update
+        working-directory: dev
+      - name: Commit intentional economics and UI snapshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dev/tests/golden/data/
+          git diff --cached --stat
+          if ! git diff --cached --quiet; then
+            git commit -m "test(memory): refresh approved relic economics and recycler screen goldens"
+            git push origin HEAD:feature/memory-ix-economy-v82
+          fi
