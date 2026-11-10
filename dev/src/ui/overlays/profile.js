@@ -34,6 +34,14 @@ function openProfile() {
     <p class="chap">Сохранение</p>
     <p class="sub" style="margin:0 0 6px;font-size:12px">Прогресс хранится на этом устройстве. Сделайте резервную копию, чтобы перенести игру на другое устройство или не потерять её при очистке данных браузера.</p>
     <div class="acts" style="margin-top:0"><button class="btn" data-saveexp="1">Экспорт сохранения</button><button class="btn" data-saveimp="1">Импорт сохранения</button></div>
+    <details class="asset-credits" style="margin:8px 0 14px;font-size:11px;color:var(--dust)">
+      <summary style="cursor:pointer">Авторы 3D-ассетов лагеря · CC BY 4.0</summary>
+      <p style="line-height:1.65;margin:7px 0">Модели адаптированы для мобильной игры: уменьшены текстуры, изменены материалы и масштаб.</p>
+      <p style="line-height:1.65;margin:4px 0">Орнитоптер «Flycatcher» — <a href="https://sketchfab.com/3d-models/ornithopter-flycatcher-fantasy-plane-828eb683e95d412aa5da8e5b13699a67" target="_blank" rel="noopener noreferrer">borsh_and</a> ·
+      Пустынный шатёр — <a href="https://sketchfab.com/3d-models/military-tent-desert-2a0fd34c43394a509e347302cea15df2" target="_blank" rel="noopener noreferrer">adventurer</a> ·
+      Голографический стол — <a href="https://sketchfab.com/3d-models/hologram-table-game-ready-asset-ea2c5ed437284a44a8878a2cc49b2270" target="_blank" rel="noopener noreferrer">ROHIT3DMODELS</a>.</p>
+      <p style="margin:4px 0">Лицензия: <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">Creative Commons Attribution 4.0</a>.</p>
+    </details>
     <div class="acts"><button class="btn" data-v="rules" data-iclose2="1">Правила боя</button><button class="btn" data-v="feats" data-iclose2="1">Подвиги</button><button class="btn" data-iclose="1" style="margin-left:auto">Закрыть</button></div>
   </div></div>`;
 }
