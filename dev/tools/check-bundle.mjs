@@ -13,5 +13,6 @@ const ast = acorn.parse(code, { ecmaVersion: 'latest', sourceType: 'script' });
 const top = new Set(ast.body.flatMap(n => n.type === 'VariableDeclaration' ? n.declarations.flatMap(d => patNames(d.id)) : n.id ? [n.id.name] : []));
 const names = []; for (const f of want) { const t = fs.readFileSync('src/' + f, 'utf8'); const m = /^export \{ (.+) \};$/m.exec(t); if (m) names.push(...m[1].split(', ')); }
 const missing = names.filter(x => !top.has(x));
+if (badOrder >= 0 || order.length !== want.length) console.error('первые 50 фактических модулей:', JSON.stringify(order.slice(0,50)), 'ожидались:', JSON.stringify(want.slice(0,50)));
 console.log(`порядок модулей: ${badOrder < 0 && order.length === want.length ? 'OK' : 'НАРУШЕН с ' + (want[badOrder] + ' ≠ ' + order[badOrder])} (${order.length}); имён: ${names.length}, потеряно/переименовано: ${missing.length ? missing.join(', ') : 'нет'}`);
 process.exit(badOrder < 0 && !missing.length ? 0 : 1);
