@@ -1,5 +1,6 @@
 // ui/views/shop.js — строки 4020–4071 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import './legend.js'; // порядок исполнения
+import { renderRecycler } from '../recycler-screen.js';
 import { cqShopView } from './conq.js';
 import { RES_INFO } from '../overlays/info.js';
 import { getRes, prog } from '../../logic/progress.js';
@@ -27,21 +28,21 @@ function shopItems(sk) {
   if (sk === 'post') return [
     { key: 'post:pl', kind: 'pl', qty: 5, cur: 'sol', price: 6000, lim: 3 }, { key: 'post:folio', kind: 'folio', qty: 3, cur: 'sol', price: 7500, lim: 3 },
     { key: 'post:water', kind: 'water', qty: 60, cur: 'sol', price: 9000, lim: 2 }, { key: 'post:sol', kind: 'sol', qty: 20000, cur: 'cry', price: 150, lim: 2 },
-    { key: 'post:candle', kind: 'candle', qty: 60, cur: 'cry', price: 60, lim: 2 }, { key: 'post:seal', kind: 'seal', qty: 1, cur: 'cry', price: 400, lim: 1 },
+    { key: 'post:candle', kind: 'candle', qty: 60, cur: 'cry', price: 60, lim: 2 }, { key: 'post:seal', kind: 'seal', qty: 1, cur: 'cry', price: 400, lim: 1 }, { key: 'post:blood_echo', kind: 'blood_echo', qty: 5, cur: 'cry', price: 80, lim: 2 },
     ...dailyHeroes('post', 4).map(id => ({ key: 'post:sh:' + id, kind: 'sh', id, qty: 5, cur: 'cry', price: 90, lim: 1 }))];
   if (sk === 'sietch') return [
     ...['paul', 'jessica', 'gurney', 'stilgar', 'chani', 'kynes', 'leto', 'duncan', 'thufir', 'fedaykin'].map(id => ({ key: 'sietch:sh:' + id, kind: 'sh', id, qty: 5, cur: 'teeth', price: 60, lim: 0 })),
     { key: 'sietch:pl', kind: 'pl', qty: 5, cur: 'teeth', price: 80, lim: 0 }, { key: 'sietch:sol', kind: 'sol', qty: 5000, cur: 'teeth', price: 50, lim: 0 },
-    { key: 'sietch:folio', kind: 'folio', qty: 5, cur: 'teeth', price: 40, lim: 0 }, { key: 'sietch:seal', kind: 'seal', qty: 1, cur: 'teeth', price: 300, lim: 1 }, { key: 'sietch:core', kind: 'core', qty: 1, cur: 'teeth', price: 150, lim: 2 }];
+    { key: 'sietch:folio', kind: 'folio', qty: 5, cur: 'teeth', price: 40, lim: 0 }, { key: 'sietch:seal', kind: 'seal', qty: 1, cur: 'teeth', price: 300, lim: 1 }, { key: 'sietch:ix_plate', kind: 'ix_plate', qty: 3, cur: 'teeth', price: 150, lim: 2 }, { key: 'sietch:holtz_conductor', kind: 'holtz_conductor', qty: 2, cur: 'teeth', price: 280, lim: 2 }];
   if (sk === 'ring') { const r = sRng(ghash(todayKey() + 'ring')), pool = ROSTER_IDS.filter(id => !CH[id].legendary && !CH[id].conquest && prog(id).stars < 7), hs = [];
     while (hs.length < 6 && pool.length) hs.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
     return [...hs.map(id => ({ key: 'ring:sh:' + id, kind: 'sh', id, qty: 5, cur: 'wring', price: 120, lim: 3 })),
       { key: 'ring:folio', kind: 'folio', qty: 5, cur: 'wring', price: 60, lim: 5 }, { key: 'ring:pl', kind: 'pl', qty: 10, cur: 'wring', price: 80, lim: 5 },
-      { key: 'ring:core', kind: 'core', qty: 1, cur: 'wring', price: 150, lim: 3 }, { key: 'ring:seal', kind: 'seal', qty: 1, cur: 'wring', price: 400, lim: 1 }, { key: 'ring:wol', kind: 'wol', qty: 1, cur: 'wring', price: 2000, lim: 1 }]; }
+      { key: 'ring:ix_plate', kind: 'ix_plate', qty: 3, cur: 'wring', price: 250, lim: 2 }, { key: 'ring:seal', kind: 'seal', qty: 1, cur: 'wring', price: 400, lim: 1 }, { key: 'ring:wol', kind: 'wol', qty: 1, cur: 'wring', price: 2000, lim: 1 }]; }
   return [
     ...dailyHeroes('chron', 6).map(id => ({ key: 'chron:sh:' + id, kind: 'sh', id, qty: 5, cur: 'rid', price: 60, lim: 2 })),
     { key: 'chron:folio', kind: 'folio', qty: 5, cur: 'rid', price: 40, lim: 5 }, { key: 'chron:sol', kind: 'sol', qty: 10000, cur: 'rid', price: 50, lim: 3 },
-    { key: 'chron:seal', kind: 'seal', qty: 1, cur: 'rid', price: 250, lim: 1 }, { key: 'chron:wol', kind: 'wol', qty: 1, cur: 'rid', price: 1500, lim: 1 }, { key: 'chron:core', kind: 'core', qty: 1, cur: 'rid', price: 120, lim: 3 }];
+    { key: 'chron:seal', kind: 'seal', qty: 1, cur: 'rid', price: 250, lim: 1 }, { key: 'chron:wol', kind: 'wol', qty: 1, cur: 'rid', price: 1500, lim: 1 }, { key: 'chron:blood_echo', kind: 'blood_echo', qty: 5, cur: 'rid', price: 160, lim: 3 }, { key: 'chron:legacy_thread', kind: 'legacy_thread', qty: 3, cur: 'rid', price: 220, lim: 2 }, { key: 'chron:age_resonance', kind: 'age_resonance', qty: 2, cur: 'rid', price: 350, lim: 1 }];
 }
 const findShopItem = key => shopItems(key.split(':')[0]).find(x => x.key === key);
 function shopFragsHtml() {
@@ -57,6 +58,7 @@ function renderShop() {
   const sk = SHOPS[S.shopTab] ? S.shopTab : 'post', cur = { post: ['sol', 'cry'], sietch: ['teeth'], chron: ['rid'], ring: ['wring'] }[sk];
   const msLeft = new Date(new Date().setHours(24, 0, 0, 0)) - Date.now();
   $('#view').innerHTML = `<h2 class="lshide">Лавки</h2>
+    <div class="panel" style="display:flex;align-items:center;gap:12px;margin:4px 0 10px;padding:8px 12px"><span class="bigico sm">${ic('ix_plate')}</span><div style="flex:1"><b>Утилизатор Икса</b><div class="sub" style="margin:0">Отдельная мастерская переработки снаряжения в артефакты Другой памяти</div></div><button class="btn go" data-ixenter="1">В мастерскую</button></div>
     <div class="ctabs">${Object.entries(SHOPS).map(([k, v]) => `<button class="ctab ${k === sk ? 'on' : ''}" data-shoptab="${k}">${v.n}<small>${{ post: ic('sol') + ic('cry'), sietch: ic('teeth'), chron: ic('rid'), ring: ic('wring') }[k]}</small></button>`).join('')}<button class="ctab" data-shoptab="jihad">Джихад<small>${ic('jt')}</small></button></div>
     <p class="sub">${SHOPS[sk].d} У вас: ${cur.map(c => amt(c, getRes(c))).join(' ')}. Лимиты обновятся через ${Math.floor(msLeft / 3.6e6)} ч ${Math.floor(msLeft % 3.6e6 / 6e4)} мин.</p>
     <div class="shop">${shopItems(sk).map(it => { const left = shopLeft(it), sold = left === 0, can = getRes(it.cur) >= it.price && !sold;
@@ -67,4 +69,4 @@ function renderShop() {
 }
 
 
-export { SHOPS, buysToday, shopLeft, dailyHeroes, shopItems, findShopItem, shopFragsHtml, renderShop };
+export { SHOPS, buysToday, shopLeft, dailyHeroes, shopItems, findShopItem, shopFragsHtml, renderShop, renderRecycler };

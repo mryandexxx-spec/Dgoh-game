@@ -15,7 +15,7 @@ const accReward = L => {
   else if (L < 20) r.push(['sol', 4000 + 400 * L], ['folio', 3 + Math.floor(L / 5)]);  // середина: умения
   else if (L < 30) r.push(['folio', 6], ['rid', 20 + L], ['pl', 6]);                 // хроники и снаряжение IV
   else if (L < 40) r.push(['seal', 1], ['rid', 40 + L], ['sol', 15000]);            // поздняя игра
-  else r.push(['core', 3 + Math.floor(L / 10)], ['rid', 40 + L], ['sol', 20000 + 500 * (L - 40)]); // реликвии
+  else r.push(['ix_plate', 3 + Math.floor(L / 10)], ['rid', 40 + L], ['sol', 20000 + 500 * (L - 40)]); // реликвии
   if (L % 5 === 0) r.push(['seal', 1], ['folio', 5]);
   if (L % 10 === 0) r.push(['wol', 1]);
   return r;

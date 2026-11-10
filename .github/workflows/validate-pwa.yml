@@ -33,6 +33,7 @@ jobs:
       - run: npm run build
       - run: node tools/check-bundle.mjs dist/pwa/app.js
       - run: node tests/smoke/gear-e3.mjs
+      - run: node tests/smoke/memory-ix.mjs dist/pwa/index.html
       - run: node tools/ci-artifact.mjs make
       - name: Upload the only production build
         uses: actions/upload-artifact@v4
@@ -100,6 +101,7 @@ jobs:
           chrome-version: stable
       - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
       - run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
+      - run: node tests/smoke/memory-ix-dom.mjs dist/pwa/index.html
       - run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
       - name: Package 8 reference v75 screenshots (844/667)
         run: node tests/smoke/pkg8-layout.mjs ../index.html dist/pkg8-shots --baseline

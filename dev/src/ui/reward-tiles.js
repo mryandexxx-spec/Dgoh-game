@@ -10,8 +10,8 @@ import { fmt, ic } from '../core/format.js';
 import { itemIcon } from './common.js';
 
 // ===================== reward tiles (one look everywhere) =====================
-const RW_TITLE = { wring: 'Вод. кольца', core: 'Др. память', sol: 'Солярии', pl: 'Пласталь', cry: 'Кристаллы', folio: 'Фолианты', seal: 'Печать', wol: 'Вода жизни', teeth: 'Зубы червя', water: 'Вода', candle: 'Свечи', rid: 'Ридулиан' };
-const RW_RARE = { wring: 'rare', core: 'epic', seal: 'epic', wol: 'leg', rid: 'rare', folio: 'rare', cry: 'rare' };
+const RW_TITLE = { ix_plate:'Плата Икса', holtz_conductor:'Проводник', tleilax_matrix:'Геноматрица', null_cell:'Нуль-ячейка', blood_echo:'Отголосок', legacy_thread:'Нить наследия', age_resonance:'Резонанс', wring: 'Вод. кольца', core: 'Др. память', sol: 'Солярии', pl: 'Пласталь', cry: 'Кристаллы', folio: 'Фолианты', seal: 'Печать', wol: 'Вода жизни', teeth: 'Зубы червя', water: 'Вода', candle: 'Свечи', rid: 'Ридулиан' };
+const RW_RARE = { ix_plate:'rare', holtz_conductor:'rare', tleilax_matrix:'epic', null_cell:'leg', blood_echo:'rare', legacy_thread:'epic', age_resonance:'leg', wring: 'rare', core: 'epic', seal: 'epic', wol: 'leg', rid: 'rare', folio: 'rare', cry: 'rare' };
 function rwTile(k, q, id, o = {}) {
   const qs = typeof q === 'number' ? fmt(q) : q, sm = o.sm ? ' sm' : '';
   if (k === 'shard' && CH[id]) { const d = CH[id], p = prog(id);

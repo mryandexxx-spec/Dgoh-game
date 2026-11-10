@@ -39,11 +39,11 @@ function midHtml(id, v) {
   const tbl = `<div class="memna${A ? '' : ' one'}"><span class="hd2">характеристика</span><span class="hd2 r">сейчас</span>${A ? '<span></span><span class="hd2 r">после</span>' : ''}
     ${row('Здоровье', 'hp')}${v.now.sh ? row('Щит', 'sh') : ''}${row('Урон', 'dmg')}${row('Скорость', 'spd')}<span class="tot">Мощь</span><b class="tot">${fmt(v.now.pow)}</b>${A ? `<i class="tot">›</i><b class="up tot">${fmt(A.pow)}</b>` : ''}</div>`;
   if (v.block === 'max') return `<span class="swcap">${MEM(v.rl)} · все уровни пробуждены</span>${tbl}<div class="membuy"><span class="memnote">«${v.steps[v.max - 1].lore[0]}»: ${v.steps[v.max - 1].lore[1]}</span><button class="btn go" data-iclose="1">ОК</button></div>`;
-  const L = v.steps[v.rn - 1].lore, c = v.cost, cok = (S.core || 0) >= c.core, sok = S.solari >= c.sol;
+  const L = v.steps[v.rn - 1].lore, c = v.cost, mats = Object.entries(c).filter(([k]) => k !== 'sol'), cok = mats.every(([k,n]) => (S[k]||0) >= n), sok = S.solari >= c.sol;
   const act = v.block === 'acc' ? `<span class="memnote lk">${MEM(v.rn)} — с уровня аккаунта ${RELIC_AT[v.rn]} (сейчас ${S.acc.lvl})</span>`
     : `<button class="btn swup ${cok && sok ? 'buy' : 'lack'}" data-relic="${id}">Усилить до ${MEM(v.rn)}<small class="${sok ? '' : 'lackc'}">${ic('sol')}${fmt(c.sol)}</small></button>`;
   return `<span class="swcap">${v.rl ? MEM(v.rl) : 'ДП0'} → ${MEM(v.rn)} · «${L[0]}»</span>${tbl}<p class="memlore">${L[1]}</p>
-    <div class="membuy"><div class="swmats"><span class="swcap">Нужно</span>${matCell('core', c.core)}</div>${act}</div>`;
+    <div class="membuy"><div class="swmats"><span class="swcap">Нужно</span>${mats.map(([k,n]) => matCell(k,n)).join('')}</div>${act}</div>`;
 }
 function stepsHtml(v) {
   return v.steps.map(s => `<li class="${s.st}"><span class="hx">${s.l}</span><span class="nm">${s.lore[0]}</span><span class="r">${s.st === 'got' ? '✓' : s.l > v.cap ? 'акк. ' + s.acc : s.st === 'next' ? 'далее' : ''}</span></li>`).join('');
@@ -53,7 +53,7 @@ function render() {
   const centre = v.block === 'ready' ? `<span class="mrlock">${LOCK}</span><span>закрыто</span>` : `<small>уровень</small><b>${v.rl}</b><span>из ${v.max}</span>`;
   $('#overlay2').innerHTML = `<div class="detail info-layer memwrap"><div class="sheet memscr" role="dialog" aria-modal="true" aria-labelledby="mem-t" data-win="mem">
     <div class="memtop"><button class="hcib" data-iclose="1" aria-label="К карточке">${BACK}</button><div class="memt"><h3 id="mem-t">Другая память</h3><span>${d.n} · ${p.stars}★ · сн. ${ROMAN[p.gear]} ${p.eq.filter(Boolean).length}/6</span></div>
-      <span class="memres"><button class="memchip" data-hcfind="core" aria-label="${RES_N.core}">${ic('core')}${fmt(S.core || 0)}</button><button class="memchip" data-hcfind="sol" aria-label="${RES_N.sol}">${ic('sol')}${fmt(S.solari)}</button></span></div>
+      <span class="memres"><button class="memchip" data-hcfind="ix_plate" aria-label="${RES_N.ix_plate}">${ic('ix_plate')}${fmt(S.ix_plate || 0)}</button><button class="memchip" data-hcfind="sol" aria-label="${RES_N.sol}">${ic('sol')}${fmt(S.solari)}</button></span></div>
     <div class="membody">
       <div class="memring"><div class="mring">${ringSvg(v)}<div class="mrc">${centre}</div></div><span class="memcap">За уровень: +8% ко всем характеристикам и +3 скорости. Потолок по уровню аккаунта: ${v.cap ? MEM(v.cap) : 'нет'}.</span></div>
       <div class="memmid">${midHtml(id, v)}</div>
