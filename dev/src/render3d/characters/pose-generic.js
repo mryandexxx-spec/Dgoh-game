@@ -72,6 +72,15 @@ function poseHuman(A, o, now, t, sp) {
   o.R.sh.rotation.set(rS, 0, .12 + rZ); o.R.el.rotation.x = rE; o.Lf.sh.rotation.set(lS, 0, -.12 + lZ); o.Lf.el.rotation.x = lE;
   if (o.skirt) o.skirt.rotation.x = (-(lx + rx) * .3 - (lk + rk) * .12) + lean * -.2;
   if (o.root._cape) o.root._cape.rotation.x = .12 + Math.abs(gait ? Math.sin(gait) : 0) * .25 + Math.max(0, -lean) * .5;
+  // BH4: three skinned cloth joints from the authored rig (not procedural cape plane).
+  // Small delayed sway keeps the long coat from behaving like rigid armor.
+  if (o.capeB && o.capeB.length === 3) {
+    const sway = Math.sin(t * 1.4 + ph) * .05 + Math.sin(t * .73 + ph) * .025;
+    const motion = (gait ? Math.sin(gait) * .12 : 0) + (o.act ? .12 : 0) + sway;
+    o.capeB[0].rotation.x = motion * .45;
+    o.capeB[1].rotation.x = motion * .7;
+    o.capeB[2].rotation.x = motion;
+  }
   if (MOCAP_OK && o.anim && o.anim.slash && a && o.act && a.kind === 'melee' && !o.dead) {      // motion-captured sword cut in the strike phase
     const k = remapK((now - a.t0) / a.dur, a), w = seg(k, .22, .3) * (1 - seg(k, .66, .74));
     if (w > 0) layerClip(o, 'slash', .14 + (k - .26) / .44 * .68, w);

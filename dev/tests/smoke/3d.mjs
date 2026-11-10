@@ -136,6 +136,25 @@ for (let c = 0; c < CYCLES; c++) {
   { const h0 = (await probe()).link, hfx = await effKeys(), n = await page.evaluate(() => { try { return (0, eval)('heroNavList(detailCid).length'); } catch (e) { return 0; } }); let sw = 0;
     for (let k = 0; k < n; k++) { const a = (await probe()).link; await run(`detailNav(1);`); await sleep(300); sw += (await probe()).link - a; await until('HERO_STAGE.pfIdle()', 6000); }
     C.heroNav = await probe(); C.heroNavN = n; C.heroNavCompiles = sw; C.heroWarm = C.heroNav.link - h0 - sw; if (sw) C.heroNavEffects = await effKeys(hfx); }
+  // BH4: exercise the real authored Baron in Babylon, not merely the 2D
+  // fallback. Run once so this assertion does not distort lifecycle budgets.
+  if (c === 0) {
+    await run("closeInfo(true); closeOverlay(); view = 'squad'; render(); openDetail('baron');");
+    const loaded = await until("HERO_STAGE && HERO_STAGE.o && HERO_STAGE.o.def.id === 'baron' && !!HERO_STAGE.o.root._authored", 20000);
+    if (loaded < 0) errors.push('BH4: Молодой Барон не загрузил authored DGM');
+    else {
+      const b4 = await page.evaluate(() => (0, eval)(`(() => {
+        const o = HERO_STAGE.o, meshes = o.root.getChildMeshes(false);
+        return { skinned: meshes.filter(m => !!m.skeleton).length,
+          joints: o.root._capeB ? o.root._capeB.length : 0,
+          material: meshes.filter(m => !!m.material).length,
+          name: o.def.id };
+      })()`));
+      if (b4.skinned < 13 || b4.joints !== 3 || b4.material < 13) errors.push('BH4: неполный rigged DGM: ' + JSON.stringify(b4));
+      C.youngBaron = b4;
+      if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `young-baron-hero${PHONE ? '-phone' : ''}.png`) });
+    }
+  }
   await run(`closeInfo(true); closeOverlay(); view = 'lobby';`);
   // вход в бой: от вызова до первого кадра арены
   await page.evaluate(() => { window.__t0 = performance.now(); });

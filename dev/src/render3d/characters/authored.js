@@ -96,14 +96,16 @@ function makeModel3(def, D) { return withCtx(null, () => {
   const R = { sh: N.shR, el: N.elR, hand: N.handR }, Lf = { sh: N.shL, el: N.elL, hand: N.handL }, LL = { hip: N.hipL, knee: N.kneeL, ank: N.ankL }, LR = { hip: N.hipR, knee: N.kneeR, ank: N.ankR };
   // the sword stays procedural (shared look with the rest of the roster)
   const gp = D.grip ? D.grip.p : [0, -.04, .01], w = grp(R.hand, gp[0], gp[1], gp[2]), steel = mat3('#eef2f6', { metalness: .6, roughness: .18, emissive: '#1a1e24' }), gold = mat3('#b08a3a', { metalness: .6, roughness: .3 });
-  add(w, mk(bBox(.03, .9, .012), steel, 0, .5, 0)); add(w, mk(bBox(.18, .028, .045), gold, 0, .04, 0)); add(w, mk(bCyl(.02, .02, .14, 8), mat3('#3a2a1a'), 0, -.05, 0)); add(w, mk(bSph(.03, 8), gold, 0, -.13, 0));
-  w.rotation.x = 1.6; mats.push(steel, gold);
+  if (def.basic.dt === 'blade') {
+    add(w, mk(bBox(.03, .9, .012), steel, 0, .5, 0)); add(w, mk(bBox(.18, .028, .045), gold, 0, .04, 0)); add(w, mk(bCyl(.02, .02, .14, 8), mat3('#3a2a1a'), 0, -.05, 0)); add(w, mk(bSph(.03, 8), gold, 0, -.13, 0));
+    w.rotation.x = 1.6; mats.push(steel, gold);
+  } else { steel.dispose(); gold.dispose(); }
   for (const m of w.getChildMeshes()) if (SHG0) SHG0.addShadowCaster(m, false);
   const sc = (def.role === 'tank' ? 1.05 : 1) * (def.legendary ? 1.08 : 1), tl = X.tall || 1; root.scaling.set(sc * (tl > 1 ? 1.03 : 1), sc * tl, sc * (tl > 1 ? 1.03 : 1));
   for (const m of mats) m._baseEm = m.emissiveColor.clone();
   CTX.shadows = SHG0; root._authored = 1;
   if (N.capeA) root._capeB = [N.capeA, N.capeB, N.capeC];
-  return { root, body, hips: N.hips, spine: N.spine, head: N.head, R, Lf, LL, LR, skirt: null, wpn: w, mats, h: 1.95 * sc * tl, melee: true, hipY0: N.hips.position.y, anim: ANIM3[def.id] || null, capeB: root._capeB || null, stance: def.role === 'tank' && !X.noShield ? 'shield' : 'guard', float: 0 };
+  return { root, body, hips: N.hips, spine: N.spine, head: N.head, R, Lf, LL, LR, skirt: null, wpn: w, mats, h: 1.95 * sc * tl, melee: def.basic.dt === 'blade', hipY0: N.hips.position.y, anim: ANIM3[def.id] || null, capeB: root._capeB || null, stance: def.role === 'tank' && !X.noShield ? 'shield' : def.basic.dt === 'blade' ? 'guard' : 'open', float: 0 };
 }); }
 
 export { MODEL_CACHE, b64bytes, modelData, MODEL_MAT, makeModel3, tex3 };
