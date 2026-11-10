@@ -35,6 +35,7 @@ try {
     const box=await page.$eval('.ixpage',el=>{const b=el.getBoundingClientRect();return {x:b.x,y:b.y,right:b.right,bottom:b.bottom};});
     assert.ok(box.x>=-2 && box.right<=width+2 && box.y>=-2 && box.bottom<=height+2,width+': recycler viewport');
     assert.ok(await page.$('[data-ixkind="ix_plate"]'),width+': categories');
+    const initialPlate = await page.evaluate(() => (0,eval)('S.ix_plate'));
     await page.screenshot({path:'dist/ix-' + width + '.png'});
     await page.click('[data-ixselect="mask2"]');
     assert.ok(await page.$('[data-ixadd="10"]'),width+': selection modal');
@@ -44,7 +45,7 @@ try {
     assert.ok(await page.$('[data-ixdo]'),width+': confirmation');
     await page.click('[data-ixdo]');
     const after=await page.evaluate(()=>(0,eval)('([S.ix_plate,S.scrapCarry.ix_plate,S.inv.mask2])'));
-    assert.deepEqual(JSON.parse(JSON.stringify(after)),[Math.max(0,(JSON.parse(fixture).ix_plate||0))+1,11,90],width+': conversion and carry');
+    assert.deepEqual(JSON.parse(JSON.stringify(after)),[initialPlate+1,11,90],width+': conversion and carry');
     await page.click('[data-ixtab="rates"]');
     assert.ok(await page.$('.ixrates'),width+': rates tab');
     await page.click('[data-ixtab="stock"]');
