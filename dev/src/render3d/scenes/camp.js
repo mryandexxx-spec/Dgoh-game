@@ -21,10 +21,20 @@ class CampStage extends Stage3D {
     this.raid = false; this.units = {};
     withCtx({ scene: this.scene, shadows: null }, () => { buildEnv(this, 'desert'); CTX.shadows = this.shadows;
     const S = this.scene; S.fogStart = 65; S.fogEnd = 190;
+    // buildEnv paints sky vertex colors, but its old basic3 white emissive
+    // bypasses those colors and produces the blown-out white horizon in v81.
+    // Use unlit diffuse *vertex* color instead (camp-only; battles untouched).
+    const oldSkyMat = this.sky.material;
+    const skyMat = new B3.StandardMaterial('camp-daylight-gradient', S);
+    skyMat.disableLighting = true; skyMat.diffuseColor = B3.Color3.White();
+    skyMat.emissiveColor = B3.Color3.Black(); skyMat.specularColor = B3.Color3.Black();
+    skyMat.fogEnabled = false; skyMat.disableDepthWrite = true;
+    skyMat.backFaceCulling = false; this.sky.material = skyMat;
+    oldSkyMat.dispose();
     // Arrakis daylight: two distant emissive sun discs; only the existing sun casts shadows.
     // Distant spheres are never shadow casters, and do not introduce new render targets.
-    const sunA = mk(bSph(4.6, 12), basic3('#ffe8a0', { fog: false }), 17, 34, -87, false);
-    const sunB = mk(bSph(2.8, 10), basic3('#fff1ba', { fog: false }), 29, 45, -103, false);
+    const sunA = mk(bSph(4.6, 12), basic3('#ffe8a0', { fog: false }), 13, 18, -87, false);
+    const sunB = mk(bSph(2.8, 10), basic3('#fff1ba', { fog: false }), 23, 25, -103, false);
     sunA.isPickable = sunB.isPickable = false;
     const rp = new B3.ReflectionProbe('rp', gfx(this.small).probe.camp, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
     // Daylight headquarters: five heroes on open sand. No campfire, flame,
