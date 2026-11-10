@@ -288,7 +288,7 @@ jobs:
     needs: gate
     runs-on: ubuntu-24.04
     permissions:
-      contents: read
+      contents: write
       pages: write
       id-token: write
     environment:
@@ -305,6 +305,19 @@ jobs:
           path: dev/dist
       - name: Verify exact validated release bits and SHA-256
         run: node dev/tools/ci-artifact.mjs verify
+      - name: Stage exact validated files into the repository root
+        run: |
+          node dev/tools/ci-artifact.mjs stage
+          git diff --exit-code -- dev
+      - name: Synchronize published PWA in main without rerunning builds
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- index.html app.js app.css sw.js babylon3d.js assets
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish v78 PWA from verified CI artifact"
+            git push origin HEAD:main
+          fi
       - name: Prepare GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload exact tested PWA
