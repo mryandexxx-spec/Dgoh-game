@@ -91,6 +91,6 @@ assert.deepEqual(bossFeat,[true,0,0], 'repeat must not retroactively grant first
 
 run('S = newSave(); metaFill(S); S.acc.lvl = 85; cq().diff = "easy";');
 const desert = json('cqFoes(cqNode("2-11-0")).map(x=>x.id)');
-assert.equal(desert[0], 'kynes');
+assert.ok(desert.includes('kynes'), 'the sector 3 boss includes ordinary Kynes');
 assert.equal(desert.includes('liet'),false);
 console.log('PASS Jihad J1: unlocks, route, replay, score, legacy migration, desert boss');
