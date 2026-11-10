@@ -58,7 +58,7 @@ document.addEventListener('click', e => {
   if (!t) return;
   const d = t.dataset;
   if (d.rwok) { const w = $('#rwwin'); if (w) w.remove(); setTimeout(() => { showCeleb(); renderNotes(); }, 50); return; }
-  if (recyclerClick(d)) { if (d.ixback) render(); return; }
+  if (recyclerClick(d)) { e.stopImmediatePropagation(); if (d.ixback) render(); return; }
   if (d.ixenter) { closeInfo(true); closeOverlay(); set_view('recycler'); render(); return; }
   if (metaClick(d) || meta2Click(d) || celebClick(d) || cqClick(d)) return;
   if (d.v) { set_view(d.v); render(); return; }
