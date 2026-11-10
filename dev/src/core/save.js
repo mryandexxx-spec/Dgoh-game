@@ -42,13 +42,13 @@ function fillSave(s) {
     };
     if (s[name]) s[name] = prune(s[name]);
   }
-  if (s.cq && typeof s.cq === 'object') {
+  if (s.conq && typeof s.conq === 'object') {
     const pruneCq = o => {
       if (!o || typeof o !== 'object') return;
       for (const k in o) if (k === 'squad' && Array.isArray(o[k])) o[k] = o[k].filter(id => id !== 'liet');
       else if (o[k] && typeof o[k] === 'object') pruneCq(o[k]);
     };
-    pruneCq(s.cq);
+    pruneCq(s.conq);
   }
   return s;
 }
