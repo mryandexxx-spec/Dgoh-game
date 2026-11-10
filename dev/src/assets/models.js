@@ -50,7 +50,7 @@ function loadKtx2() {
 let ASSETS_P = null;
 function loadAssets3() {   // Promise: каждый ассет независим — что не загрузилось, то 3D заменяет как раньше (процедурная модель, без mocap/окружения)
   return ASSETS_P || (ASSETS_P = Promise.allSettled([
-    ...['duncan', 'worm'].map(id => assetBytes(`models/${id}.dgm`).then(b => { MODEL_DATA[id] = parseDgm(b); })),
+    ...['duncan', 'worm', ...(assetUrl('models/young-baron.dgm') ? ['young-baron'] : [])].map(id => assetBytes(`models/${id}.dgm`).then(b => { MODEL_DATA[id === 'young-baron' ? 'baron' : id] = parseDgm(b); })),
     fetch(assetUrl('anim/mocap.json')).then(r => r.ok ? r.json() : Promise.reject(new Error('mocap.json: HTTP ' + r.status))).then(setMocap),
     (async () => { const u = assetUrl('env/desert.env'); if (!u) throw new Error('нет env/desert.env');
       setEnvHdr(u.endsWith('.txt') ? 'data:application/octet-stream;base64,' + (await (await fetch(u)).text()).trim() : u); })(),
