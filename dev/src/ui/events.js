@@ -59,7 +59,7 @@ document.addEventListener('click', e => {
   const d = t.dataset;
   if (d.rwok) { const w = $('#rwwin'); if (w) w.remove(); setTimeout(() => { showCeleb(); renderNotes(); }, 50); return; }
   if (recyclerClick(d)) { if (d.ixback) render(); return; }
-  if (d.ixenter) { set_view('recycler'); render(); return; }
+  if (d.ixenter) { closeInfo(true); closeOverlay(); set_view('recycler'); render(); return; }
   if (metaClick(d) || meta2Click(d) || celebClick(d) || cqClick(d)) return;
   if (d.v) { set_view(d.v); render(); return; }
   if (d.csel !== undefined) { set_campSel(+d.csel); render(); return; }
