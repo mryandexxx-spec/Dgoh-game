@@ -16,6 +16,7 @@ try {
   for (const [width,height] of [[844,390],[667,375]]) {
     const page = await browser.newPage(), errors = [];
     page.on('pageerror',err=>errors.push(err.message));
+    page.on('console',msg=>{ if(msg.text().startsWith('IX_EVT')||msg.text().startsWith('IX_AFTER')) console.log('browser',width,msg.text()); });
     await page.setViewport({width,height,deviceScaleFactor:1,isMobile:true,hasTouch:true,isLandscape:true});
     await page.setRequestInterception(true);
     page.on('request',req=>/^(data|blob):|^http:\/\/127\.0\.0\.1:/.test(req.url())?req.continue():req.abort());
@@ -35,6 +36,10 @@ try {
       view='recycler';render();
     `);
     await page.waitForSelector('.ixpage');
+    await page.evaluate(() => {
+      document.addEventListener('click',e=>console.log('IX_EVT',e.target.closest('button')?.outerHTML.slice(0,180)||e.target.outerHTML?.slice(0,180)),true);
+      document.addEventListener('click',e=>setTimeout(()=>console.log('IX_AFTER',document.querySelector('#overlay2')?.innerHTML.slice(0,90)),0));
+    });
     const box=await page.$eval('.ixpage',el=>{const b=el.getBoundingClientRect();return {x:b.x,y:b.y,right:b.right,bottom:b.bottom};});
     console.log('Ix viewport',width+'x'+height,JSON.stringify(box));
     await page.screenshot({path:'dist/ix-debug-' + width + '.png'});
