@@ -26,6 +26,7 @@ assert.equal(run("activeDaily().some(q => q.k === 'skill')"), false);
 
 // v83: old save is migrated once, with no resource compensation
 const old = JSON.parse(JSON.stringify(run("({ ...S, roster: { ...S.roster, liet: { stars: 7, lvl: 85, gear: 13 } }, journeys: { ...S.journeys, liet: { 0: true } }, squad: ['liet', 'leto'], jKey: 'liet' })")));
+delete old.migrations; delete old.retiredLiet;
 const migrated = R('fillSave')(old);
 assert.equal(migrated.roster.liet, undefined);
 assert.equal(migrated.squad.includes('liet'), false);
