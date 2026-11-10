@@ -115,20 +115,25 @@ class CampStage extends Stage3D {
     this.raid = false; this.units = {}; this.campTwinSuns = true;
     withCtx({ scene: this.scene, shadows: null }, () => { buildEnv(this, 'desert'); CTX.shadows = this.shadows;
     const S = this.scene; S.fogStart = 65; S.fogEnd = 190;
-    // buildEnv paints sky vertex colors, but its old basic3 white emissive
-    // bypasses those colors and produces the blown-out white horizon in v81.
-    // Use unlit diffuse *vertex* color instead (camp-only; battles untouched).
+    // A single 16x128 emissive sky gradient is stable on mobile Safari.
+    // The previous vertex-color-only sky rendered near-black in real phone
+    // screenshots; do not use the overexposed white emissive dome from v81.
     const oldSkyMat = this.sky.material;
-    const skyMat = new B3.StandardMaterial('camp-daylight-gradient', S);
-    skyMat.disableLighting = true; skyMat.diffuseColor = B3.Color3.White();
-    skyMat.emissiveColor = B3.Color3.Black(); skyMat.specularColor = B3.Color3.Black();
+    const skyMat = new B3.StandardMaterial('camp-sky-warm', S);
+    skyMat.disableLighting = true; skyMat.diffuseColor = B3.Color3.Black();
+    skyMat.emissiveColor = B3.Color3.White(); skyMat.specularColor = B3.Color3.Black();
     skyMat.fogEnabled = false; skyMat.disableDepthWrite = true;
-    skyMat.backFaceCulling = false; this.sky.material = skyMat;
-    oldSkyMat.dispose();
+    skyMat.backFaceCulling = false;
+    const grad = new B3.DynamicTexture('camp-sky-gradient', { width: 16, height: 128 }, S, false);
+    const cx = grad.getContext(), gr = cx.createLinearGradient(0, 0, 0, 128);
+    gr.addColorStop(0, '#9a633c'); gr.addColorStop(.45, '#cb8952');
+    gr.addColorStop(1, '#e6b67b'); cx.fillStyle = gr; cx.fillRect(0, 0, 16, 128);
+    grad.update(false); skyMat.emissiveTexture = grad;
+    this.sky.material = skyMat; oldSkyMat.dispose();
     // Arrakis daylight: two distant emissive sun discs; only the existing sun casts shadows.
     // Distant spheres are never shadow casters, and do not introduce new render targets.
-    const sunA = mk(bSph(4.6, 12), basic3('#ffe8a0', { fog: false }), 13, 18, -87, false);
-    const sunB = mk(bSph(2.8, 10), basic3('#fff1ba', { fog: false }), 23, 25, -103, false);
+    const sunA = mk(bSph(2.5, 12), basic3('#eed1a0', { fog: false }), -16, 9, -90, false);
+    const sunB = mk(bSph(1.7, 10), basic3('#f6deb0', { fog: false }), 22, 12, -103, false);
     sunA.isPickable = sunB.isPickable = false;
     const rp = new B3.ReflectionProbe('rp', gfx(this.small).probe.camp, S); rp.renderList.push(this.sky, this.ground); rp.position = V3(0, 2, 0); rp.refreshRate = B3.RenderTargetTexture.REFRESHRATE_RENDER_ONCE; S.environmentTexture = rp.cubeTexture;
     // Daylight headquarters: five heroes on open sand. No campfire, flame,
@@ -257,11 +262,12 @@ class CampStage extends Stage3D {
       place(bBox(.31, .33, .31), glow, shopX - .63, shopZ + .79, .97);
       place(bBox(.32, .24, .32), ember, shopX + .5, shopZ + .79, .9);
     }
-    const fallbackTent = S.meshes.slice(fallbackTentAt);
+    // Keep the shop's stall counter and spice crates as foreground detail when the tent loads.
+    const fallbackTent = S.meshes.slice(fallbackTentAt, fallbackTentAt + 5);
     const authored = [
-      { file: 'ornithopter.glb', x: -7.5, z: landmarkZ, scale: .78, fallback: fallbackOrnithopter },
-      { file: 'hologram_table.glb', x: 2.8, z: -2.7, scale: .69, fallback: fallbackTable },
-      { file: 'market_tent.glb', x: 10.5, z: -2.2, scale: .68, fallback: fallbackTent },
+      { file: 'ornithopter.glb', x: -7.5, z: landmarkZ + 1.15, y: .62, scale: .98, yaw: .3, fallback: fallbackOrnithopter },
+      { file: 'hologram_table.glb', x: 2.8, z: -2.7, y: 0, scale: .82, fallback: fallbackTable },
+      { file: 'market_tent.glb', x: 10.5, z: -2.2, y: 0, scale: .76, fallback: fallbackTent },
     ];
     // Optional until verified binary files are committed to dev/assets/models.
     // When the model loads it atomically replaces its procedural placeholder.
@@ -269,7 +275,8 @@ class CampStage extends Stage3D {
       const url = assetUrl('models/' + item.file);
       if (!url) continue;
       const origin = new B3.TransformNode('camp-model-anchor-' + item.file, S);
-      origin.position.set(item.x, this.heightAt(item.x, item.z), item.z);
+      origin.position.set(item.x, this.heightAt(item.x, item.z) + (item.y || 0), item.z);
+      origin.rotation.y = item.yaw || 0;
       importCampGlb(url, S, origin, item.scale).then(root => {
         if (!this.alive) { root.dispose(false, true); origin.dispose(); return; }
         item.fallback.forEach(mesh => mesh.dispose(false, false));
