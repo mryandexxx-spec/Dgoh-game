@@ -1,0 +1,50 @@
+name: v82 one-shot CC BY profile golden
+on:
+  push:
+    branches: [feature/v82-arrakis-daylight-hub]
+    paths: [.github/workflows/v82-credits-golden.yml]
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/v82-arrakis-daylight-hub
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - name: Build and capture only intended profile credit changes
+        working-directory: dev
+        run: |
+          npm ci
+          npm run build
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+          cp tests/golden/data/screens.json.gz.b64 /tmp/screens-before.b64
+          node tests/dom/screens.mjs dist/pwa/index.html --update
+          node --input-type=module <<'JS'
+          import fs from 'node:fs'; import zlib from 'node:zlib';
+          const unpack = data => JSON.parse(zlib.gunzipSync(Buffer.from(data.replace(/\s+/g,''),'base64')));
+          const before=unpack(fs.readFileSync('/tmp/screens-before.b64','utf8'));
+          const after=unpack(fs.readFileSync('tests/golden/data/screens.json.gz.b64','utf8'));
+          const changed=after.screens.filter((s,i)=>JSON.stringify(s)!==JSON.stringify(before.screens[i])).map(x=>x.name);
+          console.log('Changed screens:', changed);
+          if (changed.length!==1||changed[0]!=='profile') throw Error('Unexpected golden drift: '+changed);
+          if (!after.screens.find(s=>s.name==='profile').overlay2.includes('Creative Commons Attribution 4.0'))
+            throw Error('CC BY credits missing from profile');
+          JS
+          node tests/dom/screens.mjs dist/pwa/index.html
+      - name: Commit baseline and delete temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dev/tests/golden/data/screens.json.gz.b64
+          git rm .github/workflows/v82-credits-golden.yml
+          git commit -m "test(v82): add CC BY attribution to profile golden"
+          git push origin HEAD:feature/v82-arrakis-daylight-hub
