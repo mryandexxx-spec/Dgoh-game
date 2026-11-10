@@ -18,7 +18,7 @@ import { CH } from '../../data/chars.js';
 class CampStage extends Stage3D {
   constructor() {
     super({ cls: 'stage3d camp3d', kind: 'camp' });
-    this.raid = false; this.units = {};
+    this.raid = false; this.units = {}; this.campTwinSuns = true;
     withCtx({ scene: this.scene, shadows: null }, () => { buildEnv(this, 'desert'); CTX.shadows = this.shadows;
     const S = this.scene; S.fogStart = 65; S.fogEnd = 190;
     // buildEnv paints sky vertex colors, but its old basic3 white emissive
