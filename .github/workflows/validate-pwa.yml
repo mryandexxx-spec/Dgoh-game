@@ -252,55 +252,6 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  # Temporary one-shot job for approved J1 golden refresh. Remove after verified commit.
-  refresh-j1-golden:
-    name: Approved J1 golden baseline refresh (one-shot)
-    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'feature/jihad-j1-implementation' }}
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 18
-    permissions:
-      contents: write
-    defaults:
-      run:
-        working-directory: dev
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: dev/package-lock.json
-      - run: npm ci
-      - uses: actions/download-artifact@v4
-        with:
-          name: dune-validated-build
-          path: dev/dist
-      - run: node tools/ci-artifact.mjs verify
-      - name: Install Chromium for canonical screen snapshots
-        run: |
-          npm install --no-save --package-lock=false playwright@1.56.1
-          npx playwright install --with-deps chromium
-      - name: Update exactly three approved J1 golden datasets; verify battles unchanged
-        run: |
-          node tests/golden/meta.mjs dist/pwa/index.html --update
-          node tests/golden/saves.mjs dist/pwa/index.html --update
-          node tests/dom/screens.mjs dist/pwa/index.html --update
-          node tests/golden/battles.mjs dist/pwa/index.html
-          git diff --exit-code -- tests/golden/data/battles.json.gz.b64
-      - name: Commit only meta, saves and screens baselines into PR branch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- tests/golden/data/meta.json.gz.b64 tests/golden/data/saves.json.gz.b64 tests/golden/data/screens.json.gz.b64
-          git diff --cached --stat
-          if git diff --cached --quiet; then echo 'All three baselines already current'; else
-            git commit -m "test(golden): refresh approved J1 meta saves screens only"
-            git push origin HEAD:feature/jihad-j1-implementation
-          fi
-
   gate:
     name: All required checks passed
     if: always()
@@ -336,7 +287,7 @@ jobs:
           git diff --exit-code -- dev
 
   deploy-pages:
-    name: Publish verified v78 PWA to GitHub Pages
+    name: Publish verified PWA to GitHub Pages
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: gate
     runs-on: ubuntu-24.04
@@ -368,7 +319,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A -- index.html app.js app.css sw.js babylon3d.js assets
           if ! git diff --cached --quiet; then
-            git commit -m "Publish v78 PWA from verified CI artifact"
+            git commit -m "Publish verified PWA from CI artifact"
             git push origin HEAD:main
           fi
       - name: Prepare GitHub Pages
