@@ -26,9 +26,9 @@ const jGateReady = k => !!prog(k).stars || JOURNEYS[k].req.every(id => {
   const p = prog(id);
   return p.stars >= 7 && p.gear >= MAX_GEAR && (p.relic || 0) >= ((JREQ[k] || {})[id] || 0);
 });
-const jReady = (k, t) => jGateReady(k) && (k === 'muaddib' && t >= 3
+const jReady = (k, t) => !!prog(k).stars || (jGateReady(k) && (k === 'muaddib' && t >= 3
   ? JOURNEYS[k].req.filter(id => jHeroOk(k, id, t)).length >= 4
-  : JOURNEYS[k].req.every(id => jHeroOk(k, id, t)));
+  : JOURNEYS[k].req.every(id => jHeroOk(k, id, t))));
 const jSelectedReady = (k, t, ids) => jReady(k, t) && (k === 'muaddib' && t >= 3
   ? ids.length === 4 && new Set(ids).size === 4 && ids.every(id => JOURNEYS[k].req.includes(id) && jHeroOk(k, id, t))
   : true);
