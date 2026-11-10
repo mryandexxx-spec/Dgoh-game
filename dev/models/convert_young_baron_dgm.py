@@ -105,7 +105,7 @@ for animation in doc.get('animations',[]):
    'times':acc(sampler['input']).reshape(-1).round(6).tolist(),
    'rotations':acc(sampler['output']).round(7).tolist()})
  clips[animation['name']]={'duration':max(t['times'][-1] for t in tracks),'tracks':tracks}
-body=transform({'v':4,'joints':J,'parts':parts,'grip':None,'clips':clips})
+body=transform({'v':4,'joints':J,'parts':parts,'grip':None,'materialMode':'standard','clips':clips})
 head=json.dumps(body,ensure_ascii=False,separators=(',',':')).encode();head+=b' '*((-len(head))%4)
 output=OUT/'young-baron.dgm';output.write_bytes(b'DGM1'+struct.pack('<I',len(head))+head+payload)
 print(json.dumps({'path':str(output),'bytes':output.stat().st_size,'parts':len(parts),'vertices':vertexCount,'triangles':triCount,'bones':len(J),'jpgs':[p.name for p in images]},ensure_ascii=False,indent=2))

@@ -24,7 +24,7 @@ function modelData(id) {
     let uv = null; if (P.uv) { const u16 = new Uint16Array(b64bytes(P.uv).buffer); uv = new Float32Array(u16.length); for (let i = 0; i < u16.length; i++) uv[i] = u16[i] / 65535; }
     parts[k] = { pos, nor, col, jj, ww, uv, material: P.material || null, alb: P.alb || null, nrm: P.nrm || null, orm: P.orm || null, idx: P.i32 ? new Uint32Array(ib) : new Uint16Array(ib) };
   }
-  return (MODEL_CACHE[id] = { joints: R.joints, parts, grip: R.grip || null, clips: R.clips || null, v: R.v || 1 });
+  return (MODEL_CACHE[id] = { joints: R.joints, parts, grip: R.grip || null, materialMode: R.materialMode || null, clips: R.clips || null, v: R.v || 1 });
 }
 const MODEL_MAT = { skin: { roughness: .5 }, cloth: { roughness: .92 }, plate: { roughness: .42, metalness: .3, noSheen: 1 }, cape: { roughness: .95, side: 'double' }, leather: { roughness: .58 }, metal: { roughness: .28, metalness: .75 }, hair: { roughness: .7, noSheen: 1 }, eye: { roughness: .15, noSheen: 1 } };
 // Фаза 5, шаг 5: текстура модели — KTX2 (байты из assets/models.js), фолбэк — JPEG по тому же пути. set(t) кладёт текстуру в материал;
@@ -66,7 +66,9 @@ function tex3(url, scene, set) {
   set(t);
   if (KTX2_ST === 0 && !t.isReady()) { KTX2_PEND.push(p); if (!KTX2_T) KTX2_T = setTimeout(() => ktx2Fail('нет загрузок за ' + KTX2_WAIT / 1000 + ' с'), KTX2_WAIT); }
 }
-function makeModel3(def, D) { return withCtx(null, () => {
+// Projected/baked albedo assets without calibrated ORM use the same direct-lit
+// material in the portrait, hero stage and battle, on every graphics tier.
+function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { pbr: false } : null, () => {
   const SHG0 = CTX.shadows; CTX.shadows = null;
   const X = HERO3[def.id] || {}, root = grp(null), body = grp(root), N = {}, abs = {};
   for (const [nm, p, par] of D.joints) { abs[nm] = p; const pp = par ? abs[par] : [0, 0, 0]; N[nm] = grp(par ? N[par] : body, p[0] - pp[0], p[1] - pp[1], p[2] - pp[2]); N[nm].name = nm; }
