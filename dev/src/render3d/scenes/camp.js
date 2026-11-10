@@ -57,19 +57,19 @@ class CampStage extends Stage3D {
       mk(shape, material, x, this.heightAt(x, z) + up, z, casts);
     // Left: House archives, training dummies, Shai-Hulud monument.
     place(bBox(.8, 2.1, .68), rock, -10.4, -1.7, 1.05);
-    place(bBox(.53, .1, .55), ember, -10.4, -1.7, 2.12);
+    if (rich) place(bBox(.53, .1, .55), ember, -10.4, -1.7, 2.12);
     place(bCyl(.09, .12, 1.5, 6), bronze, -7.5, -1.9, .75);
     place(bBox(1, .16, .18), ink, -7.5, -1.9, 1.36);
     place(bCyl(.62, .84, .32, low ? 6 : 10), rock, -4.8, -1.7, .16);
     const worm = place(bCyl(.22, .48, 1.5, low ? 6 : 10), bronze, -4.8, -1.7, .91);
     worm.rotation.z = -.28;
-    if (!low) place(bSph(.22, 8), ember, -4.8, -1.7, 1.75);
+    if (rich) place(bSph(.22, 8), ember, -4.8, -1.7, 1.75);
     // Centre: squad by the existing fire, adjacent illuminated Arrakis map table.
     // No mesh is placed on the heroes' formation or the campfire.
-    place(bCyl(.68, .75, .15, 8), rock, -2.4, -2.7, .08);
+    if (rich) place(bCyl(.68, .75, .15, 8), rock, -2.4, -2.7, .08);
     place(bBox(1.8, .16, 1.2), bronze, 2.8, -2.7, .94);
     place(bPlane(1.35, .8), glow, 2.8, -2.7, 1.035).rotation.x = Math.PI / 2;
-    if (!low) {
+    if (rich) {
       place(bCyl(.08, .09, .87, 6), ink, 2.1, -2.7, .46);
       place(bCyl(.08, .09, .87, 6), ink, 3.5, -2.7, .46);
     }
@@ -78,7 +78,7 @@ class CampStage extends Stage3D {
     const wing = place(bBox(2.2, .09, .38), bronze, 7.3, -1.9, 1.27);
     wing.rotation.z = .13;
     place(bCyl(0, 1.65, 2.65, 4), canvas, 10.5, -2.2, 1.33);
-    place(bBox(.86, 1.32, .12), ink, 10.5, -1.31, .69);
+    if (rich) place(bBox(.86, 1.32, .12), ink, 10.5, -1.31, .69);
     place(bSph(.18, 8), glow, 10.5, -1.22, 1.66);
     if (rich) {
       // HIGH-only carved symbols, no extra shadow maps or postprocess targets.
