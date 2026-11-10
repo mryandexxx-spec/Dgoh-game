@@ -56,14 +56,18 @@ async function importCampGlb(url, scene, parent, scale) {
     material.metallic = pbr.metallicFactor || 0;
     material.roughness = pbr.roughnessFactor ?? .85;
     material.backFaceCulling = !spec.doubleSided;
-    const tex = pbr.baseColorTexture;
-    if (tex) {
-      const source = doc.images[doc.textures[tex.index].source], bv = src[source.bufferView];
+    const importTex = ref => {
+      if (!ref) return null;
+      const source = doc.images[doc.textures[ref.index].source], bv = src[source.bufferView];
       const raw = new Uint8Array(bytes, binAt + (bv.byteOffset || 0), bv.byteLength);
       const blobUrl = URL.createObjectURL(new Blob([raw], {type:source.mimeType || 'image/jpeg'}));
-      const texture = new B3.Texture(blobUrl, scene, false, false, B3.Texture.TRILINEAR_SAMPLINGMODE,
+      return new B3.Texture(blobUrl, scene, false, false, B3.Texture.TRILINEAR_SAMPLINGMODE,
         () => URL.revokeObjectURL(blobUrl), () => URL.revokeObjectURL(blobUrl));
-      material.albedoTexture = texture;
+    };
+    material.albedoTexture = importTex(pbr.baseColorTexture);
+    if (spec.emissiveTexture) {
+      material.emissiveTexture = importTex(spec.emissiveTexture);
+      material.emissiveColor = B3.Color3.FromArray(spec.emissiveFactor || [1,1,1]);
     }
     return material;
   });
