@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "node tools/build.mjs",
-    "test": "node tests/run.mjs dist/artifact.html && node tests/run.mjs dist/pwa/index.html"
+    "test": "node tests/run.mjs dist/artifact.html && node tests/run.mjs dist/pwa/index.html",
+    "prebuild": "node tools/check-young-baron.mjs"
   },
   "devDependencies": {
     "@babylonjs/core": "9.30.0",
