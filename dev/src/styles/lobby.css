@@ -69,3 +69,15 @@ body:has(#battle) .appver { left: 50%; transform: translateX(-50%); }   /* в б
 .lobby .spot[data-zone] .sbadge {font-size:9px}
 .lobby .spot[data-v="squad"] .sicon,.lobby .spot[data-v="camp"] .sicon {width:52px;height:52px}
 @media(max-width:700px){.lobby .spot[data-zone] .sicon{width:34px;height:34px}.lobby .spot[data-zone] .slabel{font-size:11px;padding:2px 5px}.lobby .spot[data-v="squad"] .sicon,.lobby .spot[data-v="camp"] .sicon{width:44px;height:44px}}
+
+/* v82 — SWGOH-style tangible landmark + caption. No floating circular icons. */
+.lobby .spot[data-zone] { gap: 3px; min-width: 108px; padding: 8px 5px; justify-content: flex-end; }
+.lobby .spot[data-zone]::before { content: ""; position: absolute; width: 118%; height: 82px; left: -9%; bottom: 78%; pointer-events: auto; }
+.lobby .spot[data-zone] .slabel { background: rgba(46,31,19,.79); border: 1px solid rgba(145,93,42,.6); border-radius: 3px; color: #fff1d7; font-size: 14px; padding: 3px 9px; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.lobby .spot[data-zone] .sbadge { background: #e5a34d; font-size: 9px; }
+.lobby .spot[data-zone]:focus-visible .slabel { outline: 2px solid #fff1cc; outline-offset: 3px; }
+@media(max-width:700px) {
+  .lobby .spot[data-zone] { min-width: 84px; }
+  .lobby .spot[data-zone]::before { height: 60px; }
+  .lobby .spot[data-zone] .slabel { font-size: 11px; padding: 3px 5px; }
+}
