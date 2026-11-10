@@ -88,6 +88,23 @@ class Arena3D extends GameScene {
     this.units[u.uid] = o;
     });
   }
+  // Keep one Engine/Scene for all waves. Remove defeated enemy nodes before spawning next wave.
+  switchWave(oldEnemies, newEnemies) {
+    for (const u of oldEnemies) {
+      const o = this.units[u.uid];
+      if (!o) continue;
+      if (o.root) o.root.dispose(false, false);
+      if (o.ring) o.ring.dispose(false, false);
+      if (o.pool) o.pool.dispose(false, false);
+      delete this.units[u.uid];
+    }
+    this._actKey = null;
+    this.actMs = 0;
+    for (const u of newEnemies) this.addUnit(u);
+    if (this.glow) for (const u of newEnemies) {
+      const o = this.units[u.uid]; if (o && o.bubble) this.glow.addExcludedMesh(o.bubble);
+    }
+  }
   slotPos([sx, sz, boss, idx]) {
     if (this.raid) {
       const asp = (this.cv.clientWidth || innerWidth) / (this.cv.clientHeight || innerHeight);

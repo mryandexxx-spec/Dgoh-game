@@ -6,11 +6,11 @@ import { persist } from '../../core/save.js';
 import { portrait } from '../../render2d/figures.js';
 import { CH } from '../../data/chars.js';
 import { $ } from '../../core/dom.js';
-import { CHEST_CRY, CHEST_NEED, CHEST_RW, DAILY, dailyGot, dly, qState } from '../../logic/daily.js';
+import { CHEST_CRY, CHEST_NEED, CHEST_RW, DAILY, activeDaily, dailyGot, dly, qState } from '../../logic/daily.js';
 
 // ===== daily quests =====
 function claimQuest(k, silent) {
-  const q = DAILY.find(x => x.k === k); if (!q || qState(q) !== 'done') return;
+  const q = activeDaily().find(x => x.k === k); if (!q || qState(q) !== 'done') return;
   dly().got[k] = true; const lines = giveRewards(q.rw); lines.push(...accXP(10)); persist();
   if (!silent) { refreshAll(); rewardWin(q.n, lines); }
   return lines;
@@ -22,7 +22,7 @@ function claimChest() {
   rewardWin('Сундук дня', lines, { sub: `Выполнено ${CHEST_NEED} заданий · кристаллы: ${cry} из 50–300` });
 }
 function renderDaily() {
-  const D = dly(), got = dailyGot(), ready = DAILY.filter(q => qState(q) === 'done').length;
+  const D = dly(), got = dailyGot(), ready = activeDaily().filter(q => qState(q) === 'done').length;
   const msLeft = new Date(new Date().setHours(24, 0, 0, 0)) - Date.now(), hh = Math.floor(msLeft / 3.6e6), mm = Math.floor(msLeft % 3.6e6 / 6e4);
   $('#view').innerHTML = `<h2>Ежедневные задания</h2><p class="sub">Задания обновляются в полночь — осталось ${hh} ч ${mm} мин. Получите награды за ${CHEST_NEED} заданий, чтобы открыть Сундук дня: Печать Ландсраада и случайно от 50 до 300 кристаллов.</p>
     <div class="chest ${D.chest ? 'opened' : got >= CHEST_NEED ? 'ready' : ''}">
@@ -31,7 +31,7 @@ function renderDaily() {
       <button class="btn ${got >= CHEST_NEED && !D.chest ? 'go' : ''}" data-qchest="1" ${got >= CHEST_NEED && !D.chest ? '' : 'disabled'}>${D.chest ? 'Получено' : 'Открыть'}</button>
     </div>
     <div class="qhead"><p class="chap" style="margin:18px 0 8px">Задания дня</p>${ready ? `<button class="btn go mini" data-qall="1">Забрать всё (${ready})</button>` : ''}</div>
-    <div class="quests">${DAILY.map(q => { const st = qState(q), c = Math.min(q.need, D.c[q.k] || 0);
+    <div class="quests">${activeDaily().map(q => { const st = qState(q), c = Math.min(q.need, D.c[q.k] || 0);
       return `<div class="quest ${st}"><div class="qtx"><b>${q.n}</b><div class="qbar"><i style="width:${c / q.need * 100}%"></i></div><span class="mono">${c}/${q.need}</span></div>
         <div class="qrw">${rewardsHtml(q.rw)}</div>
         <div class="qbtn">${st === 'got' ? '<span class="qok">✓ Получено</span>' : st === 'done' ? `<button class="btn go mini" data-qclaim="${q.k}">Забрать</button>` : q.go ? `<button class="btn mini" data-goto="${q.go}">Перейти</button>` : ''}</div></div>`; }).join('')}</div>

@@ -10,14 +10,14 @@ import { onPersist, persist0 } from '../core/save.js';
 import { ROMAN, todayKey } from '../logic/economy.js';
 import { fmt } from '../core/format.js';
 import { $ } from '../core/dom.js';
-import { DAILY, qState } from '../logic/daily.js';
+import { DAILY, activeDaily, qState } from '../logic/daily.js';
 
 // ===================== corner notifications (daily quests / feats) =====================
 function noteSnap(init) {
   S.notes ??= { d: '', q: {}, f: {} };
   if (S.notes.d !== todayKey()) { S.notes.d = todayKey(); S.notes.q = {}; init = init || false; }
   const out = [];
-  for (const q of DAILY) { const st = qState(q); if (st !== 'prog' && !S.notes.q[q.k]) { S.notes.q[q.k] = 1; if (!init) out.push({ kind: 'quest', q }); } }
+  for (const q of activeDaily()) { const st = qState(q); if (st !== 'prog' && !S.notes.q[q.k]) { S.notes.q[q.k] = 1; if (!init) out.push({ kind: 'quest', q }); } }
   for (const F of FEATS) {
     const s = featStep(F); if (s >= F.at.length) continue;
     const v = METRIC[F.m](), goal = F.at[s], prev = s ? F.at[s - 1] : 0, pct = Math.min(1, Math.max(0, (v - prev) / (goal - prev)));
