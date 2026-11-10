@@ -21,6 +21,7 @@ import { craftAndEquip, buildPart } from '../logic/gear-crafting.js';
 import { detailSk, hcStat, openDetail, set_detailSk, updLvl } from './hero-card.js';
 import { hcFind, hcSkill, skTab } from './skill-window.js';
 import { hcMem } from './memory-screen.js';
+import { recyclerClick } from './recycler-screen.js';
 import { nextShards, rosterClick } from './views/squad.js';
 import { campSel, set_campSel } from './views/camp.js';
 import { render } from './router.js';
@@ -57,6 +58,8 @@ document.addEventListener('click', e => {
   if (!t) return;
   const d = t.dataset;
   if (d.rwok) { const w = $('#rwwin'); if (w) w.remove(); setTimeout(() => { showCeleb(); renderNotes(); }, 50); return; }
+  if (recyclerClick(d)) { if (d.ixback) render(); return; }
+  if (d.ixenter) { set_view('recycler'); render(); return; }
   if (metaClick(d) || meta2Click(d) || celebClick(d) || cqClick(d)) return;
   if (d.v) { set_view(d.v); render(); return; }
   if (d.csel !== undefined) { set_campSel(+d.csel); render(); return; }
