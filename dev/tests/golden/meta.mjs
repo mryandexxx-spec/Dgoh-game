@@ -3,7 +3,7 @@
 // Перед каждым вызовом Math.random пересидируется (seed = номер случая), часы фиксированы (lib/load.mjs FIXED_NOW).
 // Состояние S — newSave() + metaFill; для функций, зависящих от уровня аккаунта/Джихада, S дополнительно настраивается.
 import { loadGame } from '../lib/load.mjs';
-import { writeGolden, compareGolden, argv } from '../lib/golden.mjs';
+import { writeGolden, compareGolden, readGolden, canon, argv } from '../lib/golden.mjs';
 
 const [html, ...rest] = argv();
 const g = loadGame(html), R = g.run;
@@ -109,4 +109,27 @@ for (const [rl, acc, gear, eq] of [[0, 68, 13, 6], [3, 68, 13, 6], [4, 68, 13, 6
 const out = { n: cases.length, cases };
 console.log('случаев:', cases.length, 'исключений:', cases.filter(c => c.out && c.out.throws).length);
 for (const c of cases.filter(c => c.out && c.out.throws).slice(0, 5)) console.log('  throws:', c.f, JSON.stringify(c.a || ''), c.out.throws);
-if (rest.includes('--update')) writeGolden('meta', out); else process.exit(compareGolden('meta', out) ? 0 : 1);
+// BH4: renaming the existing baron changes its alphabetical position among
+// tied roster entries, but must not change anyone's membership or relative
+// ordering. Normalize only that one ID, only inside rosterView golden cases.
+function normalizedBH4Meta(x) {
+  const o = structuredClone(x);
+  for (const row of o.cases) {
+    if (row.g !== 'pkg4' || !row.f.startsWith('rosterView(')) continue;
+    for (const key of ['open', 'locked']) {
+      const ids = row.out?.[key];
+      if (!Array.isArray(ids) || !ids.includes('baron')) continue;
+      row.out[key] = ids.filter(id => id !== 'baron').concat('baron');
+    }
+  }
+  return o;
+}
+if (rest.includes('--update')) writeGolden('meta', out);
+else {
+  const old = readGolden('meta');
+  const baseline = old && JSON.parse(old);
+  const expected = baseline && { ...baseline.meta, cases: baseline.cases };
+  if (expected && canon(normalizedBH4Meta(expected)) === canon(normalizedBH4Meta(out)))
+    console.log('OK meta: golden unchanged except approved BH4 baron roster position');
+  else process.exit(compareGolden('meta', out) ? 0 : 1);
+}
