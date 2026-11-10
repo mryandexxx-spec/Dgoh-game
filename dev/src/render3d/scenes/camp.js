@@ -74,9 +74,9 @@ class CampStage extends Stage3D {
     place(bBox(2.8, .16, 1.05), rock, craftX, craftZ, .13); // landing pad
     const hull = place(bBox(.56, .56, 2.35), bronze, craftX, craftZ, 1.47);
     hull.rotation.x = -.10;
-    const wingLeft = place(bBox(2.22, .12, .44), bright, craftX - 1.35, craftZ + .02, 1.78);
+    const wingLeft = place(bBox(1.62, .12, .44), bright, craftX - 1.05, craftZ + .02, 1.78);
     wingLeft.rotation.z = -.20;
-    const wingRight = place(bBox(2.22, .12, .44), bright, craftX + 1.35, craftZ + .02, 1.78);
+    const wingRight = place(bBox(1.62, .12, .44), bright, craftX + 1.05, craftZ + .02, 1.78);
     wingRight.rotation.z = .20;
     place(bBox(.48, .3, .85), ink, craftX, craftZ + .55, 1.75); // glass cockpit
     place(bBox(.22, .82, .34), canvas, craftX, craftZ - .85, 1.91); // tail fin
