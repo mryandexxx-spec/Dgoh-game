@@ -136,6 +136,7 @@ function normalizedGE1Meta(input) {
   for (const row of x.cases) {
     if (row.g === 'const' && row.f === 'NODE_ITEMS') row.out = '[GE1 source index verified separately]';
     if (row.g === 'reward' && row.f === 'rollItems') row.out = '[GE1 farm roll verified separately]';
+    if (row.g === 'reward' && row.f === 'raidFrags') row.out = '[GE1 component raid loot verified separately]';
     if (row.g === 'reward' && row.f === 'campReward') {
       if (row.out && typeof row.out === 'object') row.out.items = '[GE1 farm roll verified separately]';
     }
