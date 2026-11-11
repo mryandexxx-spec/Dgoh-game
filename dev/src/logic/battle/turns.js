@@ -44,6 +44,27 @@ function glAct(B, u, tuid) {
     B.spice[u.side] = Math.min(100, B.spice[u.side] + 20);
     return;
   }
+  // Recovered Baron GL: army strike across the enemy formation.
+  // Numeric values are configurable rather than hardcoded as approved balance.
+  if (B.glKind === 'fall-of-atreides') {
+    const gl = u.def.gl, mult = Number.isFinite(gl.damageMultiplier) ? gl.damageMultiplier : 3;
+    const armorTurns = Number.isInteger(gl.armorDownTurns) ? gl.armorDownTurns : 3;
+    const atrBonus = Number.isFinite(gl.atreidesBonus) ? gl.atreidesBonus : .5;
+    const healPerKill = Number.isFinite(gl.healPerKill) ? gl.healPerKill : .2;
+    log(B, `${u.def.sn}: «${gl.n}»`, u.side === 'A' ? 'actA' : 'actB');
+    const targets = living(B, foe(u.side)).slice();
+    for (const t of targets) {
+      if (B.over) break;
+      const m = mult * (has(t, 'atr') ? 1 + atrBonus : 1);
+      hit(B, u, t, 'fast', m);
+      if (!t.alive) {
+        const heal = Math.min(u.maxHp - u.hp, Math.round(u.maxHp * healPerKill));
+        if (heal > 0) { u.hp += heal; ev(B, u, '+' + heal, 'heal'); }
+      } else applyFx(B, u, t, 'armDown', armorTurns);
+    }
+    checkOver(B);
+    return;
+  }
   if (B.glKind === 'mirror') {
     const sm = 1 + .04 * ((u.sk && u.sk.ult) || 1);
     log(B, `${u.def.sn}: «${u.def.gl.n}»`, u.side === 'A' ? 'actA' : 'actB');
