@@ -37,4 +37,28 @@ function orderedAssist(B, actor, target, helper, multiplier, hit) {
   const dt = basic.dt === 'laser' ? 'fast' : basic.dt;
   return hit(B, helper, target, dt, (basic.m || 1) * multiplier);
 }
-export { canReceiveBuff, canApplyStatus, consumeForesight, markHouseVictim, markedDamageFactor, mayRevive, strongestAlly, orderedAssist };
+// Runs only for a hero explicitly declaring the recovered "Алчность" passive.
+// The state belongs to the combat instance; never persists between fights.
+function baronDeathTriggers(B, victim, ev) {
+  if (!victim || !B?.units) return;
+  const barons = B.units.filter(a => a.alive && a.side !== victim.side && a.def?.passive?.harkonnenGreed);
+  const atreides = victim.def?.f?.includes('atr');
+  if (atreides && barons.length) victim.noRev = true;
+  for (const baron of barons) {
+    const h = Math.min(baron.maxHp - baron.hp, Math.round(baron.maxHp * (baron.def.passive.healOnEnemyDeath ?? .5)));
+    if (h > 0) { baron.hp += h; if (ev) ev(B, baron, '+' + h, 'heal'); }
+    const turns = atreides ? 2 : 1;
+    for (const ally of B.units) if (ally.alive && ally.side === baron.side && ally.def?.f?.includes('hark')) {
+      ally.fx.attackUp = Math.max(ally.fx.attackUp || 0, turns);
+    }
+  }
+  // The strongest initial enemy was marked by the *leader*, which may differ
+  // from a living Baron with the passive. Trigger the mark reward once only.
+  if (victim.houseVictimSide && !victim.houseVictimClaimed) {
+    victim.houseVictimClaimed = true;
+    for (const ally of B.units) if (ally.alive && ally.side === victim.houseVictimSide) {
+      ally.fx.attackUp = Math.max(ally.fx.attackUp || 0, 2);
+    }
+  }
+}
+export { canReceiveBuff, canApplyStatus, consumeForesight, markHouseVictim, markedDamageFactor, mayRevive, strongestAlly, orderedAssist, baronDeathTriggers };
