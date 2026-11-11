@@ -46,4 +46,22 @@ for(const x of core.filter(x=>x.type==='mission')) assert.ok(!lens.some(y=>y.typ
 assert.equal(gearSources(pad.id,'complete').length,1);
 assert.equal(gearSources(pad.id,'complete')[0].chance,.002);
 assert.equal(gearSources('pad13','complete').length,0);
+
+const raidStart=raw.indexOf('function raidFrags('),raidEnd=raw.indexOf('const IG =',raidStart);
+assert.ok(raidStart>0 && raidEnd>raidStart);
+const {raidFrags}=new Function('ITEMS','RAID_FRAGS','PARTS_BY_KIND','partFragId',
+  raw.slice(raidStart,raidEnd)+'return {raidFrags};')
+  (ITEMS,[{n:12,tiers:[6,7,8]},{n:22,tiers:[9,10,11]},{n:36,tiers:[11,12,13]}],
+    PARTS_BY_KIND,partFragId);
+for(const tier of [0,1,2]) {
+  const rewards=raidFrags(tier,1);
+  assert.ok(rewards.length>0);
+  for(const [id,q] of rewards) {
+    assert.match(id,/^frag:[a-z]+\\d+:[a-z]+$/);
+    assert.equal(q,1);
+  }
+}
+assert.ok(!gearSources('pad9').some(s=>s.type==='sietch'||s.type==='raid'),
+  'Legacy universal fragments have no new acquisition sources');
+
 console.log('GE1 complete / component sources, probability bands, inventory and disjointness: PASS (156 items)');
