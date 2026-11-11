@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 const src=readFileSync(new URL('../src/render3d/characters/pose-legend-baron.js',import.meta.url),'utf8')
-  .replace(/^import .*;\s*$/gm,'').replace(/^export .*;\s*$/gm,'');
+  .replace(/^import [^\n]*;[^\n]*$/gm,'').replace(/^export [^\n]*;[^\n]*$/gm,'');
 const ANIM3={};
 const seg=(v,a,b)=>{const t=Math.min(1,Math.max(0,(v-a)/(b-a)));return t*t*(3-2*t);};
 const ctx=vm.createContext({ANIM3,seg,Math});
