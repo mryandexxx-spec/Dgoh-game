@@ -1,7 +1,7 @@
 // Таблица разрезания src/app.js (проход 1) на модули — REFACTOR_PLAN §2.
 // [первая строка в app.js, путь модуля]; модуль занимает строки до начала следующего. Порядок = порядок исполнения в монолите.
 export const SPLIT = [
-  [1, 'data/fx.js'], [33, 'data/chars.js'], [184, 'data/skill-ups.js'], [184, 'logic/battle/skills.js'], [214, 'data/boss.js'], [228, 'data/gear-recipes.js'], [228, 'data/gear-bonuses.js'],
+  [1, 'data/fx.js'], [33, 'data/baron-future-kits.js'], [33, 'data/chars.js'], [184, 'data/skill-ups.js'], [184, 'logic/battle/skills.js'], [214, 'data/boss.js'], [228, 'data/gear-recipes.js'], [228, 'data/gear-bonuses.js'],
   [228, 'logic/battle/stats.js'], [246, 'logic/battle/horror.js'], [246, 'logic/battle/support-kits.js'], [246, 'logic/battle/baron-mechanics.js'], [246, 'logic/battle/engine.js'], [434, 'logic/battle/turns.js'], [584, 'logic/battle/raid.js'], [623, 'logic/battle/ai.js'],
   [654, 'data/looks.js'], [676, 'render2d/figures.js'], [805, 'render2d/scenes.js'], [1082, 'render2d/scene-bg.js'], [1138, 'render2d/fx-layer.js'],
   [1183, 'render3d/base.js'], [1205, 'render3d/quality.js'], [1205, 'render3d/ctx.js'], [1205, 'render3d/game-scene.js'], [1205, 'render3d/materials.js'], [1248, 'render3d/geometry.js'], [1295, 'render3d/env/build-env.js'], [1352, 'render3d/env/props.js'],
