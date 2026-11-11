@@ -1,6 +1,6 @@
-// BH9.7 — sealed normal-hero launch contract. Pure logic; never invoked by
-// fillSave or public routing until approved portrait, rig and release assets exist.
-// Reuses exactly the ordinary hero save schema (no special Baron progression).
+// BH9.7 — two ordinary heroes. Owner approved existing procedural Chani/Paul
+// rendering for now; full authored GLB/DGM is explicitly postponed.
+// This pure module retains the final art manifest without requiring it in gameplay.
 import { BARON_FUTURE_KITS, validateBaronFutureKits } from '../data/baron-future-kits.js';
 import { BARON_FUTURE_HEROES, validateFutureHeroRegistry } from '../data/baron-future-heroes.js';
 
@@ -30,11 +30,12 @@ function releaseAssetCheck(names,defs=standardFutureDefs()) {
   }
   return missing;
 }
-// Deliberate explicit gate: a missing portrait, model or animation is *not*
-// satisfied by a procedural avatar. No silent public unlocks.
-function stageFutureRoster(save,{approved=false,availableAssets=[]}={}){
+// Procedural art is now an expressly approved temporary option. Final authored
+// model mode still requires six files. Never reset previously earned progress.
+function stageFutureRoster(save,{approved=false,visualMode='procedural',availableAssets=[]}={}){
   if(!approved)return {ok:false,reason:'approval-required',changed:false};
-  const missing=releaseAssetCheck(availableAssets);
+  if(visualMode!=='procedural' && visualMode!=='authored')return {ok:false,reason:'visual-mode',changed:false};
+  const missing=visualMode==='authored'?releaseAssetCheck(availableAssets):[];
   if(missing.length)return {ok:false,reason:'assets-required',missing,changed:false};
   if(!save||typeof save!=='object'||!save.roster||typeof save.roster!=='object')
     return {ok:false,reason:'save-required',changed:false};
