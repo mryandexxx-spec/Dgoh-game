@@ -73,7 +73,11 @@ function grantFrags(list) {
 }
 function raidFrags(tier, pct) {
   const R = RAID_FRAGS[tier], n = Math.round(R.n * pct), pool = Object.values(ITEMS).filter(it => R.tiers.includes(it.t)), out = [];
-  for (let k = 0; k < n; k++) out.push([pool[Math.floor(Math.random() * pool.length)].id, 1]);
+  for (let k = 0; k < n; k++) {
+    const item = pool[Math.floor(Math.random() * pool.length)];
+    const part = PARTS_BY_KIND[item.kind][Math.floor(Math.random() * 2)];
+    out.push([partFragId(item, part), 1]);
+  }
   return out;
 }
 const IG = {
