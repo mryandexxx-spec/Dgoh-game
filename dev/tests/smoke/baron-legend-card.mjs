@@ -43,7 +43,7 @@ try {
     await page.screenshot({ path:path.join(out, `${w}x${h}-${quality}-existing-muaddib.png`) });
     const begin = await page.evaluate(() => {
       const before = JSON.stringify(S.roster);
-      previewLegendBaronCard();
+      openDetail('baron_legend', true);
       const hc = document.querySelector('#overlay .hc');
       if (!hc || hc.dataset.cid !== 'baron_legend') throw Error('Shared hero card not mounted');
       const disabled = [...hc.querySelectorAll('button:not([data-close]):not([data-dback]):not([data-hcstat])')];
