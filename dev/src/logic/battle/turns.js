@@ -32,7 +32,7 @@ function startTurn(B, u) {
   decFx(u);
   return { skip: false };
 }
-function decFx(u) { for (const k in u.fx) { if (k === 'voiced' || k === 'fear' || k === 'stun') continue; if (--u.fx[k] <= 0) delete u.fx[k]; } if (!u.fx.bleed) u.bleedN = 0; }
+function decFx(u) { for (const k in u.fx) { if (k === 'voiced' || k === 'fear' || k === 'stun') continue; if (--u.fx[k] <= 0) delete u.fx[k]; } if (!u.fx.bleed) u.bleedN = 0; if (!u.fx.horror) u.horrorStrength = 1; }
 
 const glMeter = (B, u) => Math.max(u.ultM || 0, u.def && !u.def.boss && u.def.legendary && B.spice ? (B.spice[u.side] || 0) : 0);
 function glCharge(B, src, n) { for (const x of B.units) if (x.alive && x.glOn && !x.glUsed && x.side === src.side) x.ultM = Math.min(100, x.ultM + (x === src ? n : 4)); }
