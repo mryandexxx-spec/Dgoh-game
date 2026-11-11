@@ -20,7 +20,7 @@ function aiPlan(B, u) {
     return true;
   };
   if (abilityReady(B, u, 'gl')) return { key: 'gl', target: null };
-  for (const k of ['ult', 'special']) if (u.def[k] && abilityReady(B, u, k) && want(u.def[k])) { key = k; break; }
+  for (const k of ['powerful', 'ult', 'special']) if (u.def[k] && abilityReady(B, u, k) && want(u.def[k])) { key = k; break; }
   const ab = u.def[key];
   let target = null;
   if (ab.tgt === 'enemy') {
