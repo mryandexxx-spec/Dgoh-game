@@ -50,23 +50,18 @@ try {
       basic:{n:'Приказ Барона',dt:'voice',tgt:'enemy'},
       special:{n:'Власть через страх'},ult:{n:'Глаза императора'},
       gl:{n:'Падение Атрейдесов',kind:'fall-of-atreides'}};
-    // The supplied legend DGM omitted materialMode, so default PBR on the
-    // court produces near-black metal and blown-out cape in the real frame.
-    // Trial the game's existing StandardMaterial path in this preview only.
-    const stagedDgm=modelData('baron_legend');
-    if(!stagedDgm)throw Error('Legend DGM parse missing');
-    stagedDgm.materialMode='standard';
     a.addUnit({uid:'bh8_preview',idx:0,side:'A',gear:13,relic:0,def});
     const caster=a.units.bh8_preview;
+    // Preview units are not in BT.B.units, so sync(B) never initializes their
+    // runtime visual flags. An undefined shieldK makes the bubble alpha NaN
+    // and renders a huge opaque white/pink sphere over the character.
+    Object.assign(caster,{shieldK:0,stealth:false,phaseN:1,dead:false,
+      hitT:0,healT:0,active:false,tgt:false,charm:false});
+    if(caster.bubble)caster.bubble.material.alpha=0;
+
     if(!caster?.root?._authored)throw Error('Model fell back to procedural');
     if(caster.root.getChildMeshes().filter(x=>x.skeleton).length!==11)
       throw Error('Expected 11 skinned model meshes');
-    // BH8 diagnostic (NOT shipping): unbind bones to isolate bad skinning
-    // from material/lighting and compare the native reference silhouette.
-    for(const m of caster.root.getChildMeshes().filter(x=>x.skeleton)){
-      m.skeleton=null;
-      m.numBoneInfluencers=0;
-    }
 
     const foes=BT.B.units.filter(x=>x.side==='B').map(x=>a.units[x.uid]).filter(Boolean);
     if(foes.length<4)throw Error('Enemy formation missing');
@@ -93,11 +88,14 @@ try {
       return {motion:__bh8.caster.root._motion,
         chairMeshes:G.chair.getChildMeshes().length,
         rootY:__bh8.caster.root.position.y,frame:a.scene.getFrameId(),
+        shieldAlpha:__bh8.caster.bubble?.material.alpha ?? null,
         liveMeshes:a.scene.meshes.length,GLactive:!!a.baronGL};
     },at);
     await page.screenshot({path:path.join(out,`${w}x${h}-${q}-${name}.png`)});
     all.push({w,h,q,name,...stats});
     assert(stats.frame>0,'real WebGL frame required: '+JSON.stringify(stats));
+    assert(Number.isFinite(stats.shieldAlpha),'preview shield alpha must be finite');
+    assert(stats.shieldAlpha===0,'unowned preview shield should stay invisible');
     assert(stats.GLactive,'GL ended before '+name);
     assert(stats.chairMeshes>=7,'GL chair lost in '+name);
     phase++;
