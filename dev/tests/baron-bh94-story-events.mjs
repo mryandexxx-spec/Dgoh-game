@@ -16,13 +16,14 @@ assert.equal(SHARDS_NEXT.slice(1,7).reduce((a,b)=>a+b,10),NORMAL_TOTAL_TO_7_STAR
 assert.equal(NORMAL_TOTAL_TO_7_STARS,330);
 assert.ok(CH.margot && CH.yue, 'Both normal heroes are available in roster');
 const seed={v:1,roster:Object.fromEntries(Object.keys(CH).map(id=>[id,{shards:0,stars:0,lvl:1,gear:1}])),journeys:{muaddib:{0:true}},acc:{lvl:39}};
-assert.equal(seed.roster.margot,undefined);
-assert.equal(seed.roster.yue,undefined);
+assert.equal(seed.roster.margot.stars,0,'Margot starts locked at 0 stars');
+assert.equal(seed.roster.yue.stars,0,'Yue starts locked at 0 stars');
 assert.equal(prepareStoryUnlockBattle(seed,'margot_story',0,'D0').reason,'locked');
 seed.acc.lvl=40;
 assert.equal(prepareStoryUnlockBattle(seed,'margot_story',0,'D0').ok,true);
 assert.equal(prepareStoryUnlockBattle(seed,'margot_story',1,'D0').reason,'locked');
 assert.equal(rewardStoryEventWin(seed,'margot_story',0,'D0',false).reason,'battle');
+delete seed.roster.margot;
 assert.equal(rewardStoryEventWin(seed,'margot_story',0,'D0',true).reason,'hero-unavailable');
 assert.equal(seed.storyEvents,undefined,'no progress created on denied action');
 seed.roster.margot={stars:0,shards:0,lvl:1,gear:1};
