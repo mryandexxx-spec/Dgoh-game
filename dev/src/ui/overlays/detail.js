@@ -34,7 +34,7 @@ function slotState(cid, k) {
     (S.gearOwned?.[it.id] || 0) * need +
     (recipe?.parts || []).reduce((sum, part) => sum +
       ((S.gearParts?.[part.id] || 0) ? part.materials[0].count :
-        (S.inv[part.materials[0].id] || 0)), 0));
+        Math.min(part.materials[0].count, S.inv[part.materials[0].id] || 0)), 0));
   const r = craftRequirements(it.id, S.inv, S.gearParts || {}, { sol: S.solari, pl: S.plast }, S.gearOwned || {});
   if (p.eq[k]) return { it, st: 'eq', have, need, recipe: r };
   if (r?.ready) return { it, st: 'ready', have, need, recipe: r };
