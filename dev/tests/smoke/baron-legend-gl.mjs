@@ -50,6 +50,12 @@ try {
       basic:{n:'Приказ Барона',dt:'voice',tgt:'enemy'},
       special:{n:'Власть через страх'},ult:{n:'Глаза императора'},
       gl:{n:'Падение Атрейдесов',kind:'fall-of-atreides'}};
+    // The supplied legend DGM omitted materialMode, so default PBR on the
+    // court produces near-black metal and blown-out cape in the real frame.
+    // Trial the game's existing StandardMaterial path in this preview only.
+    const stagedDgm=modelData('baron_legend');
+    if(!stagedDgm)throw Error('Legend DGM parse missing');
+    stagedDgm.materialMode='standard';
     a.addUnit({uid:'bh8_preview',idx:0,side:'A',gear:13,relic:0,def});
     const caster=a.units.bh8_preview;
     if(!caster?.root?._authored)throw Error('Model fell back to procedural');
