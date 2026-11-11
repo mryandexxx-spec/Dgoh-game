@@ -23,6 +23,7 @@ assert.equal(m.fx.foresight,1);
 assert.equal(y.fx.foresight,undefined);
 assert.ok(j.tm>=200,'Allies receive turn meter');
 l.fx.defUp=2;
+j.hp=j.maxHp*.8;
 act(B,m,'ult',l.uid);
 assert.equal(l.fx.defUp,undefined,'one positive status dispelled');
 assert.equal(l.fx.isolation,2);
