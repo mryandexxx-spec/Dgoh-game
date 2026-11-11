@@ -8,7 +8,7 @@ import { CH, MENTAT } from '../../data/chars.js';
 import { LEAD_MODS } from '../../data/skill-ups.js';
 import { FX } from '../../data/fx.js';
 import { horrorDamageFactor, horrorSpeedFactor } from './horror.js';
-import { canApplyStatus, consumeForesight, markedDamageFactor, markHouseVictim } from './baron-mechanics.js';
+import { canApplyStatus, consumeForesight, markedDamageFactor, markHouseVictim, baronDeathTriggers } from './baron-mechanics.js';
 
 function mkRng(seed) {
   let a = seed >>> 0;
@@ -112,6 +112,7 @@ function kill(B, u, by) {
   const g = !B.over && u.alive && guardOf(B, u);
   if (g) { u.hp = 1; ev(B, u, '1 ОЗ', 'buff'); log(B, `${g.def.sn} не даёт ${u.def.sn} пасть: 1 здоровья.`, 'ctrl'); return; }
   u.hp = 0; u.alive = false; u.fx = {}; u.shield = 0; ev(B, u, '', 'death');
+  baronDeathTriggers(B, u, ev); // after guards, before any resurrection queue
   if (u.def.id === 'duncan' && !u.revived && !u.noRev && skLv(u, 'passive') >= 7) { u.revived = true; u.pendingRevive = true; log(B, `${u.def.sn} падает… но гхола не умирает дважды.`, 'death'); return; }
   if (u.side === 'A' && B.cqGhola && !u.revived && !u.charmed && !u.noRev) { B.cqGhola = 0; u.revived = true; u.pendingRevive = true; u.revHp = .5; log(B, `${u.def.sn} падает… но аксолотлевый чан вернёт его в бой.`, 'death'); return; }
   log(B, `${u.def.sn} выбывает из боя.`, 'death');
