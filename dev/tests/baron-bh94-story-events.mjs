@@ -46,19 +46,20 @@ for(const id of ['margot_story','yue_story']){
     assert.equal(result.shardsGranted,[20,30,50][index]);
     assert.equal(result.firstClear,true);
     const replay=finishStoryUnlockBattle(seed,p,'D0');
-    if(index<2)assert.equal(replay.shardsGranted,0);
-    else assert.equal(replay.shardsGranted,2);
+    assert.equal(replay.ok,false,'one battle cannot produce multiple rewards');
+    assert.equal(replay.reason,'already-settled');
   }
   assert.equal(eventStatus(seed,id,'D0').progress,3);
   assert.equal(seed.roster[STORY_UNLOCK_EVENTS[id].hero].stars,1);
-  assert.equal(seed.roster[STORY_UNLOCK_EVENTS[id].hero].shards,92);
-  // III replay has already claimed 1 of the five daily entries.
-  for(let i=0;i<4;i++){
+  assert.equal(seed.roster[STORY_UNLOCK_EVENTS[id].hero].shards,90);
+  // Each of the five daily claims must come from a distinct completed fight.
+  for(let i=0;i<5;i++){
     const p=prepareStoryUnlockBattle(seed,id,2,'D0',i+57);
     assert.equal(p.ok,true);
     for(const u of p.battle.units.filter(u=>u.side==='B'))u.alive=false;
     checkOver(p.battle);
     assert.equal(finishStoryUnlockBattle(seed,p,'D0').shardsGranted,2);
+    assert.equal(finishStoryUnlockBattle(seed,p,'D0').reason,'already-settled');
   }
   assert.equal(eventStatus(seed,id,'D0').dailyRemaining,0);
   assert.equal(prepareStoryUnlockBattle(seed,id,2,'D0').reason,'daily-limit');
