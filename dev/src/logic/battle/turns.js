@@ -4,6 +4,7 @@ import { bossTurn, wormFrenzy } from './raid.js';
 import { applyFx, checkOver, damageRaw, ev, foe, has, hit, kill, living, log, stunFx, validTargets } from './engine.js';
 import { abFor, dunBuff, dunGuard, skLv, skMult } from './skills.js';
 import { FX } from '../../data/fx.js';
+import { supportAbilityEffects, supportDispel } from './support-kits.js';
 import { strongestAlly, orderedAssist } from './baron-mechanics.js';
 
 // ---- turn lifecycle ----
@@ -124,6 +125,7 @@ function act(B, u, key, targetUid) {
     } else if (damaging) { const o = { bonusDebuffed: ab.bonusDebuffed, fromStealth, noRev: ab.noRev };
       alive = hit(B, u, t, ab.dt, ab.m * sm, o);
       for (let h = 1; h < (ab.hits || 1) && alive && t.alive && !B.over; h++) { log(B, `${u.def.sn} бьёт снова!`); alive = hit(B, u, t, ab.dt, ab.m * sm, o); } }
+    if (alive && ab.removePositive) supportDispel(t,ab.removePositive);
     if (alive) for (const [k, n, to, ch] of ab.fx || []) if (to === 't') applyFx(B, u, t, k, n, ch ?? 1);
     if (alive && key === 'basic' && u.def.doubleBasic && t.alive && !B.over && B.rng() < u.def.doubleBasic) { log(B, `${u.def.sn} бьёт повторно!`); hit(B, u, t, ab.dt, ab.m * .6); }
     if (alive && key === 'basic' && u.cqOnHit && t.alive && !B.over) for (const [k, n, ch] of u.cqOnHit) applyFx(B, u, t, k, n, ch);
@@ -178,6 +180,7 @@ function act(B, u, key, targetUid) {
   if (ab.shieldSelf && u.maxShield) { u.shield = u.maxShield; ev(B, u, 'Щит', 'buff'); }
   if (ab.heal) for (const a of living(B, u.side)) { const h = Math.min(a.maxHp - a.hp, Math.round(a.maxHp * ab.heal * sm * (1 + (u.def.healUp || 0)))); a.hp += h; if (h) ev(B, a, '+' + h, 'heal'); }
   if (ab.cleanse) for (const a of living(B, u.side)) { delete a.fx.poison; delete a.fx.fear; delete a.fx.voiced; }
+  supportAbilityEffects(B,u,ab,{living,applyFx,ev});
   if (ab.unstealth) for (const e of living(B, foe(u.side))) delete e.fx.stealth;
   // counterattack
   if (ab.tgt === 'enemy' && damaging && lastTarget && lastTarget.alive && u.alive && !B.over) {
