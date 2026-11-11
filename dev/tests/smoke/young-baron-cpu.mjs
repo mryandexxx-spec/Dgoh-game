@@ -29,8 +29,8 @@ try {
       const v=[tmp.x,tmp.y,tmp.z];for(let k=0;k<3;k++){min[k]=Math.min(min[k],v[k]);max[k]=Math.max(max[k],v[k]);}
     }
    }
-   o.Lf.hand.computeWorldMatrix(true);
-   return {clip:o.root._clip,motion:o.root._motion,q:o.R.sh.rotationQuaternion.asArray(),left:o.Lf.sh.rotationQuaternion.asArray(),hand:o.Lf.hand.getAbsolutePosition().asArray(),head:o.head.rotationQuaternion.asArray(),min,max,hip:o.hips.position.y};
+   o.Lf.hand.computeWorldMatrix(true);o.R.hand.computeWorldMatrix(true);
+   return {clip:o.root._clip,motion:o.root._motion,q:o.R.sh.rotationQuaternion.asArray(),left:o.Lf.sh.rotationQuaternion.asArray(),hand:o.Lf.hand.getAbsolutePosition().asArray(),right:o.R.hand.getAbsolutePosition().asArray(),head:o.head.rotationQuaternion.asArray(),min,max,hip:o.hips.position.y};
   };
  for(const name of ['Idle','Attack','Hit','Death'])samples[name]=sample(name);
   for(const name of ['basic','special','ult','Showcase'])samples[name]=sample(name);
@@ -65,6 +65,7 @@ try {
  }
  assert.notDeepEqual(result.samples.basic.left,result.samples.special.left,'special is the basic attack');
  assert.notDeepEqual(result.samples.special.left,result.samples.ult.left,'ultimate is the special gesture');
+ assert(result.samples.basic.right[2]>.3 && result.samples.basic.right[1]<1.6,'needle hand aims upward instead of forward');
  assert.equal(result.samples.Showcase.motion,'Showcase');
  assert(B.Vector3.Distance(B.Vector3.FromArray(result.samples.Idle.hand),B.Vector3.FromArray(result.samples.Showcase.hand))>.12,'showcase hand hardly moves');
  assert.notDeepEqual(result.samples.Idle.head,result.samples.idleLater.head,'idle head is frozen');

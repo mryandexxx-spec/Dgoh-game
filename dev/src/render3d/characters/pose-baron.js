@@ -32,7 +32,7 @@ function poseBaron(o, now, t, sp, clip, u, stage) {
       o.root._motion = 'Showcase';
       add(o.Lf.sh, -.65 * w, -.2 * w, .35 * w);
       add(o.Lf.el, -1.05 * w); add(o.Lf.hand, .1 * w, 0, -.3 * w);
-      add(o.head, .12 * w, -.15 * w);
+      add(o.head, .12 * w, .35 * w);
     }
   } else if (clip === 'Attack') {
     const a = o.act;
@@ -41,7 +41,7 @@ function poseBaron(o, now, t, sp, clip, u, stage) {
     const w = seg(u, 0, .24) * (1 - seg(u, .65, 1));
     if (key === 'basic') {
       // Poison needle: aim the right wrist, snap forward at the existing hit.
-      add(o.R.sh, -.38 * w); add(o.R.el, -.48 * w);
+      add(o.R.sh, -.2 * w); add(o.R.el, .5 * w);
       add(o.R.hand, .12 * w, 0, -.12 * w);
       add(o.Lf.el, -.25 * w); add(o.spine, .06 * w);
     } else if (key === 'special') {
