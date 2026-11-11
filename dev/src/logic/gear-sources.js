@@ -16,10 +16,11 @@ function gearSources(id, type = 'fragment') {
     type:'mission', id:i, chance:nodeChance(i),
     energy:NODES[i].camp === 'C'?'candle':'water', reward:'fragment'
   }));
-  // Existing raid and sietch item fragments remain legacy universal materials.
-  if (id === itemId) {
-    if (SHOP_FRAG[item.t]) out.push({type:'sietch',currency:'teeth',price:SHOP_FRAG[item.t],qty:1,legacy:true});
-    RAID_FRAGS.forEach((raid,i)=>{if(raid.tiers.includes(item.t)) out.push({type:'raid',tier:i,random:true,legacy:true});});
+  // GE1: new purchases/raid awards are specific component fragments only.
+  // Existing S.inv[itemId] is legacy stock and cannot be newly generated.
+  if (id.startsWith('frag:')) {
+    if (SHOP_FRAG[item.t]) out.push({type:'sietch',currency:'teeth',price:SHOP_FRAG[item.t],qty:1});
+    RAID_FRAGS.forEach((raid,i)=>{if(raid.tiers.includes(item.t)) out.push({type:'raid',tier:i,random:true});});
   }
   return out;
 }
