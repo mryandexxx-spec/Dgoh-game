@@ -1,0 +1,52 @@
+import assert from 'node:assert/strict';
+import { CH } from '../src/data/chars.js';
+import { BARON_APPROVED_REQUIREMENTS } from '../src/data/baron-legend-approved.js';
+import { BARON_BH9_ENCOUNTERS } from '../src/data/baron-legend-encounters.js';
+import { BH9_BALANCE_PROFILES, validateBH9Balance, baronBH9EnemyProgress } from '../src/data/baron-bh9-balance.js';
+import { baronBH9EventModel, baronBH9LaunchPlan } from '../src/logic/baron-bh9-event.js';
+import { prepareBaronBH9Battle } from '../src/logic/baron-bh9-battle.js';
+
+assert.deepEqual(validateBH9Balance(), []);
+const save = { roster:Object.fromEntries(BARON_APPROVED_REQUIREMENTS.map(r =>
+  [r.id,{ lvl:85, stars:7, gear:13, relic:r.relic }])), journeys:{ muaddib:{0:true} } };
+save.roster.baron_legend = { stars:0, shards:0 };
+const before = structuredClone(save);
+let model=baronBH9EventModel(save);
+assert.equal(model.requirements.ready,true);
+assert.equal(model.configurationReady,true);
+assert.deepEqual(model.stages.map(s=>s.waves),[1,1,1,2,2]);
+assert.deepEqual(model.stages.map(s=>s.lockReason),['hero-kit','sequence','sequence','sequence','sequence']);
+assert.deepEqual(model.stages[0].missingKits,['margot']);
+assert.deepEqual(baronBH9LaunchPlan(save,0),{ok:false,reason:'hero-kit'});
+assert.equal(baronBH9LaunchPlan(save,5).reason,'stage');
+assert.deepEqual(save,before,'render model never modifies save or adds a farm path');
+
+const stageHeroDefs={...CH, margot:{...CH.jessica,id:'margot'}, yue:{...CH.thufir,id:'yue'}};
+let plan=baronBH9LaunchPlan(save,0,stageHeroDefs);
+assert.equal(plan.ok,true);
+assert.deepEqual(plan.squad,BARON_BH9_ENCOUNTERS.stages[0].allies);
+assert.deepEqual(plan.waves,baronBH9EnemyProgress(0));
+assert.equal(plan.firstClearShards,20);
+assert.equal(plan.waves[0][0].lvl,80);
+assert.equal(plan.waves[0][0].gear,13);
+assert.equal(plan.waves[0][0].relic,2);
+assert.equal(baronBH9LaunchPlan(save,1,stageHeroDefs).reason,'sequence');
+const b=prepareBaronBH9Battle(save,0,{heroDefs:stageHeroDefs,seed:37});
+assert.equal(b.ok,true,'battle adapter receives new provisional tuning without manual injection');
+assert.deepEqual(b.battle.units.filter(u=>u.side==='B').map(u=>u.def.id),BARON_BH9_ENCOUNTERS.stages[0].waves[0]);
+
+save.roster.margot.stars=0;
+model=baronBH9EventModel(save,stageHeroDefs);
+assert.equal(model.requirements.ready,false);
+assert.equal(model.stages[0].lockReason,'requirements');
+assert.equal(baronBH9LaunchPlan(save,0,stageHeroDefs).reason,'requirements');
+save.roster.margot.stars=7;
+save.journeys.baron_legend={0:true,1:true,2:true,3:true};
+const final=baronBH9LaunchPlan(save,4,stageHeroDefs);
+assert.equal(final.ok,true);
+assert.equal(final.waves.length,2);
+assert.deepEqual(final.waves[1].map(p=>p.id),BARON_BH9_ENCOUNTERS.stages[4].waves[1]);
+assert.ok(final.waves[1][0].pow > final.waves[0][0].pow);
+assert.equal(BH9_BALANCE_PROFILES.length,5);
+assert.deepEqual(save.journeys.muaddib,{0:true});
+console.log('BH9.2 event model, gating, numeric tuning, fixed squad and engine-ready plan: PASS');
