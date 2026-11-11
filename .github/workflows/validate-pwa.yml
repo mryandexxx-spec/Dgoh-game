@@ -44,6 +44,7 @@ jobs:
       - run: node tests/baron-bh94-story-events.mjs
       - run: node tests/baron-bh95-integration.mjs
       - run: node tests/baron-bh96-story-screen.mjs
+      - run: node tests/baron-bh97-character-release.mjs
       - run: node tests/baron-horror.mjs
       - run: node tests/baron-abilities.mjs
       - run: node tests/baron-mechanics.mjs
