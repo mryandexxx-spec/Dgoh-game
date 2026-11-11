@@ -11,6 +11,12 @@ const HERO3 = {
   shaddam: { style: 'emperor', hairC: '#b8562e' }, fenring: { style: 'emperor', nohelm: 1 }, mohiam: { old: 1 }, jessica: { hairC: '#8a4a26', skin: '#f2d4b8', dagger: 1, look: { cloak: '#d8bf94', dark: '#b8986a', acc: '#6a4a2a', pants: '#8a6a44' } },
   thufir: { hairC: '#c8c0b0', old: 1, noStaff: 1, scars: 1, fat: 1.28 }, gurney: { scar: 1, baliset: 1, bald: 1 }, duncan: { hairC: '#151110', curly: 1, skin: '#8a5a3a', tall: 1.12, muscle: 1, noShield: 1 }, leto: { hairC: '#2a1c14', beard: 1, mus: 1, skin: '#f4dcc6' }, paul: { skin: '#f0d0b0', hairC: '#2a1c14' },
   stilgar: { beard: 1, tube: 1 }, chani: { tube: 1, hairC: '#3a1a10' }, fedaykin: { mask: 1, tube: 1 }, kynes: { tube: 1 }, liet: { tube: 1 },
+  // BH9.7 approved visual direction, temporary procedural 3D like Chani/Paul:
+  // Margot: plum court robes, fine gold trim, high collar; Yue: weary Suk doctor.
+  margot: { style: 'bgrobe', slim: .92, noStaff: 1, hairC: '#302332',
+    skin: '#dec0ad', look: { hi: '#766080', cloak: '#46314e', dark: '#24182d', acc: '#c8a47d', pants: '#251d2a' } },
+  yue: { style: 'tunic', old: 1, noStaff: 1, slim: .98,
+    skin: '#c9ab90', look: { hi: '#b9ac98', cloak: '#777268', dark: '#343c32', acc: '#8e9e72', pants: '#49453d' } },
   robot: { style: 'robot' }, cymek: { style: 'robot', cymek: 1 },
   erasmus: { style: 'robe', erasmus: 1, dagger: 1, noStaff: 1, tall: 1.06, skin: '#c9ced8', look: { cloak: '#7a1626', dark: '#2a0c12', acc: '#d8b050', pants: '#24242c' } },
 };
