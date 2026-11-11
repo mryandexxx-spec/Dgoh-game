@@ -36,7 +36,7 @@ try {
     await page.evaluate(async () => {
       if (!await loadB3()) throw Error('3D engine failed to load');
       if (!MODEL_DATA.baron_legend) throw Error('Legendary Baron DGM not loaded');
-      if (!CH.baron || CH.baron_legend || CH.margot || CH.yue) throw Error('Public hero identity gate broken');
+      if (!CH.baron || CH.baron_legend || !CH.margot || !CH.yue) throw Error('Public hero identity gate broken');
       closeInfo(true); // monthly calendar lives in #overlay2; closeOverlay only clears #overlay
       closeOverlay();
       openDetail('muaddib');
