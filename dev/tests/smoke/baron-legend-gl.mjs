@@ -60,19 +60,28 @@ try {
     const t0=performance.now();
     caster.act={key:'gl',kind:'cast',t0,dur:2500,dir:V3(1,0,0),to:caster.base.clone(),tg:foes};
     a.startBaronGL(caster,foes,t0,1);
+    // Freeze host-driven updates during CPU-heavy screenshot serialization;
+    // advance the *same* genuine Arena3D renderer explicitly per phase.
+    a.update=()=>{};
     window.__bh8={caster,foes,started:t0,initialMeshes:a.scene.meshes.length};
     return {meshes:a.scene.meshes.length,previewSkinned:caster.root.getChildMeshes().filter(x=>x.skeleton).length};
   });
   let phase=0;
   for(const [name,at] of [['rise',360],['command',1100],['strike',1900]]){
-    const passed=await page.evaluate(()=>performance.now()-__bh8.started);
-    if(passed<at)await sleep(at-passed);
-    const stats=await page.evaluate(()=>{
-      const a=BT.arena; a._loop(); const G=a.baronGL;
-      return {motion:__bh8.caster.root._motion,chairMeshes:G?.chair?.getChildMeshes().length||0,
+    const stats=await page.evaluate(at=>{
+      const a=BT.arena,G=a.baronGL;
+      if(!G)throw Error('BH8 staged GL not active before sample');
+      const t0=performance.now()-at, delta=t0-G.t0;
+      G.t0=t0;
+      __bh8.caster.act.t0=t0;
+      // Keep scheduled shell volleys relative to the sampled GL origin.
+      for(const event of a.fxq||[])event.t+=delta;
+      a._loop();
+      return {motion:__bh8.caster.root._motion,
+        chairMeshes:G.chair.getChildMeshes().length,
         rootY:__bh8.caster.root.position.y,frame:a.scene.getFrameId(),
-        liveMeshes:a.scene.meshes.length,GLactive:!!G};
-    });
+        liveMeshes:a.scene.meshes.length,GLactive:!!a.baronGL};
+    },at);
     await page.screenshot({path:path.join(out,`${w}x${h}-${q}-${name}.png`)});
     all.push({w,h,q,name,...stats});
     assert(stats.frame>0,'real WebGL frame required: '+JSON.stringify(stats));
@@ -80,10 +89,10 @@ try {
     assert(stats.chairMeshes>=7,'GL chair lost in '+name);
     phase++;
   }
-  const passed=await page.evaluate(()=>performance.now()-__bh8.started);
-  if(passed<3000)await sleep(3000-passed);
   const end=await page.evaluate(()=>{
     const a=BT.arena;
+    if(a.baronGL)a.baronGL.t0=performance.now()-a.baronGL.dur-100;
+    a._loop();
     const visible=Object.values(a.units).filter(o=>o.def.id==='baron_legend');
     return {ended:!a.baronGL,modelOnlyPreview:visible.length===1,
       youthInPublicCH:!!CH.baron,legendInPublicCH:!!CH.baron_legend,
