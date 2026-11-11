@@ -29,7 +29,10 @@ for(const item of Object.values(ITEMS)){
   const complete=farm.COMPLETE_INDEX.get(item.id)||[];
   assert.equal(complete.length,farm.COMPLETE_SOURCES[item.t],item.id+': complete source count');
   assert.equal(farm.COMPLETE_RATE[item.t],chances[item.t]);
-  for(const i of complete) assert.ok(farm.COMPLETE_NODE_ITEMS[i].includes(item.id));
+  for(const i of complete) {
+    assert.ok(farm.COMPLETE_NODE_ITEMS[i].includes(item.id));
+    assert.ok(!groups.some(group=>group.includes(i)),item.id+': complete and component sources overlap');
+  }
 }
 farm.grantFrags([['gear:pad9',1],['frag:pad9:core',2],['pad9',4]]);
 assert.equal(S.gearOwned.pad9,1);assert.equal(S.inv['frag:pad9:core'],2);assert.equal(S.inv.pad9,4);
