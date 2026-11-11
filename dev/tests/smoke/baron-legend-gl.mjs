@@ -112,6 +112,25 @@ try {
         a.scene.render();
       });
       await page.screenshot({path:path.join(out,`${w}x${h}-${q}-detail.png`)});
+      if(w===667&&q==='low'){
+        for(const mode of ['noshield','nopool','noglow']){
+          await page.evaluate(mode=>{
+            const a=BT.arena,o=__bh8.caster;
+            const affected=mode==='noshield'?[o.bubble]:mode==='nopool'?[o.pool,o.ring]:[];
+            window.__bh8Affected=affected.filter(Boolean).filter(m=>m.isEnabled());
+            for(const m of __bh8Affected)m.setEnabled(false);
+            window.__bh8PrevGlow=a.glow?.isEnabled;
+            if(mode==='noglow'&&a.glow)a.glow.isEnabled=false;
+            a.scene.render();
+          },mode);
+          await page.screenshot({path:path.join(out,`667x375-low-${mode}.png`)});
+          await page.evaluate(()=>{
+            const a=BT.arena;for(const m of __bh8Affected||[])m.setEnabled(true);
+            if(a.glow)a.glow.isEnabled=__bh8PrevGlow;
+            a.scene.render();
+          });
+        }
+      }
       if(w===844&&q==='med'){
         // Diagnostic ONLY: isolate the source model and throne from additive
         // battle overlays. Restore everything after taking the frame.
