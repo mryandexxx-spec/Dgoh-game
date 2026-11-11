@@ -51,6 +51,20 @@ function createBattle(squadA, squadB, opts = {}) {
       if (src.def.teamStartTM) for (const a of team) a.tm = Math.min(999, a.tm + src.def.teamStartTM);
     }
   }
+  // Recovered Greed passive: calculate team bonuses exactly once from the
+  // opening formation (not re-applied on resurrection or new waves).
+  for (const side of ['A', 'B']) {
+    const team = B.units.filter(a => a.side === side);
+    const greeds = team.filter(a => a.def.passive?.harkonnenGreed);
+    if (!greeds.length) continue;
+    const hark = team.filter(a => has(a, 'hark'));
+    const hasFeyd = team.some(a => a.def.id === 'feyd');
+    for (const a of hark) {
+      a.maxHp = Math.round(a.maxHp * (1 + .1 * hark.length));
+      a.hp = a.maxHp;
+      if (hasFeyd) a.critDamageBonus = (a.critDamageBonus || 0) + .2;
+    }
+  }
   for (const u of B.units) if (u.def.id === 'duncan' && skLv(u, 'passive') >= 4) u.fx.taunt = 2;
   // Data-driven leader mark, only for a hero whose leader kit explicitly enables it.
   for (const side of ['A', 'B']) {
@@ -175,7 +189,7 @@ function hit(B, att, tgt, dt, m, opts = {}) {
   if (att.cqExec && tgt.hp / tgt.maxHp < .5) d *= 1 + att.cqExec;
   if (att.cqFury) d *= 1 + att.cqFury * B.units.filter(x => x.side === att.side && !x.alive).length;
   if (att.vsFac) for (const f of tgt.def.f) if (att.vsFac[f]) d *= 1 + att.vsFac[f];
-  const crit = B.rng() < att.crit; if (crit) d *= att.fx.critDown ? 1.25 : 1.5;
+  const crit = B.rng() < att.crit; if (crit) d *= att.fx.critDown ? 1.25 : 1.5 + (att.critDamageBonus || 0);
 
   if (dt === 'laser' && tgt.shield > 0) {
     log(B, `РЕАКЦИЯ ХОЛЬЦМАНА! Луч ${att.def.sn} коснулся щита ${tgt.def.sn}.`, 'holtz');
