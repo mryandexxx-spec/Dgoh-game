@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { CH, CHARS } from '../src/data/chars.js';
 import { BARON_LEGEND_KIT } from '../src/data/baron-legend-kit.js';
 import { STAGED_HERO_IDS, defaultStagedHero, stageBaronRoster, baronRosterGate, baronLegendPreview } from '../src/logic/baron-roster-integration.js';
@@ -73,6 +74,18 @@ assert.equal(CH.margot, undefined);
 assert.equal(CH.yue, undefined);
 assert.deepEqual(baronLegendPreview({}).progress,
   {stars:0,shards:0,lvl:1,gear:1,relic:0});
+// Ensure the actual shared hero card/scene, not a parallel mocked layout, is used.
+const cardSource = readFileSync(new URL('../src/ui/hero-card.js', import.meta.url), 'utf8');
+const stageSource = readFileSync(new URL('../src/render3d/scenes/hero.js', import.meta.url), 'utf8');
+assert.match(cardSource, /function previewLegendBaronCard\(\) \{ return openDetail\('baron_legend', true\); \}/);
+assert.match(cardSource, /const d = stagedPreview \? \{ \.\.\.BARON_LEGEND_KIT, side: 'dark' \} : CH\[id\]/);
+assert.match(cardSource, /const p = stagedPreview \? defaultStagedHero\(\) : prog\(id\)/);
+assert.match(cardSource, /mountHeroStage\(id, near, stagedPreview \? \{ def: d, progress: p \} : null\)/);
+assert.match(stageSource, /const p = staged\?\.progress \|\| prog\(id\), d = staged\?\.def \|\| CH\[id\]/);
+assert.match(cardSource, /if \(!stagedPreview && !CH\[id\]\) return/);
+assert.match(cardSource, /if \(!button\.matches\('\[data-close\],\[data-dback\],\[data-hcstat\]'\)\) button\.disabled = true/);
+console.log('BH8 shared hero card/3D scene, locked staging entry and mutation guards: PASS');
+
 console.log('BH8 read-only staged roster preview, 4 HUD slots and no public hero: PASS');
 
 console.log('BH4 staged roster migration, locked future heroes and safe event gate: PASS');
