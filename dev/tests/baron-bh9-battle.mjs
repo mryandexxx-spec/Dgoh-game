@@ -5,12 +5,8 @@ import { BARON_BH9_ENCOUNTERS } from '../src/data/baron-legend-encounters.js';
 import { prepareBaronBH9Battle, finishBaronBH9Battle } from '../src/logic/baron-bh9-battle.js';
 import { checkOver, advanceWave } from '../src/logic/battle/engine.js';
 
-// The fake kits exist exclusively in this test. Production must never publish
-// Margot/Yue or fabricate skill sets just to make the event playable.
-const extra = {
-  margot: { ...CH.jessica, id:'margot', n:'Test Margot', sn:'Margot', f:['bg'] },
-  yue: { ...CH.thufir, id:'yue', n:'Test Yue', sn:'Yue', f:['atr'] },
-};
+// BH9.7: owner-approved regular Margot/Yue kits are now in CHARS.
+const extra = { margot:CH.margot, yue:CH.yue };
 const save = {
   roster: Object.fromEntries(BARON_APPROVED_REQUIREMENTS.map(r => [r.id, {
     lvl:85, stars:7, gear:13, relic:r.relic, sk:{ basic:1, special:1, ult:1, passive:1, leader:1 },
@@ -23,9 +19,8 @@ const tuning = index => BARON_BH9_ENCOUNTERS.stages[index].waves.map(w => w.map(
 })));
 assert.equal(prepareBaronBH9Battle(save, 4, {heroDefs:extra}).reason, 'locked');
 assert.equal(prepareBaronBH9Battle(save, 3).ok, true, 'default provisional tuning must prepare stage IV');
-const missing = prepareBaronBH9Battle(save, 2, {enemyProgress:tuning(2)});
-assert.equal(missing.reason, 'hero-kit');
-assert.deepEqual(missing.missing, ['yue']);
+const ready = prepareBaronBH9Battle(save, 2, {enemyProgress:tuning(2)});
+assert.equal(ready.ok, true, 'Yue has a real approved kit; no fake substitutes');
 const bad = tuning(3);bad[0][0].id='rabban';
 assert.equal(prepareBaronBH9Battle(save,3,{heroDefs:extra,enemyProgress:bad}).reason,'balance');
 const p = prepareBaronBH9Battle(save,3,{heroDefs:extra,enemyProgress:tuning(3),seed:77});
@@ -66,4 +61,4 @@ assert.equal(last.shardsGranted,120);
 assert.equal(last.unlocked,true);
 assert.equal(save.roster.baron_legend.stars,7);
 assert.equal(save.roster.baron_legend.shards,90,'surplus preserved');
-console.log('BH9 real engine fixed squads, multi-wave carryover, victory-only rewards, no public kits: PASS');
+console.log('BH9 real engine fixed squads, multi-wave carryover, victory-only rewards, approved standard kits: PASS');
