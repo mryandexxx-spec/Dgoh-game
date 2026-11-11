@@ -15,13 +15,14 @@ let model=baronBH9EventModel(save);
 assert.equal(model.requirements.ready,true);
 assert.equal(model.configurationReady,true);
 assert.deepEqual(model.stages.map(s=>s.waves),[1,1,1,2,2]);
-assert.deepEqual(model.stages.map(s=>s.lockReason),['hero-kit','sequence','sequence','sequence','sequence']);
-assert.deepEqual(model.stages[0].missingKits,['margot']);
-assert.deepEqual(baronBH9LaunchPlan(save,0),{ok:false,reason:'hero-kit'});
+assert.deepEqual(model.stages.map(s=>s.lockReason),[null,'sequence','sequence','sequence','sequence']);
+assert.deepEqual(model.stages[0].missingKits,[]);
+assert.equal(baronBH9LaunchPlan(save,0).ok,true);
+assert.equal(baronBH9LaunchPlan(save,0,{}).reason,'hero-kit', 'missing definitions still fail when explicitly provided');
 assert.equal(baronBH9LaunchPlan(save,5).reason,'stage');
 assert.deepEqual(save,before,'render model never modifies save or adds a farm path');
 
-const stageHeroDefs={...CH, margot:{...CH.jessica,id:'margot'}, yue:{...CH.thufir,id:'yue'}};
+const stageHeroDefs=CH;
 let plan=baronBH9LaunchPlan(save,0,stageHeroDefs);
 assert.equal(plan.ok,true);
 assert.deepEqual(plan.squad,BARON_BH9_ENCOUNTERS.stages[0].allies);
