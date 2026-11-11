@@ -50,7 +50,7 @@ try {
       await page.waitForFunction(id=>!!(typeof HERO_STAGE!=='undefined' &&
         HERO_STAGE?.o?.root && HERO_STAGE.o.def?.id===id &&
         HERO_STAGE.scene.getFrameId()>2),{timeout:60000},id);
-      const data=await page.evaluate(id=>{
+      const data=await page.evaluate(({id,before})=>{
         closeInfo(true);
         const hero=HERO_STAGE.o,card=document.querySelector('#overlay .hc');
         if(!card||card.dataset.cid!==id)throw Error('Wrong standard hero card');
@@ -60,11 +60,12 @@ try {
           procedural:!hero.root._authored,
           meshes:hero.root.getChildMeshes().length,
           stage:!!stage,skills:[...card.querySelectorAll('.hcsk')].length,
-          rosterPreserved:JSON.stringify(S.roster)===window.__ignored};
-      },id);
+          rosterPreserved:JSON.stringify(S.roster)===before};
+      },{id,before:roster.before});
       assert.equal(data.regular,true,id+' is ordinary');
       assert.equal(data.locked,true,id+' starts locked');
       assert.equal(data.procedural,true,id+' has temporary procedural model');
+      assert.equal(data.rosterPreserved,true,id+' card leaves prior progress unchanged');
       assert.ok(data.meshes>0,id+' generated 3D geometry');
       assert.ok(data.stage && data.skills>0,id+' uses the shared ability card');
       cards.push(data);
