@@ -8,6 +8,8 @@ import { CH } from '../../data/chars.js';
 const esc = x => String(x ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const validEvent = id => STORY_EVENT_IDS.includes(id) ? id : STORY_EVENT_IDS[0];
 const dateKey = () => new Date().toDateString();
+// Total consumed shards at each ordinary star rank (normal 10-shard unlock).
+const SPENT_TO_STARS = [0,10,25,50,80,145,230,330];
 function storyEventsHtml(save, day=dateKey(), selected='margot_story', selectedStage=0) {
   const id=validEvent(selected), ev=STORY_UNLOCK_EVENTS[id], status=eventStatus(save,id,day);
   const hero=save?.roster?.[ev.hero], available=hero && hero.stars>=0 && Number.isInteger(hero.shards);
@@ -27,7 +29,7 @@ function storyEventsHtml(save, day=dateKey(), selected='margot_story', selectedS
     <span class="mono" style="color:var(--spice);margin-right:9px">${st.index+1}.</span>
     <span style="flex:1;min-width:0"><b>${esc(st.title)}</b><small style="display:block;color:var(--dust)">${esc(stageStatus(st))}</small></span>
     <span class="mono">${st.completed?'✓':`+${st.rewardShards}`}</span></button>`).join('');
-  const shardsEarned=(hero?.shards||0)+((hero?.stars||0)>0?10:0);
+  const shardsEarned=(hero?.shards||0)+SPENT_TO_STARS[Math.min(7,hero?.stars||0)];
   const focus=ev.hero==='margot'?'МФ':'ВЮ';
   return `<section class="storyev" style="padding:5px;max-width:100%;min-width:0">
     <div class="ctabs">${STORY_EVENT_IDS.map(eid=>`<button class="ctab ${eid===id?'on':''}"
