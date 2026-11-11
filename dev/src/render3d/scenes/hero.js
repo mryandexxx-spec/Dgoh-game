@@ -125,12 +125,12 @@ class HeroStage extends Stage3D {
 }
 let HERO_STAGE = null, HERO_SNAP = null, HERO_HOLD = false;
 function heroHold(on) { HERO_HOLD = !!on; }
-function mountHeroStage(id, near) {
+function mountHeroStage(id, near, staged = null) {
   const host = document.querySelector('#overlay .hcfig'); if (!host) return;
-  if (!HAS3D) { if (HAS_GL) loadB3().then(ok => { if (ok && host.isConnected) mountHeroStage(id, near); }); return; }   // фаза 4: пока грузится чанк — 2D-фигура
+  if (!HAS3D) { if (HAS_GL) loadB3().then(ok => { if (ok && host.isConnected) mountHeroStage(id, near, staged); }); return; }   // фаза 4: пока грузится чанк — 2D-фигура
   try {
     if (!HERO_STAGE || !HERO_STAGE.alive) HERO_STAGE = new HeroStage();
-    const p = prog(id), d = CH[id];
+    const p = staged?.progress || prog(id), d = staged?.def || CH[id];
     host.classList.add('has3d'); HERO_STAGE.setHero(d, p, (near || []).map(x => CH[x])); HERO_STAGE.attach(host);
     const snap = { id, stars: p.stars, gear: p.gear, eq: p.eq.filter(Boolean).length, lvl: p.lvl, sk: JSON.stringify(p.sk) };
     if (HERO_SNAP && HERO_SNAP.id === id) { if (snap.stars > HERO_SNAP.stars || snap.gear > HERO_SNAP.gear) HERO_STAGE.celebrate('star'); else if (snap.eq > HERO_SNAP.eq || snap.lvl > HERO_SNAP.lvl || snap.sk !== HERO_SNAP.sk) HERO_STAGE.celebrate('up'); }
