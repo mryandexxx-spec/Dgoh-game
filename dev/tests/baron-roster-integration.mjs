@@ -77,9 +77,9 @@ assert.deepEqual(baronLegendPreview({}).progress,
 // Ensure the actual shared hero card/scene, not a parallel mocked layout, is used.
 const cardSource = readFileSync(new URL('../src/ui/hero-card.js', import.meta.url), 'utf8');
 const stageSource = readFileSync(new URL('../src/render3d/scenes/hero.js', import.meta.url), 'utf8');
-assert.match(cardSource, /function previewLegendBaronCard\(\) \{ return openDetail\('baron_legend', true\); \}/);
-assert.match(cardSource, /const d = stagedPreview \? \{ \.\.\.BARON_LEGEND_KIT, side: 'dark' \} : CH\[id\]/);
-assert.match(cardSource, /const p = stagedPreview \? defaultStagedHero\(\) : prog\(id\)/);
+assert.match(cardSource, /function openDetail\(id, stagedPreview = null\)/);
+assert.match(cardSource, /const d = stagedPreview \? \{ \.\.\.stagedPreview\.def, side: 'dark' \} : CH\[id\]/);
+assert.match(cardSource, /const p = stagedPreview \? \{ \.\.\.stagedPreview\.progress, stars: 0, shards: 0 \} : prog\(id\)/);
 assert.match(cardSource, /mountHeroStage\(id, near, stagedPreview \? \{ def: d, progress: p \} : null\)/);
 assert.match(stageSource, /const p = staged\?\.progress \|\| prog\(id\), d = staged\?\.def \|\| CH\[id\]/);
 assert.match(cardSource, /if \(!stagedPreview && !CH\[id\]\) return/);
