@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { CH, CHARS } from '../src/data/chars.js';
 import { BARON_LEGEND_KIT } from '../src/data/baron-legend-kit.js';
-import { STAGED_HERO_IDS, defaultStagedHero, stageBaronRoster, baronRosterGate } from '../src/logic/baron-roster-integration.js';
+import { STAGED_HERO_IDS, defaultStagedHero, stageBaronRoster, baronRosterGate, baronLegendPreview } from '../src/logic/baron-roster-integration.js';
 import { BARON_APPROVED_STAGES } from '../src/data/baron-legend-approved.js';
 
 assert.deepEqual(STAGED_HERO_IDS, ['baron_legend','margot','yue']);
@@ -49,4 +49,30 @@ for (const r of (await import('../src/data/baron-legend-approved.js')).BARON_APP
 }
 assert.equal(baronRosterGate(allReady).ready,true);
 assert.ok(baronRosterGate(allReady).availableStages.every(s=>!s.readyForBattle));
+// BH8: card/view-model is a read-only staging projection, never a public unlock.
+const beforePreview = structuredClone(allReady);
+const preview = baronLegendPreview(allReady);
+assert.deepEqual(allReady, beforePreview, 'Preview must not mutate a save');
+assert.equal(preview.id, 'baron_legend');
+assert.equal(preview.public, false);
+assert.equal(preview.playable, false);
+assert.equal(preview.eventPlayable, false);
+assert.equal(preview.portraitApproved, false);
+assert.equal(preview.modelAsset, 'models/baron-legend-mobile.dgm');
+assert.deepEqual(preview.actions.map(x=>x.slot), ['basic','special','ult','gl']);
+assert.deepEqual(preview.actions.map(x=>x.name),
+  ['Приказ Барона','Власть через страх','Глаза императора','Падение Атрейдесов']);
+assert.deepEqual(preview.actions.map(x=>x.initialCooldown), [0,3,4,0]);
+assert.equal(preview.actions[3].glKind, 'fall-of-atreides');
+assert.equal(preview.requirements.completed, 10);
+assert.equal(preview.requirements.ready, true);
+assert.equal(preview.passive, 'Алчность');
+assert.equal(preview.leader, 'Дом Харконненов');
+assert.equal(CH.baron_legend, undefined, 'Preview must not publish the hero');
+assert.equal(CH.margot, undefined);
+assert.equal(CH.yue, undefined);
+assert.deepEqual(baronLegendPreview({}).progress,
+  {stars:0,shards:0,lvl:1,gear:1,relic:0});
+console.log('BH8 read-only staged roster preview, 4 HUD slots and no public hero: PASS');
+
 console.log('BH4 staged roster migration, locked future heroes and safe event gate: PASS');
