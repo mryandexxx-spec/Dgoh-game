@@ -154,7 +154,10 @@ class Arena3D extends GameScene {
         const dt = shots[0] && shots[0].dt;
         let kind = !shots.length ? 'cast' : dt === 'voice' ? 'voice' : dt === 'blade' ? 'melee' : 'shoot';
         if (kind === 'melee' && tg.length > 1) kind = 'aoe';
-        const base = ((o.anim && o.anim.dur && o.anim.dur(B.lastKey)) || { melee: 820, aoe: 920, shoot: 640, voice: 760, cast: 760 }[kind]) * ANIM_SLOW;
+        const animBase = (o.anim && o.anim.dur && o.anim.dur(B.lastKey)) || { melee: 820, aoe: 920, shoot: 640, voice: 760, cast: 760 }[kind];
+        // The approved Baron GL is precisely 2.5s at x1, unlike the generic
+        // 1.5x-stretched abilities. Keep hit FX in sync with the third beat.
+        const base = o.def?.id === 'baron_legend' && B.lastKey === 'gl' ? animBase : animBase * ANIM_SLOW;
         const center = tg.length ? tg.reduce((acc, t) => acc.add(t.base), V3()).scale(1 / tg.length) : null;
         const dir = center ? center.subtract(o.base) : V3(o.side === 'A' ? 1 : -1, 0, 0); dir.y = 0; const dl = dir.length(), nd = dl > .001 ? dir.scale(1 / dl) : V3(1, 0, 0);
         const reach = MOCAP_OK && o.anim && (o.anim.slash || o.anim.pose) ? 1.55 : .95;     // motion-captured cuts lunge forward on their own
