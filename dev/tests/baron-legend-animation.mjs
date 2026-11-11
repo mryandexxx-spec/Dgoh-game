@@ -14,7 +14,7 @@ assert.ok(profile && typeof profile.cliplessPose==='function');
 assert.equal(profile.dur('basic'),1000);
 assert.equal(profile.dur('special'),1350);
 assert.equal(profile.dur('ult'),1550);
-assert.equal(profile.dur('gl'),2350);
+assert.equal(profile.dur('gl'),2500);
 assert.equal(profile.dur('unknown'),null);
 assert.equal(ANIM3.baron,undefined,'must not install a replacement for young Baron');
 const joint=()=>({rotation:{x:0,y:0,z:0}});
