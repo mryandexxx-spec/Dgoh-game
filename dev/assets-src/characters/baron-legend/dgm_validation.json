@@ -1,0 +1,11 @@
+{
+  "actual_project_parseDgm": true,
+  "byte_ranges_and_indices": true,
+  "normalized_skin_weights": true,
+  "joints": 18,
+  "parts": 11,
+  "vertices": 20171,
+  "triangles": 38333,
+  "bytes": 638026,
+  "webgl_and_iphone_tested": false
+}

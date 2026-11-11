@@ -1,0 +1,14 @@
+{
+  "before": {
+    "mesh_objects": 271,
+    "triangles": 186688,
+    "original_glb_bytes": 4836976
+  },
+  "after": {
+    "mesh_objects": 11,
+    "triangles": 38333,
+    "bones": 18,
+    "materials": 11
+  },
+  "source_sha256": "dbf26ebb5b17982c31ba3f2708f6e15bc7bdb00241918a42a99e905c82342da8"
+}

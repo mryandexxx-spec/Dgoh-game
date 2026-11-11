@@ -1,0 +1,17 @@
+{
+  "front": {
+    "comparison_height_px": 240,
+    "silhouette_disagreement_percent": 0.13,
+    "mean_absolute_rgb_error_percent": 2.887
+  },
+  "threequarter": {
+    "comparison_height_px": 240,
+    "silhouette_disagreement_percent": 0.125,
+    "mean_absolute_rgb_error_percent": 2.875
+  },
+  "back": {
+    "comparison_height_px": 240,
+    "silhouette_disagreement_percent": 0.122,
+    "mean_absolute_rgb_error_percent": 1.867
+  }
+}

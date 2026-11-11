@@ -1,0 +1,24 @@
+{
+  "original_glb": {
+    "bytes": 4836976,
+    "mesh_objects": 271,
+    "primitives": 272,
+    "vertices": 82698,
+    "triangles": 145008,
+    "bones": 18,
+    "materials": 11,
+    "valid_positions_indices_weights": true,
+    "external_dependencies": false
+  },
+  "mobile_glb": {
+    "bytes": 1403628,
+    "mesh_objects": 11,
+    "primitives": 11,
+    "vertices": 22584,
+    "triangles": 38333,
+    "bones": 18,
+    "materials": 11,
+    "valid_positions_indices_weights": true,
+    "external_dependencies": false
+  }
+}
