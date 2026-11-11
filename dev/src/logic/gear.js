@@ -55,14 +55,11 @@ for (const item of Object.values(ITEMS)) {
     chosen.forEach(i => COMPLETE_NODE_ITEMS[i].push(item.id));
   }
 }
-const nodeChance = i => NODE_ITEMS[i].length ? (NODE_ITEMS[i].length === 1 ? .94 : Math.min(1, 1.3 / NODE_ITEMS[i].length)) : 0;
+const COMPONENT_DROP_RATE = .18;
+const nodeChance = i => NODE_ITEMS[i].length ? COMPONENT_DROP_RATE : 0;
 function rollItems(i) {
-  const pool = NODE_ITEMS[i].slice(), out = [];
-  if (pool.length && Math.random() < .9) {
-    const j = Math.floor(Math.random() * pool.length);
-    out.push([pool.splice(j,1)[0], 1]);
-  }
-  if (pool.length && Math.random() < .4) out.push([pool[Math.floor(Math.random() * pool.length)], 1]);
+  const out = [];
+  for (const id of NODE_ITEMS[i]) if (Math.random() < COMPONENT_DROP_RATE) out.push([id, 1]);
   for (const id of COMPLETE_NODE_ITEMS[i]) if (Math.random() < COMPLETE_RATE[ITEMS[id].t])
     out.push(['gear:' + id, 1]);
   return out;
