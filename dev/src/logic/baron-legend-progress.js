@@ -22,7 +22,7 @@ function commitBaronLegendWin(save, outcome) {
   save.journeys ??= {};
   const previous = baronLegendProgress(save);
   for (const [key, completed] of Object.entries(outcome.progress || {})) {
-    if (!completed || !/^\\d+$/.test(key) || Number(key) >= BARON_LEGEND_STAGE_COUNT) return false;
+    if (!completed || !/^[0-4]$/.test(key) || Number(key) >= BARON_LEGEND_STAGE_COUNT) return false;
   }
   // Must never overwrite an existing completed stage from a concurrent/repeated call.
   const merged = { ...previous };
