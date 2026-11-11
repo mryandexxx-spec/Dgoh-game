@@ -18,11 +18,10 @@ assert.notEqual(CH.muaddib.ult.n, BARON_LEGEND_KIT.ult.n, 'Regular third abiliti
 assert.equal(BARON_LEGEND_KIT.special.cd0, 3);
 assert.equal(BARON_LEGEND_KIT.ult.cd0, 4);
 assert.equal(BARON_LEGEND_KIT.powerful, undefined, 'must reuse native MuadDib regular ult slot');
-CH.baron_legend = BARON_LEGEND_KIT; // isolated test process only
-try {
+{
   const build = (id, gl=false) => ({id,lvl:85,stars:7,gear:13,relic:7,gl});
   const B = createBattle([build('baron_legend',true),build('feyd'),build('rabban')],
-    [build('leto'),build('gurney')],{seed:12345});
+    [build('leto'),build('gurney')],{seed:12345,extraHeroDefs:{baron_legend:BARON_LEGEND_KIT}});
   const baron=B.units.find(x=>x.def.id==='baron_legend');
   const feyd=B.units.find(x=>x.def.id==='feyd');
   assert.ok(baron);
@@ -48,5 +47,6 @@ try {
   const enemyLeader=B.units.find(x=>x.side==='B' && x.idx===0);
   assert.ok(enemyLeader.fx.isolation,'Enemy leader isolation');
   assert.equal(aiPlan(B,baron).key,'basic','All stronger powers on cooldown');
-} finally { delete CH.baron_legend; }
+}
+assert.equal(CH.baron_legend, undefined, 'preview cannot mutate the public roster index');
 console.log('BH3 staged legendary Baron: three regular actions, CD, assists and AI: PASS');
