@@ -153,21 +153,21 @@ function normalizeApprovedBH97(s) {
     if (screen.name === 'view:legend' && typeof screen.view === 'string') {
       const entry = '<div style="margin:6px 0"><button type="button" class="btn" data-v="story_events">Сюжетные события · Марго и Юэ</button></div>';
       assert.ok(screen.view.includes(entry), 'BH9.7 story entry in approved location');
-      screen.view = screen.view.replace(entry + '\\n  ', '');
+      screen.view = screen.view.replace(entry + '\n  ', '');
     }
     if (rosterScreens.has(screen.name) && typeof screen.view === 'string') {
       let v = screen.view;
-      const cards = /<button class="hc[^"]*"[^>]*data-open="(margot|yue)"[^>]*>[\\s\\S]*?<\\/button>/g;
+      const cards = /<button class="hc[^"]*"[^>]*data-open="(margot|yue)"[^>]*>[\s\S]*?<\/button>/g;
       const found = [...v.matchAll(cards)].map(m => m[1]).sort();
       assert.deepEqual(found, ['margot','yue'], screen.name + ': two standard new hero cards');
       v = v.replace(cards, '');
-      v = v.replace(/(мощь · открыто \\d+\\/)(\\d+)/, (_m, a, n) => a + (Number(n) - 2));
+      v = v.replace(/(мощь · открыто \d+\/)(\d+)/, (_m, a, n) => a + (Number(n) - 2));
       // Other roster totals (filter counts and locked divider) are checked
       // separately after the first full diff; never replace arbitrary digits.
       screen.view = v;
     }
     if (screen.name === 'profile' && typeof screen.overlay2 === 'string') {
-      const avatar = /<button class="pick[^"]*" data-pava="hero:(margot|yue)"[^>]*>[\\s\\S]*?<\\/button>/g;
+      const avatar = /<button class="pick[^"]*" data-pava="hero:(margot|yue)"[^>]*>[\s\S]*?<\/button>/g;
       const found = [...screen.overlay2.matchAll(avatar)].map(m => m[1]).sort();
       assert.deepEqual(found, ['margot','yue'], 'BH9.7 new profile avatar choices');
       screen.overlay2 = screen.overlay2.replace(avatar, '');
