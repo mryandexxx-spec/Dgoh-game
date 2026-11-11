@@ -44,6 +44,7 @@ jobs:
       - run: node tests/baron-staged-kit.mjs
       - run: node tests/baron-roster-integration.mjs
       - run: node tests/baron-legend-model-asset.mjs
+      - run: node tests/baron-legend-animation.mjs
       - run: node tests/smoke/gear-e3.mjs
       - run: node tests/smoke/memory-ix.mjs dist/pwa/index.html
       - run: node tests/smoke/v83-v85.mjs dist/pwa/index.html
