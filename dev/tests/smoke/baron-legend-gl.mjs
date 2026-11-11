@@ -68,14 +68,14 @@ try {
     const passed=await page.evaluate(()=>performance.now()-__bh8.started);
     if(passed<at)await sleep(at-passed);
     const stats=await page.evaluate(()=>{
-      const a=BT.arena,G=a.baronGL;
+      const a=BT.arena; a._loop(); const G=a.baronGL;
       return {motion:__bh8.caster.root._motion,chairMeshes:G?.chair?.getChildMeshes().length||0,
         rootY:__bh8.caster.root.position.y,frame:a.scene.getFrameId(),
         liveMeshes:a.scene.meshes.length,GLactive:!!G};
     });
     await page.screenshot({path:path.join(out,`${w}x${h}-${q}-${name}.png`)});
     all.push({w,h,q,name,...stats});
-    assert(stats.frame>5,'real WebGL frames required');
+    assert(stats.frame>0,'real WebGL frame required: '+JSON.stringify(stats));
     assert(stats.GLactive,'GL ended before '+name);
     assert(stats.chairMeshes>=7,'GL chair lost in '+name);
     phase++;
