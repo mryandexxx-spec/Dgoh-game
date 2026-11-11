@@ -4,10 +4,11 @@
 import { STORY_EVENT_IDS, STORY_UNLOCK_EVENTS } from '../../data/bh94-unlock-events.js';
 import { eventStatus } from '../../logic/bh94-story-events.js';
 import { CH } from '../../data/chars.js';
+import { todayKey } from '../../logic/economy.js';
 
 const esc = x => String(x ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const validEvent = id => STORY_EVENT_IDS.includes(id) ? id : STORY_EVENT_IDS[0];
-const dateKey = () => new Date().toDateString();
+const dateKey = () => todayKey();
 // Total consumed shards at each ordinary star rank (normal 10-shard unlock).
 const SPENT_TO_STARS = [0,10,25,50,80,145,230,330];
 function storyEventsHtml(save, day=dateKey(), selected='margot_story', selectedStage=0) {
@@ -32,6 +33,7 @@ function storyEventsHtml(save, day=dateKey(), selected='margot_story', selectedS
   const shardsEarned=(hero?.shards||0)+SPENT_TO_STARS[Math.min(7,hero?.stars||0)];
   const focus=ev.hero==='margot'?'МФ':'ВЮ';
   return `<section class="storyev" style="padding:5px;max-width:100%;min-width:0">
+    <button type="button" class="btn" data-v="legend" style="margin-bottom:6px">‹ К легендам</button>
     <div class="ctabs">${STORY_EVENT_IDS.map(eid=>`<button class="ctab ${eid===id?'on':''}"
       data-story-event="${eid}">${esc(STORY_UNLOCK_EVENTS[eid].title)}</button>`).join('')}</div>
     <p class="sub" style="margin:4px 0 8px">Сюжетное событие · три этапа · фиксированные отряды · аккаунт 40+</p>
