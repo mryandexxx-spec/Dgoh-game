@@ -3,7 +3,7 @@ name: Validate Dune GoH PWA
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, feat/ge1-equipment-farming]
   workflow_dispatch:
 
 permissions:
