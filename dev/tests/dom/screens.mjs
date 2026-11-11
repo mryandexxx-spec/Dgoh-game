@@ -162,6 +162,17 @@ function normalizeApprovedBH97(s) {
       assert.deepEqual(found, ['margot','yue'], screen.name + ': two standard new hero cards');
       v = v.replace(cards, '');
       v = v.replace(/(мощь · открыто \d+\/)(\d+)/, (_m, a, n) => a + (Number(n) - 2));
+      const expectedAdditions = { rf: { all:2, light:1, dark:1, atr:1, bg:1, cor:1 }, rr: { all:2, sup:1, heal:1 } };
+      v = v.replace(/(<button class="ropt" data-(rf|rr)="([^"]+)" aria-pressed="[^"]+">[\s\S]*?<small>)(\d+)(<\/small><\/button>)/g,
+        (match, before, kind, key, number, after) => {
+          const delta = expectedAdditions[kind][key] || 0;
+          assert.ok(Number(number) >= delta, screen.name + ': nonnegative approved filter count');
+          return before + (Number(number) - delta) + after;
+        });
+      v = v.replace(/(<span id="rdiv-n">)(\d+)(<\/span>)/, (_m, before, count, after) => {
+        assert.ok(Number(count) >= 2, screen.name + ': two newly locked heroes');
+        return before + (Number(count) - 2) + after;
+      });
       // Other roster totals (filter counts and locked divider) are checked
       // separately after the first full diff; never replace arbitrary digits.
       screen.view = v;
