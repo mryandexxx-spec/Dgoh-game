@@ -31,12 +31,12 @@ try {
       if(!o.root._authored)throw Error('Baron did not load authored model');
       await HERO_STAGE.scene.whenReadyAsync();
       heroHold(true);
-      const sample=(name)=>{
+      const sample=(name,progress=.5,time=1.3)=>{
         const now=10000;o.dead=false;o.act=null;o.hitT=0;
-        if(['Attack','basic','special','ult'].includes(name))o.act={key:name==='Attack'?'basic':name,kind:name==='special'||name==='ult'?'cast':'shoot',t0:now-640*.5,dur:640,dir:V3(0,0,1),to:V3(0,0,0),fx:1};
+        if(['Attack','basic','special','ult'].includes(name))o.act={key:name==='Attack'?'basic':name,kind:name==='special'||name==='ult'?'cast':'shoot',t0:now-640*progress,dur:640,dir:V3(0,0,1),to:V3(0,0,0),fx:1};
         if(name==='Hit')o.hitT=now-170;
         if(name==='Death'){o.dead=true;o.deathT=now-900;}
-        poseHuman(HERO_STAGE,o,now,1.3,1);o.root.rotation.y=-.3;
+        poseHuman(HERO_STAGE,o,now,time,1);o.root.rotation.y=-.3;
         o.root.computeWorldMatrix(true);
         for(const m of o.root.getChildMeshes()){m.computeWorldMatrix(true);if(m.skeleton)m.skeleton.prepare(true);}
         HERO_STAGE.scene.render();
@@ -104,6 +104,10 @@ try {
       for(const name of ['Attack','special','ult','Hit','Death']){
         await p.evaluate(name=>window.__baronSample(name),name);
         await p.screenshot({path:path.join(out,`${tag}-${width}-${quality}-${name}.png`)});
+      }
+      if(width===844 && quality==='med')for(const name of ['Idle','basic','special','ult'])for(let frame=0;frame<9;frame++) {
+        await p.evaluate(({name,frame})=>window.__baronSample(name,frame/8,name==='Idle'?frame*.5:1.3+frame*.15),{name,frame});
+        await p.screenshot({path:path.join(out,`motion-${name}-${frame}.png`)});
       }
     }
     await p.evaluate(()=>{window.__baronSample('Idle');heroHold(false);});
