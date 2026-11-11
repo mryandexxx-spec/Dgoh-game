@@ -4,6 +4,7 @@
 //   node tests/golden/saves.mjs <game.html> [--update]
 // Реальные сохранения: положите в tests/fixtures/saves/ файл .json (сам объект) или .txt (код «Экспорт сохранения»).
 import fs from 'node:fs';
+import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadGame } from '../lib/load.mjs';
@@ -29,4 +30,24 @@ for (const f of [null, ...files]) {
 }
 console.log('сохранений:', saves.length, saves.map(s => `${s.file}${s.startError ? ' [start: ' + s.startError + ']' : ''}`).join('; '));
 const out = { n: saves.length, saves };
-if (rest.includes('--update')) writeGolden('saves', out); else process.exit(compareGolden('saves', out) ? 0 : 1);
+// The legacy golden must remain byte-for-byte strict for all previously saved data.
+// BH9.7 adds only two empty roster records to a legacy save. Assert their exact
+// default state, then remove only those records for comparison with the old golden.
+const historical = structuredClone(out);
+for (const entry of historical.saves) {
+  for (const stage of ['fillSave', 'start']) {
+    const roster = entry[stage]?.roster;
+    assert.ok(roster, `${entry.file}: ${stage} roster present`);
+    for (const id of ['margot', 'yue']) {
+      const hero = roster[id];
+      assert.ok(hero, `${entry.file}: ${stage} includes ${id}`);
+      assert.equal(hero.stars, 0, `${entry.file}: ${id} starts locked`);
+      assert.equal(hero.shards, 0, `${entry.file}: ${id} has no gifted shards`);
+      assert.equal(hero.lvl, 1, `${entry.file}: ${id} has default level`);
+      assert.equal(hero.gear, 1, `${entry.file}: ${id} has default gear`);
+      delete roster[id];
+    }
+  }
+}
+if (rest.includes('--update')) writeGolden('saves', out);
+else process.exit(compareGolden('saves', historical) ? 0 : 1);
