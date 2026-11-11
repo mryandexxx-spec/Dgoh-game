@@ -67,7 +67,7 @@ function openItem(cid, k, partId = null) {
   itemCtx = { cid, k, partId };
   const p = prog(cid), s = slotState(cid, k), it = s.it;
   const recipe = recipeFor(it.id), needs = craftRequirements(it.id, S.inv, S.gearParts || {},
-    { sol: S.solari, pl: S.plast }), part = partId ? recipe.parts?.find(x => x.id === partId) : null;
+    { sol: S.solari, pl: S.plast }, S.gearOwned || {}), part = partId ? recipe.parts?.find(x => x.id === partId) : null;
   const top = !!$('#overlay .csheet'), host = top ? '#overlay2' : '#overlay';
   if (top) { set_infoKey(null); heroHold(true); set_INFO_ON_CLOSE(() => heroHold(false)); }
   const haveFrag = S.inv[it.id] || 0, complete = S.gearOwned?.[it.id] || 0;
