@@ -11,8 +11,8 @@ const BH9_ENEMY_SQUADS = Object.freeze([
   [['leto', 'jessica', 'thufir', 'duncan', 'gurney']],
   // The first wave is a defensive screen. The second contains the approved
   // named-hero roster. No special NPCs or new combat actors are introduced.
-  [['trooper', 'bashar', 'legion', 'fedaykin', 'trooper'], ['duncan', 'gurney', 'thufir', 'leto', 'paul']],
-  [['trooper', 'bashar', 'legion', 'trooper', 'bashar'], ['leto', 'duncan', 'gurney', 'thufir', 'jessica']],
+  [['thufir', 'gurney', 'duncan', 'jessica', 'paul'], ['duncan', 'gurney', 'thufir', 'leto', 'paul']],
+  [['paul', 'jessica', 'thufir', 'gurney', 'duncan'], ['leto', 'duncan', 'gurney', 'thufir', 'jessica']],
 ].map(waves => Object.freeze(waves.map(ids => Object.freeze([...ids])))));
 
 const BARON_BH9_ENCOUNTERS = Object.freeze({
