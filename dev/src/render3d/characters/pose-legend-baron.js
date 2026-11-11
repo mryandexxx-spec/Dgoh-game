@@ -8,7 +8,7 @@ import { ANIM3, seg } from './pose-duncan.js';
 const clamp = x => Math.max(0, Math.min(1, x));
 const bell = (u, a, b, c, d) => seg(u, a, b) * (1 - seg(u, c, d));
 const MOTION = Object.freeze({ basic: 'Приказ Барона', special: 'Власть через страх', ult: 'Глаза императора', gl: 'Падение Атрейдесов' });
-const DUR = Object.freeze({ basic: 1000, special: 1350, ult: 1550, gl: 2350 });
+const DUR = Object.freeze({ basic: 1000, special: 1350, ult: 1550, gl: 2500 });
 
 // Invoked AFTER generic poseHuman on clipless authored rigs.
 // Deliberately additive: neither overwrites nor mimics young Baron's clipPose.
@@ -67,14 +67,18 @@ function poseLegendBaron(o, now, t, sp, stage) {
       add(o.head, -.1 * w, -.22 * strike);
       add(o.spine, .1 * strike);
     } else {
-      // GL concept: rising stance/arms only. Levitation chair, Sardaukar
-      // strike and scene/camera effects require separate visual approval.
+      // BH7 approved cinematic: sit into a levitating chair, give the order,
+      // then direct the army strike. Scene owns the physical chair and camera.
       const rise = bell(u, .08, .29, .78, .98);
       add(o.R.sh, -1.07 * rise, 0, -.27 * rise);
       add(o.Lf.sh, -1.07 * rise, 0, .27 * rise);
       add(o.R.el, -.31 * rise); add(o.Lf.el, -.31 * rise);
       add(o.spine, -.19 * rise);
       add(o.head, .17 * strike);
+      const sit = bell(u, .08, .25, .78, 1);
+      add(o.LL?.hip, -.58 * sit); add(o.LR?.hip, -.58 * sit);
+      add(o.LL?.knee, 1.05 * sit); add(o.LR?.knee, 1.05 * sit);
+      add(o.LL?.ank, -.43 * sit); add(o.LR?.ank, -.43 * sit);
     }
     if (o.capeB) for (let i=0;i<o.capeB.length;i++)
       add(o.capeB[i], Math.sin(u * Math.PI * 2 - i * .48) * .1 * w);
