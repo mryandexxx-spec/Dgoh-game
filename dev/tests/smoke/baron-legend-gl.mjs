@@ -60,7 +60,13 @@ try {
     // and renders a huge opaque white/pink sphere over the character.
     Object.assign(caster,{shieldK:0,stealth:false,phaseN:1,dead:false,
       hitT:0,healT:0,active:false,tgt:false,charm:false});
-    if(caster.bubble)caster.bubble.material.alpha=0;
+    if(caster.bubble){
+      caster.bubble.material.alpha=0;
+      // Arena.setupFX() excluded the bubbles of the original 5v5 units.
+      // This test inserts the preview actor *after* setupFX, so match the
+      // production path or GlowLayer illuminates even an alpha-zero sphere.
+      a.glow?.addExcludedMesh(caster.bubble);
+    }
 
     if(!caster?.root?._authored)throw Error('Model fell back to procedural');
     if(caster.root.getChildMeshes().filter(x=>x.skeleton).length!==11)
