@@ -82,12 +82,26 @@ try {
       return result;
     });
     await page.screenshot({ path:path.join(out, `${w}x${h}-${quality}-legend-baron.png`) });
-    // Art-review diagnostic ONLY: the normal locked hero card deliberately
-    // dims its 3D canvas via CSS grayscale(1) brightness(.4), hiding the model.
-    // Leave production CSS and the locked-save semantics untouched.
+    // Art-review diagnostic ONLY. The shared EngineHost canvas can be parked
+    // between frames on slow LOW/SwiftShader runs. Remount the SAME live HeroStage,
+    // never create another engine/model or modify production locked-card CSS.
+    await page.evaluate(() => {
+      const host = document.querySelector('#overlay .hcfig');
+      if (!host || !host.isConnected || HERO_STAGE?.o?.def?.id !== 'baron_legend' ||
+          !HERO_STAGE.o.root?._authored) throw Error('Authentic staged hero stage unavailable');
+      if (!host.querySelector('canvas')) HERO_STAGE.attach(host);
+    });
+    await page.waitForFunction(() => {
+      const host = document.querySelector('#overlay .hcfig');
+      const canvas = host?.querySelector('canvas');
+      return !!(host?.isConnected && canvas?.isConnected &&
+        HERO_STAGE?.o?.def?.id === 'baron_legend' && HERO_STAGE.o.root?._authored);
+    }, { timeout:15000 });
+    // The normal locked card deliberately dims its 3D canvas. The override
+    // exists only in this ephemeral screenshot page, after production capture.
     const artReview = await page.evaluate(() => {
       const canvas = document.querySelector('#overlay .hcfig canvas');
-      if (!canvas) throw Error('Shared hero canvas not mounted');
+      if (!canvas?.isConnected) throw Error('Shared hero canvas not mounted');
       const before = getComputedStyle(canvas).filter;
       canvas.style.filter = 'none';
       return { lockedCanvasFilter: before, reviewCanvasFilter: getComputedStyle(canvas).filter };
