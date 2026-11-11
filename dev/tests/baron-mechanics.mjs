@@ -41,7 +41,7 @@ assert.equal(mayRevive(enemy),false);
 delete enemy.noRev;
 assert.equal(mayRevive(enemy),true);
 // Real hit: foresight consumes without a damage roll; voice bypasses foresight.
-caster.dmg=100;caster.fx={};caster.crit=0;caster.eva=0;
+caster.dmg=100;caster.dmgBonus=0;caster.fx={};caster.crit=0;caster.eva=0;
 ally.fx={};enemy.fx={foresight:1};enemy.houseVictimSide='A';enemy.shield=0;
 assert.equal(hit(B,caster,enemy,'blade',1),false);
 assert.equal(enemy.hp,1000);
