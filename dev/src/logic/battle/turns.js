@@ -144,6 +144,22 @@ function act(B, u, key, targetUid) {
       orderedAssist(B, u, lastTarget, extra, (ab.extraAssistMultiplier || 1) * bonus, hit);
     }
   }
+  if (ab.selfHealStaggered) {
+    // Three visible healing pulses, total 30% in the recovered base skill.
+    const each = ab.selfHealStaggered / 3;
+    for (let i = 0; i < 3 && u.alive; i++) {
+      const h = Math.min(u.maxHp - u.hp, Math.round(u.maxHp * each));
+      if (h > 0) { u.hp += h; ev(B, u, '+' + h, 'heal'); }
+    }
+  }
+  if (ab.harkFx) {
+    for (const [k, n] of ab.harkFx) for (const a of living(B, u.side))
+      if (has(a, 'hark')) applyFx(B, u, a, k, n);
+  }
+  if (ab.enemyLeaderFx && !B.over) {
+    const t = living(B, foe(u.side)).find(a => a.idx === 0);
+    if (t) for (const [k, n] of ab.enemyLeaderFx) applyFx(B, u, t, k, n);
+  }
   if (ab.wormCall && !B.over) {
     B.flash = ab.wormSmall ? 'wormSmall' : 'worm'; B.rhythm = 0;
     log(B, `${u.def.sn} встаёт на крючья: червь идёт по его воле!`, 'worm');
