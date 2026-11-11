@@ -1,5 +1,5 @@
 // ui/events.js — строки 4473–4621 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { DLG, bPopClose, dlgEnd, dlgNext, doAct, finish, launch, leaveBattle, openFxPop, playDialog, renderBattle, startBattle, useAbil } from './battle/battle-ui.js';
+import { DLG, bPopClose, dlgEnd, dlgNext, doAct, finish, launch, launchStoryUnlock, leaveBattle, openFxPop, playDialog, renderBattle, startBattle, useAbil } from './battle/battle-ui.js';
 import { cqClick } from './views/conq.js';
 import { celebClick, celebQueue, showCeleb } from './overlays/celebrate.js';
 import { meta2Click } from './overlays/battle-settings.js';
@@ -25,13 +25,15 @@ import { recyclerClick } from './recycler-screen.js';
 import { nextShards, rosterClick } from './views/squad.js';
 import { campSel, set_campSel } from './views/camp.js';
 import { render } from './router.js';
+import { selectStoryEvent, selectStoryStage } from './views/story-events.js';
+import { prepareStoryUnlockBattle } from '../logic/bh94-story-battle.js';
 import { toast } from './common.js';
 import { getRes, prog } from '../logic/progress.js';
 import { BT, S, set_view, tickWater, view } from '../core/state.js';
 import { persist } from '../core/save.js';
 import { CRAFT, GEAR_UP_SOL, ITEMS, SHOP_FRAG, grantFrags, raidFrags } from '../logic/gear.js';
 import { MEM, RELIC_MAX, isLegend, relicBuy } from '../logic/relics.js';
-import { BATTLE_WATER, GEAR_COST, LVL_COST, MAX_GEAR, MAX_LVL, RAID_SCENES, ROMAN, RW_NAME, STAR_COST, WMAX } from '../logic/economy.js';
+import { BATTLE_WATER, GEAR_COST, LVL_COST, MAX_GEAR, MAX_LVL, RAID_SCENES, ROMAN, RW_NAME, STAR_COST, WMAX, todayKey } from '../logic/economy.js';
 import { JK, JR } from '../data/journeys.js';
 import { NODES, campNodes, nodeOpen } from '../data/campaigns.js';
 import { aiPlan } from '../logic/battle/ai.js';
@@ -61,6 +63,15 @@ document.addEventListener('click', e => {
   if (recyclerClick(d)) { e.stopImmediatePropagation(); if (d.ixback) render(); return; }
   if (d.ixenter) { closeInfo(true); closeOverlay(); set_view('recycler'); render(); return; }
   if (metaClick(d) || meta2Click(d) || celebClick(d) || cqClick(d)) return;
+  if (d.storyEvent) { if(selectStoryEvent(d.storyEvent))render(); return; }
+  if (d.storyStage !== undefined) { if(selectStoryStage(Number(d.storyStage)))render(); return; }
+  if (d.storyStart) {
+    const [id,index]=d.storyStart.split(':');
+    const prepared=prepareStoryUnlockBattle(S,id,Number(index),todayKey());
+    if(!prepared.ok) { toast('Событие пока недоступно: '+prepared.reason); return; }
+    if(!launchStoryUnlock(prepared))toast('Не удалось начать сюжетный бой');
+    return;
+  }
   if (d.v) { set_view(d.v); render(); return; }
   if (d.csel !== undefined) { set_campSel(+d.csel); render(); return; }
   if (d.iclose !== undefined && (t.tagName === 'BUTTON' || e.target === t)) return closeInfo();
