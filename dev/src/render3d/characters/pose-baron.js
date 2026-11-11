@@ -1,7 +1,6 @@
 // Young Baron's authored rig: additive motion over the four source GLB clips.
 import { ANIM3, seg } from './pose-duncan.js';
 import { B3 } from '../base.js';
-import './pose-legend-baron.js'; // BH6: separate legend profile; ANIM3.baron unchanged
 
 ANIM3.baron = {
   dur: key => ({ basic: 900, special: 1100, ult: 1250 })[key] || null,
