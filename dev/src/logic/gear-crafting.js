@@ -67,7 +67,8 @@ function buildPart(itemId, partId, inventory, partStockMap, currencies) {
   const part = recipe?.parts?.find(p => p.id === partId);
   if (!part) return { ok: false, reason: 'part' };
   const count = part.materials[0].count, key = part.materials[0].id;
-  const legacy = Math.min(count,amount(inventory,itemId)), specific = count-legacy;
+  const availableSpecific = Math.min(count,amount(inventory,key));
+  const specific = availableSpecific, legacy = count-specific;
   if (amount(inventory,key) < specific || amount(currencies, 'sol') < part.cost.sol ||
       amount(currencies, 'pl') < part.cost.pl) return { ok: false, reason: 'resources' };
   inventory[itemId] = amount(inventory,itemId) - legacy;
