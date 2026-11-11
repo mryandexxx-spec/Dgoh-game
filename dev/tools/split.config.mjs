@@ -14,7 +14,7 @@ export const SPLIT = [
   [3252, 'ui/common.js'], [3272, 'ui/router.js'], [3282, 'ui/views/camp.js'], [3330, 'ui/portrait.js'], [3330, 'ui/views/squad.js'], [3365, 'ui/overlays/detail.js'], [3365, 'ui/hero-card.js'], [3365, 'ui/skill-window.js'], [3365, 'ui/memory-screen.js'],
   [3550, 'ui/overlays/info.js'], [3668, 'ui/overlays/sim.js'], [3761, 'ui/rewards.js'], [3779, 'ui/views/daily.js'], [3826, 'ui/overlays/calendar.js'],
   [3859, 'ui/overlays/squad-select.js'], [3951, 'ui/views/raid.js'], [3992, 'ui/views/legend.js'], [4020, 'logic/recycler.js'], [4020, 'ui/recycler-screen.js'], [4020, 'ui/views/shop.js'], [4072, 'ui/views/lobby.js'],
-  [4109, 'ui/views/rules.js'], [4130, 'ui/battle/battle-ui.js'], [4473, 'ui/events.js'], [4622, 'core/boot.js'], [4648, 'ui/hero-window.js'],
+  [4109, 'ui/views/rules.js'], [4130, 'data/bh94-unlock-events.js'], [4130, 'logic/bh94-story-events.js'], [4130, 'logic/bh94-story-battle.js'], [4130, 'ui/battle/battle-ui.js'], [4473, 'ui/events.js'], [4622, 'core/boot.js'], [4648, 'ui/hero-window.js'],
   [4681, 'logic/trials.js'], [4681, 'ui/views/trials.js'], [4810, 'logic/stats.js'], [4826, 'data/cosmetics.js'], [4856, 'ui/views/feats.js'], [4906, 'ui/overlays/profile.js'],
   [4934, 'ui/wiring.js'], [4966, 'logic/account.js'], [5015, 'ui/fx-text.js'], [5020, 'ui/overlays/levelup.js'], [5037, 'ui/notifications.js'],
   [5084, 'ui/mouse.js'], [5105, 'ui/craft.js'], [5118, 'ui/overlays/battle-settings.js'], [5164, 'ui/perf-overlay.js'], [5164, 'ui/reward-tiles.js'], [5200, 'ui/overlays/celebrate.js'],
