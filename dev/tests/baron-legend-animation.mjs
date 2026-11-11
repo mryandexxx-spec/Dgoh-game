@@ -44,6 +44,7 @@ const death=make();death.dead=true;death.deathT=0;profile.cliplessPose(death,100
 const young=make('baron');profile.cliplessPose(young,200,.2,1,{});assert.equal(young.root._motion,undefined);
 const scene=readFileSync(new URL('../src/render3d/scenes/arena.js',import.meta.url),'utf8');
 assert.match(scene,/B\.glKind === 'fall-of-atreides'/);
-assert.match(scene,/army-impact pulses, NEVER a worm summon/);
+assert.match(scene,/this\.startBaronGL\(caster,/);
+assert.match(scene,/B\.glKind === 'fall-of-atreides'/);
 assert.match(readFileSync(new URL('../src/render3d/characters/pose-generic.js',import.meta.url),'utf8'),/!o\.root\._clips && o\.anim\?\.cliplessPose/);
 console.log('BH6 separate legendary Baron clipless pose: Idle/Showcase/basic/special/ult/gl/Hit/Death and no worm: PASS');
