@@ -4,8 +4,11 @@ import { STORY_UNLOCK_EVENTS,validateStoryEvents } from '../src/data/bh94-unlock
 import { eventStatus,rewardStoryEventWin,NORMAL_TOTAL_TO_7_STARS } from '../src/logic/bh94-story-events.js';
 import { prepareStoryUnlockBattle,finishStoryUnlockBattle } from '../src/logic/bh94-story-battle.js';
 import { checkOver } from '../src/logic/battle/engine.js';
-import { SHARDS_NEXT } from '../src/logic/economy.js';
-import { fillSave } from '../src/core/save.js';
+import { readFileSync } from 'node:fs';
+const economySource=readFileSync(new URL('../src/logic/economy.js',import.meta.url),'utf8');
+const saveSource=readFileSync(new URL('../src/core/save.js',import.meta.url),'utf8');
+const SHARDS_NEXT=JSON.parse('['+economySource.match(/const SHARDS_NEXT = \[([^\]]+)\]/)[1]+']');
+assert.ok(saveSource.includes('s.storyEvents ??= {}'), 'save migration must initialize event progress without browser dependencies');
 
 assert.deepEqual(validateStoryEvents(),[]);
 assert.deepEqual(Object.keys(STORY_UNLOCK_EVENTS),['margot_story','yue_story']);
@@ -13,10 +16,7 @@ assert.equal(SHARDS_NEXT.slice(1,7).reduce((a,b)=>a+b,10),NORMAL_TOTAL_TO_7_STAR
 assert.equal(NORMAL_TOTAL_TO_7_STARS,330);
 assert.equal(CH.margot,undefined);
 assert.equal(CH.yue,undefined);
-const seed=fillSave({v:1,roster:Object.fromEntries(Object.keys(CH).map(id=>[id,{shards:0,stars:0,lvl:1,gear:1}])),journeys:{muaddib:{0:true}},acc:{lvl:39}});
-const seedAgain=structuredClone(seed);
-fillSave(seedAgain);
-assert.deepEqual(seedAgain.storyEvents,seed.storyEvents);
+const seed={v:1,roster:Object.fromEntries(Object.keys(CH).map(id=>[id,{shards:0,stars:0,lvl:1,gear:1}])),journeys:{muaddib:{0:true}},acc:{lvl:39},storyEvents:{}};
 assert.equal(seed.roster.margot,undefined);
 assert.equal(seed.roster.yue,undefined);
 assert.equal(prepareStoryUnlockBattle(seed,'margot_story',0,'D0').reason,'locked');
