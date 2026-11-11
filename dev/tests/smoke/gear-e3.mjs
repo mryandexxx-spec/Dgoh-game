@@ -49,9 +49,32 @@ assert.equal(badCash.sol, 100000);
 
 const sources = stripped(read('logic/gear-sources.js'));
 const nodes = [{ camp: 'L' }, { camp: 'C' }], nodeItems = [[it.id], []];
-const { gearSources } = new Function('NODES','ITEMS','NODE_ITEMS','SHOP_FRAG','RAID_FRAGS','nodeChance',sources+
-  'return { gearSources };')(nodes, ITEMS, nodeItems, Array(14).fill(12), [{tiers:[8]}], ()=>0.3);
-assert.equal(gearSources(it.id).filter(s=>s.type==='mission').length, 1);
+const fragmentId = recipe.parts[0].materials[0].id;
+const fragSources = new Map([[fragmentId,[0]]]), completeIndex = new Map([[it.id,[1]]]);
+const completeRate = Array(14).fill(0); completeRate[8] = .002;
+const { gearSources } = new Function('NODES','ITEMS','FRAGMENT_SOURCES','COMPLETE_INDEX',
+  'COMPLETE_RATE','NODE_ITEMS','SHOP_FRAG','RAID_FRAGS','nodeChance',sources+
+  'return { gearSources };')(nodes, ITEMS, fragSources, completeIndex, completeRate,
+  nodeItems, Array(14).fill(12), [{tiers:[8]}], ()=>0.3);
+assert.equal(gearSources(fragmentId).filter(s=>s.type==='mission').length, 1);
+assert.equal(gearSources(it.id,'complete').filter(s=>s.type==='mission').length, 1);
+assert.equal(gearSources(it.id,'complete')[0].chance, .002);
 assert.equal(gearSources(it.id).filter(s=>s.type==='sietch').length, 1);
 assert.equal(gearSources(it.id).filter(s=>s.type==='raid').length, 1);
-console.log('E3 recipes, atomic crafting, source index: PASS (' + cases + ' items)');
+
+// GE1: all original fragments remain usable and existing complete items require no recipe costs.
+const completeBag = {[it.id]:1}, emptyInv = {}, noParts = {};
+const zeroWallet = {sol:0,pl:0};
+assert.equal(G.craftAndEquip(it.id,emptyInv,noParts,zeroWallet,completeBag).ok,true);
+assert.equal(completeBag[it.id],0);
+assert.equal(zeroWallet.sol,0);
+const need = G.craftRequirements(it.id,{}, {}, zeroWallet, {[it.id]:1});
+assert.equal(need.ready,true);
+assert.equal(need.complete,true);
+const specific = {};
+for (const part of recipe.parts) specific[part.materials[0].id]=part.materials[0].count;
+const preciseWallet={...CRAFT(it.t)}, preciseParts={};
+assert.equal(G.craftAndEquip(it.id,specific,preciseParts,preciseWallet).ok,true);
+assert.equal(specific[it.id]||0,0);
+for (const part of recipe.parts) assert.equal(specific[part.materials[0].id],0);
+console.log('E3/GE1 legacy, distinct components, direct equip and source index: PASS (' + cases + ' items)');
