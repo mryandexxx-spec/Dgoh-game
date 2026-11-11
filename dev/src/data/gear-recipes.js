@@ -27,7 +27,7 @@ const PARTS_BY_KIND = Object.freeze({
 });
 const partId = (item, part) => 'part:' + item.id + ':' + part;
 // Existing item fragments remain the sole farmable drop; no orphaned drop IDs.
-const partFragId = item => item.id;
+const partFragId = (item, part) => 'frag:' + item.id + ':' + part;
 function gearRecipe(item, fragmentsNeeded, craftCost) {
   if (!item || !Number.isInteger(item.t) || item.t < 1 || item.t > 13) throw new Error('Invalid equipment item');
   const total = fragmentsNeeded[item.t];
