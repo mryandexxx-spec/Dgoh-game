@@ -43,4 +43,39 @@ function baronRosterGate(save) {
   };
 }
 
-export { STAGED_HERO_IDS, defaultStagedHero, stageBaronRoster, baronRosterGate };
+// BH8 — pure, non-public roster/card contract.  No mutations to CHARS,
+// ROSTER_IDS, save data, or the live UI. Visual publication is a separate gate.
+// The normal `ult` slot intentionally maps to the approved "Глаза императора".
+const BARON_PREVIEW_ACTION_KEYS = Object.freeze(['basic', 'special', 'ult', 'gl']);
+function baronLegendPreview(save) {
+  const p = save?.roster?.[BARON_LEGEND_KIT.id];
+  const requirements = baronRosterGate(save);
+  return {
+    id: BARON_LEGEND_KIT.id,
+    name: BARON_LEGEND_KIT.n,
+    faction: [...BARON_LEGEND_KIT.f],
+    role: BARON_LEGEND_KIT.role,
+    legendary: true,
+    // Absence of approved artwork and encounters always keeps this staged.
+    public: false,
+    playable: false,
+    modelAsset: 'models/baron-legend-mobile.dgm',
+    portraitApproved: false,
+    progress: { stars: p?.stars ?? 0, shards: p?.shards ?? 0, lvl: p?.lvl ?? 1,
+      gear: p?.gear ?? 1, relic: p?.relic ?? 0 },
+    actions: BARON_PREVIEW_ACTION_KEYS.map(key => ({
+      slot: key, name: BARON_LEGEND_KIT[key].n,
+      cooldown: BARON_LEGEND_KIT[key].cd || 0,
+      initialCooldown: BARON_LEGEND_KIT[key].cd0 || 0,
+      glKind: key === 'gl' ? BARON_LEGEND_KIT.gl.kind : null,
+    })),
+    passive: BARON_LEGEND_KIT.passive.n,
+    leader: BARON_LEGEND_KIT.leader.n,
+    requirements: { ready: requirements.ready, completed: requirements.completed,
+      total: requirements.total, futureLocked: [...requirements.futureLocked] },
+    eventPlayable: false,
+  };
+}
+
+export { STAGED_HERO_IDS, defaultStagedHero, stageBaronRoster, baronRosterGate, baronLegendPreview };
+
