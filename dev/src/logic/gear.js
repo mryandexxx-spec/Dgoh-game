@@ -50,7 +50,7 @@ for (const item of Object.values(ITEMS)) {
     for (const i of chosen) { NODE_ITEMS[i].push(id); used.add(i); }
   }
   if (COMPLETE_SOURCES[item.t]) {
-    const chosen = selectFarmNodes(item, new Set(), COMPLETE_SOURCES[item.t], 'complete');
+    const chosen = selectFarmNodes(item, used, COMPLETE_SOURCES[item.t], 'complete');
     COMPLETE_INDEX.set(item.id, chosen);
     chosen.forEach(i => COMPLETE_NODE_ITEMS[i].push(item.id));
   }
