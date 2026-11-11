@@ -122,7 +122,7 @@ document.addEventListener('click', e => {
   if (d.gearfind && itemCtx) {
     const { cid, k, partId } = itemCtx, it = slotState(cid, k).it;
     set_INFO_BACK({ label: 'К предмету', open: () => openItem(cid, k, partId) });
-    return openInfo('frag:' + it.id);
+    return partId ? openItem(cid,k,partId) : openInfo('frag:' + it.id);
   }
   if (d.buildpart && itemCtx) {
     const { cid, k } = itemCtx, it = slotState(cid, k).it;
@@ -139,7 +139,7 @@ document.addEventListener('click', e => {
     const { cid, k } = itemCtx, s = slotState(cid, k), p = prog(cid);
     if (p.eq[k] || !p.stars) return;
     const wallet = { sol: S.solari, pl: S.plast };
-    const result = craftAndEquip(s.it.id, S.inv, S.gearParts, wallet);
+    const result = craftAndEquip(s.it.id, S.inv, S.gearParts, wallet, S.gearOwned);
     if (!result.ok) return toast('Недостаточно материалов для сборки');
     S.solari = wallet.sol; S.plast = wallet.pl;
     p.eq[k] = true; quest('craft'); persist();
