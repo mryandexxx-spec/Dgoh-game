@@ -52,6 +52,11 @@ function createBattle(squadA, squadB, opts = {}) {
     }
   }
   for (const u of B.units) if (u.def.id === 'duncan' && skLv(u, 'passive') >= 4) u.fx.taunt = 2;
+  // Data-driven leader mark, only for a hero whose leader kit explicitly enables it.
+  for (const side of ['A', 'B']) {
+    const leader = B.units.find(u => u.side === side && u.idx === 0);
+    if (leader?.def?.leader?.houseMark) markHouseVictim(B.units, side);
+  }
   if (opts.boss) {
     const R = opts.boss, T = RAID_TIERS[R.tier];
     B.raid = true; B.desert = true;
