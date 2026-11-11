@@ -37,6 +37,7 @@ try {
       if (!await loadB3()) throw Error('3D engine failed to load');
       if (!MODEL_DATA.baron_legend) throw Error('Legendary Baron DGM not loaded');
       if (!CH.baron || CH.baron_legend || CH.margot || CH.yue) throw Error('Public hero identity gate broken');
+      closeInfo(true); // monthly calendar lives in #overlay2; closeOverlay only clears #overlay
       closeOverlay();
       openDetail('muaddib');
     });
@@ -48,6 +49,8 @@ try {
       openDetail('baron_legend', { def, progress });
       const hc = document.querySelector('#overlay .hc');
       if (!hc || hc.dataset.cid !== 'baron_legend') throw Error('Shared hero card not mounted');
+      if (document.querySelector('#overlay2')?.innerHTML.trim()) throw Error('Monthly calendar/info overlay obscures card screenshot');
+      if (!document.elementFromPoint(innerWidth/2, innerHeight/2)?.closest('.hc')) throw Error('Card is not topmost at viewport center');
       const disabled = [...hc.querySelectorAll('button:not([data-close]):not([data-dback]):not([data-hcstat])')];
       if (!disabled.length || disabled.some(b => !b.disabled)) throw Error('Staged mutations not disabled');
       if (JSON.stringify(S.roster) !== before) throw Error('Staged preview changed save roster');
