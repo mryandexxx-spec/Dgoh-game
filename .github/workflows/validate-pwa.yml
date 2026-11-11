@@ -287,10 +287,48 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  bh8-preview:
+    name: BH8 legendary Baron WebGL frames (844/667 MED/LOW)
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dune-validated-build
+          path: dev/dist
+      - run: node tools/ci-artifact.mjs verify
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          chrome-version: stable
+      - name: Capture hidden legend in real WebGL; public roster untouched
+        run: node tests/smoke/baron-legend-gl.mjs dist/pwa/index.html
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: Upload actual GPU snapshots for owner review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-bh8-legend-baron-${{ github.run_number }}
+          path: dev/dist/baron-legend-bh8-shots/
+          if-no-files-found: ignore
+          retention-days: 14
+
   gate:
     name: All required checks passed
     if: always()
-    needs: [build, golden, ui, three-d]
+    needs: [build, golden, ui, three-d, bh8-preview]
     runs-on: ubuntu-24.04
     steps:
       - name: Reject any failed or skipped required check
