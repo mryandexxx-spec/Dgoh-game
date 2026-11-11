@@ -236,6 +236,15 @@ function applyFx(B, att, tgt, k, n, chance = 1) {
   }
   if (k === 'bleed') { tgt.bleedN = Math.min(5, (tgt.fx.bleed ? tgt.bleedN || 0 : 0) + 1); tgt.fx.bleed = n; }
   tgt.fx[k] = Math.max(tgt.fx[k] || 0, n);
+  if (k === 'horror' && att && att.side !== tgt.side) {
+    const team = living(B, att.side), barons = team.filter(x => x.def.passive?.harkonnenGreed);
+    if (barons.length) {
+      if (team.some(x => x.def.id === 'rabban')) tgt.horrorStrength = 2;
+      for (const baron of barons) baron.fx.defUp = Math.max(baron.fx.defUp || 0, 2);
+      for (const ally of team) if (has(ally, 'hark') && canApplyStatus(ally, barons[0], false))
+        ally.fx.attackUp = Math.max(ally.fx.attackUp || 0, 2);
+    }
+  }
   ev(B, tgt, k === 'bleed' && tgt.bleedN > 1 ? `${FX[k].n} ×${tgt.bleedN}` : FX[k].n, FX[k].bad ? 'debuff' : 'buff');
   if (FX[k].bad && att && att.side !== tgt.side && B.leader[att.side] === 'erasmus' && (has(att, 'mach') || MENTAT(att))) for (const a of living(B, att.side)) if (has(a, 'mach') || MENTAT(a)) a.tm = Math.min(999, a.tm + 80);
 }
