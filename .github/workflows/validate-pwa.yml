@@ -316,6 +316,10 @@ jobs:
         run: node tests/smoke/baron-legend-gl.mjs dist/pwa/index.html
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: Capture actual staged Baron in standard hero card (844/667 MED/LOW)
+        run: node tests/smoke/baron-legend-card.mjs dist/pwa/index.html
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
       - name: Upload actual GPU snapshots for owner review
         if: always()
         uses: actions/upload-artifact@v4
