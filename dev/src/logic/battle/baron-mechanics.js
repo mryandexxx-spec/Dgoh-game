@@ -39,11 +39,16 @@ function orderedAssist(B, actor, target, helper, multiplier, hit) {
 }
 // Runs only for a hero explicitly declaring the recovered "Алчность" passive.
 // The state belongs to the combat instance; never persists between fights.
+function baronPreventRevival(B, victim) {
+  if (!victim?.def?.f?.includes('atr')) return false;
+  const active = B.units.some(a => a.alive && a.side !== victim.side && a.def?.passive?.harkonnenGreed);
+  if (active) victim.noRev = true;
+  return active;
+}
 function baronDeathTriggers(B, victim, ev) {
   if (!victim || !B?.units) return;
   const barons = B.units.filter(a => a.alive && a.side !== victim.side && a.def?.passive?.harkonnenGreed);
   const atreides = victim.def?.f?.includes('atr');
-  if (atreides && barons.length) victim.noRev = true;
   for (const baron of barons) {
     const h = Math.min(baron.maxHp - baron.hp, Math.round(baron.maxHp * (baron.def.passive.healOnEnemyDeath ?? .5)));
     if (h > 0) { baron.hp += h; if (ev) ev(B, baron, '+' + h, 'heal'); }
@@ -61,4 +66,4 @@ function baronDeathTriggers(B, victim, ev) {
     }
   }
 }
-export { canReceiveBuff, canApplyStatus, consumeForesight, markHouseVictim, markedDamageFactor, mayRevive, strongestAlly, orderedAssist, baronDeathTriggers };
+export { canReceiveBuff, canApplyStatus, consumeForesight, markHouseVictim, markedDamageFactor, mayRevive, strongestAlly, orderedAssist, baronPreventRevival, baronDeathTriggers };
