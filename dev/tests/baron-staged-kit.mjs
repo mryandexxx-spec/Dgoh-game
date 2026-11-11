@@ -8,9 +8,11 @@ import { aiPlan } from '../src/logic/battle/ai.js';
 
 assert.equal(CH.baron_legend, undefined, 'future legend must not be live in CHARS');
 assert.equal(BARON_LEGEND_KIT.gl.n, BARON_LEGEND_ABILITIES.gl.name);
+assert.equal(BARON_LEGEND_KIT.ult.n, BARON_LEGEND_ABILITIES.powerful.name);
 assert.equal(BARON_LEGEND_KIT.basic.n, 'Приказ Барона');
 assert.equal(BARON_LEGEND_KIT.special.cd0, 3);
-assert.equal(BARON_LEGEND_KIT.powerful.cd0, 4);
+assert.equal(BARON_LEGEND_KIT.ult.cd0, 4);
+assert.equal(BARON_LEGEND_KIT.powerful, undefined, 'must reuse native MuadDib regular ult slot');
 CH.baron_legend = BARON_LEGEND_KIT; // isolated test process only
 try {
   const build = (id, gl=false) => ({id,lvl:85,stars:7,gear:13,relic:7,gl});
@@ -20,8 +22,8 @@ try {
   const feyd=B.units.find(x=>x.def.id==='feyd');
   assert.ok(baron);
   assert.equal(baron.cd.special,3);
-  assert.equal(baron.cd.powerful,4);
-  assert.equal(abilityReady(B,baron,'powerful'),false);
+  assert.equal(baron.cd.ult,4);
+  assert.equal(abilityReady(B,baron,'ult'),false);
   assert.equal(abilityReady(B,baron,'gl'),false);
   const target=living(B,'B')[0];
   baron.hp=Math.round(baron.maxHp*.5);
@@ -33,10 +35,10 @@ try {
   act(B,baron,'special',target.uid);
   assert.equal(baron.cd.special,3);
   assert.ok(living(B,'B').some(e=>e.fx.horror), 'Horror should land under a high potency deterministic roll');
-  baron.cd.powerful=0;
-  assert.equal(abilityReady(B,baron,'powerful'),true);
-  act(B,baron,'powerful',target.uid);
-  assert.equal(baron.cd.powerful,4);
+  baron.cd.ult=0;
+  assert.equal(abilityReady(B,baron,'ult'),true);
+  act(B,baron,'ult',target.uid);
+  assert.equal(baron.cd.ult,4);
   assert.ok(feyd.fx.debuffImmune);
   const enemyLeader=B.units.find(x=>x.side==='B' && x.idx===0);
   assert.ok(enemyLeader.fx.isolation,'Enemy leader isolation');
