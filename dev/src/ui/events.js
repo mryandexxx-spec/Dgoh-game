@@ -122,7 +122,7 @@ document.addEventListener('click', e => {
   if (d.gearfind && itemCtx) {
     const { cid, k, partId } = itemCtx, it = slotState(cid, k).it;
     set_INFO_BACK({ label: 'К предмету', open: () => openItem(cid, k, partId) });
-    return partId ? openItem(cid,k,partId) : openInfo('frag:' + it.id);
+    return openInfo(partId ? 'gefrag:' + (partId.replace(/^part:/,'frag:')) : 'gegear:' + it.id);
   }
   if (d.buildpart && itemCtx) {
     const { cid, k } = itemCtx, it = slotState(cid, k).it;
