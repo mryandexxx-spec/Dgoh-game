@@ -328,6 +328,18 @@ jobs:
         run: node tests/smoke/baron-legend-card.mjs dist/pwa/index.html
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: BH9.8 procedural Margot/Yue standard roster, hero cards and live WebGL battle (844/667 MED/LOW)
+        run: node tests/smoke/bh97-procedural-mobile.mjs dist/pwa/index.html
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: Upload BH9.8 temporary procedural hero mobile screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-bh98-procedural-${{ github.run_number }}
+          path: dev/dist/bh97-procedural-mobile-shots/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Upload actual GPU snapshots for owner review
         if: always()
         uses: actions/upload-artifact@v4
