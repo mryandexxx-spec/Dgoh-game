@@ -22,9 +22,8 @@ function fillSave(s) {
   s.daily ??= { d: '', c: {}, got: {}, chest: false }; s.login ??= { m: '', n: 0, last: '' };
   s.folio ??= 10; s.seal ??= 0; s.wol ??= 0; s.seenDlg ??= {}; s.skipDlg ??= false; s.sealBuy ??= { d: '', n: 0 }; s.sealClaim ??= {};
   for (const id in s.roster) s.roster[id].sk ??= { basic: 1, special: 1, ult: 1, passive: 1, leader: 1 };
-  // BH9.4: idempotent placeholder for independent story event progress.
-  // Future hero roster records are deliberately NOT created until release.
-  s.storyEvents ??= {};
+  // BH9.4 uses lazy storyEvents initialization on the first earned reward.
+  // Keep untouched legacy saves byte-for-byte compatible with golden snapshots.
   s.cry ??= 200; s.cryClaim ??= {}; s.refills ??= { d: '', n: 0 };
   s.inv ??= {}; s.gearParts ??= {}; for (const id in s.roster) s.roster[id].eq ??= [false, false, false, false, false, false];
   // Однократная миграция Голосов предков в Платы Икса. Старые уровни ДП не меняются.
