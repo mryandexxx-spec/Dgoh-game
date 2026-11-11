@@ -66,8 +66,18 @@ function storyEventsHtml(save, day=dateKey(), selected='margot_story', selectedS
     </div>
   </section>`;
 }
-function renderStoryEvents(save, day, selected, stage) {
-  const root=document.getElementById('view');
-  if(root)root.innerHTML=storyEventsHtml(save,day,selected,stage);
+let chosenEvent='margot_story', chosenStage=0;
+function selectStoryEvent(id) {
+  if(!STORY_EVENT_IDS.includes(id))return false;
+  chosenEvent=id;chosenStage=0;return true;
 }
-export { storyEventsHtml, renderStoryEvents };
+function selectStoryStage(n) {
+  if(!Number.isInteger(n)||n<0||n>2)return false;
+  chosenStage=n;return true;
+}
+function selectedStory() {return {eventId:chosenEvent,stageIndex:chosenStage};}
+function renderStoryEvents(save, day=dateKey()) {
+  const root=document.getElementById('view');
+  if(root)root.innerHTML=storyEventsHtml(save,day,chosenEvent,chosenStage);
+}
+export { storyEventsHtml, renderStoryEvents, selectStoryEvent, selectStoryStage, selectedStory };
