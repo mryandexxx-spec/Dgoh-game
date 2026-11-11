@@ -116,7 +116,7 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
   return { root, body, hips: N.hips, spine: N.spine, head: N.head, R, Lf, LL, LR, skirt: null, wpn: w, mats, h: 1.95 * sc * tl, melee: def.basic.dt === 'blade', hipY0: N.hips.position.y, anim: ANIM3[def.id] || null, capeB: root._capeB || null, stance: def.role === 'tank' && !X.noShield ? 'shield' : def.basic.dt === 'blade' ? 'guard' : 'open', float: 0 };
 }); }
 
-function poseModelClip(o, now, t, sp) {
+function poseModelClip(o, now, t, sp, stage) {
   const clips = o.root._clips; if (!clips) return;
   let name = 'Idle', u = ((t + (o.phase || 0)) % clips.Idle.duration) / clips.Idle.duration;
   if (o.dead && now >= o.deathT) { name = 'Death'; u = Math.min(1, (now - o.deathT) / 950); }
@@ -143,6 +143,7 @@ function poseModelClip(o, now, t, sp) {
     o.body.position.y = -.1 * k * k * (3 - 2 * k);
   }
   o.root._clip = name;
+  if (o.anim && o.anim.clipPose) o.anim.clipPose(o, now, t, sp, name, u, stage);
 }
 
 export { MODEL_CACHE, b64bytes, modelData, MODEL_MAT, makeModel3, tex3, poseModelClip };

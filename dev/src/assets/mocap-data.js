@@ -1,5 +1,5 @@
 // assets/mocap-data.js — строки 2333–2336 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import '../render3d/characters/pose-duncan.js'; // порядок исполнения
+import '../render3d/characters/pose-baron.js'; // порядок исполнения
 
 // ===================== mocap clips (Mixamo → retargeted in Blender to the game rig, mirrored for the weapon hand) =====================
 // Joint order: hips, spine, head, shR, elR, handR, shL, elL, handL, hipR, kneeR, ankR, hipL, kneeL, ankL. Rotations are local to the

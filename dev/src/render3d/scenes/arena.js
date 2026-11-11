@@ -168,7 +168,7 @@ class Arena3D extends GameScene {
         }
         const dur = total / sp; this.actMs = total;
         const ab = B.lastKey && B.lastKey !== 'gl' && o.def ? o.def[B.lastKey] : null;
-        o.act = { kind, t0: now, dur, dir: nd, to, tg, dt, ab, f1, f2 };
+        o.act = { key: B.lastKey, kind, t0: now, dur, dir: nd, to, tg, dt, ab, f1, f2 };
         if (['special', 'ult'].includes(B.lastKey) && !this.raid && !(typeof CINE_OFF === 'function' && CINE_OFF())) { const pts = [kind === 'melee' || kind === 'aoe' ? to : o.base, ...tg.map(t => t.base)], c = V3(); for (const q of pts) c.addInPlace(q); c.scaleInPlace(1 / pts.length); this.cine = { t0: now, dur: dur + 700 / sp, p: c, side: o.side, ult: B.lastKey === 'ult' }; }
         if (ab && (ab.fx || ab.heal || ab.tm || ab.shieldSelf || ab.cleanse)) this.at(now + (kind === 'cast' ? .3 : .55) * dur, () => this.buffFX(B, o, ab));
         const hitAt = unmapK((o.anim && o.anim.hit && o.anim.hit(B.lastKey)) || { melee: .52, aoe: .56, shoot: .4, voice: .5, cast: .3 }[kind], o.act) * dur;
