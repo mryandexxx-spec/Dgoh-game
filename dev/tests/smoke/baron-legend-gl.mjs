@@ -61,6 +61,13 @@ try {
     if(!caster?.root?._authored)throw Error('Model fell back to procedural');
     if(caster.root.getChildMeshes().filter(x=>x.skeleton).length!==11)
       throw Error('Expected 11 skinned model meshes');
+    // BH8 diagnostic (NOT shipping): unbind bones to isolate bad skinning
+    // from material/lighting and compare the native reference silhouette.
+    for(const m of caster.root.getChildMeshes().filter(x=>x.skeleton)){
+      m.skeleton=null;
+      m.numBoneInfluencers=0;
+    }
+
     const foes=BT.B.units.filter(x=>x.side==='B').map(x=>a.units[x.uid]).filter(Boolean);
     if(foes.length<4)throw Error('Enemy formation missing');
     const t0=performance.now();
