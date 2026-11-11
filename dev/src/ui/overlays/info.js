@@ -45,7 +45,7 @@ function itemSourceRows(it, fragmentId = null, type = 'fragment') {
   const shop = sources.find(s => s.type === 'sietch');
   if (shop) rows.push(navRow(ic('teeth'), 'Лавка сиетча',
     `${amt('teeth', shop.price)} за фрагмент · у вас ${amt('teeth', S.teeth)}`,
-    [1, 5].map(q => `<button class="btn mini" data-fbuy="${it.id}:${q}" ${S.teeth >= q * shop.price ? '' : 'disabled'}>Купить ${q}<small>${amt('teeth', q * shop.price)}</small></button>`).join('')));
+    [1, 5].map(q => `<button class="btn mini" data-fbuy="${fragmentId || it.id}:${q}" ${S.teeth >= q * shop.price ? '' : 'disabled'}>Купить ${q}<small>${amt('teeth', q * shop.price)}</small></button>`).join('')));
   const raids = sources.filter(s => s.type === 'raid');
   if (raids.length) rows.push(navRow(wormIco(), 'Рейд «Шаи-Хулуд»',
     `Случайные фрагменты Т${raids.map(s => s.tier + 1).join(', Т')} в награде за урон`,
