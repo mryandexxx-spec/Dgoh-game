@@ -46,7 +46,57 @@ try {
       const poses=Object.fromEntries(['Idle','Attack','Hit','Death'].map(name=>[name,sample(name)]));sample('Idle');
       return {poses,cache:tag==='after'?bakeKey('baron'):null,model:assetUrl('models/young-baron.dgm')};
     },tag);
+    const occlusion=await p.evaluate(async()=>{
+      const s=HERO_STAGE,E=s.engine;
+      const w=E.getRenderWidth(),h=E.getRenderHeight();
+      const at=B3.Vector3.Project(V3(0,1.25,0),s.o.root.getWorldMatrix(),s.scene.getTransformMatrix(),s.camera.viewport.toGlobal(w,h));
+      const read=async enabled=>{
+        s.halo.setEnabled(enabled);s.bg.setEnabled(enabled);
+        for(let i=0;i<4;i++)s.scene.render();
+        return Array.from(await E.readPixels(Math.round(at.x)-2,h-Math.round(at.y)-2,5,5));
+      };
+      const on=await read(true),off=await read(false);await read(true);
+      let delta=0;for(let i=0;i<on.length;i++)if(i%4!==3)delta=Math.max(delta,Math.abs(on[i]-off[i]));
+      return {delta,pixels:on.length,backgroundInGlow:s.glow?.hasMesh(s.halo)||s.glow?.hasMesh(s.bg)};
+    });
+    console.log('BH4 opaque torso vs backdrop',tag,quality,JSON.stringify(occlusion));
+    if(tag==='after') {
+      assert.equal(occlusion.pixels,100);
+      assert(occlusion.delta<=3,'Background glow leaks through the opaque torso: '+occlusion.delta);
+      assert.equal(occlusion.backgroundInGlow,false);
+      const afterWake=await p.evaluate(async()=>{
+        const s=HERO_STAGE;s.onSleep({light:true});s.onWake();s.scene.render();
+        await s.scene.whenReadyAsync();for(let i=0;i<4;i++)s.scene.render();
+        return s.glow?.hasMesh(s.halo)||s.glow?.hasMesh(s.bg);
+      });
+      assert.equal(afterWake,false,'Backdrop glow returned after light sleep');
+    }
     await p.screenshot({path:path.join(out,`${tag}-${width}-${quality}-hero.png`)});
+    // Keep the same camera/pose while isolating the showcase effects. A green
+    // geometry/animation test alone does not establish a readable character.
+    if(tag==='before') {
+      for(const variant of ['no-dof','no-halo','no-post']) {
+        const state=await p.evaluate(variant=>{
+          const s=HERO_STAGE;
+          window.__showcaseEffects ||= {dof:s.pipe.depthOfFieldEnabled,halo:s.halo.isEnabled(),bloom:s.pipe.bloomEnabled,glow:s.glow?.isEnabled};
+          const old=window.__showcaseEffects;
+          s.pipe.depthOfFieldEnabled=variant==='no-dof'||variant==='no-post'?false:old.dof;
+          s.halo.setEnabled(variant==='no-halo'||variant==='no-post'?false:old.halo);
+          s.pipe.bloomEnabled=variant==='no-post'?false:old.bloom;
+          if(s.glow)s.glow.isEnabled=variant==='no-post'?false:old.glow;
+          for(let i=0;i<4;i++)s.scene.render();
+          return {dof:s.pipe.depthOfFieldEnabled,halo:s.halo.isEnabled(),alpha:s.o.root.getChildMeshes().map(m=>({name:m.name,alpha:m.material?.alpha,visibility:m.visibility}))};
+        },variant);
+        await p.screenshot({path:path.join(out,`${tag}-${width}-${quality}-${variant}.png`)});
+        console.log('BH4 showcase isolation',quality,variant,JSON.stringify(state));
+      }
+      await p.evaluate(()=>{
+        const s=HERO_STAGE,old=window.__showcaseEffects;
+        s.pipe.depthOfFieldEnabled=old.dof;s.halo.setEnabled(old.halo);s.pipe.bloomEnabled=old.bloom;
+        if(s.glow)s.glow.isEnabled=old.glow;
+        for(let i=0;i<4;i++)s.scene.render();
+      });
+    }
     if(tag==='after') {
       assert.notEqual(summary.cache,'b9:baron');assert(summary.cache.includes(summary.model));
       for(const name of ['Idle','Attack','Hit','Death'])assert.equal(summary.poses[name].clip,name);

@@ -14,6 +14,19 @@ import { CH } from '../../data/chars.js';
 
 // ---------- hero showcase (character window) ----------
 class HeroStage extends Stage3D {
+  look(options = {}) {
+    super.look(options);
+    // The background sphere and radial backdrop are already self-lit/soft.
+    // Rendering them into GlowLayer adds
+    // its light over the opaque hero on MED/LOW, where glowOnly deliberately
+    // omits non-emissive character meshes (and thus their depth occlusion).
+    // Keep the backdrop in the normal scene, out of the extra glow pass.
+    // Apply on every look(), including pipeline recreation after light sleep.
+    if (this.glow) {
+      if (this.bg) this.glow.addExcludedMesh(this.bg);
+      if (this.halo) this.glow.addExcludedMesh(this.halo);
+    }
+  }
   constructor() {
     super({ cls: 'stage3d hero3d', alpha: false, kind: 'hero' });
     const S = this.scene; let tx; withCtx({ scene: S, shadows: null }, () => { S._maxL = 5; // hemi + key + 2 rims + aura
