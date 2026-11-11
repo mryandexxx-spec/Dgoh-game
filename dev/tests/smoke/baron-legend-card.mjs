@@ -82,6 +82,20 @@ try {
       return result;
     });
     await page.screenshot({ path:path.join(out, `${w}x${h}-${quality}-legend-baron.png`) });
+    // Art-review diagnostic ONLY: the normal locked hero card deliberately
+    // dims its 3D canvas via CSS grayscale(1) brightness(.4), hiding the model.
+    // Leave production CSS and the locked-save semantics untouched.
+    const artReview = await page.evaluate(() => {
+      const canvas = document.querySelector('#overlay .hcfig canvas');
+      if (!canvas) throw Error('Shared hero canvas not mounted');
+      const before = getComputedStyle(canvas).filter;
+      canvas.style.filter = 'none';
+      return { lockedCanvasFilter: before, reviewCanvasFilter: getComputedStyle(canvas).filter };
+    });
+    assert.notEqual(artReview.lockedCanvasFilter, 'none', 'Preview must reflect genuine shared locked card styling');
+    assert.equal(artReview.reviewCanvasFilter, 'none');
+    await page.screenshot({ path:path.join(out, `${w}x${h}-${quality}-legend-baron-art-review.png`) });
+
     assert.equal(verdict.id, 'baron_legend');
     assert.equal(verdict.authored, true, 'Procedural fallback is not an approved DGM model');
     assert.equal(verdict.skinned, 11, 'Exactly 11 skinned meshes expected from legend DGM');
