@@ -2,6 +2,7 @@
 // The supplied 18-bone mobile DGM has no clips. Babylon's generic rig pose
 // establishes the baseline; this profile adds distinct command gestures.
 // No new render loop or GPU resources. Young Baron remains ANIM3.baron.
+import './pose-baron.js'; // порядок исполнения: young Baron profile precedes the legend
 import { ANIM3, seg } from './pose-duncan.js';
 
 const clamp = x => Math.max(0, Math.min(1, x));
