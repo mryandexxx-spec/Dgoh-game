@@ -10,34 +10,37 @@ const partStock = (bag, key) => amount(bag, key);
 // Возвращает потребности и возможные действия, не меняя состояние игрока.
 // У предмета не больше двух деталей; каждая деталь требует обычные фрагменты.
 // Сначала учитываем уже созданные детали, затем общий доступный запас фрагментов.
-function craftRequirements(id, inventory, partsStock = {}, currencies = {}) {
+function craftRequirements(id, inventory, partsStock = {}, currencies = {}, gearOwned = {}) {
   const recipe = recipeFor(id);
   if (!recipe) return null;
-  const ownedFragments = amount(inventory, id);
+  const legacy = amount(inventory,id), ownedFragments = legacy;
   const needs = [], missing = [];
-  let fragments = 0, sol = recipe.cost.sol, pl = recipe.cost.pl;
+  let availableLegacy = legacy, sol = recipe.cost.sol, pl = recipe.cost.pl, fragments = 0;
   if (recipe.parts) {
     for (const part of recipe.parts) {
-      if (partStock(partsStock, part.id)) continue;
-      fragments += part.materials[0].count;
-      sol += part.cost.sol; pl += part.cost.pl;
-      needs.push({ kind: 'part', id: part.id, count: 1, name: part.name,
-        fragmentId: id, fragments: part.materials[0].count,
-        sol: part.cost.sol, pl: part.cost.pl });
+      if (partStock(partsStock,part.id)) continue;
+      const needed = part.materials[0].count;
+      const specific = amount(inventory,part.materials[0].id);
+      const legacyUsed = Math.min(availableLegacy,Math.max(0,needed-specific));
+      availableLegacy -= legacyUsed;
+      if (specific+legacyUsed < needed) missing.push({kind:'fragment',id:part.materials[0].id,have:specific+legacyUsed,need:needed});
+      needs.push({kind:'part',id:part.id,count:1,name:part.name,fragmentId:part.materials[0].id,fragments:needed,sol:part.cost.sol,pl:part.cost.pl});
+      fragments += needed; sol += part.cost.sol; pl += part.cost.pl;
     }
   } else {
     fragments = recipe.materials[0].count;
+    if (legacy < fragments) missing.push({kind:'fragment',id,have:legacy,need:fragments});
   }
-  if (ownedFragments < fragments) missing.push({ kind: 'fragment', id, have: ownedFragments, need: fragments });
-  if (amount(currencies, 'sol') < sol) missing.push({ kind: 'currency', id: 'sol', have: amount(currencies, 'sol'), need: sol });
-  if (amount(currencies, 'pl') < pl) missing.push({ kind: 'currency', id: 'pl', have: amount(currencies, 'pl'), need: pl });
-  return { recipe, needs, fragments, currencies: { sol, pl }, missing,
-    ready: missing.length === 0, ownedFragments };
+  const complete = amount(gearOwned,id)>0;
+  if (amount(currencies,'sol') < sol) missing.push({kind:'currency',id:'sol',have:amount(currencies,'sol'),need:sol});
+  if (amount(currencies,'pl') < pl) missing.push({kind:'currency',id:'pl',have:amount(currencies,'pl'),need:pl});
+  return {recipe,needs,fragments,currencies:{sol,pl},missing,ready:complete || missing.length===0,complete,ownedFragments};
 }
 
 // Атомарная автосборка: сначала проверяем весь маршрут на копиях,
 // затем применяем списание только если предмет действительно можно надеть.
-function craftAndEquip(itemId, inventory, partsStock, currencies) {
+function craftAndEquip(itemId, inventory, partsStock, currencies, gearOwned = {}) {
+  if (amount(gearOwned,itemId)>0) { gearOwned[itemId] -= 1; return {ok:true,complete:true,steps:[]}; }
   const recipe = recipeFor(itemId);
   if (!recipe) return { ok: false, reason: 'item' };
   const inv = { ...inventory }, parts = { ...partsStock }, cash = { ...currencies };
@@ -52,6 +55,7 @@ function craftAndEquip(itemId, inventory, partsStock, currencies) {
   if (!result.ok) return result;
   // Применяем только известные ключи, удалений/перезаписи других ресурсов нет.
   inventory[itemId] = inv[itemId] || 0;
+  for (const part of recipe.parts || []) inventory[part.materials[0].id] = inv[part.materials[0].id] || 0;
   for (const part of recipe.parts || []) partsStock[part.id] = parts[part.id] || 0;
   currencies.sol = cash.sol; currencies.pl = cash.pl;
   return { ok: true, steps };
@@ -62,10 +66,12 @@ function buildPart(itemId, partId, inventory, partStockMap, currencies) {
   const recipe = recipeFor(itemId);
   const part = recipe?.parts?.find(p => p.id === partId);
   if (!part) return { ok: false, reason: 'part' };
-  const count = part.materials[0].count;
-  if (amount(inventory, itemId) < count || amount(currencies, 'sol') < part.cost.sol ||
+  const count = part.materials[0].count, key = part.materials[0].id;
+  const legacy = Math.min(count,amount(inventory,itemId)), specific = count-legacy;
+  if (amount(inventory,key) < specific || amount(currencies, 'sol') < part.cost.sol ||
       amount(currencies, 'pl') < part.cost.pl) return { ok: false, reason: 'resources' };
-  inventory[itemId] -= count;
+  inventory[itemId] = amount(inventory,itemId) - legacy;
+  inventory[key] = amount(inventory,key) - specific;
   currencies.sol -= part.cost.sol;
   currencies.pl -= part.cost.pl;
   partStockMap[partId] = amount(partStockMap, partId) + 1;
