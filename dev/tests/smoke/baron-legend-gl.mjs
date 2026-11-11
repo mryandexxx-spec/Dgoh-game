@@ -32,6 +32,8 @@ try {
   await page.goto(srv.url(path.basename(html)),{waitUntil:'load',timeout:120000});
   const begin=await page.evaluate(async()=>{
    if(!await loadB3())throw Error('Babylon chunk unavailable');
+   window.toast=()=>{};window.openCalendar=()=>{};
+   if(typeof closeOverlay==='function')closeOverlay();
    if(!MODEL_DATA.baron_legend)throw Error('Staged DGM not loaded');
    const ids=Object.keys(CH).filter(id=>CH[id]&&!CH[id].boss&&prog(id).stars).slice(0,5);
    const enemies=Object.keys(CH).filter(id=>CH[id]&&!CH[id].boss).filter(id=>!ids.includes(id)).slice(0,5);
@@ -40,9 +42,10 @@ try {
      squad:ids,enemy:enemies.map(id=>enemyProg(id,65,false))});
    return {ids,enemies};
   });
-  await page.waitForFunction(()=>!!(window.BT?.arena?.scene?.getFrameId?.()>3),{timeout:60000});
+  await page.waitForFunction(()=>!!(window.BT?.arena?.scene?.getFrameId?.()>3 && window.BT?.waiting),{timeout:60000});
   const initial=await page.evaluate(()=>{
     const a=BT.arena;
+    a.cine=null;a.shakeT=0;a.glT=0;
     const source=a.units.u0;
     if(!source)throw Error('Original live actor unavailable');
     source.root.setEnabled(false);source.ring?.setEnabled(false);source.pool?.setEnabled(false);
@@ -92,6 +95,18 @@ try {
         liveMeshes:a.scene.meshes.length,GLactive:!!a.baronGL};
     },at);
     await page.screenshot({path:path.join(out,`${w}x${h}-${q}-${name}.png`)});
+    if(name==='command'){
+      // Character-only diagnostic composition: inspect original materials,
+      // leg bend, silhouette and chair at a readable phone resolution.
+      // This does not alter the battle camera or ship in the game.
+      await page.evaluate(()=>{
+        const a=BT.arena,p=__bh8.caster.root.position;
+        a.camera.position.set(p.x-3.2,p.y+2.9,p.z+5.5);
+        a.camera.setTarget(p.add(V3(0,1.2,0)));
+        a.scene.render();
+      });
+      await page.screenshot({path:path.join(out,`${w}x${h}-${q}-detail.png`)});
+    }
     all.push({w,h,q,name,...stats});
     assert(stats.frame>0,'real WebGL frame required: '+JSON.stringify(stats));
     assert(Number.isFinite(stats.shieldAlpha),'preview shield alpha must be finite');
