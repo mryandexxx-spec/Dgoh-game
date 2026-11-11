@@ -8,6 +8,7 @@ import { CH, MENTAT } from '../../data/chars.js';
 import { LEAD_MODS } from '../../data/skill-ups.js';
 import { FX } from '../../data/fx.js';
 import { horrorDamageFactor, horrorSpeedFactor } from './horror.js';
+import { passiveTeamPotency, supportEmergencyHeal, supportOnIsolation } from './support-kits.js';
 import { canApplyStatus, consumeForesight, markedDamageFactor, markHouseVictim, mayRevive, baronPreventRevival, baronDeathTriggers } from './baron-mechanics.js';
 
 function mkRng(seed) {
@@ -71,6 +72,7 @@ function createBattle(squadA, squadB, opts = {}) {
       if (hasFeyd) a.critDamageBonus = (a.critDamageBonus || 0) + .2;
     }
   }
+  passiveTeamPotency(B);
   for (const u of B.units) if (u.def.id === 'duncan' && skLv(u, 'passive') >= 4) u.fx.taunt = 2;
   // Data-driven leader mark, only for a hero whose leader kit explicitly enables it.
   for (const side of ['A', 'B']) {
@@ -123,7 +125,9 @@ function previewOrder(B, n = 8) {
 function damageRaw(B, u, pct, why) {
   if (!u.alive) return;
   const d = Math.round(u.maxHp * pct);
+  const previousFraction=u.hp/u.maxHp;
   u.hp -= d; ev(B, u, '−' + d, 'raw');
+  supportEmergencyHeal(B,u,previousFraction,ev);
   if (u.hp <= 0) kill(B, u, null, why); else dunGuard(B, u);
 }
 // страж (def.guards): пока жив, подзащитные союзники не погибают — остаются с 1 здоровья
@@ -214,7 +218,9 @@ function hit(B, att, tgt, dt, m, opts = {}) {
   else if (dt === 'voice' || dt === 'poison') { toHp = d; }
   else { toShield = Math.min(tgt.shield, d); toHp = d - toShield; }
   if (tgt.cqLast && toHp >= tgt.hp) { toHp = Math.max(0, tgt.hp - 1); tgt.cqLast = 0; tgt.fx.evaUp = Math.max(tgt.fx.evaUp || 0, 2); ev(B, tgt, 'Предзнание', 'buff'); log(B, `${tgt.def.sn} предвидит смертельный удар и уходит от него (1 ОЗ, Уклонение↑).`, 'ctrl'); }
+  const previousFraction=tgt.hp/tgt.maxHp;
   tgt.shield -= toShield; tgt.hp -= toHp;
+  if(toHp)supportEmergencyHeal(B,tgt,previousFraction,ev);
   const what = toHp ? `${toHp}${toShield ? ` (+${toShield} по щиту)` : ''}` : `${toShield} по щиту`;
   ev(B, tgt, (toHp ? '−' + toHp : '◇−' + toShield) + (crit ? '!' : ''), toHp ? (crit ? 'crit' : 'dmg') : 'shield');
   log(B, `${att.def.sn} → ${tgt.def.sn}: ${what}${crit ? ', крит' : ''}${dt === 'fast' && toShield && !toHp ? ' — щит остановил пулю' : ''}.`);
@@ -242,6 +248,7 @@ function applyFx(B, att, tgt, k, n, chance = 1) {
   }
   if (k === 'bleed') { tgt.bleedN = Math.min(5, (tgt.fx.bleed ? tgt.bleedN || 0 : 0) + 1); tgt.fx.bleed = n; }
   tgt.fx[k] = Math.max(tgt.fx[k] || 0, n);
+  if(k==='isolation' && att && att.side!==tgt.side)supportOnIsolation(B,att,tgt,{living,ev});
   if (k === 'horror' && att && att.side !== tgt.side) {
     const team = living(B, att.side), barons = team.filter(x => x.def.passive?.harkonnenGreed);
     if (barons.length) {
