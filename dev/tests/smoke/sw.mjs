@@ -41,8 +41,18 @@ const assetHits = () => LOG.filter(([f]) => f.startsWith('assets/'));
 // 1. A: установка, докачка
 let pa = await open();
 await until(pa, () => navigator.serviceWorker.controller && caches.keys().then(k => k.length > 0));
-await sleep(6000);   // A (v54) докачки не знает — всё предкэшировано при установке
+// A→B tests delta downloads only when the A installation has actually warmed
+// its asset cache. Six wall-clock seconds is not enough on shared CI runners:
+// otherwise B correctly fetches many *missing* A assets and the test mistakes
+// that for a regression. Keep the strict changed-only assertion below.
 const vA = swVer(A), vB = swVer(B);
+const existingA = swList(A, 'ASSETS').filter(f => !swList(A, 'LAZY').includes(f)).length;
+const readyAssetsA = await until(pa, async expected => {
+  const ac = await caches.open('dune-goh-assets');
+  const keys = await ac.keys();
+  return keys.filter(k => new URL(k.url).pathname.includes('/assets/')).length >= expected;
+}, 120000, existingA);
+check(!!readyAssetsA, `A: исходный ассет-кэш полностью прогрет перед проверкой обновления (${existingA} файлов)`);
 console.log(`A: ${await ver(pa)}, controller ${await pa.evaluate(() => !!navigator.serviceWorker.controller)}, ${pa.url()}, кэши ${Object.keys(await cacheState(pa)).join(', ')}`);
 
 // 2. A → B
