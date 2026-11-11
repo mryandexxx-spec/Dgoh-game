@@ -38,6 +38,7 @@ jobs:
       - run: node tests/baron-future-heroes.mjs
       - run: node tests/baron-approved-data.mjs
       - run: node tests/baron-bh9-encounters.mjs
+      - run: node tests/baron-bh9-battle.mjs
       - run: node tests/baron-horror.mjs
       - run: node tests/baron-abilities.mjs
       - run: node tests/baron-mechanics.mjs
