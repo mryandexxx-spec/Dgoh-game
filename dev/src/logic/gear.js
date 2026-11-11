@@ -55,7 +55,7 @@ for (const item of Object.values(ITEMS)) {
     chosen.forEach(i => COMPLETE_NODE_ITEMS[i].push(item.id));
   }
 }
-const nodeChance = i => NODE_ITEMS[i].length ? Math.min(1, 1.3 / NODE_ITEMS[i].length) : 0;
+const nodeChance = i => NODE_ITEMS[i].length ? (NODE_ITEMS[i].length === 1 ? .94 : Math.min(1, 1.3 / NODE_ITEMS[i].length)) : 0;
 function rollItems(i) {
   const pool = NODE_ITEMS[i].slice(), out = [];
   if (pool.length && Math.random() < .9) {
