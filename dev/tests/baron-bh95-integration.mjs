@@ -15,8 +15,7 @@ assert.match(ui,/\n  persist\(\);\n  const el = document\.createElement\('div'\)
 assert.match(events,/prepareStoryUnlockBattle\(S,id,Number\(index\),todayKey\(\)\)/,'story click must re-check eligibility');
 assert.match(events,/if\(!prepared\.ok\)/,'story click must reject unavailable heroes');
 assert.doesNotMatch(save,/s\.storyEvents \?\?= \{\}/);
-assert.equal(CH.margot,undefined);
-assert.equal(CH.yue,undefined);
+assert.ok(CH.margot && CH.yue,'Two normal heroes are now registered');
 
 const saveData={acc:{lvl:40},roster:{margot:{stars:0,shards:0},yue:{stars:0,shards:0}},storyEvents:{}};
 const prepared=prepareStoryUnlockBattle(saveData,'margot_story',0,'D1',93);
