@@ -8,7 +8,7 @@ import { CH, MENTAT } from '../../data/chars.js';
 import { LEAD_MODS } from '../../data/skill-ups.js';
 import { FX } from '../../data/fx.js';
 import { horrorDamageFactor, horrorSpeedFactor } from './horror.js';
-import { canApplyStatus, consumeForesight, markedDamageFactor, markHouseVictim, baronDeathTriggers } from './baron-mechanics.js';
+import { canApplyStatus, consumeForesight, markedDamageFactor, markHouseVictim, baronPreventRevival, baronDeathTriggers } from './baron-mechanics.js';
 
 function mkRng(seed) {
   let a = seed >>> 0;
@@ -112,9 +112,10 @@ function kill(B, u, by) {
   const g = !B.over && u.alive && guardOf(B, u);
   if (g) { u.hp = 1; ev(B, u, '1 ОЗ', 'buff'); log(B, `${g.def.sn} не даёт ${u.def.sn} пасть: 1 здоровья.`, 'ctrl'); return; }
   u.hp = 0; u.alive = false; u.fx = {}; u.shield = 0; ev(B, u, '', 'death');
-  baronDeathTriggers(B, u, ev); // after guards, before any resurrection queue
+  baronPreventRevival(B, u); // must run before scheduling any resurrection
   if (u.def.id === 'duncan' && !u.revived && !u.noRev && skLv(u, 'passive') >= 7) { u.revived = true; u.pendingRevive = true; log(B, `${u.def.sn} падает… но гхола не умирает дважды.`, 'death'); return; }
   if (u.side === 'A' && B.cqGhola && !u.revived && !u.charmed && !u.noRev) { B.cqGhola = 0; u.revived = true; u.pendingRevive = true; u.revHp = .5; log(B, `${u.def.sn} падает… но аксолотлевый чан вернёт его в бой.`, 'death'); return; }
+  baronDeathTriggers(B, u, ev); // only an irreversible death earns Greed and mark bonuses
   log(B, `${u.def.sn} выбывает из боя.`, 'death');
   if (u.side === 'A' && B.cqAvenge) { const al = B.units.filter(a => a.alive && a.side === u.side); for (const a of al) { a.fx.defUp = Math.max(a.fx.defUp || 0, 2); a.fx.counter = Math.max(a.fx.counter || 0, 2); } if (al.length) log(B, `Клятва сиетча: отряд мстит за ${u.def.sn} (Защита↑, Контратака).`); }
   if (by && by.alive && by.cqChain && by.side !== u.side && !B.over) { if (by === B.active) by.tmBonus = 999; else by.tm = 999; ev(B, by, 'Ещё ход', 'buff'); log(B, `Танец смерти: ${by.def.sn} сразу готов к новому удару.`); }
