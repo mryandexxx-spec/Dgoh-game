@@ -7,8 +7,8 @@ import { BARON_APPROVED_STAGES } from '../src/data/baron-legend-approved.js';
 
 assert.deepEqual(STAGED_HERO_IDS, ['baron_legend','margot','yue']);
 assert.equal(CH.baron_legend, undefined, 'Unapproved legendary art must not appear in live roster');
-assert.equal(CH.margot, undefined, 'Unapproved Margot kit must not appear in live roster');
-assert.equal(CH.yue, undefined, 'Unapproved Yue kit must not appear in live roster');
+assert.equal(CH.margot.id,'margot','Approved normal Margot kit is present');
+assert.equal(CH.yue.id,'yue','Approved normal Yue kit is present');
 assert.equal(CH.baron.id, 'baron');
 assert.equal(CH.baron.legendary, undefined);
 assert.equal(CH.muaddib.gl.kind, 'prophecy');
@@ -70,8 +70,8 @@ assert.equal(preview.requirements.ready, true);
 assert.equal(preview.passive, 'Алчность');
 assert.equal(preview.leader, 'Дом Харконненов');
 assert.equal(CH.baron_legend, undefined, 'Preview must not publish the hero');
-assert.equal(CH.margot, undefined);
-assert.equal(CH.yue, undefined);
+assert.equal(CH.margot.id,'margot');
+assert.equal(CH.yue.id,'yue');
 assert.deepEqual(baronLegendPreview({}).progress,
   {stars:0,shards:0,lvl:1,gear:1,relic:0});
 // Ensure the actual shared hero card/scene, not a parallel mocked layout, is used.
@@ -88,4 +88,4 @@ console.log('BH8 shared hero card/3D scene, locked staging entry and mutation gu
 
 console.log('BH8 read-only staged roster preview, 4 HUD slots and no public hero: PASS');
 
-console.log('BH4 staged roster migration, locked future heroes and safe event gate: PASS');
+console.log('BH9.7 regular Margot/Yue roster plus separate staged Baron preview and safe event gate: PASS');
