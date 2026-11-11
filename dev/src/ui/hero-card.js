@@ -17,8 +17,6 @@ import { figureSVG } from '../render2d/figures.js';
 import { unitPower, unitStats } from '../logic/battle/stats.js';
 import { SK_KEYS, skMax } from '../logic/battle/skills.js';
 import { CH } from '../data/chars.js';
-import { BARON_LEGEND_KIT } from '../data/baron-legend-kit.js';
-import { defaultStagedHero } from '../logic/baron-roster-integration.js';
 import { FACTIONS, ROLES } from '../data/fx.js';
 import { amt, fmt, ic } from '../core/format.js';
 import { $ } from '../core/dom.js';
@@ -125,15 +123,15 @@ function hcStats(d, p) {
 // точечное обновление: зона перерисовывается, только если её разметка изменилась
 function setZone(sel, html) { const el = $('#overlay .hc ' + sel); if (el && el._h !== html) { el.innerHTML = html; el._h = html; } }
 
-function openDetail(id, stagedPreview = false) {
+function openDetail(id, stagedPreview = null) {
   // The approved universal hero card is reused, never copied. This staged
   // entry is private: no public roster, no unlock, and no save migration.
   if (stagedPreview && id !== 'baron_legend') throw new Error('Only the staged legendary Baron can be previewed');
   if (!stagedPreview && !CH[id]) return;
   if (detailCid !== id) detailSk = 'basic';
   detailCid = id;
-  const d = stagedPreview ? { ...BARON_LEGEND_KIT, side: 'dark' } : CH[id];
-  const p = stagedPreview ? defaultStagedHero() : prog(id); // preview is always locked, never a live progression entry
+  const d = stagedPreview ? { ...stagedPreview.def, side: 'dark' } : CH[id];
+  const p = stagedPreview ? { ...stagedPreview.progress, stars: 0, shards: 0 } : prog(id); // read-only locked staging
   const L = stagedPreview ? [] : heroNavList(id), i = L.indexOf(id), nav = L.length > 1;
   const near = nav ? [L[(i + 1) % L.length], L[(i - 1 + L.length) % L.length]] : [];
   const Z = { '.hctop': hcTop(d), '.hcleft': hcSkills(id, d, p), '.hcgl': hcSlots(id, p, [0, 1, 2]), '.hcgr': hcSlots(id, p, [3, 4, 5]), '.hcbot': hcBot(id, d, p, nav), '.hcright': hcRight(id, d, p), '.hcst': hcStats(d, p) };
@@ -166,6 +164,5 @@ function hcStat() { HC_STAT = !HC_STAT; const hc = $('#overlay .hc'); if (!hc) r
 
 // Internal opt-in staging entry point. It is deliberately not wired into the
 // roster, Legends navigation, route handling or public save schema.
-function previewLegendBaronCard() { return openDetail('baron_legend', true); }
 function set_detailSk(v) { return detailSk = v; }
-export { detailCid, detailSk, heroNavList, openDetail, previewLegendBaronCard, updLvl, hcStat, set_detailSk, HC_REFRESH, skKeys };
+export { detailCid, detailSk, heroNavList, openDetail, updLvl, hcStat, set_detailSk, HC_REFRESH, skKeys };
