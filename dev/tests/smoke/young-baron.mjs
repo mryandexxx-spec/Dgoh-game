@@ -47,6 +47,31 @@ try {
       return {poses,cache:tag==='after'?bakeKey('baron'):null,model:assetUrl('models/young-baron.dgm')};
     },tag);
     await p.screenshot({path:path.join(out,`${tag}-${width}-${quality}-hero.png`)});
+    // Keep the same camera/pose while isolating the showcase effects. A green
+    // geometry/animation test alone does not establish a readable character.
+    if(tag==='before') {
+      for(const variant of ['no-dof','no-halo','no-post']) {
+        const state=await p.evaluate(variant=>{
+          const s=HERO_STAGE;
+          window.__showcaseEffects ||= {dof:s.pipe.depthOfFieldEnabled,halo:s.halo.isEnabled(),bloom:s.pipe.bloomEnabled,glow:s.glow?.isEnabled};
+          const old=window.__showcaseEffects;
+          s.pipe.depthOfFieldEnabled=variant==='no-dof'||variant==='no-post'?false:old.dof;
+          s.halo.setEnabled(variant==='no-halo'||variant==='no-post'?false:old.halo);
+          s.pipe.bloomEnabled=variant==='no-post'?false:old.bloom;
+          if(s.glow)s.glow.isEnabled=variant==='no-post'?false:old.glow;
+          for(let i=0;i<4;i++)s.scene.render();
+          return {dof:s.pipe.depthOfFieldEnabled,halo:s.halo.isEnabled(),alpha:s.o.root.getChildMeshes().map(m=>({name:m.name,alpha:m.material?.alpha,visibility:m.visibility}))};
+        },variant);
+        await p.screenshot({path:path.join(out,`${tag}-${width}-${quality}-${variant}.png`)});
+        console.log('BH4 showcase isolation',quality,variant,JSON.stringify(state));
+      }
+      await p.evaluate(()=>{
+        const s=HERO_STAGE,old=window.__showcaseEffects;
+        s.pipe.depthOfFieldEnabled=old.dof;s.halo.setEnabled(old.halo);s.pipe.bloomEnabled=old.bloom;
+        if(s.glow)s.glow.isEnabled=old.glow;
+        for(let i=0;i<4;i++)s.scene.render();
+      });
+    }
     if(tag==='after') {
       assert.notEqual(summary.cache,'b9:baron');assert(summary.cache.includes(summary.model));
       for(const name of ['Idle','Attack','Hit','Death'])assert.equal(summary.poses[name].clip,name);
