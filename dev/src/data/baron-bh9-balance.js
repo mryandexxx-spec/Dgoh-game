@@ -14,7 +14,7 @@ const BH9_BALANCE_PROFILES = Object.freeze([
                  { lvl: 85, stars: 7, gear: 13, relic: 6, pow: 1.19 }]),
 ].map(stage => Object.freeze(stage.map(w => Object.freeze({ ...w })))));
 
-const BH9_SCENES = Object.freeze(['palace', 'palace', 'palace', 'dawn', 'palace']);
+const BH9_SCENES = Object.freeze(['giedi', 'court', 'court', 'arrakeen', 'court']);
 const BH9_STORY_DESERT = Object.freeze([false, false, false, true, false]);
 
 function validateBH9Balance() {
