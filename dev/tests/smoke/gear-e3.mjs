@@ -77,4 +77,23 @@ const preciseWallet={...CRAFT(it.t)}, preciseParts={};
 assert.equal(G.craftAndEquip(it.id,specific,preciseParts,preciseWallet).ok,true);
 assert.equal(specific[it.id]||0,0);
 for (const part of recipe.parts) assert.equal(specific[part.materials[0].id],0);
+// GE1 regression: legacy stock must never go negative when new specific stocks are partial.
+const hybridItem = ITEMS.pad9, hybrid = G.recipeFor(hybridItem.id);
+const hybridInv = {[hybridItem.id]:0};
+for(const p of hybrid.parts) hybridInv[p.materials[0].id]=1;
+const before = structuredClone(hybridInv), hybridParts={}, hybridCash={...CRAFT(hybridItem.t)};
+assert.equal(G.craftRequirements(hybridItem.id,hybridInv,hybridParts,hybridCash).ready,false);
+assert.equal(G.craftAndEquip(hybridItem.id,hybridInv,hybridParts,hybridCash).ok,false);
+assert.deepEqual(hybridInv,before);
+assert.deepEqual(hybridParts,{});
+assert.deepEqual(hybridCash,CRAFT(hybridItem.t));
+// A legacy reserve funds the second component while the first uses its specific fragments.
+const legacy = {[hybridItem.id]:hybrid.parts[1].materials[0].count,
+  [hybrid.parts[0].materials[0].id]:hybrid.parts[0].materials[0].count};
+const legacyWallet={...CRAFT(hybridItem.t)};
+assert.equal(G.craftRequirements(hybridItem.id,legacy,{},legacyWallet).ready,true);
+assert.equal(G.craftAndEquip(hybridItem.id,legacy,{},legacyWallet).ok,true);
+assert.equal(legacy[hybridItem.id],0);
+assert.equal(legacy[hybrid.parts[0].materials[0].id],0);
+
 console.log('E3/GE1 legacy, distinct components, direct equip and source index: PASS (' + cases + ' items)');
