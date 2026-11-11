@@ -25,13 +25,11 @@ function dunGuard(B, t) {
 }
 const dunShielded = (B, x) => (x.def.id === 'paul' || x.def.id === 'muaddib') && B.units.some(d => d.alive && d.side === x.side && d.dunProtect);
 const SK_KEYS = ['basic', 'special', 'ult', 'passive', 'leader'];
-// Extended key list is per character; never add powerful to the five-skill legacy roster UI.
-const skillKeysFor = def => def?.powerful ? [...SK_KEYS, 'powerful'] : SK_KEYS;
 const skMax = (def, k) => def.z7 && def.z7.includes(k) ? 7 : 6;
-const autoSk = lvl => { const v = Math.min(6, 1 + Math.floor((lvl || 1) / 5)); return { basic: v, special: v, ult: v, passive: v, leader: v, powerful: v }; };
+const autoSk = lvl => { const v = Math.min(6, 1 + Math.floor((lvl || 1) / 5)); return { basic: v, special: v, ult: v, passive: v, leader: v }; };
 const skLv = (u, k) => (u.sk && u.sk[k]) || 1;
 const skMult = l => 1 + .06 * (l - 1) + (l >= 7 ? .15 : 0);
 const pasMult = l => 1 + .02 * (l - 1) + (l >= 7 ? .08 : 0);
 const leadBonus = l => .015 * (l - 1) + (l >= 7 ? .045 : 0);
 
-export { abFor, dunBuff, dunGuard, dunShielded, SK_KEYS, skillKeysFor, skMax, autoSk, skLv, skMult, pasMult, leadBonus };
+export { abFor, dunBuff, dunGuard, dunShielded, SK_KEYS, skMax, autoSk, skLv, skMult, pasMult, leadBonus };
