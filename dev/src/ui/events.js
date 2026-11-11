@@ -173,8 +173,14 @@ document.addEventListener('click', e => {
     return;
   }
   if (d.fbuy) {
-    const [id, q] = d.fbuy.split(':'), cost = +q * SHOP_FRAG[ITEMS[id].t];
-    if (S.teeth >= cost) { S.teeth -= cost; S.inv[id] = (S.inv[id] || 0) + +q; quest('shop'); persist(); toast(`+${amt('frag', +q)} ${ITEMS[id].n}`); }
+    const parts = d.fbuy.split(':'), q = Number(parts.pop()), id = parts.join(':');
+    const item = ITEMS[id.startsWith('frag:') ? id.split(':')[1] : id];
+    if (!item || !Number.isInteger(q) || q < 1 || !id.startsWith('frag:')) return;
+    const cost = q * SHOP_FRAG[item.t];
+    if (S.teeth >= cost) {
+      S.teeth -= cost; S.inv[id] = (S.inv[id] || 0) + q;
+      quest('shop'); persist(); toast(`+${amt('frag', q)} ${item.n} · компонент`);
+    }
     refreshAll(); return;
   }
   if (d.dback || (d.close && (t.tagName === 'BUTTON' || e.target === t) && DETAIL_BACK && $('#overlay .csheet'))) { const f = DETAIL_BACK; set_DETAIL_BACK(null); return f ? f() : closeOverlay(); }
