@@ -29,8 +29,8 @@ function abilityHtml(ab, kind) {
 }
 function slotState(cid, k) {
   const p = prog(cid), it = ITEMS[gearPlan(cid, p.gear)[k]];
-  const have = S.inv[it.id] || 0, need = FRAG_NEED[it.t];
-  const r = craftRequirements(it.id, S.inv, S.gearParts || {}, { sol: S.solari, pl: S.plast });
+  const have = (S.inv[it.id] || 0) + (S.gearOwned?.[it.id] || 0) * FRAG_NEED[it.t], need = FRAG_NEED[it.t];
+  const r = craftRequirements(it.id, S.inv, S.gearParts || {}, { sol: S.solari, pl: S.plast }, S.gearOwned || {});
   if (p.eq[k]) return { it, st: 'eq', have, need, recipe: r };
   if (r?.ready) return { it, st: 'ready', have, need, recipe: r };
   if (have >= need || r?.needs.some(n => (S.gearParts || {})[n.id])) return { it, st: 'frags', have, need, recipe: r };
@@ -65,19 +65,19 @@ function openItem(cid, k, partId = null) {
     { sol: S.solari, pl: S.plast }), part = partId ? recipe.parts?.find(x => x.id === partId) : null;
   const top = !!$('#overlay .csheet'), host = top ? '#overlay2' : '#overlay';
   if (top) { set_infoKey(null); heroHold(true); set_INFO_ON_CLOSE(() => heroHold(false)); }
-  const haveFrag = S.inv[it.id] || 0;
+  const haveFrag = S.inv[it.id] || 0, complete = S.gearOwned?.[it.id] || 0;
   const pieces = (S.gearParts || {});
   const requirements = part
-    ? `<div class="e3mat"><b>Фрагменты ${it.n}</b><span class="${haveFrag >= part.materials[0].count ? 'okc' : 'lackc'}">${haveFrag}/${part.materials[0].count}</span></div>`
+    ? `<div class="e3mat"><b>Фрагменты ${part.name.toLowerCase()}</b><span class="${haveFrag + (S.inv[part.materials[0].id] || 0) >= part.materials[0].count ? 'okc' : 'lackc'}">${(S.inv[part.materials[0].id] || 0) + haveFrag}/${part.materials[0].count}</span></div>`
     : recipe.parts
       ? recipe.parts.map(x => `<button class="e3mat" data-gearpart="${x.id}"><span>${x.name}</span><span class="${pieces[x.id] ? 'okc' : 'lackc'}">${pieces[x.id] || 0}/1</span><b>›</b></button>`).join('')
       : `<div class="e3mat"><b>Фрагменты</b><span class="${haveFrag >= s.need ? 'okc' : 'lackc'}">${haveFrag}/${s.need}</span></div>`;
   const cost = part ? part.cost : recipe.cost;
-  const affordable = part ? haveFrag >= part.materials[0].count && S.solari >= cost.sol && S.plast >= cost.pl : needs.ready;
+  const affordable = part ? haveFrag + (S.inv[part.materials[0].id] || 0) >= part.materials[0].count && S.solari >= cost.sol && S.plast >= cost.pl : needs.ready;
   const action = s.st === 'eq' && !part ? '<button class="btn" disabled>Надето</button>'
     : part ? `<button class="btn ${affordable ? 'buy' : 'lack'}" data-buildpart="${part.id}" ${affordable ? '' : 'disabled'}>Создать компонент</button>`
-    : `<button class="btn ${affordable ? 'buy' : 'lack'}" data-craft="1" ${affordable && p.stars ? '' : 'disabled'}>${p.stars ? 'Создать и надеть' : 'Герой не открыт'}</button>`;
-  const rows = itemSourceRows(it);
+    : `<button class="btn ${affordable ? 'buy' : 'lack'}" data-craft="1" ${affordable && p.stars ? '' : 'disabled'}>${p.stars ? (complete ? 'Надеть готовое' : 'Создать и надеть') : 'Герой не открыт'}</button>`;
+  const rows = itemSourceRows(it, part ? part.materials[0].id : null, part ? 'fragment' : 'complete');
   $(host).innerHTML = `<div class="detail${top ? ' info-layer' : ''}" ${top ? 'data-iclose' : 'data-close'}="1"><div class="sheet isheet e3sheet" role="dialog" aria-modal="true" aria-labelledby="it-name">
     <div class="e3crumb"><button class="btn mini back" data-iback="${cid}">‹ ${CH[cid].sn}</button>${part ? `<button class="btn mini" data-gearroot="1">› ${it.n}</button><span>› ${part.name}</span>` : '<span>› Снаряжение</span>'}</div>
     <div class="ihead">${itemIcon(it, 58)}<div><h3 id="it-name">${part ? part.name : it.n}</h3>
@@ -85,11 +85,11 @@ function openItem(cid, k, partId = null) {
       <small>Ячейка ${k + 1} · ${part ? 'компонент рецепта' : 'индивидуальные бонусы снаряжения'}</small></div></div>
     <div class="e3grid"><div class="e3left">
       ${part ? '' : `<p class="chap">Характеристики</p><div class="e3stats">${itemBonusHtml(it)}</div>`}
-      <p class="chap">Рецепт</p><div class="e3materials">${requirements}</div>
+      <p class="chap">Рецепт</p><div class="e3materials">${!part && complete ? `<div class="e3mat"><b>Готовых предметов</b><span class="okc">${complete}</span></div>` : ''}${requirements}</div>
       <div class="e3cost"><span>Сборка</span><b class="${S.solari < cost.sol ? 'lackc' : ''}">${amt('sol', cost.sol)}</b><b class="${S.plast < cost.pl ? 'lackc' : ''}">${amt('pl', cost.pl)}</b></div>
       <div class="acts">${action}<button class="btn" data-gearfind="1">Найти</button></div>
     </div><div class="e3right"><p class="chap">Можно получить в</p>
-      <div class="srcs">${rows.join('') || '<p class="sub">Источников пока нет.</p>'}</div>
+      <div class="srcs">${rows.join('') || '<p class="sub">Источников готового предмета нет — требуется сборка.</p>'}</div>
     </div></div></div></div>`;
   document.querySelectorAll(host + ' canvas[data-scene]').forEach(sceneThumb);
 }
