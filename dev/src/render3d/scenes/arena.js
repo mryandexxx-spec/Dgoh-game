@@ -194,26 +194,80 @@ class Arena3D extends GameScene {
       const delay = 1500, foes = B.units.filter(x => x.side !== (B.units.find(y => y.uid === B.glCast) || {}).side && !x.def.boss);
       if (B.glKind === 'mirror') { for (const x of B.units) { const v = this.units[x.uid]; if (v && !v.boss && x.side !== (B.units.find(y => y.uid === B.glCast) || {}).side || (v && x.charmed)) { this.at(now + 500, () => this.ringFX(v, '#9fe8ff', 1.3)); this.at(now + 900, () => this.sparkFX(v, 2)); } } }
       else if (B.glKind === 'fall-of-atreides') {
-        // BH6 preview: army-impact pulses, NEVER a worm summon. The levitating
-        // chair/cinematic is a separate owner-approval deliverable.
+        // Owner-approved BH7: rise -> command -> artillery, about 2.5s at x1.
+        // This path is exclusive to the separate legendary Baron.
         const caster = this.units[B.glCast];
-        if (caster) {
-          this.at(now + 180, () => this.ringFX(caster, '#b14a2c', 1.45));
-          if (!caster.boss && caster.anim?.cliplessPose)
-            caster.act = { key: 'gl', kind: 'cast', t0: now, dur: 2350 / Math.max(1, this.speed), dir: V3(1, 0, 0), to: caster.base.clone(), tg: foes.map(x=>this.units[x.uid]).filter(Boolean) };
-        }
-        for (const [i, x] of foes.entries()) {
-          const target = this.units[x.uid];
-          if (target) {
-            this.at(now + 600 + i * 95, () => this.ringFX(target, '#ba402b', 1.12));
-            this.at(now + 760 + i * 95, () => this.sparkFX(target, 2));
-          }
-        }
+        if (caster?.def?.id === 'baron_legend') this.startBaronGL(caster, foes.map(x => this.units[x.uid]).filter(Boolean), now, Math.max(1, this.speed));
       }
       else if ((B.glKind === 'devour' || B.glKind === 'prophecy') && B.glTarget && this.units[B.glTarget]) { const v = this.units[B.glTarget], tu = B.units.find(x => x.uid === B.glTarget); this.summon(v.base.x, v.base.z, v.boss ? 1.5 : 1, now + delay, v.boss || (tu && tu.alive) ? null : v); }
       else { let c = V3(this.raid ? 0 : 5, 0, this.raid ? -6 : 0); const os = foes.map(x => this.units[x.uid]).filter(Boolean); if (os.length) { c = V3(); for (const o of os) c.addInPlace(o.base); c.scaleInPlace(1 / os.length); } this.summon(c.x, c.z, 1.45, now + delay, null); }
-      this.glT = (typeof CINE_OFF === 'function' && CINE_OFF()) ? 0 : now; if (!this.glLight) { this.glLight = new B3.PointLight('gll', V3(0, 6, 2), this.scene); this.glLight.diffuse = col3('#ffc860'); this.glLight.range = 40; this.glLight.intensity = 0; }
+      this.glT = B.glKind === 'fall-of-atreides' || (typeof CINE_OFF === 'function' && CINE_OFF()) ? 0 : now; if (!this.glLight) { this.glLight = new B3.PointLight('gll', V3(0, 6, 2), this.scene); this.glLight.diffuse = col3('#ffc860'); this.glLight.range = 40; this.glLight.intensity = 0; }
     }
+  }
+  // BH7 approved storyboard — one temporary chair, no new scene/Engine/rAF.
+  // The caster root receives the actual rise in _loop(); all objects are
+  // disposed at the end or by GameScene.dispose on scene teardown.
+  startBaronGL(caster, foes, now, sp) {
+    if (this.baronGL) this.endBaronGL();
+    const Q = gfx(this.small).baronGL;
+    const chair = withCtx({ scene: this.scene, shadows: null }, () => {
+      const root = grp(caster.root);
+      const part = (mesh, color, x, y, z, emissive = false) => {
+        const m = mk(mesh, basic3(color, { alpha: emissive ? .7 : 1, add: emissive }), x, y, z, false);
+        m.parent = root;
+        return m;
+      };
+      // Simple low-poly anti-gravity throne matching the three approved frames.
+      part(bBox(1.08, .18, .84), '#38251f', 0, .74, .10);
+      part(bBox(1.04, .88, .15), '#593b2b', 0, 1.18, .46);
+      for (const x of [-.61, .61]) {
+        part(bBox(.14, .12, .79), '#805037', x, .95, .1);
+        part(bCyl(.12, .22, .34, 8), '#34201a', x, .48, .08);
+      }
+      part(bCyl(.56, .3, .2, 10), '#33251f', 0, .42, 0);
+      if (Q.chairGlow) part(bSph(.38, 8), '#e28a42', 0, .31, 0, true);
+      return root;
+    });
+    this.baronGL = { caster, foes, chair, t0: now, dur: 2500 / sp, sp, config: Q };
+    // Retain the shared camera only for other legendary heroes.
+    this.glT = 0;
+    this.ringFX(caster, '#d17a41', .75);
+    // Three waves HIGH/MED, one cheap wave on LOW. Shots are pooled,
+    // timed in the existing queue, not independent render loops.
+    for (let wave = 0; wave < Q.waves; wave++) {
+      const atMs = 1500 + (wave + .5) * 1000 / Q.waves;
+      this.at(now + atMs / sp, () => {
+        const live = foes.filter(x => x.root && !x.root.isDisposed());
+        for (let i = 0; i < Math.min(Q.shots, live.length); i++) {
+          const target = live[(wave * Q.shots + i) % live.length];
+          this.baronShell(caster, target, Math.max(1, this.speed));
+        }
+        for (const target of live) this.ringFX(target, '#ba402b', .62);
+      });
+    }
+  }
+  baronShell(caster, target, sp) {
+    withCtx({ scene: this.scene }, () => {
+      const p = caster.root.position, to = target.root.position;
+      const x0 = p.x, y0 = p.y + 2.4, z0 = p.z;
+      const x1 = to.x, y1 = to.y + 1.05, z1 = to.z;
+      const m = this.fx('baronShell', () => bSph(.13, 8), '#ffad6b', .95, x0, y0, z0);
+      this.fade(m, 270 / sp, (mesh, k) => {
+        mesh.position.set(x0 + (x1 - x0) * k, y0 + (y1 - y0) * k + .5 * Math.sin(k * Math.PI), z0 + (z1 - z0) * k);
+        mesh.material.alpha = .95 * (1 - k);
+        if (k > .85 && !mesh._impact) {
+          mesh._impact = true;
+          if (this.baronGL?.config.strikeSparks) this.sparkFX(target, this.baronGL.config.strikeSparks);
+        }
+      });
+      m._impact = false;
+    });
+  }
+  endBaronGL() {
+    const g = this.baronGL;
+    if (!g) return;
+    this.baronGL = null;
+    if (g.chair && !g.chair.isDisposed()) g.chair.dispose(false, true);
   }
   at(t, fn) { (this.fxq ||= []).push({ t, fn }); }
   fade(mesh, life, upd) { (this.tr ||= []).push({ mesh, t0: performance.now(), life, upd }); }
@@ -370,7 +424,7 @@ class Arena3D extends GameScene {
     const bt = typeof BT !== 'undefined' && BT, cv = this.cv;
     const z = cvSize(cv);
     if (!bt || !cv.isConnected || (z.w || innerWidth) !== this.w || (z.h || innerHeight) !== this.h) return 'active';
-    const busy = !!(this.cine || this.summons.length || (this.fxq && this.fxq.length) || (this.tr && this.tr.length) || (this.glT && now - this.glT < 1600) || (this.shakeT && now - this.shakeT < 300));
+    const busy = !!(this.baronGL || this.cine || this.summons.length || (this.fxq && this.fxq.length) || (this.tr && this.tr.length) || (this.glT && now - this.glT < 1600) || (this.shakeT && now - this.shakeT < 300));
     if (bt.done && !busy) { if (!this.doneT) this.doneT = now; if (now - this.doneT > 1200) return 'static'; } else this.doneT = 0;
     if (!busy) { const ov = document.getElementById('overlay'); if (bt.waiting || bt.done || (typeof DLG !== 'undefined' && DLG && DLG.inBattle) || (ov && ov.childElementCount)) return 'idle'; }
     return 'active';
@@ -389,6 +443,15 @@ class Arena3D extends GameScene {
     // Рейд: прежний ракурс и дыхание камеры без изменений.
     pos.set((this.camX || 0) + sway, this.camH + (this.raid ? Math.sin(t * .09) * .2 : 0), this.camDist); look.copyFrom(LK);
     if (this.shakeT && now - this.shakeT < 300) { const k = 1 - (now - this.shakeT) / 300; pos.x += (Math.random() - .5) * .25 * k; pos.y += (Math.random() - .5) * .25 * k; }
+    if (this.baronGL && !((typeof CINE_OFF === 'function') && CINE_OFF())) {
+      const G = this.baronGL, k = Math.max(0, Math.min(1, (now - G.t0) / G.dur));
+      const w = k < .28 ? k / .28 : k < .6 ? 1 : Math.max(0, 1 - (k - .6) / .4);
+      const caster = G.caster.root.position, strength = G.config.camera * w;
+      T1.set(caster.x - 3, caster.y + 5, caster.z + this.camDist * .52);
+      B3.Vector3.LerpToRef(pos, T1, strength, pos);
+      T1.set(caster.x, caster.y + 1.5, caster.z);
+      B3.Vector3.LerpToRef(look, T1, strength, look);
+    }
     if (this.glT && now - this.glT < 1600) { const k = Math.sin(Math.min(1, (now - this.glT) / 1600) * Math.PI); T1.set(0, this.camH * .7, this.camDist * .72); B3.Vector3.LerpToRef(pos, T1, k * .5, pos); look.set(LK.x, LK.y + .35, LK.z); if (this.glLight) this.glLight.intensity = 4 * k; }
     else if (this.glLight) this.glLight.intensity = 0;
     let fd = 0;
@@ -408,6 +471,13 @@ class Arena3D extends GameScene {
       } else {
         if (o.rise && o.dead && now >= o.rise) { o.dead = false; o.rise = now; this.ringFX(o, '#ffd27a', 1.4); this.healFX(o); this.shakeT = now; }
         poseHuman(this, o, now, t, sp);
+        if (this.baronGL?.caster === o) {
+          const G = this.baronGL, k = Math.max(0, Math.min(1, (now - G.t0) / G.dur));
+          // Rise 0–0.7s, hold through the order, return during impact.
+          const lift = k < .28 ? k / .28 : k < .6 ? 1 : Math.max(0, 1 - (k - .6) / .4);
+          o.root.position.y += .8 * lift;
+          if (G.chair) G.chair.scaling.setAll(Math.min(1, .25 + k * 5));
+        }
         const hk = o.hitT && now >= o.hitT ? Math.max(0, 1 - (now - o.hitT) / 260) : 0, hl = o.healT && now >= o.healT ? Math.max(0, 1 - (now - o.healT) / 500) : 0;
         for (const m of o.mats) { const b0 = m._baseEm; m.emissiveColor.set(b0.r + hk * .9 + hl * .05, b0.g + hk * .35 + hl * .5, b0.b + hk * .2 + hl * .1); m.alpha = o.stealth ? .38 : 1; }
         if (o.bubble) o.bubble.material.alpha = o.dead ? 0 : o.shieldK * (.05 + Math.sin(t * 3 + o.phase) * .015) + (hk && o.shieldK ? .18 * hk : 0);
@@ -434,6 +504,7 @@ class Arena3D extends GameScene {
       if (k > 1) { if (this.glow) this.glow.removeExcludedMesh(W.dust); W.g.dispose(false, false); W.done = true; }
     }
     if (this.summons.length) inPlaceKeep(this.summons, W => !W.done);
+    if (this.baronGL && now - this.baronGL.t0 >= this.baronGL.dur) this.endBaronGL();
     if (this.fxq && this.fxq.length) runDue(this.fxq, now);
     if (this.tr && this.tr.length) inPlaceKeep(this.tr, T => { const k = (now - T.t0) / T.life; if (k >= 1) { if (T.mesh._fxk) this.fxFree(T.mesh); else T.mesh.dispose(false, true); return false; } T.upd(T.mesh, k); return true; });
     this.scene.render();
