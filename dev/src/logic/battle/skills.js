@@ -24,9 +24,9 @@ function dunGuard(B, t) {
   if (d) dunBuff(B, d, `закрывает собой ${t.def.id === 'paul' ? 'Пола' : 'Муад\'Диба'}`);
 }
 const dunShielded = (B, x) => (x.def.id === 'paul' || x.def.id === 'muaddib') && B.units.some(d => d.alive && d.side === x.side && d.dunProtect);
-const SK_KEYS = ['basic', 'special', 'ult', 'passive', 'leader'];
+const SK_KEYS = ['basic', 'special', 'ult', 'passive', 'leader', 'powerful'];
 const skMax = (def, k) => def.z7 && def.z7.includes(k) ? 7 : 6;
-const autoSk = lvl => { const v = Math.min(6, 1 + Math.floor((lvl || 1) / 5)); return { basic: v, special: v, ult: v, passive: v, leader: v }; };
+const autoSk = lvl => { const v = Math.min(6, 1 + Math.floor((lvl || 1) / 5)); return { basic: v, special: v, ult: v, passive: v, leader: v, powerful: v }; };
 const skLv = (u, k) => (u.sk && u.sk[k]) || 1;
 const skMult = l => 1 + .06 * (l - 1) + (l >= 7 ? .15 : 0);
 const pasMult = l => 1 + .02 * (l - 1) + (l >= 7 ? .08 : 0);
