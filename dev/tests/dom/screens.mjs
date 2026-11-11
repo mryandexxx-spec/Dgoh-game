@@ -175,6 +175,14 @@ function normalizeApprovedBH97(s) {
       });
       // Other roster totals (filter counts and locked divider) are checked
       // separately after the first full diff; never replace arbitrary digits.
+      if (screen.name !== 'fresh:squad') {
+        // The late fixture had 24/24 heroes unlocked; the two new 0-star
+        // heroes alone make the locked divider visible. After excluding them
+        // from the legacy comparison it must return to its hidden state.
+        assert.ok(v.includes('<div class="rdiv" id="rdiv">Не открыты · <span id="rdiv-n">0</span>'),
+          screen.name + ': only BH9.7 heroes were locked in the late fixture');
+        v = v.replace('<div class="rdiv" id="rdiv">', '<div class="rdiv" id="rdiv" hidden="">');
+      }
       screen.view = v;
     }
     if (screen.name === 'profile' && typeof screen.overlay2 === 'string') {
