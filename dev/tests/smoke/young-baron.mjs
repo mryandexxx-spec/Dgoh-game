@@ -31,16 +31,16 @@ try {
       if(!o.root._authored)throw Error('Baron did not load authored model');
       await HERO_STAGE.scene.whenReadyAsync();
       heroHold(true);
-      const sample=(name)=>{
+      const sample=(name,progress=.5,time=1.3)=>{
         const now=10000;o.dead=false;o.act=null;o.hitT=0;
-        if(name==='Attack')o.act={kind:'shoot',t0:now-640*.5,dur:640,dir:V3(0,0,1),to:V3(0,0,0),fx:1};
+        if(['Attack','basic','special','ult'].includes(name))o.act={key:name==='Attack'?'basic':name,kind:name==='special'||name==='ult'?'cast':'shoot',t0:now-640*progress,dur:640,dir:V3(0,0,1),to:V3(0,0,0),fx:1};
         if(name==='Hit')o.hitT=now-170;
         if(name==='Death'){o.dead=true;o.deathT=now-900;}
-        poseHuman(HERO_STAGE,o,now,1.3,1);o.root.rotation.y=-.3;
+        poseHuman(HERO_STAGE,o,now,time,1);o.root.rotation.y=-.3;
         o.root.computeWorldMatrix(true);
         for(const m of o.root.getChildMeshes()){m.computeWorldMatrix(true);if(m.skeleton)m.skeleton.prepare(true);}
         HERO_STAGE.scene.render();
-        return {clip:o.root._clip,rotation:o.R.sh.rotationQuaternion?.asArray(),hip:o.hips.position.asArray()};
+        return {clip:o.root._clip,motion:o.root._motion,rotation:o.R.sh.rotationQuaternion?.asArray(),left:o.Lf.sh.rotationQuaternion?.asArray(),hip:o.hips.position.asArray()};
       };
       window.__baronSample=sample;
       const poses=Object.fromEntries(['Idle','Attack','Hit','Death'].map(name=>[name,sample(name)]));sample('Idle');
@@ -101,9 +101,13 @@ try {
       assert.notEqual(summary.cache,'b9:baron');assert(summary.cache.includes(summary.model));
       for(const name of ['Idle','Attack','Hit','Death'])assert.equal(summary.poses[name].clip,name);
       assert.notDeepEqual(summary.poses.Idle.rotation,summary.poses.Attack.rotation);
-      for(const name of ['Attack','Hit','Death']){
+      for(const name of ['Attack','special','ult','Hit','Death']){
         await p.evaluate(name=>window.__baronSample(name),name);
         await p.screenshot({path:path.join(out,`${tag}-${width}-${quality}-${name}.png`)});
+      }
+      if(width===844 && quality==='med')for(const name of ['Idle','basic','special','ult'])for(let frame=0;frame<9;frame++) {
+        await p.evaluate(({name,frame})=>window.__baronSample(name,frame/8,name==='Idle'?frame*.5:1.3+frame*.15),{name,frame});
+        await p.screenshot({path:path.join(out,`motion-${name}-${frame}.png`)});
       }
     }
     await p.evaluate(()=>{window.__baronSample('Idle');heroHold(false);});
@@ -142,6 +146,33 @@ try {
     await new Promise(r=>setTimeout(r,1800));
     await p.screenshot({path:path.join(out,`${tag}-${width}-${quality}-battle.png`)});
     assert.equal(await p.evaluate(()=>!!Object.values(BT.arena.units).find(o=>o.def.id==='baron' && o.side==='A' && o.root._authored)),true);
+    if(tag==='after') {
+      const actions=await p.evaluate(()=>{
+        const A=BT.arena,B=BT.B,u=B.units.find(x=>x.side==='A'&&x.def.id==='baron');
+        const target=B.units.find(x=>x.side==='B'&&x.alive),o=A.units[u.uid],results=[];
+        for(const speed of [1,2,4])for(const key of ['basic','special','ult']) {
+          clearTimeout(BT.timer);BT.speed=speed;A.speed=speed;B.active=u;
+          target.hp=target.maxHp=10000000;u.cd[key]=0;B.shots=[];B.flash=null;o.hitT=0;
+          doAct(u,key,target.uid);clearTimeout(BT.timer);
+          const a=o.act;if(!a)throw Error('Ability did not reach the 3D actor: '+key);
+          const now=a.t0+a.dur*.4;
+          poseHuman(A,o,now,1.3,speed);
+          const active={key:a.key,motion:o.root._motion,clip:o.root._clip,duration:a.dur,left:o.Lf.sh.rotationQuaternion.asArray()};
+          poseHuman(A,o,a.t0+a.dur+1,1.3,speed);
+          results.push({speed,key,...active,returned:o.root._clip});
+        }
+        return results;
+      });
+      for(const a of actions) {
+        assert.equal(a.key,a.motion);assert.equal(a.clip,'Attack');assert.equal(a.returned,'Idle');
+        assert(Math.abs(a.duration-({basic:900,special:1100,ult:1250}[a.key]*1.5/a.speed))<.01);
+      }
+      for(const speed of [1,2,4]) {
+        const a=actions.filter(x=>x.speed===speed);
+        assert.notDeepEqual(a[0].left,a[1].left);assert.notDeepEqual(a[1].left,a[2].left);
+      }
+      console.log('PASS BH4 actual doAct → Arena.sync → source clip + distinct ability motion (×1/×2/×4)',JSON.stringify(actions));
+    }
     assert.equal(errors.length,0,errors.join('\n'));console.log('BH4',tag,width,quality,JSON.stringify(summary));
     await p.close();
    }

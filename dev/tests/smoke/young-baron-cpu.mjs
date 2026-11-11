@@ -9,15 +9,15 @@ g.ctx.__data=new Uint8Array(fs.readFileSync('assets/models/young-baron.dgm'));
 g.run('MODEL_DATA.baron=parseDgm(__data);');
 const engine=new B.NullEngine();g.ctx.__scene=new B.Scene(engine);
 try {
- g.run("window.o=makeHuman3(CH.baron,{scene:__scene,shadows:null,pbr:false});o.base=V3();o.face=0;o.side='A';o.phase=0;");
+ g.run("window.o=makeHuman3(CH.baron,{scene:__scene,shadows:null,pbr:false});o.base=V3();o.face=0;o.side='A';o.phase=0;o.def=CH.baron;");
  const result=g.run(`(()=>{
   const samples={};
   const sample=(name,now=10000,t=1.3,deathK=900/950)=>{
    o.dead=false;o.act=null;o.hitT=0;
-   if(name==='Attack')o.act={kind:'shoot',t0:now-320,dur:640,dir:V3(0,0,1),to:V3(),fx:1};
+   if(['Attack','basic','special','ult'].includes(name))o.act={key:name==='Attack'?'basic':name,kind:name==='special'||name==='ult'?'cast':'shoot',t0:now-320,dur:640,dir:V3(0,0,1),to:V3(),fx:1};
    if(name==='Hit')o.hitT=now-170;
    if(name==='Death'){o.dead=true;o.deathT=now-950*deathK;}
-   poseHuman({},o,now,t,1);
+   poseHuman({showcase:name==='Showcase'},o,now,t,1);
    o.root.computeWorldMatrix(true);
    const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
    for(const m of o.root.getChildMeshes()){
@@ -29,9 +29,12 @@ try {
       const v=[tmp.x,tmp.y,tmp.z];for(let k=0;k<3;k++){min[k]=Math.min(min[k],v[k]);max[k]=Math.max(max[k],v[k]);}
     }
    }
-   return {clip:o.root._clip,q:o.R.sh.rotationQuaternion.asArray(),min,max,hip:o.hips.position.y};
+   o.Lf.hand.computeWorldMatrix(true);o.R.hand.computeWorldMatrix(true);
+   return {clip:o.root._clip,motion:o.root._motion,q:o.R.sh.rotationQuaternion.asArray(),left:o.Lf.sh.rotationQuaternion.asArray(),hand:o.Lf.hand.getAbsolutePosition().asArray(),right:o.R.hand.getAbsolutePosition().asArray(),head:o.head.rotationQuaternion.asArray(),min,max,hip:o.hips.position.y};
   };
  for(const name of ['Idle','Attack','Hit','Death'])samples[name]=sample(name);
+  for(const name of ['basic','special','ult','Showcase'])samples[name]=sample(name);
+  samples.idleLater=sample('Idle',12000,4);
   const death=Array.from({length:11},(_,k)=>sample('Death',10000,1.3,k/10).min[1]);
   samples.revive=sample('Idle',12000,2.3);
   // Isolated arm movement must not drag the lower coat or lining.
@@ -56,6 +59,16 @@ try {
  assert(result.clothVertices>100 && result.clothDrag<.00001,'arm movement stretches the coat: '+result.clothDrag);
  assert(result.death.every(y=>y>-.08),'Death feet sink through floor');
  assert.notDeepEqual(result.samples.Idle.q,result.samples.Attack.q);
+ for(const key of ['basic','special','ult']) {
+  const s=result.samples[key];assert.equal(s.motion,key);assert.equal(s.clip,'Attack');
+  assert(s.min[1]>-.08 && [...s.min,...s.max].every(v=>Number.isFinite(v)&&Math.abs(v)<4));
+ }
+ assert.notDeepEqual(result.samples.basic.left,result.samples.special.left,'special is the basic attack');
+ assert.notDeepEqual(result.samples.special.left,result.samples.ult.left,'ultimate is the special gesture');
+ assert(result.samples.basic.right[2]>.3 && result.samples.basic.right[1]<1.6,'needle hand aims upward instead of forward');
+ assert.equal(result.samples.Showcase.motion,'Showcase');
+ assert(B.Vector3.Distance(B.Vector3.FromArray(result.samples.Idle.hand),B.Vector3.FromArray(result.samples.Showcase.hand))>.12,'showcase hand hardly moves');
+ assert.notDeepEqual(result.samples.Idle.head,result.samples.idleLater.head,'idle head is frozen');
  assert.equal(result.samples.revive.clip,'Idle');
  assert(Math.abs(result.samples.Idle.hip-.902571)<.02,'bind hip height was overwritten');
  assert(result.key.includes(result.model));assert.notEqual(result.key,'b9:baron');
