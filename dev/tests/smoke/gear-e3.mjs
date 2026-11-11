@@ -59,8 +59,10 @@ const { gearSources } = new Function('NODES','ITEMS','FRAGMENT_SOURCES','COMPLET
 assert.equal(gearSources(fragmentId).filter(s=>s.type==='mission').length, 1);
 assert.equal(gearSources(it.id,'complete').filter(s=>s.type==='mission').length, 1);
 assert.equal(gearSources(it.id,'complete')[0].chance, .002);
-assert.equal(gearSources(it.id).filter(s=>s.type==='sietch').length, 1);
-assert.equal(gearSources(it.id).filter(s=>s.type==='raid').length, 1);
+assert.equal(gearSources(fragmentId).filter(s=>s.type==='sietch').length, 1);
+assert.equal(gearSources(it.id).filter(s=>s.type==='sietch').length, 0);
+assert.equal(gearSources(fragmentId).filter(s=>s.type==='raid').length, 1);
+assert.equal(gearSources(it.id).filter(s=>s.type==='raid').length, 0);
 
 // GE1: all original fragments remain usable and existing complete items require no recipe costs.
 const completeBag = {[it.id]:1}, emptyInv = {}, noParts = {};
