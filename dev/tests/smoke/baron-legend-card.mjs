@@ -6,6 +6,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
 import { serve } from '../lib/serve.mjs';
+import { BARON_LEGEND_KIT } from '../../src/data/baron-legend-kit.js';
+import { defaultStagedHero } from '../../src/logic/baron-roster-integration.js';
 
 const html = path.resolve(process.argv[2] || 'dist/pwa/index.html');
 const chrome = process.env.CHROME_PATH || '/usr/bin/chromium';
@@ -41,9 +43,9 @@ try {
     await page.waitForFunction(() => !!(typeof HERO_STAGE !== 'undefined' && HERO_STAGE?.o?.root && HERO_STAGE.scene.getFrameId() > 2), { timeout:60000 });
     await new Promise(r => setTimeout(r, 1100));
     await page.screenshot({ path:path.join(out, `${w}x${h}-${quality}-existing-muaddib.png`) });
-    const begin = await page.evaluate(() => {
+    const begin = await page.evaluate((def, progress) => {
       const before = JSON.stringify(S.roster);
-      openDetail('baron_legend', true);
+      openDetail('baron_legend', { def, progress });
       const hc = document.querySelector('#overlay .hc');
       if (!hc || hc.dataset.cid !== 'baron_legend') throw Error('Shared hero card not mounted');
       const disabled = [...hc.querySelectorAll('button:not([data-close]):not([data-dback]):not([data-hcstat])')];
@@ -51,7 +53,7 @@ try {
       if (JSON.stringify(S.roster) !== before) throw Error('Staged preview changed save roster');
       window.__bh8CardBefore = before;
       return { disabledButtons:disabled.length, cardClass:hc.className };
-    });
+    }, BARON_LEGEND_KIT, defaultStagedHero());
     await page.waitForFunction(() => !!(typeof HERO_STAGE !== 'undefined' && HERO_STAGE?.o?.root?._authored &&
       HERO_STAGE.o.def?.id === 'baron_legend' && HERO_STAGE.scene.getFrameId() > 5), { timeout:60000 });
     await new Promise(r => setTimeout(r, 1400));
