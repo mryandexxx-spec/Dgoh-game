@@ -54,6 +54,22 @@ try {
   })()`);
   assert.equal(result.Idle.vertices,20171,'must skin the real approved mobile DGM');
   assert.equal(result.Idle.meshes,11);
+  // The source's robe is charcoal (#2f2b2f), not PBR white.
+  // Check that ONLY the new legend explicitly owns its approved part colors.
+  const colors=g.run(`(()=>{
+    const meshes=legend.root.getChildMeshes();
+    const pick=name=>{
+      const m=meshes.find(x=>x.name.includes(name));
+      return m&&{rgba:m.material.diffuseColor.asArray(),vertexColors:m.useVertexColors};
+    };
+    return {robe:pick('obsidian_woven_robe'),skin:pick('pallid_skin'),
+      metal:pick('aged_gunmetal')};
+  })()`);
+  assert.ok(colors.robe&&colors.skin&&colors.metal);
+  assert.deepEqual(colors.robe.vertexColors,false);
+  assert(Math.abs(colors.robe.rgba[0]-47/255)<.015,'robe must be charcoal not white');
+  assert(Math.abs(colors.skin.rgba[0]-168/255)<.015,'pale skin must retain source tone');
+
   for(const key of ['Idle','Showcase','basic','special','ult','gl','Hit','Death']){
     const s=result[key];
     assert.equal(s.motion,key,'animation state mismatch: '+key);
