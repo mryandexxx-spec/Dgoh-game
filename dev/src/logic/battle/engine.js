@@ -18,13 +18,19 @@ function mkRng(seed) {
 // squads: [{id, lvl, stars, gear}], side A = player, B = enemy
 function createBattle(squadA, squadB, opts = {}) {
   const B = { units: [], desert: !!opts.desert, spice: { A: 0, B: 0 }, rhythm: 0, log: [], events: [], over: null, active: null, rng: mkRng(opts.seed || Date.now()), leader: {}, round: 0 };
+  // Explicit preview-only definitions let future playable heroes enter isolated
+  // scenario tests without inserting unapproved art into the public CHARS roster.
+  // Existing CH definitions always take priority, preventing character overrides.
+  const resolveDef = id => CH[id] || opts.extraHeroDefs?.[id];
   let uid = 0;
   for (const [side, sq] of [['A', squadA], ['B', squadB]]) {
     if (!sq.length) { B.leader[side] = null; continue; }
-    const leadDef = CH[sq[0].id];
+    const leadDef = resolveDef(sq[0].id);
+    if (!leadDef) throw new Error('Unknown battle leader: ' + sq[0].id);
     B.leader[side] = leadDef.leader ? leadDef.id : null;
     sq.forEach((p, i) => {
-      const def = CH[p.id];
+      const def = resolveDef(p.id);
+      if (!def) throw new Error('Unknown battle hero: ' + p.id);
       const s = unitStats(def, p), sk = p.sk || autoSk(p.lvl), pm = pasMult(sk.passive || 1);
       s.maxHp = Math.round(s.maxHp * pm); s.dmg = Math.round(s.dmg * pm);
       const u = { sk, uid: 'u' + (uid++), side, idx: i, def, ...s, hp: s.maxHp, shield: s.maxShield, glOn: !!(def.gl && p.gl), ultM: 0, glUsed: false, tm: 0, cd: { special: def.special?.cd0 ?? 0, ult: def.ult ? (def.ult.cd0 ?? 3) : 0 }, fx: {}, alive: true, intent: null, dmgBonus: 0, fearImmune: !!def.fearImm, counterChance: def.counter || 0, gear: p.gear || 1, relic: p.relic || 0 };
