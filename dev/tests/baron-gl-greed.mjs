@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { kill } from '../src/logic/battle/engine.js';
-import { glAct } from '../src/logic/battle/turns.js';
+import { kill, applyFx } from '../src/logic/battle/engine.js';
+import { glAct, decFx } from '../src/logic/battle/turns.js';
 const def = (id,f,extras={}) => ({id,sn:id,f,role:'sup',basic:{dt:'fast',m:1},...extras});
 const baron = {uid:'baron',side:'A',idx:0,def:def('baron_legend',['hark'],{
   passive:{harkonnenGreed:true,healOnEnemyDeath:.5},
@@ -29,4 +29,18 @@ assert.equal(E.fx.armDown,3);
 assert.equal(C.fx.armDown,3);
 assert.ok(E.hp<C.hp); // +50% vs Atreides
 assert.equal(S.over,null);
-console.log('BH2 Greed death, anti-revive and Fall of the Atreides GL: PASS');
+// Greed's horror trigger and Rabban's doubled intensity must expire cleanly.
+const H=fresh(baron,1000), R={...fresh(feyd,900),uid:'rabban',def:def('rabban',['hark'])};
+const foeUnit=fresh(enemy2,2000);
+const T={units:[H,R,foeUnit],events:[],log:[],leader:{A:null,B:null},rng:()=>.5,spice:{A:0,B:0},over:null};
+applyFx(T,H,foeUnit,'horror',2);
+assert.equal(foeUnit.fx.horror,2);
+assert.equal(foeUnit.horrorStrength,2);
+assert.equal(H.fx.defUp,2);
+assert.equal(R.fx.attackUp,2);
+decFx(foeUnit);
+assert.equal(foeUnit.fx.horror,1);
+decFx(foeUnit);
+assert.equal(foeUnit.fx.horror,undefined);
+assert.equal(foeUnit.horrorStrength,1);
+console.log('BH2 Greed death, anti-revive, Horror synergy and Baron GL: PASS');
