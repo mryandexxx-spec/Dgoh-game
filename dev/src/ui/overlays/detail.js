@@ -29,7 +29,12 @@ function abilityHtml(ab, kind) {
 }
 function slotState(cid, k) {
   const p = prog(cid), it = ITEMS[gearPlan(cid, p.gear)[k]];
-  const have = (S.inv[it.id] || 0) + (S.gearOwned?.[it.id] || 0) * FRAG_NEED[it.t], need = FRAG_NEED[it.t];
+  const need = FRAG_NEED[it.t], recipe = recipeFor(it.id);
+  const have = Math.min(need, (S.inv[it.id] || 0) +
+    (S.gearOwned?.[it.id] || 0) * need +
+    (recipe?.parts || []).reduce((sum, part) => sum +
+      ((S.gearParts?.[part.id] || 0) ? part.materials[0].count :
+        (S.inv[part.materials[0].id] || 0)), 0));
   const r = craftRequirements(it.id, S.inv, S.gearParts || {}, { sol: S.solari, pl: S.plast }, S.gearOwned || {});
   if (p.eq[k]) return { it, st: 'eq', have, need, recipe: r };
   if (r?.ready) return { it, st: 'ready', have, need, recipe: r };
