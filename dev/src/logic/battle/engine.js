@@ -27,7 +27,7 @@ function createBattle(squadA, squadB, opts = {}) {
       const def = CH[p.id];
       const s = unitStats(def, p), sk = p.sk || autoSk(p.lvl), pm = pasMult(sk.passive || 1);
       s.maxHp = Math.round(s.maxHp * pm); s.dmg = Math.round(s.dmg * pm);
-      const u = { sk, uid: 'u' + (uid++), side, idx: i, def, ...s, hp: s.maxHp, shield: s.maxShield, glOn: !!(def.gl && p.gl), ultM: 0, glUsed: false, tm: 0, cd: { special: def.special?.cd0 ?? 0, ult: def.ult ? (def.ult.cd0 ?? 3) : 0, ...(def.powerful ? { powerful: def.powerful.cd0 ?? 0 } : {}) }, fx: {}, alive: true, intent: null, dmgBonus: 0, fearImmune: !!def.fearImm, counterChance: def.counter || 0, gear: p.gear || 1, relic: p.relic || 0 };
+      const u = { sk, uid: 'u' + (uid++), side, idx: i, def, ...s, hp: s.maxHp, shield: s.maxShield, glOn: !!(def.gl && p.gl), ultM: 0, glUsed: false, tm: 0, cd: { special: def.special?.cd0 ?? 0, ult: def.ult ? (def.ult.cd0 ?? 3) : 0 }, fx: {}, alive: true, intent: null, dmgBonus: 0, fearImmune: !!def.fearImm, counterChance: def.counter || 0, gear: p.gear || 1, relic: p.relic || 0 };
       if (def.armUp) u.arm += def.armUp; if (def.critUp) u.crit += def.critUp; if (def.potUp) u.pot += def.potUp;
       const L = B.leader[side];
       if (L === 'leto' && has(u, 'atr')) { u.arm += .1; u.dmgBonus += .1; u.counterChance = Math.max(u.counterChance, .25); }
