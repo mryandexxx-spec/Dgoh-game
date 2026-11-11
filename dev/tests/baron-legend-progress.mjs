@@ -26,4 +26,8 @@ badRoster.baron.relic = 6;
 assert.deepEqual(baronLegendWin(config, { journeys: {} }, badRoster, 0), { ok: false, reason: 'locked' });
 assert.equal(baronLegendWin(config, { journeys: {} }, badRoster, 0, true).firstClear, true);
 assert.deepEqual(baronLegendWin({ requirements: [], stages: [] }, save, roster, 0), { ok: false, reason: 'config' });
+assert.equal(commitBaronLegendWin(save, { ok: true, firstClear: true, stageIndex: 4 }), false);
+assert.equal(commitBaronLegendWin(save, { ok: true, firstClear: true, stageIndex: -1 }), false);
+assert.equal(commitBaronLegendWin(save, { ok: true, firstClear: true, stageIndex: 0, progress: { 0: true, 4: true } }), false);
+assert.deepEqual(baronLegendProgress(save), { 0: true, 1: true });
 console.log('BH1 stage results and replay guards: PASS');
