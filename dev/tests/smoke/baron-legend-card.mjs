@@ -43,10 +43,13 @@ try {
     });
     await page.waitForFunction(() => !!(typeof HERO_STAGE !== 'undefined' && HERO_STAGE?.o?.root && HERO_STAGE.scene.getFrameId() > 2), { timeout:60000 });
     await new Promise(r => setTimeout(r, 1100));
+    await page.evaluate(() => closeInfo(true)); // async monthly calendar may appear after boot
     await page.screenshot({ path:path.join(out, `${w}x${h}-${quality}-existing-muaddib.png`) });
     const begin = await page.evaluate((def, progress) => {
+      closeInfo(true);
       const before = JSON.stringify(S.roster);
       openDetail('baron_legend', { def, progress });
+      closeInfo(true); // info overlay can be opened by deferred login jobs
       const hc = document.querySelector('#overlay .hc');
       if (!hc || hc.dataset.cid !== 'baron_legend') throw Error('Shared hero card not mounted');
       if (document.querySelector('#overlay2')?.innerHTML.trim()) throw Error('Monthly calendar/info overlay obscures card screenshot');
@@ -61,6 +64,7 @@ try {
       HERO_STAGE.o.def?.id === 'baron_legend' && HERO_STAGE.scene.getFrameId() > 5), { timeout:60000 });
     await new Promise(r => setTimeout(r, 1400));
     const verdict = await page.evaluate(() => {
+      closeInfo(true); // perform after async model warmup, immediately before screenshot
       const o = HERO_STAGE.o, hc = document.querySelector('#overlay .hc');
       const skinned = o.root.getChildMeshes().filter(m => m.skeleton).length;
       const items = [...hc.querySelectorAll('.hcsk')].map(b => b.textContent.trim());
@@ -71,6 +75,8 @@ try {
         rosterUnchanged:JSON.stringify(S.roster) === window.__bh8CardBefore,
         youngBaronUnchanged:!!CH.baron && CH.baron.id === 'baron',
         notPublic:!CH.baron_legend,
+        infoLayerClear:!document.querySelector('#overlay2')?.innerHTML.trim(),
+        topmost:!!document.elementFromPoint(innerWidth/2, innerHeight/2)?.closest('.hc'),
         frame:HERO_STAGE.scene.getFrameId(),
       };
       return result;
@@ -79,7 +85,7 @@ try {
     assert.equal(verdict.id, 'baron_legend');
     assert.equal(verdict.authored, true, 'Procedural fallback is not an approved DGM model');
     assert.equal(verdict.skinned, 11, 'Exactly 11 skinned meshes expected from legend DGM');
-    for (const key of ['heroCard','previewLocked','text','actions','rosterUnchanged','youngBaronUnchanged','notPublic'])
+    for (const key of ['heroCard','previewLocked','text','actions','rosterUnchanged','youngBaronUnchanged','notPublic','infoLayerClear','topmost'])
       assert.equal(verdict[key], true, `${w}x${h} ${quality}: ${key}`);
     assert.equal(errors.length, 0, 'WebGL/browser console errors: '+JSON.stringify(errors));
     results.push({ resolution:`${w}x${h}`, quality, ...begin, ...verdict });
