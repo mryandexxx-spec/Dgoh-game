@@ -27,7 +27,9 @@ const BARON_LEGEND_KIT = Object.freeze({
     fx: [['horror',2,'enemies']], harkFx: [['attackUp',2]],
     d: 'Начальная перезарядка 3. Все враги получают Ужас, уменьшающий урон и получение шкалы хода. Харконнены получают Атаку↑.',
   },
-  powerful: {
+  // Existing 'ult' slot is the THIRD regular attack, as on Muad'Dib.
+  // The separate 'gl' key keeps its independent charge and one-use rules.
+  ult: {
     n: C.powerful.name, cd: 4, cd0: 4, tgt: 'enemy', dt: 'fast', m: 2,
     harkFx: [['attackUp',2],['defUp',2],['debuffImmune',1],['foresight',1]],
     enemyLeaderFx: [['isolation',2]],
