@@ -4,8 +4,8 @@ import { createBattle } from '../src/logic/battle/engine.js';
 import { HERO_IDS,HERO_LOOKS,standardFutureDefs,releaseAssetCheck,stageFutureRoster } from '../src/logic/bh97-hero-release.js';
 const defs=standardFutureDefs();
 assert.deepEqual(HERO_IDS,['margot','yue']);
-assert.equal(CH.margot,undefined,'public roster not yet released');
-assert.equal(CH.yue,undefined);
+assert.equal(CH.margot.n,defs.margot.n,'approved normal hero in CHARS');
+assert.equal(CH.yue.n,defs.yue.n);
 assert.equal(defs.margot.role,'sup');
 assert.equal(defs.yue.role,'heal');
 assert.equal(defs.margot.side,'dark');
@@ -22,12 +22,12 @@ const legacy={v:1,roster:{leto:{stars:7,shards:42,lvl:85,gear:13}},
 const snapshot=JSON.stringify(legacy);
 assert.equal(stageFutureRoster(legacy).reason,'approval-required');
 assert.equal(JSON.stringify(legacy),snapshot);
-let denied=stageFutureRoster(legacy,{approved:true,availableAssets:[assets[0]]});
+let denied=stageFutureRoster(legacy,{approved:true,visualMode:'authored',availableAssets:[assets[0]]});
 assert.equal(denied.reason,'assets-required');
 assert.equal(JSON.stringify(legacy),snapshot);
 assert.equal(releaseAssetCheck(assets).length,0);
 assert.equal(releaseAssetCheck([]).length,6);
-const migrated=stageFutureRoster(legacy,{approved:true,availableAssets:assets});
+const migrated=stageFutureRoster(legacy,{approved:true,visualMode:'procedural'});
 assert.deepEqual(migrated,{ok:true,changed:true,heroes:['margot','yue']});
 for(const id of HERO_IDS){
  assert.equal(legacy.roster[id].stars,0);
