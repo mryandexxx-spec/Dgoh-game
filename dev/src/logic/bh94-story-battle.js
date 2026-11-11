@@ -28,6 +28,11 @@ function prepareStoryUnlockBattle(save,eventId,stageIndex,day,seed=1){
 function finishStoryUnlockBattle(save,prepared,day){
   if(!prepared?.ok||!prepared.battle||prepared.battle.over!=='A'||prepared.battle.wavePending ||
     day!==prepared.day)return {ok:false,reason:'battle'};
-  return rewardStoryEventWin(save,prepared.eventId,prepared.stageIndex,day,true);
+  // A finished battle result is a one-use receipt. Re-rendering the result,
+  // double-tapping or re-entering finish must never grant extra daily shards.
+  if(prepared.settled)return {ok:false,reason:'already-settled'};
+  const outcome=rewardStoryEventWin(save,prepared.eventId,prepared.stageIndex,day,true);
+  if(outcome.ok)prepared.settled=true;
+  return outcome;
 }
 export { prepareStoryUnlockBattle, finishStoryUnlockBattle };
