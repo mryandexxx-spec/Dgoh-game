@@ -38,7 +38,7 @@ try {
       closeOverlay();
       openDetail('muaddib');
     });
-    await page.waitForFunction(() => !!(window.HERO_STAGE?.o?.root && HERO_STAGE.scene.getFrameId() > 2), { timeout:60000 });
+    await page.waitForFunction(() => !!(typeof HERO_STAGE !== 'undefined' && HERO_STAGE?.o?.root && HERO_STAGE.scene.getFrameId() > 2), { timeout:60000 });
     await new Promise(r => setTimeout(r, 1100));
     await page.screenshot({ path:path.join(out, `${w}x${h}-${quality}-existing-muaddib.png`) });
     const begin = await page.evaluate(() => {
@@ -52,7 +52,7 @@ try {
       window.__bh8CardBefore = before;
       return { disabledButtons:disabled.length, cardClass:hc.className };
     });
-    await page.waitForFunction(() => !!(window.HERO_STAGE?.o?.root?._authored &&
+    await page.waitForFunction(() => !!(typeof HERO_STAGE !== 'undefined' && HERO_STAGE?.o?.root?._authored &&
       HERO_STAGE.o.def?.id === 'baron_legend' && HERO_STAGE.scene.getFrameId() > 5), { timeout:60000 });
     await new Promise(r => setTimeout(r, 1400));
     const verdict = await page.evaluate(() => {
