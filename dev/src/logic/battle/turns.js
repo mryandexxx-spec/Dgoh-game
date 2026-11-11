@@ -4,6 +4,7 @@ import { bossTurn, wormFrenzy } from './raid.js';
 import { applyFx, checkOver, damageRaw, ev, foe, has, hit, kill, living, log, stunFx, validTargets } from './engine.js';
 import { abFor, dunBuff, dunGuard, skLv, skMult } from './skills.js';
 import { FX } from '../../data/fx.js';
+import { strongestAlly, orderedAssist } from './baron-mechanics.js';
 
 // ---- turn lifecycle ----
 // returns {skip} ; handles ticks & forced actions
@@ -107,6 +108,20 @@ function act(B, u, key, targetUid) {
     if (alive && key === 'basic' && u.cqOnHit && t.alive && !B.over) for (const [k, n, ch] of u.cqOnHit) applyFx(B, u, t, k, n, ch);
     if (alive && key === 'basic' && B.leader[u.side] === 'baron' && has(u, 'hark') && !(ab.fx || []).some(f => f[0] === 'poison')) applyFx(B, u, t, 'poison', 2, .75);
     if (B.over) break;
+  }
+  // A declarative ordered assist does not call act() and cannot recurse through
+  // ally attacks. The helper uses its ordinary base damage, but no extra turn.
+  if (ab.assistFaction && key === 'basic' && lastTarget && lastTarget.alive && !B.over) {
+    const best = strongestAlly(B.units, u, ab.assistFaction);
+    if (best) {
+      const bonus = lastTarget.fx.horror ? (1 + (ab.assistHorrorBonus || 0)) : 1;
+      orderedAssist(B, u, lastTarget, best, (ab.assistMultiplier || 1) * bonus, hit);
+    }
+    const extra = allies.find(a => a !== u && a.def.id === ab.extraAssistId);
+    if (extra && lastTarget.alive && !B.over) {
+      const bonus = lastTarget.fx.horror ? (1 + (ab.assistHorrorBonus || 0)) : 1;
+      orderedAssist(B, u, lastTarget, extra, (ab.extraAssistMultiplier || 1) * bonus, hit);
+    }
   }
   if (ab.wormCall && !B.over) {
     B.flash = ab.wormSmall ? 'wormSmall' : 'worm'; B.rhythm = 0;
