@@ -133,7 +133,7 @@ function openDetail(id, stagedPreview = false) {
   if (detailCid !== id) detailSk = 'basic';
   detailCid = id;
   const d = stagedPreview ? { ...BARON_LEGEND_KIT, side: 'dark' } : CH[id];
-  const p = stagedPreview ? (S.roster?.baron_legend || defaultStagedHero()) : prog(id);
+  const p = stagedPreview ? defaultStagedHero() : prog(id); // preview is always locked, never a live progression entry
   const L = stagedPreview ? [] : heroNavList(id), i = L.indexOf(id), nav = L.length > 1;
   const near = nav ? [L[(i + 1) % L.length], L[(i - 1 + L.length) % L.length]] : [];
   const Z = { '.hctop': hcTop(d), '.hcleft': hcSkills(id, d, p), '.hcgl': hcSlots(id, p, [0, 1, 2]), '.hcgr': hcSlots(id, p, [3, 4, 5]), '.hcbot': hcBot(id, d, p, nav), '.hcright': hcRight(id, d, p), '.hcst': hcStats(d, p) };
