@@ -5,6 +5,7 @@ import { ROMAN } from './economy.js';
 import { CAMP_KEYS, NODES, campNodes } from '../data/campaigns.js';
 import { ghash } from '../data/looks.js';
 import { sRng } from '../core/rng.js';
+import { PARTS_BY_KIND, partFragId } from '../data/gear-recipes.js';
 import { setGearStatProvider } from './battle/stats.js';
 
 // ===== gear =====
@@ -26,26 +27,53 @@ function gearPlan(cid, t) {
   return kinds.slice(0, 6).map(k => k + t);
 }
 setGearStatProvider(gearPlan);
-const NODE_ITEMS = (() => {
-  const m = NODES.map(() => []), band = i => Math.min(11, 1 + Math.floor(NODES[i].lvl / 7.4));
-  for (const ck of CAMP_KEYS) {
-    const idx = campNodes(ck);
-    for (const it of Object.values(ITEMS)) {
-      if (it.t > 12) continue;
-      const cand = idx.filter(i => it.t === band(i) || it.t === band(i) + 1), r = sRng(ghash(it.id + ck));
-      for (let k = 0; k < 3 && cand.length; k++) m[cand.splice(Math.floor(r() * cand.length), 1)[0]].push(it.id);
-    }
-    for (const i of idx) if (!m[i].length) { const t = band(i), pool = Object.values(ITEMS).filter(x => x.t === t); m[i].push(pool[i % pool.length].id); }
+// GE1: distinct farm maps, seeded deterministically; no shared missions between parts of one item.
+const COMPLETE_RATE = [0, .02,.02,.02,.01,.01,.005,.005,.002,.002,.001,0,0,0];
+const COMPLETE_SOURCES = [0,2,2,2,1,1,1,1,1,1,1,0,0,0];
+const COMPLETE_NODE_ITEMS = NODES.map(() => []);
+const NODE_ITEMS = NODES.map(() => []);
+const FRAGMENT_SOURCES = new Map(), COMPLETE_INDEX = new Map();
+const _band = i => Math.min(12, 1 + Math.floor(NODES[i].lvl / 7.4));
+function selectFarmNodes(item, excluded, count, salt) {
+  const options = NODES.map((n, i) => i).filter(i => !excluded.has(i))
+    .sort((a,b) => Math.abs(_band(a)-item.t)-Math.abs(_band(b)-item.t) ||
+      ghash(item.id + ':' + salt + ':' + a)-ghash(item.id + ':' + salt + ':' + b));
+  return options.slice(0, count);
+}
+for (const item of Object.values(ITEMS)) {
+  const used = new Set();
+  const parts = item.t <= 5 ? ['direct'] : PARTS_BY_KIND[item.kind];
+  for (const part of parts) {
+    const id = part === 'direct' ? item.id : partFragId(item, part);
+    const chosen = selectFarmNodes(item, used, Math.min(3, item.t < 6 ? 3 : 2), part);
+    FRAGMENT_SOURCES.set(id, chosen);
+    for (const i of chosen) { NODE_ITEMS[i].push(id); used.add(i); }
   }
-  return m;
-})();
-const nodeChance = i => 1.8 / NODE_ITEMS[i].length;
+  if (COMPLETE_SOURCES[item.t]) {
+    const chosen = selectFarmNodes(item, new Set(), COMPLETE_SOURCES[item.t], 'complete');
+    COMPLETE_INDEX.set(item.id, chosen);
+    chosen.forEach(i => COMPLETE_NODE_ITEMS[i].push(item.id));
+  }
+}
+const nodeChance = i => NODE_ITEMS[i].length ? Math.min(1, 1.3 / NODE_ITEMS[i].length) : 0;
 function rollItems(i) {
-  const L = NODE_ITEMS[i].slice(), out = [];
-  let left = 2; for (let k = 0; k < 2 && L.length && left > 0; k++) { if (Math.random() > .9) continue; const q = Math.min(left, 1 + (Math.random() < .3 ? 1 : 0)); left -= q; out.push([L.splice(Math.floor(Math.random() * L.length), 1)[0], q]); }
+  const pool = NODE_ITEMS[i].slice(), out = [];
+  if (pool.length && Math.random() < .9) {
+    const j = Math.floor(Math.random() * pool.length);
+    out.push([pool.splice(j,1)[0], 1]);
+  }
+  if (pool.length && Math.random() < .4) out.push([pool[Math.floor(Math.random() * pool.length)], 1]);
+  for (const id of COMPLETE_NODE_ITEMS[i]) if (Math.random() < COMPLETE_RATE[ITEMS[id].t])
+    out.push(['gear:' + id, 1]);
   return out;
 }
-function grantFrags(list) { for (const [id, q] of list) S.inv[id] = (S.inv[id] || 0) + q; }
+function grantFrags(list) {
+  for (const [id,q] of list) {
+    const store = id.startsWith('gear:') ? (S.gearOwned ??= {}) : S.inv;
+    const key = id.startsWith('gear:') ? id.slice(5) : id;
+    store[key] = (store[key] || 0) + q;
+  }
+}
 function raidFrags(tier, pct) {
   const R = RAID_FRAGS[tier], n = Math.round(R.n * pct), pool = Object.values(ITEMS).filter(it => R.tiers.includes(it.t)), out = [];
   for (let k = 0; k < n; k++) out.push([pool[Math.floor(Math.random() * pool.length)].id, 1]);
@@ -66,4 +94,4 @@ const IG = {
   compass: (c, d) => `<circle cx="12" cy="12" r="8" fill="none" stroke="${c}" stroke-width="2"/><path d="M12 5.5l2.6 6.5-2.6 6.5-2.6-6.5z" fill="${c}"/>`,
 };
 
-export { ITEM_KINDS, TIER_COL, TIER_NAME, FRAG_NEED, CRAFT, GEAR_UP_SOL, SHOP_FRAG, RAID_FRAGS, ITEMS, gearPlan, NODE_ITEMS, nodeChance, rollItems, grantFrags, raidFrags, IG };
+export { ITEM_KINDS, TIER_COL, TIER_NAME, FRAG_NEED, CRAFT, GEAR_UP_SOL, SHOP_FRAG, RAID_FRAGS, ITEMS, gearPlan, NODE_ITEMS, COMPLETE_NODE_ITEMS, FRAGMENT_SOURCES, COMPLETE_INDEX, COMPLETE_RATE, nodeChance, rollItems, grantFrags, raidFrags, IG };
