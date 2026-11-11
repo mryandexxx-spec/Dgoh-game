@@ -193,6 +193,23 @@ class Arena3D extends GameScene {
     if (B.flash === 'gl') {
       const delay = 1500, foes = B.units.filter(x => x.side !== (B.units.find(y => y.uid === B.glCast) || {}).side && !x.def.boss);
       if (B.glKind === 'mirror') { for (const x of B.units) { const v = this.units[x.uid]; if (v && !v.boss && x.side !== (B.units.find(y => y.uid === B.glCast) || {}).side || (v && x.charmed)) { this.at(now + 500, () => this.ringFX(v, '#9fe8ff', 1.3)); this.at(now + 900, () => this.sparkFX(v, 2)); } } }
+      else if (B.glKind === 'fall-of-atreides') {
+        // BH6 preview: army-impact pulses, NEVER a worm summon. The levitating
+        // chair/cinematic is a separate owner-approval deliverable.
+        const caster = this.units[B.glCast];
+        if (caster) {
+          this.at(now + 180, () => this.ringFX(caster, '#b14a2c', 1.45));
+          if (!caster.boss && caster.anim?.cliplessPose)
+            caster.act = { key: 'gl', kind: 'cast', t0: now, dur: 2350 / Math.max(1, this.speed), dir: V3(1, 0, 0), to: caster.base.clone(), tg: foes.map(x=>this.units[x.uid]).filter(Boolean) };
+        }
+        for (const [i, x] of foes.entries()) {
+          const target = this.units[x.uid];
+          if (target) {
+            this.at(now + 600 + i * 95, () => this.ringFX(target, '#ba402b', 1.12));
+            this.at(now + 760 + i * 95, () => this.sparkFX(target, 2));
+          }
+        }
+      }
       else if ((B.glKind === 'devour' || B.glKind === 'prophecy') && B.glTarget && this.units[B.glTarget]) { const v = this.units[B.glTarget], tu = B.units.find(x => x.uid === B.glTarget); this.summon(v.base.x, v.base.z, v.boss ? 1.5 : 1, now + delay, v.boss || (tu && tu.alive) ? null : v); }
       else { let c = V3(this.raid ? 0 : 5, 0, this.raid ? -6 : 0); const os = foes.map(x => this.units[x.uid]).filter(Boolean); if (os.length) { c = V3(); for (const o of os) c.addInPlace(o.base); c.scaleInPlace(1 / os.length); } this.summon(c.x, c.z, 1.45, now + delay, null); }
       this.glT = (typeof CINE_OFF === 'function' && CINE_OFF()) ? 0 : now; if (!this.glLight) { this.glLight = new B3.PointLight('gll', V3(0, 6, 2), this.scene); this.glLight.diffuse = col3('#ffc860'); this.glLight.range = 40; this.glLight.intensity = 0; }
