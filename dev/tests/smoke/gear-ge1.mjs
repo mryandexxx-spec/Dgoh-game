@@ -57,7 +57,7 @@ for(const tier of [0,1,2]) {
   const rewards=raidFrags(tier,1);
   assert.ok(rewards.length>0);
   for(const [id,q] of rewards) {
-    assert.match(id,/^frag:[a-z]+\\d+:[a-z]+$/);
+    assert.match(id,/^frag:[a-z]+\d+:[a-z]+$/);
     assert.equal(q,1);
   }
 }
