@@ -7,6 +7,7 @@ import { autoSk, dunGuard, dunShielded, leadBonus, pasMult, skLv } from './skill
 import { CH, MENTAT } from '../../data/chars.js';
 import { LEAD_MODS } from '../../data/skill-ups.js';
 import { FX } from '../../data/fx.js';
+import { horrorDamageFactor } from './horror.js';
 
 function mkRng(seed) {
   let a = seed >>> 0;
@@ -150,7 +151,7 @@ function hit(B, att, tgt, dt, m, opts = {}) {
   if (tgt.glOn && !tgt.glUsed) tgt.ultM = Math.min(100, tgt.ultM + 6);
   const eva = tgt.eva + (tgt.fx.evaUp ? .3 : 0) + (dt === 'blade' && tgt.def.evaBlade ? tgt.def.evaBlade : 0);
   if (dt !== 'voice' && dt !== 'poison' && B.rng() < eva) { ev(B, tgt, 'Уклон', 'miss'); log(B, `${tgt.def.sn} уклоняется от атаки ${att.def.sn}.`); return false; }
-  let d = att.dmg * m * (0.9 + 0.2 * B.rng()) * (1 + att.dmgBonus);
+  let d = att.dmg * m * (0.9 + 0.2 * B.rng()) * (1 + att.dmgBonus) * horrorDamageFactor(att);
   if (B.leader[att.side] === 'baron' && has(att, 'hark') && tgt.fx.poison) d *= 1.4;
   if (att.def.fallenBonus) d *= 1 + att.def.fallenBonus * B.units.filter(x => x.side === att.side && !x.alive).length;
   if (opts.bonusDebuffed && isDebuffed(tgt)) d *= 1.5;
