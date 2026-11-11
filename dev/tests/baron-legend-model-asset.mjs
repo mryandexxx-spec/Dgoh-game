@@ -1,5 +1,5 @@
 // BH5 — protect the two independent Baron model IDs. The optimized DGM is
-// optional and ONLY the new legendary identity may ever receive it.
+// required in BH5 and ONLY the new legendary identity may ever receive it.
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -10,7 +10,8 @@ assert.match(loader, /'models\/baron-legend-mobile\.dgm'/, 'Legendary Baron DGM 
 assert.match(loader, /id === 'young-baron' \? 'baron' : id === 'baron-legend-mobile' \? 'baron_legend'/,
   'Never route the legendary model into the young Baron ID');
 const name = resolve(new URL('../assets/models/baron-legend-mobile.dgm', import.meta.url).pathname);
-if (existsSync(name)) {
+assert.ok(existsSync(name), 'Owner uploaded BH5 DGM must exist in this branch');
+{
   const b = readFileSync(name);
   assert.equal(b.toString('ascii', 0, 4), 'DGM1');
   const len = b.readUInt32LE(4), doc = JSON.parse(b.toString('utf8',8,8+len));
@@ -33,6 +34,4 @@ if (existsSync(name)) {
     for(let i=0;i<weights.length;i+=4)assert.equal(weights[i]+weights[i+1]+weights[i+2]+weights[i+3],255,k+' normalized weights');
   }
   console.log('BH5 legendary Baron optimized DGM parsed from repository: PASS');
-} else {
-  console.log('BH5 asset routing: PASS (optional legendary model binary not yet uploaded)');
 }
