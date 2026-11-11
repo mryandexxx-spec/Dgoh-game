@@ -43,6 +43,8 @@ for (const entry of historical.saves) {
       continue;
     }
     assert.ok(roster, `${entry.file}: ${stage} roster present`);
+    assert.deepEqual(entry[stage].gearOwned, {}, `${entry.file}: GE1 migration adds empty complete gear inventory`);
+    delete entry[stage].gearOwned; // normalize only the newly introduced empty field; keep historical golden untouched
     for (const id of ['margot', 'yue']) {
       const hero = roster[id];
       assert.ok(hero, `${entry.file}: ${stage} includes ${id}`);
