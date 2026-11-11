@@ -27,6 +27,7 @@ const HIGH = {
   glowKernel: 32,                   // blurKernelSize GlowLayer
   shadowQ: 'medium',                // качество PCF теней (WebGL2): 'medium' | 'low'
   campTotems: 'full', campAccents: true, campAccentLights: true,
+  baronGL: { waves: 3, chairGlow: true, camera: .22, strikeSparks: 2 }, // BH7: per-profile legendary Baron cinematic
   wormSmall: 1,                     // пакет 3: малый червь «Наездника» — доля частиц песка; 0 — без меша, только всплески FX
   arenaActive: 0,                   // шаг 6: потолок active-кадров в бою (0 — как fps.active); 30 — ступень low30,
   // Пакет 8: камера 3/4 из-за союзников. Пара [desktop, phone]; для LOW — чуть шире обзор.
@@ -35,14 +36,14 @@ const HIGH = {
 const PROFILES = {
   high: HIGH,
   med: { ...HIGH, dpr: { arena: [1.5, 1.25], hero: [1.75, 1.25], camp: [1.5, 1.25] }, msaa: 1, heroIdle: 'idle',
-    grain: false, chromatic: false, sharpen: false, dof: 'hero', ssao: false, shadowSize: 1024, heroShadow: [1024, 512], bake: true, glowSel: true, campTotems: 'simple', campAccents: true, campAccentLights: false, wormSmall: .5,
+    grain: false, chromatic: false, sharpen: false, dof: 'hero', ssao: false, shadowSize: 1024, heroShadow: [1024, 512], bake: true, glowSel: true, campTotems: 'simple', campAccents: true, campAccentLights: false, wormSmall: .5, baronGL: { waves: 3, chairGlow: true, camera: .12, strikeSparks: 1 },
     battleCamera: { x: [-16, -15], y: [13.5, 12], z: [19, 18], lookY: 1.3, fov: [35, 39] } },
 };
 // шаг 5: LOW — от MED вниз: без DoF и bloom, glow дешевле, тени 512 (PCF low), ниже dpr, пробники, сетка земли, частицы, кадр в покое
 PROFILES.low = { ...PROFILES.med, dpr: { arena: 1.25, hero: [1.5, 1], camp: 1.25 }, dof: false, bloom: false,
   glowRatio: [.35, .25], glowKernel: 16, shadowSize: 512, heroShadow: [512, 256], shadowQ: 'low',
   probe: { arena: 32, hero: 32, camp: 32 }, groundSeg: [100, 80], particles: .5,
-  fps: { active: 60, idle: 20, idleLow: 15, static: 0 }, campIdle: 'idleLow', campTotems: 'low', campAccents: false, campAccentLights: false, wormSmall: 0,
+  fps: { active: 60, idle: 20, idleLow: 15, static: 0 }, campIdle: 'idleLow', campTotems: 'low', campAccents: false, campAccentLights: false, wormSmall: 0, baronGL: { waves: 1, chairGlow: false, camera: 0, strikeSparks: 0 },
   battleCamera: { x: [-17, -16], y: [14, 12.5], z: [20, 19], lookY: 1.3, fov: [37, 42] } };
 // шаг 6: ступени auto; low30 — LOW с 30 fps в бою, только для авто (ручного выбора нет)
 PROFILES.low30 = { ...PROFILES.low, arenaActive: 30 };
