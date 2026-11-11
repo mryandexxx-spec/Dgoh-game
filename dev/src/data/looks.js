@@ -22,6 +22,6 @@ function sigil(fac, x, y, col) {
 
 const SKINS = [['#efcaa6', '#b98b68'], ['#d3a17b', '#93634a'], ['#f4d6b8', '#c79c79'], ['#bc8862', '#7a4d33'], ['#9a6a4a', '#5e3c28']];
 const OL = '#100a06';
-const FEM = new Set(['jessica', 'chani', 'mohiam', 'kynes']);
+const FEM = new Set(['jessica', 'chani', 'mohiam', 'kynes', 'margot']);
 
 export { LOOK, ghash, sigil, SKINS, OL, FEM };
