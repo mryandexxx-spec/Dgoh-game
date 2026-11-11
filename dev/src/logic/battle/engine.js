@@ -7,7 +7,7 @@ import { autoSk, dunGuard, dunShielded, leadBonus, pasMult, skLv } from './skill
 import { CH, MENTAT } from '../../data/chars.js';
 import { LEAD_MODS } from '../../data/skill-ups.js';
 import { FX } from '../../data/fx.js';
-import { horrorDamageFactor } from './horror.js';
+import { horrorDamageFactor, horrorSpeedFactor } from './horror.js';
 
 function mkRng(seed) {
   let a = seed >>> 0;
@@ -77,8 +77,8 @@ function ev(B, u, text, kind) { B.events.push({ uid: u.uid, text, kind }); }
 function nextActor(B) {
   const alive = living(B);
   let best = null, bestT = Infinity;
-  for (const u of alive) { const t = Math.max(0, 1000 - u.tm) / u.spd; if (t < bestT - 1e-9 || (Math.abs(t - bestT) < 1e-9 && u.spd > best.spd)) { bestT = t; best = u; } }
-  for (const u of alive) u.tm += u.spd * bestT;
+  for (const u of alive) { const t = Math.max(0, 1000 - u.tm) / (u.spd * horrorSpeedFactor(u)); if (t < bestT - 1e-9 || (Math.abs(t - bestT) < 1e-9 && u.spd > best.spd)) { bestT = t; best = u; } }
+  for (const u of alive) u.tm += u.spd * horrorSpeedFactor(u) * bestT;
   best.tm = 1000;
   return best;
 }
@@ -87,8 +87,8 @@ function previewOrder(B, n = 8) {
   const out = [];
   while (out.length < n && alive.length) {
     let best = null, bestT = Infinity;
-    for (const a of alive) { const t = Math.max(0, 1000 - a.tm) / a.u.spd; if (t < bestT) { bestT = t; best = a; } }
-    for (const a of alive) a.tm += a.u.spd * bestT;
+    for (const a of alive) { const t = Math.max(0, 1000 - a.tm) / (a.u.spd * horrorSpeedFactor(a.u)); if (t < bestT) { bestT = t; best = a; } }
+    for (const a of alive) a.tm += a.u.spd * horrorSpeedFactor(a.u) * bestT;
     best.tm = 0; out.push(best.u);
   }
   return out;
