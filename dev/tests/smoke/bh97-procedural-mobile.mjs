@@ -103,6 +103,51 @@ try {
   await browser.close();
   await server.close();
 }
+// 2D fallback is a separate browser process with WebGL deliberately disabled.
+// The same saved heroes must retain their normal cards and SVG figures.
+const fallbackBrowser = await puppeteer.launch({executablePath:chrome,headless:true,
+  args:['--no-sandbox','--disable-webgl','--disable-3d-apis']});
+const fallbackServer = await serve(path.dirname(html));
+try {
+  for(const [width,height] of [[844,390],[667,375]]){
+    const page=await fallbackBrowser.newPage(),errors=[];
+    page.on('pageerror',e=>errors.push(e.message));
+    await page.setViewport({width,height,deviceScaleFactor:1,isMobile:true,hasTouch:true,isLandscape:true});
+    await page.evaluateOnNewDocument(save=>{
+      localStorage.clear();
+      localStorage.setItem('dune-goh-v1',save);
+      localStorage.setItem('dune-cine-off','true');
+      try{Object.defineProperty(navigator,'serviceWorker',{value:undefined});}catch{}
+    },fixture);
+    await page.goto(fallbackServer.url(path.basename(html)),{waitUntil:'load',timeout:120000});
+    const verdict=await page.evaluate(()=>{
+      closeInfo(true);closeOverlay();view='squad';render();
+      const count=document.querySelectorAll('#rgrid [data-hc]').length;
+      const cards=[];
+      for(const id of ['margot','yue']){
+        openDetail(id);
+        const card=document.querySelector('#overlay .hc');
+        cards.push({id,shared:card?.dataset.cid===id,
+          svg:!!document.querySelector('#overlay .hcfig svg'),
+          locked:card?.classList.contains('locked')});
+      }
+      return {count,cards};
+    });
+    assert.equal(verdict.count,26);
+    for(const card of verdict.cards) {
+      assert.equal(card.shared,true);
+      assert.equal(card.svg,true,card.id+' renders SVG without WebGL');
+      assert.equal(card.locked,true);
+    }
+    assert.deepEqual(errors,[],'2D fallback page errors');
+    await page.screenshot({path:path.join(out,`${width}x${height}-2d-fallback.png`)});
+    await page.close();
+    console.log('PASS BH9.8 2D fallback',width+'x'+height);
+  }
+} finally {
+  await fallbackBrowser.close();
+  await fallbackServer.close();
+}
 assert.equal(results.length,4);
 fs.writeFileSync(path.join(out,'manifest.json'),JSON.stringify(results,null,2));
-console.log('PASS BH9.8 procedural iPhone preview MED/LOW, 4 resolutions/profiles, 2 heroes, shared cards and live battle');
+console.log('PASS BH9.8 procedural iPhone preview MED/LOW, 4 resolution/profile cases, both heroes, shared cards, live battle and 2D fallback');
