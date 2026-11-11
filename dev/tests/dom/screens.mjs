@@ -162,7 +162,9 @@ else {
   if (!isDeepStrictEqual(want, got)) {
     const changed = want.screens.filter((v, i) => !isDeepStrictEqual(v, got.screens[i])).map(x => x.name);
     console.error('Unapproved golden screen differences:', changed.join(', '));
-    for (const name of changed.slice(0, 2)) {
+    // Report each changed screen independently so owner can approve only intended UI
+    // deltas; do not rewrite or normalize golden snapshots automatically.
+    for (const name of changed) {
       const expected = want.screens.find(x => x.name === name), actual = got.screens.find(x => x.name === name);
       for (const key of ['header','view','overlay','overlay2','bodyClass','errors']) {
         if (isDeepStrictEqual(expected[key],actual[key])) continue;
