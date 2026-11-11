@@ -10,6 +10,11 @@ assert.equal(CH.baron_legend, undefined, 'future legend must not be live in CHAR
 assert.equal(BARON_LEGEND_KIT.gl.n, BARON_LEGEND_ABILITIES.gl.name);
 assert.equal(BARON_LEGEND_KIT.ult.n, BARON_LEGEND_ABILITIES.powerful.name);
 assert.equal(BARON_LEGEND_KIT.basic.n, 'Приказ Барона');
+const nativeLayout = ['basic', 'special', 'ult', 'gl'];
+assert.deepEqual(nativeLayout.filter(k => CH.muaddib[k]), nativeLayout, 'MuadDib owns all four native slots');
+assert.deepEqual(nativeLayout.filter(k => BARON_LEGEND_KIT[k]), nativeLayout, 'Baron reuses those slots');
+assert.notEqual(CH.muaddib.gl.kind, BARON_LEGEND_KIT.gl.kind, 'GL abilities are independent');
+assert.notEqual(CH.muaddib.ult.n, BARON_LEGEND_KIT.ult.n, 'Regular third abilities are independent');
 assert.equal(BARON_LEGEND_KIT.special.cd0, 3);
 assert.equal(BARON_LEGEND_KIT.ult.cd0, 4);
 assert.equal(BARON_LEGEND_KIT.powerful, undefined, 'must reuse native MuadDib regular ult slot');
