@@ -106,6 +106,29 @@ try {
         a.scene.render();
       });
       await page.screenshot({path:path.join(out,`${w}x${h}-${q}-detail.png`)});
+      if(w===844&&q==='med'){
+        // Diagnostic ONLY: isolate the source model and throne from additive
+        // battle overlays. Restore everything after taking the frame.
+        await page.evaluate(()=>{
+          const a=BT.arena,o=__bh8.caster;
+          const off=[o.bubble,o.pool,o.ring,...(a.baronGL?.chair?.getChildMeshes()||[]).filter(m=>m.material?.alpha<1)].filter(Boolean);
+          window.__bh8off=off.filter(x=>x.isEnabled());
+          for(const m of __bh8off)m.setEnabled(false);
+          window.__bh8glow=a.glow?.isEnabled;
+          if(a.glow)a.glow.isEnabled=false;
+          window.__bh8bloom=a.pipe?.bloomEnabled;
+          if(a.pipe)a.pipe.bloomEnabled=false;
+          a.scene.render();
+        });
+        await page.screenshot({path:path.join(out,`844x390-med-clean-detail.png`)});
+        await page.evaluate(()=>{
+          const a=BT.arena;
+          for(const m of __bh8off||[])m.setEnabled(true);
+          if(a.glow)a.glow.isEnabled=__bh8glow;
+          if(a.pipe)a.pipe.bloomEnabled=__bh8bloom;
+          a.scene.render();
+        });
+      }
     }
     all.push({w,h,q,name,...stats});
     assert(stats.frame>0,'real WebGL frame required: '+JSON.stringify(stats));
