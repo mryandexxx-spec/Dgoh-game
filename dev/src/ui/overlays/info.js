@@ -38,10 +38,10 @@ const goLeg = (k, label) => `<button class="btn mini" data-jkey="${k}">${label}<
 const navRow = (icon, title, text, btns) => `<div class="src"><div class="srci">${icon}</div><div class="srct"><b>${title}</b><span>${text}</span></div>${btns ? `<div class="srca">${btns}</div>` : ''}</div>`;
 const wormIco = () => `<svg viewBox="0 0 24 24" style="color:var(--worm)">${SPOT_ICONS.worm}</svg>`;
 const go = (v, label) => `<button class="btn mini" data-goto="${v}">${label}</button>`;
-function itemSourceRows(it) {
-  const sources = gearSources(it.id);
+function itemSourceRows(it, fragmentId = null, type = 'fragment') {
+  const sources = gearSources(fragmentId || it.id, type);
   const missions = pickSrc(sources.filter(s => s.type === 'mission').map(s => s.id));
-  const rows = missions.map(i => campRow(i, `шанс ≈${Math.round(nodeChance(i) * 100)}% за бой`));
+  const rows = missions.map(i => { const src = sources.find(x => x.type === 'mission' && x.id === i); return campRow(i, `шанс ${(src.chance * 100).toLocaleString('ru-RU',{maximumFractionDigits:2})}% за бой`); });
   const shop = sources.find(s => s.type === 'sietch');
   if (shop) rows.push(navRow(ic('teeth'), 'Лавка сиетча',
     `${amt('teeth', shop.price)} за фрагмент · у вас ${amt('teeth', S.teeth)}`,
