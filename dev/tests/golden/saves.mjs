@@ -37,6 +37,11 @@ const historical = structuredClone(out);
 for (const entry of historical.saves) {
   for (const stage of ['fillSave', 'start']) {
     const roster = entry[stage]?.roster;
+    // With no stored save loadSave() legitimately returns null; start() creates a new one.
+    if (entry.file === '(нет сохранения → newSave)' && stage === 'fillSave') {
+      assert.equal(entry[stage], null, 'missing save stays null until start');
+      continue;
+    }
     assert.ok(roster, `${entry.file}: ${stage} roster present`);
     for (const id of ['margot', 'yue']) {
       const hero = roster[id];
