@@ -91,7 +91,7 @@ function openItem(cid, k, partId = null) {
     <div class="e3grid"><div class="e3left">
       ${part ? '' : `<p class="chap">Характеристики</p><div class="e3stats">${itemBonusHtml(it)}</div>`}
       <p class="chap">Рецепт</p><div class="e3materials">${!part && complete ? `<div class="e3mat"><b>Готовых предметов</b><span class="okc">${complete}</span></div>` : ''}${requirements}</div>
-      <div class="e3cost"><span>Сборка</span><b class="${S.solari < cost.sol ? 'lackc' : ''}">${amt('sol', cost.sol)}</b><b class="${S.plast < cost.pl ? 'lackc' : ''}">${amt('pl', cost.pl)}</b></div>
+      <div class="e3cost"><span>${complete && !part ? 'Готовый предмет · установка бесплатна' : 'Сборка'}</span>${complete && !part ? '' : `<b class="${S.solari < cost.sol ? 'lackc' : ''}">${amt('sol', cost.sol)}</b><b class="${S.plast < cost.pl ? 'lackc' : ''}">${amt('pl', cost.pl)}</b>`}</div>
       <div class="acts">${action}<button class="btn" data-gearfind="1">Найти</button></div>
     </div><div class="e3right"><p class="chap">Можно получить в</p>
       <div class="srcs">${rows.join('') || '<p class="sub">Источников готового предмета нет — требуется сборка.</p>'}</div>
