@@ -22,7 +22,7 @@ const tuning = index => BARON_BH9_ENCOUNTERS.stages[index].waves.map(w => w.map(
   id, lvl:85, stars:7, gear:13, relic:4, pow:1,
 })));
 assert.equal(prepareBaronBH9Battle(save, 4, {heroDefs:extra}).reason, 'locked');
-assert.equal(prepareBaronBH9Battle(save, 3).ok, false);
+assert.equal(prepareBaronBH9Battle(save, 3).ok, true, 'default provisional tuning must prepare stage IV');
 const missing = prepareBaronBH9Battle(save, 2, {enemyProgress:tuning(2)});
 assert.equal(missing.reason, 'hero-kit');
 assert.deepEqual(missing.missing, ['yue']);
