@@ -8,6 +8,7 @@ import { CH, MENTAT } from '../../data/chars.js';
 import { LEAD_MODS } from '../../data/skill-ups.js';
 import { FX } from '../../data/fx.js';
 import { horrorDamageFactor, horrorSpeedFactor } from './horror.js';
+import { canApplyStatus, consumeForesight, markedDamageFactor, markHouseVictim } from './baron-mechanics.js';
 
 function mkRng(seed) {
   let a = seed >>> 0;
@@ -150,8 +151,11 @@ function hit(B, att, tgt, dt, m, opts = {}) {
   (B.shots ||= []).push({ a: att.uid, t: tgt.uid, dt });
   if (tgt.glOn && !tgt.glUsed) tgt.ultM = Math.min(100, tgt.ultM + 6);
   const eva = tgt.eva + (tgt.fx.evaUp ? .3 : 0) + (dt === 'blade' && tgt.def.evaBlade ? tgt.def.evaBlade : 0);
+  if (consumeForesight(tgt, dt)) { ev(B, tgt, 'Предвидение', 'miss'); log(B, `${tgt.def.sn} предвидит удар ${att.def.sn}.`, 'ctrl'); return false; }
   if (dt !== 'voice' && dt !== 'poison' && B.rng() < eva) { ev(B, tgt, 'Уклон', 'miss'); log(B, `${tgt.def.sn} уклоняется от атаки ${att.def.sn}.`); return false; }
-  let d = att.dmg * m * (0.9 + 0.2 * B.rng()) * (1 + att.dmgBonus) * horrorDamageFactor(att);
+  let d = att.dmg * m * (0.9 + 0.2 * B.rng()) * (1 + att.dmgBonus) * horrorDamageFactor(att) * markedDamageFactor(tgt,att);
+  if (att.fx.attackUp) d *= 1.2;
+  if (att.fx.damageDown) d *= .8;
   if (B.leader[att.side] === 'baron' && has(att, 'hark') && tgt.fx.poison) d *= 1.4;
   if (att.def.fallenBonus) d *= 1 + att.def.fallenBonus * B.units.filter(x => x.side === att.side && !x.alive).length;
   if (opts.bonusDebuffed && isDebuffed(tgt)) d *= 1.5;
@@ -203,7 +207,8 @@ function resist(B, att, tgt, k) {
   return B.rng() >= ch;
 }
 function applyFx(B, att, tgt, k, n, chance = 1) {
-  if (!tgt.alive) return;
+  if (!tgt.alive || !FX[k]) return;
+  if (!canApplyStatus(tgt, att, Boolean(FX[k].bad))) return;
   if (FX[k].bad) {
     if (B.rng() >= chance) return;
     if (resist(B, att, tgt, k)) { ev(B, tgt, 'Сопр.', 'miss'); log(B, `${tgt.def.sn} сопротивляется эффекту «${FX[k].n}».`); return; }
