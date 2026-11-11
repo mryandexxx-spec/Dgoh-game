@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BH9 · Сюжетные бои Барона — макет 844 и 667</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#11161b;color:#ead9b9;font:12px system-ui,sans-serif}main{max-width:880px;margin:auto;padding:18px}h1{font-size:20px;margin:0 0 6px}p{line-height:1.5}small,.muted{color:#bdab91}h2{color:#d8aa73;font-size:14px;margin:14px 0 7px}.frame{background:radial-gradient(circle at 55% 5%,#49332b,#1b2026 72%);border:1px solid #756047;border-radius:12px;margin:8px 0 18px;padding:10px;overflow:hidden}.wide{width:844px;height:390px}.narrow{width:667px;height:375px}.head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #75543d;padding:3px 5px 10px}.head strong{font-size:17px}.columns{display:grid;grid-template-columns:28% 42% 30%;gap:7px;height:calc(100% - 46px);padding-top:8px}.panel{background:#24262bcf;border:1px solid #6a5746;border-radius:8px;padding:8px;overflow:hidden;min-width:0}.panel h3{font-size:12px;color:#d4a36f;margin:0 0 8px}.stages{display:grid;gap:4px}.stage{display:flex;align-items:center;gap:6px;padding:7px 5px;background:#332d2b;border:1px solid #5c4c3b;border-radius:5px;font-size:11px}.stage.selected{border-color:#d4a36f;background:#4a392e}.stage b{font-size:13px;color:#e6c18d}.pill{background:#514437;border:1px solid #9b774f;border-radius:5px;padding:5px 8px;text-align:center;margin-top:7px}.hero{background:#3c3632;border-radius:5px;padding:5px;margin:4px 0}.hero span{float:right;color:#cca671}.hint{color:#c9b69e;font-size:10px;line-height:1.5}.warning{border:1px dashed #b68f58;padding:6px;border-radius:5px;color:#e0c08d;font-size:10px;margin-top:8px}.narrow .columns{grid-template-columns:28% 42% 30%;gap:5px}.narrow .panel{padding:5px}.narrow .stage{padding:5px 3px;font-size:10px}.narrow .head strong{font-size:14px}.narrow .hero{font-size:10px;padding:4px}
+</style></head><body><main>
+<h1>BH9 · Пять боёв «Восхождение Барона»</h1>
+<p>Интерактивности и игровой логики нет. Это статический макет **на согласование**, не действующий экран. Союзники фиксированы и утверждены; противники и награды — предложения. Блокировка до выполнения десяти требований сохраняется.</p>
+<div id="screens"></div>
+<script>
+const stages=[
+ ['Тайный союз',['Барон','Питер','Фейд','Раббан','Марго'],['Хават','Гурни','Дункан','Лето','Пол']],
+ ['Печать императора',['Шаддам','Фенринг','Марго','Мохиам','Сардаукар'],['Лето','Хават','Джессика','Гурни','Дункан']],
+ ['Цена предательства',['Юэ','Питер','Барон','Мохиам','Фенринг'],['Лето','Джессика','Хават','Дункан','Гурни']],
+ ['Ночь над Арракином',['Барон','Фейд','Раббан','Питер','Сардаукар'],['Дункан','Гурни','Хават','Лето','Пол']],
+ ['Триумф Барона',['Барон','Фейд','Раббан','Шаддам','Фенринг'],['Лето','Дункан','Гурни','Хават','Джессика']]
+];
+for(const [w,h] of [[844,390],[667,375]]) {
+const frame=document.createElement('section');frame.className='frame '+(w===844?'wide':'narrow');
+const index=3, s=stages[index];
+frame.innerHTML='<div class="head"><span>‹ ЛЕГЕНДЫ</span><strong>ВОСХОЖДЕНИЕ БАРОНА</strong><span>0/5 · ЗАКРЫТО</span></div>'+
+'<div class="columns"><div class="panel"><h3>ПЯТЬ СЮЖЕТНЫХ ЭТАПОВ</h3><div class="stages">'+
+stages.map((t,i)=>'<div class="stage '+(i===index?'selected':'')+'"><b>'+('0'+(i+1))+'</b><span>'+t[0]+'</span></div>').join('')+
+'</div><div class="pill">Все 10 требований обязательны</div></div>'+
+'<div class="panel"><h3>IV · '+s[0]+'</h3><div class="hint">Сюжетно фиксированный союзный отряд — утверждено</div>'+
+s[1].map((name,i)=>'<div class="hero">'+(i+1)+'. '+name+'<span>7★ · XIII</span></div>').join('')+
+'<div class="warning">Бой недоступен до выполнения всех требований. Марго и Юэ не имеют источника получения.</div></div>'+
+'<div class="panel"><h3>ПРОТИВНИКИ · ПРОЕКТ</h3>'+s[2].map((name,i)=>'<div class="hero">'+(i+1)+'. '+name+'</div>').join('')+
+'<div class="hint">Волны, сложность и награды ещё не утверждены.</div><div class="pill">🔒 НАЧАТЬ БОЙ</div></div></div>';
+document.getElementById('screens').appendChild(Object.assign(document.createElement('h2'),{textContent:'iPhone '+w+' × '+h}));document.getElementById('screens').appendChild(frame);
+}
+</script></main></body></html>
