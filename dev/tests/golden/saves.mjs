@@ -45,6 +45,7 @@ for (const entry of historical.saves) {
       assert.equal(hero.shards, 0, `${entry.file}: ${id} has no gifted shards`);
       assert.equal(hero.lvl, 1, `${entry.file}: ${id} has default level`);
       assert.equal(hero.gear, 1, `${entry.file}: ${id} has default gear`);
+      assert.deepEqual(hero.eq, [false, false, false, false, false, false], `${entry.file}: ${id} has no equipped slots`);
       delete roster[id];
     }
   }
