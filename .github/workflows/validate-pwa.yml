@@ -40,6 +40,7 @@ jobs:
       - run: node tests/baron-bh9-encounters.mjs
       - run: node tests/baron-bh9-battle.mjs
       - run: node tests/baron-bh9-event.mjs
+      - run: node tests/baron-bh99-public-journey.mjs
       - run: node tests/baron-bh9-hero-kits.mjs
       - run: node tests/baron-bh94-story-events.mjs
       - run: node tests/baron-bh95-integration.mjs
