@@ -22,6 +22,7 @@ import { FACTIONS, ROLES } from '../../data/fx.js';
 import { amt, fmt, ic } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
 import { itemIcon, starStr, thumb } from '../common.js';
+import { campaignMapPreset } from '../../data/campaign-map-presets.js';
 import { RING_RATE } from '../../logic/rewards.js';
 import { gearSources } from '../../logic/gear-sources.js';
 import { MEM_MATS, SIGNAL_NODES } from '../../data/memory-scrap.js';
@@ -30,8 +31,9 @@ import { MEM_MATS, SIGNAL_NODES } from '../../data/memory-scrap.js';
 function campRow(i, note) {
   const n = NODES[i], open = nodeOpen(i), three = S.cleared[i] === 3, en = nodeEn(i), c = nodeCost(i);
   const simB = kk => `<button class="btn mini ${enGet(en) >= kk * c ? '' : 'lack'}" data-xsim="${i}:${kk}">×${kk}<small>${amt(en, kk * c)}</small></button>`;
+  const mapB = campaignMapPreset(n.camp,n.c) ? `<button class="btn mini" data-c20farm="${i}">На карте</button>` : '';
   return `<div class="src">${thumb(NODE_SCENES[i], (n.c + 1) + '-' + (n.m + 1))}<div class="srct"><b>${nodeTitle(i)}</b><span>${note} · ${amt(en, c)} за бой${S.cleared[i] ? ' · ' + starStr(S.cleared[i], 3) : ''}</span></div>
-    <div class="srca">${!open ? `<span class="lockd">Сначала пройдите предыдущую миссию</span>` : `<button class="btn go mini ${enGet(en) >= c ? '' : 'lack'}" data-node="${i}">В бой</button>${three ? [1, 5, 10].map(simB).join('') : '<span class="lockd">симуляция после 3★</span>'}`}</div></div>`;
+    <div class="srca">${mapB}${!open ? `<span class="lockd">Сначала пройдите предыдущую миссию</span>` : `<button class="btn go mini ${enGet(en) >= c ? '' : 'lack'}" data-node="${i}">В бой</button>${three ? [1, 5, 10].map(simB).join('') : '<span class="lockd">симуляция после 3★</span>'}`}</div></div>`;
 }
 const pickSrc = list => { const sc = i => S.cleared[i] === 3 ? 0 : nodeOpen(i) ? 1 : 2 + i / 1000; return list.slice().sort((a, b) => sc(a) - sc(b)).slice(0, 5); };
 const goLeg = (k, label) => `<button class="btn mini" data-jkey="${k}">${label}</button>`;
