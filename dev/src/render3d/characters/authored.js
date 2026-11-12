@@ -145,6 +145,7 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
     // Mixamo root motion is handled by the game's actor movement. Preserve only
     // the pelvis height change, not its X/Z travel (which causes sliding).
     root._clipNames = { Idle: 'Idle_11', Attack: 'Right_Hand_Sword_Slash',
+      special: 'Charged_Spell_Cast', ult: 'mage_soell_cast_1',
       Hit: 'Stand_Dodge', Death: 'Charged_Ground_Slam' };
     root._clipRest = Object.fromEntries(D.joints.map(([nm, p, , q, scale]) =>
       [nm, { node: N[nm], p: p.slice(), q: (q || [0, 0, 0, 1]).slice(), s: (scale || [1, 1, 1]).slice() }]));
@@ -161,7 +162,14 @@ function poseModelClip(o, now, t, sp, stage) {
   if (o.dead && now >= o.deathT) { name = 'Death'; u = Math.min(1, (now - o.deathT) / 950); }
   else if (o.hitT && now >= o.hitT && now - o.hitT < 340 / Math.min(sp, 2)) {
     name = 'Hit'; u = (now - o.hitT) / (340 / Math.min(sp, 2));
-  } else if (o.act) { name = 'Attack'; u = Math.max(0, Math.min(1, (now - o.act.t0) / o.act.dur)); }
+  } else if (o.act) {
+    const action = o.act;
+    // The ability object (ab) is the authoritative battle action descriptor.
+    // Existing heroes without a v5 clip map retain their Attack animation.
+    name = names.special && action.ab === o.def?.special ? 'special'
+      : names.ult && (action.ab === o.def?.ult || action.ab === o.def?.gl) ? 'ult' : 'Attack';
+    u = Math.max(0, Math.min(1, (now - action.t0) / action.dur));
+  }
   const clipName = names[name] || name, clip = clips[clipName]; if (!clip) return;
   // Reset source bind transforms at transitions: some clips omit channels.
   // Otherwise a previous action can leave an arm / pelvis in the wrong pose.
