@@ -12,6 +12,7 @@ let HAS3D = !!B3 && HAS_GL;
 const B3_SUBS = [];
 function onB3(fn) { if (HAS3D) fn(); else B3_SUBS.push(fn); }
 let B3_P = null;
+const b3LoadStatus = () => !HAS_GL ? 'unavailable' : HAS3D ? 'ready' : B3_P ? 'loading' : 'idle';
 const B3_PRE = [];   // Опциональные 3D-ассеты: не должны удерживать сам движок.
 function b3Pre(fn) { B3_PRE.push(fn); }
 // Safari/PWA can leave an asset fetch or cached script pending indefinitely.
@@ -101,4 +102,4 @@ function cvSize(cv, fresh) {
   return s;
 }
 
-export { B3, HAS3D, HAS_GL, loadB3, onB3, b3Pre, ENV3, SLOT3, cvSize };
+export { B3, HAS3D, HAS_GL, loadB3, onB3, b3Pre, b3LoadStatus, ENV3, SLOT3, cvSize };
