@@ -171,7 +171,9 @@ class CampaignMapScene extends GameScene {
   // Per-pixel calibration uses the ACTUAL canvas CSS height and camera FOV;
   // otherwise the same finger movement differs wildly between iPhone sizes.
   panPixels(dx,dy) {
-    const delta=campaignPanDelta(dx,dy,{
+    // Physical iPhone feedback v99: reverse the delivered drag behavior on both
+    // axes at the gesture boundary. Keep the existing pan speed and camera math.
+    const delta=campaignPanDelta(-dx,-dy,{
       alpha:this.alpha,beta:this.beta,radius:this.radius,
       fov:this.cam.fov,height:this.stageHeight||this.cv.clientHeight||1,
     });
