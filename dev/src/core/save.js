@@ -23,7 +23,7 @@ function fillSave(s) {
   s.folio ??= 10; s.seal ??= 0; s.wol ??= 0; s.seenDlg ??= {}; s.skipDlg ??= false; s.sealBuy ??= { d: '', n: 0 }; s.sealClaim ??= {};
   for (const id in s.roster) s.roster[id].sk ??= { basic: 1, special: 1, ult: 1, passive: 1, leader: 1 };
   s.cry ??= 200; s.cryClaim ??= {}; s.refills ??= { d: '', n: 0 };
-  s.inv ??= {}; s.gearParts ??= {}; for (const id in s.roster) s.roster[id].eq ??= [false, false, false, false, false, false];
+  s.inv ??= {}; s.gearParts ??= {}; s.gearOwned ??= {}; for (const id in s.roster) s.roster[id].eq ??= [false, false, false, false, false, false];
   // Однократная миграция Голосов предков в Платы Икса. Старые уровни ДП не меняются.
   if (!s.memoryEconomyV2) { s.ix_plate = (s.ix_plate || 0) + (s.core || 0); s.core = 0; s.memoryEconomyV2 = 1; }
   for (const k of Object.keys(MEM_MATS)) s[k] ??= 0;
