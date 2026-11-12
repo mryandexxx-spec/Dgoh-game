@@ -1,0 +1,74 @@
+[
+  {
+    "name": "Running",
+    "channels": 192,
+    "paths": {
+      "translation": 64,
+      "rotation": 64,
+      "scale": 64
+    }
+  },
+  {
+    "name": "Walking",
+    "channels": 192,
+    "paths": {
+      "translation": 64,
+      "rotation": 64,
+      "scale": 64
+    }
+  },
+  {
+    "name": "Charged_Ground_Slam",
+    "channels": 192,
+    "paths": {
+      "translation": 64,
+      "rotation": 64,
+      "scale": 64
+    }
+  },
+  {
+    "name": "Charged_Spell_Cast",
+    "channels": 192,
+    "paths": {
+      "translation": 64,
+      "rotation": 64,
+      "scale": 64
+    }
+  },
+  {
+    "name": "Idle_11",
+    "channels": 192,
+    "paths": {
+      "translation": 64,
+      "rotation": 64,
+      "scale": 64
+    }
+  },
+  {
+    "name": "Right_Hand_Sword_Slash",
+    "channels": 192,
+    "paths": {
+      "translation": 64,
+      "rotation": 64,
+      "scale": 64
+    }
+  },
+  {
+    "name": "Stand_Dodge",
+    "channels": 192,
+    "paths": {
+      "translation": 64,
+      "rotation": 64,
+      "scale": 64
+    }
+  },
+  {
+    "name": "mage_soell_cast_1",
+    "channels": 192,
+    "paths": {
+      "translation": 64,
+      "rotation": 64,
+      "scale": 64
+    }
+  }
+]

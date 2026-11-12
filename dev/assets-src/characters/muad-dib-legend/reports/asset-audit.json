@@ -1,0 +1,92 @@
+{
+  "status": "STAGING_NOT_RUNTIME_READY",
+  "source": "Meshy + Mixamo user-supplied",
+  "identity": "muad_dib legendary; must not overwrite paul",
+  "mobile_glb_bytes": 4156588,
+  "master_glb_bytes": 6346868,
+  "triangle_count": 18658,
+  "skin_count": 1,
+  "bones": 66,
+  "animations": [
+    {
+      "name": "Running",
+      "channels": 192,
+      "paths": {
+        "translation": 64,
+        "rotation": 64,
+        "scale": 64
+      }
+    },
+    {
+      "name": "Walking",
+      "channels": 192,
+      "paths": {
+        "translation": 64,
+        "rotation": 64,
+        "scale": 64
+      }
+    },
+    {
+      "name": "Charged_Ground_Slam",
+      "channels": 192,
+      "paths": {
+        "translation": 64,
+        "rotation": 64,
+        "scale": 64
+      }
+    },
+    {
+      "name": "Charged_Spell_Cast",
+      "channels": 192,
+      "paths": {
+        "translation": 64,
+        "rotation": 64,
+        "scale": 64
+      }
+    },
+    {
+      "name": "Idle_11",
+      "channels": 192,
+      "paths": {
+        "translation": 64,
+        "rotation": 64,
+        "scale": 64
+      }
+    },
+    {
+      "name": "Right_Hand_Sword_Slash",
+      "channels": 192,
+      "paths": {
+        "translation": 64,
+        "rotation": 64,
+        "scale": 64
+      }
+    },
+    {
+      "name": "Stand_Dodge",
+      "channels": 192,
+      "paths": {
+        "translation": 64,
+        "rotation": 64,
+        "scale": 64
+      }
+    },
+    {
+      "name": "mage_soell_cast_1",
+      "channels": 192,
+      "paths": {
+        "translation": 64,
+        "rotation": 64,
+        "scale": 64
+      }
+    }
+  ],
+  "materials": 1,
+  "textures": 1,
+  "runtime_blockers": [
+    "DGM converter assumes 18-bone translation-only bind; Mixamo has 66 bones with rotational bind transforms",
+    "DGM current runtime does not process translation and scale animation channels",
+    "No validated DGM1 export, KTX2, Babylon renderer smoke or iPhone quality signoff"
+  ],
+  "sha256": "b22111665c2b65ca1055fe94c0ef817025a056794e1a26a4b0063577cfd58546"
+}

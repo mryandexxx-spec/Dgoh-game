@@ -53,6 +53,9 @@ jobs:
       - run: node tests/baron-staged-kit.mjs
       - run: node tests/baron-roster-integration.mjs
       - run: node tests/baron-legend-model-asset.mjs
+      - run: node tests/muad-dib-asset.mjs
+      - run: node tests/muad-dib-skinning.mjs
+      - run: node tests/muad-dib-babylon.mjs dist/pwa/index.html
       - run: node tests/baron-legend-animation.mjs
       - run: node tests/baron-legend-skinning.mjs dist/pwa/index.html
       - run: node tests/baron-legend-cinematic.mjs dist/pwa/index.html
@@ -137,6 +140,8 @@ jobs:
           path: dev/dist/campaign20-shots/
           if-no-files-found: ignore
           retention-days: 14
+      - name: Muad Dib legendary mobile card 844/667 MED/LOW
+        run: node tests/smoke/muad-dib.mjs dist/pwa/index.html
       - run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
       - run: node tests/smoke/memory-ix-dom.mjs dist/pwa/index.html
       - run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
@@ -146,6 +151,14 @@ jobs:
         run: node tests/smoke/young-baron.mjs dist/pwa/index.html ../index.html
       - name: PWA update and offline assets
         run: node tests/smoke/sw.mjs .. dist/pwa
+      - name: Upload Muad Dib 3D visual review screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-muaddib-${{ github.run_number }}
+          path: dev/dist/muad-dib-shots/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Upload Young Baron visual regression screenshots
         if: always()
         uses: actions/upload-artifact@v4
