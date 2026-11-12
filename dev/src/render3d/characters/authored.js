@@ -139,8 +139,14 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
       values: new Float32Array(b64bytes(tr.values).buffer), componentCount: tr.componentCount
     } : { node: N[tr.joint], times: tr.times, rotations: tr.rotations.map(q => new B3.Quaternion(...q)) })
   }])) : null;
-  if (localTrs) root._clipNames = { Idle: 'Idle_11', Attack: 'Right_Hand_Sword_Slash',
-    Hit: 'Stand_Dodge', Death: 'Charged_Ground_Slam' };
+  if (localTrs) {
+    // Mixamo root motion is handled by the game's actor movement. Preserve only
+    // the pelvis height change, not its X/Z travel (which causes sliding).
+    root._clipNames = { Idle: 'Idle_11', Attack: 'Right_Hand_Sword_Slash',
+      Hit: 'Stand_Dodge', Death: 'Charged_Ground_Slam' };
+    root._clipRest = Object.fromEntries(D.joints.map(([nm, p, , q, scale]) =>
+      [nm, { node: N[nm], p: p.slice(), q: (q || [0, 0, 0, 1]).slice(), s: (scale || [1, 1, 1]).slice() }]));
+  }
   if (N.capeA) root._capeB = [N.capeA, N.capeB, N.capeC];
   return { root, body, hips: N.hips, spine: N.spine, head: N.head, R, Lf, LL, LR, skirt: null, wpn: w, mats, h: 1.95 * sc * tl, melee: def.basic.dt === 'blade', hipY0: N.hips.position.y, anim: ANIM3[def.id] || null, capeB: root._capeB || null, stance: def.role === 'tank' && !X.noShield ? 'shield' : def.basic.dt === 'blade' ? 'guard' : 'open', float: 0 };
 }); }
@@ -154,7 +160,18 @@ function poseModelClip(o, now, t, sp, stage) {
   else if (o.hitT && now >= o.hitT && now - o.hitT < 340 / Math.min(sp, 2)) {
     name = 'Hit'; u = (now - o.hitT) / (340 / Math.min(sp, 2));
   } else if (o.act) { name = 'Attack'; u = Math.max(0, Math.min(1, (now - o.act.t0) / o.act.dur)); }
-  const clip = clips[names[name] || name]; if (!clip) return;
+  const clipName = names[name] || name, clip = clips[clipName]; if (!clip) return;
+  // Reset source bind transforms at transitions: some clips omit channels.
+  // Otherwise a previous action can leave an arm / pelvis in the wrong pose.
+  const rest = o.root._clipRest;
+  if (rest && o.root._lastClip !== clipName) {
+    for (const { node, p, q, s } of Object.values(rest)) {
+      node.position.copyFromFloats(p[0], p[1], p[2]);
+      node.scaling.copyFromFloats(s[0], s[1], s[2]);
+      node.rotationQuaternion.copyFromFloats(q[0], q[1], q[2], q[3]);
+    }
+    o.root._lastClip = clipName;
+  }
   const time = u * clip.duration;
   for (const tr of clip.tracks) {
     let i = 0; while (i < tr.times.length - 2 && time > tr.times[i + 1]) i++;
@@ -170,7 +187,12 @@ function poseModelClip(o, now, t, sp, stage) {
         B3.Quaternion.SlerpToRef(qa, qb, f, q); q.normalize();
       } else {
         const dest = tr.path === 'translation' ? n.position : n.scaling;
-        dest.set(v[a] + (v[b] - v[a]) * f, v[a + 1] + (v[b + 1] - v[a + 1]) * f, v[a + 2] + (v[b + 2] - v[a + 2]) * f);
+        const x = v[a] + (v[b] - v[a]) * f, y = v[a + 1] + (v[b + 1] - v[a + 1]) * f,
+          z = v[a + 2] + (v[b + 2] - v[a + 2]) * f;
+        if (rest && tr.path === 'translation' && n === o.hips) {
+          const base = rest.hips.p;
+          dest.set(base[0], y, base[2]); // gameplay controls horizontal movement
+        } else dest.set(x, y, z);
       }
     } else {
       const q = n.rotationQuaternion || (n.rotationQuaternion = B3.Quaternion.Identity());
@@ -180,7 +202,7 @@ function poseModelClip(o, now, t, sp, stage) {
   if (name === 'Death') {
     // The clip supplies its own leg/pelvis pose: don't add the generic squat.
     // Retain a smaller whole-body fall to bring this standing source clip down.
-    o.hips.position.y = o.hipY0;
+    if (!rest) o.hips.position.y = o.hipY0;
     o.body.rotation.x *= .6;
     const k = Math.max(0, Math.min(1, (u - .7) / .3));
     o.body.position.y = -.1 * k * k * (3 - 2 * k);
