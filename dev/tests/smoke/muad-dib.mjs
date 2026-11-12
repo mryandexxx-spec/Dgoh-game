@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer-core';
-import { serve } from './lib/serve.mjs';
+import { serve } from '../lib/serve.mjs';
 const html=path.resolve(process.argv[2]||'dist/pwa/index.html');
 const out=path.resolve('dist/muad-dib-shots');fs.mkdirSync(out,{recursive:true});
 const save=fs.readFileSync('tests/fixtures/saves/03-late.json','utf8');
