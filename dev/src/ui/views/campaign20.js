@@ -33,7 +33,7 @@ export function campaign20Start() { page='home';legacy=false;selected=null;detai
 function homeHtml(){
   const completed=ck=>campNodes(ck).filter(i=>!!S.cleared[i]).length;
   return `<div class="c20 c20-home">
-    <div class="c20-head"><span class="c20-crumb">АРХИВ ИМПЕРИУМА / КАМПАНИИ</span></div>
+    <div class="c20-head"><button data-v="lobby">‹ Лагерь</button><span class="c20-crumb">АРХИВ ИМПЕРИУМА / КАМПАНИИ</span></div>
     <div class="c20-choices">
       <button class="c20-cover c20-cover-story" data-c20="story" aria-label="Открыть сюжет">
         <span class="c20-art c20-sun">✦</span><span class="c20-copy"><strong>СЮЖЕТ</strong><span>Путь Атрейдесов и интриги Харконненов</span><small>Светлые / Тёмные · вода · ${completed('L')+completed('D')}/140 миссий</small></span>
