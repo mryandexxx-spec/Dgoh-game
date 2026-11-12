@@ -91,10 +91,43 @@ try {
     await page.waitForSelector('.c20-dialog');
     await page.screenshot({path:path.join(shots,`detail-${w}.png`)});
     await page.click('[data-c20tab="foes"]');
-    assert.ok((await page.$$eval('.c20-foes>div',a=>a.length))>0,'foes tab');
+    assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-foes>div').length))>0,'foes tab');
+    assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-conditions span').length))>=3,'mission level, side and power requirements');
     await page.click('[data-c20tab="rewards"]');
+    assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-earn').length))===1,'real mission currency preview');
+    assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-lootrow').length))>0,'real GE2 and shard rewards');
+    const canvasBeforeInfo=await page.evaluate(()=>window.__campaignCanvas===document.querySelector('#c20world canvas'));
+    assert.equal(canvasBeforeInfo,true,'rewards tab retains the Babylon canvas');
+    await page.screenshot({path:path.join(shots,`rewards-${w}.png`)});
+    const pages=await page.evaluate(()=>document.querySelectorAll('[data-c20rewardpage]').length);
+    if(pages) {
+      await page.evaluate(()=>document.querySelector('[data-c20rewardpage="1"]')?.click());
+      assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-lootrow').length))>0,'next rewards page renders');
+    }
+    await page.evaluate(()=>document.querySelector('[data-c20item]')?.click());
+    await page.waitForSelector('#overlay2 .infosheet',{timeout:5000});
+    await page.evaluate(()=>document.querySelector('#overlay2 [data-iclose]')?.click());
+    await page.waitForFunction(()=>!document.querySelector('#overlay2 .infosheet'),{timeout:5000});
+    assert.ok(await page.$('.c20-dialog'),'closing source info retains mission details');
     await page.click('[data-c20="back"]');
     assert.equal(await page.$('.c20-dialog'),null,'modal closes');
+    // The first mission has index zero: it must be launchable (not skipped as falsy).
+    await page.evaluate(()=>document.querySelector('[data-c20node="0"]').click());
+    await page.evaluate(()=>document.querySelector('.c20-card [data-node="0"]').click());
+    await page.waitForSelector('#overlay .sqsel',{timeout:6000});
+    await page.evaluate(()=>document.querySelector('#overlay [data-sqback]')?.click());
+    assert.equal(await page.$('#overlay .sqsel'),null,'squad panel closes without spending energy');
+    // Simulation shares existing GE2 economy/summary, including mission id 0.
+    await page.evaluate(()=>document.querySelector('.c20-card [data-sim="0"]')?.click());
+    await page.waitForSelector('#overlay .simsheet',{timeout:5000});
+    assert.equal(await page.$eval('#simn',el=>Number(el.min)),1,'native simulation count selector');
+    await page.evaluate(()=>document.querySelector('[data-simgo]')?.click());
+    await page.waitForSelector('#overlay .result.won',{timeout:6000});
+    assert.ok((await page.$eval('#overlay .result.won',el=>el.textContent)).includes('Симуляция'),'simulation produced existing reward report');
+    await page.evaluate(()=>document.querySelector('#overlay [data-close]')?.click());
+    await page.waitForFunction(()=>!document.querySelector('#overlay .result'),{timeout:5000});
+    assert.ok(await page.$('#c20world canvas'),'map remains after simulation');
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();

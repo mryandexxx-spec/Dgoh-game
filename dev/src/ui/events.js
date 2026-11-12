@@ -24,7 +24,7 @@ import { hcMem } from './memory-screen.js';
 import { recyclerClick } from './recycler-screen.js';
 import { nextShards, rosterClick } from './views/squad.js';
 import { campSel, set_campSel } from './views/camp.js';
-import { campaign20Action, campaign20Start, campaign20Legacy, campaign20FocusCurrent } from './views/campaign20.js';
+import { campaign20Action, campaign20Start, campaign20Legacy, campaign20FocusCurrent, campaign20JumpToMission } from './views/campaign20.js';
 import { render } from './router.js';
 import { selectStoryEvent, selectStoryStage } from './views/story-events.js';
 import { selectBaronStage } from './views/baron-journey.js';
@@ -77,6 +77,13 @@ document.addEventListener('click', e => {
     return;
   }
   if (d.c20focus) { campaign20FocusCurrent(); return; }
+  if (d.c20item) { openInfo(d.c20item); return; }
+  if (d.c20farm!==undefined) {
+    const id=Number(d.c20farm);
+    if (!campaign20JumpToMission(id)) return;
+    closeInfo(true); closeOverlay();
+    set_view('camp'); render(); return;
+  }
   if (campaign20Action(d)) { render(); return; }
   if (d.v) { if (d.v === 'camp') campaign20Start(); set_view(d.v); render(); return; }
   if (d.csel !== undefined) { set_campSel(+d.csel); render(); return; }
@@ -117,8 +124,8 @@ document.addEventListener('click', e => {
   if (d.cch !== undefined) { S.campCh[S.campTab] = +d.cch; set_campSel(null); render(); return; }
   if (d.shoptab) { S.shopTab = d.shoptab; closeInfo(true); closeOverlay(); set_view('shop'); render(); return; }
   if (d.goto === 'chron') { S.campTab = 'C'; set_campSel(null); closeInfo(true); closeOverlay(); set_view('camp'); render(); return; }
-  if (d.node) { closeInfo(true); if (BT && BT.B) leaveBattle(); return openSquadSel('camp', +d.node); }
-  if (d.sim) return openSim(+d.sim);
+  if (d.node !== undefined) { closeInfo(true); if (BT && BT.B) leaveBattle(); return openSquadSel('camp', +d.node); }
+  if (d.sim !== undefined) return openSim(+d.sim);
   if (d.simgo) return runSim();
   if (rosterClick(d)) return;
   if (d.open) return openDetail(d.open);

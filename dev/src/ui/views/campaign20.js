@@ -3,15 +3,18 @@
 import { S } from '../../core/state.js';
 import { CAMP_DEF, CAMP_KEYS, NODES, ROM7, campNodes, chapNodes, nodeOpen, nodeCost, nodeEn } from '../../data/campaigns.js';
 import { chapterMap, nextCampaignNode } from '../../logic/campaign-map.js';
-import { campReward, enemyProg } from '../../logic/economy.js';
-import { reqText } from '../../logic/progress.js';
+import { campReward, enemyProg, CRY_WIN } from '../../logic/economy.js';
+import { reqText, enGet, nodePower, campSquad, prog, sideOk } from '../../logic/progress.js';
+import { ITEMS, NODE_ITEMS, COMPLETE_NODE_ITEMS, COMPLETE_RATE, TIER_COL } from '../../logic/gear.js';
+import { unitPower } from '../../logic/battle/stats.js';
 import { CH } from '../../data/chars.js';
 import { fmt, amt } from '../../core/format.js';
 import { portrait } from '../../render2d/figures.js';
-import { starStr } from '../common.js';
+import { starStr, itemIcon } from '../common.js';
 import { mountCampaignMap, focusCampaignNode, closeCampaignMap } from '../../render3d/scenes/campaign-map.js';
 
 let page = 'home', detail = false, tab = 'story', chapterPicker = false, legacy = false;
+let rewardPage = 0, storyPage = 0;
 let selected = null;
 const esc = x => String(x ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 export function campaign20Action(d) {
@@ -20,13 +23,15 @@ export function campaign20Action(d) {
   if (d.c20 === 'story') { page='map';S.campTab=S.campTab==='D'?'D':'L';detail=false;return true; }
   if (d.c20 === 'chron') { page='map';S.campTab='C';detail=false;return true; }
   if (d.c20 === 'back') { detail=false;chapterPicker=false;return true; }
-  if (d.c20 === 'detail') { detail=true;tab='story';return true; }
+  if (d.c20 === 'detail') { detail=true;tab='story';rewardPage=0;storyPage=0;return true; }
   if (d.c20 === 'chapters') { chapterPicker=!chapterPicker;return true; }
   if (d.c20tab) { tab=d.c20tab;return true; }
+  if (d.c20rewardpage!==undefined) { rewardPage=Math.max(0,Number(d.c20rewardpage)||0);return true; }
+  if (d.c20storypage!==undefined) { storyPage=Math.max(0,Number(d.c20storypage)||0);return true; }
   if (d.c20side) { S.campTab=d.c20side;selected=null;detail=false;chapterPicker=false;return true; }
   if (d.c20chapter!==undefined) { const c=Number(d.c20chapter);if(nodeOpen(chapNodes(S.campTab,c)[0])){S.campCh[S.campTab]=c;selected=null;detail=false;chapterPicker=false;}return true; }
   if (d.c20dir){const ck=S.campTab,now=S.campCh[ck]||0,step=Number(d.c20dir),next=now+step;if(next>=0&&next<7&&nodeOpen(chapNodes(ck,next)[0])){S.campCh[ck]=next;selected=null;}return true;}
-  if (d.c20node!==undefined){selected=Number(d.c20node);detail=false;return true;}
+  if (d.c20node!==undefined){selected=Number(d.c20node);detail=false;rewardPage=0;storyPage=0;return true;}
   return false;
 }
 export function campaign20Start() { closeCampaignMap(); page='home';legacy=false;selected=null;detail=false;chapterPicker=false; }
@@ -45,18 +50,57 @@ function homeHtml(){
     </div>
   </div>`;
 }
+// Mission loot comes from GE2 farm tables, not a duplicated rewards economy.
+function missionLoot(i) {
+  const n=NODES[i];
+  return [
+    ...n.drops.map((id,k)=>({key:'shard:'+id,icon:portrait(CH[id],30),
+      title:'Осколки · '+CH[id].sn, note:k===0?(n.camp==='C'?'до 2 · 60%':'до 2 · 50%'):(n.camp==='C'?'до 1 · 23,4%':'до 1 · 24%')})),
+    ...NODE_ITEMS[i].map(key=>{
+      const part=key.startsWith('frag:'),it=ITEMS[part?key.split(':')[1]:key];
+      return it?{key:part?'gefrag:'+key:'frag:'+key,icon:itemIcon(it,29).replace(/ data-info="[^"]*"/,''),
+        title:(part?'Компонент · ':'Фрагменты · ')+it.n,note:'18% за бой'}:null;
+    }).filter(Boolean),
+    ...COMPLETE_NODE_ITEMS[i].map(key=>{
+      const it=ITEMS[key];return it?{key:'gegear:'+key,icon:itemIcon(it,29).replace(/ data-info="[^"]*"/,''),
+        title:'Готовое · '+it.n,note:(COMPLETE_RATE[it.t]*100).toLocaleString('ru-RU',{maximumFractionDigits:2})+'% за бой'}:null;
+    }).filter(Boolean)
+  ];
+}
+function modalPager(kind,p,count) {
+  return count<=1?'':`<div class="c20-pages"><button data-c20${kind}page="${Math.max(0,p-1)}" ${p===0?'disabled':''}>‹</button>
+    <span>${p+1}/${count}</span><button data-c20${kind}page="${Math.min(count-1,p+1)}" ${p>=count-1?'disabled':''}>›</button></div>`;
+}
 function modalHtml(ck,n,i){
   if(!detail)return '';
-  const rw=campReward(i,3);
+  const rw=campReward(i,3,true);
+  const loot=missionLoot(i),count=Math.max(1,Math.ceil(loot.length/3));
+  rewardPage=Math.min(rewardPage,count-1);
+  const chunks=(n.story||'История не указана').match(/.{1,220}(?:\s|$)/gu)||[n.story||''];
+  storyPage=Math.min(storyPage,chunks.length-1);
+  const squad=campSquad(i).filter(id=>prog(id).stars&&sideOk(ck,id));
+  const ownPower=squad.reduce((a,id)=>a+unitPower(CH[id],prog(id)),0);
+  const requirements=`<div class="c20-conditions"><span>Ур. ${n.lvl}</span>
+    <span>${ck==='L'?'Светлая сторона':ck==='D'?'Тёмная сторона':'Любые герои'}</span>
+    ${reqText(i)?`<span>${esc(reqText(i))}</span>`:''}
+    <span>Враг ${fmt(nodePower(n))} · отряд ${fmt(ownPower)}</span></div>`;
   const bodies={
-    story:`<p>${esc(n.story)}</p>${n.dlg?`<button class="btn mini" data-dlgview="${i}">Диалог миссии</button>`:''}
-       <label class="c20-check"><input type="checkbox" data-dlgtoggle="1" ${S.skipDlg?'':'checked'}> Диалоги перед первым боем</label>`,
-    foes:`<p>Уровень ${n.lvl}. ${esc(reqText(i)||CAMP_DEF[ck].desc)}</p><div class="c20-foes">${n.enemy.map(id=>{
+    story:`<div class="c20-storytext">${esc(chunks[storyPage])}</div>
+      ${modalPager('story',storyPage,chunks.length)}
+      <div class="c20-inlineactions">${n.dlg?`<button class="btn mini" data-dlgview="${i}">Диалог</button>`:''}
+      <label class="c20-check"><input type="checkbox" data-dlgtoggle="1" ${S.skipDlg?'':'checked'}> Диалоги перед боем</label></div>`,
+    foes:`${requirements}<div class="c20-foes">${n.enemy.slice(0,5).map(id=>{
       const p=enemyProg(id,n.lvl,n.m===9);
-      return `<div>${portrait(CH[id],37)}<span>${esc(CH[id].sn)}</span><small>★ ${p.stars} · ур. ${p.lvl}</small></div>`;
+      return `<div>${portrait(CH[id],32,TIER_COL[p.gear])}<span>${esc(CH[id].sn)}</span>
+        <small>★${p.stars} · ур.${p.lvl} · сн.${p.gear}</small></div>`;
     }).join('')}</div>`,
-    rewards:`<div class="c20-rewards">${n.drops.map(id=>`<span>${portrait(CH[id],35)}${esc(CH[id].sn)}</span>`).join('')}</div>
-      <p>${amt('sol',rw.sol)} · ${amt('pl','1–3')} · ${amt('folio',rw.folio)}</p>`
+    rewards:`<div class="c20-earn">За победу: ${amt('sol',rw.sol)} · ${amt('pl',rw.pl)} · ${amt('folio',rw.folio)}
+      ${ck==='C'?' · '+amt('rid','8–15'):''} · ${amt('cry',CRY_WIN)}</div>
+      <div class="c20-loot">${loot.slice(rewardPage*3,(rewardPage+1)*3).map(row=>
+        `<div class="c20-lootrow"><span class="c20-looticon" data-info="${esc(row.key)}">${row.icon}</span>
+        <span>${esc(row.title)}<small>${esc(row.note)}</small></span>
+        <button class="btn mini" data-c20item="${esc(row.key)}">Найти</button></div>`).join('')}</div>
+      ${modalPager('reward',rewardPage,count)}`
   };
   return `<div class="c20-modal"><div class="c20-dialog" role="dialog" aria-modal="true" aria-label="Миссия">
     <header><strong>${esc(n.n)}</strong><button class="btn" data-c20="back">✕</button></header>
@@ -82,8 +126,10 @@ function mapHtml(setSel){
     data-c20node="${p.id}" title="${esc(p.title)}" aria-label="Миссия ${p.number}: ${esc(p.title)}">
     <b>${p.number}</b><small>${p.stars?'★'.repeat(p.stars):p.open?'◆':'⌑'}</small></button>`).join(''):'';
   const old=map?'':`<p class="c20-pending">3D-карта этой главы будет подготовлена после Каладана. Можно продолжать играть через прежнюю кампанию.</p><button class="btn" data-c20legacy="1">Открыть классическую карту</button>`;
-  const actions=open?`<button class="btn go" data-node="${chosen}">В бой <small>${amt(en,cost)}</small></button>
-    ${stars===3?`<button class="btn" data-sim="${chosen}">Симуляция <small>${amt(en,cost)}</small></button>`:''}`:'<span class="c20-locked">Сначала пройдите предыдущую миссию</span>';
+  const enough=enGet(en)>=cost;
+  const actions=open?`<button class="btn go ${enough?'':'lack'}" data-node="${chosen}">В бой <small>${amt(en,cost)}</small></button>
+    ${stars===3?`<button class="btn ${enough?'':'lack'}" data-sim="${chosen}">Симуляция <small>${amt(en,cost)}</small></button>`:'<span class="c20-locked">Симуляция после 3★</span>'}`:
+    '<span class="c20-locked">Сначала пройдите предыдущую миссию</span>';
   const html=`<div class="c20 c20-map">
     <div class="c20-head"><button class="c20-back" data-c20="home">‹ ${ck==='C'?'Хроники':'Сюжет'}</button>${side}<span class="c20-progress">★ ${nodes.reduce((a,i)=>a+(S.cleared[i]||0),0)}/30</span></div>
     <div class="c20-chapbar"><button data-c20dir="-1" aria-label="Предыдущая глава">‹</button><button data-c20="chapters">ГЛАВА ${ROM7[c]} · ${esc(chapters[c].t)} ⌄</button><button data-c20dir="1" aria-label="Следующая глава">›</button></div>
@@ -136,4 +182,13 @@ export function campaign20FocusCurrent() {
   const map=chapterMap(ck,chapter,S.cleared);
   const node=map?.nodes.find(x=>x.id===selected)||nextCampaignNode(map);
   if(node)focusCampaignNode(node.id);
+}
+
+// Farm deeplink selects the original mission without mutating progress or rewards.
+export function campaign20JumpToMission(id) {
+  const n=NODES[id];if(!n)return false;
+  page='map';legacy=false;detail=false;tab='rewards';
+  S.campTab=n.camp;S.campCh[n.camp]=n.c;
+  selected=id;rewardPage=0;storyPage=0;chapterPicker=false;
+  return true;
 }
