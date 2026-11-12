@@ -8,7 +8,7 @@ const events=readFileSync(new URL('../src/ui/events.js',import.meta.url),'utf8')
 const save=readFileSync(new URL('../src/core/save.js',import.meta.url),'utf8');
 
 assert.match(ui,/function launchStoryUnlock\(prepared\)/);
-assert.match(ui,/cfg\.mode === 'story_unlock' \? cfg\.prepared\.battle/);
+assert.match(ui,/\(cfg\.mode === 'story_unlock' \|\| cfg\.mode === 'baron_legend'\) \? cfg\.prepared\.battle/,'both scripted modes reuse prepared battle without rebuilding');
 assert.match(ui,/else if \(cfg\.mode === 'story_unlock'\)/);
 assert.match(ui,/finishStoryUnlockBattle\(S, cfg\.prepared, todayKey\(\)\)/);
 assert.match(ui,/\n  persist\(\);\n  const el = document\.createElement\('div'\)/);
