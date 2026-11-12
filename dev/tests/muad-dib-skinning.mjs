@@ -35,7 +35,7 @@ assert.ok(maxErr<0.001,'bind/inverse-bind mismatch: '+maxErr);
  // Bind-pose iris centres measured from the shipped textured DGM mesh:
  // left/right x=-.030/+ .030, y=1.582, frontal surface z≈.179.
  const source=fs.readFileSync(new URL('../src/render3d/characters/authored.js',import.meta.url),'utf8');
- const match=source.match(/const MUAD_IRIS_LOCALS = (\\[[^;]+\\]);/);
+ const match=source.match(/const MUAD_IRIS_LOCALS = (\[[^;]+\]);/);
  assert(match,'Muad Dib iris local positions are missing');
  const offsets=JSON.parse(match[1]);
  assert.equal(offsets.length,2);
