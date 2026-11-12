@@ -90,7 +90,7 @@ class WorldHudLayout {
       this.nodes.set(label, row); if (this.observer) this.observer.observe(label);
       this.dirty = true;
     }
-    if (row.dead !== dead || Math.abs(ax - row.ax) >= .25 || Math.abs(ay - row.ay) >= .25 || row.ax === undefined) {
+    if (row.dead !== dead || Math.abs(ax - row.ax) >= .05 || Math.abs(ay - row.ay) >= .05 || row.ax === undefined) {
       row.ax = ax; row.ay = ay; row.dead = dead; this.dirty = true;
     }
   }

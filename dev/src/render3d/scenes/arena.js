@@ -426,7 +426,11 @@ class Arena3D extends GameScene {
         } else el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -100%)`;
       }
       if (!(Math.abs(hpx - el._fh) <= 1)) { el._fh = hpx; el.style.setProperty('--fh', hpx + 'px'); el.style.setProperty('--w', this.raid ? Math.max(44, hpx * (o.boss ? .9 : .5)) + 'px' : Math.max(48, Math.min(66, hpx * .62)) + 'px'); }
-      if (this.worldHud) this.worldHud.track(uid, el, fx, fy - hpx - 4, o.dead);
+      // Match the CSS coordinates/height actually written above. --fh is
+      // deliberately quantised to avoid layout churn; using the new raw hpx
+      // here would drift the collision boxes by up to a pixel during attacks.
+      if (this.worldHud) this.worldHud.track(uid, el, Number(el._hx.toFixed(1)) - this._hdx,
+        Number(el._hy.toFixed(1)) - this._hdy - el._fh - 4, o.dead);
     }
     if (this.worldHud) this.worldHud.place(this.w, this.h, this._hudInsets);
   }
