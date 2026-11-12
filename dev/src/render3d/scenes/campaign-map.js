@@ -178,8 +178,10 @@ class CampaignMapScene extends GameScene {
     this.cx+=delta.x;this.cz+=delta.z;
   }
   pointerDown=e=>{
+    if(e.target.closest?.('.c20-recenter'))return;
     this.cameraTween=null;
-    this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,moved:false});
+    const fromPin=!!e.target.closest?.('[data-c20node]');
+    this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,moved:false,fromPin});
     if(this.pointers.size===2) {
       const [a,b]=[...this.pointers.values()];
       this._pinchD=Math.hypot(a.x-b.x,a.y-b.y);
@@ -187,14 +189,19 @@ class CampaignMapScene extends GameScene {
       // A two-finger gesture never selects an underlying 3D mission.
       for(const p of this.pointers.values())p.moved=true;
     }
-    try{this.cv.setPointerCapture(e.pointerId);}catch(_){}
+    // Leave ordinary pin taps uncaptured, so the native button click selects
+    // the mission. Capture terrain drags to keep them responsive at the edges.
+    if(!fromPin)try{this.screenEl.setPointerCapture(e.pointerId);}catch(_){}
   };
   pointerMove=e=>{
     const p=this.pointers.get(e.pointerId);if(!p)return;
     const dx=e.clientX-p.x,dy=e.clientY-p.y;
     if(dx===0&&dy===0)return;
     p.x=e.clientX;p.y=e.clientY;
-    if(Math.hypot(p.x-p.sx,p.y-p.sy)>7)p.moved=true;
+    if(Math.hypot(p.x-p.sx,p.y-p.sy)>7) {
+      p.moved=true;
+      if(p.fromPin)try{this.screenEl.setPointerCapture(e.pointerId);}catch(_){}
+    }
     this.cameraTween=null;
     if(this.pointers.size===1){
       if(e.altKey || e.buttons===2) this.alpha+=dx*.006;
@@ -219,8 +226,9 @@ class CampaignMapScene extends GameScene {
       // No jump on the first move after lifting a second finger.
       const left=[...this.pointers.values()][0];left.moved=true;
     }
-    if(!p || p.moved || Math.hypot(e.clientX-p.sx,e.clientY-p.sy)>9 || this.pointers.size)return;
-    const hit=this.scene.pick(e.offsetX,e.offsetY);
+    if(!p || p.moved || p.fromPin || Math.hypot(e.clientX-p.sx,e.clientY-p.sy)>9 || this.pointers.size)return;
+    const rect=this.cv.getBoundingClientRect();
+    const hit=this.scene.pick(e.clientX-rect.left,e.clientY-rect.top);
     const id=hit?.pickedMesh?.metadata?.campaignNodeId;
     if(Number.isInteger(id))this.select(id);
   };
@@ -232,16 +240,19 @@ class CampaignMapScene extends GameScene {
   // shift with Alt/mouse drag is supported by the same input without additional frames.
   bind() {
     this.cv.style.touchAction='none';
-    this.cv.addEventListener('pointerdown',this.pointerDown);
-    this.cv.addEventListener('pointermove',this.pointerMove);
-    this.cv.addEventListener('pointerup',this.pointerUp);
-    this.cv.addEventListener('pointercancel',this.pointerUp);
-    this.cv.addEventListener('wheel',this.wheel,{passive:false});
+    const surface=this.screenEl||this.cv;
+    surface.style.touchAction='none';
+    surface.addEventListener('pointerdown',this.pointerDown);
+    surface.addEventListener('pointermove',this.pointerMove);
+    surface.addEventListener('pointerup',this.pointerUp);
+    surface.addEventListener('pointercancel',this.pointerUp);
+    surface.addEventListener('wheel',this.wheel,{passive:false});
   }
   unbind(){
+    const surface=this.screenEl||this.cv;
     for(const [name,fn] of [['pointerdown',this.pointerDown],['pointermove',this.pointerMove],
       ['pointerup',this.pointerUp],['pointercancel',this.pointerUp],['wheel',this.wheel]])
-      this.cv.removeEventListener(name,fn);
+      surface.removeEventListener(name,fn);
     this.pointers.clear();this._pinchD=null;this._pinchA=undefined;
   }
   projectLabels(){
