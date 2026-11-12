@@ -33,6 +33,10 @@ try{
       document.querySelector('#overlay2').innerHTML='';
       openDetail('muaddib');
       await new Promise(resolve=>setTimeout(resolve,1500));
+      // Boot may schedule the login calendar after openDetail, so close
+      // the test-unrelated layer AFTER startup has settled.
+      const extra=document.querySelector('#overlay2');
+      if(extra)extra.replaceChildren();
       const o=HERO_STAGE?.o;
       if(!o||!o.root._authored)throw Error('Muad Dib authored model failed to load');
       if(!o.root._clips?.Idle_11)throw Error('Muad Dib source clips absent');
