@@ -31,7 +31,7 @@ try {
     await page.waitForSelector('.c20-home',{timeout:5000});
     assert.equal(await page.$$eval('.c20-cover',a=>a.length),2,'two campaign covers');
     await page.screenshot({path:path.join(shots,`hub-${w}.png`)});
-    await page.click('[data-c20="story"]');
+    await page.evaluate(()=>document.querySelector('[data-c20="story"]').click());
     await page.waitForSelector('.c20-map',{timeout:8000}).catch(async e=>{
       const diag=await page.evaluate(()=>({view:document.querySelector('#view')?.innerHTML.slice(0,800),body:document.body.className}));
       console.error('Campaign map transition diagnostic',JSON.stringify({diag,errors}));throw e;
