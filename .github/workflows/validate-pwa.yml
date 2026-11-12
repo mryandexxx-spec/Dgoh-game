@@ -130,6 +130,8 @@ jobs:
         with:
           chrome-version: stable
       - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+      - name: Service worker installs even if optional 3D asset stalls
+        run: node tests/sw-install-stall.mjs
       - name: Core model stalled on iPhone must not block 3D lobby
         run: node tests/smoke/core-model-stall.mjs dist/pwa/index.html
       - name: Optional Muad-Dib download must not block 3D lobby
