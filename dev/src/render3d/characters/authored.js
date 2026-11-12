@@ -15,6 +15,7 @@ function modelData(id) {
   if (MODEL_CACHE[id] !== undefined) return MODEL_CACHE[id];
   const R = typeof MODEL_DATA !== 'undefined' && MODEL_DATA[id]; if (!R) return (MODEL_CACHE[id] = null);
   const parts = {};
+  const f32 = raw => new Float32Array(b64bytes(raw).buffer);
   for (const [k, P] of Object.entries(R.parts)) {
     const p16 = new Int16Array(b64bytes(P.p).buffer), n8 = new Int8Array(b64bytes(P.nr).buffer), c8 = b64bytes(P.c), j8 = b64bytes(P.j), w8 = b64bytes(P.w), ib = b64bytes(P.i).buffer;
     const pos = new Float32Array(p16.length), nor = new Float32Array(n8.length), col = new Float32Array(P.n * 4), jj = new Float32Array(j8.length), ww = new Float32Array(w8.length);
@@ -24,7 +25,7 @@ function modelData(id) {
     let uv = null; if (P.uv) { const u16 = new Uint16Array(b64bytes(P.uv).buffer); uv = new Float32Array(u16.length); for (let i = 0; i < u16.length; i++) uv[i] = u16[i] / 65535; }
     parts[k] = { pos, nor, col, jj, ww, uv, material: P.material || null, alb: P.alb || null, nrm: P.nrm || null, orm: P.orm || null, idx: P.i32 ? new Uint32Array(ib) : new Uint16Array(ib) };
   }
-  return (MODEL_CACHE[id] = { joints: R.joints, parts, grip: R.grip || null, materialMode: R.materialMode || null, clips: R.clips || null, v: R.v || 1 });
+  return (MODEL_CACHE[id] = { joints: R.joints, parts, grip: R.grip || null, materialMode: R.materialMode || null, clips: R.clips || null, v: R.v || 1, jointFormat: R.jointFormat || null, inverseBindMatrices: R.inverseBindMatrices ? f32(R.inverseBindMatrices) : null });
 }
 const MODEL_MAT = { skin: { roughness: .5 }, cloth: { roughness: .92 }, plate: { roughness: .42, metalness: .3, noSheen: 1 }, cape: { roughness: .95, side: 'double' }, leather: { roughness: .58 }, metal: { roughness: .28, metalness: .75 }, hair: { roughness: .7, noSheen: 1 }, eye: { roughness: .15, noSheen: 1 } };
 // Фаза 5, шаг 5: текстура модели — KTX2 (байты из assets/models.js), фолбэк — JPEG по тому же пути. set(t) кладёт текстуру в материал;
@@ -71,9 +72,24 @@ function tex3(url, scene, set) {
 function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { pbr: false } : null, () => {
   const SHG0 = CTX.shadows; CTX.shadows = null;
   const X = HERO3[def.id] || {}, root = grp(null), body = grp(root), N = {}, abs = {};
-  for (const [nm, p, par] of D.joints) { abs[nm] = p; const pp = par ? abs[par] : [0, 0, 0]; N[nm] = grp(par ? N[par] : body, p[0] - pp[0], p[1] - pp[1], p[2] - pp[2]); N[nm].name = nm; }
+  const localTrs = D.v >= 5 && D.jointFormat === 'local-trs';
+  for (const [nm, p, par, rot, scale] of D.joints) {
+    const pp = !localTrs && par ? abs[par] : [0, 0, 0];
+    abs[nm] = p;
+    const n = N[nm] = grp(par ? N[par] : body, p[0] - pp[0], p[1] - pp[1], p[2] - pp[2]);
+    n.name = nm;
+    if (localTrs) {
+      n.rotationQuaternion = new B3.Quaternion(...(rot || [0, 0, 0, 1]));
+      n.scaling.copyFromFloats(...(scale || [1, 1, 1]));
+    }
+  }
   const skel = new B3.Skeleton('sk_' + def.id, 'sk_' + def.id, CTX.scene), BN = {};
-  for (const [nm, p, par] of D.joints) { const n = N[nm]; BN[nm] = new B3.Bone(nm, skel, par ? BN[par] : null, B3.Matrix.Translation(n.position.x, n.position.y, n.position.z)); BN[nm].linkTransformNode(n); }
+  for (const [nm, p, par] of D.joints) {
+    const n = N[nm];
+    const bind = localTrs ? B3.Matrix.Compose(n.scaling, n.rotationQuaternion, n.position) : B3.Matrix.Translation(n.position.x, n.position.y, n.position.z);
+    BN[nm] = new B3.Bone(nm, skel, par ? BN[par] : null, bind);
+    BN[nm].linkTransformNode(n);
+  }
   const mats = [];
   for (const [k, P] of Object.entries(D.parts)) {
     const me = new B3.Mesh(def.id + '_' + k, CTX.scene), vd = new B3.VertexData();
@@ -118,30 +134,48 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
   // Source GLB rotations are sampled by the existing scene update, on every
   // quality tier. No AnimationGroup observer or extra render loop is needed.
   root._clips = D.clips ? Object.fromEntries(Object.entries(D.clips).map(([key, clip]) => [key, {
-    duration: clip.duration, tracks: clip.tracks.map(tr => ({ node: N[tr.joint], times: tr.times,
-      rotations: tr.rotations.map(q => new B3.Quaternion(...q)) }))
+    duration: clip.duration, tracks: clip.tracks.map(tr => localTrs ? {
+      node: N[tr.joint], path: tr.path, times: new Float32Array(b64bytes(tr.times).buffer),
+      values: new Float32Array(b64bytes(tr.values).buffer), componentCount: tr.componentCount
+    } : { node: N[tr.joint], times: tr.times, rotations: tr.rotations.map(q => new B3.Quaternion(...q)) })
   }])) : null;
+  if (localTrs) root._clipNames = { Idle: 'Idle_11', Attack: 'Right_Hand_Sword_Slash',
+    Hit: 'Stand_Dodge', Death: 'Charged_Ground_Slam' };
   if (N.capeA) root._capeB = [N.capeA, N.capeB, N.capeC];
   return { root, body, hips: N.hips, spine: N.spine, head: N.head, R, Lf, LL, LR, skirt: null, wpn: w, mats, h: 1.95 * sc * tl, melee: def.basic.dt === 'blade', hipY0: N.hips.position.y, anim: ANIM3[def.id] || null, capeB: root._capeB || null, stance: def.role === 'tank' && !X.noShield ? 'shield' : def.basic.dt === 'blade' ? 'guard' : 'open', float: 0 };
 }); }
 
 function poseModelClip(o, now, t, sp, stage) {
   const clips = o.root._clips; if (!clips) return;
-  let name = 'Idle', u = ((t + (o.phase || 0)) % clips.Idle.duration) / clips.Idle.duration;
+  const names = o.root._clipNames || {};
+  const idle = clips[names.Idle || 'Idle']; if (!idle) return;
+  let name = 'Idle', u = ((t + (o.phase || 0)) % idle.duration) / idle.duration;
   if (o.dead && now >= o.deathT) { name = 'Death'; u = Math.min(1, (now - o.deathT) / 950); }
   else if (o.hitT && now >= o.hitT && now - o.hitT < 340 / Math.min(sp, 2)) {
     name = 'Hit'; u = (now - o.hitT) / (340 / Math.min(sp, 2));
   } else if (o.act) { name = 'Attack'; u = Math.max(0, Math.min(1, (now - o.act.t0) / o.act.dur)); }
-  const clip = clips[name]; if (!clip) return;
+  const clip = clips[names[name] || name]; if (!clip) return;
   const time = u * clip.duration;
   for (const tr of clip.tracks) {
     let i = 0; while (i < tr.times.length - 2 && time > tr.times[i + 1]) i++;
     const j = Math.min(i + 1, tr.times.length - 1), span = tr.times[j] - tr.times[i];
     const n = tr.node; if (!n) continue;
 
-    const q = n.rotationQuaternion || (n.rotationQuaternion = B3.Quaternion.Identity());
-    B3.Quaternion.SlerpToRef(tr.rotations[i], tr.rotations[j], span ? Math.max(0, Math.min(1, (time - tr.times[i]) / span)) : 0, q);
-    q.normalize();
+    const f = span ? Math.max(0, Math.min(1, (time - tr.times[i]) / span)) : 0;
+    if (tr.values) {
+      const k = tr.componentCount, a = i * k, b = j * k, v = tr.values;
+      if (tr.path === 'rotation') {
+        const qa = B3.Quaternion.FromArray(v, a), qb = B3.Quaternion.FromArray(v, b);
+        const q = n.rotationQuaternion || (n.rotationQuaternion = B3.Quaternion.Identity());
+        B3.Quaternion.SlerpToRef(qa, qb, f, q); q.normalize();
+      } else {
+        const dest = tr.path === 'translation' ? n.position : n.scaling;
+        dest.set(v[a] + (v[b] - v[a]) * f, v[a + 1] + (v[b + 1] - v[a + 1]) * f, v[a + 2] + (v[b + 2] - v[a + 2]) * f);
+      }
+    } else {
+      const q = n.rotationQuaternion || (n.rotationQuaternion = B3.Quaternion.Identity());
+      B3.Quaternion.SlerpToRef(tr.rotations[i], tr.rotations[j], f, q); q.normalize();
+    }
   }
   if (name === 'Death') {
     // The clip supplies its own leg/pelvis pose: don't add the generic squat.
