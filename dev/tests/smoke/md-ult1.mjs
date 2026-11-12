@@ -57,8 +57,20 @@ try {
         BT.auto = false; BT.speed = 1;
         renderBattle();
         if (!abilityReady(BT.B, u, 'gl')) throw Error('GL is not ready');
-        doAct(u, 'gl', target.uid);
+        // Heavy SwiftShader screenshot capture can exceed the 2.9s movie. Extend
+        // only the overlay-removal timer in the test, never production timing or actShow.
+        const nativeTimeout = window.setTimeout;
+        window.setTimeout = (fn, ms, ...args) =>
+          nativeTimeout(fn, ms === 2900 ? 9000 : ms, ...args);
+        try { doAct(u, 'gl', target.uid); }
+        finally { window.setTimeout = nativeTimeout; }
         const cine = document.querySelector('.ultcine');
+        // Freeze a genuine mid-cinematic animation frame for stable PNG capture.
+        for (const animation of cine?.getAnimations({ subtree: true }) || []) {
+          const duration = animation.effect?.getComputedTiming()?.duration;
+          if (Number.isFinite(duration)) animation.currentTime = duration * .5;
+          animation.pause();
+        }
         if (!cine || BT.B.lastKey !== 'gl' || BT.B.glCast !== u.uid) throw Error('GL action did not start cinematic');
         const fig = cine.querySelector('.ucfig');
         return { id, target: target.def.id, hasSvg: !!fig.querySelector('svg'),
@@ -80,11 +92,11 @@ try {
         assert.equal(start.hasSvg, true, 'Other legendary cinematics stay unchanged');
       }
       // Capture while actual .ultcine exists and is fully visible, not after its timeout.
-      await new Promise(resolve => setTimeout(resolve, 450));
+      await new Promise(resolve => setTimeout(resolve, 150));
       assert.equal(await page.$('.ultcine') !== null, true, 'cinematic vanished before screenshot');
       const suffix = hero === 'muaddib' ? (portrait ? 'baked' : 'missing') : 'baron';
       await page.screenshot({ path: path.join(out, `${width}x${height}-${quality}-${suffix}.png`) });
-      await new Promise(resolve => setTimeout(resolve, 3900));
+      await new Promise(resolve => setTimeout(resolve, 9200));
       const end = await page.evaluate(() => ({
         overlayGone: !document.querySelector('.ultcine'),
         holdCleared: BT.hold === false,
