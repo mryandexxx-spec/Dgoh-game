@@ -57,8 +57,8 @@ try {
     });
     assert.equal(metrics.scroll,false,'no campaign viewport scroll');
     assert.equal(metrics.sceneCanvas,true,'canvas exists');
-    // Native-feeling pan: drag the terrain right/down and verify the same
-    // mission marker follows that direction on the tilted/rotated 3D map.
+    // Inverse pan contract: dragging right/down moves the 3D terrain LEFT/UP,
+    // in both phone profiles and from the very first gesture.
     // Also assert the first gesture remains responsive, not just the second.
     const panChecks=await page.evaluate(async()=>{
       document.querySelector('[data-c20node="4"]').click();
@@ -87,10 +87,10 @@ try {
       return {horizontal,backward,vertical,upward,
         canvasSame:canvas===document.querySelector('#c20world canvas')};
     });
-    assert.ok(panChecks.horizontal[0]>4,'drag-right should move map RIGHT: '+JSON.stringify(panChecks));
-    assert.ok(panChecks.backward[0]<-4,'drag-left should move map LEFT: '+JSON.stringify(panChecks));
-    assert.ok(panChecks.vertical[1]>4,'drag-down should move map DOWN: '+JSON.stringify(panChecks));
-    assert.ok(panChecks.upward[1]<-4,'drag-up should move map UP: '+JSON.stringify(panChecks));
+    assert.ok(panChecks.horizontal[0]<-4,'drag-right should move map LEFT: '+JSON.stringify(panChecks));
+    assert.ok(panChecks.backward[0]>4,'drag-left should move map RIGHT: '+JSON.stringify(panChecks));
+    assert.ok(panChecks.vertical[1]<-4,'drag-down should move map UP: '+JSON.stringify(panChecks));
+    assert.ok(panChecks.upward[1]>4,'drag-up should move map DOWN: '+JSON.stringify(panChecks));
     assert.equal(panChecks.canvasSame,true,'drag never remounts Babylon');
     console.log('Campaign touch pan',w,JSON.stringify(panChecks));
 
