@@ -36,7 +36,12 @@ try {
       const diag=await page.evaluate(()=>({view:document.querySelector('#view')?.innerHTML.slice(0,800),body:document.body.className}));
       console.error('Campaign map transition diagnostic',JSON.stringify({diag,errors}));throw e;
     });
-    assert.equal(await page.$$eval('.c20-pin',a=>a.length),10,'ten Caladan missions');
+    // Late-game fixture starts on the last unlocked chapter; explicitly choose Caladan I.
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]').click());
+    await page.waitForSelector('[data-c20chapter="0"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="0"]').click());
+    await page.waitForFunction(()=>document.querySelectorAll('.c20-pin').length===10,{timeout:7000});
+    assert.equal(await page.$eval('.c20-pin',a=>a.length),10,'ten Caladan missions');
     const opened=await page.waitForFunction(()=>!!document.querySelector('.c20-world.campaign20-3d-ready'),{timeout:15000}).then(()=>true).catch(()=>false);
     assert.equal(opened,true,'Babylon 3D Caladan mounted');
     await page.waitForFunction(()=>[...document.querySelectorAll('.c20-pin')].some(p=>getComputedStyle(p).visibility==='visible'),{timeout:8000});
