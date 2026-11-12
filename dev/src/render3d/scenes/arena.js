@@ -217,6 +217,9 @@ class Arena3D extends GameScene {
     // Do not let the remaining formation cross the foreground of this close-up.
     // Restore every previous enabled state when the cinematic ends.
     const hidden = [];
+    for (const node of [o.ring, o.pool]) {
+      if (node && node.isEnabled()) { hidden.push(node); node.setEnabled(false); }
+    }
     for (const other of Object.values(this.units)) {
       if (other === o) continue;
       for (const node of [other.root, other.ring, other.pool]) {
@@ -510,9 +513,9 @@ class Arena3D extends GameScene {
         const exit = Math.min(1, (1 - k) / .16);
         const w = Math.max(0, Math.min(entry, exit));
         const strength = w * w * (3 - 2 * w);
-        T1.set(p.x + 2.2, p.y + 1.9, p.z + 4.7);
+        T1.set(p.x + 2.2, p.y + 2.2, p.z + 6.0);
         B3.Vector3.LerpToRef(pos, T1, strength, pos);
-        T1.set(p.x + .45, p.y + 1.3, p.z);
+        T1.set(p.x + 1.25, p.y + 1.62, p.z);
         B3.Vector3.LerpToRef(look, T1, strength, look);
       }
     }
