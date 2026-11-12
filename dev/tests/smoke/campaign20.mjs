@@ -91,18 +91,18 @@ try {
     await page.waitForSelector('.c20-dialog');
     await page.screenshot({path:path.join(shots,`detail-${w}.png`)});
     await page.click('[data-c20tab="foes"]');
-    assert.ok((await page.$eval('.c20-foes>div',a=>a.length))>0,'foes tab');
-    assert.ok((await page.$eval('.c20-conditions span',a=>a.length))>=3,'mission level, side and power requirements');
+    assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-foes>div').length))>0,'foes tab');
+    assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-conditions span').length))>=3,'mission level, side and power requirements');
     await page.click('[data-c20tab="rewards"]');
-    assert.ok((await page.$eval('.c20-earn',a=>a.length))===1,'real mission currency preview');
-    assert.ok((await page.$eval('.c20-lootrow',a=>a.length))>0,'real GE2 and shard rewards');
+    assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-earn').length))===1,'real mission currency preview');
+    assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-lootrow').length))>0,'real GE2 and shard rewards');
     const canvasBeforeInfo=await page.evaluate(()=>window.__campaignCanvas===document.querySelector('#c20world canvas'));
     assert.equal(canvasBeforeInfo,true,'rewards tab retains the Babylon canvas');
     await page.screenshot({path:path.join(shots,`rewards-${w}.png`)});
-    const pages=await page.$eval('[data-c20rewardpage]',a=>a.length);
+    const pages=await page.evaluate(()=>document.querySelectorAll('[data-c20rewardpage]').length);
     if(pages) {
       await page.evaluate(()=>document.querySelector('[data-c20rewardpage="1"]')?.click());
-      assert.ok((await page.$eval('.c20-lootrow',a=>a.length))>0,'next rewards page renders');
+      assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-lootrow').length))>0,'next rewards page renders');
     }
     await page.evaluate(()=>document.querySelector('[data-c20item]')?.click());
     await page.waitForSelector('#overlay2 .infosheet',{timeout:5000});
