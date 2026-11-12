@@ -27,11 +27,15 @@ try {
     page.on('request',req=>/^http:\/\/127\.0\.0\.1/.test(req.url())?req.continue():req.abort());
     await page.goto(server.url(path.basename(html)),{waitUntil:'load'});
     await page.waitForSelector('[data-v="camp"]',{timeout:18000});
+    // Login calendar is intentionally opened on boot. Dismiss it via its real
+    // Close button before performing physical touch/click checks on the campaign.
+    await page.evaluate(()=>document.querySelector('#overlay2 button[data-iclose="1"]')?.click());
+    await page.waitForFunction(()=>!document.querySelector('#overlay2 .detail'),{timeout:5000});
     await page.evaluate(()=>document.querySelector('[data-v="camp"]').click());
     await page.waitForSelector('.c20-home',{timeout:5000});
     assert.equal(await page.$$eval('.c20-cover',a=>a.length),2,'two campaign covers');
     await page.screenshot({path:path.join(shots,`hub-${w}.png`)});
-    await page.evaluate(()=>document.querySelector('[data-c20="story"]').click());
+    await page.click('[data-c20="story"]');
     await page.waitForSelector('.c20-map',{timeout:8000}).catch(async e=>{
       const diag=await page.evaluate(()=>({view:document.querySelector('#view')?.innerHTML.slice(0,800),body:document.body.className}));
       console.error('Campaign map transition diagnostic',JSON.stringify({diag,errors}));throw e;
