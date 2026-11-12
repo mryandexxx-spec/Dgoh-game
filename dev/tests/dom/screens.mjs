@@ -188,7 +188,7 @@ function normalizeApprovedBH97(s) {
     if (screen.name === 'profile' && typeof screen.overlay2 === 'string') {
       const avatar = /<button class="pick[^"]*" data-pava="hero:(margot|yue)"[^>]*>[\s\S]*?<\/button>/g;
       const found = [...screen.overlay2.matchAll(avatar)].map(m => m[1]).sort();
-      assert.deepEqual(found, ['baron_legend','margot','yue'], 'BH9.9 three new profile avatar choices');
+      assert.deepEqual(found, ['margot','yue'], 'BH9.9 locked legend must not enter profile avatar selection');
       screen.overlay2 = screen.overlay2.replace(avatar, '');
     }
   }
