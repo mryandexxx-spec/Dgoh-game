@@ -32,10 +32,10 @@
   box-shadow:inset 0 1px 0 rgba(255,248,218,.55),0 5px 12px rgba(0,0,0,.28);
 }
 @media (hover:hover) {
-  body:not(.battle) .btn:not(:disabled):hover,.detail .btn:not(:disabled):hover {transform:translateY(-1px)}
+  :is(.ros, .detail .sheet.hc, .e3sheet, .profsheet, #view:has(.shop)) .btn:not(:disabled):hover,.detail .btn:not(:disabled):hover {transform:translateY(-1px)}
 }
 @media (prefers-reduced-motion:reduce) {
-  body:not(.battle) .btn,.detail .btn {transition:none}
+  :is(.ros, .detail .sheet.hc, .e3sheet, .profsheet, #view:has(.shop)) .btn,.detail .btn {transition:none}
 }
 /* UI2 roster: whole available width belongs to the collection.
    Maintain existing 8–9 / 7 portrait grid density and filtering. */
