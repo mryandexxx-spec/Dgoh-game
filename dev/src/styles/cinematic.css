@@ -26,7 +26,7 @@
   background: linear-gradient(270deg, transparent 0%, rgb(10 6 3 / .08) 34%,
     rgb(10 6 3 / .82) 58%, rgb(10 6 3 / .93) 91%, transparent 100%);
 }
-.ultcine.muad-live .ucrays { opacity: .4; }
+.ultcine.muad-live .ucrays { filter: opacity(.3); }
 @keyframes ucfig { 0% { transform: translateX(-120%) scale(1.1); } 16% { transform: translateX(0) scale(1); } 80% { transform: translateX(6%) scale(1.02); opacity: 1; } 100% { transform: translateX(18%) scale(1.04); opacity: 0; } }
 .uctext { position: absolute; right: 6%; top: 50%; text-align: right; display: grid; gap: 4px; max-width: 58%; z-index: 2; animation: uctext var(--ud, 2.9s) cubic-bezier(.2, .8, .2, 1) forwards; }
 @keyframes uctext { 0%, 10% { transform: translate(40%, -50%); opacity: 0; } 24% { transform: translate(0, -50%); opacity: 1; } 82% { transform: translate(-3%, -50%); opacity: 1; } 100% { transform: translate(-6%, -50%); opacity: 0; } }
