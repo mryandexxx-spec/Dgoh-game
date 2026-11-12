@@ -246,6 +246,19 @@ function normalizeApprovedGE1(src, isCurrent) {
       // prices, UI and currencies are compared unchanged.
       screen.view = screen.view.slice(0, at) + '[GE1 component shop panel]';
     }
+    if (screen.name === 'info:frag:belt5' && typeof screen.overlay2 === 'string') {
+      // GE1 changes the farm locations of direct I–V gear fragments too;
+      // preserve header, recipe context, resource counts and close controls.
+      const source = /(<div class="srcs">)[\s\S]*?(<\/div>)(?=\s*<div class="acts">)/;
+      assert.ok(source.test(screen.overlay2), 'GE1 direct fragment info has one source panel');
+      if (isCurrent) {
+        const match = screen.overlay2.match(source);
+        assert.ok(match[0].includes('шанс 18% за бой'), 'GE1 direct fragment farm shows real 18% chance');
+        assert.ok(!match[0].includes('шанс ≈'), 'GE1 direct fragment farm has no approximate chance');
+      }
+      screen.overlay2 = screen.overlay2.replace(source,
+        '$1[GE1 direct I–V fragment sources]$2');
+    }
     if (screen.name === 'item:paul:0' && typeof screen.overlay2 === 'string') {
       const marker = '<div class="srcs">';
       const at = screen.overlay2.indexOf(marker);
