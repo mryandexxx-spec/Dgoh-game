@@ -159,5 +159,13 @@ else {
   const expected = baseline && { ...baseline.meta, cases: baseline.cases };
   if (expected && canon(normalizedBH4Meta(normalizedBH99Meta(normalizedGE1Meta(expected)))) === canon(normalizedBH4Meta(normalizedBH99Meta(normalizedGE1Meta(out)))))
     console.log('OK meta: golden unchanged except approved BH4 baron roster position');
-  else process.exit(compareGolden('meta', out) ? 0 : 1);
+  else {
+    if(expected){
+      const a=normalizedBH4Meta(normalizedBH99Meta(normalizedGE1Meta(expected)));
+      const b=normalizedBH4Meta(normalizedBH99Meta(normalizedGE1Meta(out)));
+      const diff=a.cases.filter((row,i)=>canon(row)!==canon(b.cases[i])).map(row=>({g:row.g,f:row.f,a:row.out,b:b.cases.find(x=>x.g===row.g&&x.f===row.f)?.out}));
+      console.error('BH9.9 narrowly divergent golden meta cases:',JSON.stringify(diff.slice(0,16)).slice(0,12000));
+    }
+    process.exit(compareGolden('meta', out) ? 0 : 1);
+  }
 }
