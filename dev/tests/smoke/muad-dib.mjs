@@ -67,13 +67,14 @@ try{
     assert.ok(info.textured>0,'Muad Dib must use the authored albedo texture');
     assert.equal(info.weaponParts,5,'Muad Dib must hold the five-part short crysknife, not the generic long sword');
     assert.deepEqual(info.irisNames.sort(),['muad_iris_L','muad_iris_R']);
-    assert(info.background?.[0]>.55,'Hero background must be the approved bright sandstone palette');
+    assert(info.background?.[0]>.27 && info.background?.[0]<.52,
+      'Hero background must be the approved mid-tone Dusk of Arrakis palette, neither near-black nor bright sand');
     const panels=await p.evaluate(()=>({
       left:getComputedStyle(document.querySelector('.hc .hcleft')).backgroundImage,
       right:getComputedStyle(document.querySelector('.hc .hcright')).backgroundImage
     }));
     assert(panels.left.includes('linear-gradient') && panels.right.includes('linear-gradient'),
-      'Both hero card side panels must stay dark and opaque against amber stage');
+      'Both hero card side panels must stay dark bronze against the dusk stage');
     const labels=await p.evaluate(()=>[...document.querySelectorAll('#overlay .hcsk .hcskt b')].map(el=>{
       const computed=getComputedStyle(el),r=el.getBoundingClientRect();
       return {text:el.textContent,whiteSpace:computed.whiteSpace,height:r.height,lineHeight:parseFloat(computed.lineHeight)};
