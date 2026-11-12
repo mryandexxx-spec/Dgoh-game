@@ -78,13 +78,35 @@ try {
         const id=gearPlan('paul',p.gear)[0], part=recipeFor(id).parts[0];
         const frag=part.materials[0].id;
         const node=FRAGMENT_SOURCES.get(frag)[0];
+        S.inv[frag]=0; S.inv[id]=0; S.gearParts[part.id]=0;
         S.cleared[node]=3; S.water=1000; S.candle=1000;
         openDetail('paul'); openItem('paul',0,part.id);
         openInfo('gefrag:'+frag);
         return {cid:'paul',partId:part.id,node};
       })()`));
     await page.evaluate(node => (0,eval)(`doXSim('${node}:1')`), ctx.node);
-    assert.ok(await page.$('#rwwin'), width + ': simulation reward shown');
+    assert.ok(await page.$('#rwwin .ge2-box'), width + ': GE2 simulation reward shown');
+    const lootState = await page.evaluate(() => (0,eval)(`(() => {
+      const box=document.querySelector('#rwwin .ge2-box'), focus=box.querySelector('.ge2-focus');
+      const label=focus.querySelector('.ge2-focus-name b')?.textContent || '';
+      const metrics=[...focus.querySelectorAll('.ge2-metrics b')].map(x=>Number(x.textContent.replace('+','')));
+      const note=focus.querySelector('.ge2-progress')?.textContent || '';
+      const footer=box.querySelector('.ge2-actions').getBoundingClientRect();
+      const tiles=box.querySelector('.ge2-tiles').getBoundingClientRect();
+      const outer=box.getBoundingClientRect();
+      return {label,metrics,note,footerTop:footer.top,tilesBottom:tiles.bottom,
+        width:outer.width,height:outer.height,viewportW:innerWidth,viewportH:innerHeight,
+        hasRetry:!!box.querySelector('[data-isim]')};
+    })()`));
+    assert.ok(lootState.label && lootState.label.includes('·'),width + ': focused component label displayed');
+    assert.equal(lootState.metrics.length,3,width + ': acquired/stock/needed shown');
+    assert.ok(lootState.metrics[2]>0,width + ': recipe required amount shown');
+    assert.ok(lootState.note.includes('Осталось'),width + ': remaining requirement shown');
+    assert.ok(lootState.tilesBottom <= lootState.footerTop+2,width + ': footer never covers reward tiles');
+    assert.ok(lootState.width <= lootState.viewportW+2 && lootState.height<=lootState.viewportH+2,
+      width + ': GE2 result fits phone');
+    assert.ok(lootState.hasRetry,width + ': simulation repeat available');
+    await page.screenshot({path:'dist/ge2-rewards-' + width + '.png'});
     await page.click('[data-rwok]');
     const stayed = await page.evaluate(() => (0,eval)(
       '({partId:itemCtx.partId, title:document.querySelector(".e3sheet #it-name")?.textContent})'));
