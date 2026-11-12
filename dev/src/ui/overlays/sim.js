@@ -8,7 +8,9 @@ import { detailCid, openDetail } from '../hero-card.js';
 import { render } from '../router.js';
 import { itemIcon, starStr, thumb, toast } from '../common.js';
 import { recipeFor } from '../../logic/gear-crafting.js';
-import { enGet, enSpend } from '../../logic/progress.js';
+import { enGet, enSpend, prog } from '../../logic/progress.js';
+import { nextShards } from '../views/squad.js';
+import { unlockNeed } from '../../logic/relics.js';
 import { S, tickWater } from '../../core/state.js';
 import { persist } from '../../core/save.js';
 import { ITEMS, grantFrags } from '../../logic/gear.js';
@@ -79,8 +81,10 @@ function simFocus(key, context, r) {
   }
   if (key?.startsWith('shard:')) {
     const id=key.slice(6);if(!CH[id])return null;
+    const p=prog(id),owned=p.shards||0,need=(p.stars?nextShards(p):unlockNeed(CH[id]))||owned;
     return {kind:'shard',key:'shard:'+id,name:CH[id].sn,icon:ic('shard'),
-      breadcrumb:'Осколки персонажа',gained:r.sh[id]||0,owned:0,need:0,legacy:0,remaining:0};
+      breadcrumb:'Осколки персонажа',gained:r.sh[id]||0,owned,need,legacy:0,
+      remaining:Math.max(0,need-owned)};
   }
   return null;
 }
