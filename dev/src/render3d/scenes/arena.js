@@ -207,6 +207,24 @@ class Arena3D extends GameScene {
       this.glT = B.glKind === 'fall-of-atreides' || (typeof CINE_OFF === 'function' && CINE_OFF()) ? 0 : now; if (!this.glLight) { this.glLight = new B3.PointLight('gll', V3(0, 6, 2), this.scene); this.glLight.diffuse = col3('#ffc860'); this.glLight.range = 40; this.glLight.intensity = 0; }
     }
   }
+  // MD-ULT-2: reuse the *existing* arena, camera and authored GLB clip.
+  // Never allocate a second Engine, scene, render target or animation loop.
+  beginMuadCinematic(uid, durationMs) {
+    const o = this.units[uid];
+    if (!this.alive || !o || o.def?.id !== 'muaddib' || !o.root?._authored ||
+        !o.root._clips?.[o.root._clipNames?.ult]) return false;
+    const now = performance.now();
+    this.muadCine = { o, t0: now, dur: durationMs };
+    o.act = { key: 'gl', ab: o.def.gl, kind: 'cast', t0: now,
+      dur: durationMs, dir: V3(1, 0, 0), to: o.base.clone(), tg: [] };
+    return true;
+  }
+  endMuadCinematic() {
+    const c = this.muadCine;
+    if (!c) return;
+    this.muadCine = null;
+    if (c.o?.act?.key === 'gl' && c.o.act.t0 === c.t0) c.o.act = null;
+  }
   // BH7 approved storyboard — one temporary chair, no new scene/Engine/rAF.
   // The caster root receives the actual rise in _loop(); all objects are
   // disposed at the end or by GameScene.dispose on scene teardown.
@@ -444,7 +462,7 @@ class Arena3D extends GameScene {
     const bt = typeof BT !== 'undefined' && BT, cv = this.cv;
     const z = cvSize(cv);
     if (!bt || !cv.isConnected || (z.w || innerWidth) !== this.w || (z.h || innerHeight) !== this.h) return 'active';
-    const busy = !!(this.baronGL || this.cine || this.summons.length || (this.fxq && this.fxq.length) || (this.tr && this.tr.length) || (this.glT && now - this.glT < 1600) || (this.shakeT && now - this.shakeT < 300));
+    const busy = !!(this.muadCine || this.baronGL || this.cine || this.summons.length || (this.fxq && this.fxq.length) || (this.tr && this.tr.length) || (this.glT && now - this.glT < 1600) || (this.shakeT && now - this.shakeT < 300));
     if (bt.done && !busy) { if (!this.doneT) this.doneT = now; if (now - this.doneT > 1200) return 'static'; } else this.doneT = 0;
     if (!busy) { const ov = document.getElementById('overlay'); if (bt.waiting || bt.done || (typeof DLG !== 'undefined' && DLG && DLG.inBattle) || (ov && ov.childElementCount)) return 'idle'; }
     return 'active';
@@ -471,6 +489,22 @@ class Arena3D extends GameScene {
       B3.Vector3.LerpToRef(pos, T1, strength, pos);
       T1.set(caster.x, caster.y + 1.5, caster.z);
       B3.Vector3.LerpToRef(look, T1, strength, look);
+    }
+    if (this.muadCine) {
+      const C = this.muadCine, k = (now - C.t0) / C.dur;
+      if (k >= 1 || !C.o.root || C.o.root.isDisposed()) this.endMuadCinematic();
+      else {
+        // Frame the real animated caster on the left, reserving the right for
+        // the existing cinematic text. Oblique front view shows face and hands.
+        const p = C.o.base, entry = Math.min(1, k / .14);
+        const exit = Math.min(1, (1 - k) / .16);
+        const w = Math.max(0, Math.min(entry, exit));
+        const strength = w * w * (3 - 2 * w);
+        T1.set(p.x + 4.1, p.y + 2.3, p.z + 6.2);
+        B3.Vector3.LerpToRef(pos, T1, strength, pos);
+        T1.set(p.x + 1.65, p.y + 1.35, p.z);
+        B3.Vector3.LerpToRef(look, T1, strength, look);
+      }
     }
     if (this.glT && now - this.glT < 1600) { const k = Math.sin(Math.min(1, (now - this.glT) / 1600) * Math.PI); T1.set(0, this.camH * .7, this.camDist * .72); B3.Vector3.LerpToRef(pos, T1, k * .5, pos); look.set(LK.x, LK.y + .35, LK.z); if (this.glLight) this.glLight.intensity = 4 * k; }
     else if (this.glLight) this.glLight.intensity = 0;
