@@ -124,8 +124,26 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
   // the sword stays procedural (shared look with the rest of the roster)
   const gp = D.grip ? D.grip.p : [0, -.04, .01], w = grp(R.hand, gp[0], gp[1], gp[2]), steel = mat3('#eef2f6', { metalness: .6, roughness: .18, emissive: '#1a1e24' }), gold = mat3('#b08a3a', { metalness: .6, roughness: .3 });
   if (def.basic.dt === 'blade') {
-    add(w, mk(bBox(.03, .9, .012), steel, 0, .5, 0)); add(w, mk(bBox(.18, .028, .045), gold, 0, .04, 0)); add(w, mk(bCyl(.02, .02, .14, 8), mat3('#3a2a1a'), 0, -.05, 0)); add(w, mk(bSph(.03, 8), gold, 0, -.13, 0));
-    w.rotation.x = 1.6; mats.push(steel, gold);
+    if (def.id === 'muaddib') {
+      // Muad'Dib carries a compact curved crysknife, not the shared 0.9m sword.
+      // Keep the existing bone/grip and shadow behavior, with no new textures.
+      const ivory = mat3('#e9e0c6', { metalness: .05, roughness: .28, emissive: '#17140e' });
+      const grip = mat3('#49372b', { roughness: .75 });
+      const guard = mat3('#968269', { metalness: .3, roughness: .46 });
+      add(w, mk(bCyl(.024, .02, .14, 8), grip, 0, -.055, 0));
+      add(w, mk(bBox(.12, .026, .045), guard, 0, .028, 0));
+      const p1 = add(w, mk(bBox(.045, .19, .019), ivory, 0, .13, 0)); p1.rotation.z = -.10;
+      const p2 = add(w, mk(bBox(.037, .13, .016), ivory, -.018, .275, 0)); p2.rotation.z = -.28;
+      const tip = add(w, mk(bBox(.023, .067, .012), ivory, -.047, .363, 0)); tip.rotation.z = -.45;
+      w.rotation.x = 1.6; mats.push(ivory, grip, guard);
+      steel.dispose(); gold.dispose();
+    } else {
+      add(w, mk(bBox(.03, .9, .012), steel, 0, .5, 0));
+      add(w, mk(bBox(.18, .028, .045), gold, 0, .04, 0));
+      add(w, mk(bCyl(.02, .02, .14, 8), mat3('#3a2a1a'), 0, -.05, 0));
+      add(w, mk(bSph(.03, 8), gold, 0, -.13, 0));
+      w.rotation.x = 1.6; mats.push(steel, gold);
+    }
   } else { steel.dispose(); gold.dispose(); }
   for (const m of w.getChildMeshes()) if (SHG0) SHG0.addShadowCaster(m, false);
   const sc = (def.role === 'tank' ? 1.05 : 1) * (def.legendary ? 1.08 : 1), tl = X.tall || 1; root.scaling.set(sc * (tl > 1 ? 1.03 : 1), sc * tl, sc * (tl > 1 ? 1.03 : 1));
