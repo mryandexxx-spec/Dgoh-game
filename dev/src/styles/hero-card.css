@@ -34,6 +34,23 @@
 .hcsk.gl .hcski { border-color: #ffd040; color: #ffd040; box-shadow: 0 0 8px rgb(255 208 64 / .35); }
 .hcskt { min-width: 0; }
 .hcskt b { display: block; font: 600 12px/1.2 var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* MUAD3D staged readability: keep long Muad'Dib ability titles legible on
+   667×375 without enlarging the left column or changing other heroes. */
+@media (orientation: landscape) and (max-width: 700px) {
+  .hc[data-cid="muaddib"] .hcskt b {
+    font-size: 11px;
+    line-height: 1.13;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+  .hc[data-cid="muaddib"] .hcsk { gap: 5px; }
+}
+
 .hcskt small { display: block; font: 11px/1.2 var(--f-mono); color: var(--dust); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hcup { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(180deg, #8fd86a, #3f8a2e); color: #0c1a06; font: 700 11px/1 var(--f-body); border: 1.5px solid #e6ffd8; }
 .hcsk.dim { opacity: .5; }
