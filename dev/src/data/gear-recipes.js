@@ -26,8 +26,8 @@ const PARTS_BY_KIND = Object.freeze({
   compass: ['lens', 'frame'],
 });
 const partId = (item, part) => 'part:' + item.id + ':' + part;
-// Existing item fragments remain the sole farmable drop; no orphaned drop IDs.
-const partFragId = item => item.id;
+// GE1: every assembled part farms its own fragment key. Old itemId fragments remain legacy-only.
+const partFragId = (item, part) => 'frag:' + item.id + ':' + part;
 function gearRecipe(item, fragmentsNeeded, craftCost) {
   if (!item || !Number.isInteger(item.t) || item.t < 1 || item.t > 13) throw new Error('Invalid equipment item');
   const total = fragmentsNeeded[item.t];

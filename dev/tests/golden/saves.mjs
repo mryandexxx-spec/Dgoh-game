@@ -58,6 +58,9 @@ for (const entry of historical.saves) {
     assert.ok(journeys && typeof journeys.baron_legend==='object', 'Baron journey migration present');
     assert.deepEqual(journeys.baron_legend, {}, 'legacy saves start with no Baron progress');
     delete journeys.baron_legend;
+    // GE1 releases a separate, initially empty stock for ready equipment.
+    assert.deepEqual(entry[stage].gearOwned, {}, entry.file + ': GE1 whole-gear stock migration');
+    delete entry[stage].gearOwned;
   }
 }
 if (rest.includes('--update')) writeGolden('saves', out);

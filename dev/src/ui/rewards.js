@@ -30,8 +30,19 @@ function giveRewards(list) {
 const rewardsHtml = list => rwGrid(list, { sm: 1 });
 function accXP(n) { return accGain(n).map(L => `<b class="acclv">Уровень аккаунта ${L}!</b>`); }
 function fragLines(list) {
-  const agg = {}; for (const [id, q] of list) agg[id] = (agg[id] || 0) + q;
-  return Object.entries(agg).map(([id, q]) => `+${amt('frag', q, 'frag:' + id)} ${itemIcon(ITEMS[id], 18)} ${ITEMS[id].n}`);
+  const agg = {};
+  for (const [id,q] of list) agg[id] = (agg[id] || 0) + q;
+  const partNames = {core:'Сердечник',lens:'Линза',frame:'Каркас',fitting:'Крепление',lining:'Подкладка',seal:'Печать'};
+  return Object.entries(agg).map(([id,q]) => {
+    const complete = id.startsWith('gear:');
+    const parts = id.startsWith('frag:') ? id.split(':') : null;
+    const item = ITEMS[complete ? id.slice(5) : parts ? parts[1] : id];
+    if (!item) return '';
+    const title = complete ? 'Готовое снаряжение: ' + item.n
+      : parts ? 'Фрагменты «' + (partNames[parts[2]] || parts[2]) + '» — ' + item.n
+      : 'Универсальные фрагменты: ' + item.n;
+    return `+${amt('frag',q,'frag:' + item.id)} ${itemIcon(item,18)} ${title}`;
+  }).filter(Boolean);
 }
 
 
