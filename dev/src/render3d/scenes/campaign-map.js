@@ -4,6 +4,7 @@ import { B3, HAS_GL, HAS3D, loadB3, cvSize } from '../base.js';
 import { engineHost } from '../engine-host.js';
 import { GameScene } from '../game-scene.js';
 import { gfx } from '../quality.js';
+import { campaignPanDelta, campaignPinch, campaignTwist } from '../campaign-gestures.js';
 
 let ACTIVE = null;
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -166,36 +167,59 @@ class CampaignMapScene extends GameScene {
     this.cameraTween={sx:this.cx,sz:this.cz,x,z,t0:performance.now(),duration:380};
     this.t0=performance.now();this.dirty=true;
   }
+  // The camera's screen-right/screen-up axes determine the pan, not world X/Z.
+  // Per-pixel calibration uses the ACTUAL canvas CSS height and camera FOV;
+  // otherwise the same finger movement differs wildly between iPhone sizes.
+  panPixels(dx,dy) {
+    const delta=campaignPanDelta(dx,dy,{
+      alpha:this.alpha,beta:this.beta,radius:this.radius,
+      fov:this.cam.fov,height:this.stageHeight||this.cv.clientHeight||1,
+    });
+    this.cx+=delta.x;this.cz+=delta.z;
+  }
   pointerDown=e=>{
-    this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY});
+    this.cameraTween=null;
+    this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,moved:false});
+    if(this.pointers.size===2) {
+      const [a,b]=[...this.pointers.values()];
+      this._pinchD=Math.hypot(a.x-b.x,a.y-b.y);
+      this._pinchA=Math.atan2(a.y-b.y,a.x-b.x);
+      // A two-finger gesture never selects an underlying 3D mission.
+      for(const p of this.pointers.values())p.moved=true;
+    }
     try{this.cv.setPointerCapture(e.pointerId);}catch(_){}
   };
   pointerMove=e=>{
     const p=this.pointers.get(e.pointerId);if(!p)return;
     const dx=e.clientX-p.x,dy=e.clientY-p.y;
+    if(dx===0&&dy===0)return;
     p.x=e.clientX;p.y=e.clientY;
+    if(Math.hypot(p.x-p.sx,p.y-p.sy)>7)p.moved=true;
     this.cameraTween=null;
     if(this.pointers.size===1){
       if(e.altKey || e.buttons===2) this.alpha+=dx*.006;
-      else { const speed=this.radius/620;this.cx-=dx*speed;this.cz-=dy*speed; }
+      else this.panPixels(dx,dy);
     }else if(this.pointers.size===2){
-      const list=[...this.pointers.values()],d=Math.hypot(list[0].x-list[1].x,list[0].y-list[1].y);
-      const ang=Math.atan2(list[0].y-list[1].y,list[0].x-list[1].x);
-      if(this._pinchD){this.radius*=this._pinchD/Math.max(8,d);}
-      if(this._pinchA!==undefined) {
-        let da=ang-this._pinchA;
-        if(da>Math.PI)da-=Math.PI*2;
-        if(da< -Math.PI)da+=Math.PI*2;
-        this.alpha+=da*.65;
-      }
-      this._pinchD=d;this._pinchA=ang;
+      const [a,b]=[...this.pointers.values()];
+      // Midpoint translation and pinch zoom work together (as in native maps).
+      this.panPixels(dx*.5,dy*.5);
+      const distance=Math.hypot(a.x-b.x,a.y-b.y);
+      const angle=Math.atan2(a.y-b.y,a.x-b.x);
+      this.radius=campaignPinch(this._pinchD,distance,this.radius);
+      this.alpha+=campaignTwist(this._pinchA,angle)*.65;
+      this._pinchD=distance;this._pinchA=angle;
     }
     this.applyCamera();
   };
   pointerUp=e=>{
     const p=this.pointers.get(e.pointerId);
-    this.pointers.delete(e.pointerId); this._pinchD=null;this._pinchA=undefined;
-    if(!p || Math.hypot(e.clientX-p.sx,e.clientY-p.sy)>9 || this.pointers.size)return;
+    this.pointers.delete(e.pointerId);
+    this._pinchD=null;this._pinchA=undefined;
+    if(this.pointers.size===1) {
+      // No jump on the first move after lifting a second finger.
+      const left=[...this.pointers.values()][0];left.moved=true;
+    }
+    if(!p || p.moved || Math.hypot(e.clientX-p.sx,e.clientY-p.sy)>9 || this.pointers.size)return;
     const hit=this.scene.pick(e.offsetX,e.offsetY);
     const id=hit?.pickedMesh?.metadata?.campaignNodeId;
     if(Number.isInteger(id))this.select(id);
