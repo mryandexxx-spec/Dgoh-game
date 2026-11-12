@@ -56,6 +56,20 @@ try {
     });
     assert.equal(metrics.scroll,false,'no campaign viewport scroll');
     assert.equal(metrics.sceneCanvas,true,'canvas exists');
+    // C2.2: changing the selected mission must preserve the SAME Babylon canvas.
+    await page.evaluate(()=>{window.__campaignCanvas = document.querySelector('#c20world canvas');});
+    const firstSelected = await page.$eval('.c20-pin.on',el=>el.dataset.c20node);
+    await page.evaluate(first=>{
+      const next=[...document.querySelectorAll('.c20-pin')].find(el=>el.dataset.c20node!==first);
+      if(!next)throw Error('missing alternate mission');next.click();
+    },firstSelected);
+    const reused=await page.evaluate(()=>window.__campaignCanvas === document.querySelector('#c20world canvas'));
+    assert.equal(reused,true,'mission selection must keep existing 3D canvas');
+    assert.notEqual(await page.$eval('.c20-pin.on',el=>el.dataset.c20node),firstSelected,'selected mission updated');
+    await page.evaluate(()=>document.querySelector('[data-c20focus]').click());
+    assert.equal(await page.evaluate(()=>window.__campaignCanvas === document.querySelector('#c20world canvas')),
+      true,'recenter must keep existing canvas');
+
     assert.ok(metrics.visiblePins>0,'projected 3D mission labels visible');
     await page.evaluate(()=>document.querySelector('[data-c20node]')?.click());
     await page.waitForSelector('.c20-card');
