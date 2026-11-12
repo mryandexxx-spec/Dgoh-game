@@ -88,6 +88,16 @@ class CampaignMapScene extends GameScene {
     makeBox('harbour warehouse',16,1.7,2,4,3.3,3,roof);
     makeBox('spaceport deck',23,.15,11,9,.7,7,stone);
     makeBox('spaceport terminal',23,1.7,14,5,3,2,roof);
+    // The landing pad stands on a coastal causeway rather than floating on the sea.
+    makeBox('spaceport causeway',23,-.09,7.1,3.2,.95,9.5,stone);
+    for(const [x,z] of [[20,8],[26,8],[20,13],[26,13]]) {
+      makeBox('landing support',x,-.58,z,.9,.6,.9,coast);
+    }
+    makeBox('airfield control tower',26.7,2.35,11,1.45,4.2,1.45,roof);
+    const bollard=this.material('coastal beacon','#c9b07d');
+    for(const z of [5.2,7.8,10.3]) for(const x of [21.3,24.7]) {
+      makeBox('runway signal',x,.65,z,.3,.45,.3,bollard);
+    }
     // Architectural landmarks: stepped castle parapets, harbour piers and a
     // raised circular landing beacon remain readable when zoomed out on phones.
     for(const [x,z] of [[-17,-10],[-12,-14],[-7,-10],[-12,-6]]) {
