@@ -54,46 +54,49 @@
   box-shadow:inset 0 1px 0 rgba(255,236,199,.11),0 3px 8px rgba(0,0,0,.26);
 }
 .ros .rdd.on,.ros .rdd.open {background:linear-gradient(180deg,#654327,#332012)}
+/* SWGOH-like circular character portrait layout:
+   Use the original UI-kit sizing from roster.css without a nested --s override.
+   The former V4 rectangular tile styling shrank/obscured portrait SVGs and
+   clipped the curved seven-star row. The real ptRound() DOM stays unchanged. */
 .ros .rgrid {
-  column-gap: 5px;
-  row-gap: calc(var(--s) * .21);
-  padding-top:calc(var(--s) * .19);
+  column-gap: 4px;
+  row-gap: calc(var(--s) * .3);
+  padding-top: calc(var(--s) * .22);
 }
-.ros .hc {
-  position:relative;
-  isolation:isolate;
-  border-radius:11px;
-  padding:8px 3px 7px;
-  gap:calc(var(--s) * .12);
-  background:linear-gradient(155deg,rgba(246,198,127,.14),transparent 42%),
-    linear-gradient(180deg,#49301c 0%,#2c1d13 55%,var(--ui2-tile-bottom) 100%);
-  border:1px solid rgba(227,171,100,.31);
-  box-shadow:inset 0 1px 0 rgba(255,240,205,.17),
-    inset 0 -4px 10px rgba(0,0,0,.22),0 5px 12px rgba(0,0,0,.3);
-  contain:layout style;
+.ros .rgrid > button.hc {
+  background: none;
+  border: 0;
+  border-radius: 7px;
+  padding: 2px 0 0;
+  box-shadow: none;
+  overflow: visible;
+  isolation: auto;
 }
-.ros .hc::before {
-  content:"";position:absolute;z-index:-1;
-  inset:4px 5px auto;height:39%;
-  background:radial-gradient(ellipse at 50% 40%,rgba(229,171,98,.25),transparent 72%);
-  pointer-events:none;
+.ros .rgrid > button.hc .hpt {
+  /* inherit the 84px desktop / 64px landscape phone size from .ros */
+  width: var(--s);
+  height: var(--s);
+  overflow: visible;
 }
-.ros .hc.lockd {
-  border-color:rgba(138,113,87,.19);
-  background:linear-gradient(180deg,#302720,#1c1713);
+.ros .rgrid > button.hc .hpt .rim {
+  overflow: hidden; /* portrait artwork only, not the outer badges */
 }
-.ros .hc .hpt { --s: min(var(--ro-s, 64px), 100%); }
-.ros .hc .nm {
-  width:100%;max-width:100%;padding:0 2px;
-  font-size:clamp(10px,1.45vw,11.5px);
-  text-shadow:0 2px 3px #100803;
+.ros .rgrid > button.hc .hpt .stars {
+  z-index: 2;
+  overflow: visible;
 }
-.ros .hc .hsh {width:94%}
-.ros .hc:focus-visible {outline:2px solid var(--ui2-champagne);outline-offset:2px}
+.ros .rgrid > button.hc .nm {
+  max-width: 100%;
+  font-size: 11.5px;
+  text-shadow: 0 2px 3px #100803;
+}
+.ros .rgrid > button.hc:focus-visible {
+  outline: 2px solid var(--ui2-champagne);
+  outline-offset: 3px;
+}
 @media (hover:hover) {
-  .ros .hc:not(.lockd):hover {
-    border-color:#dfb27c;
-    box-shadow:inset 0 1px 0 rgba(255,240,205,.28),0 8px 19px rgba(0,0,0,.5);
+  .ros .rgrid > button.hc:not(.lockd):hover .hpt .ring {
+    border-color: var(--ui2-champagne);
   }
 }
 .ros .rpop {
@@ -222,7 +225,6 @@
 .profsheet .ptitle {padding:9px 11px}
 .profsheet .ptitle.on {background:linear-gradient(125deg,#5a3921,#281b13)}
 @media (orientation:landscape) and (max-height:520px) {
-  .ros .hc {padding:6px 2px 5px}
   .ros .rhead {padding-bottom:6px;margin-bottom:2px}
   .ros .rgrid {row-gap:calc(var(--s) * .17)}
   .hcsk {padding:2px 4px}
