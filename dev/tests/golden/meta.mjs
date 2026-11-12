@@ -128,12 +128,22 @@ function normalizedBH4Meta(x) {
   }
   return o;
 }
+// BH9.9: only the newly approved public legend may be absent from historical
+// roster-view baselines. Preserve the relative order of every legacy hero.
+function normalizedBH99Meta(x) {
+  const o=structuredClone(x);
+  for(const row of o.cases)if(row.g==='pkg4' && row.f.startsWith('rosterView(')){
+    for(const key of ['open','locked'])if(Array.isArray(row.out?.[key]))
+      row.out[key]=row.out[key].filter(id=>id!=='baron_legend');
+  }
+  return o;
+}
 if (rest.includes('--update')) writeGolden('meta', out);
 else {
   const old = readGolden('meta');
   const baseline = old && JSON.parse(old);
   const expected = baseline && { ...baseline.meta, cases: baseline.cases };
-  if (expected && canon(normalizedBH4Meta(expected)) === canon(normalizedBH4Meta(out)))
+  if (expected && canon(normalizedBH4Meta(normalizedBH99Meta(expected))) === canon(normalizedBH4Meta(normalizedBH99Meta(out))))
     console.log('OK meta: golden unchanged except approved BH4 baron roster position');
   else process.exit(compareGolden('meta', out) ? 0 : 1);
 }
