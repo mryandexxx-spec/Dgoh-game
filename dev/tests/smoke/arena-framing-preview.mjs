@@ -51,7 +51,8 @@ try {
           const f=A.project(o.root.position),h=A.project(o.root.position.add(new __B3.Vector3(0,o.h,0)));
           return {id:o.uid,side:o.side,height:f[1]-h[1]};
         });
-        return {cam:{x:A.camX,y:A.camH,z:A.camDist},rows,heroes};
+        const layout=[...A.worldHud.rows.values()].map(r=>({id:r.id,w:r.w,h:r.h,x:r.x,y:r.y,ax:r.ax,ay:r.ay}));
+        return {cam:{x:A.camX,y:A.camH,z:A.camDist},rows,heroes,layout};
       });
       results.push({tag,...data});
       for(const a of data.rows){

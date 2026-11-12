@@ -50,6 +50,9 @@ class WorldHudLayout {
         const h = Math.ceil(size ? size.blockSize : entry.contentRect.height);
         if (w !== row.w || h !== row.h) { row.w = w; row.h = h; this.dirty = true; }
       }
+      // Repack before this layout is painted, rather than waiting for the next
+      // (possibly slow WebGL) frame after statuses/target arrows change size.
+      if (this.width) this.place(this.width, this.height);
     });
   }
   begin() { for (const row of this.rows.values()) row.seen = false; }
