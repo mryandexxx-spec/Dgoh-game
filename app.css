@@ -2299,3 +2299,330 @@ nav.tabs .vname { font-family: var(--f-display); font-size: 20px; letter-spacing
   .e3right .src {border-radius:7px}
   .hcsk {border-radius:7px}
 }
+/* UI2 V4 / secondary screens. Warm Imperial material vocabulary.
+   Scoped to existing view classes; do not alter battle, Campaign 2.0,
+   roster portraits, game state, button identities or scroll interaction. */
+:root {
+  --ui2s-rim: rgba(233,184,115,.28);
+  --ui2s-edge: rgba(239,197,134,.12);
+  --ui2s-paper: #f2e5cc;
+  --ui2s-muted: #bba588;
+  --ui2s-panel: linear-gradient(148deg,rgba(249,211,148,.09),transparent 43%),linear-gradient(180deg,#392719,#21160e 74%,#1a100a);
+  --ui2s-shadow: inset 0 1px 0 rgba(255,231,186,.15),0 6px 16px rgba(6,3,1,.36);
+}
+/* Common section actions only inside the selected views. */
+#view:has(.quests) .btn,
+#view:has(.feats) .btn,
+#view:has(.trcards) .btn,
+#view:has(.tiers) .btn,
+#view:has(.jreq-group) .btn {
+  border-radius: 9px;
+  box-shadow: inset 0 1px 0 rgba(255,227,182,.12),0 3px 8px rgba(0,0,0,.22);
+}
+#view:has(.quests) .btn.go:not(:disabled),
+#view:has(.feats) .btn.go:not(:disabled),
+#view:has(.trcards) .btn.go:not(:disabled),
+#view:has(.tiers) .btn.go:not(:disabled),
+#view:has(.jreq-group) .btn.go:not(:disabled) {
+  border-color: #eabb7b;
+  background: linear-gradient(180deg,#f6c483,#d18b4e 66%,#a8612a);
+  color: #261609;
+  box-shadow: inset 0 1px 0 rgba(255,245,218,.48),0 4px 12px rgba(0,0,0,.32);
+}
+/* Daily: chest is the hero object, quests read as compact mission rows. */
+#view:has(.quests) .chest {
+  position:relative;
+  border-radius: 15px;
+  border-color: #ad7d45;
+  padding: 12px 15px;
+  background:
+    radial-gradient(ellipse at 14% 50%,rgba(255,189,84,.19),transparent 43%),
+    linear-gradient(115deg,#54371e,#302014 55%,#20150e);
+  box-shadow: inset 0 1px 0 rgba(255,224,165,.24),0 8px 21px rgba(0,0,0,.4);
+}
+#view:has(.quests) .chico {
+  filter: drop-shadow(0 5px 5px rgba(0,0,0,.48));
+}
+#view:has(.quests) .chest.ready {
+  border-color:#f2bf71;
+  box-shadow:inset 0 1px 0 rgba(255,241,199,.3),0 0 0 1px rgba(242,191,113,.24),0 10px 20px rgba(0,0,0,.38);
+}
+#view:has(.quests) .quest {
+  border-radius: 11px;
+  border-color:var(--ui2s-rim);
+  background:var(--ui2s-panel);
+  box-shadow:var(--ui2s-shadow);
+  min-height:57px;
+}
+#view:has(.quests) .quest.done {
+  border-color:#ce9652;
+  background:linear-gradient(95deg,rgba(229,148,63,.19),transparent 60%),linear-gradient(180deg,#392719,#21160e);
+}
+#view:has(.quests) .quest.got {opacity:.65}
+#view:has(.quests) .chbar,#view:has(.quests) .qbar {
+  border-radius:20px;overflow:hidden;
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.46);
+}
+#view:has(.quests) .calcard {
+  border-radius:12px;
+  background:linear-gradient(105deg,#42301b,#22180f);
+  box-shadow:var(--ui2s-shadow);
+}
+/* Feats: collection-level award cards and progress steps. */
+#view:has(.feats) .fhead {align-items:center;margin-bottom:10px}
+#view:has(.feats) .fhead b {
+  color: #f6ce8b;
+  text-shadow: 0 2px 10px rgba(224,156,73,.25);
+}
+#view:has(.feats) .feats {gap:10px}
+#view:has(.feats) .feat {
+  position:relative;
+  border-radius: 13px;
+  border-color:var(--ui2s-rim);
+  background:var(--ui2s-panel);
+  box-shadow:var(--ui2s-shadow);
+  padding:12px 14px;
+}
+#view:has(.feats) .feat.ready {
+  border-color: #dda35f;
+  box-shadow:inset 0 1px 0 rgba(255,230,183,.25),0 0 0 1px rgba(218,162,92,.18),0 7px 17px rgba(0,0,0,.37);
+}
+#view:has(.feats) .feat.done {
+  background:linear-gradient(120deg,rgba(218,163,73,.19),transparent 58%),linear-gradient(180deg,#362719,#21160f);
+}
+#view:has(.feats) .fth h4 {color:var(--ui2s-paper);font-size:clamp(17px,2vw,20px)}
+#view:has(.feats) .frank {color:#e7b16f !important}
+#view:has(.feats) .fpip {
+  border-radius:7px;
+  border-color:rgba(228,184,115,.25);
+  background:rgba(13,8,4,.21);
+}
+#view:has(.feats) .fpip.got {
+  background:linear-gradient(180deg,#edc481,#b57d37);
+  border-color:#edc481;
+}
+#view:has(.feats) .fpip.rdy {
+  color:#ffe1a8;
+  border-color:#e0a764;
+  animation:none; /* no continuous decorative animation during idle */
+}
+#view:has(.feats) .fbar {height:16px;border-radius:20px}
+#view:has(.feats) .fbar i {
+  background:linear-gradient(90deg,#a46a30,#eeb76e);
+}
+/* Trials: retain actual 3D scene thumbnails, align supporting texts and action. */
+#view:has(.trcards) .trcards {gap:12px;padding:5px 3px 11px}
+#view:has(.trcards) .trcard {
+  width:210px;
+  border-radius:14px;
+  border-color:var(--ui2s-rim);
+  padding:9px;
+  gap:6px;
+  background:var(--ui2s-panel);
+  box-shadow:var(--ui2s-shadow);
+}
+#view:has(.trcards) .trcard.sel {
+  border-color:#edb678;
+  box-shadow:inset 0 1px 0 rgba(255,229,191,.21),0 0 0 1px rgba(244,186,105,.37),0 8px 22px rgba(0,0,0,.48);
+}
+#view:has(.trcards) .trcard.off {
+  filter:none;
+  opacity:.54;
+}
+#view:has(.trcards) .trcard.off.sel {opacity:.78}
+#view:has(.trcards) .trt {font-size:17px;color:var(--ui2s-paper)}
+#view:has(.trcards) .trart {
+  border-radius:10px;
+  border-color:rgba(221,171,103,.32);
+  box-shadow:inset 0 0 0 1px rgba(255,240,207,.1),0 4px 11px rgba(0,0,0,.35);
+}
+#view:has(.trcards) .trnote {color:#efc58d;letter-spacing:.06em}
+#view:has(.trcards) .trfoot {
+  border-radius:9px;
+  background:linear-gradient(180deg,#ba7e46,#73441f);
+  border-color:rgba(239,189,123,.65);
+  color:#fff0d7;
+  font-size:14px;
+}
+#view:has(.trcards) .trcard.off .trfoot {background:linear-gradient(180deg,#4b3b2c,#2b2118);border-color:#66503b}
+#view:has(.trcards) .trcard .trfoot.done {background:linear-gradient(180deg,#5b8948,#365522);border-color:#91bd6e}
+#view:has(.trcards) .trdetail {
+  border-radius:13px;border-color:var(--ui2s-rim);
+  background:var(--ui2s-panel);
+  box-shadow:var(--ui2s-shadow);
+}
+#view:has(.trcards) .trtier {
+  border-radius:9px;
+  border-color:rgba(230,183,114,.25);
+  background:rgba(12,7,4,.24);
+}
+/* Raid and legends: keep real tier status and functional actions. */
+#view:has(.tiers) .tier {
+  border-color:var(--ui2s-rim);
+  border-radius:12px;
+  background:var(--ui2s-panel);
+  box-shadow:var(--ui2s-shadow);
+  min-height:75px;
+}
+#view:has(.tiers) .tier.done {
+  border-color:rgba(195,174,92,.52);
+  background:linear-gradient(135deg,rgba(174,150,66,.14),transparent 66%),linear-gradient(180deg,#372719,#23170f);
+}
+#view:has(.tiers) .tier h4 {color:var(--ui2s-paper);font-size:15px}
+#view:has(.tiers) .tier .thumb {border-radius:9px}
+#view:has(.tiers) .panel {
+  border-radius:12px;
+  border-color:var(--ui2s-rim);
+  background:var(--ui2s-panel);
+  box-shadow:var(--ui2s-shadow);
+}
+#view:has(.jreq-group) .ctabs {gap:7px}
+#view:has(.jreq-group) .ctab {
+  border-radius:10px;
+  border-color:rgba(225,173,104,.35);
+  background:linear-gradient(180deg,#382719,#22160f);
+  box-shadow:inset 0 1px 0 rgba(255,234,194,.11);
+}
+#view:has(.jreq-group) .ctab.on {
+  border-color:#e9b775;
+  background:linear-gradient(180deg,#654226,#352111);
+  box-shadow:inset 0 1px 0 rgba(255,230,191,.25),0 3px 10px rgba(0,0,0,.31);
+}
+#view:has(.jreq-group) .req > div {
+  border-radius:8px;border-color:rgba(236,180,106,.25);
+  background:rgba(16,10,5,.2);
+}
+/* Rules remain a readable reference, not a decorative dashboard. */
+#view:has(.rules) .rules {max-width:100%}
+#view:has(.rules) .tbl {
+  border-radius:12px;
+  border:1px solid var(--ui2s-rim);
+  background:var(--ui2s-panel);
+  box-shadow:var(--ui2s-shadow);
+  overflow-x:auto;
+}
+#view:has(.rules) .tbl table {border-collapse:separate;border-spacing:0;min-width:440px}
+#view:has(.rules) .tbl th {
+  background:linear-gradient(180deg,#53351d,#332114);
+  color:#f4dfbe;
+}
+#view:has(.rules) .tbl td,#view:has(.rules) .tbl th {border-color:rgba(222,174,102,.18)}
+#view:has(.rules) .rules > p {color:#dfcbb0;line-height:1.45}
+@media (orientation:landscape) and (max-height:520px) {
+  #view:has(.quests) .chest {padding:8px 11px;gap:8px}
+  #view:has(.quests) .quest {min-height:43px;padding:6px 9px}
+  #view:has(.feats) .feat {padding:9px 11px;gap:5px}
+  #view:has(.feats) .feats {grid-template-columns:repeat(auto-fill,minmax(265px,1fr))}
+  #view:has(.trcards) .trcard {width:185px;padding:7px;gap:4px}
+  #view:has(.trcards) .trt {font-size:15px}
+  #view:has(.trcards) .trdetail {padding:8px}
+  #view:has(.tiers) .tier {padding:7px 9px;min-height:60px}
+}
+@media (max-width:700px) {
+  #view:has(.feats) .feats {grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+  #view:has(.trcards) .trcard {width:172px}
+  #view:has(.tiers) .tier {gap:7px;grid-template-columns:90px minmax(0,1fr) auto}
+  #view:has(.tiers) .tier .btn {min-width:0}
+}
+
+/* Jihad: card materials only. The scrollable tactical map, node positions,
+   paths, touch handling and battle transitions are deliberately untouched. */
+#view .cqdiffs > .cqdiff {
+  border-radius: 13px;
+  border-color:var(--ui2s-rim);
+  background:var(--ui2s-panel);
+  box-shadow:var(--ui2s-shadow);
+}
+#view .cqdiffs > .cqdiff.d-easy {border-color:rgba(108,171,99,.64)}
+#view .cqdiffs > .cqdiff.d-normal {border-color:rgba(102,151,202,.7)}
+#view .cqdiffs > .cqdiff.d-hard {border-color:rgba(207,109,69,.8)}
+#view .cqdiffs > .cqdiff.locked {opacity:.54}
+#view .cqdiffs > .cqdiff h3 {color:var(--ui2s-paper)}
+#view .cqitem {
+  border-radius:9px;
+  border-color:rgba(224,177,113,.34);
+  background:linear-gradient(145deg,rgba(255,219,164,.12),rgba(23,15,10,.6));
+  box-shadow:inset 0 1px 0 rgba(255,226,181,.1);
+}
+#view .cqgoods > .cqgood,
+#view .cqgoods > .item {
+  border-radius:11px;
+  border-color:var(--ui2s-rim);
+  background:var(--ui2s-panel);
+  box-shadow:var(--ui2s-shadow);
+}
+#view .cqgoods .btn {border-radius:9px}
+#view .cqdet,#view .cdetail {
+  border-radius:12px;
+  border-color:rgba(231,183,114,.25);
+}
+#view .cqmap {
+  border-color:rgba(231,183,114,.28);
+  border-radius:10px;
+  /* preserve horizontal native panning of the campaign-style node map */
+}
+/* Recycler: its inline <style> belongs to the screen, so higher specificity
+   is intentional. Keep independent scrollable work/quote columns as-is. */
+#view .ixpage .ixpanel {
+  border-radius:13px;
+  border-color:var(--ui2s-rim);
+  background:var(--ui2s-panel);
+  box-shadow:var(--ui2s-shadow);
+}
+#view .ixpage .ixkinds button {
+  border-radius:9px;
+  border-color:rgba(223,175,107,.34);
+  background:linear-gradient(180deg,#3d291a,#25180f);
+  box-shadow:inset 0 1px 0 rgba(255,231,190,.12);
+}
+#view .ixpage .ixkinds button.on {
+  border-color:#e9ae6b;
+  color:#ffdfaa;
+  background:linear-gradient(180deg,#664327,#382314);
+}
+#view .ixpage .ixtabs .btn {
+  border-radius:10px;
+  background:linear-gradient(180deg,#3b2819,#21160e);
+}
+#view .ixpage .ixtabs .btn.go {
+  background:linear-gradient(180deg,#f1bc78,#c98545);
+  color:#271608;
+}
+#view .ixpage .ixitem {
+  border-color:rgba(236,184,116,.19);
+  border-radius:8px;
+  padding:6px 5px;
+}
+#view .ixpage .ixitem .btn {
+  border-radius:8px;
+  min-height:29px;
+}
+#view .ixpage .ixrate {
+  border-radius:12px;
+  border-color:var(--ui2s-rim);
+  background:var(--ui2s-panel);
+  box-shadow:var(--ui2s-shadow);
+}
+#view .ixpage .ixbadge {
+  border-radius:8px;
+  border-color:rgba(229,174,107,.3);
+  background:linear-gradient(180deg,#47301d,#281a11);
+}
+#view .ixpage .ixprog {
+  border-radius:20px;
+  border-color:rgba(233,181,111,.38);
+  background:#100a06;
+}
+#view .ixpage .ixprog i {background:linear-gradient(90deg,#ac682e,#efb66f)}
+#view .ixpage .ixnum {color:#f6c887;text-shadow:0 2px 8px rgba(255,174,75,.15)}
+#view .ixmodal .panel {
+  border-radius:14px;
+  border-color:#ba8954;
+  background:var(--ui2s-panel);
+  box-shadow:0 14px 45px rgba(0,0,0,.65);
+}
+@media (orientation:landscape) and (max-height:520px) {
+  #view .ixpage .ixpanel {padding:7px}
+  #view .ixpage .ixitem {padding:4px 3px}
+  #view .ixpage .ixrate {padding:8px}
+}
