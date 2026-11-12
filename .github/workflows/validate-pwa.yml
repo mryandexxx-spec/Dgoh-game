@@ -32,6 +32,7 @@ jobs:
       - run: node tools/check-deps.mjs
       - run: npm run build
       - run: node tools/check-bundle.mjs dist/pwa/app.js
+      - run: node tests/arena-hud-layout.mjs dist/pwa/index.html
       - run: node tests/smoke/young-baron-cpu.mjs dist/pwa/index.html
       - run: node tests/baron-legend-contract.mjs
       - run: node tests/baron-legend-progress.mjs

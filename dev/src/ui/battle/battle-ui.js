@@ -311,6 +311,7 @@ function unitHtml(u, B, ctx, fig = figSvg(u) + figBubble(u)) {
   const hit = B.events.some(e => e.uid === u.uid && /dmg|crit|raw|shield/.test(e.kind)), dying = B.events.some(e => e.uid === u.uid && e.kind === 'death');
   const cls = ['unit', 'side-' + u.side, u.def.legendary ? 'legend' : '', u.relic ? 'relic' : '', u.charmed ? 'charmed' : '', u.def.boss ? 'boss ph' + u.phase : '', u.alive ? '' : 'dead', dying ? 'dying' : '', B.active === u ? 'active' : '', B.actor === u.uid ? 'lunge' : '', isT ? 'tgt' : '', isC ? 'cur' : '', hit ? 'hit' : ''].join(' ');
   return `<div class="${cls}" data-uid="${u.uid}" style="--tc:${u.relic ? RELIC_COL : TIER_COL[u.gear || 1]};left:${pos[0]}%;top:${pos[1]}%;--s:${pos[2]};--d:-${(ghash(u.uid + u.def.id) % 30) / 10}s;z-index:${Math.round(pos[1])}" ${isT ? `tabindex="0" role="button" aria-label="Цель: ${u.def.sn}"` : ''}>
+    ${BT.pkg9 ? '<div class="world-label">' : ''}
     ${isC || isCA ? `<div class="tcur ${isCA && !isC && u.side === 'A' ? 'ally' : ''}"><i></i></div>` : ''}
     <div class="hud">
       ${u.alive && Object.keys(u.fx).length ? `<div class="fxs" data-fxu="${u.uid}" role="button" tabindex="0" aria-label="Эффекты: ${Object.keys(u.fx).map(k => FX[k].n).join(', ')}">${Object.keys(u.fx).map(k => fxIcon(k, u.fx[k])).join('')}</div>` : ''}
@@ -322,6 +323,7 @@ function unitHtml(u, B, ctx, fig = figSvg(u) + figBubble(u)) {
       ${!u.def.boss && spiceUser(u.def) && u.glOn ? `<div class="hb spm ${B.spice[u.side] >= 100 ? 'full' : ''}" title="Меланж ${B.spice[u.side]}%"><i style="width:${Math.min(100, B.spice[u.side])}%"></i></div>` : ''}
     </div>
     ${intent ? `<div class="intent">${intent}</div>` : ''}
+    ${BT.pkg9 ? '</div>' : ''}
     <div class="fig ${u.side === 'B' ? 'flip' : ''}">${fig}</div>
     <div class="shadow"></div>
     <div class="uname">${u.def.sn}${u.def.boss ? ` · фаза ${u.phase}: ${PHASES[u.phase]}` : ''}</div>

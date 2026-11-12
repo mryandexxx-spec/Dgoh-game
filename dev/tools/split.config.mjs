@@ -41,6 +41,7 @@ export const SPLIT = [
   [1512, 'render3d/characters/procedural.js'],
   [1666, 'render3d/characters/pose-generic.js'],
   [1739, 'render3d/worm.js'],
+  [1800, 'render3d/world-hud.js'],
   [1800, 'render3d/scenes/arena.js'],
   [2196, 'render3d/characters/pose-duncan.js'],
   [2333, 'render3d/characters/pose-baron.js'],
