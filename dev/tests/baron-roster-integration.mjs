@@ -6,13 +6,13 @@ import { STAGED_HERO_IDS, defaultStagedHero, stageBaronRoster, baronRosterGate, 
 import { BARON_APPROVED_STAGES } from '../src/data/baron-legend-approved.js';
 
 assert.deepEqual(STAGED_HERO_IDS, ['baron_legend','margot','yue']);
-assert.equal(CH.baron_legend, undefined, 'Unapproved legendary art must not appear in live roster');
+assert.equal(CH.baron_legend.id, 'baron_legend', 'BH9.9 approved public legendary hero');
 assert.equal(CH.margot.id,'margot','Approved normal Margot kit is present');
 assert.equal(CH.yue.id,'yue','Approved normal Yue kit is present');
 assert.equal(CH.baron.id, 'baron');
 assert.equal(CH.baron.legendary, undefined);
 assert.equal(CH.muaddib.gl.kind, 'prophecy');
-assert.deepEqual(CHARS.some(c => c.id === BARON_LEGEND_KIT.id), false);
+assert.equal(CHARS.filter(c => c.id === BARON_LEGEND_KIT.id).length,1);
 
 const sample = { roster: { baron: { stars: 7, gear: 13, relic: 7, shards: 12 } }, journeys: { muaddib: {0:true} } };
 const saved = structuredClone(sample);
@@ -69,7 +69,7 @@ assert.equal(preview.requirements.completed, 10);
 assert.equal(preview.requirements.ready, true);
 assert.equal(preview.passive, 'Алчность');
 assert.equal(preview.leader, 'Дом Харконненов');
-assert.equal(CH.baron_legend, undefined, 'Preview must not publish the hero');
+assert.equal(CH.baron_legend.id, 'baron_legend', 'Legacy preview must not modify the public hero');
 assert.equal(CH.margot.id,'margot');
 assert.equal(CH.yue.id,'yue');
 assert.deepEqual(baronLegendPreview({}).progress,
@@ -86,6 +86,6 @@ assert.match(cardSource, /if \(!stagedPreview && !CH\[id\]\) return/);
 assert.match(cardSource, /if \(!button\.matches\('\[data-close\],\[data-dback\],\[data-hcstat\]'\)\) button\.disabled = true/);
 console.log('BH8 shared hero card/3D scene, locked staging entry and mutation guards: PASS');
 
-console.log('BH8 read-only staged roster preview, 4 HUD slots and no public hero: PASS');
+console.log('BH9.9 separate public legend plus read-only historical preview: PASS');
 
 console.log('BH9.7 regular Margot/Yue roster plus separate staged Baron preview and safe event gate: PASS');
