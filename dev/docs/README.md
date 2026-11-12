@@ -16,3 +16,5 @@
 - `AUDIT_perf_memory.md` — аудит производительности монолита и статус фазы 1.
 - `RELEASE_PLAN.md` — пакеты A–D (v39–v42) эпохи монолита.
 - `JIHAD_NOTES.md` — механики Джихада (диски и пр.) на v38.
+
+- **MD-ULT-1 — Муад’Диб, манекен на экране ульты:** [handoff 12.11.2026](MD_ULT1_MUADDIB_CINEMATIC_HANDOFF_2026_11_12.md) — причина в `figureSVG(d, true)` / asynchronous baked portrait fallback; ожидает исправления.
