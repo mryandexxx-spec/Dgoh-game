@@ -38,14 +38,14 @@ const goLeg = (k, label) => `<button class="btn mini" data-jkey="${k}">${label}<
 const navRow = (icon, title, text, btns) => `<div class="src"><div class="srci">${icon}</div><div class="srct"><b>${title}</b><span>${text}</span></div>${btns ? `<div class="srca">${btns}</div>` : ''}</div>`;
 const wormIco = () => `<svg viewBox="0 0 24 24" style="color:var(--worm)">${SPOT_ICONS.worm}</svg>`;
 const go = (v, label) => `<button class="btn mini" data-goto="${v}">${label}</button>`;
-function itemSourceRows(it) {
-  const sources = gearSources(it.id);
+function itemSourceRows(it, fragmentId = null, type = 'fragment') {
+  const sources = gearSources(fragmentId || it.id, type);
   const missions = pickSrc(sources.filter(s => s.type === 'mission').map(s => s.id));
-  const rows = missions.map(i => campRow(i, `шанс ≈${Math.round(nodeChance(i) * 100)}% за бой`));
+  const rows = missions.map(i => { const src = sources.find(x => x.type === 'mission' && x.id === i); return campRow(i, `шанс ${(src.chance * 100).toLocaleString('ru-RU',{maximumFractionDigits:2})}% за бой`); });
   const shop = sources.find(s => s.type === 'sietch');
   if (shop) rows.push(navRow(ic('teeth'), 'Лавка сиетча',
     `${amt('teeth', shop.price)} за фрагмент · у вас ${amt('teeth', S.teeth)}`,
-    [1, 5].map(q => `<button class="btn mini" data-fbuy="${it.id}:${q}" ${S.teeth >= q * shop.price ? '' : 'disabled'}>Купить ${q}<small>${amt('teeth', q * shop.price)}</small></button>`).join('')));
+    [1, 5].map(q => `<button class="btn mini" data-fbuy="${fragmentId || it.id}:${q}" ${S.teeth >= q * shop.price ? '' : 'disabled'}>Купить ${q}<small>${amt('teeth', q * shop.price)}</small></button>`).join('')));
   const raids = sources.filter(s => s.type === 'raid');
   if (raids.length) rows.push(navRow(wormIco(), 'Рейд «Шаи-Хулуд»',
     `Случайные фрагменты Т${raids.map(s => s.tier + 1).join(', Т')} в награде за урон`,
@@ -107,6 +107,19 @@ function openInfo(key, keepScroll) {
       <div class="kv" style="margin-top:10px"><span>Пополнений сегодня</span><div>${n} из ${REFILL_MAX}</div><span>Следующее</span><div>${n >= REFILL_MAX ? 'лимит исчерпан' : `+${amtN} за ${amt('cry', c)}`}</div><span>Кристаллы</span><div>${amt('cry', S.cry)}</div></div>
       <div class="acts" style="margin-top:10px">${n >= REFILL_MAX ? '<span class="lockd">Возвращайтесь завтра — лимит обновится в полночь</span>' : `<button class="btn ${S.cry >= c ? 'go' : 'lack'}" data-refill="${cand ? 'candle' : '1'}">Пополнить +${amtN}<small>${amt('cry', c)}</small></button>`}${have >= cost ? '<span class="qok">✓ Теперь хватает</span>' : ''}</div>`;
     rows = [navRow(ic('cry'), 'Кристаллы пряности', `У вас ${amt('cry', S.cry)}.`, `<button class="btn mini" data-iswitch="cry">Где взять</button>`)];
+  } else if (kind === 'gegear' && id && ITEMS[id]) {
+    const it = ITEMS[id];
+    head = `<div class="ihead">${itemIcon(it,72)}<div><h3>Готовое снаряжение: ${it.n}</h3><div class="sub">В инвентаре: ${S.gearOwned?.[id] || 0} · устанавливается сразу без сборки</div></div></div>`;
+    rows = itemSourceRows(it, null, 'complete');
+    if (!rows.length) body = '<p class="sub">Готовый предмет не выпадает в боях. Соберите его из компонентов.</p>';
+  } else if (kind === 'gefrag' && key.startsWith('gefrag:')) {
+    const frag = key.slice('gefrag:'.length);
+    const it = ITEMS[frag.split(':')[1]];
+    if (!it) return;
+    const part = frag.split(':')[2];
+    const names = {core:'Сердечник',lens:'Линза',frame:'Каркас',fitting:'Крепление',lining:'Подкладка',seal:'Печать'};
+    head = `<div class="ihead">${itemIcon(it,72)}<div><h3>Фрагменты: ${names[part] || part}</h3><div class="sub">${it.n} · в запасе ${S.inv[frag] || 0}; старые универсальные ${S.inv[it.id] || 0}</div></div></div>`;
+    rows = itemSourceRows(it, frag, 'fragment');
   } else if (kind === 'frag' && id && ITEMS[id]) {
     const it = ITEMS[id], have = S.inv[id] || 0, who = [];
     for (const cid of ROSTER_IDS) { const p = prog(cid); if (!p.stars) continue; gearPlan(cid, p.gear).forEach((x, k) => { if (x === id && !p.eq[k]) who.push(cid); }); }
