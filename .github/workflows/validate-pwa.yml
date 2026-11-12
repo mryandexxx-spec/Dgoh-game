@@ -54,6 +54,7 @@ jobs:
       - run: node tests/baron-roster-integration.mjs
       - run: node tests/baron-legend-model-asset.mjs
       - run: node tests/muad-dib-asset.mjs
+      - run: node tests/muad-dib-skinning.mjs
       - run: node tests/baron-legend-animation.mjs
       - run: node tests/baron-legend-skinning.mjs dist/pwa/index.html
       - run: node tests/baron-legend-cinematic.mjs dist/pwa/index.html
