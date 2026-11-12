@@ -6,6 +6,7 @@ import { RES_INFO } from '../overlays/info.js';
 import { getRes, prog } from '../../logic/progress.js';
 import { S } from '../../core/state.js';
 import { FRAG_NEED, ITEMS, SHOP_FRAG, TIER_COL, gearPlan } from '../../logic/gear.js';
+import { PARTS_BY_KIND, partFragId } from '../../data/gear-recipes.js';
 import { ROSTER_IDS, RW_NAME, todayKey } from '../../logic/economy.js';
 import { portrait } from '../../render2d/figures.js';
 import { ghash } from '../../data/looks.js';
@@ -47,10 +48,23 @@ function shopItems(sk) {
 const findShopItem = key => shopItems(key.split(':')[0]).find(x => x.key === key);
 function shopFragsHtml() {
   const need = new Map();
-  for (const cid of S.squad) { const p = prog(cid); gearPlan(cid, p.gear).forEach((id, k) => { if (!p.eq[k] && ITEMS[id].t >= 6) need.set(id, (need.get(id) || []).concat(CH[cid].sn)); }); }
-  return `<p class="chap" style="margin:22px 0 8px">Фрагменты снаряжения VI–XIII</p>` +
-    (need.size ? `<div class="shop">${[...need].map(([id, who]) => { const it = ITEMS[id], have = S.inv[id] || 0;
-      return `<div class="item">${itemIcon(it, 40)}<div class="t">${it.n}</div><div class="s">${who.join(', ')} · есть ${amt('frag', have + '/' + FRAG_NEED[it.t])}</div><button class="btn" data-fbuy="${id}:1" ${S.teeth >= SHOP_FRAG[it.t] ? '' : 'disabled'}>1 за ${amt('teeth', SHOP_FRAG[it.t])}</button></div>`; }).join('')}</div>`
+  for (const cid of S.squad) {
+    const p = prog(cid);
+    gearPlan(cid, p.gear).forEach((id, k) => {
+      if (!p.eq[k] && ITEMS[id].t >= 6)
+        need.set(id, (need.get(id) || []).concat(CH[cid].sn));
+    });
+  }
+  return `<p class="chap" style="margin:22px 0 8px">Фрагменты компонентов снаряжения VI–XIII</p>` +
+    (need.size ? `<div class="shop">${[...need].flatMap(([id, who]) => {
+      const it = ITEMS[id], names = PARTS_BY_KIND[it.kind] || [];
+      return names.map((part, index) => {
+        const key = partFragId(it, part), required = index ? Math.floor(FRAG_NEED[it.t] / 2) : Math.ceil(FRAG_NEED[it.t] / 2);
+        const have = S.inv[key] || 0, legacy = S.inv[id] || 0;
+        const title = {core:'Сердечник',lens:'Линза',frame:'Каркас',fitting:'Крепление',lining:'Подкладка',seal:'Печать'}[part] || part;
+        return `<div class="item">${itemIcon(it, 40)}<div class="t">${it.n} · ${title}</div><div class="s">${who.join(', ')} · ${amt('frag', have + '/' + required)} · старых универсальных: ${legacy}</div><button class="btn" data-fbuy="${key}:1" ${S.teeth >= SHOP_FRAG[it.t] ? '' : 'disabled'}>1 за ${amt('teeth', SHOP_FRAG[it.t])}</button></div>`;
+      });
+    }).join('')}</div>`
       : `<p class="sub">Сейчас героям отряда не нужны предметы VI–XIII.</p>`);
 }
 function renderShop() {

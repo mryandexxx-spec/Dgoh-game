@@ -14,12 +14,12 @@ import { quest } from '../logic/daily.js';
 
 function craftAllPlan(cid) {
   const p = prog(cid); if (!p.stars) return [];
-  const inv = { ...S.inv }, parts = { ...(S.gearParts || {}) };
+  const inv = { ...S.inv }, parts = { ...(S.gearParts || {}) }, owned = { ...(S.gearOwned || {}) };
   const wallet = { sol: S.solari, pl: S.plast }, out = [];
   for (let k = 0; k < 6; k++) {
     if (p.eq[k]) continue;
     const it = slotState(cid, k).it;
-    const result = craftAndEquip(it.id, inv, parts, wallet);
+    const result = craftAndEquip(it.id, inv, parts, wallet, owned);
     if (result.ok) out.push({ k, it, steps: result.steps });
   }
   return out;
@@ -30,7 +30,7 @@ function craftAll(cid) {
   const wallet = { sol: S.solari, pl: S.plast };
   for (const { k, it } of plan) {
     if (p.eq[k]) continue;
-    const result = craftAndEquip(it.id, S.inv, S.gearParts, wallet);
+    const result = craftAndEquip(it.id, S.inv, S.gearParts, wallet, S.gearOwned);
     if (!result.ok) continue;
     p.eq[k] = true;
     quest('craft');

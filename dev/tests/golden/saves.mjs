@@ -4,6 +4,7 @@
 //   node tests/golden/saves.mjs <game.html> [--update]
 // Реальные сохранения: положите в tests/fixtures/saves/ файл .json (сам объект) или .txt (код «Экспорт сохранения»).
 import fs from 'node:fs';
+import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadGame } from '../lib/load.mjs';
@@ -29,4 +30,15 @@ for (const f of [null, ...files]) {
 }
 console.log('сохранений:', saves.length, saves.map(s => `${s.file}${s.startError ? ' [start: ' + s.startError + ']' : ''}`).join('; '));
 const out = { n: saves.length, saves };
-if (rest.includes('--update')) writeGolden('saves', out); else process.exit(compareGolden('saves', out) ? 0 : 1);
+if (rest.includes('--update')) writeGolden('saves', out);
+else {
+  const historical = structuredClone(out);
+  for (const entry of historical.saves) {
+    for (const stage of ['fillSave','start']) {
+      if (!entry[stage]) continue;
+      assert.deepEqual(entry[stage].gearOwned, {}, entry.file + ': GE1 adds empty whole-gear stock');
+      delete entry[stage].gearOwned; // strict golden for every legacy field
+    }
+  }
+  process.exit(compareGolden('saves', historical) ? 0 : 1);
+}

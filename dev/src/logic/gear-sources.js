@@ -1,32 +1,26 @@
-// E3: детерминированный индекс мест получения фрагментов.
-// Вычисляется из существующих таблиц наград; без DOM, без копии списка миссий.
+// GE1: source lookup from exactly the same indices as reward generation.
 import './gear-crafting.js'; // порядок исполнения
 import { NODES } from '../data/campaigns.js';
-import { ITEMS, NODE_ITEMS, SHOP_FRAG, RAID_FRAGS, nodeChance } from './gear.js';
-
-const INDEX = (() => {
-  const map = new Map();
-  for (let i = 0; i < NODE_ITEMS.length; i++) {
-    for (const id of NODE_ITEMS[i]) {
-      let list = map.get(id);
-      if (!list) map.set(id, list = []);
-      list.push(Object.freeze({
-        type: 'mission', id: i, chance: nodeChance(i),
-        energy: NODES[i].camp === 'C' ? 'candle' : 'water',
-      }));
-    }
+import { ITEMS, FRAGMENT_SOURCES, COMPLETE_INDEX, COMPLETE_RATE, NODE_ITEMS, nodeChance, SHOP_FRAG, RAID_FRAGS } from './gear.js';
+function gearSources(id, type = 'fragment') {
+  if (type === 'complete') {
+    const item = ITEMS[id];
+    return item ? (COMPLETE_INDEX.get(id) || []).map(i => ({
+      type:'mission', id:i, chance:COMPLETE_RATE[item.t], energy:NODES[i].camp === 'C'?'candle':'water', reward:'complete'
+    })) : [];
   }
-  return map;
-})();
-
-function gearSources(id) {
-  const it = ITEMS[id];
-  if (!it) return [];
-  const out = [...(INDEX.get(id) || [])];
-  if (SHOP_FRAG[it.t]) out.push({ type: 'sietch', currency: 'teeth', price: SHOP_FRAG[it.t], qty: 1 });
-  for (let i = 0; i < RAID_FRAGS.length; i++) {
-    if (RAID_FRAGS[i].tiers.includes(it.t))
-      out.push({ type: 'raid', tier: i, random: true });
+  const itemId = id.startsWith('frag:') ? id.split(':')[1] : id;
+  const item = ITEMS[itemId];
+  if (!item) return [];
+  const out = (FRAGMENT_SOURCES.get(id) || []).map(i => ({
+    type:'mission', id:i, chance:nodeChance(i),
+    energy:NODES[i].camp === 'C'?'candle':'water', reward:'fragment'
+  }));
+  // GE1: new purchases/raid awards are specific component fragments only.
+  // Existing S.inv[itemId] is legacy stock and cannot be newly generated.
+  if (id.startsWith('frag:')) {
+    if (SHOP_FRAG[item.t]) out.push({type:'sietch',currency:'teeth',price:SHOP_FRAG[item.t],qty:1});
+    RAID_FRAGS.forEach((raid,i)=>{if(raid.tiers.includes(item.t)) out.push({type:'raid',tier:i,random:true});});
   }
   return out;
 }
