@@ -23,14 +23,39 @@ async function installShell() {
     await sc.put(u, new Response(b, { headers: r.headers }));
   }
 }
+// The app shell is mandatory and SHA-verified, but 3D model files are optional
+// offline warm-cache resources. On iOS Safari a single stalled CDN request used
+// to prevent the entire new service worker from installing, leaving users on
+// the broken old version even after Pages had reported a successful deploy.
 async function installAssets() {
-  const upd = await isUpdate(), ac = await caches.open(AC);   // фаза 5, шаг 7: isUpdate до open — иначе AC уже есть и первая установка считается обновлением
-  for (const p of ASSETS) {
-    const u = abs(p); if (LAZY.has(p) || await ac.match(u)) continue;
-    const old = await caches.match(u); if (old) { await ac.put(u, old); continue; }
-    if (upd) { const r = await fetch(u, { cache: 'no-cache' }); if (!r.ok) throw new Error(p + ': HTTP ' + r.status); await ac.put(u, r); }
-  }
+  const upd = await isUpdate();  // before opening AC (fresh installs do not prefetch)
+  const ac = await caches.open(AC);
+  if (!upd) return;
+  const controller = new AbortController();
+  const limit = setTimeout(() => controller.abort(), 12000);
+  try {
+    const queue = [...ASSETS].filter(p => !LAZY.has(p));
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < queue.length && !controller.signal.aborted) {
+        const p = queue[cursor++], u = abs(p);
+        if (await ac.match(u)) continue;
+        const old = await caches.match(u);
+        if (old) { await ac.put(u, old); continue; }
+        try {
+          const res = await fetch(u, {cache:'no-cache',signal:controller.signal});
+          if (!res.ok) { console.warn('3D cache deferred:',p,res.status); continue; }
+          await ac.put(u,res);
+        } catch(e) {
+          if (!controller.signal.aborted) console.warn('3D cache deferred:',p,e);
+          // Fetch-on-demand and the existing warm message will retry later.
+        }
+      }
+    };
+    await Promise.allSettled([worker(),worker(),worker(),worker()]);
+  } finally {clearTimeout(limit);}
 }
+
 self.addEventListener('install', e => { e.waitUntil(installShell().then(installAssets).then(() => self.skipWaiting())); });
 
 self.addEventListener('activate', e => { e.waitUntil((async () => {
