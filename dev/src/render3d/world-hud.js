@@ -107,7 +107,7 @@ class WorldHudLayout {
     packWorldLabels(rows, width, height, insets);
     for (const row of rows) {
       const dx = row.x + row.w / 2 - row.ax, dy = row.y + row.h - row.ay;
-      if (Math.abs(dx - row.dx) < .25 && Math.abs(dy - row.dy) < .25) continue;
+      if (Math.abs(dx - row.dx) < .05 && Math.abs(dy - row.dy) < .05) continue;
       row.dx = dx; row.dy = dy;
       const s = row.el.style, length = Math.hypot(dx, dy);
       s.setProperty('--hud-x', dx.toFixed(1) + 'px'); s.setProperty('--hud-y', dy.toFixed(1) + 'px');
