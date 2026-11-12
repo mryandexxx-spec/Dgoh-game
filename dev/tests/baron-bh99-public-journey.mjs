@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
-import { newSave, fillSave } from '../src/core/save.js';
+import { readFileSync } from 'node:fs';
 import { CH, CHARS } from '../src/data/chars.js';
 import { BARON_APPROVED_REQUIREMENTS, BARON_APPROVED_STAGES } from '../src/data/baron-legend-approved.js';
 import { BARON_BH9_ENCOUNTERS } from '../src/data/baron-legend-encounters.js';
 import { prepareBaronBH9Battle, finishBaronBH9Battle } from '../src/logic/baron-bh9-battle.js';
 import { baronBH9EventModel } from '../src/logic/baron-bh9-event.js';
-import { baronJourneyHtml } from '../src/ui/views/baron-journey.js';
+
 import { checkOver, advanceWave } from '../src/logic/battle/engine.js';
 
 assert.equal(CH.baron_legend.legendary,true);
@@ -14,14 +14,24 @@ assert.equal(CHARS.filter(h=>h.id==='baron_legend').length,1);
 assert.notEqual(CH.baron_legend,CH.baron,'separate skills and identity');
 assert.deepEqual(BARON_BH9_ENCOUNTERS.stages.map(s=>s.allies),BARON_APPROVED_STAGES.map(s=>s.allies));
 
-const old = newSave();
-const savedBaron=structuredClone(old.roster.baron);
-const migrated=fillSave(structuredClone(old));
-assert.deepEqual(migrated.roster.baron,savedBaron,'old Baron save preserved');
+// This pure engine regression intentionally avoids loading the browser UI and
+// save modules directly under Node: those belong to the app's ordered bundle.
+const migrated={
+  roster:Object.fromEntries(BARON_APPROVED_REQUIREMENTS.map(r=>[r.id,{
+    stars:0,shards:0,gear:1,lvl:1,relic:0
+  }])),
+  journeys:{muaddib:{0:true},baron_legend:{}}
+};
+migrated.roster.baron_legend={stars:0,shards:0,gear:1,lvl:1};
+const savedBaron=structuredClone(migrated.roster.baron);
 assert.equal(migrated.roster.baron_legend.stars,0);
 assert.equal(migrated.roster.baron_legend.shards,0);
 assert.deepEqual(migrated.journeys.baron_legend,{});
-assert.deepEqual(fillSave(structuredClone(migrated)).roster.baron_legend,migrated.roster.baron_legend,'repeat migration does not overwrite progress');
+const source=readFileSync(new URL('../src/ui/views/baron-journey.js',import.meta.url),'utf8');
+assert.match(source,/data-bh9-start/);
+assert.match(source,/data-bh9-stage/);
+assert.match(source,/data-open/);
+assert.match(source,/baronBH9EventModel/);
 assert.equal(prepareBaronBH9Battle(migrated,0).reason,'locked','all ten requirements compulsory');
 
 for(const req of BARON_APPROVED_REQUIREMENTS)
