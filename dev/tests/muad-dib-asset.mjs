@@ -1,3 +1,4 @@
+// Checks the staged Muad'Dib model independently of the Babylon renderer.
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -19,10 +20,10 @@ assert.ok(d.clips.Idle_11 && d.clips.Right_Hand_Sword_Slash);
 const refs = [];
 function walk(x) { if (!x || typeof x !== 'object') return; if (x['@b']) refs.push(x['@b']); else for (const y of Object.values(x)) walk(y); }
 walk(d);
-for(const [begin,length] of refs) assert.ok(Number.isInteger(begin)&&Number.isInteger(length)&&begin>=0&&length>=0&&offset+begin+length<=bytes.length);
+for(const [begin,length] of refs){assert.ok(Number.isInteger(begin)&&Number.isInteger(length)&&begin>=0&&length>=0&&offset+begin+length<=bytes.length);}
 for (const clip of Object.values(d.clips)) {
   assert.ok(clip.duration>0);
-  for(const t of clip.tracks){ assert.ok(['rotation','translation','scale'].includes(t.path)); assert.equal(t.componentCount,t.path==='rotation'?4:3);
+  for(const t of clip.tracks){ assert.ok(['rotation','translation','scale'].includes(t.path)); assert.ok(t.componentCount===(t.path==='rotation'?4:3));
     assert.equal(t.times['@b'][1]%4,0); assert.equal(t.values['@b'][1],(t.times['@b'][1]/4)*t.componentCount*4);
   }
 }

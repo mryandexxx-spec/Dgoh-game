@@ -1,0 +1,78 @@
+{
+  "format": "DGM1 v5 local-trs",
+  "input": "MuadDib_mobile_optimized_animated.glb",
+  "bones": 66,
+  "vertices": 17907,
+  "triangles": 18658,
+  "materials": 1,
+  "textures": 1,
+  "animations": {
+    "Running": {
+      "duration": 0.6333330273628235,
+      "tracks": 67,
+      "types": {
+        "rotation": 64,
+        "translation": 3
+      }
+    },
+    "Walking": {
+      "duration": 1.0333329439163208,
+      "tracks": 67,
+      "types": {
+        "rotation": 64,
+        "translation": 3
+      }
+    },
+    "Charged_Ground_Slam": {
+      "duration": 3.0,
+      "tracks": 65,
+      "types": {
+        "rotation": 62,
+        "translation": 3
+      }
+    },
+    "Charged_Spell_Cast": {
+      "duration": 2.6666669845581055,
+      "tracks": 65,
+      "types": {
+        "rotation": 62,
+        "translation": 3
+      }
+    },
+    "Idle_11": {
+      "duration": 1.8666659593582153,
+      "tracks": 65,
+      "types": {
+        "rotation": 62,
+        "translation": 3
+      }
+    },
+    "Right_Hand_Sword_Slash": {
+      "duration": 1.5,
+      "tracks": 65,
+      "types": {
+        "rotation": 62,
+        "translation": 3
+      }
+    },
+    "Stand_Dodge": {
+      "duration": 1.399999976158142,
+      "tracks": 65,
+      "types": {
+        "rotation": 62,
+        "translation": 3
+      }
+    },
+    "mage_soell_cast_1": {
+      "duration": 3.5,
+      "tracks": 65,
+      "types": {
+        "rotation": 62,
+        "translation": 3
+      }
+    }
+  },
+  "runtime_compatibility": "REQUIRES localTrs renderer support; older DGM parser can parse file but old renderer cannot animate correctly",
+  "dgm_bytes": 1242748,
+  "dgm_sha256": "b2597689cc168f941ed5dac8e3a6040552e5ae60742dec6157f4bd30889fd7e6"
+}
