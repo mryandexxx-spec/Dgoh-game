@@ -81,7 +81,7 @@ try {
   assert.notDeepEqual(result.special.left,result.ult.left,'special and ult have identical pose');
   assert.notDeepEqual(result.ult.left,result.gl.left,'ult and GL have identical pose');
   assert.notDeepEqual(result.Idle.head,result.idleLater.head,'idle should have live breathing');
-  assert.equal(g.run('CH.baron_legend'),undefined,'preview must never register live hero');
+  assert.equal(g.run('CH.baron_legend.id'),'baron_legend','approved legend is live');
   console.log('BH6 real legendary Baron DGM Babylon skinning (11 meshes, 20171 verts, 8 states): PASS');
   console.log(JSON.stringify(Object.fromEntries(Object.entries(result).filter(([k])=>k!=='idleLater').map(([k,v])=>[k,{motion:v.motion,bounds:v.bounds}]))));
 } finally { g.ctx.__scene.dispose();engine.dispose(); }
