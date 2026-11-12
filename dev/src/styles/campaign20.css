@@ -33,6 +33,15 @@ body:has(.c20) #notes{display:none!important;}
 .c20-pin.on{box-shadow:0 0 0 2px #f2bd72,0 0 18px #e7a54a}
 .c20-world.campaign20-3d-ready .c20-pin{left:0;top:0;visibility:hidden}
 .c20-world.c20-fallback .c20-pin{visibility:visible}
+.c20 .c20-recenter{
+  position:absolute;z-index:4;right:8px;bottom:8px;
+  width:38px;height:38px;border-radius:50%;font-size:23px;
+  background:linear-gradient(145deg,#55402a,#23170d);
+  border-color:#d1a86c;box-shadow:0 3px 10px #0009;
+  display:grid;place-items:center;touch-action:manipulation;
+}
+.c20 .c20-recenter:active{background:#77552c}
+.c20-world.campaign20-3d-ready .c20-pin{will-change:transform}
 .c20-card{flex:0 0 68px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:7px;align-items:center;
  padding:6px 10px;background:linear-gradient(120deg,#39281a,#23170f);border:1px solid #705038;border-radius:4px}
 .c20-card strong{display:block;font:17px var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
