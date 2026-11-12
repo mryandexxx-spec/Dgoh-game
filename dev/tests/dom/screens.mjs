@@ -227,14 +227,14 @@ function normalizeApprovedGE1(src, isCurrent) {
       // shards, currencies, labels, action buttons and the rest of the view.
       const loot = /<span class="rewit">[\s\S]*?<\/span>(?=\s*<span class="mono" style="color:var\(--dust\)">)/g;
       const matches = [...screen.view.matchAll(loot)];
-      if (isCurrent && screen.view.includes('class="c20 ')) continue; // Campaign 2.0 approved redesign: separate mobile/WebGL smoke validates mission UI.
-      assert.equal(matches.length, 1, screen.name + ': exactly one mission gear preview');
-      if (isCurrent && matches[0][0].includes('data-info="frag:')) {
-        // All actual item cards must refer to real equipment, not an internal
-        // composite fragment ID. The click-through source is separately tested.
-        assert.ok(!/data-info="frag:frag:/.test(matches[0][0]), screen.name + ': no invalid fragment links');
+      if (!(isCurrent && screen.view.includes('class="c20 '))) {
+        assert.equal(matches.length, 1, screen.name + ': exactly one mission gear preview');
+        if (isCurrent && matches[0][0].includes('data-info="frag:')) {
+          // Fragment source validation is still strict for all other panels.
+          assert.ok(!/data-info="frag:frag:/.test(matches[0][0]), screen.name + ': no invalid fragment links');
+        }
+        screen.view = screen.view.replace(loot, '<span class="rewit">[GE1 equipment loot preview]</span>');
       }
-      screen.view = screen.view.replace(loot, '<span class="rewit">[GE1 equipment loot preview]</span>');
     }
     if (screen.name === 'shop:sietch' && typeof screen.view === 'string') {
       const marker = '<p class="chap" style="margin:22px 0 8px">Фрагменты';
