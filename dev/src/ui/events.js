@@ -1,5 +1,5 @@
 // ui/events.js — строки 4473–4621 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { DLG, bPopClose, dlgEnd, dlgNext, doAct, finish, launch, launchStoryUnlock, leaveBattle, openFxPop, playDialog, renderBattle, startBattle, useAbil } from './battle/battle-ui.js';
+import { DLG, bPopClose, dlgEnd, dlgNext, doAct, finish, launch, launchBaronLegend, launchStoryUnlock, leaveBattle, openFxPop, playDialog, renderBattle, startBattle, useAbil } from './battle/battle-ui.js';
 import { cqClick } from './views/conq.js';
 import { celebClick, celebQueue, showCeleb } from './overlays/celebrate.js';
 import { meta2Click } from './overlays/battle-settings.js';
@@ -26,6 +26,7 @@ import { nextShards, rosterClick } from './views/squad.js';
 import { campSel, set_campSel } from './views/camp.js';
 import { render } from './router.js';
 import { selectStoryEvent, selectStoryStage } from './views/story-events.js';
+import { selectBaronStage } from './views/baron-journey.js';
 import { prepareStoryUnlockBattle } from '../logic/bh94-story-battle.js';
 import { toast } from './common.js';
 import { getRes, prog } from '../logic/progress.js';
@@ -63,6 +64,8 @@ document.addEventListener('click', e => {
   if (recyclerClick(d)) { e.stopImmediatePropagation(); if (d.ixback) render(); return; }
   if (d.ixenter) { closeInfo(true); closeOverlay(); set_view('recycler'); render(); return; }
   if (metaClick(d) || meta2Click(d) || celebClick(d) || cqClick(d)) return;
+  if (d.bh9Stage !== undefined) { if (selectBaronStage(Number(d.bh9Stage))) render(); return; }
+  if (d.bh9Start !== undefined) { const outcome=launchBaronLegend(Number(d.bh9Start)); if (!outcome.ok) toast('Восхождение недоступно: '+outcome.reason); return; }
   if (d.storyEvent) { if(selectStoryEvent(d.storyEvent))render(); return; }
   if (d.storyStage !== undefined) { if(selectStoryStage(Number(d.storyStage)))render(); return; }
   if (d.storyStart) {
