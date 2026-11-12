@@ -24,7 +24,7 @@ import { hcMem } from './memory-screen.js';
 import { recyclerClick } from './recycler-screen.js';
 import { nextShards, rosterClick } from './views/squad.js';
 import { campSel, set_campSel } from './views/camp.js';
-import { campaign20Action, campaign20Start } from './views/campaign20.js';
+import { campaign20Action, campaign20Start, campaign20Legacy } from './views/campaign20.js';
 import { render } from './router.js';
 import { selectStoryEvent, selectStoryStage } from './views/story-events.js';
 import { selectBaronStage } from './views/baron-journey.js';
@@ -112,7 +112,7 @@ document.addEventListener('click', e => {
   if (d.ishow) { closeInfo(true); return openDetail(d.ishow); }
   if (d.xsim) return doXSim(d.xsim);
   if (d.jkey) { S.jKey = d.jkey; persist(); closeInfo(true); closeOverlay(); set_view('legend'); render(); return; }
-  if (d.ctab) { S.campTab = d.ctab; set_campSel(null); closeInfo(true); closeOverlay(); set_view('camp'); render(); return; }
+  if (d.ctab) { campaign20Legacy(); S.campTab = d.ctab; set_campSel(null); closeInfo(true); closeOverlay(); set_view('camp'); render(); return; }
   if (d.cch !== undefined) { S.campCh[S.campTab] = +d.cch; set_campSel(null); render(); return; }
   if (d.shoptab) { S.shopTab = d.shoptab; closeInfo(true); closeOverlay(); set_view('shop'); render(); return; }
   if (d.goto === 'chron') { S.campTab = 'C'; set_campSel(null); closeInfo(true); closeOverlay(); set_view('camp'); render(); return; }
