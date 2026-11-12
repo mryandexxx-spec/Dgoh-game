@@ -9,7 +9,7 @@ import { CH } from '../../data/chars.js';
 import { fmt, amt } from '../../core/format.js';
 import { portrait } from '../../render2d/figures.js';
 import { starStr } from '../common.js';
-import { mountCampaignMap } from '../../render3d/scenes/campaign-map.js';
+import { mountCampaignMap, focusCampaignNode, closeCampaignMap } from '../../render3d/scenes/campaign-map.js';
 
 let page = 'home', detail = false, tab = 'story', chapterPicker = false, legacy = false;
 let selected = null;
@@ -29,8 +29,8 @@ export function campaign20Action(d) {
   if (d.c20node!==undefined){selected=Number(d.c20node);detail=false;return true;}
   return false;
 }
-export function campaign20Start() { page='home';legacy=false;selected=null;detail=false;chapterPicker=false; }
-export function campaign20Legacy() { legacy=true;detail=false;chapterPicker=false; }
+export function campaign20Start() { closeCampaignMap(); page='home';legacy=false;selected=null;detail=false;chapterPicker=false; }
+export function campaign20Legacy() { closeCampaignMap(); legacy=true;detail=false;chapterPicker=false; }
 function homeHtml(){
   const completed=ck=>campNodes(ck).filter(i=>!!S.cleared[i]).length;
   return `<div class="c20 c20-home">
@@ -88,20 +88,52 @@ function mapHtml(setSel){
     <div class="c20-head"><button class="c20-back" data-c20="home">‹ ${ck==='C'?'Хроники':'Сюжет'}</button>${side}<span class="c20-progress">★ ${nodes.reduce((a,i)=>a+(S.cleared[i]||0),0)}/30</span></div>
     <div class="c20-chapbar"><button data-c20dir="-1" aria-label="Предыдущая глава">‹</button><button data-c20="chapters">ГЛАВА ${ROM7[c]} · ${esc(chapters[c].t)} ⌄</button><button data-c20dir="1" aria-label="Следующая глава">›</button></div>
     ${picker}
-    <div class="c20-world ${map?'caladan':'no-map'}" id="c20world">${markers}${old}</div>
+    <div class="c20-world ${map?'caladan':'no-map'}" id="c20world">${markers}${old}${map?'<button class="c20-recenter" data-c20focus="1" aria-label="Центрировать текущую миссию" title="К текущей миссии">◎</button>':''}</div>
     <div class="c20-card"><div><strong>${n.m+1}. ${esc(n.n)}</strong><small>Ур. ${n.lvl} · ${starStr(stars,3)}</small></div><button class="btn" data-c20="detail">Подробнее</button><div class="c20-card-actions">${actions}</div></div>
     ${modalHtml(ck,n,chosen)}
   </div>`;
   return {html,map,chosen};
 }
+// C2.2: refresh the selected-mission HUD without tearing down the Babylon canvas.
+// The engine, camera and 3D scene remain mounted across taps and modal changes.
+function replacePart(current, fresh, selector) {
+  const a=current.querySelector(selector),b=fresh.querySelector(selector);
+  if(a&&b)a.replaceWith(b);
+  else if(a&&!b)a.remove();
+  else if(b)current.append(b);
+}
 export function renderCampaign20(setSel) {
-  if(legacy) return false;
-  if(page==='home'){document.querySelector('#view').innerHTML=homeHtml();return true;}
-  const {html,map}=mapHtml(setSel);
-  document.querySelector('#view').innerHTML=html;
+  if(legacy){closeCampaignMap();return false;}
+  const view=document.querySelector('#view');
+  if(page==='home'){closeCampaignMap();view.innerHTML=homeHtml();return true;}
+  const {html,map,chosen}=mapHtml(setSel);
+  const current=view.querySelector('.c20-map');
+  if(map && current && current.dataset.map===map.preset.id) {
+    const template=document.createElement('div');
+    template.innerHTML=html;
+    const fresh=template.firstElementChild;
+    const oldSelection=current.querySelector('.c20-pin.on')?.dataset.c20node;
+    for(const selector of ['.c20-head','.c20-chapbar','.c20-card','.c20-picker','.c20-modal'])
+      replacePart(current,fresh,selector);
+    for(const pin of current.querySelectorAll('.c20-pin'))
+      pin.classList.toggle('on',Number(pin.dataset.c20node)===chosen);
+    if(Number(oldSelection)!==chosen)focusCampaignNode(chosen);
+    return true;
+  }
+  closeCampaignMap();
+  view.innerHTML=html;
   if(map){
     const container=document.getElementById('c20world');
-    mountCampaignMap(container,map,i=>{setSel(i);selected=i;detail=false;renderCampaign20(setSel);},()=>container?.classList.add('c20-fallback'));
+    const root=view.querySelector('.c20-map');
+    if(root)root.dataset.map=map.preset.id;
+    mountCampaignMap(container,map,i=>{setSel(i);selected=i;detail=false;renderCampaign20(setSel);},
+      ()=>container?.classList.add('c20-fallback'));
   }
   return true;
+}
+export function campaign20FocusCurrent() {
+  const ck=S.campTab,chapter=S.campCh[ck]||0;
+  const map=chapterMap(ck,chapter,S.cleared);
+  const node=map?.nodes.find(x=>x.id===selected)||nextCampaignNode(map);
+  if(node)focusCampaignNode(node.id);
 }
