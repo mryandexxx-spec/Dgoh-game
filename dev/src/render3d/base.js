@@ -12,7 +12,8 @@ let HAS3D = !!B3 && HAS_GL;
 const B3_SUBS = [];
 function onB3(fn) { if (HAS3D) fn(); else B3_SUBS.push(fn); }
 let B3_P = null;
-const b3LoadStatus = () => !HAS_GL ? 'unavailable' : HAS3D ? 'ready' : B3_P ? 'loading' : 'idle';
+let B3_FAILED = false;
+const b3LoadStatus = () => !HAS_GL ? 'unavailable' : HAS3D ? 'ready' : B3_P ? 'loading' : B3_FAILED ? 'failed' : 'idle';
 const B3_PRE = [];   // Опциональные 3D-ассеты: не должны удерживать сам движок.
 function b3Pre(fn) { B3_PRE.push(fn); }
 // Safari/PWA can leave an asset fetch or cached script pending indefinitely.
@@ -31,6 +32,7 @@ function loadB3() {  // Promise<boolean>; a stuck asset/script must never poison
   if (HAS3D) return Promise.resolve(true);
   if (!HAS_GL) { console.warn('3D unavailable: WebGL context not supported'); return Promise.resolve(false); }
   if (B3_P) return B3_P;
+  B3_FAILED = false;
   B3_P = new Promise(resolve => {
     // Start asset fetches once, in parallel. Do not block readiness indefinitely.
     const pre = b3Deadline(Promise.allSettled(B3_PRE.map(f => Promise.resolve().then(f))), B3_ASSET_WAIT_MS, 'assets');
@@ -53,6 +55,7 @@ function loadB3() {  // Promise<boolean>; a stuck asset/script must never poison
       } else {
         console.warn('Babylon chunk unavailable; 2D fallback active');
         script.remove();
+        B3_FAILED = true;
         B3_P = null;  // future navigation can retry after an intermittent offline error
         resolve(false);
       }
