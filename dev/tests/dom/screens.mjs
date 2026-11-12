@@ -206,14 +206,71 @@ function validateV86Legend(s) {
     'all eleven required hero cards exist in the requirements panel');
   assert.ok(html.includes('Бои заблокированы') || html.includes('Муад’Диб открыт') || html.includes('Все 11 требований выполнены'), 'gate status is explained');
 }
+// GE1: the approved redesign changes only three well-bounded portions of the
+// existing DOM goldens. Keep all other markup/attributes strictly compared.
+// Old screen baselines are NEVER overwritten by this normalization.
+function normalizeApprovedGE1(src, isCurrent) {
+  const copy = structuredClone(src);
+  const campView = new Set([
+    'fresh:camp','camp:L','camp:D','camp:C','camp:L:node5',
+    'info:bio:paul','info:shard:chani','info:frag:belt5',
+    'info:need:water:6','info:sol','info:cry',
+    'squadsel:camp0','sim:node3','battle:start','battle:turns'
+  ]);
+  for (const screen of copy.screens) {
+    if (campView.has(screen.name) && typeof screen.view === 'string') {
+      // Only the equipment icons within the mission rewards row. Preserve
+      // shards, currencies, labels, action buttons and the rest of the view.
+      const loot = /<span class="rewit">[\s\S]*?<\/span>(?=\s*<span class="mono" style="color:var\(--dust\)">)/g;
+      const matches = [...screen.view.matchAll(loot)];
+      assert.equal(matches.length, 1, screen.name + ': exactly one mission gear preview');
+      if (isCurrent && matches[0][0].includes('data-info="frag:')) {
+        // All actual item cards must refer to real equipment, not an internal
+        // composite fragment ID. The click-through source is separately tested.
+        assert.ok(!/data-info="frag:frag:/.test(matches[0][0]), screen.name + ': no invalid fragment links');
+      }
+      screen.view = screen.view.replace(loot, '<span class="rewit">[GE1 equipment loot preview]</span>');
+    }
+    if (screen.name === 'shop:sietch' && typeof screen.view === 'string') {
+      const marker = '<p class="chap" style="margin:22px 0 8px">Фрагменты';
+      const at = screen.view.indexOf(marker);
+      assert.ok(at >= 0, 'GE1 Sietch section must exist');
+      const section = screen.view.slice(at);
+      if (isCurrent) {
+        assert.ok(section.includes('Фрагменты компонентов снаряжения VI–XIII'), 'GE1 shop uses component fragments');
+        assert.ok(!/data-fbuy="[a-z]+\d+:\d+"/.test(section), 'GE1 shop cannot create new legacy universal fragments');
+        if (section.includes('data-fbuy=')) assert.ok(/data-fbuy="frag:[a-z]+\d+:[a-z]+:\d+"/.test(section),
+          'GE1 shop provides real component purchase IDs');
+      }
+      // This section is the final element of shop:sietch. All previous stock,
+      // prices, UI and currencies are compared unchanged.
+      screen.view = screen.view.slice(0, at) + '[GE1 component shop panel]';
+    }
+    if (screen.name === 'item:paul:0' && typeof screen.overlay2 === 'string') {
+      const marker = '<div class="srcs">';
+      const at = screen.overlay2.indexOf(marker);
+      assert.ok(at >= 0, 'GE1 equipment source panel must exist');
+      const tail = screen.overlay2.slice(at);
+      const closing = '</div>\n    </div></div></div></div>';
+      const end = tail.lastIndexOf(closing);
+      assert.ok(end > 0, 'GE1 source list has expected closing layout');
+      if (isCurrent) {
+        assert.ok(/шанс [\d,.]+% за бой/.test(tail), 'GE1 complete gear chance shown');
+        assert.ok(!tail.includes('шанс ≈'), 'GE1 does not show legacy approximate source chance');
+      }
+      screen.overlay2 = screen.overlay2.slice(0,at) + '<div class="srcs">[GE1 complete gear sources]' + tail.slice(end);
+    }
+  }
+  return copy;
+}
 if (rest.includes('--update')) writeGolden('screens', out);
 else {
   validateV86Legend(out);
   const baseline = readGolden('screens');
   if (!baseline) throw new Error('screens golden baseline missing');
   const parsed = JSON.parse(baseline);
-  const want = normalizeApprovedBH4(normalizeApprovedV86({ ...parsed.meta, screens: parsed.screens }));
-  const got = normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedBH97(out)));
+  const want = normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGE1({ ...parsed.meta, screens: parsed.screens }, false)));
+  const got = normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedBH97(normalizeApprovedGE1(out, true))));
   if (!isDeepStrictEqual(want, got)) {
     const changed = want.screens.filter((v, i) => !isDeepStrictEqual(v, got.screens[i])).map(x => x.name);
     console.error('Unapproved golden screen differences:', changed.join(', '));
