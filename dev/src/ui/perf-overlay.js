@@ -21,6 +21,7 @@ function draw() {
     ? `${mb(A.loaded)} / ${mb(A.total)} МБ · ${Math.min(A.finished ? 100 : 99, Math.round(A.loaded / A.total * 100))}%`
     : `${mb(A.loaded)} / ${A.unknown ? 'размер уточняется' : A.total ? mb(A.total) + ' МБ' : '—'}`;
   const state = status === 'unavailable' ? 'WebGL недоступен'
+    : status === 'failed' ? '3D: ошибка загрузки движка · можно повторить'
     : status === 'ready' ? '3D готово'
     : status === 'loading' ? '3D загружается'
     : '3D ожидает запуска';
