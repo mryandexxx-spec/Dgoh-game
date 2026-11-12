@@ -1,5 +1,6 @@
 // ui/views/camp.js — строки 3282–3329 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import '../router.js'; // порядок исполнения
+import { renderCampaign20 } from './campaign20.js';
 import { campSquad, enGet, nodePower, prog, reqText, sideOk } from '../../logic/progress.js';
 import { S } from '../../core/state.js';
 import { ITEMS, NODE_ITEMS, TIER_COL } from '../../logic/gear.js';
@@ -15,6 +16,7 @@ import { itemIcon, starStr } from '../common.js';
 let campSel = null;
 function chapStars(ck, c) { return chapNodes(ck, c).reduce((a, i) => a + (S.cleared[i] || 0), 0); }
 function renderCamp() {
+  if (renderCampaign20(set_campSel)) return;
   const ck = CAMP_DEF[S.campTab] ? S.campTab : 'L', CD = CAMP_DEF[ck], sp = campSquad(campNodes(ck)[0]).filter(id => prog(id).stars && sideOk(ck, id)).reduce((a, id) => a + unitPower(CH[id], prog(id)), 0);
   const all = campNodes(ck), firstOpen = all.find(i => !S.cleared[i]) ?? all[all.length - 1];
   let c = S.campCh[ck]; if (c === undefined || !nodeOpen(chapNodes(ck, c)[0])) c = NODES[firstOpen].c;
