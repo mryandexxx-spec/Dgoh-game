@@ -15,6 +15,9 @@
 /* MD-ULT-2: the actual animated 3D caster is on the existing canvas behind the
    overlay. Keep the left side transparent so the spell gesture is visible. */
 .ultcine.muad-live .ucfig { display: none; }
+/* Only hide the battle UI while this animated overlay is mounted. */
+#battle:has(> .ultcine.muad-live) #bwrap { opacity: 0; pointer-events: none; }
+
 .ultcine.muad-live .ucband {
   background: linear-gradient(90deg, transparent 0%, rgb(10 6 3 / .08) 34%,
     rgb(10 6 3 / .82) 58%, rgb(10 6 3 / .93) 91%, transparent 100%);
