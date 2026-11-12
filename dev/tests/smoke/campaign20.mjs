@@ -36,7 +36,7 @@ try {
     await page.waitForSelector('.c20-home',{timeout:5000});
     assert.equal(await page.$$eval('.c20-cover',a=>a.length),2,'two campaign covers');
     await page.screenshot({path:path.join(shots,`hub-${w}.png`)});
-    await page.click('[data-c20="story"]');
+    await page.locator('[data-c20="story"]').click();
     await page.waitForSelector('.c20-map',{timeout:8000}).catch(async e=>{
       const diag=await page.evaluate(()=>({view:document.querySelector('#view')?.innerHTML.slice(0,800),body:document.body.className}));
       console.error('Campaign map transition diagnostic',JSON.stringify({diag,errors}));throw e;
@@ -57,8 +57,8 @@ try {
     });
     assert.equal(metrics.scroll,false,'no campaign viewport scroll');
     assert.equal(metrics.sceneCanvas,true,'canvas exists');
-    // Native-feeling pan: drag the terrain right/down and verify the same
-    // mission marker follows that direction on the tilted/rotated 3D map.
+    // Inverse pan contract: dragging right/down moves the 3D terrain LEFT/UP,
+    // in both phone profiles and from the very first gesture.
     // Also assert the first gesture remains responsive, not just the second.
     const panChecks=await page.evaluate(async()=>{
       document.querySelector('[data-c20node="4"]').click();
@@ -87,10 +87,10 @@ try {
       return {horizontal,backward,vertical,upward,
         canvasSame:canvas===document.querySelector('#c20world canvas')};
     });
-    assert.ok(panChecks.horizontal[0]>4,'drag-right should move map RIGHT: '+JSON.stringify(panChecks));
-    assert.ok(panChecks.backward[0]<-4,'drag-left should move map LEFT: '+JSON.stringify(panChecks));
-    assert.ok(panChecks.vertical[1]>4,'drag-down should move map DOWN: '+JSON.stringify(panChecks));
-    assert.ok(panChecks.upward[1]<-4,'drag-up should move map UP: '+JSON.stringify(panChecks));
+    assert.ok(panChecks.horizontal[0]<-4,'drag-right should move map LEFT: '+JSON.stringify(panChecks));
+    assert.ok(panChecks.backward[0]>4,'drag-left should move map RIGHT: '+JSON.stringify(panChecks));
+    assert.ok(panChecks.vertical[1]<-4,'drag-down should move map UP: '+JSON.stringify(panChecks));
+    assert.ok(panChecks.upward[1]>4,'drag-up should move map DOWN: '+JSON.stringify(panChecks));
     assert.equal(panChecks.canvasSame,true,'drag never remounts Babylon');
     console.log('Campaign touch pan',w,JSON.stringify(panChecks));
 
@@ -124,13 +124,13 @@ try {
 
     await page.evaluate(()=>document.querySelector('[data-c20node]')?.click());
     await page.waitForSelector('.c20-card');
-    await page.click('[data-c20="detail"]');
+    await page.locator('[data-c20="detail"]').click();
     await page.waitForSelector('.c20-dialog');
     await page.screenshot({path:path.join(shots,`detail-${w}.png`)});
-    await page.click('[data-c20tab="foes"]');
+    await page.locator('[data-c20tab="foes"]').click();
     assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-foes>div').length))>0,'foes tab');
     assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-conditions span').length))>=3,'mission level, side and power requirements');
-    await page.click('[data-c20tab="rewards"]');
+    await page.locator('[data-c20tab="rewards"]').click();
     assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-earn').length))===1,'real mission currency preview');
     assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-lootrow').length))>0,'real GE2 and shard rewards');
     const canvasBeforeInfo=await page.evaluate(()=>window.__campaignCanvas===document.querySelector('#c20world canvas'));
@@ -146,7 +146,7 @@ try {
     await page.evaluate(()=>document.querySelector('#overlay2 [data-iclose]')?.click());
     await page.waitForFunction(()=>!document.querySelector('#overlay2 .infosheet'),{timeout:5000});
     assert.ok(await page.$('.c20-dialog'),'closing source info retains mission details');
-    await page.click('[data-c20="back"]');
+    await page.locator('[data-c20="back"]').click();
     assert.equal(await page.$('.c20-dialog'),null,'modal closes');
     // The first mission has index zero: it must be launchable (not skipped as falsy).
     await page.evaluate(()=>document.querySelector('[data-c20node="0"]').click());
