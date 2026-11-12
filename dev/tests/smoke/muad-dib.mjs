@@ -27,7 +27,11 @@ try{
     await p.goto(srv.url(path.basename(html)),{waitUntil:'load'});
     const info=await p.evaluate(async()=>{
       window.bakePortraits=()=>{};
-      await loadB3();closeInfo(true);closeOverlay();openDetail('muaddib');
+      await loadB3();closeInfo(true);closeOverlay();
+      // Login calendar lives in overlay2, not the main overlay. A successful
+      // Babylon model assertion does NOT imply the card is visible.
+      document.querySelector('#overlay2').innerHTML='';
+      openDetail('muaddib');
       await new Promise(resolve=>setTimeout(resolve,1500));
       const o=HERO_STAGE?.o;
       if(!o||!o.root._authored)throw Error('Muad Dib authored model failed to load');
@@ -36,12 +40,21 @@ try{
       heroHold(true);
       await HERO_STAGE.scene.whenReadyAsync();
       for(let i=0;i<3;i++)HERO_STAGE.scene.render();
-      return {id:o.def?.id,model:assetUrl('models/muad-dib-legend.dgm'),
+      const card=document.querySelector('#overlay .hc');
+      const rect=card?.getBoundingClientRect();
+      const cover=document.querySelector('#overlay2');
+      const coverVisible=!!cover?.querySelector('.calsheet, .sheet');
+      if(!card || card.dataset.cid!=='muaddib' || !rect || rect.width<300 || rect.height<180 ||
+          rect.right<=0 || rect.left>=innerWidth || coverVisible)
+        throw Error('Muad Dib card is hidden or covered: '+JSON.stringify({
+          card:card?.dataset.cid,rect:rect?.toJSON(),coverVisible}));
+      return {id:o.def?.id,cardVisible:true,model:assetUrl('models/muad-dib-legend.dgm'),
         textured:o.root.getChildMeshes().filter(m=>m.skeleton&&m.material?.diffuseTexture).length,
         meshes:o.root.getChildMeshes().filter(m=>m.skeleton).length,
         clips:Object.keys(o.root._clips)};
     });
     assert.equal(info.id,'muaddib');
+    assert.equal(info.cardVisible,true);
     assert.ok(info.model);
     assert.equal(info.meshes,1);
     assert(info.clips.length>=8);
