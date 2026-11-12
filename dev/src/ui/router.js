@@ -7,7 +7,6 @@ import { renderRules } from './views/rules.js';
 import { renderLobby } from './views/lobby.js';
 import { renderShop, renderRecycler } from './views/shop.js';
 import { renderLegend } from './views/legend.js';
-import { renderBaronJourney } from './views/baron-journey.js';
 import { renderRaid } from './views/raid.js';
 import { renderDaily } from './views/daily.js';
 import { renderSquad } from './views/squad.js';
@@ -17,16 +16,18 @@ import { S, view } from '../core/state.js';
 import { sceneThumb } from '../render2d/scenes.js';
 
 let storyViewRenderer = null;
+let baronViewRenderer = null;
+function registerBaronView(renderer) { baronViewRenderer=renderer; }
 function registerStoryView(renderer) { storyViewRenderer=renderer; }
 const VIEW_NAMES = { camp: 'Кампания', raid: 'Рейд', legend: 'Легенды', baron_journey: 'Восхождение Барона', story_events: 'Сюжетные события', squad: 'Персонажи', shop: 'Лавки', recycler: 'Утилизатор Икса', trials: 'Испытания', conq: 'Джихад', feats: 'Подвиги', daily: 'Задания', rules: 'Правила боя' };
 function render() {
   renderRes();
   { const vn = document.getElementById('vname'); if (vn) vn.textContent = VIEW_NAMES[view] || ''; }
   document.body.classList.toggle('lobby-on', view === 'lobby');
-  ({ daily: renderDaily, lobby: renderLobby, camp: renderCamp, squad: renderSquad, raid: renderRaid, legend: renderLegend, baron_journey: renderBaronJourney, story_events: () => { if(storyViewRenderer) storyViewRenderer(S); }, shop: renderShop, recycler: renderRecycler, rules: renderRules, trials: renderTrials, feats: renderFeats, conq: renderConq })[view]();
+  ({ daily: renderDaily, lobby: renderLobby, camp: renderCamp, squad: renderSquad, raid: renderRaid, legend: renderLegend, baron_journey: () => { if(baronViewRenderer) baronViewRenderer(S); }, story_events: () => { if(storyViewRenderer) storyViewRenderer(S); }, shop: renderShop, recycler: renderRecycler, rules: renderRules, trials: renderTrials, feats: renderFeats, conq: renderConq })[view]();
   document.querySelectorAll('#view canvas[data-scene]').forEach(sceneThumb);
   if (typeof notePoll === 'function' && S) setTimeout(() => notePoll(), 0);
 }
 
 
-export { VIEW_NAMES, render, registerStoryView };
+export { VIEW_NAMES, render, registerStoryView, registerBaronView };
