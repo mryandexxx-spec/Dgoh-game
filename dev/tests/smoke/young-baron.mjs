@@ -71,6 +71,8 @@ try {
       });
       assert.equal(afterWake,false,'Backdrop glow returned after light sleep');
     }
+    // Dismiss asynchronous daily-task notices only for an unobstructed QA frame.
+    await p.evaluate(()=>{document.querySelectorAll('.toast, #notes').forEach(el=>el.remove());});
     await p.screenshot({path:path.join(out,`${tag}-${width}-${quality}-hero.png`)});
     // Keep the same camera/pose while isolating the showcase effects. A green
     // geometry/animation test alone does not establish a readable character.

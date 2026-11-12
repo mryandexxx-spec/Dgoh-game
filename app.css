@@ -1259,6 +1259,84 @@ button.bgz { cursor: pointer; font: inherit; } button.bgz:hover { border-color: 
 @keyframes rotph { 30%, 70% { transform: rotate(-90deg); } }
 .rotbox h3 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 26px; color: #fbe9c8; } .rotbox p { margin: 0; color: var(--dust); }
 
+/* Campaign 2.0 · C2. Pilot viewport is a full-screen landscape overlay, not a scrolling page. */
+body:has(.c20){overflow:hidden;overscroll-behavior:none;}
+/* The persistent daily/feat notifications cover the battle/detail actions at 667/844.
+   They remain queued and visible again after the player leaves Campaign 2.0. */
+body:has(.c20) #notes{display:none!important;}
+.c20{position:fixed;inset:0;z-index:9;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;gap:5px;
+ padding: max(7px,env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) max(7px,env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px));
+ background:#170f09;color:#f4e7cf;font-family:var(--f-body);isolation:isolate}
+.c20 button{border:1px solid #715139;border-radius:4px;background:linear-gradient(#36281b,#23170e);color:#f4e7cf;touch-action:manipulation}
+.c20 button:focus-visible{outline:2px solid #e8c98e;outline-offset:2px}
+.c20 .c20-head{display:flex;gap:10px;align-items:center;justify-content:space-between;flex:0 0 33px;min-height:0}
+.c20-crumb,.c20-progress{font:10px var(--f-mono);color:#e8c98e;letter-spacing:.12em}
+.c20 .c20-head button{padding:5px 12px;font-size:12px}
+.c20 .c20-back{margin-right:auto}
+.c20 .c20-sides{display:flex;gap:4px}
+.c20 .c20-sides button.on.light{background:#245074;border-color:#5aa8f0}
+.c20 .c20-sides button.on.dark{background:#69251c;border-color:#e0483a}
+.c20-chapbar{display:grid;grid-template-columns:35px minmax(0,1fr) 35px;gap:5px;flex:0 0 31px}
+.c20-chapbar button{padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.c20-world{position:relative;flex:1 1 auto;min-height:40px;overflow:hidden;border:1px solid #55432d;border-radius:4px;
+ background:linear-gradient(145deg,#7b8965 0 37%,#51684c 38% 59%,#205969 60% 100%);
+ touch-action:none}
+.campaign20-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;z-index:1}
+.c20-world.c20-3d-ready{background:#163b40}
+.c20-world .c20-pin{position:absolute;z-index:2;width:50px;height:50px;left:var(--px);top:var(--py);
+ transform:translate(-50%,-50%);border-radius:50%;border:2px solid #d4a14b;
+ background:radial-gradient(circle at 40% 32%,#6a5333,#261a13 75%);
+ display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+ box-shadow:0 2px 7px #000b,0 0 0 2px #1b1b16;color:#fff;line-height:1;touch-action:manipulation}
+.c20-pin b{font:22px var(--f-display)}.c20-pin small{font:9px var(--f-mono);color:#f6ca81;white-space:nowrap}
+.c20-pin.passed{border-color:#8dba83}.c20-pin.locked{border-color:#5f5a52;filter:grayscale(.6)}
+.c20-pin.boss{width:60px;height:60px;border-color:#d45944}
+.c20-pin.on{box-shadow:0 0 0 2px #f2bd72,0 0 18px #e7a54a}
+.c20-world.campaign20-3d-ready .c20-pin{left:0;top:0;visibility:hidden}
+.c20-world.c20-fallback .c20-pin{visibility:visible}
+.c20-card{flex:0 0 68px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:7px;align-items:center;
+ padding:6px 10px;background:linear-gradient(120deg,#39281a,#23170f);border:1px solid #705038;border-radius:4px}
+.c20-card strong{display:block;font:17px var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c20-card small{display:block;color:#e8c98e;font:10px var(--f-mono)}
+.c20-card .btn{font-size:11px;padding:5px 10px;white-space:nowrap}
+.c20-card-actions{display:flex;gap:5px;align-items:center}
+.c20-card-actions .btn.go{background:#dca15f;color:#1d120a}
+.c20-locked{font-size:11px;max-width:140px;color:#bca685}
+.c20-picker{position:absolute;z-index:6;top:74px;left:15%;right:15%;padding:8px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;
+ background:#21160d;border:1px solid #8f6740;border-radius:5px;box-shadow:0 6px 20px #000b}
+.c20-picker button{font-size:11px;padding:8px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c20-picker button.on{border-color:#e8c98e}.c20-picker button:disabled{opacity:.4}
+.c20-modal{position:absolute;z-index:7;inset:0;display:grid;place-items:center;padding:10px;background:#080705c9}
+.c20-dialog{display:grid;grid-template-rows:auto auto minmax(0,1fr);gap:7px;width:min(600px,97%);height:min(295px,96%);
+ padding:12px;border:1px solid #9a7246;border-radius:6px;background:#2a1d13}
+.c20-dialog header{display:flex;align-items:center;justify-content:space-between}
+.c20-dialog header strong{font:23px var(--f-display)}.c20-dialog header .btn{padding:2px 9px}
+.c20-dialog nav{display:flex;gap:4px}.c20-dialog nav button{padding:5px 9px;font-size:11px;flex:1}
+.c20-dialog nav button.on{border-color:#f0bb75;background:#614025}
+.c20-dialog section{min-height:0;overflow:hidden;font-size:12px;color:#e7d6bc;line-height:1.4}
+.c20-dialog section p{margin:0 0 5px}
+.c20-check{display:inline-flex;gap:6px;align-items:center;font-size:11px}
+.c20-foes,.c20-rewards{display:flex;gap:7px;align-items:flex-start;overflow:hidden}
+.c20-foes>div{width:72px;display:flex;flex-direction:column;align-items:center;text-align:center;font-size:10px}
+.c20-foes small{font-size:9px}.c20-rewards>span{display:flex;gap:3px;align-items:center;font-size:10px}
+.c20-home{background:radial-gradient(ellipse at 50% 12%,#47311e,#170f09 70%)}
+.c20-choices{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 0}
+.c20 .c20-cover{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;
+ text-align:left;padding:12px;border:1px solid #ad8752;background:linear-gradient(0deg,#17100b 0%,#47391e 60%,#ae8650 100%)}
+.c20 .c20-cover-chron{background:linear-gradient(0deg,#11120d,#1d3438 60%,#52727a)}
+.c20-art{position:absolute;font-size:min(22vw,140px);opacity:.26;right:10%;top:-15%;font-family:var(--f-display)}
+.c20-copy{position:relative;display:grid;gap:3px;text-shadow:0 2px 4px #000}
+.c20-copy strong{font:clamp(26px,5vw,47px) var(--f-display);letter-spacing:.1em;color:#f3d9a8}
+.c20-copy span{font-size:12px}.c20-copy small{font:10px var(--f-mono);color:#e8c98e}
+.c20-pending{padding:30px;font-size:13px;text-align:center}.c20-world.no-map{display:flex;align-items:center;justify-content:center;flex-direction:column}
+@media(max-width:700px){.c20{gap:4px;padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
+ .c20-card{grid-template-columns:minmax(0,1fr) auto;flex-basis:77px}
+ .c20-card-actions{grid-column:1/-1;justify-content:flex-end}
+ .c20-card strong{font-size:15px}.c20 .c20-head{flex-basis:29px}.c20-chapbar{flex-basis:27px}
+ .c20-dialog{height:min(270px,96%);padding:8px}.c20-dialog header strong{font-size:19px}
+ .c20-choices{gap:7px}.c20 .c20-cover{padding:8px}.c20-copy span{font-size:10px}.c20-copy small{font-size:9px}
+ .c20-picker{left:4%;right:4%;grid-template-columns:repeat(4,minmax(0,1fr));top:66px}
+}
 /* ===== landscape phones (primary orientation) ===== */
 @media (orientation: landscape) and (max-height: 520px) {
   header.top .wrap { padding-block: 4px 0; gap: 4px 14px; }
@@ -1642,7 +1720,7 @@ nav.tabs .vname { font-family: var(--f-display); font-size: 20px; letter-spacing
 .detail .sheet.hc { --lw: clamp(168px, 23vw, 214px); --rw: clamp(142px, 20vw, 196px); --gs: clamp(52px, 7.4vw, 66px); --gz: clamp(40px, 5.6vw, 50px);
   position: relative; width: min(1060px, 100%); height: min(640px, 100%); max-height: none; overflow: hidden; border-radius: 6px; padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   display: grid; grid-template-columns: var(--lw) minmax(0, 1fr) var(--rw); grid-template-rows: 48px minmax(0, 1fr) 72px; place-items: stretch; align-content: stretch;
-  background: radial-gradient(60% 90% at 50% 75%, #3a2414 0%, #1a110a 55%, #120b06 100%); }
+  background: radial-gradient(70% 90% at 50% 62%, #927b61 0%, #66513e 58%, #34271e 100%); }
 .detail .sheet.hc::before { display: none; }
 @media (orientation: landscape) and (max-height: 520px) { .detail .sheet.hc { width: 100%; height: 100%; border-radius: 0; border: 0; padding-top: 0; padding-bottom: env(safe-area-inset-bottom, 0px); grid-template-rows: 44px minmax(0, 1fr) 68px; } }
 .hc .hccap { font: 9px var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--dust); }
@@ -1662,7 +1740,7 @@ nav.tabs .vname { font-family: var(--f-display); font-size: 20px; letter-spacing
 .hcres .amt { height: 26px; padding: 0 8px 0 5px; background: linear-gradient(180deg, #2e2116, #1a120a); border: 1px solid #5a4028; border-radius: 13px; font: 600 12px var(--f-mono); }
 @media (max-width: 700px) { .hcres { display: none; } }
 /* слева: умения */
-.hcleft { grid-row: 2 / 4; display: flex; flex-direction: column; gap: 4px; padding: 8px 4px 8px 8px; min-height: 0; }
+.hcleft { grid-row: 2 / 4; display: flex; flex-direction: column; gap: 4px; padding: 8px 4px 8px 8px; min-height: 0; background: linear-gradient(90deg, #2e241d 0%, #392a20 77%, #4c3728 100%); border-right: 1px solid #68503a; }
 .hcsks { display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .hcsk { flex: none; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 7px; width: 100%; padding: 3px 6px 3px 3px; border-radius: 3px; text-align: left; color: inherit; background: rgb(18 12 7 / .55); border: 1px solid transparent; }
 .hcsk:hover { border-color: var(--line); }
@@ -1672,6 +1750,26 @@ nav.tabs .vname { font-family: var(--f-display); font-size: 20px; letter-spacing
 .hcsk.gl .hcski { border-color: #ffd040; color: #ffd040; box-shadow: 0 0 8px rgb(255 208 64 / .35); }
 .hcskt { min-width: 0; }
 .hcskt b { display: block; font: 600 12px/1.2 var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* MUAD3D staged readability: keep long Muad'Dib ability titles legible on
+   667×375 without enlarging the left column or changing other heroes. */
+@media (orientation: landscape) and (max-width: 700px) {
+  .hc[data-cid="muaddib"] .hcskt b {
+    font-size: 11px;
+    line-height: 1.13;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+  .hc[data-cid="muaddib"] .hcsk { gap: 5px; min-height: 51px; padding-top: 5px; padding-bottom: 5px; }
+  .hc[data-cid="muaddib"] .hcskt { min-width: 0; overflow: hidden; }
+  .hc[data-cid="muaddib"] .hcskt small { font-size: 10px; line-height: 1.15; }
+  /* Tall ability tiles scroll within the existing skill pane, never overlap. */
+}
+
 .hcskt small { display: block; font: 11px/1.2 var(--f-mono); color: var(--dust); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hcup { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(180deg, #8fd86a, #3f8a2e); color: #0c1a06; font: 700 11px/1 var(--f-body); border: 1.5px solid #e6ffd8; }
 .hcsk.dim { opacity: .5; }
@@ -1684,7 +1782,7 @@ nav.tabs .vname { font-family: var(--f-display); font-size: 20px; letter-spacing
 /* центр: 3D и ячейки */
 .hcstage { position: relative; grid-row: 2; grid-column: 2; min-height: 0; min-width: 0; }
 .hc .hcfig, .hc .hcfig.has3d { position: absolute; inset: 0 var(--gs); width: auto !important; height: auto; aspect-ratio: auto; max-width: none; border-radius: 4px; overflow: hidden; border: 0; box-shadow: none; cursor: grab;
-  background: radial-gradient(55% 30% at 50% 92%, rgb(232 145 63 / .25), transparent 70%), radial-gradient(70% 80% at 50% 45%, #2c1c10, #120b06 80%); }
+  background: radial-gradient(55% 34% at 50% 80%, rgb(208 155 93 / .22), transparent 78%), radial-gradient(75% 85% at 50% 42%, #998166, #5e4939 95%); }
 .hc .hcfig > svg { width: 100%; height: 100%; }
 .hc .hcfig canvas { width: 100% !important; height: 100% !important; display: block; }
 .hcgl, .hcgr { position: absolute; top: 4px; bottom: 4px; width: var(--gs); display: flex; flex-direction: column; justify-content: space-around; align-items: center; pointer-events: none; }
@@ -1717,7 +1815,7 @@ nav.tabs .vname { font-family: var(--f-display); font-size: 20px; letter-spacing
 .hc .btn.buy { background: linear-gradient(180deg, #8fd86a, #3f8a2e); border-color: #9ae07a; color: #0c1a06; }
 .hcmaxg { padding: 12px 0; }
 /* справа */
-.hcright { grid-row: 2 / 4; grid-column: 3; display: flex; flex-direction: column; gap: 8px; padding: 8px 8px 8px 4px; min-height: 0; overflow-y: auto; }
+.hcright { grid-row: 2 / 4; grid-column: 3; display: flex; flex-direction: column; gap: 8px; padding: 8px 8px 8px 4px; min-height: 0; overflow-y: auto; background: linear-gradient(90deg, #4c3728 0%, #392a20 23%, #2e241d 100%); border-left: 1px solid #68503a; }
 .hcblk { display: grid; gap: 5px; padding: 8px; background: rgb(18 12 7 / .6); border: 1px solid var(--line); border-radius: 2px; }
 .hcrow { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
 .hcbig { font: 600 20px/1 var(--f-mono); } .hcbig small { font-size: 12px; color: var(--dust); font-weight: 400; }

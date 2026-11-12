@@ -1,5 +1,6 @@
-// Пакет 8: реальная WebGL-проекция 5×5 на iPhone. Проверяет не боковую камеру,
-// расстояние между экранными силуэтами и компактный HUD LOW; сохраняет снимки.
+// Approved v94: real 5x5 close over-the-shoulder composition on iPhone.
+// Indicator rectangles, pointer selection and motion are checked separately by
+// arena-framing-preview.mjs (required by the same UI release gate).
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -47,7 +48,9 @@ try {
       if (A.scene.getFrameId()<2) throw Error('Arena did not render');
       const arr=Object.values(A.units).map(o=>{
         const p=A.project(o.base.add(new __B3.Vector3(0,o.h*.65,0)));
-        return {side:o.side,x:p[0],y:p[1],z:o.base.z,worldX:o.base.x};
+        const foot=A.project(o.base),head=A.project(o.base.add(new __B3.Vector3(0,o.h,0)));
+        return {side:o.side,x:p[0],y:p[1],z:o.base.z,worldX:o.base.x,
+          headY:head[1],footY:foot[1],height:foot[1]-head[1]};
       });
       if(arr.length!==10) throw Error('Expected 10 models, got '+arr.length);
       const minDistance=side=>{
@@ -57,15 +60,21 @@ try {
         return d;
       };
       return {arr,allyMin:minDistance('A'),enemyMin:minDistance('B'),
-        cam:{x:A.camX,y:A.camH,z:A.camDist},w:A.w,h:A.h,
+        cam:{x:A.camX,y:A.camH,z:A.camDist,fov:A.fovDeg},w:A.w,h:A.h,
         compact:document.getElementById('battle').classList.contains('compact-world-hud')};
     });
     await new Promise(r=>setTimeout(r,1200));
     await page.screenshot({path:path.join(shots,`battle-${width}-${gfx}${baseline?'-v75':''}.png`)});
     const all=result.arr, ally=all.filter(o=>o.side==='A'), enemy=all.filter(o=>o.side==='B');
-    const valid=baseline ? !errors.length && all.length===10 : !errors.length && result.cam.x < -10 &&
+    const valid=baseline ? !errors.length && all.length===10 : !errors.length &&
+      result.cam.x===-11.5 && result.cam.y===3.9 && result.cam.z===10 && result.cam.fov===36 &&
       ally.every(o=>o.worldX<0) && enemy.every(o=>o.worldX>0) &&
-      result.allyMin >= 45 && result.enemyMin >= 43 &&
+      // Staggered ranks intentionally overlap in depth in the approved close
+      // composition; 45px centre distance belonged to the former distant view.
+      // Require distinct body centres plus large, fully framed characters.
+      result.allyMin >= 35 && result.enemyMin >= 35 &&
+      ally.every(o=>o.height>=75) && enemy.every(o=>o.height>=45) &&
+      all.every(o=>o.headY>=60&&o.footY<=height-30) &&
       Math.max(...ally.map(o=>o.x)) < Math.max(...enemy.map(o=>o.x)) &&
       result.compact === (gfx==='low') &&
       all.every(o=>o.x>=35&&o.x<=width-30&&o.y>=65&&o.y<=height-45);
