@@ -72,7 +72,7 @@ try {
         // only the overlay-removal timer in the test, never production timing or actShow.
         const nativeTimeout = window.setTimeout;
         window.setTimeout = (fn, ms, ...args) =>
-          nativeTimeout(fn, ms === 2900 ? 9000 : ms, ...args);
+          nativeTimeout(fn, ms === 2900 || ms === 2610 ? 9000 : ms, ...args);
         try { doAct(u, 'gl', target.uid); }
         finally { window.setTimeout = nativeTimeout; }
         const cine = document.querySelector('.ultcine');
@@ -127,20 +127,22 @@ try {
         const first = tr.node.rotationQuaternion.asArray();
         // Advance this test-only sampled pose along the same action without
         // changing production clocks or the real battle action duration.
-        const originalT=C.t0;
-        C.t0=performance.now()-C.dur*.65;
+        // Hold at mid-gesture through the capture, so the screenshot shows
+        // the same framing an iPhone would see without SwiftShader delays.
+        C.t0=performance.now()-C.dur*.45;
         o.act.t0=C.t0;
         A._loop();
         const second=tr.node.rotationQuaternion.asArray();
-        C.t0=originalT;
-        o.act.t0=originalT;
+        const center = A.project(o.root.position.add(V3(0, o.h * .5, 0)));
         return { playing:o.root._clip, first, second, trackChange:changes(tr),
-          camera:A.camera.position.asArray() };
+          camera:A.camera.position.asArray(), center };
       });
       if (hero === 'muaddib' && !disableLive) {
         assert.equal(motion?.playing, 'ult', 'real spell-cast DGM clip did not play');
         assert.ok(motion.trackChange > .001, 'spell cast has no animated rotation channels');
         assert.notDeepEqual(motion.second, motion.first, 'spell caster bones did not animate');
+        assert.ok(motion.center[0] > width * .09 && motion.center[0] < width * .51,
+          'Muad-Dib should be fully readable on the left: ' + JSON.stringify(motion.center));
       }
       assert.equal(await page.$('.ultcine') !== null, true, 'cinematic vanished before screenshot');
       const suffix = hero === 'muaddib' ? (disableLive ? 'baked-fallback' : portrait ? 'live-baked' : 'live-unbaked') : 'baron';
