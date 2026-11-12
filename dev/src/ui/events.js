@@ -24,7 +24,7 @@ import { hcMem } from './memory-screen.js';
 import { recyclerClick } from './recycler-screen.js';
 import { nextShards, rosterClick } from './views/squad.js';
 import { campSel, set_campSel } from './views/camp.js';
-import { campaign20Action, campaign20Start, campaign20Legacy } from './views/campaign20.js';
+import { campaign20Action, campaign20Start, campaign20Legacy, campaign20FocusCurrent } from './views/campaign20.js';
 import { render } from './router.js';
 import { selectStoryEvent, selectStoryStage } from './views/story-events.js';
 import { selectBaronStage } from './views/baron-journey.js';
@@ -76,6 +76,7 @@ document.addEventListener('click', e => {
     if(!launchStoryUnlock(prepared))toast('Не удалось начать сюжетный бой');
     return;
   }
+  if (d.c20focus) { campaign20FocusCurrent(); return; }
   if (campaign20Action(d)) { render(); return; }
   if (d.v) { if (d.v === 'camp') campaign20Start(); set_view(d.v); render(); return; }
   if (d.csel !== undefined) { set_campSel(+d.csel); render(); return; }
