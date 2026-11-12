@@ -62,8 +62,10 @@ try{
     assert.equal(info.cardVisible,true);
     assert.ok(info.model);
     assert.equal(info.meshes,1);
+    assert.ok(info.textured>0,'Muad Dib must use the authored albedo texture');
     assert.equal(info.weaponParts,5,'Muad Dib must hold the five-part short crysknife, not the generic long sword');
     assert(info.clips.length>=8);
+    await p.evaluate(()=>document.querySelectorAll('.toast').forEach(el=>el.remove()));
     await p.screenshot({path:path.join(out,`muaddib-${width}x${height}-${quality}-card.png`)});
     for(const state of ['Idle','Attack','special','ult']){
       const data=await p.evaluate(state=>{
@@ -80,8 +82,31 @@ try{
         return {clip:o.root._lastClip,authored:o.root._authored};
       },state);
       assert.ok(data.authored);
+      await p.evaluate(()=>document.querySelectorAll('.toast').forEach(el=>el.remove()));
       await p.screenshot({path:path.join(out,`muaddib-${width}x${height}-${quality}-${state}.png`)});
     }
+    // Additional review-only close-up: keep the game's standard camera and
+    // gameplay untouched, alter only this test's temporary Babylon camera.
+    const closeup=await p.evaluate(()=>{
+      document.querySelectorAll('.toast').forEach(el=>el.remove());
+      const s=HERO_STAGE,o=s.o,now=10000;
+      o.act=null;o.hitT=0;o.dead=false;
+      poseModelClip(o,now,1.6,1,{});
+      const originalPosition=s.camera.position.clone(),originalFov=s.camera.fov;
+      const target=s.camera.getTarget().clone();
+      s.camera.position=target.add(originalPosition.subtract(target).scale(.68));
+      s.camera.fov=.62;
+      s.scene.render();
+      return {originalPosition:originalPosition.asArray(),originalFov,
+        canvasRect:s.cv.getBoundingClientRect().toJSON()};
+    });
+    assert(closeup.canvasRect.width>100 && closeup.canvasRect.height>100);
+    await p.screenshot({path:path.join(out,`muaddib-${width}x${height}-${quality}-closeup.png`)});
+    await p.evaluate(({originalPosition,originalFov})=>{
+      HERO_STAGE.camera.position.copyFromFloats(...originalPosition);
+      HERO_STAGE.camera.fov=originalFov;
+      HERO_STAGE.scene.render();
+    },closeup);
     assert.deepEqual(errors,[],errors.join('; '));
     console.log('PASS Muad Dib mobile hero card',width,height,quality,JSON.stringify(info));
    }finally{await p.close();}
