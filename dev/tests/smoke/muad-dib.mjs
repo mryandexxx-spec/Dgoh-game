@@ -55,12 +55,14 @@ try{
       return {id:o.def?.id,cardVisible:true,model:assetUrl('models/muad-dib-legend.dgm'),
         textured:o.root.getChildMeshes().filter(m=>m.skeleton&&m.material?.diffuseTexture).length,
         meshes:o.root.getChildMeshes().filter(m=>m.skeleton).length,
+        weaponParts:o.wpn.getChildMeshes().length,
         clips:Object.keys(o.root._clips)};
     });
     assert.equal(info.id,'muaddib');
     assert.equal(info.cardVisible,true);
     assert.ok(info.model);
     assert.equal(info.meshes,1);
+    assert.equal(info.weaponParts,5,'Muad Dib must hold the five-part short crysknife, not the generic long sword');
     assert(info.clips.length>=8);
     await p.screenshot({path:path.join(out,`muaddib-${width}x${height}-${quality}-card.png`)});
     for(const state of ['Idle','Attack','special','ult']){
