@@ -111,7 +111,7 @@ document.addEventListener('click', e => {
   if (d.gearfind && itemCtx) {
     const { cid, k, partId } = itemCtx, it = slotState(cid, k).it;
     set_INFO_BACK({ label: 'К предмету', open: () => openItem(cid, k, partId) });
-    return openInfo('frag:' + it.id);
+    return openInfo(partId ? 'gefrag:' + (partId.replace(/^part:/,'frag:')) : 'gegear:' + it.id);
   }
   if (d.buildpart && itemCtx) {
     const { cid, k } = itemCtx, it = slotState(cid, k).it;
@@ -128,7 +128,7 @@ document.addEventListener('click', e => {
     const { cid, k } = itemCtx, s = slotState(cid, k), p = prog(cid);
     if (p.eq[k] || !p.stars) return;
     const wallet = { sol: S.solari, pl: S.plast };
-    const result = craftAndEquip(s.it.id, S.inv, S.gearParts, wallet);
+    const result = craftAndEquip(s.it.id, S.inv, S.gearParts, wallet, S.gearOwned);
     if (!result.ok) return toast('Недостаточно материалов для сборки');
     S.solari = wallet.sol; S.plast = wallet.pl;
     p.eq[k] = true; quest('craft'); persist();
@@ -162,8 +162,14 @@ document.addEventListener('click', e => {
     return;
   }
   if (d.fbuy) {
-    const [id, q] = d.fbuy.split(':'), cost = +q * SHOP_FRAG[ITEMS[id].t];
-    if (S.teeth >= cost) { S.teeth -= cost; S.inv[id] = (S.inv[id] || 0) + +q; quest('shop'); persist(); toast(`+${amt('frag', +q)} ${ITEMS[id].n}`); }
+    const parts = d.fbuy.split(':'), q = Number(parts.pop()), id = parts.join(':');
+    const item = ITEMS[id.startsWith('frag:') ? id.split(':')[1] : id];
+    if (!item || !Number.isInteger(q) || q < 1 || !id.startsWith('frag:')) return;
+    const cost = q * SHOP_FRAG[item.t];
+    if (S.teeth >= cost) {
+      S.teeth -= cost; S.inv[id] = (S.inv[id] || 0) + q;
+      quest('shop'); persist(); toast(`+${amt('frag', q)} ${item.n} · компонент`);
+    }
     refreshAll(); return;
   }
   if (d.dback || (d.close && (t.tagName === 'BUTTON' || e.target === t) && DETAIL_BACK && $('#overlay .csheet'))) { const f = DETAIL_BACK; set_DETAIL_BACK(null); return f ? f() : closeOverlay(); }
