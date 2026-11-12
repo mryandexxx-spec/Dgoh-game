@@ -72,6 +72,19 @@ try {
       true,'recenter must keep existing canvas');
 
     assert.ok(metrics.visiblePins>0,'projected 3D mission labels visible');
+    const overlapping=await page.evaluate(()=>{
+      const visible=[...document.querySelectorAll('.c20-pin')].filter(el=>getComputedStyle(el).visibility==='visible');
+      const rects=visible.map(el=>({id:el.dataset.c20node,rect:el.getBoundingClientRect()}));
+      const collisions=[];
+      for(let i=0;i<rects.length;i++)for(let j=i+1;j<rects.length;j++){
+        const a=rects[i],b=rects[j],x=Math.min(a.rect.right,b.rect.right)-Math.max(a.rect.left,b.rect.left);
+        const y=Math.min(a.rect.bottom,b.rect.bottom)-Math.max(a.rect.top,b.rect.top);
+        if(x>3&&y>3)collisions.push([a.id,b.id]);
+      }
+      return collisions;
+    });
+    assert.deepEqual(overlapping,[],'50/60px mission markers cannot overlap at phone size');
+
     await page.evaluate(()=>document.querySelector('[data-c20node]')?.click());
     await page.waitForSelector('.c20-card');
     await page.click('[data-c20="detail"]');
