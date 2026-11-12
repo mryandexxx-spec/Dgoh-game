@@ -56,7 +56,7 @@ try {
       },id);
       await page.screenshot({path:path.join(out,`${width}x${height}-${quality}-${id}-roster.png`)});
     }
-    assert.equal(roster.count,26,'Two normal heroes extend the 24-hero roster');
+    assert.equal(roster.count,27,'Two ordinary heroes and a distinct legendary Baron are public');
 
     const cards=[];
     for(const id of ['margot','yue']){
@@ -168,7 +168,7 @@ try {
       }
       return {count,cards};
     });
-    assert.equal(verdict.count,26);
+    assert.equal(verdict.count,27);
     for(const card of verdict.cards) {
       assert.equal(card.shared,true);
       assert.equal(card.svg,true,card.id+' renders SVG without WebGL');
