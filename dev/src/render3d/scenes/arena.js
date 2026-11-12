@@ -419,7 +419,12 @@ class Arena3D extends GameScene {
       B3.Vector3.ProjectToRef(F, B3.Matrix.IdentityReadOnly, M, vp, pa); B3.Vector3.ProjectToRef(Hd, B3.Matrix.IdentityReadOnly, M, vp, pb);
       const fx = pa.x, fy = pa.y, hpx = Math.max(20, fy - pb.y), x = this._hdx + fx, y = this._hdy + fy;
       if (!el._hp) { el._hp = 1; el.style.left = '0px'; el.style.top = '0px'; el._hx = el._hy = NaN; }
-      if (!(Math.abs(x - el._hx) < .25 && Math.abs(y - el._hy) < .25)) { el._hx = x; el._hy = y; el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -100%)`; }
+      if (!(Math.abs(x - el._hx) < .25 && Math.abs(y - el._hy) < .25)) {
+        el._hx = x; el._hy = y;
+        if (el.firstElementChild?.classList.contains('world-label')) {
+          el.style.setProperty('--world-x', x.toFixed(1) + 'px'); el.style.setProperty('--world-y', y.toFixed(1) + 'px');
+        } else el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -100%)`;
+      }
       if (!(Math.abs(hpx - el._fh) <= 1)) { el._fh = hpx; el.style.setProperty('--fh', hpx + 'px'); el.style.setProperty('--w', this.raid ? Math.max(44, hpx * (o.boss ? .9 : .5)) + 'px' : Math.max(48, Math.min(66, hpx * .62)) + 'px'); }
       if (this.worldHud) this.worldHud.track(uid, el, fx, fy - hpx - 4, o.dead);
     }

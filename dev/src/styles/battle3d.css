@@ -69,13 +69,25 @@
 .battle.pkg9 .btop { position: absolute; inset: 0 0 auto; height: 54px; z-index: 20; pointer-events: none; display: block; }
 .battle.pkg9 .btitle, .battle.pkg9 .ticker { display: none; }
 .battle.pkg9 .field.three { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; z-index: 5; pointer-events: none; }
-.battle.pkg9 .field.three .unit { pointer-events: auto; }
+.battle.pkg9 .field.three .unit {
+  /* No per-unit stacking context: every label must sit above *all* model hit
+     areas, including the transparent hit rectangle of a neighbouring model. */
+  transform: none !important; z-index: auto !important; pointer-events: none;
+}
+.battle.pkg9 .field.three .unit .fig {
+  z-index: 1; pointer-events: auto;
+  transform: translate3d(calc(var(--world-x, 0px) - 50%), calc(var(--world-y, 0px) - 100%), 0) !important;
+}
+.battle.pkg9 .field.three .unit .float {
+  left: 0; top: 0; z-index: 8;
+  translate: var(--world-x, 0px) calc(var(--world-y, 0px) - var(--fh, 120px) - 10px);
+}
 .battle.pkg9 .field.three { padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
 .battle.pkg9 .world-label {
-  position: absolute; left: 50%; bottom: calc(var(--fh, 120px) + 4px);
+  position: absolute; left: 0; top: 0; bottom: auto;
   display: flex; flex-direction: column; align-items: center; width: max-content; min-width: 120px;
   padding: 0 12px; z-index: 6; pointer-events: auto;
-  transform: translate(calc(-50% + var(--hud-x, 0px)), var(--hud-y, 0px));
+  transform: translate3d(calc(var(--world-x, 0px) + var(--hud-x, 0px) - 50%), calc(var(--world-y, 0px) - var(--fh, 120px) - 4px + var(--hud-y, 0px) - 100%), 0);
 }
 .battle.pkg9 .world-label .tcur { position: relative; left: auto; bottom: auto; transform: none; flex: none; }
 .battle.pkg9 .world-label .fxs { justify-self: center; }
