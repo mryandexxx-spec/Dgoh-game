@@ -18,7 +18,7 @@ try {
   for(const [w,h,gfx] of [[844,390,'med'],[667,375,'low']]){
     const page=await browser.newPage(),errors=[];
     page.on('pageerror',e=>{errors.push(e.message);console.log('Campaign browser pageerror:',e.stack||e.message);});
-    page.on('console',msg=>{if(msg.type()==='warning'||msg.type()==='error')console.log('Campaign console '+msg.type()+': '+msg.text());});
+    page.on('console',msg=>{if(msg.type()==='warn'||msg.type()==='error')console.log('Campaign console '+msg.type()+': '+msg.text());});
     await page.setViewport({width:w,height:h,deviceScaleFactor:1,isMobile:true,hasTouch:true,isLandscape:true});
     await page.evaluateOnNewDocument((s,profile)=>{
       try{localStorage.setItem('dune-goh-v1',s);localStorage.setItem('dune-gfx',JSON.stringify({p:profile,auto:0,bad:0,good:0,noUp:false}));}catch(e){}
