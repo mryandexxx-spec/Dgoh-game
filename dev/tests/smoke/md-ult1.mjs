@@ -16,7 +16,7 @@ const srv = await serve(path.dirname(html));
 const records = [];
 try {
   for (const [width, height, quality] of [[844, 390, 'med'], [667, 375, 'low']]) {
-    for (const [hero, portrait] of [['muaddib', false], ['muaddib', true], ['baron_legend', false]]) {
+    for (const [hero, portrait, disableLive] of [['muaddib', false, false], ['muaddib', true, false], ['muaddib', true, true], ['baron_legend', false, false]]) {
       const page = await browser.newPage(), errors = [];
       page.on('pageerror', e => errors.push(e.message));
       await page.setViewport({ width, height, deviceScaleFactor: 1, isMobile: true, hasTouch: true, isLandscape: true });
@@ -29,6 +29,7 @@ try {
       }, save, quality);
       await page.goto(srv.url(path.basename(html)), { waitUntil: 'load', timeout: 120000 });
       await page.evaluate(async () => { if (!await loadB3()) throw Error('3D not available'); });
+      if (hero === 'muaddib') await page.waitForFunction(() => !!MODEL_DATA.muaddib, { timeout: 60000 });
       if (portrait) {
         // Bake the genuine authored hero via the existing shared EngineHost before battle.
         await page.waitForFunction(() => !!MODEL_DATA.muaddib, { timeout: 60000 });
@@ -41,7 +42,7 @@ try {
           } finally { baker.dispose(); }
         });
       }
-      const start = await page.evaluate(id => {
+      const start = await page.evaluate((id, disableLive) => {
         if (!CH[id]?.gl) throw Error('Missing playable legendary ultimate: ' + id);
         const friends = [id, ...Object.keys(CH).filter(k => k !== id && !CH[k].boss && !CH[k].legendary).slice(0, 4)];
         const enemies = Object.keys(CH).filter(k => !CH[k].boss && !friends.includes(k)).slice(0, 5);
@@ -52,6 +53,10 @@ try {
         const u = BT.B.units.find(x => x.side === 'A' && x.def.id === id);
         const target = BT.B.units.find(x => x.side === 'B');
         if (!u || !target) throw Error('Real battle hero/target missing');
+        const actor = BT.arena?.units[u.uid];
+        if (id === 'muaddib' && !actor?.root?._clips?.[actor.root._clipNames?.ult]) throw Error('Muad-Dib spell clip missing');
+        // Simulate an unavailable authored model without touching battle mechanics.
+        if (disableLive && actor) actor.root._authored = 0;
         u.glOn = true; u.glUsed = false; u.ultM = 100;
         BT.B.active = u; BT.B.actor = u.uid; BT.waiting = u;
         BT.auto = false; BT.speed = 1;
@@ -73,29 +78,51 @@ try {
         }
         if (!cine || BT.B.lastKey !== 'gl' || BT.B.glCast !== u.uid) throw Error('GL action did not start cinematic');
         const fig = cine.querySelector('.ucfig');
-        return { id, target: target.def.id, hasSvg: !!fig.querySelector('svg'),
+        return { id, target: target.def.id, live: cine.classList.contains('muad-live'),
+          spellClip: actor?.root?._clipNames?.ult || null,
+          hasSvg: !!fig.querySelector('svg'),
           hasImg: !!fig.querySelector('img'), src: fig.querySelector('img')?.getAttribute('src') || '',
           title: cine.querySelector('.uctext b')?.textContent,
           heroName: cine.querySelector('.uctext span')?.textContent,
           rays: !!cine.querySelector('.ucrays'), sand: cine.querySelectorAll('.ucsand i').length,
           bgFrame: BT.arena?.scene?.getFrameId?.() || 0 };
-      }, hero);
+      }, hero, disableLive);
       assert.equal(start.rays, true);
       assert.equal(start.sand, 26);
       assert.ok(start.title);
       assert.ok(start.heroName);
       if (hero === 'muaddib') {
         assert.equal(start.hasSvg, false, 'Muad-Dib must never use procedural figureSVG');
-        assert.equal(start.hasImg, portrait);
-        if (portrait) assert.match(start.src, /^blob:/, 'genuine baked portrait expected');
+        assert.equal(start.live, !disableLive, 'existing authored model must animate its GL spell');
+        assert.equal(start.spellClip, 'mage_soell_cast_1');
+        assert.equal(start.hasImg, disableLive && portrait);
+        if (disableLive && portrait) assert.match(start.src, /^blob:/, 'genuine baked fallback expected');
       } else {
         assert.equal(start.hasSvg, true, 'Other legendary cinematics stay unchanged');
       }
       // Capture while actual .ultcine exists and is fully visible, not after its timeout.
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise(resolve => setTimeout(resolve, 320));
+      const frameA = await page.evaluate(() => {
+        const c = BT.arena?.muadCine, o = c?.o;
+        const tr = o?.root?._clips?.[o.root._clipNames?.ult]?.tracks?.find(t => t.path === 'rotation' && t.node);
+        return { playing: o?.root?._clip || null, quaternion: tr?.node?.rotationQuaternion?.asArray() || null,
+          camera: BT.arena?.camera?.position?.asArray() || null };
+      });
       assert.equal(await page.$('.ultcine') !== null, true, 'cinematic vanished before screenshot');
-      const suffix = hero === 'muaddib' ? (portrait ? 'baked' : 'missing') : 'baron';
+      const suffix = hero === 'muaddib' ? (disableLive ? 'baked-fallback' : portrait ? 'live-baked' : 'live-unbaked') : 'baron';
       await page.screenshot({ path: path.join(out, `${width}x${height}-${quality}-${suffix}.png`) });
+      if (hero === 'muaddib' && !disableLive) {
+        assert.equal(frameA.playing, 'ult', 'real spell-cast DGM clip did not play');
+        await new Promise(resolve => setTimeout(resolve, 700));
+        const frameB = await page.evaluate(() => {
+          const o = BT.arena?.muadCine?.o;
+          const tr = o?.root?._clips?.[o.root._clipNames?.ult]?.tracks?.find(t => t.path === 'rotation' && t.node);
+          return { playing: o?.root?._clip || null, quaternion: tr?.node?.rotationQuaternion?.asArray() || null };
+        });
+        assert.equal(frameB.playing, 'ult', 'spell clip stopped early');
+        assert.notDeepEqual(frameB.quaternion, frameA.quaternion, 'spell caster bones did not animate');
+        await page.screenshot({ path: path.join(out, `${width}x${height}-${quality}-${suffix}-late.png`) });
+      }
       await new Promise(resolve => setTimeout(resolve, 9200));
       const end = await page.evaluate(() => ({
         overlayGone: !document.querySelector('.ultcine'),
@@ -113,11 +140,11 @@ try {
       if (hero === 'muaddib') assert.equal(end.muaddibGlUsed, true, 'GL use not registered');
       assert.ok(start.bgFrame > 0 || end.frame > 0, 'WebGL did not render');
       assert.deepEqual(errors, [], 'browser JS errors');
-      records.push({ width, height, quality, portrait, hero, start, end });
+      records.push({ width, height, quality, portrait, disableLive, hero, start, end });
       console.log('PASS MD-ULT-1', width, height, quality, hero, portrait ? 'baked' : 'fallback');
       await page.close();
     }
   }
 } finally { await browser.close(); await srv.close(); }
 fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(records, null, 2));
-assert.equal(records.length, 6);
+assert.equal(records.length, 8);
