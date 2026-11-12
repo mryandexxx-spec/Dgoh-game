@@ -131,6 +131,8 @@ jobs:
         with:
           chrome-version: stable
       - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+      - name: Optional Muad-Dib download must not block 3D lobby
+        run: node tests/smoke/optional-model-boot.mjs dist/pwa/index.html
       - name: Campaign 2.0 Caladan real WebGL UX (844/667 MED/LOW)
         run: node tests/smoke/campaign20.mjs dist/pwa/index.html dist/campaign20-shots
       - name: Upload Campaign 2.0 screenshots

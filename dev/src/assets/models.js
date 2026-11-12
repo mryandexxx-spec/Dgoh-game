@@ -48,9 +48,22 @@ function loadKtx2() {
     e => console.warn('KTX2 выключен, текстуры — JPEG:', e));
 }
 let ASSETS_P = null;
+let MUAD_P = null;
+function warmMuadDib() {
+  if (!assetUrl('models/muad-dib-legend.dgm')) return Promise.resolve();
+  if (!MUAD_P) MUAD_P = assetBytes('models/muad-dib-legend.dgm')
+    .then(b => { MODEL_DATA.muaddib = parseDgm(b); })
+    .catch(e => { console.warn('optional Muad-Dib model unavailable, procedural fallback', e); MUAD_P = null; });
+  return MUAD_P;
+}
+
 function loadAssets3() {   // Promise: каждый ассет независим — что не загрузилось, то 3D заменяет как раньше (процедурная модель, без mocap/окружения)
+  void warmMuadDib(); // optional; intentionally NOT in the readiness barrier
   return ASSETS_P || (ASSETS_P = Promise.allSettled([
-    ...['duncan', 'worm', ...(assetUrl('models/young-baron.dgm') ? ['young-baron'] : []), ...(assetUrl('models/baron-legend-mobile.dgm') ? ['baron-legend-mobile'] : []), ...(assetUrl('models/muad-dib-legend.dgm') ? ['muad-dib-legend'] : [])].map(id => assetBytes(`models/${id}.dgm`).then(b => { MODEL_DATA[id === 'young-baron' ? 'baron' : id === 'baron-legend-mobile' ? 'baron_legend' : id === 'muad-dib-legend' ? 'muaddib' : id] = parseDgm(b); })),
+    // Muad'Dib v5 is a noncritical, optional hero asset: fetching it in the
+    // shared bootstrap barrier can block *every* 3D scene on a slow iPhone/PWA.
+    // It is fetched in parallel but never prevents Babylon/camp/other heroes.
+    ...['duncan', 'worm', ...(assetUrl('models/young-baron.dgm') ? ['young-baron'] : []), ...(assetUrl('models/baron-legend-mobile.dgm') ? ['baron-legend-mobile'] : [])].map(id => assetBytes(`models/${id}.dgm`).then(b => { MODEL_DATA[id === 'young-baron' ? 'baron' : id === 'baron-legend-mobile' ? 'baron_legend' : id] = parseDgm(b); })),
     fetch(assetUrl('anim/mocap.json')).then(r => r.ok ? r.json() : Promise.reject(new Error('mocap.json: HTTP ' + r.status))).then(setMocap),
     (async () => { const u = assetUrl('env/desert.env'); if (!u) throw new Error('нет env/desert.env');
       setEnvHdr(u.endsWith('.txt') ? 'data:application/octet-stream;base64,' + (await (await fetch(u)).text()).trim() : u); })(),
