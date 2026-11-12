@@ -141,12 +141,15 @@ try {
         assert.equal(motion?.playing, 'ult', 'real spell-cast DGM clip did not play');
         assert.ok(motion.trackChange > .001, 'spell cast has no animated rotation channels');
         assert.notDeepEqual(motion.second, motion.first, 'spell caster bones did not animate');
-        assert.ok(motion.center[0] > width * .09 && motion.center[0] < width * .51,
-          'Muad-Dib should be fully readable on the left: ' + JSON.stringify(motion.center));
+
       }
       assert.equal(await page.$('.ultcine') !== null, true, 'cinematic vanished before screenshot');
       const suffix = hero === 'muaddib' ? (disableLive ? 'baked-fallback' : portrait ? 'live-baked' : 'live-unbaked') : 'baron';
       await page.screenshot({ path: path.join(out, `${width}x${height}-${quality}-${suffix}.png`) });
+      if (hero === 'muaddib' && !disableLive) {
+        assert.ok(motion.center[0] > width * .09 && motion.center[0] < width * .51,
+          'Muad-Dib should be readable inside left cinematic: ' + JSON.stringify(motion.center));
+      }
       await new Promise(resolve => setTimeout(resolve, 9200));
       const end = await page.evaluate(() => ({
         overlayGone: !document.querySelector('.ultcine'),
