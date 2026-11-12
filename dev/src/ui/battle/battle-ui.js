@@ -34,7 +34,7 @@ import { Arena3D } from '../../render3d/scenes/arena.js';
 import { HAS3D, HAS_GL, loadB3 } from '../../render3d/base.js';
 import { FXLayer } from '../../render2d/fx-layer.js';
 import { SceneBG, reduceMotion } from '../../render2d/scene-bg.js';
-import { figureSVG, portrait, wormSVG } from '../../render2d/figures.js';
+import { figureSVG, portrait, wormSVG, bakedFullPortraitUrl } from '../../render2d/figures.js';
 import { ghash } from '../../data/looks.js';
 import { aiPlan, hasPrescience } from '../../logic/battle/ai.js';
 import { act, endTurn, glMeter, startTurn } from '../../logic/battle/turns.js';
@@ -259,8 +259,14 @@ function ultCinematic(u, B) {
   const tgt = B.glTarget && B.units.find(x => x.uid === B.glTarget);
   const ud = BT.speed >= 4 ? 1.9 : BT.speed >= 2 ? 2.4 : 2.9;
   const g = document.createElement('div'); g.className = 'ultcine' + (foeSide ? ' foe' : ''); g.style.setProperty('--uc', th); g.style.setProperty('--ud', ud + 's');
+  // Muad'Dib may not have a baked portrait yet (first launch, offline, IndexedDB blocked).
+  // Never show a rough procedural figure in his cinematic; a missing image is safe.
+  const muaddibPortrait = d.id === 'muaddib' ? bakedFullPortraitUrl(d.id) : null;
+  const cinematicFigure = d.id === 'muaddib'
+    ? (muaddibPortrait ? `<img src="${muaddibPortrait}" alt="" aria-hidden="true">` : '')
+    : figureSVG(d, true);
   g.innerHTML = `<div class="ucbar t"></div><div class="ucbar b"></div><div class="ucrays"></div><div class="ucband"></div>
-    <div class="ucfig">${figureSVG(d, true)}</div>
+    <div class="ucfig">${cinematicFigure}</div>
     <div class="uctext"><small>Ультимативная способность${foeSide ? ' врага' : ''}</small><b>${gl.n}</b><span>${d.n}</span>${tgt ? `<em>${tgt.def.boss ? 'Цель' : 'Поглощён'}: ${tgt.def.sn}</em>` : ''}</div>
     <div class="ucsand">${Array.from({ length: 26 }, (_, i) => `<i style="--x:${(i * 37) % 100}%;--dl:${(i % 9) * .07}s;--sz:${4 + (i * 7) % 9}px"></i>`).join('')}</div>`;
   $('#battle').appendChild(g);
