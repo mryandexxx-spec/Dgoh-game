@@ -58,11 +58,11 @@ function missionLoot(i) {
       title:'Осколки · '+CH[id].sn, note:k===0?(n.camp==='C'?'до 2 · 60%':'до 2 · 50%'):(n.camp==='C'?'до 1 · 23,4%':'до 1 · 24%')})),
     ...NODE_ITEMS[i].map(key=>{
       const part=key.startsWith('frag:'),it=ITEMS[part?key.split(':')[1]:key];
-      return it?{key:part?'gefrag:'+key:'frag:'+key,icon:itemIcon(it,29),
+      return it?{key:part?'gefrag:'+key:'frag:'+key,icon:itemIcon(it,29).replace(/ data-info="[^"]*"/,''),
         title:(part?'Компонент · ':'Фрагменты · ')+it.n,note:'18% за бой'}:null;
     }).filter(Boolean),
     ...COMPLETE_NODE_ITEMS[i].map(key=>{
-      const it=ITEMS[key];return it?{key:'gegear:'+key,icon:itemIcon(it,29),
+      const it=ITEMS[key];return it?{key:'gegear:'+key,icon:itemIcon(it,29).replace(/ data-info="[^"]*"/,''),
         title:'Готовое · '+it.n,note:(COMPLETE_RATE[it.t]*100).toLocaleString('ru-RU',{maximumFractionDigits:2})+'% за бой'}:null;
     }).filter(Boolean)
   ];
@@ -97,7 +97,7 @@ function modalHtml(ck,n,i){
     rewards:`<div class="c20-earn">За победу: ${amt('sol',rw.sol)} · ${amt('pl',rw.pl)} · ${amt('folio',rw.folio)}
       ${ck==='C'?' · '+amt('rid','8–15'):''} · ${amt('cry',CRY_WIN)}</div>
       <div class="c20-loot">${loot.slice(rewardPage*3,(rewardPage+1)*3).map(row=>
-        `<div class="c20-lootrow"><span class="c20-looticon">${row.icon}</span>
+        `<div class="c20-lootrow"><span class="c20-looticon" data-info="${esc(row.key)}">${row.icon}</span>
         <span>${esc(row.title)}<small>${esc(row.note)}</small></span>
         <button class="btn mini" data-c20item="${esc(row.key)}">Найти</button></div>`).join('')}</div>
       ${modalPager('reward',rewardPage,count)}`
