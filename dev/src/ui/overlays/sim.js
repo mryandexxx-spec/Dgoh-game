@@ -24,7 +24,7 @@ function refreshAll() {
   render();
   const it2 = !!$('#overlay2 .isheet');   // v73: окно предмета слоем над карточкой
   if ($('#overlay .csheet') && detailCid) openDetail(detailCid);
-  if (($('#overlay .isheet') || it2) && itemCtx) openItem(itemCtx.cid, itemCtx.k); else if (infoKey) openInfo(infoKey, true);
+  if (($('#overlay .isheet') || it2) && itemCtx) openItem(itemCtx.cid, itemCtx.k, itemCtx.partId); else if (infoKey) openInfo(infoKey, true);
 }
 function crefillN() { return S.crefills.d === todayKey() ? S.crefills.n : 0; }
 function crefillCost() { return refillPrice(crefillN()); }
@@ -41,6 +41,10 @@ function doXSim(spec) {
   if (S.cleared[i] !== 3) return;
   if (enGet(en) < cost) return openInfo(`need:${en}:${cost}`);
   enSpend(en, cost);
+  // Keep the active recipe component before refresh re-renders underlying overlays.
+  const targetPart = infoKey?.startsWith('gefrag:') && itemCtx?.partId
+    && infoKey.slice('gefrag:'.length) === itemCtx.partId.replace(/^part:/, 'frag:')
+    ? { cid: itemCtx.cid, k: itemCtx.k, partId: itemCtx.partId } : null;
   const r = simCore(i, kk); persist();
   let focus = '';
   const [kind, id] = (infoKey || '').split(':');
@@ -48,6 +52,8 @@ function doXSim(spec) {
   else if (kind === 'frag' && id) focus = ` · +${amt('frag', r.fr[id] || 0)} ${ITEMS[id].n}`;
   else if (!infoKey && itemCtx && $('#overlay .isheet, #overlay2 .isheet')) { const it = slotState(itemCtx.cid, itemCtx.k).it; focus = ` · +${amt('frag', r.fr[it.id] || 0)} ${it.n}`; }
   refreshAll();
+  // Return to the selected recipe component, not the parent equipment or source list.
+  if (targetPart) openItem(targetPart.cid, targetPart.k, targetPart.partId);
   const more = enGet(en) >= cost;
   rewardWin(`Симуляция ×${kk}`, r.lines, { sub: `${nodeTitle(i)} · потрачено ${amt(en, cost)}${focus}`, ok: 'Готово',
     btns: `<button class="btn go ${more ? '' : 'lack'}" data-isim="${spec}" ${more ? '' : 'disabled'}>Ещё ×${kk}<small>${amt(en, cost)}</small></button>`,
