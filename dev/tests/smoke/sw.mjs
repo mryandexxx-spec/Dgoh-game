@@ -41,7 +41,17 @@ const assetHits = () => LOG.filter(([f]) => f.startsWith('assets/'));
 // 1. A: установка, докачка
 let pa = await open();
 await until(pa, () => navigator.serviceWorker.controller && caches.keys().then(k => k.length > 0));
-await sleep(6000);   // A (v54) докачки не знает — всё предкэшировано при установке
+// Wait for A's actual async asset warm-up instead of a fixed 6s timeout.
+// On slow CI/SwiftShader, the older cache could still contain only 5/50 assets
+// when we start the upgrade, falsely reporting 45 "unnecessary" B downloads.
+const warmA = await until(pa, () => window.__warm && window.__warm.fetched + window.__warm.cached === window.__warm.total ? window.__warm : null, 120000);
+check(!!warmA, `A initial asset warm completed before upgrade: ${JSON.stringify(warmA)}`);
+if (warmA) {
+  const stateA = await cacheState(pa);
+  const expectedA = swList(A,'ASSETS').filter(p => !swList(A,'LAZY').includes(p));
+  check(expectedA.every(p => (stateA['dune-goh-assets']||[]).includes(p)),
+    `A initial cache contains all ${expectedA.length} non-lazy assets`);
+}
 const vA = swVer(A), vB = swVer(B);
 console.log(`A: ${await ver(pa)}, controller ${await pa.evaluate(() => !!navigator.serviceWorker.controller)}, ${pa.url()}, кэши ${Object.keys(await cacheState(pa)).join(', ')}`);
 
