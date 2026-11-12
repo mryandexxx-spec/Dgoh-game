@@ -70,7 +70,7 @@ function mapHtml(setSel){
   const first=ids.find(i=>!S.cleared[i])??ids.at(-1);
   let c=S.campCh[ck];
   if(!Number.isInteger(c)||!nodeOpen(chapNodes(ck,c)[0]))c=NODES[first].c;
-  const map=chapterMap(ck,c);
+  const map=chapterMap(ck,c,S.cleared);
   const nodes=chapNodes(ck,c);
   const chosen=nodes.includes(selected)?selected:map?(nextCampaignNode(map)?.id??nodes[0]):(nodes.find(i=>!S.cleared[i])??nodes.at(-1));
   selected=chosen;
