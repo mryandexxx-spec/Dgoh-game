@@ -41,18 +41,18 @@ const assetHits = () => LOG.filter(([f]) => f.startsWith('assets/'));
 // 1. A: установка, докачка
 let pa = await open();
 await until(pa, () => navigator.serviceWorker.controller && caches.keys().then(k => k.length > 0));
-// A→B tests delta downloads only when the A installation has actually warmed
-// its asset cache. Six wall-clock seconds is not enough on shared CI runners:
-// otherwise B correctly fetches many *missing* A assets and the test mistakes
-// that for a regression. Keep the strict changed-only assertion below.
+// Wait for A's actual async asset warm-up instead of a fixed 6s timeout.
+// On slow CI/SwiftShader, the older cache could still contain only 5/50 assets
+// when we start the upgrade, falsely reporting 45 "unnecessary" B downloads.
+const warmA = await until(pa, () => window.__warm && window.__warm.fetched + window.__warm.cached === window.__warm.total ? window.__warm : null, 120000);
+check(!!warmA, `A initial asset warm completed before upgrade: ${JSON.stringify(warmA)}`);
+if (warmA) {
+  const stateA = await cacheState(pa);
+  const expectedA = swList(A,'ASSETS').filter(p => !swList(A,'LAZY').includes(p));
+  check(expectedA.every(p => (stateA['dune-goh-assets']||[]).includes(p)),
+    `A initial cache contains all ${expectedA.length} non-lazy assets`);
+}
 const vA = swVer(A), vB = swVer(B);
-const existingA = swList(A, 'ASSETS').filter(f => !swList(A, 'LAZY').includes(f)).length;
-const readyAssetsA = await until(pa, async expected => {
-  const ac = await caches.open('dune-goh-assets');
-  const keys = await ac.keys();
-  return keys.filter(k => new URL(k.url).pathname.includes('/assets/')).length >= expected;
-}, 120000, existingA);
-check(!!readyAssetsA, `A: исходный ассет-кэш полностью прогрет перед проверкой обновления (${existingA} файлов)`);
 console.log(`A: ${await ver(pa)}, controller ${await pa.evaluate(() => !!navigator.serviceWorker.controller)}, ${pa.url()}, кэши ${Object.keys(await cacheState(pa)).join(', ')}`);
 
 // 2. A → B
