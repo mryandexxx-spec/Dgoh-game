@@ -49,6 +49,7 @@ import { quest } from '../../logic/daily.js';
 import { grantShards } from '../../logic/rewards.js';
 import { finishStoryUnlockBattle } from '../../logic/bh94-story-battle.js';
 import { STORY_UNLOCK_EVENTS } from '../../data/bh94-unlock-events.js';
+import { prepareBaronBH9Battle, finishBaronBH9Battle } from '../../logic/baron-bh9-battle.js';
 import { todayKey } from '../../logic/economy.js';
 
 registerStoryView(renderStoryEvents);
@@ -65,6 +66,7 @@ function startBattle(i) {
 }
 let LAUNCH_WAIT = false, B3_TRIED = false;
 function launch(cfg) {
+  if (cfg.mode === 'baron_legend' && (!cfg.prepared?.ok || !cfg.prepared.battle || !Number.isInteger(cfg.prepared.stageIndex))) return;
   if (cfg.mode === 'story_unlock' && (!cfg.prepared?.ok || !cfg.prepared.battle ||
       !STORY_UNLOCK_EVENTS[cfg.prepared.eventId] ||
       !Number.isInteger(cfg.prepared.stageIndex))) return;
@@ -76,12 +78,12 @@ function launch(cfg) {
   }
   set_SQ(null);
   closeInfo(true);
-  if (cfg.mode !== 'story_unlock') { let lg = 0; cfg.squad = cfg.squad.filter(id => !isLegend(id) || !lg++); }
+  if (cfg.mode !== 'story_unlock' && cfg.mode !== 'baron_legend') { let lg = 0; cfg.squad = cfg.squad.filter(id => !isLegend(id) || !lg++); }
   sleepStages();
-  const squadData = cfg.mode === 'story_unlock' ? [] : cfg.squad.map(id => ({ id, ...prog(id) }));
+  const squadData = (cfg.mode === 'story_unlock' || cfg.mode === 'baron_legend') ? [] : cfg.squad.map(id => ({ id, ...prog(id) }));
   if (cfg.scriptedMuaddib && cfg.mode === 'journey' && cfg.i >= 3) squadData.push({ id: 'muaddib', lvl: 85, stars: 7, gear: 13, relic: cfg.i === 3 ? 5 : 6, gl: false });
   const waves = Array.isArray(cfg.waves) && cfg.waves.length ? cfg.waves : null;
-  const B = cfg.mode === 'story_unlock' ? cfg.prepared.battle : createBattle(squadData, waves ? waves[0] : cfg.enemy || [], { desert: cfg.desert, seed: Date.now() & 0xffffff, boss: cfg.boss, waves: waves ? waves.slice(1) : null });
+  const B = (cfg.mode === 'story_unlock' || cfg.mode === 'baron_legend') ? cfg.prepared.battle : createBattle(squadData, waves ? waves[0] : cfg.enemy || [], { desert: cfg.desert, seed: Date.now() & 0xffffff, boss: cfg.boss, waves: waves ? waves.slice(1) : null });
   if (cfg.mode === 'conq' && typeof cqApply === 'function') cqApply(B, cfg);
   set_BT({ B, cfg, i: cfg.i, auto: BT?.autoPref ?? false, autoPref: BT?.autoPref ?? false, speed: Math.min(4, BT?.speedPref ?? 1), speedPref: Math.min(4, BT?.speedPref ?? 1), timer: null, waiting: null, sel: 'basic', autoTargetUid: null, autoTaunts: [], done: false });
   $('#overlay').innerHTML = `<div class="battle ${B.desert ? 'desert' : ''}" id="battle"><canvas class="bgc" id="bgc"></canvas><div class="bwrap" id="bwrap"></div><canvas class="fxc" id="fxc"></canvas><div class="flash" id="flash"></div></div>`;
@@ -580,6 +582,14 @@ function finish() {
       html = '<h3>Победа</h3><ul><li>Повторное получение разовой награды недоступно.</li></ul>';
     else html = '<h3>Победа</h3><ul><li>Награда не начислена: проверка события не пройдена (' + award.reason + ').</li></ul>';
     btns = '<button class="btn go" data-leave="1">Завершить</button>';
+  } else if (cfg.mode === 'baron_legend') {
+    const result = won ? finishBaronBH9Battle(S, cfg.prepared) : { ok:false, reason:'battle' };
+    if (!won) html = '<h3>Поражение</h3><ul><li>Прогресс восхождения сохранён, награды нет.</li></ul>';
+    else if (result.ok) {
+      if (result.firstClear) quest('journey');
+      html = `<h3>Победа · Восхождение Барона</h3><ul><li>${result.firstClear ? '+'+amt('shard',result.shardsGranted,'shard:baron_legend')+' осколков Барона' : 'Повторная победа · без награды'}</li>${result.unlocked?'<li>Легенда разблокирована · 7★!</li>':''}</ul>`;
+    } else html = `<h3>Победа</h3><ul><li>Награда не начислена: ${result.reason}</li></ul>`;
+    btns = '<button class="btn go" data-leave="1">К восхождению</button>';
   } else if (cfg.mode === 'journey') {
     quest('journey');
     const t = JR().tiers[cfg.i];
@@ -625,7 +635,19 @@ function finish() {
 function leaveBattle() { battleMark(null); if (BT) clearTimeout(BT.timer); if (BT && BT.arena) BT.arena.dispose(); const pref = BT && { autoPref: BT.autoPref, speedPref: BT.speedPref }; set_BT(pref); closeOverlay(); render(); }
 
 
-// No public click-handler or menu entry is attached before final UI approval.
+// BH9.9: a single validated battle, fixed player progression and actual wave engine.
+function launchBaronLegend(stageIndex) {
+  const prepared = prepareBaronBH9Battle(S, stageIndex, { seed: Date.now() & 0xffffff });
+  if (!prepared.ok) return prepared;
+  const cfg = { mode:'baron_legend', i:stageIndex, prepared,
+    squad:prepared.allyIds.slice(),
+    title:'Восхождение Барона · '+prepared.title,
+    scene: ['giedi','court','court','arrakeen','court'][stageIndex],
+    desert:stageIndex===3 };
+  launch(cfg);
+  return { ok:true };
+}
+
 function launchStoryUnlock(prepared) {
   if (!prepared?.ok || !prepared.battle || !STORY_UNLOCK_EVENTS[prepared.eventId] || prepared.settled) return false;
   launch({ mode: 'story_unlock', prepared, i: prepared.stageIndex,
@@ -635,4 +657,4 @@ function launchStoryUnlock(prepared) {
   return true;
 }
 
-export { startBattle, launch, launchStoryUnlock, DLG, playDialog, renderDialog, dlgNext, dlgEnd, later, safeRun, FX_ICONS, fxTurns, fxIcon, LEAD_F, leaderFor, bPop, bPopClose, fxListHtml, openFxPop, openUnitPop, step, curTargets, ensureCur, useAbil, abilPop, doAct, actShow, ultCinematic, FORM, AB_ICONS, iconFor, unitHtml, renderBattle, playFX, finish, leaveBattle };
+export { startBattle, launch, launchBaronLegend, launchStoryUnlock, DLG, playDialog, renderDialog, dlgNext, dlgEnd, later, safeRun, FX_ICONS, fxTurns, fxIcon, LEAD_F, leaderFor, bPop, bPopClose, fxListHtml, openFxPop, openUnitPop, step, curTargets, ensureCur, useAbil, abilPop, doAct, actShow, ultCinematic, FORM, AB_ICONS, iconFor, unitHtml, renderBattle, playFX, finish, leaveBattle };
