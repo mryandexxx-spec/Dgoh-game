@@ -32,6 +32,8 @@ function fillSave(s) {
   s.scrapCarry ??= {}; s.scrapLocks ??= {};
   for (const k of Object.keys(SCRAP)) s.scrapCarry[k] ??= 0;
   s.core ??= 0; s.teeth ??= 0; s.raid ??= null; s.raidKills ??= []; s.journey ??= {}; s.journeys ??= { muaddib: s.journey, liet: {} }; s.jKey ??= 'muaddib'; s.jPicks ??= { muaddib: s.jPick || [], liet: [] }; s.raidPick ??= []; s.jPick ??= [];
+  // BH9.9: idempotent new legend journey; never replace the old Muad'Dib progress.
+  s.journeys.baron_legend ??= {};
   // v83: one-time retirement of legendary liet, no compensation; keep historical data reversible.
   if (!s.migrations) s.migrations = {};
   if (!s.migrations.retireLietV83) {
