@@ -55,6 +55,7 @@ try {
         return {cam:{x:A.camX,y:A.camH,z:A.camDist},rows,heroes,layout};
       });
       results.push({tag,...data});
+      fs.writeFileSync(path.join(out,`trace-${width}-${gfx}.json`),JSON.stringify(results,null,2));
       for(const a of data.rows){
         assert.ok(a.x>=11.5&&a.x+a.w<=width-11.5&&a.y>=59.5&&a.y+a.h<=height-99.5,tag+' label inside safe bounds '+a.id);
         for(const b of data.rows)if(a!==b) assert.ok(

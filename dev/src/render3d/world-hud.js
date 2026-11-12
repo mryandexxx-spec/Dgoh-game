@@ -12,6 +12,7 @@ const hudIntersects = (a, b) => a.x < b.x + b.w + HUD_GAP && a.x + a.w + HUD_GAP
 function packWorldLabels(rows, width, height, insets = { left: 12, right: 12 }) {
   const placed = [], top = 60, bottom = Math.max(top + 60, height - 100);
   const ordered = [...rows].sort((a, b) => b.ay - a.ay || String(a.id).localeCompare(String(b.id)));
+  let crowded = false;
   for (const r of ordered) {
     const nx = clampHud(r.ax - r.w / 2, insets.left, width - insets.right - r.w);
     const ny = clampHud(r.ay - r.h, top, bottom - r.h);
@@ -32,11 +33,32 @@ function packWorldLabels(rows, width, height, insets = { left: 12, right: 12 }) 
       const cost = dx * dx * 2 + dy * dy * (dy > 0 ? 8 : 1);
       if (cost < score) { score = cost; best = box; }
     }
-    // Normal landscape layouts have ample room for ten labels. Keep a bounded
-    // fallback for unsupported narrow viewports instead of hiding health bars.
+    if (!best) crowded = true;
     r.x = best ? best.x : nx; r.y = best ? best.y : ny;
     placed.push({ x: r.x, y: r.y, w: r.w, h: r.h });
   }
+  if (!crowded || !rows.length) return;
+  // A growing target arrow can fragment the remaining free space. Repack the
+  // whole group into two/three compact shelves instead of accepting an overlap.
+  // Ten ordinary labels (including 73px arrows+effects+intentions) fit in the
+  // supported landscape phone viewports, even with 59px notch insets.
+  const cellW = Math.max(...rows.map(r => r.w)) + HUD_GAP;
+  const cols = Math.max(1, Math.floor((width - insets.left - insets.right + HUD_GAP) / cellW));
+  const shelves = [...rows].sort((a,b) => a.ay - b.ay || String(a.id).localeCompare(String(b.id)));
+  const groups = [];
+  for (let start = 0; start < shelves.length; start += cols) groups.push(shelves.slice(start, start + cols));
+  const heights = groups.map(group => Math.max(...group.map(r => r.h)));
+  const totalH = heights.reduce((sum,h) => sum + h + HUD_GAP, -HUD_GAP);
+  if (totalH > bottom - top) return; // unsupported, very narrow viewport
+  const y0 = clampHud(rows.reduce((sum,r) => sum + r.ay, 0) / rows.length - totalH / 2, top, bottom - totalH);
+  let y = y0;
+  groups.forEach((group, k) => {
+    const shelf = group.sort((a,b) => a.ax - b.ax || String(a.id).localeCompare(String(b.id)));
+    const totalW = shelf.length * cellW - HUD_GAP;
+    const x0 = insets.left + (width - insets.left - insets.right - totalW) / 2;
+    shelf.forEach((r,i) => { r.x = x0 + i * cellW + (cellW - HUD_GAP - r.w) / 2; r.y = y; });
+    y += heights[k] + HUD_GAP;
+  });
 }
 
 class WorldHudLayout {

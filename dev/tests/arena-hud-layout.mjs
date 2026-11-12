@@ -28,6 +28,12 @@ for (const [w,h] of [[844,390],[667,375],[960,600]]) {
 const notchRows = Array.from({length:10}, (_,i) => ({id:String(i),ax:60+i*55,ay:180,w:100,h:35}));
 g.set('__labels',notchRows);g.run('packWorldLabels(__labels,667,375,{left:59,right:59})');
 check(notchRows,667,375);assert.ok(notchRows.every(r=>r.x>=59&&r.x+r.w<=608),'notch safe area');
+// Growing/shrinking selected arrows and intentions can fragment a greedy pack.
+let seed=42;const rnd=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);
+for(let frame=0;frame<300;frame++){
+  const rows=Array.from({length:10},(_,i)=>({id:String(i),ax:120+rnd()*420,ay:100+rnd()*160,w:124,h:i===frame%10?73:15+Math.floor(rnd()*33)}));
+  check(pack(rows,667,375),667,375);
+}
 // Regression: resizing a status block must repack in the observer callback,
 // before paint, without waiting for another expensive WebGL frame.
 let resize, disconnected=false;
