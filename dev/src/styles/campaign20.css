@@ -85,3 +85,41 @@ body:has(.c20) #notes{display:none!important;}
  .c20-choices{gap:7px}.c20 .c20-cover{padding:8px}.c20-copy span{font-size:10px}.c20-copy small{font-size:9px}
  .c20-picker{left:4%;right:4%;grid-template-columns:repeat(4,minmax(0,1fr));top:66px}
 }
+
+
+/* C3: dense mission information fits inside landscape viewports without page scroll. */
+.c20-dialog section{display:flex;flex-direction:column;gap:4px;min-height:0;overflow:hidden}
+.c20-storytext{line-height:1.36;font-size:12px;overflow:hidden;max-height:92px;white-space:normal}
+.c20-conditions{display:flex;gap:4px;flex-wrap:wrap;align-items:center;flex-shrink:0}
+.c20-conditions span{border:1px solid #6e5138;border-radius:3px;padding:2px 5px;font-size:10px;color:#e6ca9e}
+.c20-foes{gap:5px;flex:1;min-height:0;align-items:flex-start}
+.c20-foes>div{min-width:0;flex:1;width:auto;max-width:85px;overflow:hidden}
+.c20-foes>div span{max-width:100%;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c20-foes>div small{white-space:nowrap;font-size:9px}
+.c20-earn{color:#eac48e;font-size:10px;min-height:0;flex:0 0 auto}
+.c20-loot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;min-height:0;flex:1}
+.c20-lootrow{display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-width:0;overflow:hidden;padding:4px;border:1px solid #604730;background:#38271b;border-radius:4px;text-align:center}
+.c20-looticon{display:flex;align-items:center;justify-content:center;max-height:31px}
+.c20-lootrow>span:nth-child(2){font-size:10px;line-height:1.12;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.c20-lootrow small{font-size:9px;color:#e8c98e;display:block}
+.c20-lootrow .btn{padding:2px 8px;font-size:10px;min-height:25px}
+.c20-pages{display:flex;align-items:center;justify-content:center;gap:10px;flex-shrink:0;height:25px;font-size:10px;color:#e8c98e}
+.c20-pages button{padding:2px 15px;font-size:12px;min-height:24px}
+.c20-pages button:disabled{opacity:.32}
+.c20-inlineactions{display:flex;gap:8px;align-items:center;margin-top:auto;flex-wrap:wrap}
+.c20-inlineactions .btn{padding:4px 10px;font-size:11px}
+.c20-card .lack{border-color:#9d6247}
+@media(max-width:700px){
+  .c20-dialog section{gap:3px}
+  .c20-storytext{font-size:11px;max-height:78px}
+  .c20-conditions span{font-size:9px;padding:1px 3px}
+  .c20-foes>div span,.c20-foes>div small{font-size:9px}
+  .c20-earn{font-size:9px}
+  .c20-loot{gap:3px}
+  .c20-lootrow{padding:2px}
+  .c20-looticon{max-height:27px;transform:scale(.82)}
+  .c20-lootrow>span:nth-child(2){font-size:9px}
+  .c20-lootrow small{font-size:8px}
+  .c20-lootrow .btn{font-size:9px;min-height:23px}
+  .c20-pages{height:23px}
+}
