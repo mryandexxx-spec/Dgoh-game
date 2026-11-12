@@ -71,6 +71,27 @@ try {
     assert.deepEqual(complete,{equipped:true,left:0,sol:0,pl:0},
       width + ': complete item equipped and consumed without crafting costs');
 
+    // GE2: farm from a nested component and keep its recipe context after the loot modal.
+    const ctx = await page.evaluate(() => (0, eval)(`
+      (() => {
+        const p=prog('paul'); p.eq[0]=false;
+        const id=gearPlan('paul',p.gear)[0], part=recipeFor(id).parts[0];
+        const frag=part.materials[0].id;
+        const node=FRAGMENT_SOURCES.get(frag)[0];
+        S.cleared[node]=3; S.water=1000; S.candle=1000;
+        openDetail('paul'); openItem('paul',0,part.id);
+        openInfo('gefrag:'+frag);
+        return {cid:'paul',partId:part.id,node};
+      })()`));
+    await page.evaluate(node => (0,eval)(`doXSim('${node}:1')`), ctx.node);
+    assert.ok(await page.$('#rwwin'), width + ': simulation reward shown');
+    await page.click('[data-rwok]');
+    const stayed = await page.evaluate(() => (0,eval)(
+      '({partId:itemCtx.partId, title:document.querySelector(".e3sheet #it-name")?.textContent})'));
+    assert.equal(stayed.partId,ctx.partId,width + ': selected recipe component retained');
+    assert.ok(stayed.title && !stayed.title.includes('мк.'),
+      width + ': recipe part window remains open after simulation');
+
     assert.deepEqual(errors, [], width + ': no uncaught page errors');
     console.log('E3 browser PASS', width + '×' + height);
     await page.close();
