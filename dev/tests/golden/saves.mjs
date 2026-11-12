@@ -43,7 +43,7 @@ for (const entry of historical.saves) {
       continue;
     }
     assert.ok(roster, `${entry.file}: ${stage} roster present`);
-    for (const id of ['margot', 'yue']) {
+    for (const id of ['margot', 'yue', 'baron_legend']) {
       const hero = roster[id];
       assert.ok(hero, `${entry.file}: ${stage} includes ${id}`);
       assert.equal(hero.stars, 0, `${entry.file}: ${id} starts locked`);
@@ -53,6 +53,11 @@ for (const entry of historical.saves) {
       assert.deepEqual(hero.eq, [false, false, false, false, false, false], `${entry.file}: ${id} has no equipped slots`);
       delete roster[id];
     }
+    // BH9.9 creates an isolated empty legend journey without touching Muad'Dib.
+    const journeys=entry[stage]?.journeys;
+    assert.ok(journeys && typeof journeys.baron_legend==='object', 'Baron journey migration present');
+    assert.deepEqual(journeys.baron_legend, {}, 'legacy saves start with no Baron progress');
+    delete journeys.baron_legend;
   }
 }
 if (rest.includes('--update')) writeGolden('saves', out);
