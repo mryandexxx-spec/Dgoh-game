@@ -130,6 +130,8 @@ jobs:
         with:
           chrome-version: stable
       - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+      - name: Core model stalled on iPhone must not block 3D lobby
+        run: node tests/smoke/core-model-stall.mjs dist/pwa/index.html
       - name: Optional Muad-Dib download must not block 3D lobby
         run: node tests/smoke/optional-model-boot.mjs dist/pwa/index.html
       - name: Campaign 2.0 Caladan real WebGL UX (844/667 MED/LOW)
