@@ -36,6 +36,7 @@ try {
     assert.equal(await page.$$eval('.c20-pin',a=>a.length),10,'ten Caladan missions');
     const opened=await page.waitForFunction(()=>!!document.querySelector('.c20-world.campaign20-3d-ready'),{timeout:15000}).then(()=>true).catch(()=>false);
     assert.equal(opened,true,'Babylon 3D Caladan mounted');
+    await page.waitForFunction(()=>[...document.querySelectorAll('.c20-pin')].some(p=>getComputedStyle(p).visibility==='visible'),{timeout:8000});
     await page.screenshot({path:path.join(shots,`map-${w}-${gfx}.png`)});
     const metrics=await page.evaluate(()=>{
       const c=document.querySelector('.c20'),rect=c.getBoundingClientRect(),world=document.querySelector('.c20-world');
