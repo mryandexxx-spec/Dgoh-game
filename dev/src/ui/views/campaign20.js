@@ -11,10 +11,11 @@ import { portrait } from '../../render2d/figures.js';
 import { starStr } from '../common.js';
 import { mountCampaignMap } from '../../render3d/scenes/campaign-map.js';
 
-let page = 'home', detail = false, tab = 'story', chapterPicker = false;
+let page = 'home', detail = false, tab = 'story', chapterPicker = false, legacy = false;
 let selected = null;
 const esc = x => String(x ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 export function campaign20Action(d) {
+  if (d.c20legacy) { legacy=true;return true; }
   if (d.c20 === 'home') { page='home'; detail=false;chapterPicker=false; return true; }
   if (d.c20 === 'story') { page='map';S.campTab=S.campTab==='D'?'D':'L';detail=false;return true; }
   if (d.c20 === 'chron') { page='map';S.campTab='C';detail=false;return true; }
@@ -28,7 +29,7 @@ export function campaign20Action(d) {
   if (d.c20node!==undefined){selected=Number(d.c20node);detail=false;return true;}
   return false;
 }
-export function campaign20Start() { page='home';selected=null;detail=false;chapterPicker=false; }
+export function campaign20Start() { page='home';legacy=false;selected=null;detail=false;chapterPicker=false; }
 function homeHtml(){
   const completed=ck=>campNodes(ck).filter(i=>!!S.cleared[i]).length;
   return `<div class="c20 c20-home">
@@ -93,11 +94,13 @@ function mapHtml(setSel){
   return {html,map,chosen};
 }
 export function renderCampaign20(setSel) {
-  if(page==='home'){document.querySelector('#view').innerHTML=homeHtml();return;}
+  if(legacy) return false;
+  if(page==='home'){document.querySelector('#view').innerHTML=homeHtml();return true;}
   const {html,map}=mapHtml(setSel);
   document.querySelector('#view').innerHTML=html;
   if(map){
     const container=document.getElementById('c20world');
     mountCampaignMap(container,map,i=>{setSel(i);selected=i;detail=false;renderCampaign20(setSel);},()=>container?.classList.add('c20-fallback'));
   }
+  return true;
 }
