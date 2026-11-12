@@ -151,18 +151,18 @@ function normalizeApprovedBH97(s) {
   ]);
   for (const screen of copy.screens) {
     if (screen.name === 'view:legend' && typeof screen.view === 'string') {
-      const entry = '<div style="margin:6px 0"><button type="button" class="btn" data-v="story_events">Сюжетные события · Марго и Юэ</button></div>';
+      const entry = '<div style="margin:6px 0;display:flex;gap:7px;flex-wrap:wrap"><button type="button" class="btn" data-v="baron_journey">Восхождение Барона · 10 требований</button><button type="button" class="btn" data-v="story_events">Сюжетные события · Марго и Юэ</button></div>';
       assert.ok(screen.view.includes(entry), 'BH9.7 story entry in approved location');
       screen.view = screen.view.replace(entry + '\n  ', '');
     }
     if (rosterScreens.has(screen.name) && typeof screen.view === 'string') {
       let v = screen.view;
-      const cards = /<button class="hc[^"]*"[^>]*data-open="(margot|yue)"[^>]*>[\s\S]*?<\/button>/g;
+      const cards = /<button class="hc[^"]*"[^>]*data-open="(baron_legend|margot|yue)"[^>]*>[\s\S]*?<\/button>/g;
       const found = [...v.matchAll(cards)].map(m => m[1]).sort();
-      assert.deepEqual(found, ['margot','yue'], screen.name + ': two standard new hero cards');
+      assert.deepEqual(found, ['baron_legend','margot','yue'], screen.name + ': three approved new hero cards');
       v = v.replace(cards, '');
-      v = v.replace(/(мощь · открыто \d+\/)(\d+)/, (_m, a, n) => a + (Number(n) - 2));
-      const expectedAdditions = { rf: { all:2, light:1, dark:1, atr:1, bg:1, cor:1 }, rr: { all:2, sup:1, heal:1 } };
+      v = v.replace(/(мощь · открыто \d+\/)(\d+)/, (_m, a, n) => a + (Number(n) - 3));
+      const expectedAdditions = { rf: { all:3, light:1, dark:2, atr:1, bg:1, cor:1, hark:1 }, rr: { all:3, sup:2, heal:1 } };
       v = v.replace(/(<button class="ropt" data-(rf|rr)="([^"]+)" aria-pressed="[^"]+">[\s\S]*?<small>)(\d+)(<\/small><\/button>)/g,
         (match, before, kind, key, number, after) => {
           const delta = expectedAdditions[kind][key] || 0;
@@ -170,8 +170,8 @@ function normalizeApprovedBH97(s) {
           return before + (Number(number) - delta) + after;
         });
       v = v.replace(/(<span id="rdiv-n">)(\d+)(<\/span>)/, (_m, before, count, after) => {
-        assert.ok(Number(count) >= 2, screen.name + ': two newly locked heroes');
-        return before + (Number(count) - 2) + after;
+        assert.ok(Number(count) >= 3, screen.name + ': two newly locked heroes');
+        return before + (Number(count) - 3) + after;
       });
       // Other roster totals (filter counts and locked divider) are checked
       // separately after the first full diff; never replace arbitrary digits.
@@ -180,7 +180,7 @@ function normalizeApprovedBH97(s) {
         // heroes alone make the locked divider visible. After excluding them
         // from the legacy comparison it must return to its hidden state.
         assert.ok(v.includes('<div class="rdiv" id="rdiv">Не открыты · <span id="rdiv-n">0</span>'),
-          screen.name + ': only BH9.7 heroes were locked in the late fixture');
+          screen.name + ': only BH9.7/BH9.9 heroes were locked in the late fixture');
         v = v.replace('<div class="rdiv" id="rdiv">', '<div class="rdiv" id="rdiv" hidden="">');
       }
       screen.view = v;
@@ -188,7 +188,7 @@ function normalizeApprovedBH97(s) {
     if (screen.name === 'profile' && typeof screen.overlay2 === 'string') {
       const avatar = /<button class="pick[^"]*" data-pava="hero:(margot|yue)"[^>]*>[\s\S]*?<\/button>/g;
       const found = [...screen.overlay2.matchAll(avatar)].map(m => m[1]).sort();
-      assert.deepEqual(found, ['margot','yue'], 'BH9.7 new profile avatar choices');
+      assert.deepEqual(found, ['baron_legend','margot','yue'], 'BH9.9 three new profile avatar choices');
       screen.overlay2 = screen.overlay2.replace(avatar, '');
     }
   }
