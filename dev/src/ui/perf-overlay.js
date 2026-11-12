@@ -3,24 +3,41 @@
 // состояние — localStorage 'dune-perf'. Касание оверлея сворачивает его в одну строку. Обновление 2 раза в секунду.
 import './overlays/battle-settings.js'; // порядок исполнения
 import { curHost } from '../render3d/engine-host.js';
+import { b3LoadStatus } from '../render3d/base.js';
+import { assetLoadProgress } from '../assets/models.js';
 import { readGfx } from '../render3d/quality.js';
 import { toast } from './common.js';
 
 const PKEY = 'dune-perf';
 let ON = false, MINI = false, EL = null, TIMER = 0, HOST = null;
+const mb = n => (n / 1048576).toFixed(2).replace('.', ',');
 const f1 = x => x.toFixed(1).replace('.', ','), STEP = { high: 'HIGH', med: 'MED', low: 'LOW', low30: 'LOW·30' };
 function draw() {
   const H = curHost();
   if (H !== HOST) { if (HOST) HOST.countDraws(false); HOST = H; if (H) H.countDraws(true); }
   if (!EL) return;
-  if (!H) { EL.innerHTML = '<div>3D не запущено</div>'; return; }
+  const A = assetLoadProgress(), status = b3LoadStatus();
+  const fmtLoad = A.total && !A.unknown
+    ? `${mb(A.loaded)} / ${mb(A.total)} МБ · ${Math.min(A.finished ? 100 : 99, Math.round(A.loaded / A.total * 100))}%`
+    : `${mb(A.loaded)} / ${A.unknown ? 'размер уточняется' : A.total ? mb(A.total) + ' МБ' : '—'}`;
+  const state = status === 'unavailable' ? 'WebGL недоступен'
+    : status === 'failed' ? '3D: ошибка загрузки движка · можно повторить'
+    : status === 'ready' ? '3D готово'
+    : status === 'loading' ? '3D загружается'
+    : '3D ожидает запуска';
+  const loadRow = `<div><span>3D-ассеты</span><span>${A.count ? fmtLoad : 'ещё не запрошены'}</span></div>`;
+  const loadInfo = `<div><span>загрузка</span><span>${state}${A.pending ? ' · файлов: ' + A.pending : ''}${A.failed ? ' · ошибок: ' + A.failed : ''}</span></div>`;
+  if (!H) {
+    EL.innerHTML = MINI ? `<div>${state} · ${A.count ? fmtLoad : 'ожидание'}</div>` : loadInfo + loadRow;
+    return;
+  }
   const P = H.perfNow(), g = readGfx(), lv = `${STEP[P.step] || P.step}${g.p === 'auto' ? ` <i>авто−${g.auto}</i>` : ' <i>ручн.</i>'}`;
   const col = P.late > .15 ? 'bad' : P.late > .03 ? 'warn' : 'ok';
-  if (MINI) { EL.innerHTML = `<div><b class="${col}">${P.fps} fps</b> · ${lv}</div>`; return; }
+  if (MINI) { EL.innerHTML = `<div><b class="${col}">${P.fps} fps</b> · ${lv} · ${A.count ? fmtLoad : state}</div>`; return; }
   const h = P.hist.filter(Boolean), tgt = 1000 / (P.target || 60), W = 150, top = Math.max(tgt * 2.2, ...h);
   const pts = h.map((v, i) => `${(i * W / Math.max(1, h.length - 1)).toFixed(0)},${(22 - v / top * 20).toFixed(1)}`).join(' ');
   const row = (k, v) => `<div><span>${k}</span><span>${v}</span></div>`;
-  EL.innerHTML = row('fps', `<b class="${col}">${P.fps}</b> <i>/${P.target}</i>`) + row('кадр', `${f1(P.iv)} · p95 ${Math.round(P.p95)}`)
+  EL.innerHTML = loadInfo + loadRow + row('fps', `<b class="${col}">${P.fps}</b> <i>/${P.target}</i>`) + row('кадр', `${f1(P.iv)} · p95 ${Math.round(P.p95)}`)
     + row('пропуски', `<b class="${col}">${Math.round(P.late * 100)}%</b>`) + row('CPU', `${f1(P.cpu)} мс`) + row('уровень', lv)
     + row('dpr', `${f1(P.dpr)} · ${f1(P.mpx)} Мп`) + row('draws', P.draws) + row('режим', P.mode) + (P.disp > 25 ? row('экран', `<b class="warn">${Math.round(1000 / P.disp)} Гц</b>`) : '')
     + `<svg width="${W}" height="24" aria-hidden="true"><line x1="0" x2="${W}" y1="${(22 - tgt * 1.5 / top * 20).toFixed(1)}" y2="${(22 - tgt * 1.5 / top * 20).toFixed(1)}" class="lim"/><polyline points="${pts}"/></svg>`;
