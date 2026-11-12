@@ -57,9 +57,9 @@ try {
     });
     assert.equal(metrics.scroll,false,'no campaign viewport scroll');
     assert.equal(metrics.sceneCanvas,true,'canvas exists');
-    // Inverse pan contract: dragging right/down moves the 3D terrain LEFT/UP,
-    // in both phone profiles and from the very first gesture.
-    // Also assert the first gesture remains responsive, not just the second.
+    // Device feedback: v99 pans the wrong way despite passing the previous screen
+    // assertions. Require an actual reversal of the v99 screen displacements on
+    // BOTH axes (also when dragging from a mission pin), preserving responsiveness.
     const panChecks=await page.evaluate(async()=>{
       document.querySelector('[data-c20node="4"]').click();
       await new Promise(resolve=>setTimeout(resolve,560)); // camera focus tween
@@ -87,10 +87,10 @@ try {
       return {horizontal,backward,vertical,upward,
         canvasSame:canvas===document.querySelector('#c20world canvas')};
     });
-    assert.ok(panChecks.horizontal[0]<-4,'drag-right should move map LEFT: '+JSON.stringify(panChecks));
-    assert.ok(panChecks.backward[0]>4,'drag-left should move map RIGHT: '+JSON.stringify(panChecks));
-    assert.ok(panChecks.vertical[1]<-4,'drag-down should move map UP: '+JSON.stringify(panChecks));
-    assert.ok(panChecks.upward[1]>4,'drag-up should move map DOWN: '+JSON.stringify(panChecks));
+    assert.ok(panChecks.horizontal[0]>4,'drag-right must reverse v99 horizontal movement: '+JSON.stringify(panChecks));
+    assert.ok(panChecks.backward[0]<-4,'drag-left must reverse v99 horizontal movement: '+JSON.stringify(panChecks));
+    assert.ok(panChecks.vertical[1]>4,'drag-down must reverse v99 vertical movement: '+JSON.stringify(panChecks));
+    assert.ok(panChecks.upward[1]<-4,'drag-up must reverse v99 vertical movement: '+JSON.stringify(panChecks));
     assert.equal(panChecks.canvasSame,true,'drag never remounts Babylon');
     console.log('Campaign touch pan',w,JSON.stringify(panChecks));
 
