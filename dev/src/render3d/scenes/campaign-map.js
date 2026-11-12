@@ -17,7 +17,9 @@ class CampaignMapScene extends GameScene {
     this.scene.clearColor = new B3.Color4(.12, .18, .16, 1);
     this.scene.skipPointerMovePicking = true;
     const c = map.preset.camera;
-    this.cx = c.target[0]; this.cz = c.target[2];
+    const current=map.nodes.find(n=>n.open&&!n.stars) || map.nodes.filter(n=>n.open).at(-1);
+    this.selectedId=current?.id ?? map.nodes[0]?.id;
+    this.cx=current?.x ?? c.target[0]; this.cz=current?.z ?? c.target[2];
     this.alpha = c.alpha; this.beta = c.beta; this.radius = c.radius;
     this.t0 = performance.now(); this.dirty = true; this.pointers = new Map();
     this.cameraTween = null;
@@ -25,9 +27,9 @@ class CampaignMapScene extends GameScene {
     this.cam.minZ = .1; this.cam.maxZ = 250; this.cam.inputs.clear();
     this.scene.activeCamera = this.cam;
     const hemi = new B3.HemisphericLight('caladan-sky', new B3.Vector3(0, 1, 0), this.scene);
-    hemi.intensity = 1.12;
+    hemi.intensity = .88;
     const sun = new B3.DirectionalLight('caladan-sun', new B3.Vector3(-.65,-1,-.45), this.scene);
-    sun.intensity = .78;
+    sun.intensity = .62;
     this.makeGeometry();
     this.applyCamera();
   }
@@ -39,9 +41,9 @@ class CampaignMapScene extends GameScene {
   }
   makeGeometry() {
     const M = B3.MeshBuilder, S = this.scene, P = this.map.preset;
-    const grass = this.material('grass', '#58664f');
+    const grass = this.material('grass', '#4a6044');
     const coast = this.material('rock', '#9a8d6c');
-    const sea = this.material('sea', '#24616c');
+    const sea = this.material('sea', '#184c5a');
     const stone = this.material('stone', '#b6a17a');
     const roof = this.material('roof', '#554e3f');
     const road = this.material('route', '#d7ad69');
@@ -147,6 +149,7 @@ class CampaignMapScene extends GameScene {
     this.t0=performance.now(); this.dirty=true;
   }
   center(node, animate = true) {
+    if(node)this.selectedId=node.id;
     const x = node?.x ?? this.map.preset.camera.target[0];
     const z = node?.z ?? this.map.preset.camera.target[2];
     if (!animate) { this.cameraTween=null;this.cx=x;this.cz=z;this.applyCamera();return; }
@@ -209,16 +212,41 @@ class CampaignMapScene extends GameScene {
   }
   projectLabels(){
     if(!this.labels?.length)return;
-    const w=this.cv.clientWidth||1,h=this.cv.clientHeight||1;
+    // UI viewport is cached at mount/resize, no DOM layout reads in the render loop.
+    const w=this.stageWidth||1,h=this.stageHeight||1;
     const vp=new B3.Viewport(0,0,w,h);
     const matrix=this.scene.getTransformMatrix();
-    this.map.nodes.forEach((node,k)=>{
-      const el=this.labels[k]; if(!el)return;
-      const p=B3.Vector3.Project(new B3.Vector3(node.x,1.15,node.z),B3.Matrix.IdentityReadOnly,matrix,vp);
-      const valid=Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.z>0&&p.z<1&&p.x>24&&p.y>24&&p.x<w-24&&p.y<h-24;
-      el.style.visibility=valid?'visible':'hidden';
-      if(valid)el.style.transform=`translate3d(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px,0) translate(-50%,-50%)`;
+    const entries=this.map.nodes.map((node,k)=>{
+      const p=B3.Vector3.Project(new B3.Vector3(node.x,1.15,node.z),
+        B3.Matrix.IdentityReadOnly,matrix,vp);
+      const diameter=node.boss?60:50;
+      const visible=Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.z>0&&p.z<1
+        &&p.x>diameter/2+3&&p.y>diameter/2+3
+        &&p.x<w-diameter/2-3&&p.y<h-diameter/2-3;
+      return {node,el:this.labels[k],x:p.x,y:p.y,diameter,visible};
     });
+    // Never allow 50/60px buttons to overlap. Give the selected node first
+    // claim, followed by open nodes nearest the focus. Farther missions become
+    // visible when the player moves/zooms the map.
+    const focus=this.map.nodes.find(n=>n.id===this.selectedId);
+    entries.sort((a,b)=>{
+      const weight=e=> (e.node.id===this.selectedId?1000:0)
+        +(e.node.open?100:0)
+        -Math.hypot(e.node.x-(focus?.x??this.cx),e.node.z-(focus?.z??this.cz));
+      return weight(b)-weight(a);
+    });
+    const shown=[];
+    for(const e of entries){
+      if(!e.el)continue;
+      const collides=shown.some(p=>
+        Math.abs(e.x-p.x)<(e.diameter+p.diameter)/2+5 &&
+        Math.abs(e.y-p.y)<(e.diameter+p.diameter)/2+5);
+      e.el.style.visibility=e.visible&&!collides?'visible':'hidden';
+      if(e.visible&&!collides){
+        e.el.style.transform=`translate3d(${e.x.toFixed(1)}px,${e.y.toFixed(1)}px,0) translate(-50%,-50%)`;
+        shown.push(e);
+      }
+    }
   }
   onWake(){this.bind();this.engine.resize();this.applyCamera();}
   onSleep(){this.unbind();}
@@ -234,12 +262,17 @@ class CampaignMapScene extends GameScene {
       this.applyCamera();
     }
     const sz=cvSize(this.cv);
-    if(sz.w!==this.w||sz.h!==this.h){this.w=sz.w;this.h=sz.h;this.engine.resize();}
+    if(sz.w!==this.w||sz.h!==this.h){
+      this.w=sz.w;this.h=sz.h;this.engine.resize();
+      this.stageWidth=this.screenEl?.clientWidth||this.stageWidth;
+      this.stageHeight=this.screenEl?.clientHeight||this.stageHeight;
+    }
     this.scene.render();this.projectLabels();this.dirty=false;
   }
   mount(el){
     this.labels=Array.from(el.querySelectorAll('[data-c20node]'));
     this.screenEl=el;
+    this.stageWidth=el.clientWidth;this.stageHeight=el.clientHeight;
     const dpr=gfx(this.small).dpr.camp;
     this.wake(el,{cls:'campaign20-canvas',first:true,dpr});
     this.dirty=true;this.t0=performance.now();
