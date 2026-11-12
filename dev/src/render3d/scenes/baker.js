@@ -13,13 +13,15 @@ import { poseHuman } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
 import { V3, col3 } from '../materials.js';
 import { B3, HAS3D, loadB3 } from '../base.js';
-import { figureSVG, set_figureSVG } from '../../render2d/figures.js';
+import { figureSVG, set_figureSVG, set_bakedFullPortrait } from '../../render2d/figures.js';
 import { CH, CHARS } from '../../data/chars.js';
 import { $ } from '../../core/dom.js';
 import { assetUrl, MODEL_DATA } from '../../assets/models.js';
 
 // ---------- portraits & figures baked from the 3D models (replace the old 2D drawings everywhere: rewards, dialogs, roster) ----------
 const BAKE_V = 'b9', BAKED = {};
+// Cinematic consumers must never receive the procedural 2D fallback.
+set_bakedFullPortrait(id => BAKED[id]?.full || null);
 // Invalidate only the changed model's portraits. Existing installations must
 // never reuse the old procedural Baron, or persist a temporary fallback.
 function bakeKey(id) { return BAKE_V + ':' + id + (id === 'baron' ? ':' + assetUrl('models/young-baron.dgm') : ''); }
