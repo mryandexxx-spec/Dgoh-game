@@ -39,6 +39,14 @@ try {
     await sleep(1500);
     const results=[];
     const check = async tag=>{
+      // Wait for an actually painted layout, not a fixed wall-clock delay.
+      // SwiftShader may take >300ms per frame; evaluate() can otherwise force a
+      // mid-frame layout before ResizeObserver has received the new arrow size.
+      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      await page.waitForFunction(()=>[...BT.arena.worldHud.rows.values()].every(r=>{
+        const b=r.label.getBoundingClientRect();
+        return Math.abs(Math.ceil(b.width)-r.w)<=1&&Math.abs(Math.ceil(b.height)-r.h)<=1;
+      }),{timeout:20000,polling:'raf'});
       const data=await page.evaluate(()=>{
         const A=BT.arena;
         const rows=[...document.querySelectorAll('.unit:not(.dead) .world-label')].map(el=>{
