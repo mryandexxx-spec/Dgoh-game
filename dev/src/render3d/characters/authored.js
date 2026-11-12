@@ -136,7 +136,9 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
   root._clips = D.clips ? Object.fromEntries(Object.entries(D.clips).map(([key, clip]) => [key, {
     duration: clip.duration, tracks: clip.tracks.map(tr => localTrs ? {
       node: N[tr.joint], path: tr.path, times: new Float32Array(b64bytes(tr.times).buffer),
-      values: new Float32Array(b64bytes(tr.values).buffer), componentCount: tr.componentCount
+      values: new Float32Array(b64bytes(tr.values).buffer), componentCount: tr.componentCount,
+      qa: tr.path === 'rotation' ? B3.Quaternion.Identity() : null,
+      qb: tr.path === 'rotation' ? B3.Quaternion.Identity() : null
     } : { node: N[tr.joint], times: tr.times, rotations: tr.rotations.map(q => new B3.Quaternion(...q)) })
   }])) : null;
   if (localTrs) {
@@ -182,7 +184,9 @@ function poseModelClip(o, now, t, sp, stage) {
     if (tr.values) {
       const k = tr.componentCount, a = i * k, b = j * k, v = tr.values;
       if (tr.path === 'rotation') {
-        const qa = B3.Quaternion.FromArray(v, a), qb = B3.Quaternion.FromArray(v, b);
+        const qa = tr.qa, qb = tr.qb;
+        qa.copyFromFloats(v[a], v[a + 1], v[a + 2], v[a + 3]);
+        qb.copyFromFloats(v[b], v[b + 1], v[b + 2], v[b + 3]);
         const q = n.rotationQuaternion || (n.rotationQuaternion = B3.Quaternion.Identity());
         B3.Quaternion.SlerpToRef(qa, qb, f, q); q.normalize();
       } else {
