@@ -14,7 +14,7 @@ function setup(g, seed) {
   const r = mulberry32(seed * 2654435761 >>> 0), ri = (a, b) => a + Math.floor(r() * (b - a + 1)), pick = a => a[Math.floor(r() * a.length)];
   // Keep the legacy 200-seed regression cohort stable when new playable heroes join CHARS.
   // BH9.7 characters have dedicated kit/event tests and must not silently reseed every historical battle.
-  const pool = CHARS.filter(c => !c.boss && !['margot', 'yue'].includes(c.id)).map(c => c.id), CH = g.get('CH');
+  const pool = CHARS.filter(c => !c.boss && !['margot', 'yue', 'baron_legend'].includes(c.id)).map(c => c.id), CH = g.get('CH');
   const squad = n => {
     const ids = [], left = pool.slice(); let leg = 0;
     while (ids.length < n && left.length) { const id = left.splice(Math.floor(r() * left.length), 1)[0]; if (CH[id].legendary && leg++) continue; ids.push(id); }
