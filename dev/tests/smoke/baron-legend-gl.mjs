@@ -175,7 +175,7 @@ try {
   assert.equal(end.ended,true,'chair lifecycle must finish');
   assert.equal(end.modelOnlyPreview,true);
   assert.equal(end.youthInPublicCH,true);
-  assert.equal(end.legendInPublicCH,false,'public roster must remain locked');
+  assert.equal(end.legendInPublicCH,true,'BH9.9 public legend is registered');
   assert.deepEqual(errors,[],'GPU/browser errors');
   console.log('PASS BH8 real WebGL staged Baron',w+'x'+h,q,JSON.stringify({begin,initial,end,phases:phase}));
   await page.close();
