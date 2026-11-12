@@ -62,6 +62,12 @@ try {
         BT.auto = false; BT.speed = 1;
         renderBattle();
         if (!abilityReady(BT.B, u, 'gl')) throw Error('GL is not ready');
+        // Visual diagnostics only: keep the *real* authored spell action and
+        // close-up camera active through slow SwiftShader screenshot encoding.
+        if (id === 'muaddib' && !disableLive && BT.arena) {
+          const orig = BT.arena.beginMuadCinematic.bind(BT.arena);
+          BT.arena.beginMuadCinematic = (uid, dur) => orig(uid, Math.max(dur, 9000));
+        }
         // Heavy SwiftShader screenshot capture can exceed the 2.9s movie. Extend
         // only the overlay-removal timer in the test, never production timing or actShow.
         const nativeTimeout = window.setTimeout;
