@@ -214,7 +214,16 @@ class Arena3D extends GameScene {
     if (!this.alive || !o || o.def?.id !== 'muaddib' || !o.root?._authored ||
         !o.root._clips?.[o.root._clipNames?.ult]) return false;
     const now = performance.now();
-    this.muadCine = { o, t0: now, dur: durationMs };
+    // Do not let the remaining formation cross the foreground of this close-up.
+    // Restore every previous enabled state when the cinematic ends.
+    const hidden = [];
+    for (const other of Object.values(this.units)) {
+      if (other === o) continue;
+      for (const node of [other.root, other.ring, other.pool]) {
+        if (node && node.isEnabled()) { hidden.push(node); node.setEnabled(false); }
+      }
+    }
+    this.muadCine = { o, t0: now, dur: durationMs, hidden };
     o.act = { key: 'gl', ab: o.def.gl, kind: 'cast', t0: now,
       dur: durationMs, dir: V3(1, 0, 0), to: o.base.clone(), tg: [] };
     return true;
@@ -223,6 +232,7 @@ class Arena3D extends GameScene {
     const c = this.muadCine;
     if (!c) return;
     this.muadCine = null;
+    for (const node of c.hidden || []) if (node && !node.isDisposed()) node.setEnabled(true);
     if (c.o?.act?.key === 'gl' && c.o.act.t0 === c.t0) c.o.act = null;
   }
   // BH7 approved storyboard — one temporary chair, no new scene/Engine/rAF.
@@ -502,7 +512,7 @@ class Arena3D extends GameScene {
         const strength = w * w * (3 - 2 * w);
         T1.set(p.x + 2.2, p.y + 1.9, p.z + 4.7);
         B3.Vector3.LerpToRef(pos, T1, strength, pos);
-        T1.set(p.x + 1.05, p.y + 1.3, p.z);
+        T1.set(p.x - .7, p.y + 1.3, p.z);
         B3.Vector3.LerpToRef(look, T1, strength, look);
       }
     }
