@@ -9,16 +9,16 @@ const hudIntersects = (a, b) => a.x < b.x + b.w + HUD_GAP && a.x + a.w + HUD_GAP
 
 // Deterministic nearest free rectangle. Prefer vertical lift over sideways drift;
 // every candidate includes leader, statuses, intention and target arrow bounds.
-function packWorldLabels(rows, width, height) {
+function packWorldLabels(rows, width, height, insets = { left: 12, right: 12 }) {
   const placed = [], top = 60, bottom = Math.max(top + 60, height - 100);
   const ordered = [...rows].sort((a, b) => b.ay - a.ay || String(a.id).localeCompare(String(b.id)));
   for (const r of ordered) {
-    const nx = clampHud(r.ax - r.w / 2, 12, width - 12 - r.w);
+    const nx = clampHud(r.ax - r.w / 2, insets.left, width - insets.right - r.w);
     const ny = clampHud(r.ay - r.h, top, bottom - r.h);
     const xs = [nx], ys = [ny, top];
     for (const p of placed) {
-      xs.push(clampHud(p.x - r.w - HUD_GAP, 12, width - 12 - r.w),
-        clampHud(p.x + p.w + HUD_GAP, 12, width - 12 - r.w));
+      xs.push(clampHud(p.x - r.w - HUD_GAP, insets.left, width - insets.right - r.w),
+        clampHud(p.x + p.w + HUD_GAP, insets.left, width - insets.right - r.w));
       ys.push(p.y - r.h - HUD_GAP, p.y + p.h + HUD_GAP);
     }
     let best = null, score = Infinity;
@@ -72,16 +72,17 @@ class WorldHudLayout {
       row.ax = ax; row.ay = ay; row.dead = dead; this.dirty = true;
     }
   }
-  place(width, height) {
+  place(width, height, insets = this.insets || { left: 12, right: 12 }) {
     for (const [id, row] of this.rows) if (!row.seen) {
       if (this.observer) this.observer.unobserve(row.label);
       this.rows.delete(id); this.dirty = true;
     }
     if (width !== this.width || height !== this.height) { this.width = width; this.height = height; this.dirty = true; }
+    if (!this.insets || insets.left !== this.insets.left || insets.right !== this.insets.right) { this.insets = insets; this.dirty = true; }
     if (!this.dirty) return;
     this.dirty = false;
     const rows = [...this.rows.values()].filter(r => !r.dead);
-    packWorldLabels(rows, width, height);
+    packWorldLabels(rows, width, height, insets);
     for (const row of rows) {
       const dx = row.x + row.w / 2 - row.ax, dy = row.y + row.h - row.ay;
       if (Math.abs(dx - row.dx) < .25 && Math.abs(dy - row.dy) < .25) continue;

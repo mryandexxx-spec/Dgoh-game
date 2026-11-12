@@ -396,7 +396,11 @@ class Arena3D extends GameScene {
     const field = document.getElementById('field'); if (!field) return;
     // фаза 7, шаг 5: смещение канвас↔поле меряет ResizeObserver (колбэк — после layout кадра), а не вызов после правки DOM;
     // синхронный замер — только для нового поля до первого колбэка и после resize движка (_hm = 0)
-    const meas = () => { const fr = field.getBoundingClientRect(), cr = this.cv.getBoundingClientRect(); this._hdx = cr.left - fr.left; this._hdy = cr.top - fr.top; this._hm = 1; };
+    const meas = () => {
+      const fr = field.getBoundingClientRect(), cr = this.cv.getBoundingClientRect();
+      this._hdx = cr.left - fr.left; this._hdy = cr.top - fr.top; this._hm = 1;
+      if (!this.raid) { const cs = getComputedStyle(field); this._hudInsets = { left: Math.max(12, parseFloat(cs.paddingLeft) || 0), right: Math.max(12, parseFloat(cs.paddingRight) || 0) }; }
+    };
     if (field !== this._hf) {
       this._hf = field; this._he = {}; for (const el of field.querySelectorAll('.unit[data-uid]')) this._he[el.dataset.uid] = el;
       if (this._hro) this._hro.disconnect();
@@ -419,7 +423,7 @@ class Arena3D extends GameScene {
       if (!(Math.abs(hpx - el._fh) <= 1)) { el._fh = hpx; el.style.setProperty('--fh', hpx + 'px'); el.style.setProperty('--w', this.raid ? Math.max(44, hpx * (o.boss ? .9 : .5)) + 'px' : Math.max(48, Math.min(66, hpx * .62)) + 'px'); }
       if (this.worldHud) this.worldHud.track(uid, el, fx, fy - hpx - 4, o.dead);
     }
-    if (this.worldHud) this.worldHud.place(this.w, this.h);
+    if (this.worldHud) this.worldHud.place(this.w, this.h, this._hudInsets);
   }
   loop() {
     if (this.lost || !this.alive) return;

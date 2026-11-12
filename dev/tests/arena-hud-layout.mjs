@@ -25,4 +25,20 @@ for (const [w,h] of [[844,390],[667,375],[960,600]]) {
   const clustered = Array.from({length:10}, (_,i) => ({id:String(i),ax:w/2,ay:170,w:100,h:35}));
   check(pack(clustered,w,h),w,h);
 }
-console.log('PASS world HUD: viewport bounds, crowded 5x5, status/arrow sizes, motion, removal, deterministic idle');
+const notchRows = Array.from({length:10}, (_,i) => ({id:String(i),ax:60+i*55,ay:180,w:100,h:35}));
+g.set('__labels',notchRows);g.run('packWorldLabels(__labels,667,375,{left:59,right:59})');
+check(notchRows,667,375);assert.ok(notchRows.every(r=>r.x>=59&&r.x+r.w<=608),'notch safe area');
+// Regression: resizing a status block must repack in the observer callback,
+// before paint, without waiting for another expensive WebGL frame.
+let resize, disconnected=false;
+g.set('ResizeObserver',class {
+  constructor(fn){resize=fn;} observe(){} unobserve(){} disconnect(){disconnected=true;}
+});
+const layout=g.run('new WorldHudLayout()');
+const label={classList:{contains:s=>s==='world-label'}},vars=new Map();
+const el={firstElementChild:label,style:{setProperty:(k,v)=>vars.set(k,v)}};
+layout.begin();layout.track('hero',el,300,180,false);layout.place(667,375);
+resize([{target:label,borderBoxSize:[{inlineSize:100,blockSize:33}]}]);
+assert.equal(layout.rows.get('hero').h,33);assert.equal(layout.dirty,false,'observer must apply the new layout immediately');
+assert.equal(vars.get('--hud-y'),'0.0px');layout.dispose();assert.equal(layout.rows.size,0);assert.ok(disconnected);
+console.log('PASS world HUD: viewport/notch bounds, crowded 5x5, status/arrow sizes, motion, removal, deterministic idle, resize-before-paint, disposal');

@@ -69,14 +69,14 @@ try {
     await page.screenshot({path:path.join(out,`idle-${width}-${gfx}.png`)});
     // Every indicator carries multiple effects, shield, leader and a target arrow.
     await page.evaluate(()=>{
-      for(const u of BT.B.units)for(const k of ['attackUp','defUp','poison','counter','speedUp'])if(FX[k])u.fx[k]={turns:2,stacks:1};
+      for(const u of BT.B.units)for(const k of ['attackUp','defUp','poison','counter','speedUp'])if(FX[k])u.fx[k]=2;
       renderBattle();
     });
     await sleep(400); await check('effects');
     await page.screenshot({path:path.join(out,`effects-${width}-${gfx}.png`)});
     // Target selection is a real pointer event on the displaced label.
     const enemy=await page.evaluate(()=>BT.B.units.filter(u=>u.side==='B'&&!u.fx.taunt)[1]?.uid||BT.B.units.find(u=>u.side==='B').uid);
-    await page.click(`.unit[data-uid="${enemy}"] .hud`);
+    await page.click(`.unit[data-uid="${enemy}"] .hud .hb.hp`);
     await sleep(300); assert.equal(await page.evaluate(()=>BT.cur),enemy,'label must select its own hero'); await check('target');
     // Use the actual battle action/animation; freeze only the subsequent turn.
     await page.evaluate(()=>{doAct(BT.waiting,'basic',BT.cur);clearTimeout(BT.timer);});
