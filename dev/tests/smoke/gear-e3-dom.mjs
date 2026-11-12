@@ -54,6 +54,23 @@ try {
     await page.click('[data-craft]');
     const equipped = await page.evaluate(() => (0,eval)("prog('paul').eq[0]"));
     assert.equal(equipped,true,width + ': craft and equip works');
+    // GE1: a complete drop is usable even when currencies and fragments are zero.
+    await page.evaluate(() => (0, eval)(`
+      { const p=prog('paul'); p.eq[0]=false;
+        const id=gearPlan('paul',p.gear)[0]; S.inv[id]=0;
+        for (const part of recipeFor(id).parts || []) S.inv[part.materials[0].id]=0;
+        S.solari=0; S.plast=0; S.gearOwned[id]=1; openItem('paul',0); }
+    `));
+    assert.equal(await page.$eval('[data-craft]', b => b.disabled),false,width + ': owned gear button enabled');
+    assert.ok((await page.$eval('.e3cost',e=>e.textContent)).includes('бесплатна'),
+      width + ': direct equip cost displayed correctly');
+    await page.click('[data-craft]');
+    const complete = await page.evaluate(() => (0,eval)(`
+      ({equipped:prog('paul').eq[0], left:S.gearOwned[gearPlan('paul',prog('paul').gear)[0]],
+        sol:S.solari,pl:S.plast})`));
+    assert.deepEqual(complete,{equipped:true,left:0,sol:0,pl:0},
+      width + ': complete item equipped and consumed without crafting costs');
+
     assert.deepEqual(errors, [], width + ': no uncaught page errors');
     console.log('E3 browser PASS', width + '×' + height);
     await page.close();
