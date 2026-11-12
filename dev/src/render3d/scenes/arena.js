@@ -18,6 +18,7 @@ import { CTX, withCtx } from '../ctx.js';
 import { B3, SLOT3, cvSize } from '../base.js';
 import { FX } from '../../data/fx.js';
 import { GameScene } from '../game-scene.js';
+import { WorldHudLayout } from '../world-hud.js';
 
 // ---------- arena ----------
 // GameScene: create = конструктор (канвас ставится в хост заранее — раскладка рейда меряет его), wake в конце конструктора;
@@ -41,7 +42,8 @@ class Arena3D extends GameScene {
     this.resize(); this.wake(); this.warmFX();
   }
   update() { this.loop(); }
-  onDetach() { if (this._hro) { this._hro.disconnect(); this._hro = null; } this.dispose(); }
+  onDetach() { this.dispose(); }
+  onDispose() { if (this._hro) this._hro.disconnect(); this._hro = null; if (this.worldHud) this.worldHud.dispose(); this.worldHud = null; }
   contextLost() { if (!this.alive) return; this.lost = true; if (this.onLost) setTimeout(() => this.onLost && this.onLost(), 0); }
   setupFX() {
     const S = this.scene, Q = gfx(this.small);
@@ -121,13 +123,11 @@ class Arena3D extends GameScene {
       const col = row ? (k === 1 ? -.5 : .5) : (k === 0 ? -1 : k === 2 ? 0 : 1), x = col * gap, z = row ? z0 - 3 : z0 + .8;
       return [x, this.heightAt(x, z), z];
     }
-    // Пакет 8: две шахматные формации 3+2 по линии взгляда, а не боковые шеренги.
-    // idx 0/2/4: ближняя к противнику тройка; 1/3: два бойца позади.
-    // z — физический интервал между моделями, x — глубина; размеры не зависят от CSS.
-    const ally = sx < 0, lane = [0, -2.5, 5, 2.5, -5][idx ?? 0] ?? 0;
-    // Из-за диагональной перспективы обычного интервала 2.4 м недостаточно:
-    // экранные силуэты начинают перекрываться. Разводим ряды вдоль оси атаки.
-    const rear = idx === 1 || idx === 3, x = ally ? (rear ? -10 : -6) : (rear ? 13 : 6);
+    // Close 3+2 formations. Offset the rear ranks along camera-space horizontal
+    // so their silhouettes sit in the gaps instead of behind the front rank.
+    const ally = sx < 0, rear = idx === 1 || idx === 3;
+    const lane = ([0, -2, 4, 2, -4][idx ?? 0] ?? 0) + (rear ? (ally ? 1.4 : -1.4) : 0);
+    const x = ally ? (rear ? -5.2 : -3.2) : (rear ? 5.2 : 3.2);
     return [x, this.heightAt(x, lane), lane];
   }
   relayout() { for (const uid in this.units) { const o = this.units[uid]; if (!o.slot) continue; const [x, y, z] = this.slotPos(o.slot); o.base.set(x, y, z); o.ring.position.set(x, y + .05, z); if (o.pool) o.pool.position.set(x, y + .04, z); } }
@@ -396,7 +396,11 @@ class Arena3D extends GameScene {
     const field = document.getElementById('field'); if (!field) return;
     // фаза 7, шаг 5: смещение канвас↔поле меряет ResizeObserver (колбэк — после layout кадра), а не вызов после правки DOM;
     // синхронный замер — только для нового поля до первого колбэка и после resize движка (_hm = 0)
-    const meas = () => { const fr = field.getBoundingClientRect(), cr = this.cv.getBoundingClientRect(); this._hdx = cr.left - fr.left; this._hdy = cr.top - fr.top; this._hm = 1; };
+    const meas = () => {
+      const fr = field.getBoundingClientRect(), cr = this.cv.getBoundingClientRect();
+      this._hdx = cr.left - fr.left; this._hdy = cr.top - fr.top; this._hm = 1;
+      if (!this.raid) { const cs = getComputedStyle(field); this._hudInsets = { left: Math.max(12, parseFloat(cs.paddingLeft) || 0), right: Math.max(12, parseFloat(cs.paddingRight) || 0) }; }
+    };
     if (field !== this._hf) {
       this._hf = field; this._he = {}; for (const el of field.querySelectorAll('.unit[data-uid]')) this._he[el.dataset.uid] = el;
       if (this._hro) this._hro.disconnect();
@@ -406,6 +410,8 @@ class Arena3D extends GameScene {
     if (!this._hm) meas();
     const M = this.scene.getTransformMatrix(), vp = this._vp || (this._vp = new B3.Viewport(0, 0, 1, 1)), F = this._pf || (this._pf = V3()), Hd = this._ph || (this._ph = V3()), pa = this._pa || (this._pa = V3()), pb = this._pb || (this._pb = V3());
     vp.width = this.w; vp.height = this.h;
+    if (!this.raid && !this.worldHud) this.worldHud = new WorldHudLayout();
+    if (this.worldHud) this.worldHud.begin();
     for (const uid in this.units) {
       let el = this._he[uid]; if (!el || !el.isConnected) { el = field.querySelector(`.unit[data-uid="${uid}"]`); if (!el) continue; this._he[uid] = el; }
       const o = this.units[uid], rp = o.root.position, rb = o.boss && this.raid;
@@ -413,9 +419,20 @@ class Arena3D extends GameScene {
       B3.Vector3.ProjectToRef(F, B3.Matrix.IdentityReadOnly, M, vp, pa); B3.Vector3.ProjectToRef(Hd, B3.Matrix.IdentityReadOnly, M, vp, pb);
       const fx = pa.x, fy = pa.y, hpx = Math.max(20, fy - pb.y), x = this._hdx + fx, y = this._hdy + fy;
       if (!el._hp) { el._hp = 1; el.style.left = '0px'; el.style.top = '0px'; el._hx = el._hy = NaN; }
-      if (!(Math.abs(x - el._hx) < .25 && Math.abs(y - el._hy) < .25)) { el._hx = x; el._hy = y; el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -100%)`; }
+      if (!(Math.abs(x - el._hx) < .25 && Math.abs(y - el._hy) < .25)) {
+        el._hx = x; el._hy = y;
+        if (el.firstElementChild?.classList.contains('world-label')) {
+          el.style.setProperty('--world-x', x.toFixed(1) + 'px'); el.style.setProperty('--world-y', y.toFixed(1) + 'px');
+        } else el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -100%)`;
+      }
       if (!(Math.abs(hpx - el._fh) <= 1)) { el._fh = hpx; el.style.setProperty('--fh', hpx + 'px'); el.style.setProperty('--w', this.raid ? Math.max(44, hpx * (o.boss ? .9 : .5)) + 'px' : Math.max(48, Math.min(66, hpx * .62)) + 'px'); }
+      // Match the CSS coordinates/height actually written above. --fh is
+      // deliberately quantised to avoid layout churn; using the new raw hpx
+      // here would drift the collision boxes by up to a pixel during attacks.
+      if (this.worldHud) this.worldHud.track(uid, el, Number(el._hx.toFixed(1)) - this._hdx,
+        Number(el._hy.toFixed(1)) - this._hdy - el._fh - 4, o.dead);
     }
+    if (this.worldHud) this.worldHud.place(this.w, this.h, this._hudInsets);
   }
   loop() {
     if (this.lost || !this.alive) return;

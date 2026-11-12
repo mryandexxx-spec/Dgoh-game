@@ -69,7 +69,38 @@
 .battle.pkg9 .btop { position: absolute; inset: 0 0 auto; height: 54px; z-index: 20; pointer-events: none; display: block; }
 .battle.pkg9 .btitle, .battle.pkg9 .ticker { display: none; }
 .battle.pkg9 .field.three { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; z-index: 5; pointer-events: none; }
-.battle.pkg9 .field.three .unit { pointer-events: auto; }
+.battle.pkg9 .field.three .unit {
+  /* No per-unit stacking context: every label must sit above *all* model hit
+     areas, including the transparent hit rectangle of a neighbouring model. */
+  transform: none !important; z-index: auto !important; pointer-events: none;
+}
+.battle.pkg9 .field.three .unit .fig {
+  z-index: 1; pointer-events: auto;
+  transform: translate3d(calc(var(--world-x, 0px) - 50%), calc(var(--world-y, 0px) - 100%), 0) !important;
+}
+.battle.pkg9 .field.three .unit .float {
+  left: 0; top: 0; z-index: 8;
+  translate: var(--world-x, 0px) calc(var(--world-y, 0px) - var(--fh, 120px) - 10px);
+}
+.battle.pkg9 .field.three { padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
+.battle.pkg9 .world-label {
+  position: absolute; left: 0; top: 0; bottom: auto;
+  display: flex; flex-direction: column; align-items: center; width: max-content; min-width: 120px;
+  padding: 0 12px; z-index: 6; pointer-events: auto;
+  transform: translate3d(calc(var(--world-x, 0px) + var(--hud-x, 0px) - 50%), calc(var(--world-y, 0px) - var(--fh, 120px) - 4px + var(--hud-y, 0px) - 100%), 0);
+}
+.battle.pkg9 .world-label .tcur { position: relative; left: auto; bottom: auto; transform: none; flex: none; }
+.battle.pkg9 .world-label .fxs { justify-self: center; }
+.battle.pkg9.compact-world-hud .world-label { min-width: 80px; }
+@media (orientation: landscape) and (max-width: 700px) {
+  .battle.pkg9 .world-label { min-width: 86px; }
+}
+.battle.pkg9 .world-label::after {
+  content: ''; position: absolute; left: 50%; top: 100%; height: 1px;
+  width: var(--hud-link, 0px); transform-origin: 0 0;
+  transform: rotate(var(--hud-angle, 0rad)); background: rgb(240 224 176 / .45); pointer-events: none;
+}
+.battle.pkg9 .unit.dead .world-label { visibility: hidden; }
 .battle.pkg9 .bbot { position: absolute; inset: auto 0 0; height: 106px; min-height: 0; z-index: 21; pointer-events: none; display: block; }
 .battle.pkg9 .bbot button, .battle.pkg9 .btop button { pointer-events: auto; }
 .battle.pkg9 .bgauges.pkg9-enemy { position: absolute; top: max(8px, env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; gap: 6px; max-width: 174px; padding: 4px 8px; border: 1px solid rgb(140 99 62 / .6); background: rgb(23 15 9 / .74); border-radius: 24px; }

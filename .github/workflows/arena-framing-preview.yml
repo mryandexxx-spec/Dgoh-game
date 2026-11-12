@@ -1,0 +1,43 @@
+name: Arena framing review
+on:
+  pull_request:
+    paths:
+      - 'dev/tests/smoke/arena-framing-preview.mjs'
+      - '.github/workflows/arena-framing-preview.yml'
+      - 'dev/src/render3d/**'
+      - 'dev/src/ui/battle/**'
+      - 'dev/src/styles/battle3d.css'
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: node tests/arena-hud-layout.mjs dist/pwa/index.html
+      - run: node tests/smoke/arena-framing-preview.mjs dist/pwa/index.html dist/arena-framing
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+      - name: A/B MED and LOW phone
+        run: |
+          node tests/smoke/ab.mjs ../index.html dist/pwa/index.html --phone --gfx med,med --out dist/arena-framing/ab-med
+          node tests/smoke/ab.mjs ../index.html dist/pwa/index.html --phone --gfx low,low --out dist/arena-framing/ab-low
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arena-framing-review
+          path: dev/dist/arena-framing/
+          retention-days: 14
