@@ -226,7 +226,15 @@ class Arena3D extends GameScene {
         if (node && node.isEnabled()) { hidden.push(node); node.setEnabled(false); }
       }
     }
-    this.muadCine = { o, t0: now, dur: durationMs, hidden };
+    // Illuminate the authentic face, sleeves and hands with the already-owned
+    // GL point light. The arena's distant sun leaves the source costume almost
+    // black in landscape close-ups. No extra light or GPU resources allocated.
+    const light = this.glLight;
+    const savedLight = light ? {
+      position: light.position.clone(), diffuse: light.diffuse.clone(),
+      intensity: light.intensity, range: light.range
+    } : null;
+    this.muadCine = { o, t0: now, dur: durationMs, hidden, savedLight };
     o.act = { key: 'gl', ab: o.def.gl, kind: 'cast', t0: now,
       dur: durationMs, dir: V3(1, 0, 0), to: o.base.clone(), tg: [] };
     return true;
@@ -236,6 +244,12 @@ class Arena3D extends GameScene {
     if (!c) return;
     this.muadCine = null;
     for (const node of c.hidden || []) if (node && !node.isDisposed()) node.setEnabled(true);
+    if (c.savedLight && this.glLight && !this.glLight.isDisposed()) {
+      this.glLight.position.copyFrom(c.savedLight.position);
+      this.glLight.diffuse.copyFrom(c.savedLight.diffuse);
+      this.glLight.intensity = c.savedLight.intensity;
+      this.glLight.range = c.savedLight.range;
+    }
     if (c.o?.act?.key === 'gl' && c.o.act.t0 === c.t0) c.o.act = null;
   }
   // BH7 approved storyboard — one temporary chair, no new scene/Engine/rAF.
@@ -513,13 +527,25 @@ class Arena3D extends GameScene {
         const exit = Math.min(1, (1 - k) / .16);
         const w = Math.max(0, Math.min(entry, exit));
         const strength = w * w * (3 - 2 * w);
-        T1.set(p.x + 2.2, p.y + 2.2, p.z + 6.0);
+        // Ally faces +X. Approach from +X to show the eyes and animated
+        // incantation, not the back/side of the dark cloak.
+        T1.set(p.x + 5.5, p.y + 2.5, p.z + 3.2);
         B3.Vector3.LerpToRef(pos, T1, strength, pos);
-        T1.set(p.x + 1.25, p.y + 1.62, p.z);
+        T1.set(p.x + 2.1, p.y + 1.6, p.z + .1);
         B3.Vector3.LerpToRef(look, T1, strength, look);
       }
     }
-    if (this.glT && now - this.glT < 1600) { const k = Math.sin(Math.min(1, (now - this.glT) / 1600) * Math.PI); T1.set(0, this.camH * .7, this.camDist * .72); B3.Vector3.LerpToRef(pos, T1, k * .5, pos); look.set(LK.x, LK.y + .35, LK.z); if (this.glLight) this.glLight.intensity = 4 * k; }
+    if (this.muadCine && this.glLight) {
+      // Follow the zoom camera so the illuminated side is the visible side.
+      // This reuses the arena GL FX light and works on LOW as well as MED.
+      const caster = this.muadCine.o.base;
+      this.glLight.position.set(caster.x + 3.6, caster.y + 3.1, caster.z + 2.5);
+      this.glLight.diffuse = this.glLight.diffuse || col3('#ffe7c9');
+      this.glLight.diffuse.copyFromFloats(1, .84, .65);
+      this.glLight.range = 16;
+    }
+    if (this.muadCine && this.glLight) this.glLight.intensity = 5;
+    else if (this.glT && now - this.glT < 1600) { const k = Math.sin(Math.min(1, (now - this.glT) / 1600) * Math.PI); T1.set(0, this.camH * .7, this.camDist * .72); B3.Vector3.LerpToRef(pos, T1, k * .5, pos); look.set(LK.x, LK.y + .35, LK.z); if (this.glLight) this.glLight.intensity = 4 * k; }
     else if (this.glLight) this.glLight.intensity = 0;
     let fd = 0;
     if (this.cine) { const C = this.cine, k = (now - C.t0) / C.dur; if (k >= 1) this.cine = null; else { const w = Math.sin(Math.min(1, k) * Math.PI) ** .7 * (C.ult ? .62 : .45), sideX = C.side === 'A' ? -3.5 : 3.5;
