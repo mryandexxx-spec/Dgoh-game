@@ -18,6 +18,7 @@ try {
   for(const [w,h,gfx] of [[844,390,'med'],[667,375,'low']]){
     const page=await browser.newPage(),errors=[];
     page.on('pageerror',e=>{errors.push(e.message);console.log('Campaign browser pageerror:',e.stack||e.message);});
+    page.on('console',msg=>{if(msg.type()==='warn'||msg.type()==='error')console.log('Campaign console '+msg.type()+': '+msg.text());});
     await page.setViewport({width:w,height:h,deviceScaleFactor:1,isMobile:true,hasTouch:true,isLandscape:true});
     await page.evaluateOnNewDocument((s,profile)=>{
       try{localStorage.setItem('dune-goh-v1',s);localStorage.setItem('dune-gfx',JSON.stringify({p:profile,auto:0,bad:0,good:0,noUp:false}));}catch(e){}
@@ -56,7 +57,34 @@ try {
     });
     assert.equal(metrics.scroll,false,'no campaign viewport scroll');
     assert.equal(metrics.sceneCanvas,true,'canvas exists');
+    // C2.2: changing the selected mission must preserve the SAME Babylon canvas.
+    await page.evaluate(()=>{window.__campaignCanvas = document.querySelector('#c20world canvas');});
+    const firstSelected = await page.$eval('.c20-pin.on',el=>el.dataset.c20node);
+    await page.evaluate(first=>{
+      const next=[...document.querySelectorAll('.c20-pin')].find(el=>el.dataset.c20node!==first);
+      if(!next)throw Error('missing alternate mission');next.click();
+    },firstSelected);
+    const reused=await page.evaluate(()=>window.__campaignCanvas === document.querySelector('#c20world canvas'));
+    assert.equal(reused,true,'mission selection must keep existing 3D canvas');
+    assert.notEqual(await page.$eval('.c20-pin.on',el=>el.dataset.c20node),firstSelected,'selected mission updated');
+    await page.evaluate(()=>document.querySelector('[data-c20focus]').click());
+    assert.equal(await page.evaluate(()=>window.__campaignCanvas === document.querySelector('#c20world canvas')),
+      true,'recenter must keep existing canvas');
+
     assert.ok(metrics.visiblePins>0,'projected 3D mission labels visible');
+    const overlapping=await page.evaluate(()=>{
+      const visible=[...document.querySelectorAll('.c20-pin')].filter(el=>getComputedStyle(el).visibility==='visible');
+      const rects=visible.map(el=>({id:el.dataset.c20node,rect:el.getBoundingClientRect()}));
+      const collisions=[];
+      for(let i=0;i<rects.length;i++)for(let j=i+1;j<rects.length;j++){
+        const a=rects[i],b=rects[j],x=Math.min(a.rect.right,b.rect.right)-Math.max(a.rect.left,b.rect.left);
+        const y=Math.min(a.rect.bottom,b.rect.bottom)-Math.max(a.rect.top,b.rect.top);
+        if(x>3&&y>3)collisions.push([a.id,b.id]);
+      }
+      return collisions;
+    });
+    assert.deepEqual(overlapping,[],'50/60px mission markers cannot overlap at phone size');
+
     await page.evaluate(()=>document.querySelector('[data-c20node]')?.click());
     await page.waitForSelector('.c20-card');
     await page.click('[data-c20="detail"]');

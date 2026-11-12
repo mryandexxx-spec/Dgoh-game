@@ -33,6 +33,7 @@ import '@babylonjs/core/Materials/Textures/Loaders/envTextureLoader.js';   // ф
 import { KhronosTextureContainer2 } from '@babylonjs/core/Misc/khronosTextureContainer2.js';
 import '@babylonjs/core/Materials/Textures/Loaders/ktxTextureLoader.js';   // фаза 5, шаг 5: загрузчик .ktx2 (транскодер — assets/ktx2/, URLConfig в authored.js)
 import { Mesh } from '@babylonjs/core/Meshes/mesh.js';
+import '@babylonjs/core/Meshes/instancedMesh.js'; // Campaign 2.0 woodland instancing
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode.js';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData.js';
 import { VertexBuffer } from '@babylonjs/core/Buffers/buffer.js';
