@@ -6,7 +6,8 @@ import { accXP, fragLines, rewardWin } from '../rewards.js';
 import { itemCtx, openItem, slotState } from './detail.js';
 import { detailCid, openDetail } from '../hero-card.js';
 import { render } from '../router.js';
-import { starStr, thumb, toast } from '../common.js';
+import { itemIcon, starStr, thumb, toast } from '../common.js';
+import { recipeFor } from '../../logic/gear-crafting.js';
 import { enGet, enSpend } from '../../logic/progress.js';
 import { S, tickWater } from '../../core/state.js';
 import { persist } from '../../core/save.js';
@@ -15,7 +16,7 @@ import { CANDLE_REFILL, CRY_WIN, REFILL_AMT, REFILL_MAX, WMAX, campReward, refil
 import { NODES, NODE_SCENES, nodeCost, nodeEn, nodeTitle } from '../../data/campaigns.js';
 import { sceneThumb } from '../../render2d/scenes.js';
 import { CH } from '../../data/chars.js';
-import { amt } from '../../core/format.js';
+import { amt, ic } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
 import { quest } from '../../logic/daily.js';
 import { grantShards } from '../../logic/rewards.js';
@@ -36,28 +37,93 @@ function doRefill(kind) {
   S.refills = { d: todayKey(), n: refillN() + 1 };
   persist(); toast(`+${amt('water', REFILL_AMT)} Воды за ${amt('cry', c)}`); refreshAll();
 }
+const PART_LABELS = {core:'Сердечник',lens:'Линза',frame:'Каркас',fitting:'Крепление',lining:'Подкладка',seal:'Печать'};
+function simFocus(key, context, r) {
+  if (context && context.cid && ITEMS[context.itemId]) {
+    const item = ITEMS[context.itemId], recipe = recipeFor(item.id);
+    const part = context.partId && recipe?.parts?.find(p => p.id === context.partId);
+    if (part) {
+      const frag = part.materials[0].id, owned = S.inv[frag] || 0;
+      const need = S.gearParts?.[part.id] ? 0 : part.materials[0].count;
+      const legacy = need ? Math.min(need, S.inv[item.id] || 0) : 0;
+      return {kind:'part',key:frag,name:part.name + ' · ' + item.n,
+        breadcrumb:CH[context.cid]?.sn + ' → Снаряжение → ' + part.name,
+        icon:itemIcon(item,36),gained:r.fr[frag]||0,owned,need,legacy,
+        remaining:Math.max(0,need-owned-legacy)};
+    }
+    const owned = S.gearOwned?.[item.id] || 0;
+    return {kind:'gear',key:'gear:' + item.id,name:item.n,icon:itemIcon(item,36),
+      breadcrumb:CH[context.cid]?.sn + ' → Готовое снаряжение',
+      gained:r.fr['gear:' + item.id]||0,owned,need:1,legacy:0,remaining:Math.max(0,1-owned)};
+  }
+  if (key?.startsWith('gefrag:')) {
+    const frag=key.slice(7), [,id,partName]=frag.split(':'), item=ITEMS[id];
+    if (!item) return null;
+    const part=recipeFor(id)?.parts?.find(p=>p.materials[0].id===frag);
+    const need=part?.materials[0].count||0,owned=S.inv[frag]||0,legacy=S.inv[id]||0;
+    return {kind:'part',key:frag,name:(PART_LABELS[partName]||partName)+' · '+item.n,
+      icon:itemIcon(item,36),breadcrumb:'Фрагмент рецепта',gained:r.fr[frag]||0,owned,
+      need,legacy:Math.min(need,legacy),remaining:Math.max(0,need-owned-legacy)};
+  }
+  if (key?.startsWith('gegear:')) {
+    const id=key.slice(7),item=ITEMS[id];if(!item)return null;
+    const owned=S.gearOwned?.[id]||0;
+    return {kind:'gear',key:'gear:'+id,name:item.n,icon:itemIcon(item,36),breadcrumb:'Готовое снаряжение',
+      gained:r.fr['gear:'+id]||0,owned,need:1,legacy:0,remaining:Math.max(0,1-owned)};
+  }
+  if (key?.startsWith('frag:')) {
+    const id=key.slice(5),item=ITEMS[id];if(!item)return null;
+    const owned=S.inv[id]||0,need=recipeFor(id)?.materials?.[0]?.count||0;
+    return {kind:'fragment',key:id,name:item.n,icon:itemIcon(item,36),breadcrumb:'Фрагменты предмета',
+      gained:r.fr[id]||0,owned,need,legacy:0,remaining:Math.max(0,need-owned)};
+  }
+  if (key?.startsWith('shard:')) {
+    const id=key.slice(6);if(!CH[id])return null;
+    return {kind:'shard',key:'shard:'+id,name:CH[id].sn,icon:ic('shard'),
+      breadcrumb:'Осколки персонажа',gained:r.sh[id]||0,owned:0,need:0,legacy:0,remaining:0};
+  }
+  return null;
+}
+function simulationTiles(r, focusedKey) {
+  const tiles=[], push=(icon,label,amount,key)=>{
+    if (Number(amount)>0 && key!==focusedKey) tiles.push({icon,label,amount});
+  };
+  push(ic('sol'),'Солярии',r.sol,'sol');
+  push(ic('pl'),'Пласталь',r.pl,'pl');
+  push(ic('cry'),'Кристаллы',r.cry,'cry');
+  push(ic('folio'),'Фолианты',r.folio,'folio');
+  push(ic('rid'),'Ридулианские',r.rid,'rid');
+  push(ic('seal'),'Печати',r.seal,'seal');
+  for (const [key,qty] of Object.entries(r.signals)) push(ic(key),key,qty,key);
+  for (const [id,qty] of Object.entries(r.sh)) push(ic('shard'),CH[id]?.sn||id,qty,'shard:'+id);
+  for (const [key,qty] of Object.entries(r.fr)) {
+    const full=key.startsWith('gear:'), p=key.startsWith('frag:')?key.split(':'):null;
+    const id=full?key.slice(5):p?p[1]:key, item=ITEMS[id];
+    if (!item) continue;
+    const label=full?'Готовое: '+item.n:p?(PART_LABELS[p[2]]||p[2])+' · '+item.n:'Фрагменты · '+item.n;
+    push(itemIcon(item,32),label,qty,key);
+  }
+  push(ic('xp'),'Опыт аккаунта',r.xp,'xp');
+  return tiles;
+}
 function doXSim(spec) {
-  const [i, kk] = spec.split(':').map(Number), en = nodeEn(i), cost = kk * nodeCost(i); tickWater();
-  if (S.cleared[i] !== 3) return;
-  if (enGet(en) < cost) return openInfo(`need:${en}:${cost}`);
-  enSpend(en, cost);
-  // Keep the active recipe component before refresh re-renders underlying overlays.
-  const targetPart = infoKey?.startsWith('gefrag:') && itemCtx?.partId
-    && infoKey.slice('gefrag:'.length) === itemCtx.partId.replace(/^part:/, 'frag:')
-    ? { cid: itemCtx.cid, k: itemCtx.k, partId: itemCtx.partId } : null;
-  const r = simCore(i, kk); persist();
-  let focus = '';
-  const [kind, id] = (infoKey || '').split(':');
-  if (kind === 'shard' && id) focus = ` · ${CH[id].sn}: +${amt('shard', r.sh[id] || 0)}`;
-  else if (kind === 'frag' && id) focus = ` · +${amt('frag', r.fr[id] || 0)} ${ITEMS[id].n}`;
-  else if (!infoKey && itemCtx && $('#overlay .isheet, #overlay2 .isheet')) { const it = slotState(itemCtx.cid, itemCtx.k).it; focus = ` · +${amt('frag', r.fr[it.id] || 0)} ${it.n}`; }
+  const [i,kk] = spec.split(':').map(Number);
+  if (!Number.isInteger(i) || !NODES[i] || !Number.isInteger(kk) || kk<1 || kk>50 || S.cleared[i]!==3) return;
+  const en=nodeEn(i),cost=kk*nodeCost(i);tickWater();
+  if (enGet(en)<cost) return openInfo(`need:${en}:${cost}`);
+  // Capture focus and recipe from the source lookup, prior to any render.
+  const originKey=infoKey, context=itemCtx && ($('#overlay .isheet') || $('#overlay2 .isheet') || originKey?.startsWith('gefrag:') || originKey?.startsWith('gegear:'))
+    ? {...itemCtx,itemId:slotState(itemCtx.cid,itemCtx.k).it.id} : null;
+  enSpend(en,cost);
+  const r=simCore(i,kk);persist();
+  const focus=simFocus(originKey,context,r);
   refreshAll();
-  // Return to the selected recipe component, not the parent equipment or source list.
-  if (targetPart) openItem(targetPart.cid, targetPart.k, targetPart.partId);
-  const more = enGet(en) >= cost;
-  rewardWin(`Симуляция ×${kk}`, r.lines, { sub: `${nodeTitle(i)} · потрачено ${amt(en, cost)}${focus}`, ok: 'Готово',
-    btns: `<button class="btn go ${more ? '' : 'lack'}" data-isim="${spec}" ${more ? '' : 'disabled'}>Ещё ×${kk}<small>${amt(en, cost)}</small></button>`,
-    focusItem: itemCtx && ($('#overlay .isheet') || $('#overlay2 .isheet')) ? slotState(itemCtx.cid, itemCtx.k).it.id : (kind === 'frag' ? id : null), inv: S.inv });
+  if (context?.partId) openItem(context.cid,context.k,context.partId);
+  const more=enGet(en)>=cost;
+  rewardWin(`Симуляция ×${kk}`,r.lines,{
+    sim:{mission:nodeTitle(i),spent:amt(en,cost),focus,tiles:simulationTiles(r,focus?.key)},
+    ok:'Готово',btns:`<button class="btn go ${more?'':'lack'}" data-isim="${spec}" ${more?'':'disabled'}>Ещё ×${kk}<small>${amt(en,cost)}</small></button>`
+  });
 }
 
 let simNode = null;
@@ -109,7 +175,7 @@ function simCore(i, k) {
   lines.push(...fragLines(items));
   lines.push(`+${k * nodeCost(i) * 3} опыта аккаунта`, ...accL);
   const fr = {}; for (const [id, q] of items) fr[id] = (fr[id] || 0) + q;
-  return { lines, sh, fr };
+  return { lines, sh, fr, sol, pl, folio, seal, rid, cry:CRY_WIN*k, signals, xp:k*nodeCost(i)*3 };
 }
 
 export { refreshAll, crefillN, crefillCost, doRefill, doXSim, simNode, openSim, updSim, runSim, simCore };
