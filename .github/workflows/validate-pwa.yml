@@ -137,6 +137,8 @@ jobs:
         run: node tests/smoke/core-model-stall.mjs dist/pwa/index.html
       - name: Optional Muad-Dib download must not block 3D lobby
         run: node tests/smoke/optional-model-boot.mjs dist/pwa/index.html
+      - name: Campaign 2.0 camera-aligned touch geometry
+        run: node tests/campaign-gestures.mjs
       - name: Campaign 2.0 Caladan real WebGL UX (844/667 MED/LOW)
         run: node tests/smoke/campaign20.mjs dist/pwa/index.html dist/campaign20-shots
       - name: Upload Campaign 2.0 screenshots
