@@ -120,16 +120,20 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
     if (m instanceof B3.PBRMaterial && k === 'eye') { m.clearCoat.isEnabled = true; m.clearCoat.intensity = 1; m.clearCoat.roughness = .04; }
     if (SHG0 && k !== 'eye') SHG0.addShadowCaster(me, false);
   }
-  // Stage-only Muad'Dib eye readability pass: tiny blue irises attached to
-  // the exported head-front joint. No change to the albedo, young Paul,
-  // or the generic hero pipeline. Avoid new dynamic lights / post passes.
+  // Muad'Dib: place faint blue accents on the ACTUAL textured iris centres,
+  // not at the HeadFront joint origin (which sits at mouth height).
+  // Calibrated against the released DGM v5 bind-pose geometry: the albedo's
+  // existing blue iris vertices are at world x≈±.03, y≈1.582, z≈.179.
+  // Coordinates below are in the HeadFront local basis, offset 3 mm forward
+  // from the textured eye surface; parent follows authored head animations.
   if (def.id === 'muaddib' && N.headfront) {
+    const MUAD_IRIS_LOCALS = [[-0.0342, 0.1071, -0.0101], [0.0258, 0.1076, -0.0107]];
     const iris = basic3('#478aff');
-    for (const side of [-1, 1]) {
-      const eye = add(N.headfront, mk(bSph(.0095, 10), iris, side * .038, .014, .012, false));
-      eye.name = side < 0 ? 'muad_iris_L' : 'muad_iris_R';
+    MUAD_IRIS_LOCALS.forEach(([x, y, z], i) => {
+      const eye = add(N.headfront, mk(bSph(.0055, 10), iris, x, y, z, false));
+      eye.name = i === 0 ? 'muad_iris_L' : 'muad_iris_R';
       eye.isPickable = false;
-    }
+    });
   }
   const R = { sh: N.shR, el: N.elR, hand: N.handR }, Lf = { sh: N.shL, el: N.elL, hand: N.handL }, LL = { hip: N.hipL, knee: N.kneeL, ank: N.ankL }, LR = { hip: N.hipR, knee: N.kneeR, ank: N.ankR };
   // the sword stays procedural (shared look with the rest of the roster)

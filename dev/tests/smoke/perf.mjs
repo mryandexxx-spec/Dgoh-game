@@ -19,6 +19,9 @@ const page = await browser.newPage(); page.on('console', m => { if (/bake|camp s
 await page.setViewport(PHONE ? { width: 844, height: 390, deviceScaleFactor: +opt('--dpr', 1), isMobile: true, hasTouch: true, isLandscape: true } : { width: 960, height: 600, deviceScaleFactor: +opt('--dpr', 1) });
 await page.setRequestInterception(true); page.on('request', r => /^(data|blob):|^http:\/\/127\.0\.0\.1:/.test(r.url()) ? r.continue() : r.abort());
 await page.evaluateOnNewDocument((save, low, gfx) => {
+  // Installed before app boot so the baker never creates transient portrait
+  // MSAA targets during the camp baseline/candidate comparison.
+  window.__DGOH_PERF_NO_BAKE__ = true;
   try { localStorage.clear(); localStorage.setItem('dune-goh-v1', save); localStorage.setItem('dune-cine-off', 'true'); if (low) localStorage.setItem('dune-gfx-low', 'true'); if (gfx) localStorage.setItem('dune-gfx', JSON.stringify({ p: gfx, auto: 0 })); } catch (e) {}
   try { Object.defineProperty(navigator, 'serviceWorker', { value: undefined }); } catch (e) {}
   // счётчики GL: draw calls, смены framebuffer, «пиксели проходов» = Σ площади вьюпорта по сегментам (fb, viewport) с ≥1 draw
@@ -34,15 +37,12 @@ await page.evaluateOnNewDocument((save, low, gfx) => {
 }, LATE, LOW, GFX);
 const SRV = await serve(path.dirname(path.resolve(html)));
 await page.goto(SRV.url(path.basename(html)), { waitUntil: 'load' });
-// A/B idle rendering budget excludes the *asynchronous* portrait baker.
-// On SwiftShader a newly added roster entry can shift the baker across the
-// first camp sample, transiently accounting ~4 MB of its MSAA render target
-// and depth as camp VRAM. Disable it equally on both baseline and candidate
-// during this perf-only browser session; the real baker still runs in the app
-// and its lifecycle is covered by separate smoke tests.
+// Benchmark mode is enabled before the game initializes (see injected flag).
+// A late overwrite of bakePortraits() could not cancel the async task already
+// scheduled by baker.js at startup and caused random +4 MB of portrait RT VRAM.
 await page.evaluate(() => {
+  if (!window.__DGOH_PERF_NO_BAKE__) throw Error('Portrait baker benchmark opt-out not installed');
   if (typeof bakePortraits !== 'function') throw Error('Portrait baker absent');
-  bakePortraits = async () => {};
 });
 await sleep(3000);
 await page.evaluate(async () => { await loadB3(); });

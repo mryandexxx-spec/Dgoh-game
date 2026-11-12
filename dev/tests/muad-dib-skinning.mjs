@@ -30,6 +30,26 @@ for(let i=0;i<world.length;i++){
   for(let j=0;j<16;j++)maxErr=Math.max(maxErr,Math.abs(product[j]-(j%5===0?1:0)));
 }
 assert.ok(maxErr<0.001,'bind/inverse-bind mismatch: '+maxErr);
+// Regression: eye highlights must be attached to textured iris vertices,
+ // not the HeadFront mouth-height joint origin (reported on physical iPhone).
+ // Bind-pose iris centres measured from the shipped textured DGM mesh:
+ // left/right x=-.030/+ .030, y=1.582, frontal surface z≈.179.
+ const source=fs.readFileSync(new URL('../src/render3d/characters/authored.js',import.meta.url),'utf8');
+ const match=source.match(/const MUAD_IRIS_LOCALS = (\[[^;]+\]);/);
+ assert(match,'Muad Dib iris local positions are missing');
+ const offsets=JSON.parse(match[1]);
+ assert.equal(offsets.length,2);
+ const head=world[names.get('headfront')];
+ const project=([x,y,z])=>[
+   head[0]*x+head[4]*y+head[8]*z+head[12],
+   head[1]*x+head[5]*y+head[9]*z+head[13],
+   head[2]*x+head[6]*y+head[10]*z+head[14]
+ ];
+ for(let i=0;i<2;i++){
+   const v=project(offsets[i]),target=[i===0?-.030:.030,1.582,.182];
+   const err=Math.hypot(...v.map((x,j)=>x-target[j]));
+   assert(err<.007,'Muad Dib iris marker deviates from actual eye centre: '+JSON.stringify({i,v,target,err}));
+ }
 let keys=0;
 for(const clip of Object.values(d.clips)){
   for(const tr of clip.tracks){

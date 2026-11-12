@@ -115,7 +115,10 @@ function bakeRefresh() {
   if (!S || (BT && BT.B) || $('#celeb') || $('#lvlup') || SQ) return;
   try { render(); if ($('#overlay .csheet') && detailCid) openDetail(detailCid); } catch (e) {}
 }
-setTimeout(() => { bakePortraits(); }, 1200);
+// The benchmark sets this before app modules load: prevent the async portrait
+// baker from allocating a transient 4x-MSAA target during camp VRAM A/B.
+// Normal gameplay always schedules portrait baking.
+if (!window.__DGOH_PERF_NO_BAKE__) setTimeout(() => { bakePortraits(); }, 1200);
 setTimeout(() => {
   let m = null; try { m = JSON.parse(localStorage.getItem('dune-inbattle') || 'null'); localStorage.removeItem('dune-inbattle'); } catch (e) {}
   if (!m || Date.now() - m.t > 3 * 3600e3) return;
