@@ -227,13 +227,14 @@ function normalizeApprovedGE1(src, isCurrent) {
       // shards, currencies, labels, action buttons and the rest of the view.
       const loot = /<span class="rewit">[\s\S]*?<\/span>(?=\s*<span class="mono" style="color:var\(--dust\)">)/g;
       const matches = [...screen.view.matchAll(loot)];
-      assert.equal(matches.length, 1, screen.name + ': exactly one mission gear preview');
-      if (isCurrent && matches[0][0].includes('data-info="frag:')) {
-        // All actual item cards must refer to real equipment, not an internal
-        // composite fragment ID. The click-through source is separately tested.
-        assert.ok(!/data-info="frag:frag:/.test(matches[0][0]), screen.name + ': no invalid fragment links');
+      if (!(isCurrent && screen.view.includes('class="c20 '))) {
+        assert.equal(matches.length, 1, screen.name + ': exactly one mission gear preview');
+        if (isCurrent && matches[0][0].includes('data-info="frag:')) {
+          // Fragment source validation is still strict for all other panels.
+          assert.ok(!/data-info="frag:frag:/.test(matches[0][0]), screen.name + ': no invalid fragment links');
+        }
+        screen.view = screen.view.replace(loot, '<span class="rewit">[GE1 equipment loot preview]</span>');
       }
-      screen.view = screen.view.replace(loot, '<span class="rewit">[GE1 equipment loot preview]</span>');
     }
     if (screen.name === 'shop:sietch' && typeof screen.view === 'string') {
       const marker = '<p class="chap" style="margin:22px 0 8px">Фрагменты';
@@ -280,14 +281,39 @@ function normalizeApprovedGE1(src, isCurrent) {
   }
   return copy;
 }
+// Campaign 2.0: the approved landing screen replaces the legacy campaign DOM.
+// Retain strict golden comparison for every non-campaign screen, overlay, save,
+// rewards and source navigation. The separate mobile Campaign 2.0 smoke checks
+// the new 3D screen in both phone viewports.
+function normalizeApprovedCampaign20(src, current) {
+  const copy = structuredClone(src);
+  const campaignNames = new Set([
+    'fresh:camp','camp:L','camp:D','camp:C','camp:L:node5',
+    'info:bio:paul','info:shard:chani','info:frag:belt5',
+    'info:need:water:6','info:sol','info:cry',
+    'squadsel:camp0','sim:node3','battle:start','battle:turns'
+  ]);
+  for (const screen of copy.screens) {
+    if (!campaignNames.has(screen.name)) continue;
+    if (current) {
+      assert.ok(screen.view?.includes('class="c20 c20-home"'),
+        screen.name + ': approved Campaign 2.0 landing available');
+      assert.ok(screen.view.includes('data-c20="story"') && screen.view.includes('data-c20="chron"'),
+        screen.name + ': both routes available');
+      assert.deepEqual(screen.errors, [], screen.name + ': no new page errors');
+    }
+    screen.view = '[approved Campaign 2.0 hub; validated separately by campaign20 smoke]';
+  }
+  return copy;
+}
 if (rest.includes('--update')) writeGolden('screens', out);
 else {
   validateV86Legend(out);
   const baseline = readGolden('screens');
   if (!baseline) throw new Error('screens golden baseline missing');
   const parsed = JSON.parse(baseline);
-  const want = normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGE1({ ...parsed.meta, screens: parsed.screens }, false)));
-  const got = normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedBH97(normalizeApprovedGE1(out, true))));
+  const want = normalizeApprovedCampaign20(normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGE1({ ...parsed.meta, screens: parsed.screens }, false))), false);
+  const got = normalizeApprovedCampaign20(normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedBH97(normalizeApprovedGE1(out, true)))), true);
   if (!isDeepStrictEqual(want, got)) {
     const changed = want.screens.filter((v, i) => !isDeepStrictEqual(v, got.screens[i])).map(x => x.name);
     console.error('Unapproved golden screen differences:', changed.join(', '));

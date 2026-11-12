@@ -130,6 +130,16 @@ jobs:
         with:
           chrome-version: stable
       - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+      - name: Campaign 2.0 Caladan real WebGL UX (844/667 MED/LOW)
+        run: node tests/smoke/campaign20.mjs dist/pwa/index.html dist/campaign20-shots
+      - name: Upload Campaign 2.0 screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-campaign20-${{ github.run_number }}
+          path: dev/dist/campaign20-shots/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Muad Dib legendary mobile card 844/667 MED/LOW
         run: node tests/smoke/muad-dib.mjs dist/pwa/index.html
       - run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
