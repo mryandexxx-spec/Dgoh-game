@@ -12,22 +12,56 @@ let HAS3D = !!B3 && HAS_GL;
 const B3_SUBS = [];
 function onB3(fn) { if (HAS3D) fn(); else B3_SUBS.push(fn); }
 let B3_P = null;
-const B3_PRE = [];   // фаза 5: предусловия 3D (ассеты, assets/models.js) — грузятся параллельно с чанком, loadB3 ждёт и их
+const B3_PRE = [];   // Опциональные 3D-ассеты: не должны удерживать сам движок.
 function b3Pre(fn) { B3_PRE.push(fn); }
-function loadB3() {   // Promise<boolean>: true — 3D готово; повторные вызовы получают тот же Promise
+// Safari/PWA can leave an asset fetch or cached script pending indefinitely.
+// Cap *readiness*, not the background asset requests: authored models load when
+// available; until then the existing procedural mesh fallback works.
+const B3_ASSET_WAIT_MS = 7000;
+const B3_SCRIPT_WAIT_MS = 12000;
+function b3Deadline(p, ms, label) {
+  let timer;
+  return Promise.race([
+    Promise.resolve(p),
+    new Promise(resolve => { timer = setTimeout(() => { console.warn('3D readiness timeout:', label); resolve(false); }, ms); }),
+  ]).finally(() => clearTimeout(timer));
+}
+function loadB3() {  // Promise<boolean>; a stuck asset/script must never poison future attempts
   if (HAS3D) return Promise.resolve(true);
-  if (!HAS_GL) return Promise.resolve(false);
-  return B3_P || (B3_P = new Promise(res => {
-    const pre = Promise.all(B3_PRE.map(f => Promise.resolve().then(f).catch(e => console.warn('предусловие 3D', e))));
-    const done = ok => {
-      if (ok && globalThis.__B3) { B3 = globalThis.__B3; HAS3D = true; for (const f of B3_SUBS.splice(0)) try { f(); } catch (e) { console.warn('onB3', e); } }
-      else { console.warn('чанк Babylon не загрузился'); B3_P = null; }   // следующий вызов попробует снова
-      res(HAS3D);
+  if (!HAS_GL) { console.warn('3D unavailable: WebGL context not supported'); return Promise.resolve(false); }
+  if (B3_P) return B3_P;
+  B3_P = new Promise(resolve => {
+    // Start asset fetches once, in parallel. Do not block readiness indefinitely.
+    const pre = b3Deadline(Promise.allSettled(B3_PRE.map(f => Promise.resolve().then(f))), B3_ASSET_WAIT_MS, 'assets');
+    const script = document.createElement('script');
+    script.src = B3_URL;
+    script.async = true;
+    let done = false, timer;
+    const finish = loaded => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      if (loaded && globalThis.__B3) {
+        // The engine is ready even if some optional meshes/textures are late.
+        // Their in-flight loads are still allowed to complete.
+        pre.then(() => {
+          B3 = globalThis.__B3; HAS3D = true;
+          for (const f of B3_SUBS.splice(0)) try { f(); } catch (e) { console.warn('onB3', e); }
+          resolve(true);
+        });
+      } else {
+        console.warn('Babylon chunk unavailable; 2D fallback active');
+        script.remove();
+        B3_P = null;  // future navigation can retry after an intermittent offline error
+        resolve(false);
+      }
     };
-    const s = document.createElement('script');   // PWA и артефакт: babylon3d.js лежит рядом со страницей (артефакт — multi-file, фаза 4 шаг 4)
-    s.src = B3_URL; s.onload = () => pre.then(() => done(true)); s.onerror = () => pre.then(() => done(false));
-    document.head.appendChild(s);
-  }));
+    script.onload = () => finish(true);
+    script.onerror = () => finish(false);
+    timer = setTimeout(() => finish(!!globalThis.__B3), B3_SCRIPT_WAIT_MS);
+    document.head.appendChild(script);
+  });
+  return B3_P;
 }
 
 const ENV3 = {
