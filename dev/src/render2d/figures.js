@@ -131,5 +131,9 @@ function portrait(def, size, ring) {
 }
 
 
+// Expose only successfully baked image URLs to cinematics; never expose the 2D stand-in.
+let bakedFullPortrait = () => null;
+function set_bakedFullPortrait(fn) { bakedFullPortrait = fn; }
+function bakedFullPortraitUrl(id) { return bakedFullPortrait(id); }
 function set_figureSVG(v) { return figureSVG = v; }
-export { figureSVG, wormSVG, portrait, set_figureSVG };
+export { figureSVG, wormSVG, portrait, set_figureSVG, set_bakedFullPortrait, bakedFullPortraitUrl };

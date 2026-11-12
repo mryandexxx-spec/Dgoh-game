@@ -431,10 +431,49 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+
+  md-ult1:
+    name: MD-ULT-1 real GL cinematic MED LOW (baked and missing)
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dune-validated-build
+          path: dev/dist
+      - run: node tools/ci-artifact.mjs verify
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          chrome-version: stable
+      - name: Real battle GL animation and screenshots (844x390 MED and 667x375 LOW)
+        run: node tests/smoke/md-ult1.mjs dist/pwa/index.html dist/md-ult1-shots
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: Upload actual MD-ULT-1 battle cinematic frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-md-ult1-${{ github.run_number }}
+          path: dev/dist/md-ult1-shots/
+          if-no-files-found: warn
+          retention-days: 14
+
   gate:
     name: All required checks passed
     if: always()
-    needs: [build, golden, ui, three-d, bh8-preview, bh98-procedural]
+    needs: [build, golden, ui, three-d, bh8-preview, bh98-procedural, md-ult1]
     runs-on: ubuntu-24.04
     steps:
       - name: Reject any failed or skipped required check

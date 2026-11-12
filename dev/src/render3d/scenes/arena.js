@@ -207,6 +207,51 @@ class Arena3D extends GameScene {
       this.glT = B.glKind === 'fall-of-atreides' || (typeof CINE_OFF === 'function' && CINE_OFF()) ? 0 : now; if (!this.glLight) { this.glLight = new B3.PointLight('gll', V3(0, 6, 2), this.scene); this.glLight.diffuse = col3('#ffc860'); this.glLight.range = 40; this.glLight.intensity = 0; }
     }
   }
+  // MD-ULT-2: reuse the *existing* arena, camera and authored GLB clip.
+  // Never allocate a second Engine, scene, render target or animation loop.
+  beginMuadCinematic(uid, durationMs) {
+    const o = this.units[uid];
+    if (!this.alive || !o || o.def?.id !== 'muaddib' || !o.root?._authored ||
+        !o.root._clips?.[o.root._clipNames?.ult]) return false;
+    const now = performance.now();
+    // Do not let the remaining formation cross the foreground of this close-up.
+    // Restore every previous enabled state when the cinematic ends.
+    const hidden = [];
+    for (const node of [o.ring, o.pool]) {
+      if (node && node.isEnabled()) { hidden.push(node); node.setEnabled(false); }
+    }
+    for (const other of Object.values(this.units)) {
+      if (other === o) continue;
+      for (const node of [other.root, other.ring, other.pool]) {
+        if (node && node.isEnabled()) { hidden.push(node); node.setEnabled(false); }
+      }
+    }
+    // Illuminate the authentic face, sleeves and hands with the already-owned
+    // GL point light. The arena's distant sun leaves the source costume almost
+    // black in landscape close-ups. No extra light or GPU resources allocated.
+    const light = this.glLight;
+    const savedLight = light ? {
+      position: light.position.clone(), diffuse: light.diffuse.clone(),
+      intensity: light.intensity, range: light.range
+    } : null;
+    this.muadCine = { o, t0: now, dur: durationMs, hidden, savedLight };
+    o.act = { key: 'gl', ab: o.def.gl, kind: 'cast', t0: now,
+      dur: durationMs, dir: V3(1, 0, 0), to: o.base.clone(), tg: [] };
+    return true;
+  }
+  endMuadCinematic() {
+    const c = this.muadCine;
+    if (!c) return;
+    this.muadCine = null;
+    for (const node of c.hidden || []) if (node && !node.isDisposed()) node.setEnabled(true);
+    if (c.savedLight && this.glLight && !this.glLight.isDisposed()) {
+      this.glLight.position.copyFrom(c.savedLight.position);
+      this.glLight.diffuse.copyFrom(c.savedLight.diffuse);
+      this.glLight.intensity = c.savedLight.intensity;
+      this.glLight.range = c.savedLight.range;
+    }
+    if (c.o?.act?.key === 'gl' && c.o.act.t0 === c.t0) c.o.act = null;
+  }
   // BH7 approved storyboard — one temporary chair, no new scene/Engine/rAF.
   // The caster root receives the actual rise in _loop(); all objects are
   // disposed at the end or by GameScene.dispose on scene teardown.
@@ -444,7 +489,7 @@ class Arena3D extends GameScene {
     const bt = typeof BT !== 'undefined' && BT, cv = this.cv;
     const z = cvSize(cv);
     if (!bt || !cv.isConnected || (z.w || innerWidth) !== this.w || (z.h || innerHeight) !== this.h) return 'active';
-    const busy = !!(this.baronGL || this.cine || this.summons.length || (this.fxq && this.fxq.length) || (this.tr && this.tr.length) || (this.glT && now - this.glT < 1600) || (this.shakeT && now - this.shakeT < 300));
+    const busy = !!(this.muadCine || this.baronGL || this.cine || this.summons.length || (this.fxq && this.fxq.length) || (this.tr && this.tr.length) || (this.glT && now - this.glT < 1600) || (this.shakeT && now - this.shakeT < 300));
     if (bt.done && !busy) { if (!this.doneT) this.doneT = now; if (now - this.doneT > 1200) return 'static'; } else this.doneT = 0;
     if (!busy) { const ov = document.getElementById('overlay'); if (bt.waiting || bt.done || (typeof DLG !== 'undefined' && DLG && DLG.inBattle) || (ov && ov.childElementCount)) return 'idle'; }
     return 'active';
@@ -472,7 +517,35 @@ class Arena3D extends GameScene {
       T1.set(caster.x, caster.y + 1.5, caster.z);
       B3.Vector3.LerpToRef(look, T1, strength, look);
     }
-    if (this.glT && now - this.glT < 1600) { const k = Math.sin(Math.min(1, (now - this.glT) / 1600) * Math.PI); T1.set(0, this.camH * .7, this.camDist * .72); B3.Vector3.LerpToRef(pos, T1, k * .5, pos); look.set(LK.x, LK.y + .35, LK.z); if (this.glLight) this.glLight.intensity = 4 * k; }
+    if (this.muadCine) {
+      const C = this.muadCine, k = (now - C.t0) / C.dur;
+      if (k >= 1 || !C.o.root || C.o.root.isDisposed()) this.endMuadCinematic();
+      else {
+        // Frame the real animated caster on the left, reserving the right for
+        // the existing cinematic text. Oblique front view shows face and hands.
+        const p = C.o.base, entry = Math.min(1, k / .14);
+        const exit = Math.min(1, (1 - k) / .16);
+        const w = Math.max(0, Math.min(entry, exit));
+        const strength = w * w * (3 - 2 * w);
+        // Ally faces +X. Approach from +X to show the eyes and animated
+        // incantation, not the back/side of the dark cloak.
+        T1.set(p.x + 5.5, p.y + 2.5, p.z + 3.2);
+        B3.Vector3.LerpToRef(pos, T1, strength, pos);
+        T1.set(p.x + 2.1, p.y + 1.6, p.z + .1);
+        B3.Vector3.LerpToRef(look, T1, strength, look);
+      }
+    }
+    if (this.muadCine && this.glLight) {
+      // Follow the zoom camera so the illuminated side is the visible side.
+      // This reuses the arena GL FX light and works on LOW as well as MED.
+      const caster = this.muadCine.o.base;
+      this.glLight.position.set(caster.x + 3.6, caster.y + 3.1, caster.z + 2.5);
+      this.glLight.diffuse = this.glLight.diffuse || col3('#ffe7c9');
+      this.glLight.diffuse.copyFromFloats(1, .84, .65);
+      this.glLight.range = 16;
+    }
+    if (this.muadCine && this.glLight) this.glLight.intensity = 5;
+    else if (this.glT && now - this.glT < 1600) { const k = Math.sin(Math.min(1, (now - this.glT) / 1600) * Math.PI); T1.set(0, this.camH * .7, this.camDist * .72); B3.Vector3.LerpToRef(pos, T1, k * .5, pos); look.set(LK.x, LK.y + .35, LK.z); if (this.glLight) this.glLight.intensity = 4 * k; }
     else if (this.glLight) this.glLight.intensity = 0;
     let fd = 0;
     if (this.cine) { const C = this.cine, k = (now - C.t0) / C.dur; if (k >= 1) this.cine = null; else { const w = Math.sin(Math.min(1, k) * Math.PI) ** .7 * (C.ult ? .62 : .45), sideX = C.side === 'A' ? -3.5 : 3.5;
