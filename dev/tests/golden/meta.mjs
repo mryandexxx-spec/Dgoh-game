@@ -132,10 +132,12 @@ function normalizedBH4Meta(x) {
 // roster-view baselines. Preserve the relative order of every legacy hero.
 function normalizedBH99Meta(x) {
   const o=structuredClone(x);
-  for(const row of o.cases)if(row.g==='pkg4' && row.f.startsWith('rosterView(')){
-    for(const key of ['open','locked'])if(Array.isArray(row.out?.[key]))
-      row.out[key]=row.out[key].filter(id=>id!=='baron_legend');
-  }
+  const removeNewId = value => {
+    if (Array.isArray(value)) return value.filter(v=>v!=='baron_legend').map(removeNewId);
+    if (value && typeof value==='object') return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,removeNewId(v)]));
+    return value;
+  };
+  for(const row of o.cases) if(row.g==='pkg4')row.out=removeNewId(row.out);
   return o;
 }
 if (rest.includes('--update')) writeGolden('meta', out);
