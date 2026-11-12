@@ -82,6 +82,16 @@ try{
     assert(labels.length>=4,'missing hero abilities');
     if(width===667)assert(labels.some(x=>x.height>x.lineHeight*1.35),
       'narrow card must wrap at least one long Muad Dib ability');
+    if(width===667) {
+      const overlap=await p.evaluate(()=>{
+        const rows=[...document.querySelectorAll('#overlay .hcsk')];
+        return rows.slice(1).filter((row,i)=>{
+          const prev=rows[i].getBoundingClientRect(),cur=row.getBoundingClientRect();
+          return prev.bottom>cur.top+1;
+        }).map(el=>el.textContent.trim());
+      });
+      assert.deepEqual(overlap,[],'Ability rows must not overlap on 667px landscape');
+    }
     assert(info.clips.length>=8);
     await p.evaluate(()=>document.querySelectorAll('.toast').forEach(el=>el.remove()));
     await p.screenshot({path:path.join(out,`muaddib-${width}x${height}-${quality}-card.png`)});
