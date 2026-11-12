@@ -34,6 +34,16 @@ await page.evaluateOnNewDocument((save, low, gfx) => {
 }, LATE, LOW, GFX);
 const SRV = await serve(path.dirname(path.resolve(html)));
 await page.goto(SRV.url(path.basename(html)), { waitUntil: 'load' });
+// A/B idle rendering budget excludes the *asynchronous* portrait baker.
+// On SwiftShader a newly added roster entry can shift the baker across the
+// first camp sample, transiently accounting ~4 MB of its MSAA render target
+// and depth as camp VRAM. Disable it equally on both baseline and candidate
+// during this perf-only browser session; the real baker still runs in the app
+// and its lifecycle is covered by separate smoke tests.
+await page.evaluate(() => {
+  if (typeof bakePortraits !== 'function') throw Error('Portrait baker absent');
+  bakePortraits = async () => {};
+});
 await sleep(3000);
 await page.evaluate(async () => { await loadB3(); });
 const run = c => page.evaluate(c => { (0, eval)(c); }, c);
