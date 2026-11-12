@@ -3,7 +3,7 @@ import { MODEL_DATA, assetUrl, ktx2For } from '../../assets/models.js';
 import { ANIM3 } from './pose-duncan.js';
 import { HERO3 } from './rig.js';
 import { add, bBox, bCyl, bSph, grp } from '../geometry.js';
-import { col3, mat3, mk } from '../materials.js';
+import { basic3, col3, mat3, mk } from '../materials.js';
 import { CTX, withCtx } from '../ctx.js';
 import { B3 } from '../base.js';
 
@@ -119,6 +119,16 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
     }
     if (m instanceof B3.PBRMaterial && k === 'eye') { m.clearCoat.isEnabled = true; m.clearCoat.intensity = 1; m.clearCoat.roughness = .04; }
     if (SHG0 && k !== 'eye') SHG0.addShadowCaster(me, false);
+  }
+  // Stage-only Muad'Dib eye readability pass: tiny blue irises attached to
+  // the exported head-front joint. No change to the albedo, young Paul,
+  // or the generic hero pipeline. Avoid new dynamic lights / post passes.
+  if (def.id === 'muaddib' && N.headfront) {
+    const iris = basic3('#478aff');
+    for (const side of [-1, 1]) {
+      const eye = add(N.headfront, mk(bSph(.0095, 10), iris, side * .038, .014, .012, false));
+      eye.isPickable = false;
+    }
   }
   const R = { sh: N.shR, el: N.elR, hand: N.handR }, Lf = { sh: N.shL, el: N.elL, hand: N.handL }, LL = { hip: N.hipL, knee: N.kneeL, ank: N.ankL }, LR = { hip: N.hipR, knee: N.kneeR, ank: N.ankR };
   // the sword stays procedural (shared look with the rest of the roster)
