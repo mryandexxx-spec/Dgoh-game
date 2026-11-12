@@ -41,7 +41,7 @@ function fetchFake(url,{signal}={}){
 let install;
 const context={
   console, caches, fetch:fetchFake, Map, Set, JSON, URL, Promise, Response,
-  crypto:globalThis.crypto,
+  crypto:globalThis.crypto, AbortController,
   self:{
     registration:{scope:'https://example.test/game/'},
     addEventListener(k,fn){handlers[k]=fn;},
