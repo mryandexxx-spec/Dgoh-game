@@ -3,14 +3,14 @@
 // Exports are deliberately Babylon/DOM-free for deterministic regression tests.
 export const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
-// Pan follows the finger: screen-right terrain motion moves the camera opposite
-// the camera's screen-right vector. Vertical ground motion is foreshortened by
+// Inverse pan: terrain moves opposite the finger, so camera moves WITH the
+// finger along camera-relative axes. Vertical ground motion is foreshortened by
 // cos(beta), so compensate to keep touch speed consistent in both directions.
 export function campaignPanDelta(dx, dy, {alpha, beta, radius, fov, height}) {
   const h = Math.max(1, height);
   const unitsPerPixel = 2 * radius * Math.tan(fov / 2) / h;
-  const alongX = -dx * unitsPerPixel;
-  const alongGroundUp = dy * unitsPerPixel / Math.max(.32, Math.abs(Math.cos(beta)));
+  const alongX = dx * unitsPerPixel;
+  const alongGroundUp = -dy * unitsPerPixel / Math.max(.32, Math.abs(Math.cos(beta)));
   return {
     x: alongX * Math.sin(alpha) - alongGroundUp * Math.cos(alpha),
     z: -alongX * Math.cos(alpha) - alongGroundUp * Math.sin(alpha),
