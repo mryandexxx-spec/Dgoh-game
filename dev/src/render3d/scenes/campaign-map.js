@@ -20,6 +20,7 @@ class CampaignMapScene extends GameScene {
     this.cx = c.target[0]; this.cz = c.target[2];
     this.alpha = c.alpha; this.beta = c.beta; this.radius = c.radius;
     this.t0 = performance.now(); this.dirty = true; this.pointers = new Map();
+    this.cameraTween = null;
     this.cam = new B3.UniversalCamera('campaign-camera', new B3.Vector3(0, 30, 30), this.scene);
     this.cam.minZ = .1; this.cam.maxZ = 250; this.cam.inputs.clear();
     this.scene.activeCamera = this.cam;
@@ -48,12 +49,28 @@ class CampaignMapScene extends GameScene {
     const ready = this.material('ready', '#d9a74d');
     const locked = this.material('locked', '#514b43');
     const boss = this.material('boss', '#b45138');
-    const ground = M.CreateGround('Caladan highlands', {width: 62, height: 43, subdivisions: 1}, S);
-    ground.position.set(-7, -.35, -2); ground.material = grass;
-    const water = M.CreateGround('Caladan sea', {width: 66, height: 46, subdivisions: 1}, S);
-    water.position.set(25, -.5, 13); water.material = sea;
-    const shore = M.CreateBox('coastline cliffs', {width: 57,height: .9,depth: 4.4}, S);
-    shore.position.set(10,-.1,7); shore.rotation.y = -.47; shore.material=coast;
+    // Caladan: a continuous low-poly shoreline, not intersecting rectangular land/sea planes.
+    // Terrain vertex elevations encode grass hills, coves and a steep waterline.
+    // No dynamic shadows, height textures, RTT or procedural work in the frame loop.
+    const water = M.CreateGround('Caladan ocean', {width: 130, height: 120}, S);
+    water.position.set(7, -.83, 11); water.material = sea; water.isPickable = false;
+    const ground = M.CreateGround('Caladan coastal highlands',
+      {width: 74, height: 51, subdivisions: 34, updatable: true}, S);
+    ground.position.set(-6, 0, -3); ground.material = grass; ground.isPickable = false;
+    const verts = ground.getVerticesData(B3.VertexBuffer.PositionKind);
+    const indices = ground.getIndices();
+    const coastAt = x => 5.8 - .12 * x + 1.5 * Math.sin((x + 4) * .24);
+    for (let i = 0; i < verts.length; i += 3) {
+      const x = verts[i] - 6, z = verts[i+2] - 3, inland = coastAt(x) - z;
+      const hills = .22 * Math.sin(x * .23) * Math.cos(z * .31)
+        + .28 * Math.sin((x + z) * .18);
+      const cliff = inland < -2 ? -1.6 : inland < 1.8 ? -.2 + inland * .53 : .75;
+      verts[i+1] = cliff + hills * Math.max(0, Math.min(1, (inland + 3) / 5));
+    }
+    ground.updateVerticesData(B3.VertexBuffer.PositionKind, verts);
+    const normals = [];
+    B3.VertexData.ComputeNormals(verts, indices, normals);
+    ground.updateVerticesData(B3.VertexBuffer.NormalKind, normals);
     // Лёгкая архитектура без runtime shadow maps / RTT.
     const makeBox=(name,x,y,z,w,h,d,mat)=>{
       const b=M.CreateBox(name,{width:w,height:h,depth:d},S);
@@ -69,6 +86,34 @@ class CampaignMapScene extends GameScene {
     makeBox('harbour warehouse',16,1.7,2,4,3.3,3,roof);
     makeBox('spaceport deck',23,.15,11,9,.7,7,stone);
     makeBox('spaceport terminal',23,1.7,14,5,3,2,roof);
+    // Architectural landmarks: stepped castle parapets, harbour piers and a
+    // raised circular landing beacon remain readable when zoomed out on phones.
+    for(const [x,z] of [[-17,-10],[-12,-14],[-7,-10],[-12,-6]]) {
+      makeBox('Atreides buttress',x,1.1,z,1.1,2.2,1.1,coast);
+    }
+    for(const z of [1.4,4.1,6.8]) {
+      makeBox('Caladan pier',15,-.06,z,7,.4,.55,stone);
+    }
+    const landing=M.CreateCylinder('landing pad', {diameter:7.5,height:.5,tessellation:18}, S);
+    landing.position.set(23,.45,11); landing.material=coast;landing.isPickable=false;
+    const beacon=M.CreateCylinder('landing signal',{diameter:.72,height:2,tessellation:8},S);
+    beacon.position.set(26,1.5,13);beacon.material=road;beacon.isPickable=false;
+    const foliage=this.material('woodland','#354e3b'),trunk=this.material('trunks','#514333');
+    const base=M.CreateCylinder('caladan-tree-trunk',{diameterTop:.11,diameterBottom:.28,height:1.35,tessellation:5},S);
+    base.material=trunk;base.isPickable=false;base.setEnabled(false);
+    const crown=M.CreateCylinder('caladan-crown',{diameterTop:.12,diameterBottom:1.25,height:2.5,tessellation:6},S);
+    crown.material=foliage;crown.isPickable=false;crown.setEnabled(false);
+    // Instancing instead of dozens of independent draw calls.
+    for(let k=0;k<22;k++) {
+      const x=-29+(k*13%43),z=-19+(k*17%21);
+      if ((x > -19 && x < -5 && z > -16 && z < -4) || Math.hypot(x+22,z+11)<4) continue;
+      const tree=base.createInstance('woodland-trunk-'+k);
+      tree.position.set(x,1.5,z);
+      const leaves=crown.createInstance('woodland-canopy-'+k);
+      leaves.position.set(x,3.3,z);
+      const scale=.66+(k%4)*.13;
+      tree.scaling.setAll(scale);leaves.scaling.setAll(scale);
+    }
     // Дорога явно соединяет миссии; тонкие дешёвые цилиндры без текстур.
     P.nodes.slice(1).forEach(([x,z],k)=>{
       const [px,pz]=P.nodes[k], dx=x-px, dz=z-pz, len=Math.hypot(dx,dz);
@@ -101,11 +146,12 @@ class CampaignMapScene extends GameScene {
     this.cam.setTarget(new B3.Vector3(this.cx,0,this.cz));
     this.t0=performance.now(); this.dirty=true;
   }
-  center(node) {
-    if(node){this.cx=node.x;this.cz=node.z;} else {
-      this.cx=this.map.preset.camera.target[0];this.cz=this.map.preset.camera.target[2];
-    }
-    this.applyCamera();
+  center(node, animate = true) {
+    const x = node?.x ?? this.map.preset.camera.target[0];
+    const z = node?.z ?? this.map.preset.camera.target[2];
+    if (!animate) { this.cameraTween=null;this.cx=x;this.cz=z;this.applyCamera();return; }
+    this.cameraTween={sx:this.cx,sz:this.cz,x,z,t0:performance.now(),duration:380};
+    this.t0=performance.now();this.dirty=true;
   }
   pointerDown=e=>{
     this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY});
@@ -115,6 +161,7 @@ class CampaignMapScene extends GameScene {
     const p=this.pointers.get(e.pointerId);if(!p)return;
     const dx=e.clientX-p.x,dy=e.clientY-p.y;
     p.x=e.clientX;p.y=e.clientY;
+    this.cameraTween=null;
     if(this.pointers.size===1){
       if(e.altKey || e.buttons===2) this.alpha+=dx*.006;
       else { const speed=this.radius/620;this.cx-=dx*speed;this.cz-=dy*speed; }
@@ -162,7 +209,7 @@ class CampaignMapScene extends GameScene {
   }
   projectLabels(){
     if(!this.labels?.length)return;
-    const w=this.w||1,h=this.h||1;
+    const w=this.cv.clientWidth||1,h=this.cv.clientHeight||1;
     const vp=new B3.Viewport(0,0,w,h);
     const matrix=this.scene.getTransformMatrix();
     this.map.nodes.forEach((node,k)=>{
@@ -177,14 +224,22 @@ class CampaignMapScene extends GameScene {
   onSleep(){this.unbind();}
   onDispose(){this.unbind();}
   contextLost(){this.dispose();}
-  mode(now){return this.dirty||now-this.t0<700?'active':'static';}
-  update(){
+  mode(now){return this.cameraTween||this.dirty||now-this.t0<700?'active':'static';}
+  update(now){
+    if(this.cameraTween){
+      const t=this.cameraTween, k=clamp((now-t.t0)/t.duration,0,1);
+      const ease=k*k*(3-2*k);
+      this.cx=t.sx+(t.x-t.sx)*ease;this.cz=t.sz+(t.z-t.sz)*ease;
+      if(k>=1)this.cameraTween=null;
+      this.applyCamera();
+    }
     const sz=cvSize(this.cv);
     if(sz.w!==this.w||sz.h!==this.h){this.w=sz.w;this.h=sz.h;this.engine.resize();}
     this.scene.render();this.projectLabels();this.dirty=false;
   }
   mount(el){
     this.labels=Array.from(el.querySelectorAll('[data-c20node]'));
+    this.screenEl=el;
     const dpr=gfx(this.small).dpr.camp;
     this.wake(el,{cls:'campaign20-canvas',first:true,dpr});
     this.dirty=true;this.t0=performance.now();
@@ -205,6 +260,10 @@ export function mountCampaignMap(el,map,onSelect,onFallback){
     }catch(e){console.warn('campaign 3d',e);onFallback?.();}
   };
   if(HAS3D)attach();else loadB3().then(ok=>ok?attach():onFallback?.());
+}
+export function focusCampaignNode(id){
+  const node=ACTIVE?.map?.nodes.find(p=>p.id===id);
+  if(node && ACTIVE.awake) ACTIVE.center(node,true);
 }
 export function closeCampaignMap(){
   if(ACTIVE){ACTIVE.sleep();ACTIVE.dispose();ACTIVE=null;}
