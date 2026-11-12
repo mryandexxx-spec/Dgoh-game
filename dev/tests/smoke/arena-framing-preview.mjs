@@ -41,17 +41,20 @@ try {
       launch({mode:'camp',dlg:false,scene:'court',i:0,title:'Тест построения 5×5',
         desert:false,squad:ids,enemy:foeIds.map(id=>enemyProg(id,65,false))});
       if(!BT.arena) throw Error('Arena3D not mounted');
-      clearTimeout(BT.timer); BT.waiting = true;
+      clearTimeout(BT.timer);
+      const u=BT.B.units.find(u=>u.side==='A'); BT.B.active=u; BT.B.actor=u.uid; BT.waiting=u;
+      ensureCur(BT.B,u); renderBattle();
+      for(const el of document.querySelectorAll('.toast'))el.remove();
     });
     await new Promise(r=>setTimeout(r,1200));
     await page.screenshot({path:path.join(shots,`before-${width}-${gfx}.png`)});
     await page.evaluate(()=>{
       const A=BT.arena;
-      A.camX=-13; A.camH=4.8; A.camDist=11; A.look.set(0,1.4,0);
-      A.camera.fov=34*Math.PI/180;
+      A.camX=-11.5; A.camH=3.9; A.camDist=10; A.look.set(0,1.35,0);
+      A.camera.fov=36*Math.PI/180;
       for(const o of Object.values(A.units)) {
         const i=o.slot[3]??0, ally=o.side==='A';
-        const rear=i===1||i===3, z=[0,-1.8,3.6,1.8,-3.6][i];
+        const rear=i===1||i===3, z=[0,-2,4,2,-4][i]+(rear?(ally?1.4:-1.4):0);
         const x=ally?(rear?-5.2:-3.2):(rear?5.2:3.2);
         o.base.set(x,A.heightAt(x,z),z); o.root.position.copyFrom(o.base);
         o.ring.position.set(x,o.base.y+.05,z); if(o.pool)o.pool.position.set(x,o.base.y+.04,z);
