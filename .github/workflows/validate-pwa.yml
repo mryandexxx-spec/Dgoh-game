@@ -367,6 +367,18 @@ jobs:
         run: node tests/smoke/bh97-procedural-mobile.mjs dist/pwa/index.html
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: BH9.9 public Baron journey + unlocked card (844/667, 2D fallback)
+        run: node tests/smoke/bh99-public-journey.mjs dist/pwa/index.html
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: Upload BH9.9 public journey iPhone frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-bh99-public-journey-${{ github.run_number }}
+          path: dev/dist/bh99-public-journey-shots/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Upload BH9.8 temporary procedural hero mobile screenshots
         if: always()
         uses: actions/upload-artifact@v4
