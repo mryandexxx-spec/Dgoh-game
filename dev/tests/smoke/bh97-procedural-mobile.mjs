@@ -31,9 +31,12 @@ try {
       try{Object.defineProperty(navigator,'serviceWorker',{value:undefined});}catch{}
     },fixture,quality);
     await page.goto(server.url(path.basename(html)),{waitUntil:'load',timeout:120000});
+    // The splash and delayed login calendar are real overlays. A screenshot
+    // is only valid after startup has completed and the canvas is unobscured.
+    await page.waitForFunction(()=>!document.getElementById('splash'),{timeout:15000});
     const roster = await page.evaluate(async()=>{
       if(!await loadB3())throw Error('Babylon unavailable');
-      closeInfo(true);closeOverlay();
+      window.openCalendar=()=>{};closeInfo(true);closeOverlay();
       view='squad';render();
       const cards=['margot','yue'].map(id=>document.querySelector('[data-hc="'+id+'"]'));
       if(cards.some(c=>!c))throw Error('Public roster missing Margot/Yue');
@@ -41,7 +44,18 @@ try {
       const before=JSON.stringify(S.roster);
       return {count:document.querySelectorAll('#rgrid [data-hc]').length,before};
     });
+    await page.evaluate(()=>{closeInfo(true);
+      if(document.getElementById('splash') || document.querySelector('#overlay2')?.innerHTML.trim())
+        throw Error('Roster capture obscured by startup or monthly calendar');
+      document.querySelector('[data-hc="margot"]').scrollIntoView({block:'center'});
+    });
     await page.screenshot({path:path.join(out,`${width}x${height}-${quality}-roster.png`)});
+    for(const id of ['margot','yue']){
+      await page.evaluate(id=>{closeInfo(true);
+        document.querySelector('[data-hc="'+id+'"]').scrollIntoView({block:'center'});
+      },id);
+      await page.screenshot({path:path.join(out,`${width}x${height}-${quality}-${id}-roster.png`)});
+    }
     assert.equal(roster.count,26,'Two normal heroes extend the 24-hero roster');
 
     const cards=[];
@@ -69,7 +83,27 @@ try {
       assert.ok(data.meshes>0,id+' generated 3D geometry');
       assert.ok(data.stage && data.skills>0,id+' uses the shared ability card');
       cards.push(data);
+      await page.evaluate(()=>{
+        closeInfo(true);
+        if(document.getElementById('splash') || document.querySelector('#overlay2')?.innerHTML.trim())
+          throw Error('Hero card screenshot obscured by an overlay');
+        const center=document.elementFromPoint(innerWidth/2,innerHeight/2);
+        if(!center?.closest('.hc'))throw Error('Shared hero card not topmost');
+      });
       await page.screenshot({path:path.join(out,`${width}x${height}-${quality}-${id}-card.png`)});
+      // Diagnostic art view ONLY: remove the ordinary locked-card dimming in
+      // this screenshot, without altering production UI, save or asset files.
+      const art=await page.evaluate(()=>{
+        const canvas=document.querySelector('#overlay .hcfig canvas');
+        if(!canvas?.isConnected)throw Error('Live WebGL model canvas absent');
+        const locked=getComputedStyle(canvas).filter;
+        if(locked==='none')throw Error('Expected locked-card dimming in production');
+        canvas.style.filter='none';
+        return {locked,review:getComputedStyle(canvas).filter};
+      });
+      assert.equal(art.review,'none');
+      await page.screenshot({path:path.join(out,`${width}x${height}-${quality}-${id}-art-review.png`)});
+      await page.evaluate(()=>{document.querySelector('#overlay .hcfig canvas')?.style.removeProperty('filter');});
     }
     const battle = await page.evaluate(()=>{
       closeInfo(true);closeOverlay();
@@ -120,12 +154,13 @@ try {
       try{Object.defineProperty(navigator,'serviceWorker',{value:undefined});}catch{}
     },fixture);
     await page.goto(fallbackServer.url(path.basename(html)),{waitUntil:'load',timeout:120000});
+    await page.waitForFunction(()=>!document.getElementById('splash'),{timeout:15000});
     const verdict=await page.evaluate(()=>{
-      closeInfo(true);closeOverlay();view='squad';render();
+      window.openCalendar=()=>{};closeInfo(true);closeOverlay();view='squad';render();
       const count=document.querySelectorAll('#rgrid [data-hc]').length;
       const cards=[];
       for(const id of ['margot','yue']){
-        openDetail(id);
+        closeInfo(true);openDetail(id);
         const card=document.querySelector('#overlay .hc');
         cards.push({id,shared:card?.dataset.cid===id,
           svg:!!document.querySelector('#overlay .hcfig svg'),
@@ -140,7 +175,21 @@ try {
       assert.equal(card.locked,true);
     }
     assert.deepEqual(errors,[],'2D fallback page errors');
-    await page.screenshot({path:path.join(out,`${width}x${height}-2d-fallback.png`)});
+    // Verify the art is actually visible; do not mistake the intro splash
+    // for a valid SVG fallback screenshot again.
+    for(const id of ['margot','yue']){
+      await page.evaluate(id=>{
+        closeInfo(true);openDetail(id);
+        if(document.getElementById('splash') || document.querySelector('#overlay2')?.innerHTML.trim())
+          throw Error('2D fallback screenshot obscured');
+        const card=document.querySelector('#overlay .hc');
+        if(card?.dataset.cid!==id || !card.querySelector('.hcfig svg'))
+          throw Error('Missing visible SVG hero fallback');
+        if(!document.elementFromPoint(innerWidth/2,innerHeight/2)?.closest('.hc'))
+          throw Error('2D hero card is not topmost');
+      },id);
+      await page.screenshot({path:path.join(out,`${width}x${height}-2d-${id}.png`)});
+    }
     await page.close();
     console.log('PASS BH9.8 2D fallback',width+'x'+height);
   }
