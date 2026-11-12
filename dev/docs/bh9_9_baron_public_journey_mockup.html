@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BH9.9 · Восхождение Барона · макет согласования</title>
+<style>
+:root{--night:#170f09;--dune:#231810;--ridge:#302216;--line:#4e3a26;--bone:#f4e7cf;--sand:#e8c98e;--dust:#bca685;--spice:#e8913f;--hp:#7fbb6c;font:12px/1.4 "IBM Plex Sans",system-ui,sans-serif;color:var(--bone);background:#100c09}
+*{box-sizing:border-box}body{margin:0;padding:12px;background:radial-gradient(ellipse at 50% 0,#3a2616,var(--night) 70%)}h1{font:27px Georgia,serif;margin:0 0 6px;color:var(--sand)}h2{font:18px Georgia,serif;margin:0 0 5px;color:var(--sand)}h3{margin:0 0 6px;font-size:12px;color:var(--sand)}p{margin:4px 0 8px}.guide{max-width:900px;margin:auto auto 18px;color:var(--dust)}.guide strong{color:var(--bone)}
+.controls{display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap}.controls button,.btn{border:1px solid #886039;background:linear-gradient(#54341f,#342016);color:var(--bone);border-radius:4px;padding:5px 9px;font:inherit;cursor:pointer}.controls button.selected,.btn.active{border-color:var(--spice);color:#ffd8a2}.btn:disabled{opacity:.5;cursor:default}
+.device{margin:0 auto 14px;overflow:hidden;background:radial-gradient(ellipse at 25% 0,#3c261a,#170f09 70%);border:2px solid #765236;box-shadow:0 8px 35px #0009;position:relative}.bar{height:32px;padding:5px 9px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}.bar strong{font:16px Georgia,serif;color:var(--sand)}.bar small{font-size:10px;color:var(--dust)}
+.content{padding:7px 8px;display:grid;grid-template-columns:37% 63%;gap:7px;height:calc(100% - 32px)}.panel{min-width:0;min-height:0;background:#24180fdd;border:1px solid #64462c;border-radius:4px;padding:6px;overflow:auto;scrollbar-color:#6a4c30 transparent;scrollbar-width:thin}
+.reqgrid{display:grid;grid-template-columns:1fr 1fr;gap:3px}.req{display:flex;align-items:center;min-width:0;gap:3px;border:1px solid var(--line);background:#170f09;padding:3px;border-radius:3px}.req span{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.req small{display:block;color:var(--dust);font-size:9px}.dot{color:#ee8350;margin:0 3px}.req.done .dot{color:var(--hp)}.stage{padding:5px;display:flex;gap:5px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:3px;background:#1a110c;margin:4px 0;width:100%;text-align:left;color:var(--bone);font:inherit;cursor:pointer}.stage.active{border-color:var(--spice);background:#3a2516}.stage span{flex:1}.stage b{font-size:11px}.stage small{display:block;font-size:9px;color:var(--dust)}.stage em{font:10px monospace;color:var(--sand)}.ribbon{font:10px/1.3 monospace;color:var(--dust);margin:3px 0}.fight{border-top:1px solid var(--line);margin-top:4px;padding-top:4px}.fight p{font-size:10px}.fight b{color:var(--sand)}.fight .btn{width:100%;margin-top:3px}.legend{font-size:10px;color:var(--dust)}.focus{color:var(--spice)}.count{color:var(--hp)}.preview{display:flex;flex-direction:column;align-items:center;margin-bottom:16px}.preview>label{align-self:flex-start;max-width:900px;width:100%;margin:5px auto;color:var(--dust)}.hint{color:var(--dust);font-size:9px}.small .bar{height:29px}.small .bar strong{font-size:14px}.small .content{height:calc(100% - 29px);padding:5px;gap:5px;grid-template-columns:37% 63%}.small .panel{padding:4px}.small .req{padding:2px}.small h3{margin:0 0 3px}.small .stage{margin:2px 0;padding:3px}.small .fight p{margin:2px 0}
+</style></head><body>
+<div class="guide"><h1>BH9.9 · Восхождение Барона</h1><p><strong>Статический HTML-макет на согласование</strong> · сохранены палитра и типографика UI-кита. Никакой игровой логики или записи прогресса. Состояния «готово» и «закрыто» переключаются только для демонстрации UX.</p>
+<div class="controls"><button id="locked" class="selected">До выполнения 10 требований</button><button id="ready">Все требования выполнены</button><button id="won">Все пять этапов пройдены</button></div>
+<p>Общее правило: 10 героев · каждый 7★, снаряжение XIII, ДП по таблице; пять фиксированных пятёрок, без выбора отряда. Осколки легенды только за первые победы: <strong>20/40/60/90/120 = 330</strong>; повтор не даёт награду.</p>
+</div>
+<div id="screens"></div>
+<script>
+const req=[['Молодой Барон','7'],['Фейд-Раута','5'],['Раббан','5'],['Питер де Врие','5'],['Марго Фенринг','4'],['Граф Фенринг','4'],['Шаддам IV','4'],['Мохиам','4'],['Доктор Юэ','3'],['Легионер','2']];
+const stages=[
+ {n:'Тайный союз',r:20,w:1,a:'Барон · Питер · Фейд · Раббан · Марго',e:'Туфир · Гурни · Дункан · Лето · Пол'},
+ {n:'Печать императора',r:40,w:1,a:'Шаддам · Фенринг · Марго · Мохиам · Легионер',e:'Лето · Туфир · Джессика · Гурни · Дункан'},
+ {n:'Цена предательства',r:60,w:1,a:'Юэ · Питер · Барон · Мохиам · Фенринг',e:'Лето · Джессика · Туфир · Дункан · Гурни'},
+ {n:'Ночь над Арракином',r:90,w:2,a:'Барон · Фейд · Раббан · Питер · Легионер',e:'Волна I: Туфир · Гурни · Дункан · Джессика · Пол. Волна II: Дункан · Гурни · Туфир · Лето · Пол'},
+ {n:'Триумф Барона',r:120,w:2,a:'Барон · Фейд · Раббан · Шаддам · Фенринг',e:'Волна I: Пол · Джессика · Туфир · Гурни · Дункан. Волна II: Лето · Дункан · Гурни · Туфир · Джессика'}];
+let mode='locked';const selection={};
+const el=(tag,html,cls)=>{const x=document.createElement(tag);x.className=cls||'';x.innerHTML=html;return x};
+const escapeHtml=v=>String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+function draw(){
+ const root=document.getElementById('screens');root.replaceChildren();
+ for(const [w,h] of [[844,390],[667,375]]){
+  const idx=selection[w]??0,stage=stages[idx],isReady=mode!=='locked',isWon=mode==='won';
+  const card=el('div','', 'device'+(w===667?' small':''));card.style.width=w+'px';card.style.height=h+'px';
+  card.innerHTML='<div class="bar"><strong>‹ Легенды　/　Восхождение Барона</strong><small>Барон Владимир Харконнен · Легенда</small></div>';
+  const content=el('div','', 'content');
+  const left=el('div','', 'panel');left.innerHTML='<h3>Герои пути · <span class="'+(isReady?'count':'focus')+'">'+(isReady?'10':'0')+'/10</span></h3><div class="ribbon">7★ · снаряжение XIII · Другая память</div>';
+  const grid=el('div','', 'reqgrid');
+  for(const [name,relic] of req){const reqEl=el('div','<span class="dot">'+(isReady?'✓':'◇')+'</span><span title="'+escapeHtml(name)+'">'+escapeHtml(name)+'<small>7★ · XIII · ДП '+relic+'</small></span>','req'+(isReady?' done':''));grid.append(reqEl)}
+  left.append(grid,el('div',isWon?'Легенда получена · 7★':isReady?'Все требования выполнены':'До готовности всех 10 героев бои закрыты','ribbon'));
+  const right=el('div','', 'panel');right.innerHTML='<h3>Пять этапов восхождения · '+(isWon?'5':0)+'/5</h3>';
+  for(let i=0;i<stages.length;i++){const st=stages[i];const b=el('button','<span><b>'+['I','II','III','IV','V'][i]+' · '+st.n+'</b><small>'+st.w+' волн'+(st.w===1?'а':'ы')+' · фиксированная пятёрка</small></span><em>'+(isWon?'✓':(isReady&&i===0?'ДОСТУПНО':'ЗАМОК'))+' · +'+st.r+'</em>','stage'+(idx===i?' active':''));b.type='button';b.onclick=()=>{selection[w]=i;draw()};right.append(b)}
+  const info=el('div','<p><b>Союзники:</b> '+stage.a+'</p><p><b>Противники:</b> '+stage.e+'</p><p class="legend">Награда первой победы: '+stage.r+' осколков. Без повторной выдачи.</p>','fight');
+  const btn=el('button',isWon?'Открыть карточку Барона':isReady&&idx===0?'В бой':'Недоступно','btn');btn.disabled=!(isWon||(isReady&&idx===0));btn.title='Макет: никакого боевого перехода';info.append(btn);right.append(info);
+  content.append(left,right);card.append(content);
+  const preview=el('div','','preview');preview.append(el('label',w+'×'+h+' · горизонтальный iPhone'),card);root.append(preview)
+ }
+ for(const [k,b] of [['locked',0],['ready',1],['won',2]])document.getElementById(k).classList.toggle('selected',mode===k);
+}
+for(const id of ['locked','ready','won'])document.getElementById(id).addEventListener('click',()=>{mode=id;draw()});draw();
+</script></body></html>
