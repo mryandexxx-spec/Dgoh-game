@@ -16,8 +16,9 @@ import { SQ, openSquadSel, set_SQ } from '../overlays/squad-select.js';
 import { closeInfo, openInfo, wormIco } from '../overlays/info.js';
 import { closeOverlay } from '../overlays/detail.js';
 import { abDescLv } from '../../logic/skill-up.js';
-import { render, registerStoryView } from '../router.js';
+import { render, registerStoryView, registerBaronView } from '../router.js';
 import { renderStoryEvents } from '../views/story-events.js';
+import { renderBaronJourney } from '../views/baron-journey.js';
 import { glyph, skillSvg, starStr, toast } from '../common.js';
 import { battleMark, errLog } from '../../core/errlog.js';
 import { campSquad, enGet, enRefund, enSpend, prog, sideOk } from '../../logic/progress.js';
@@ -53,6 +54,7 @@ import { prepareBaronBH9Battle, finishBaronBH9Battle } from '../../logic/baron-b
 import { todayKey } from '../../logic/economy.js';
 
 registerStoryView(renderStoryEvents);
+registerBaronView(renderBaronJourney);
 
 // ===== battle UI =====
 function startBattle(i) {
