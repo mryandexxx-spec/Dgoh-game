@@ -4,7 +4,7 @@
 .detail .sheet.hc { --lw: clamp(168px, 23vw, 214px); --rw: clamp(142px, 20vw, 196px); --gs: clamp(52px, 7.4vw, 66px); --gz: clamp(40px, 5.6vw, 50px);
   position: relative; width: min(1060px, 100%); height: min(640px, 100%); max-height: none; overflow: hidden; border-radius: 6px; padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   display: grid; grid-template-columns: var(--lw) minmax(0, 1fr) var(--rw); grid-template-rows: 48px minmax(0, 1fr) 72px; place-items: stretch; align-content: stretch;
-  background: radial-gradient(60% 90% at 50% 75%, #3a2414 0%, #1a110a 55%, #120b06 100%); }
+  background: radial-gradient(70% 90% at 50% 65%, #c4a473 0%, #aa875d 48%, #806347 100%); }
 .detail .sheet.hc::before { display: none; }
 @media (orientation: landscape) and (max-height: 520px) { .detail .sheet.hc { width: 100%; height: 100%; border-radius: 0; border: 0; padding-top: 0; padding-bottom: env(safe-area-inset-bottom, 0px); grid-template-rows: 44px minmax(0, 1fr) 68px; } }
 .hc .hccap { font: 9px var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--dust); }
@@ -24,7 +24,7 @@
 .hcres .amt { height: 26px; padding: 0 8px 0 5px; background: linear-gradient(180deg, #2e2116, #1a120a); border: 1px solid #5a4028; border-radius: 13px; font: 600 12px var(--f-mono); }
 @media (max-width: 700px) { .hcres { display: none; } }
 /* слева: умения */
-.hcleft { grid-row: 2 / 4; display: flex; flex-direction: column; gap: 4px; padding: 8px 4px 8px 8px; min-height: 0; }
+.hcleft { grid-row: 2 / 4; display: flex; flex-direction: column; gap: 4px; padding: 8px 4px 8px 8px; min-height: 0; background: linear-gradient(90deg, #1e160f 0%, #2c2117 92%, #3b2a1c); border-right: 1px solid #735337; }
 .hcsks { display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .hcsk { flex: none; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 7px; width: 100%; padding: 3px 6px 3px 3px; border-radius: 3px; text-align: left; color: inherit; background: rgb(18 12 7 / .55); border: 1px solid transparent; }
 .hcsk:hover { border-color: var(--line); }
@@ -63,7 +63,7 @@
 /* центр: 3D и ячейки */
 .hcstage { position: relative; grid-row: 2; grid-column: 2; min-height: 0; min-width: 0; }
 .hc .hcfig, .hc .hcfig.has3d { position: absolute; inset: 0 var(--gs); width: auto !important; height: auto; aspect-ratio: auto; max-width: none; border-radius: 4px; overflow: hidden; border: 0; box-shadow: none; cursor: grab;
-  background: radial-gradient(55% 30% at 50% 92%, rgb(232 145 63 / .25), transparent 70%), radial-gradient(70% 80% at 50% 45%, #2c1c10, #120b06 80%); }
+  background: radial-gradient(55% 30% at 50% 92%, rgb(245 192 112 / .30), transparent 75%), radial-gradient(80% 90% at 50% 44%, #d1b384, #96734e 95%); }
 .hc .hcfig > svg { width: 100%; height: 100%; }
 .hc .hcfig canvas { width: 100% !important; height: 100% !important; display: block; }
 .hcgl, .hcgr { position: absolute; top: 4px; bottom: 4px; width: var(--gs); display: flex; flex-direction: column; justify-content: space-around; align-items: center; pointer-events: none; }
@@ -96,7 +96,7 @@
 .hc .btn.buy { background: linear-gradient(180deg, #8fd86a, #3f8a2e); border-color: #9ae07a; color: #0c1a06; }
 .hcmaxg { padding: 12px 0; }
 /* справа */
-.hcright { grid-row: 2 / 4; grid-column: 3; display: flex; flex-direction: column; gap: 8px; padding: 8px 8px 8px 4px; min-height: 0; overflow-y: auto; }
+.hcright { grid-row: 2 / 4; grid-column: 3; display: flex; flex-direction: column; gap: 8px; padding: 8px 8px 8px 4px; min-height: 0; overflow-y: auto; background: linear-gradient(90deg, #3b2a1c, #251a12 15%, #1e160f 100%); border-left: 1px solid #735337; }
 .hcblk { display: grid; gap: 5px; padding: 8px; background: rgb(18 12 7 / .6); border: 1px solid var(--line); border-radius: 2px; }
 .hcrow { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
 .hcbig { font: 600 20px/1 var(--f-mono); } .hcbig small { font-size: 12px; color: var(--dust); font-weight: 400; }
