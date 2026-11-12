@@ -190,6 +190,13 @@ function normalizeApprovedBH97(s) {
       const found = [...screen.overlay2.matchAll(avatar)].map(m => m[1]).sort();
       assert.deepEqual(found, ['margot','yue'], 'BH9.9 locked legend must not enter profile avatar selection');
       screen.overlay2 = screen.overlay2.replace(avatar, '');
+      // The newly public legend is still locked on historical saves. Its
+      // avatar choice is shown disabled, never granted or automatically usable.
+      const lockedLegend=/<button class="pick[^"]*" data-pava="hero:baron_legend"[^>]*>[\s\S]*?<\/button>/g;
+      const newLegend=[...screen.overlay2.matchAll(lockedLegend)];
+      assert.equal(newLegend.length,1,'one additional locked legendary avatar');
+      assert.ok(newLegend[0][0].includes('disabled=""'),'locked legendary avatar must stay disabled');
+      screen.overlay2=screen.overlay2.replace(lockedLegend,'');
     }
   }
   return copy;
