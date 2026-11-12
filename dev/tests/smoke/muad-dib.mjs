@@ -56,6 +56,8 @@ try{
         textured:o.root.getChildMeshes().filter(m=>m.skeleton&&m.material?.diffuseTexture).length,
         meshes:o.root.getChildMeshes().filter(m=>m.skeleton).length,
         weaponParts:o.wpn.getChildMeshes().length,
+        irisNames:o.root.getChildMeshes().filter(m=>m.name.startsWith('muad_iris_')).map(m=>m.name),
+        background:HERO_STAGE.bg.material.emissiveColor?.asArray(),
         clips:Object.keys(o.root._clips)};
     });
     assert.equal(info.id,'muaddib');
@@ -64,6 +66,15 @@ try{
     assert.equal(info.meshes,1);
     assert.ok(info.textured>0,'Muad Dib must use the authored albedo texture');
     assert.equal(info.weaponParts,5,'Muad Dib must hold the five-part short crysknife, not the generic long sword');
+    assert.deepEqual(info.irisNames.sort(),['muad_iris_L','muad_iris_R']);
+    assert(info.background?.[0]>.3,'Hero background must not fall back to black');
+    const labels=await p.evaluate(()=>[...document.querySelectorAll('#overlay .hcsk .hcskt b')].map(el=>{
+      const computed=getComputedStyle(el),r=el.getBoundingClientRect();
+      return {text:el.textContent,whiteSpace:computed.whiteSpace,height:r.height,lineHeight:parseFloat(computed.lineHeight)};
+    }));
+    assert(labels.length>=4,'missing hero abilities');
+    if(width===667)assert(labels.some(x=>x.height>x.lineHeight*1.35),
+      'narrow card must wrap at least one long Muad Dib ability');
     assert(info.clips.length>=8);
     await p.evaluate(()=>document.querySelectorAll('.toast').forEach(el=>el.remove()));
     await p.screenshot({path:path.join(out,`muaddib-${width}x${height}-${quality}-card.png`)});
