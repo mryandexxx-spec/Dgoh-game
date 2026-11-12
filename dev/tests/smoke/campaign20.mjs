@@ -117,6 +117,17 @@ try {
     await page.waitForSelector('#overlay .sqsel',{timeout:6000});
     await page.evaluate(()=>document.querySelector('#overlay [data-sqback]')?.click());
     assert.equal(await page.$('#overlay .sqsel'),null,'squad panel closes without spending energy');
+    // Simulation shares existing GE2 economy/summary, including mission id 0.
+    await page.evaluate(()=>document.querySelector('.c20-card [data-sim="0"]')?.click());
+    await page.waitForSelector('#overlay .simsheet',{timeout:5000});
+    assert.equal(await page.$eval('#simn',el=>Number(el.min)),1,'native simulation count selector');
+    await page.evaluate(()=>document.querySelector('[data-simgo]')?.click());
+    await page.waitForSelector('#overlay .result.won',{timeout:6000});
+    assert.ok((await page.$eval('#overlay .result.won',el=>el.textContent)).includes('Симуляция'),'simulation produced existing reward report');
+    await page.evaluate(()=>document.querySelector('#overlay [data-close]')?.click());
+    await page.waitForFunction(()=>!document.querySelector('#overlay .result'),{timeout:5000});
+    assert.ok(await page.$('#c20world canvas'),'map remains after simulation');
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
