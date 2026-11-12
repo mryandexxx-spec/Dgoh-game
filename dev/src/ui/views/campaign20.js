@@ -3,7 +3,7 @@
 import { S } from '../../core/state.js';
 import { CAMP_DEF, CAMP_KEYS, NODES, ROM7, campNodes, chapNodes, nodeOpen, nodeCost, nodeEn } from '../../data/campaigns.js';
 import { chapterMap, nextCampaignNode } from '../../logic/campaign-map.js';
-import { campReward, enemyProg } from '../../logic/economy.js';
+import { campReward, enemyProg, CRY_WIN } from '../../logic/economy.js';
 import { reqText, enGet, nodePower, campSquad, prog, sideOk } from '../../logic/progress.js';
 import { ITEMS, NODE_ITEMS, COMPLETE_NODE_ITEMS, COMPLETE_RATE, TIER_COL } from '../../logic/gear.js';
 import { unitPower } from '../../logic/battle/stats.js';
@@ -55,7 +55,7 @@ function missionLoot(i) {
   const n=NODES[i];
   return [
     ...n.drops.map((id,k)=>({key:'shard:'+id,icon:portrait(CH[id],30),
-      title:'Осколки · '+CH[id].sn, note:k===0?(n.camp==='C'?'до 2 · 60%':'до 2 · 50%'):'до 1 · 30%'})),
+      title:'Осколки · '+CH[id].sn, note:k===0?(n.camp==='C'?'до 2 · 60%':'до 2 · 50%'):(n.camp==='C'?'до 1 · 23,4%':'до 1 · 24%')})),
     ...NODE_ITEMS[i].map(key=>{
       const part=key.startsWith('frag:'),it=ITEMS[part?key.split(':')[1]:key];
       return it?{key:part?'gefrag:'+key:'frag:'+key,icon:itemIcon(it,29),
@@ -95,7 +95,7 @@ function modalHtml(ck,n,i){
         <small>★${p.stars} · ур.${p.lvl} · сн.${p.gear}</small></div>`;
     }).join('')}</div>`,
     rewards:`<div class="c20-earn">За победу: ${amt('sol',rw.sol)} · ${amt('pl',rw.pl)} · ${amt('folio',rw.folio)}
-      ${ck==='C'?' · '+amt('rid','8–15'):''}</div>
+      ${ck==='C'?' · '+amt('rid','8–15'):''} · ${amt('cry',CRY_WIN)}</div>
       <div class="c20-loot">${loot.slice(rewardPage*3,(rewardPage+1)*3).map(row=>
         `<div class="c20-lootrow"><span class="c20-looticon">${row.icon}</span>
         <span>${esc(row.title)}<small>${esc(row.note)}</small></span>
@@ -126,8 +126,10 @@ function mapHtml(setSel){
     data-c20node="${p.id}" title="${esc(p.title)}" aria-label="Миссия ${p.number}: ${esc(p.title)}">
     <b>${p.number}</b><small>${p.stars?'★'.repeat(p.stars):p.open?'◆':'⌑'}</small></button>`).join(''):'';
   const old=map?'':`<p class="c20-pending">3D-карта этой главы будет подготовлена после Каладана. Можно продолжать играть через прежнюю кампанию.</p><button class="btn" data-c20legacy="1">Открыть классическую карту</button>`;
-  const actions=open?`<button class="btn go" data-node="${chosen}">В бой <small>${amt(en,cost)}</small></button>
-    ${stars===3?`<button class="btn" data-sim="${chosen}">Симуляция <small>${amt(en,cost)}</small></button>`:''}`:'<span class="c20-locked">Сначала пройдите предыдущую миссию</span>';
+  const enough=enGet(en)>=cost;
+  const actions=open?`<button class="btn go ${enough?'':'lack'}" data-node="${chosen}">В бой <small>${amt(en,cost)}</small></button>
+    ${stars===3?`<button class="btn ${enough?'':'lack'}" data-sim="${chosen}">Симуляция <small>${amt(en,cost)}</small></button>`:'<span class="c20-locked">Симуляция после 3★</span>'}`:
+    '<span class="c20-locked">Сначала пройдите предыдущую миссию</span>';
   const html=`<div class="c20 c20-map">
     <div class="c20-head"><button class="c20-back" data-c20="home">‹ ${ck==='C'?'Хроники':'Сюжет'}</button>${side}<span class="c20-progress">★ ${nodes.reduce((a,i)=>a+(S.cleared[i]||0),0)}/30</span></div>
     <div class="c20-chapbar"><button data-c20dir="-1" aria-label="Предыдущая глава">‹</button><button data-c20="chapters">ГЛАВА ${ROM7[c]} · ${esc(chapters[c].t)} ⌄</button><button data-c20dir="1" aria-label="Следующая глава">›</button></div>
