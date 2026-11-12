@@ -6,7 +6,7 @@ import { createBattle, abilityReady, living } from '../src/logic/battle/engine.j
 import { act, startTurn } from '../src/logic/battle/turns.js';
 import { aiPlan } from '../src/logic/battle/ai.js';
 
-assert.equal(CH.baron_legend, undefined, 'future legend must not be live in CHARS');
+assert.equal(CH.baron_legend.id, 'baron_legend', 'approved legend is public');
 assert.equal(BARON_LEGEND_KIT.gl.n, BARON_LEGEND_ABILITIES.gl.name);
 assert.equal(BARON_LEGEND_KIT.ult.n, BARON_LEGEND_ABILITIES.powerful.name);
 assert.equal(BARON_LEGEND_KIT.basic.n, 'Приказ Барона');
@@ -48,5 +48,5 @@ assert.equal(BARON_LEGEND_KIT.powerful, undefined, 'must reuse native MuadDib re
   assert.ok(enemyLeader.fx.isolation,'Enemy leader isolation');
   assert.equal(aiPlan(B,baron).key,'basic','All stronger powers on cooldown');
 }
-assert.equal(CH.baron_legend, undefined, 'preview cannot mutate the public roster index');
+assert.equal(CH.baron_legend.id, 'baron_legend', 'battle preview cannot change public roster index');
 console.log('BH3 staged legendary Baron: three regular actions, CD, assists and AI: PASS');
