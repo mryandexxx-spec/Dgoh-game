@@ -84,6 +84,6 @@ for(const id of ['margot_story','yue_story']){
     '7-star hero never becomes an unlimited conversion farm');
 }
 assert.deepEqual(seed.journeys.muaddib,{0:true});
-assert.equal(seed.roster.baron_legend,undefined);
+assert.deepEqual(seed.roster.baron_legend,{shards:0,stars:0,lvl:1,gear:1},'BH9.4 must never grant the separate 7-star legend');
 assert.ok(seed.storyEvents.margot_story.done[2] && seed.storyEvents.yue_story.done[2]);
 console.log('BH9.4 story fixed squads, 40+ gate, two independent 23-day shard tracks, caps, normal 7 stars: PASS');
