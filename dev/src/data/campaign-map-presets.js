@@ -5,8 +5,8 @@ export const CAMPAIGN_MAPS = Object.freeze({
   'L:0': Object.freeze({
     id: 'caladan-atreides', title: 'Каладан · Замок Атрейдесов',
     theme: 'caladan', bounds: [-28, 28, -18, 18],
-    camera: { target: [-2, 0, 0], alpha: -1.13, beta: 0.94, radius: 46,
-      minRadius: 29, maxRadius: 67, turnLimit: 0.3 },
+    camera: { target: [-2, 0, 0], alpha: -1.13, beta: 0.94, radius: 30,
+      minRadius: 22, maxRadius: 65, turnLimit: 0.3 },
     // Последовательность строго соответствует полю m=0..9.
     nodes: Object.freeze([
       [-22, -11], [-16, -7], [-11, -4], [-6, -8], [-1, -4],
