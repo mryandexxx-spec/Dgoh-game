@@ -17,7 +17,7 @@ fs.mkdirSync(shots,{recursive:true});
 try {
   for(const [w,h,gfx] of [[844,390,'med'],[667,375,'low']]){
     const page=await browser.newPage(),errors=[];
-    page.on('pageerror',e=>errors.push(e.message));
+    page.on('pageerror',e=>{errors.push(e.message);console.log('Campaign browser pageerror:',e.stack||e.message);});
     await page.setViewport({width:w,height:h,deviceScaleFactor:1,isMobile:true,hasTouch:true,isLandscape:true});
     await page.evaluateOnNewDocument((s,profile)=>{
       try{localStorage.setItem('dune-goh-v1',s);localStorage.setItem('dune-gfx',JSON.stringify({p:profile,auto:0,bad:0,good:0,noUp:false}));}catch(e){}
@@ -32,7 +32,10 @@ try {
     assert.equal(await page.$$eval('.c20-cover',a=>a.length),2,'two campaign covers');
     await page.screenshot({path:path.join(shots,`hub-${w}.png`)});
     await page.click('[data-c20="story"]');
-    await page.waitForSelector('.c20-map');
+    await page.waitForSelector('.c20-map',{timeout:8000}).catch(async e=>{
+      const diag=await page.evaluate(()=>({view:document.querySelector('#view')?.innerHTML.slice(0,800),body:document.body.className}));
+      console.error('Campaign map transition diagnostic',JSON.stringify({diag,errors}));throw e;
+    });
     assert.equal(await page.$$eval('.c20-pin',a=>a.length),10,'ten Caladan missions');
     const opened=await page.waitForFunction(()=>!!document.querySelector('.c20-world.campaign20-3d-ready'),{timeout:15000}).then(()=>true).catch(()=>false);
     assert.equal(opened,true,'Babylon 3D Caladan mounted');
