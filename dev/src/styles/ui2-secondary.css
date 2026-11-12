@@ -223,3 +223,105 @@
   #view:has(.tiers) .tier {gap:7px;grid-template-columns:90px minmax(0,1fr) auto}
   #view:has(.tiers) .tier .btn {min-width:0}
 }
+
+/* Jihad: card materials only. The scrollable tactical map, node positions,
+   paths, touch handling and battle transitions are deliberately untouched. */
+#view .cqdiffs > .cqdiff {
+  border-radius: 13px;
+  border-color:var(--ui2s-rim);
+  background:var(--ui2s-panel);
+  box-shadow:var(--ui2s-shadow);
+}
+#view .cqdiffs > .cqdiff.d-easy {border-color:rgba(108,171,99,.64)}
+#view .cqdiffs > .cqdiff.d-normal {border-color:rgba(102,151,202,.7)}
+#view .cqdiffs > .cqdiff.d-hard {border-color:rgba(207,109,69,.8)}
+#view .cqdiffs > .cqdiff.locked {opacity:.54}
+#view .cqdiffs > .cqdiff h3 {color:var(--ui2s-paper)}
+#view .cqitem {
+  border-radius:9px;
+  border-color:rgba(224,177,113,.34);
+  background:linear-gradient(145deg,rgba(255,219,164,.12),rgba(23,15,10,.6));
+  box-shadow:inset 0 1px 0 rgba(255,226,181,.1);
+}
+#view .cqgoods > .cqgood,
+#view .cqgoods > .item {
+  border-radius:11px;
+  border-color:var(--ui2s-rim);
+  background:var(--ui2s-panel);
+  box-shadow:var(--ui2s-shadow);
+}
+#view .cqgoods .btn {border-radius:9px}
+#view .cqdet,#view .cdetail {
+  border-radius:12px;
+  border-color:rgba(231,183,114,.25);
+}
+#view .cqmap {
+  border-color:rgba(231,183,114,.28);
+  border-radius:10px;
+  /* preserve horizontal native panning of the campaign-style node map */
+}
+/* Recycler: its inline <style> belongs to the screen, so higher specificity
+   is intentional. Keep independent scrollable work/quote columns as-is. */
+#view .ixpage .ixpanel {
+  border-radius:13px;
+  border-color:var(--ui2s-rim);
+  background:var(--ui2s-panel);
+  box-shadow:var(--ui2s-shadow);
+}
+#view .ixpage .ixkinds button {
+  border-radius:9px;
+  border-color:rgba(223,175,107,.34);
+  background:linear-gradient(180deg,#3d291a,#25180f);
+  box-shadow:inset 0 1px 0 rgba(255,231,190,.12);
+}
+#view .ixpage .ixkinds button.on {
+  border-color:#e9ae6b;
+  color:#ffdfaa;
+  background:linear-gradient(180deg,#664327,#382314);
+}
+#view .ixpage .ixtabs .btn {
+  border-radius:10px;
+  background:linear-gradient(180deg,#3b2819,#21160e);
+}
+#view .ixpage .ixtabs .btn.go {
+  background:linear-gradient(180deg,#f1bc78,#c98545);
+  color:#271608;
+}
+#view .ixpage .ixitem {
+  border-color:rgba(236,184,116,.19);
+  border-radius:8px;
+  padding:6px 5px;
+}
+#view .ixpage .ixitem .btn {
+  border-radius:8px;
+  min-height:29px;
+}
+#view .ixpage .ixrate {
+  border-radius:12px;
+  border-color:var(--ui2s-rim);
+  background:var(--ui2s-panel);
+  box-shadow:var(--ui2s-shadow);
+}
+#view .ixpage .ixbadge {
+  border-radius:8px;
+  border-color:rgba(229,174,107,.3);
+  background:linear-gradient(180deg,#47301d,#281a11);
+}
+#view .ixpage .ixprog {
+  border-radius:20px;
+  border-color:rgba(233,181,111,.38);
+  background:#100a06;
+}
+#view .ixpage .ixprog i {background:linear-gradient(90deg,#ac682e,#efb66f)}
+#view .ixpage .ixnum {color:#f6c887;text-shadow:0 2px 8px rgba(255,174,75,.15)}
+#view .ixmodal .panel {
+  border-radius:14px;
+  border-color:#ba8954;
+  background:var(--ui2s-panel);
+  box-shadow:0 14px 45px rgba(0,0,0,.65);
+}
+@media (orientation:landscape) and (max-height:520px) {
+  #view .ixpage .ixpanel {padding:7px}
+  #view .ixpage .ixitem {padding:4px 3px}
+  #view .ixpage .ixrate {padding:8px}
+}
