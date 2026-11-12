@@ -36,7 +36,7 @@ try {
     await page.waitForSelector('.c20-home',{timeout:5000});
     assert.equal(await page.$$eval('.c20-cover',a=>a.length),2,'two campaign covers');
     await page.screenshot({path:path.join(shots,`hub-${w}.png`)});
-    await page.click('[data-c20="story"]');
+    await page.locator('[data-c20="story"]').click();
     await page.waitForSelector('.c20-map',{timeout:8000}).catch(async e=>{
       const diag=await page.evaluate(()=>({view:document.querySelector('#view')?.innerHTML.slice(0,800),body:document.body.className}));
       console.error('Campaign map transition diagnostic',JSON.stringify({diag,errors}));throw e;
@@ -124,13 +124,13 @@ try {
 
     await page.evaluate(()=>document.querySelector('[data-c20node]')?.click());
     await page.waitForSelector('.c20-card');
-    await page.click('[data-c20="detail"]');
+    await page.locator('[data-c20="detail"]').click();
     await page.waitForSelector('.c20-dialog');
     await page.screenshot({path:path.join(shots,`detail-${w}.png`)});
-    await page.click('[data-c20tab="foes"]');
+    await page.locator('[data-c20tab="foes"]').click();
     assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-foes>div').length))>0,'foes tab');
     assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-conditions span').length))>=3,'mission level, side and power requirements');
-    await page.click('[data-c20tab="rewards"]');
+    await page.locator('[data-c20tab="rewards"]').click();
     assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-earn').length))===1,'real mission currency preview');
     assert.ok((await page.evaluate(()=>document.querySelectorAll('.c20-lootrow').length))>0,'real GE2 and shard rewards');
     const canvasBeforeInfo=await page.evaluate(()=>window.__campaignCanvas===document.querySelector('#c20world canvas'));
@@ -146,7 +146,7 @@ try {
     await page.evaluate(()=>document.querySelector('#overlay2 [data-iclose]')?.click());
     await page.waitForFunction(()=>!document.querySelector('#overlay2 .infosheet'),{timeout:5000});
     assert.ok(await page.$('.c20-dialog'),'closing source info retains mission details');
-    await page.click('[data-c20="back"]');
+    await page.locator('[data-c20="back"]').click();
     assert.equal(await page.$('.c20-dialog'),null,'modal closes');
     // The first mission has index zero: it must be launchable (not skipped as falsy).
     await page.evaluate(()=>document.querySelector('[data-c20node="0"]').click());
