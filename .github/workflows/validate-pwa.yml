@@ -33,6 +33,29 @@ jobs:
       - run: npm run build
       - run: node tools/check-bundle.mjs dist/pwa/app.js
       - run: node tests/smoke/young-baron-cpu.mjs dist/pwa/index.html
+      - run: node tests/baron-legend-contract.mjs
+      - run: node tests/baron-legend-progress.mjs
+      - run: node tests/baron-future-heroes.mjs
+      - run: node tests/baron-approved-data.mjs
+      - run: node tests/baron-bh9-encounters.mjs
+      - run: node tests/baron-bh9-battle.mjs
+      - run: node tests/baron-bh9-event.mjs
+      - run: node tests/baron-bh99-public-journey.mjs
+      - run: node tests/baron-bh9-hero-kits.mjs
+      - run: node tests/baron-bh94-story-events.mjs
+      - run: node tests/baron-bh95-integration.mjs
+      - run: node tests/baron-bh96-story-screen.mjs
+      - run: node tests/baron-bh97-character-release.mjs
+      - run: node tests/baron-horror.mjs
+      - run: node tests/baron-abilities.mjs
+      - run: node tests/baron-mechanics.mjs
+      - run: node tests/baron-gl-greed.mjs
+      - run: node tests/baron-staged-kit.mjs
+      - run: node tests/baron-roster-integration.mjs
+      - run: node tests/baron-legend-model-asset.mjs
+      - run: node tests/baron-legend-animation.mjs
+      - run: node tests/baron-legend-skinning.mjs dist/pwa/index.html
+      - run: node tests/baron-legend-cinematic.mjs dist/pwa/index.html
       - run: node tests/smoke/gear-e3.mjs
       - run: node tests/smoke/gear-ge1.mjs
       - run: node tests/smoke/memory-ix.mjs dist/pwa/index.html
@@ -75,7 +98,7 @@ jobs:
           key: ${{ runner.os }}-playwright-chromium-1.56.1
       - run: |
           npm install --no-save --package-lock=false playwright@1.56.1
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
       - run: npm test
 
   ui:
@@ -274,10 +297,102 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  bh8-preview:
+    name: BH8 legendary Baron WebGL frames (844/667 MED/LOW)
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dune-validated-build
+          path: dev/dist
+      - run: node tools/ci-artifact.mjs verify
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          chrome-version: stable
+      - name: Capture hidden legend in real WebGL; public roster untouched
+        run: node tests/smoke/baron-legend-gl.mjs dist/pwa/index.html
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: Capture actual staged Baron in standard hero card (844/667 MED/LOW)
+        run: node tests/smoke/baron-legend-card.mjs dist/pwa/index.html
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: Upload actual GPU snapshots for owner review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-bh8-legend-baron-${{ github.run_number }}
+          path: dev/dist/baron-legend-bh8-shots/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  bh98-procedural:
+    name: BH9.8 Margot + Yue procedural WebGL cards, battle and 2D fallback (844/667 MED/LOW)
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dune-validated-build
+          path: dev/dist
+      - run: node tools/ci-artifact.mjs verify
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          chrome-version: stable
+      - name: Capture existing standard Margot/Yue cards, roster, live Arena3D and SVG fallback
+        run: node tests/smoke/bh97-procedural-mobile.mjs dist/pwa/index.html
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: BH9.9 public Baron journey + unlocked card (844/667, 2D fallback)
+        run: node tests/smoke/bh99-public-journey.mjs dist/pwa/index.html
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: Upload BH9.9 public journey iPhone frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-bh99-public-journey-${{ github.run_number }}
+          path: dev/dist/bh99-public-journey-shots/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload BH9.8 temporary procedural hero mobile screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-bh98-procedural-${{ github.run_number }}
+          path: dev/dist/bh97-procedural-mobile-shots/
+          if-no-files-found: ignore
+          retention-days: 14
+
   gate:
     name: All required checks passed
     if: always()
-    needs: [build, golden, ui, three-d]
+    needs: [build, golden, ui, three-d, bh8-preview, bh98-procedural]
     runs-on: ubuntu-24.04
     steps:
       - name: Reject any failed or skipped required check

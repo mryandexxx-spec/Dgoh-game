@@ -30,15 +30,38 @@ for (const f of [null, ...files]) {
 }
 console.log('сохранений:', saves.length, saves.map(s => `${s.file}${s.startError ? ' [start: ' + s.startError + ']' : ''}`).join('; '));
 const out = { n: saves.length, saves };
-if (rest.includes('--update')) writeGolden('saves', out);
-else {
-  const historical = structuredClone(out);
-  for (const entry of historical.saves) {
-    for (const stage of ['fillSave','start']) {
-      if (!entry[stage]) continue;
-      assert.deepEqual(entry[stage].gearOwned, {}, entry.file + ': GE1 adds empty whole-gear stock');
-      delete entry[stage].gearOwned; // strict golden for every legacy field
+// The legacy golden must remain byte-for-byte strict for all previously saved data.
+// BH9.7 adds only two empty roster records to a legacy save. Assert their exact
+// default state, then remove only those records for comparison with the old golden.
+const historical = structuredClone(out);
+for (const entry of historical.saves) {
+  for (const stage of ['fillSave', 'start']) {
+    const roster = entry[stage]?.roster;
+    // With no stored save loadSave() legitimately returns null; start() creates a new one.
+    if (entry.file === '(нет сохранения → newSave)' && stage === 'fillSave') {
+      assert.equal(entry[stage], null, 'missing save stays null until start');
+      continue;
     }
+    assert.ok(roster, `${entry.file}: ${stage} roster present`);
+    for (const id of ['margot', 'yue', 'baron_legend']) {
+      const hero = roster[id];
+      assert.ok(hero, `${entry.file}: ${stage} includes ${id}`);
+      assert.equal(hero.stars, 0, `${entry.file}: ${id} starts locked`);
+      assert.equal(hero.shards, 0, `${entry.file}: ${id} has no gifted shards`);
+      assert.equal(hero.lvl, 1, `${entry.file}: ${id} has default level`);
+      assert.equal(hero.gear, 1, `${entry.file}: ${id} has default gear`);
+      assert.deepEqual(hero.eq, [false, false, false, false, false, false], `${entry.file}: ${id} has no equipped slots`);
+      delete roster[id];
+    }
+    // BH9.9 creates an isolated empty legend journey without touching Muad'Dib.
+    const journeys=entry[stage]?.journeys;
+    assert.ok(journeys && typeof journeys.baron_legend==='object', 'Baron journey migration present');
+    assert.deepEqual(journeys.baron_legend, {}, 'legacy saves start with no Baron progress');
+    delete journeys.baron_legend;
+    // GE1 releases a separate, initially empty stock for ready equipment.
+    assert.deepEqual(entry[stage].gearOwned, {}, entry.file + ': GE1 whole-gear stock migration');
+    delete entry[stage].gearOwned;
   }
-  process.exit(compareGolden('saves', historical) ? 0 : 1);
 }
+if (rest.includes('--update')) writeGolden('saves', out);
+else process.exit(compareGolden('saves', historical) ? 0 : 1);

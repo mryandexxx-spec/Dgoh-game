@@ -81,7 +81,16 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
     vd.positions = P.pos; vd.normals = P.nor; if (!P.alb) vd.colors = col; if (P.uv) vd.uvs = P.uv; vd.indices = P.idx; vd.applyToMesh(me, false);
     me.setVerticesData(B3.VertexBuffer.MatricesIndicesKind, P.jj, false); me.setVerticesData(B3.VertexBuffer.MatricesWeightsKind, P.ww, false);
     me.numBoneInfluencers = 4; me.skeleton = skel; me.parent = body; me.receiveShadows = true; me.isPickable = false; me.alwaysSelectAsActiveMesh = true;
-    const m = mat3('#ffffff', P.material || MODEL_MAT[k] || {}); me.material = m; if (m._lit) mats.push(m);
+    // BH8: each material part in the owner's optimized legendary DGM uses a
+    // *constant* sRGB vertex color, no albedo texture. In PBR on the phone its
+    // vertex-color path washed the dark robe out to pale white. Set the exact
+    // part color on the material and prevent a second vertex-color multiply.
+    // Scope ONLY baron_legend; young Baron, Duncan and all others unchanged.
+    const legendSolid = def.id === 'baron_legend' && !P.alb && P.col.length >= 4;
+    const legendColor = legendSolid ? '#' + [0, 1, 2].map(i =>
+      Math.round(Math.max(0, Math.min(1, P.col[i])) * 255).toString(16).padStart(2, '0')).join('') : '#ffffff';
+    if (legendSolid) me.useVertexColors = false;
+    const m = mat3(legendColor, P.material || MODEL_MAT[k] || {}); me.material = m; if (m._lit) mats.push(m);
     if (P.alb) tex3(P.alb, CTX.scene, t => { if (m.albedoTexture !== undefined && m instanceof B3.PBRMaterial) m.albedoTexture = t; else m.diffuseTexture = t; });
     if (P.nrm) tex3(P.nrm, CTX.scene, t => { m.bumpTexture = t; t.level = k === 'skin' ? .7 : 1; m.invertNormalMapY = true; });
     if (P.orm && m instanceof B3.PBRMaterial) {          // R: ambient occlusion, G: roughness, B: metallic (baked in Blender)

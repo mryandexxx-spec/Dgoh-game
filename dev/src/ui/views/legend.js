@@ -22,6 +22,7 @@ function renderLegend() {
   const groups = [{ title: 'Дом Атрейдесов', ids: ['paul', 'duncan', 'leto', 'jessica', 'gurney'] }, { title: 'Союзники и противники', ids: ['stilgar', 'chani', 'kynes', 'mohiam', 'baron', 'shaddam'] }];
   let html = `<h2 class="lshide">Легенды</h2>
   <div class="ctabs">${Object.keys(JOURNEYS).map(k => { const done = JOURNEYS[k].tiers.filter((t, i) => (S.journeys[k] || {})[i]).length; return `<button class="ctab ${k === lk ? 'on' : ''}" data-jkey="${k}">${CH[k].n}<small>ярусов ${done}/5 · ${prog(k).stars ? prog(k).stars + '★' : 'не открыт'}</small></button>`; }).join('')}</div>
+  <div style="margin:6px 0;display:flex;gap:7px;flex-wrap:wrap"><button type="button" class="btn" data-v="baron_journey">Восхождение Барона · 10 требований</button><button type="button" class="btn" data-v="story_events">Сюжетные события · Марго и Юэ</button></div>
   <p class="sub">Путь Муад’Диба · пять боёв за 330 осколков. Для открытия любого боя нужны все 11 героев: 7★, снаряжение XIII и указанный ДП. В ярусах IV–V участвуют четыре выбранных героя и сюжетный Муад’Диб. Уже открытая легенда сохраняет доступ.</p>
   <div class="grid2"><div class="panel"><div class="hd" style="display:flex;gap:14px;align-items:center">${portrait(m, 84)}<div><h3>${m.n}</h3>
     <div style="color:var(--dust);font-size:12px">${m.f.map(f => FACTIONS[f].n).join(' · ')} · Легенда</div>

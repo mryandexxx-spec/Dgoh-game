@@ -16,7 +16,9 @@ import { SQ, openSquadSel, set_SQ } from '../overlays/squad-select.js';
 import { closeInfo, openInfo, wormIco } from '../overlays/info.js';
 import { closeOverlay } from '../overlays/detail.js';
 import { abDescLv } from '../../logic/skill-up.js';
-import { render } from '../router.js';
+import { render, registerStoryView, registerBaronView } from '../router.js';
+import { renderStoryEvents } from '../views/story-events.js';
+import { renderBaronJourney } from '../views/baron-journey.js';
 import { glyph, skillSvg, starStr, toast } from '../common.js';
 import { battleMark, errLog } from '../../core/errlog.js';
 import { campSquad, enGet, enRefund, enSpend, prog, sideOk } from '../../logic/progress.js';
@@ -46,6 +48,13 @@ import { amt, fmt } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
 import { quest } from '../../logic/daily.js';
 import { grantShards } from '../../logic/rewards.js';
+import { finishStoryUnlockBattle } from '../../logic/bh94-story-battle.js';
+import { STORY_UNLOCK_EVENTS } from '../../data/bh94-unlock-events.js';
+import { prepareBaronBH9Battle, finishBaronBH9Battle } from '../../logic/baron-bh9-battle.js';
+import { todayKey } from '../../logic/economy.js';
+
+registerStoryView(renderStoryEvents);
+registerBaronView(renderBaronJourney);
 
 // ===== battle UI =====
 function startBattle(i) {
@@ -59,6 +68,10 @@ function startBattle(i) {
 }
 let LAUNCH_WAIT = false, B3_TRIED = false;
 function launch(cfg) {
+  if (cfg.mode === 'baron_legend' && (!cfg.prepared?.ok || !cfg.prepared.battle || !Number.isInteger(cfg.prepared.stageIndex))) return;
+  if (cfg.mode === 'story_unlock' && (!cfg.prepared?.ok || !cfg.prepared.battle ||
+      !STORY_UNLOCK_EVENTS[cfg.prepared.eventId] ||
+      !Number.isInteger(cfg.prepared.stageIndex))) return;
   if (!HAS3D && HAS_GL && !B3_TRIED) {   // фаза 4: чанк Babylon ещё грузится — бой ждёт его (2D-бой не подставляем)
     if (LAUNCH_WAIT) return; LAUNCH_WAIT = true;
     $('#overlay').innerHTML = `<div class="battle b3load"><div class="b3spin">Загрузка 3D…</div></div>`;
@@ -67,12 +80,12 @@ function launch(cfg) {
   }
   set_SQ(null);
   closeInfo(true);
-  { let lg = 0; cfg.squad = cfg.squad.filter(id => !isLegend(id) || !lg++); }
+  if (cfg.mode !== 'story_unlock' && cfg.mode !== 'baron_legend') { let lg = 0; cfg.squad = cfg.squad.filter(id => !isLegend(id) || !lg++); }
   sleepStages();
-  const squadData = cfg.squad.map(id => ({ id, ...prog(id) }));
+  const squadData = (cfg.mode === 'story_unlock' || cfg.mode === 'baron_legend') ? [] : cfg.squad.map(id => ({ id, ...prog(id) }));
   if (cfg.scriptedMuaddib && cfg.mode === 'journey' && cfg.i >= 3) squadData.push({ id: 'muaddib', lvl: 85, stars: 7, gear: 13, relic: cfg.i === 3 ? 5 : 6, gl: false });
   const waves = Array.isArray(cfg.waves) && cfg.waves.length ? cfg.waves : null;
-  const B = createBattle(squadData, waves ? waves[0] : cfg.enemy || [], { desert: cfg.desert, seed: Date.now() & 0xffffff, boss: cfg.boss, waves: waves ? waves.slice(1) : null });
+  const B = (cfg.mode === 'story_unlock' || cfg.mode === 'baron_legend') ? cfg.prepared.battle : createBattle(squadData, waves ? waves[0] : cfg.enemy || [], { desert: cfg.desert, seed: Date.now() & 0xffffff, boss: cfg.boss, waves: waves ? waves.slice(1) : null });
   if (cfg.mode === 'conq' && typeof cqApply === 'function') cqApply(B, cfg);
   set_BT({ B, cfg, i: cfg.i, auto: BT?.autoPref ?? false, autoPref: BT?.autoPref ?? false, speed: Math.min(4, BT?.speedPref ?? 1), speedPref: Math.min(4, BT?.speedPref ?? 1), timer: null, waiting: null, sel: 'basic', autoTargetUid: null, autoTaunts: [], done: false });
   $('#overlay').innerHTML = `<div class="battle ${B.desert ? 'desert' : ''}" id="battle"><canvas class="bgc" id="bgc"></canvas><div class="bwrap" id="bwrap"></div><canvas class="fxc" id="fxc"></canvas><div class="flash" id="flash"></div></div>`;
@@ -558,6 +571,27 @@ function finish() {
       html = `${WORM_BADGE}<h3>Червь повержен</h3><ul><li>+${amt(artifacts, cr)} артефактов</li><li>Урон этой попытки: ${fmt(dmg)}</li><li>+${amt('teeth', rw.teeth)} зубов червя</li><li>+${amt('pl', rw.pl)} +${amt('sol', rw.sol)} +${amt('cry', rw.cry)}</li><li>+${amt('folio', rw.folio)} +${amt('seal', rw.seal)}${rw.wol ? ` +${amt('wol', rw.wol)} Вода жизни!` : ''}</li>${fragLines(rf).map(l => `<li>${l}</li>`).join('')}${R.tier < 2 ? `<li>Открыт ярус Т${R.tier + 2}</li>` : ''}</ul>`;
     } else html = `<h3>${dmg ? 'Червь ушёл в песок' : 'Отряд поглощён'}</h3><ul><li>Урон: ${fmt(dmg)} (${(dmg / R.maxHp * 100).toFixed(1)}% рейда)</li><li>Осталось: ${fmt(R.hp)} здоровья, пройдено ${(raidPct() * 100).toFixed(1)}%</li><li>Эти бойцы больше не атакуют в этом рейде.</li></ul>`;
     btns = `<button class="btn go" data-leave="1">К рейду</button>`;
+  } else if (cfg.mode === 'story_unlock') {
+    // Reuse the *same* combat instance prepared by the closed event adapter:
+    // never rebuild the battle from the player's normal roster.
+    const event = STORY_UNLOCK_EVENTS[cfg.prepared.eventId];
+    const award = finishStoryUnlockBattle(S, cfg.prepared, todayKey());
+    const heroName = event.hero === 'margot' ? 'Марго Фенринг' : 'доктора Юэ';
+    if (!won) html = '<h3>Поражение</h3><ul><li>Награда не начислена. Попробуйте ещё раз.</li></ul>';
+    else if (award.ok && award.shardsGranted > 0)
+      html = `<h3>Победа</h3><ul><li>+${amt('shard', award.shardsGranted, 'shard:' + event.hero)} — осколки ${heroName}</li></ul>`;
+    else if (award.ok)
+      html = '<h3>Победа</h3><ul><li>Повторное получение разовой награды недоступно.</li></ul>';
+    else html = '<h3>Победа</h3><ul><li>Награда не начислена: проверка события не пройдена (' + award.reason + ').</li></ul>';
+    btns = '<button class="btn go" data-leave="1">Завершить</button>';
+  } else if (cfg.mode === 'baron_legend') {
+    const result = won ? finishBaronBH9Battle(S, cfg.prepared) : { ok:false, reason:'battle' };
+    if (!won) html = '<h3>Поражение</h3><ul><li>Прогресс восхождения сохранён, награды нет.</li></ul>';
+    else if (result.ok) {
+      if (result.firstClear) quest('journey');
+      html = `<h3>Победа · Восхождение Барона</h3><ul><li>${result.firstClear ? '+'+amt('shard',result.shardsGranted,'shard:baron_legend')+' осколков Барона' : 'Повторная победа · без награды'}</li>${result.unlocked?'<li>Легенда разблокирована · 7★!</li>':''}</ul>`;
+    } else html = `<h3>Победа</h3><ul><li>Награда не начислена: ${result.reason}</li></ul>`;
+    btns = '<button class="btn go" data-leave="1">К восхождению</button>';
   } else if (cfg.mode === 'journey') {
     quest('journey');
     const t = JR().tiers[cfg.i];
@@ -603,4 +637,26 @@ function finish() {
 function leaveBattle() { battleMark(null); if (BT) clearTimeout(BT.timer); if (BT && BT.arena) BT.arena.dispose(); const pref = BT && { autoPref: BT.autoPref, speedPref: BT.speedPref }; set_BT(pref); closeOverlay(); render(); }
 
 
-export { startBattle, launch, DLG, playDialog, renderDialog, dlgNext, dlgEnd, later, safeRun, FX_ICONS, fxTurns, fxIcon, LEAD_F, leaderFor, bPop, bPopClose, fxListHtml, openFxPop, openUnitPop, step, curTargets, ensureCur, useAbil, abilPop, doAct, actShow, ultCinematic, FORM, AB_ICONS, iconFor, unitHtml, renderBattle, playFX, finish, leaveBattle };
+// BH9.9: a single validated battle, fixed player progression and actual wave engine.
+function launchBaronLegend(stageIndex) {
+  const prepared = prepareBaronBH9Battle(S, stageIndex, { seed: Date.now() & 0xffffff });
+  if (!prepared.ok) return prepared;
+  const cfg = { mode:'baron_legend', i:stageIndex, prepared,
+    squad:prepared.allyIds.slice(),
+    title:'Восхождение Барона · '+prepared.title,
+    scene: ['giedi','court','court','arrakeen','court'][stageIndex],
+    desert:stageIndex===3 };
+  launch(cfg);
+  return { ok:true };
+}
+
+function launchStoryUnlock(prepared) {
+  if (!prepared?.ok || !prepared.battle || !STORY_UNLOCK_EVENTS[prepared.eventId] || prepared.settled) return false;
+  launch({ mode: 'story_unlock', prepared, i: prepared.stageIndex,
+    squad: prepared.squad.slice(), scene: prepared.scene,
+    title: STORY_UNLOCK_EVENTS[prepared.eventId].title + ' · ' +
+      STORY_UNLOCK_EVENTS[prepared.eventId].stages[prepared.stageIndex].title });
+  return true;
+}
+
+export { startBattle, launch, launchBaronLegend, launchStoryUnlock, DLG, playDialog, renderDialog, dlgNext, dlgEnd, later, safeRun, FX_ICONS, fxTurns, fxIcon, LEAD_F, leaderFor, bPop, bPopClose, fxListHtml, openFxPop, openUnitPop, step, curTargets, ensureCur, useAbil, abilPop, doAct, actShow, ultCinematic, FORM, AB_ICONS, iconFor, unitHtml, renderBattle, playFX, finish, leaveBattle };

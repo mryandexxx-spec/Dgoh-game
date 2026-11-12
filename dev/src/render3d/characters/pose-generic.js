@@ -86,6 +86,9 @@ function poseHuman(A, o, now, t, sp) {
     const k = remapK((now - a.t0) / a.dur, a), w = seg(k, .22, .3) * (1 - seg(k, .66, .74));
     if (w > 0) layerClip(o, 'slash', .14 + (k - .26) / .44 * .68, w);
   }
+  // Models without exported GLB animation clips use their own additive profile
+  // after the shared rig pose. Young Baron's source clips are unaffected.
+  if (!o.root._clips && o.anim?.cliplessPose) o.anim.cliplessPose(o, now, t, sp, A);
   poseModelClip(o, now, t, sp, A);
 }
 

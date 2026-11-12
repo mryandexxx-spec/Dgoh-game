@@ -4,6 +4,8 @@ import { bossTurn, wormFrenzy } from './raid.js';
 import { applyFx, checkOver, damageRaw, ev, foe, has, hit, kill, living, log, stunFx, validTargets } from './engine.js';
 import { abFor, dunBuff, dunGuard, skLv, skMult } from './skills.js';
 import { FX } from '../../data/fx.js';
+import { supportAbilityEffects, supportDispel } from './support-kits.js';
+import { strongestAlly, orderedAssist } from './baron-mechanics.js';
 
 // ---- turn lifecycle ----
 // returns {skip} ; handles ticks & forced actions
@@ -31,7 +33,7 @@ function startTurn(B, u) {
   decFx(u);
   return { skip: false };
 }
-function decFx(u) { for (const k in u.fx) { if (k === 'voiced' || k === 'fear' || k === 'stun') continue; if (--u.fx[k] <= 0) delete u.fx[k]; } if (!u.fx.bleed) u.bleedN = 0; }
+function decFx(u) { for (const k in u.fx) { if (k === 'voiced' || k === 'fear' || k === 'stun') continue; if (--u.fx[k] <= 0) delete u.fx[k]; } if (!u.fx.bleed) u.bleedN = 0; if (!u.fx.horror) u.horrorStrength = 1; }
 
 const glMeter = (B, u) => Math.max(u.ultM || 0, u.def && !u.def.boss && u.def.legendary && B.spice ? (B.spice[u.side] || 0) : 0);
 function glCharge(B, src, n) { for (const x of B.units) if (x.alive && x.glOn && !x.glUsed && x.side === src.side) x.ultM = Math.min(100, x.ultM + (x === src ? n : 4)); }
@@ -41,6 +43,27 @@ function glAct(B, u, tuid) {
     if (!glExec(B, u, tuid, GL_EXEC.devour)) return;
     for (const a of living(B, u.side)) if (a !== u) a.tm = Math.min(999, a.tm + 500);
     B.spice[u.side] = Math.min(100, B.spice[u.side] + 20);
+    return;
+  }
+  // Recovered Baron GL: army strike across the enemy formation.
+  // Numeric values are configurable rather than hardcoded as approved balance.
+  if (B.glKind === 'fall-of-atreides') {
+    const gl = u.def.gl, mult = Number.isFinite(gl.damageMultiplier) ? gl.damageMultiplier : 3;
+    const armorTurns = Number.isInteger(gl.armorDownTurns) ? gl.armorDownTurns : 3;
+    const atrBonus = Number.isFinite(gl.atreidesBonus) ? gl.atreidesBonus : .5;
+    const healPerKill = Number.isFinite(gl.healPerKill) ? gl.healPerKill : .2;
+    log(B, `${u.def.sn}: «${gl.n}»`, u.side === 'A' ? 'actA' : 'actB');
+    const targets = living(B, foe(u.side)).slice();
+    for (const t of targets) {
+      if (B.over) break;
+      const m = mult * (has(t, 'atr') ? 1 + atrBonus : 1);
+      hit(B, u, t, 'fast', m);
+      if (!t.alive) {
+        const heal = Math.min(u.maxHp - u.hp, Math.round(u.maxHp * healPerKill));
+        if (heal > 0) { u.hp += heal; ev(B, u, '+' + heal, 'heal'); }
+      } else applyFx(B, u, t, 'armDown', armorTurns);
+    }
+    checkOver(B);
     return;
   }
   if (B.glKind === 'mirror') {
@@ -102,11 +125,42 @@ function act(B, u, key, targetUid) {
     } else if (damaging) { const o = { bonusDebuffed: ab.bonusDebuffed, fromStealth, noRev: ab.noRev };
       alive = hit(B, u, t, ab.dt, ab.m * sm, o);
       for (let h = 1; h < (ab.hits || 1) && alive && t.alive && !B.over; h++) { log(B, `${u.def.sn} бьёт снова!`); alive = hit(B, u, t, ab.dt, ab.m * sm, o); } }
+    if (alive && ab.removePositive) supportDispel(t,ab.removePositive);
     if (alive) for (const [k, n, to, ch] of ab.fx || []) if (to === 't') applyFx(B, u, t, k, n, ch ?? 1);
     if (alive && key === 'basic' && u.def.doubleBasic && t.alive && !B.over && B.rng() < u.def.doubleBasic) { log(B, `${u.def.sn} бьёт повторно!`); hit(B, u, t, ab.dt, ab.m * .6); }
     if (alive && key === 'basic' && u.cqOnHit && t.alive && !B.over) for (const [k, n, ch] of u.cqOnHit) applyFx(B, u, t, k, n, ch);
     if (alive && key === 'basic' && B.leader[u.side] === 'baron' && has(u, 'hark') && !(ab.fx || []).some(f => f[0] === 'poison')) applyFx(B, u, t, 'poison', 2, .75);
     if (B.over) break;
+  }
+  // A declarative ordered assist does not call act() and cannot recurse through
+  // ally attacks. The helper uses its ordinary base damage, but no extra turn.
+  if (ab.assistFaction && key === 'basic' && lastTarget && lastTarget.alive && !B.over) {
+    const best = strongestAlly(B.units, u, ab.assistFaction);
+    if (best) {
+      const bonus = lastTarget.fx.horror ? (1 + (ab.assistHorrorBonus || 0)) : 1;
+      orderedAssist(B, u, lastTarget, best, (ab.assistMultiplier || 1) * bonus, hit);
+    }
+    const extra = allies.find(a => a !== u && a.def.id === ab.extraAssistId);
+    if (extra && lastTarget.alive && !B.over) {
+      const bonus = lastTarget.fx.horror ? (1 + (ab.assistHorrorBonus || 0)) : 1;
+      orderedAssist(B, u, lastTarget, extra, (ab.extraAssistMultiplier || 1) * bonus, hit);
+    }
+  }
+  if (ab.selfHealStaggered) {
+    // Three visible healing pulses, total 30% in the recovered base skill.
+    const each = ab.selfHealStaggered / 3;
+    for (let i = 0; i < 3 && u.alive; i++) {
+      const h = Math.min(u.maxHp - u.hp, Math.round(u.maxHp * each));
+      if (h > 0) { u.hp += h; ev(B, u, '+' + h, 'heal'); }
+    }
+  }
+  if (ab.harkFx) {
+    for (const [k, n] of ab.harkFx) for (const a of living(B, u.side))
+      if (has(a, 'hark')) applyFx(B, u, a, k, n);
+  }
+  if (ab.enemyLeaderFx && !B.over) {
+    const t = living(B, foe(u.side)).find(a => a.idx === 0);
+    if (t) for (const [k, n] of ab.enemyLeaderFx) applyFx(B, u, t, k, n);
   }
   if (ab.wormCall && !B.over) {
     B.flash = ab.wormSmall ? 'wormSmall' : 'worm'; B.rhythm = 0;
@@ -126,6 +180,7 @@ function act(B, u, key, targetUid) {
   if (ab.shieldSelf && u.maxShield) { u.shield = u.maxShield; ev(B, u, 'Щит', 'buff'); }
   if (ab.heal) for (const a of living(B, u.side)) { const h = Math.min(a.maxHp - a.hp, Math.round(a.maxHp * ab.heal * sm * (1 + (u.def.healUp || 0)))); a.hp += h; if (h) ev(B, a, '+' + h, 'heal'); }
   if (ab.cleanse) for (const a of living(B, u.side)) { delete a.fx.poison; delete a.fx.fear; delete a.fx.voiced; }
+  supportAbilityEffects(B,u,ab,{living,applyFx,ev});
   if (ab.unstealth) for (const e of living(B, foe(u.side))) delete e.fx.stealth;
   // counterattack
   if (ab.tgt === 'enemy' && damaging && lastTarget && lastTarget.alive && u.alive && !B.over) {

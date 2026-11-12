@@ -2,7 +2,7 @@
 import { FEM, LOOK, OL, SKINS, ghash, sigil } from '../data/looks.js';
 
 function figureSVG(def, full) {
-  const fac = def.f[0], L = LOOK[fac] || LOOK.atr, h = ghash(def.id), fem = FEM.has(def.id);
+  const fac = def.f[0], L = def.id === 'margot' ? {hi:'#766080',cloak:'#46314e',dark:'#24182d',acc:'#c8a47d',pants:'#251d2a'} : def.id === 'yue' ? {hi:'#b9ac98',cloak:'#777268',dark:'#343c32',acc:'#8e9e72',pants:'#49453d'} : LOOK[fac] || LOOK.atr, h = ghash(def.id), fem = FEM.has(def.id);
   const si = h % SKINS.length, [sk1, sk2] = SKINS[si];
   const hairC = ['#2a1c14', '#5a3a22', '#151110', '#7a5232', '#3a2a20', '#8a8076'][(h >> 3) % 6];
   const style = def.legendary || fac === 'frem' ? 'robe' : def.f.includes('bg') ? 'bgrobe' : fac === 'hark' || fac === 'mach' ? 'armor' : fac === 'cor' ? 'cor' : 'tunic';
@@ -18,7 +18,7 @@ function figureSVG(def, full) {
     <linearGradient id="boot" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a2a1e"/><stop offset="1" stop-color="#1a120c"/></linearGradient></defs>`);
   if (def.legendary) G.push(`<ellipse cx="30" cy="48" rx="28" ry="50" fill="#e0b44a" opacity=".12"/><ellipse cx="30" cy="30" rx="18" ry="26" fill="#f6d688" opacity=".14"/>`);
   if (def.leader) G.push(`<path d="M${30 - sw} 25 Q30 22 ${30 + sw} 25 L${30 + sw + 9} 95 Q30 99 ${30 - sw - 9} 95Z" fill="${fac === 'cor' ? '#7a1f1a' : L.dark}" stroke="${OL}" stroke-width=".7"/><path d="M${30 + sw + 1} 30 L${30 + sw + 7} 93" stroke="#fff" stroke-width=".7" opacity=".12"/>`);
-  if (def.role === 'sup') G.push(`<line x1="14" y1="98" x2="14" y2="14" stroke="${OL}" stroke-width="3.6" stroke-linecap="round"/><line x1="14" y1="98" x2="14" y2="14" stroke="#6e5034" stroke-width="2.4" stroke-linecap="round"/><path d="M14 9 l3.4 4 -3.4 4 -3.4 -4z" fill="${L.acc}" stroke="${OL}" stroke-width=".6"/><circle cx="13" cy="12" r="1" fill="#fff" opacity=".7"/>`);
+  if (def.role === 'sup' && def.id !== 'margot') G.push(`<line x1="14" y1="98" x2="14" y2="14" stroke="${OL}" stroke-width="3.6" stroke-linecap="round"/><line x1="14" y1="98" x2="14" y2="14" stroke="#6e5034" stroke-width="2.4" stroke-linecap="round"/><path d="M14 9 l3.4 4 -3.4 4 -3.4 -4z" fill="${L.acc}" stroke="${OL}" stroke-width=".6"/><circle cx="13" cy="12" r="1" fill="#fff" opacity=".7"/>`);
   // legs & boots
   if (!long) {
     const pc = style === 'armor' ? 'url(#mt-hark)' : L.pants;

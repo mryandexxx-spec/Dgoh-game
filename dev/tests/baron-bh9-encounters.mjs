@@ -1,0 +1,41 @@
+import assert from 'node:assert/strict';
+import { BARON_APPROVED_REQUIREMENTS, BARON_APPROVED_STAGES } from '../src/data/baron-legend-approved.js';
+import { BARON_BH9_ENCOUNTERS, validateBH9Encounters } from '../src/data/baron-legend-encounters.js';
+import { awardBaronBH9FirstClear } from '../src/logic/baron-bh9-rewards.js';
+
+assert.deepEqual(validateBH9Encounters(), []);
+assert.deepEqual(BARON_BH9_ENCOUNTERS.stages.map(s => s.allies), BARON_APPROVED_STAGES.map(s => s.allies));
+assert.deepEqual(BARON_BH9_ENCOUNTERS.stages.map(s => s.waves.length), [1, 1, 1, 2, 2]);
+assert.equal(BARON_BH9_ENCOUNTERS.stages.reduce((n, s) => n + s.firstClearShards, 0), 330);
+assert.equal(BARON_BH9_ENCOUNTERS.stages.every(s => s.waves.every(w => w.length === 5)), true);
+const roster = Object.fromEntries(BARON_APPROVED_REQUIREMENTS.map(r => [r.id, { stars:7, gear:13, relic:r.relic, shards:0 }]));
+roster.baron_legend = { stars:0, shards:0, gear:1, relic:0 };
+const save = { roster, journeys: { muaddib: { 0:true } } };
+const before = structuredClone(save);
+assert.deepEqual(awardBaronBH9FirstClear(save, 0, false), { ok:false, reason:'battle' });
+assert.deepEqual(save, before);
+assert.deepEqual(awardBaronBH9FirstClear(save, 2, true), { ok:false, reason:'locked' });
+const broken = structuredClone(roster);
+broken.margot.stars = 0;
+assert.deepEqual(awardBaronBH9FirstClear({ roster: broken, journeys:{} }, 0, true), { ok:false, reason:'locked' });
+let gained = 0;
+for (let i = 0; i < 5; i++) {
+  const res = awardBaronBH9FirstClear(save, i, true);
+  assert.equal(res.ok, true);
+  assert.equal(res.firstClear, true);
+  assert.equal(res.shardsGranted, BARON_BH9_ENCOUNTERS.stages[i].firstClearShards);
+  gained += res.shardsGranted;
+  assert.equal(save.journeys.baron_legend[i], true);
+  assert.equal(awardBaronBH9FirstClear(save, i, true).shardsGranted, 0, 'replay must not grant');
+}
+assert.equal(gained, 330);
+assert.equal(roster.baron_legend.stars, 7, 'final stage unlocks legend');
+assert.equal(roster.baron_legend.shards, 0);
+assert.deepEqual(save.journeys.muaddib, { 0:true });
+const staleSave = structuredClone(save);
+assert.equal(awardBaronBH9FirstClear(save, 4, false).ok, false);
+assert.deepEqual(save, staleSave);
+const invalid = { ...BARON_BH9_ENCOUNTERS, stages: BARON_BH9_ENCOUNTERS.stages.map((x,i) => i===4?{...x,firstClearShards:500}:x) };
+assert.ok(validateBH9Encounters(invalid).length);
+assert.deepEqual(awardBaronBH9FirstClear(save, 4, true, invalid), { ok:false, reason:'config' });
+console.log('BH9 staged encounters, waves, 330 shards, ordered single-grant rewards: PASS');

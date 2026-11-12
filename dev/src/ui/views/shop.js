@@ -24,7 +24,11 @@ const SHOPS = {
 };
 function buysToday() { if (S.buys.d !== todayKey()) S.buys = { d: todayKey(), n: {} }; return S.buys.n; }
 const shopLeft = it => it.lim ? Math.max(0, it.lim - (buysToday()[it.key] || 0)) : -1;
-function dailyHeroes(tag, n) { const r = sRng(ghash(todayKey() + tag)), pool = ROSTER_IDS.filter(id => !CH[id].legendary); const out = []; while (out.length < n && pool.length) out.push(pool.splice(Math.floor(r() * pool.length), 1)[0]); return out; }
+// BH9.7 event-exclusive shards must not leak into rotating shops.
+// Keep legacy shop RNG pools stable as characters are registered in CHARS.
+const STORY_EXCLUSIVE_HEROES = new Set(['margot', 'yue']);
+const shopHeroPool = () => ROSTER_IDS.filter(id => !STORY_EXCLUSIVE_HEROES.has(id));
+function dailyHeroes(tag, n) { const r = sRng(ghash(todayKey() + tag)), pool = shopHeroPool().filter(id => !CH[id].legendary); const out = []; while (out.length < n && pool.length) out.push(pool.splice(Math.floor(r() * pool.length), 1)[0]); return out; }
 function shopItems(sk) {
   if (sk === 'post') return [
     { key: 'post:pl', kind: 'pl', qty: 5, cur: 'sol', price: 6000, lim: 3 }, { key: 'post:folio', kind: 'folio', qty: 3, cur: 'sol', price: 7500, lim: 3 },
@@ -35,7 +39,7 @@ function shopItems(sk) {
     ...['paul', 'jessica', 'gurney', 'stilgar', 'chani', 'kynes', 'leto', 'duncan', 'thufir', 'fedaykin'].map(id => ({ key: 'sietch:sh:' + id, kind: 'sh', id, qty: 5, cur: 'teeth', price: 60, lim: 0 })),
     { key: 'sietch:pl', kind: 'pl', qty: 5, cur: 'teeth', price: 80, lim: 0 }, { key: 'sietch:sol', kind: 'sol', qty: 5000, cur: 'teeth', price: 50, lim: 0 },
     { key: 'sietch:folio', kind: 'folio', qty: 5, cur: 'teeth', price: 40, lim: 0 }, { key: 'sietch:seal', kind: 'seal', qty: 1, cur: 'teeth', price: 300, lim: 1 }, { key: 'sietch:ix_plate', kind: 'ix_plate', qty: 3, cur: 'teeth', price: 150, lim: 2 }, { key: 'sietch:holtz_conductor', kind: 'holtz_conductor', qty: 2, cur: 'teeth', price: 280, lim: 2 }];
-  if (sk === 'ring') { const r = sRng(ghash(todayKey() + 'ring')), pool = ROSTER_IDS.filter(id => !CH[id].legendary && !CH[id].conquest && prog(id).stars < 7), hs = [];
+  if (sk === 'ring') { const r = sRng(ghash(todayKey() + 'ring')), pool = shopHeroPool().filter(id => !CH[id].legendary && !CH[id].conquest && prog(id).stars < 7), hs = [];
     while (hs.length < 6 && pool.length) hs.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
     return [...hs.map(id => ({ key: 'ring:sh:' + id, kind: 'sh', id, qty: 5, cur: 'wring', price: 120, lim: 3 })),
       { key: 'ring:folio', kind: 'folio', qty: 5, cur: 'wring', price: 60, lim: 5 }, { key: 'ring:pl', kind: 'pl', qty: 10, cur: 'wring', price: 80, lim: 5 },

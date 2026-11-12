@@ -139,6 +139,68 @@ function normalizeApprovedBH4(s) {
   }
   return copy;
 }
+// BH9.7 approved registration of two ordinary heroes and the shared story entry.
+// Compare old screens against the same legacy DOM after removing ONLY these
+// approved additions. All unrelated text, controls, card bodies and fields
+// remain subject to the original exact golden comparison.
+function normalizeApprovedBH97(s) {
+  const copy = structuredClone(s);
+  const rosterScreens = new Set([
+    'fresh:squad','view:squad','detail:paul','detail:duncan',
+    'detail:baron','detail:erasmus','item:paul:0'
+  ]);
+  for (const screen of copy.screens) {
+    if (screen.name === 'view:legend' && typeof screen.view === 'string') {
+      const entry = '<div style="margin:6px 0;display:flex;gap:7px;flex-wrap:wrap"><button type="button" class="btn" data-v="baron_journey">Восхождение Барона · 10 требований</button><button type="button" class="btn" data-v="story_events">Сюжетные события · Марго и Юэ</button></div>';
+      assert.ok(screen.view.includes(entry), 'BH9.7 story entry in approved location');
+      screen.view = screen.view.replace(entry + '\n  ', '');
+    }
+    if (rosterScreens.has(screen.name) && typeof screen.view === 'string') {
+      let v = screen.view;
+      const cards = /<button class="hc[^"]*"[^>]*data-open="(baron_legend|margot|yue)"[^>]*>[\s\S]*?<\/button>/g;
+      const found = [...v.matchAll(cards)].map(m => m[1]).sort();
+      assert.deepEqual(found, ['baron_legend','margot','yue'], screen.name + ': three approved new hero cards');
+      v = v.replace(cards, '');
+      v = v.replace(/(мощь · открыто \d+\/)(\d+)/, (_m, a, n) => a + (Number(n) - 3));
+      const expectedAdditions = { rf: { all:3, light:1, dark:2, atr:1, bg:1, cor:1, hark:1 }, rr: { all:3, sup:2, heal:1 } };
+      v = v.replace(/(<button class="ropt" data-(rf|rr)="([^"]+)" aria-pressed="[^"]+">[\s\S]*?<small>)(\d+)(<\/small><\/button>)/g,
+        (match, before, kind, key, number, after) => {
+          const delta = expectedAdditions[kind][key] || 0;
+          assert.ok(Number(number) >= delta, screen.name + ': nonnegative approved filter count');
+          return before + (Number(number) - delta) + after;
+        });
+      v = v.replace(/(<span id="rdiv-n">)(\d+)(<\/span>)/, (_m, before, count, after) => {
+        assert.ok(Number(count) >= 3, screen.name + ': two newly locked heroes');
+        return before + (Number(count) - 3) + after;
+      });
+      // Other roster totals (filter counts and locked divider) are checked
+      // separately after the first full diff; never replace arbitrary digits.
+      if (screen.name !== 'fresh:squad') {
+        // The late fixture had 24/24 heroes unlocked; the two new 0-star
+        // heroes alone make the locked divider visible. After excluding them
+        // from the legacy comparison it must return to its hidden state.
+        assert.ok(v.includes('<div class="rdiv" id="rdiv">Не открыты · <span id="rdiv-n">0</span>'),
+          screen.name + ': only BH9.7/BH9.9 heroes were locked in the late fixture');
+        v = v.replace('<div class="rdiv" id="rdiv">', '<div class="rdiv" id="rdiv" hidden="">');
+      }
+      screen.view = v;
+    }
+    if (screen.name === 'profile' && typeof screen.overlay2 === 'string') {
+      const avatar = /<button class="pick[^"]*" data-pava="hero:(margot|yue)"[^>]*>[\s\S]*?<\/button>/g;
+      const found = [...screen.overlay2.matchAll(avatar)].map(m => m[1]).sort();
+      assert.deepEqual(found, ['margot','yue'], 'BH9.9 locked legend must not enter profile avatar selection');
+      screen.overlay2 = screen.overlay2.replace(avatar, '');
+      // The newly public legend is still locked on historical saves. Its
+      // avatar choice is shown disabled, never granted or automatically usable.
+      const lockedLegend=/<button class="pick[^"]*" data-pava="hero:baron_legend"[^>]*>[\s\S]*?<\/button>/g;
+      const newLegend=[...screen.overlay2.matchAll(lockedLegend)];
+      assert.equal(newLegend.length,1,'one additional locked legendary avatar');
+      assert.ok(newLegend[0][0].includes('disabled=""'),'locked legendary avatar must stay disabled');
+      screen.overlay2=screen.overlay2.replace(lockedLegend,'');
+    }
+  }
+  return copy;
+}
 function validateV86Legend(s) {
   const legend = s.screens.find(x => x.name === 'view:legend');
   assert.ok(legend && !legend.errors.length, 'legend screen renders without errors');
@@ -151,9 +213,6 @@ function validateV86Legend(s) {
     'all eleven required hero cards exist in the requirements panel');
   assert.ok(html.includes('Бои заблокированы') || html.includes('Муад’Диб открыт') || html.includes('Все 11 требований выполнены'), 'gate status is explained');
 }
-// GE1: the approved redesign changes only three well-bounded portions of the
-// existing DOM goldens. Keep all other markup/attributes strictly compared.
-// Old screen baselines are NEVER overwritten by this normalization.
 function normalizeApprovedGE1(src, isCurrent) {
   const copy = structuredClone(src);
   const campView = new Set([
@@ -228,11 +287,13 @@ else {
   if (!baseline) throw new Error('screens golden baseline missing');
   const parsed = JSON.parse(baseline);
   const want = normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGE1({ ...parsed.meta, screens: parsed.screens }, false)));
-  const got = normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGE1(out, true)));
+  const got = normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedBH97(normalizeApprovedGE1(out, true))));
   if (!isDeepStrictEqual(want, got)) {
     const changed = want.screens.filter((v, i) => !isDeepStrictEqual(v, got.screens[i])).map(x => x.name);
     console.error('Unapproved golden screen differences:', changed.join(', '));
-    for (const name of changed.slice(0, 2)) {
+    // Report each changed screen independently so owner can approve only intended UI
+    // deltas; do not rewrite or normalize golden snapshots automatically.
+    for (const name of changed) {
       const expected = want.screens.find(x => x.name === name), actual = got.screens.find(x => x.name === name);
       for (const key of ['header','view','overlay','overlay2','bodyClass','errors']) {
         if (isDeepStrictEqual(expected[key],actual[key])) continue;

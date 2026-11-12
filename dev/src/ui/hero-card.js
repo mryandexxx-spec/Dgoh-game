@@ -123,10 +123,16 @@ function hcStats(d, p) {
 // точечное обновление: зона перерисовывается, только если её разметка изменилась
 function setZone(sel, html) { const el = $('#overlay .hc ' + sel); if (el && el._h !== html) { el.innerHTML = html; el._h = html; } }
 
-function openDetail(id) {
+function openDetail(id, stagedPreview = null) {
+  // The approved universal hero card is reused, never copied. This staged
+  // entry is private: no public roster, no unlock, and no save migration.
+  if (stagedPreview && id !== 'baron_legend') throw new Error('Only the staged legendary Baron can be previewed');
+  if (!stagedPreview && !CH[id]) return;
   if (detailCid !== id) detailSk = 'basic';
   detailCid = id;
-  const d = CH[id], p = prog(id), L = heroNavList(id), i = L.indexOf(id), nav = L.length > 1;
+  const d = stagedPreview ? { ...stagedPreview.def, side: 'dark' } : CH[id];
+  const p = stagedPreview ? { ...stagedPreview.progress, stars: 0, shards: 0 } : prog(id); // read-only locked staging
+  const L = stagedPreview ? [] : heroNavList(id), i = L.indexOf(id), nav = L.length > 1;
   const near = nav ? [L[(i + 1) % L.length], L[(i - 1 + L.length) % L.length]] : [];
   const Z = { '.hctop': hcTop(d), '.hcleft': hcSkills(id, d, p), '.hcgl': hcSlots(id, p, [0, 1, 2]), '.hcgr': hcSlots(id, p, [3, 4, 5]), '.hcbot': hcBot(id, d, p, nav), '.hcright': hcRight(id, d, p), '.hcst': hcStats(d, p) };
   const root = $('#overlay .hc');
@@ -140,9 +146,15 @@ function openDetail(id) {
   }
   for (const k in Z) setZone(k, Z[k]);
   const hc = $('#overlay .hc'); hc.dataset.cid = id; hc.classList.toggle('locked', !p.stars);
-  updLvl();
-  mountHeroStage(id, near);
-  for (const f of HC_REFRESH) f(id);   // открытые окно умения / «Другая память» (пакет 6)
+  if (stagedPreview) {
+    // Prevent preview-only controls from writing into a real player's roster.
+    // Close/back and the stats toggle retain the same shared card behavior.
+    hc.querySelectorAll('button').forEach(button => {
+      if (!button.matches('[data-close],[data-dback],[data-hcstat]')) button.disabled = true;
+    });
+  } else updLvl();
+  mountHeroStage(id, near, stagedPreview ? { def: d, progress: p } : null);
+  if (!stagedPreview) for (const f of HC_REFRESH) f(id);   // открытые окно умения / «Другая память» (пакет 6)
 }
 
 function updLvl() { const r = $('#lvlr'); if (!r) return; const p = prog(detailCid), to = +r.value, c = lvlCost(p.lvl, to); $('#lvlv').textContent = to; $('#lvlc').innerHTML = amt('sol', c); const b = $('#lvlgo'); b.disabled = S.solari < c; b.classList.toggle('go', S.solari >= c); }
@@ -150,5 +162,7 @@ function updLvl() { const r = $('#lvlr'); if (!r) return; const p = prog(detailC
 function hcStat() { HC_STAT = !HC_STAT; const hc = $('#overlay .hc'); if (!hc) return; hc.classList.toggle('stat', HC_STAT); const b = hc.querySelector('[data-hcstat]'); if (b) { b.classList.toggle('on', HC_STAT); b.setAttribute('aria-pressed', HC_STAT); } const z = hc.querySelector('.hctop'); if (z) z._h = null; }
 
 
+// Internal opt-in staging entry point. It is deliberately not wired into the
+// roster, Legends navigation, route handling or public save schema.
 function set_detailSk(v) { return detailSk = v; }
 export { detailCid, detailSk, heroNavList, openDetail, updLvl, hcStat, set_detailSk, HC_REFRESH, skKeys };

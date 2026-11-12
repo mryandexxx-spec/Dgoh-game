@@ -1,0 +1,9 @@
+{
+  "reopened": true,
+  "meshes": 11,
+  "bones": 18,
+  "all_meshes_skinned": true,
+  "normalized_weights": true,
+  "finite_deformation_in_three_test_poses": true,
+  "animation_quality_reviewed": false
+}

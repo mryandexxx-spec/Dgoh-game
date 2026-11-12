@@ -1,5 +1,7 @@
 // data/chars.js — строки 33–183 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import './fx.js'; // порядок исполнения
+import { BARON_FUTURE_KITS } from './baron-future-kits.js';
+import { BARON_LEGEND_KIT } from './baron-legend-kit.js';
 
 const CHARS = [
   { id: 'leto', n: 'Герцог Лето Атрейдес', sn: 'Лето', g: 'ЛА', f: ['atr'], role: 'sup', teamShield: .2,
@@ -138,9 +140,15 @@ CHARS.push(
     ult: { n: 'Зеркало жидкого металла', cd: 4, tgt: 'enemies', dt: 'voice', m: 1.5, fx: [['voiced', 1, 't', .65], ['armDown', 2, 't']], tm: { enemies: -250 }, d: 'Голос по всем врагам: 150% урона мимо щитов, Броня↓ на 2 хода, 65% шанс подчинения Голосом и −25% шкалы хода.' },
     gl: { kind: 'mirror', theme: '#9fe8ff', n: 'Перепрограммирование', d: 'Ультимативная способность. Заряжается в бою: +12% за каждое действие Эразма, +4% за действие союзника, +6% за полученный удар. Один раз за бой: все враги теряют 50% макс. здоровья мимо щитов, лишаются положительных эффектов и оглушаются; самый опасный выживший враг перепрограммирован и до конца боя сражается за отряд Эразма. По боссу-червю — 1000% урона Голосом.' } },
 );
+// BH9.7 temporary procedural models (same 3D pipeline as Chani/Paul).
+// Approved original concept art remains the target for future GLB/DGM assets.
+// Both heroes are ordinary locked characters; no leader or legendary GL ability.
+CHARS.push(...['margot','yue'].map(id => ({ ...BARON_FUTURE_KITS[id] })));
+// BH9.9: own public legendary hero; the ordinary baron remains untouched.
+CHARS.push({ ...BARON_LEGEND_KIT });
 const MENTAT = u => (u.def || u).prof === 'Ментат';
 const LIGHT_IDS = new Set(['leto', 'paul', 'jessica', 'gurney', 'duncan', 'thufir', 'stilgar', 'chani', 'kynes', 'fedaykin', 'muaddib', 'liet', 'atrguard']);
-CHARS.forEach(c => { c.side = c.f.includes('mach') ? 'mach' : LIGHT_IDS.has(c.id) ? 'light' : 'dark'; });
+CHARS.forEach(c => { c.side = c.f.includes('mach') ? 'mach' : LIGHT_IDS.has(c.id) || c.id === 'yue' ? 'light' : 'dark'; });
 const CH = Object.fromEntries(CHARS.map(c => [c.id, c]));
 CHARS.forEach((c, i) => { c.z7 = c.leader ? ['ult', 'leader'] : [['ult', 'special'], ['ult', 'passive'], ['ult']][i % 3]; });
 CH.duncan.z7 = ['ult', 'passive'];

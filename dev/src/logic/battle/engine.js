@@ -7,6 +7,9 @@ import { autoSk, dunGuard, dunShielded, leadBonus, pasMult, skLv } from './skill
 import { CH, MENTAT } from '../../data/chars.js';
 import { LEAD_MODS } from '../../data/skill-ups.js';
 import { FX } from '../../data/fx.js';
+import { horrorDamageFactor, horrorSpeedFactor } from './horror.js';
+import { passiveTeamPotency, supportEmergencyHeal, supportOnIsolation } from './support-kits.js';
+import { canApplyStatus, consumeForesight, markedDamageFactor, markHouseVictim, mayRevive, baronPreventRevival, baronDeathTriggers } from './baron-mechanics.js';
 
 function mkRng(seed) {
   let a = seed >>> 0;
@@ -16,16 +19,22 @@ function mkRng(seed) {
 // squads: [{id, lvl, stars, gear}], side A = player, B = enemy
 function createBattle(squadA, squadB, opts = {}) {
   const B = { units: [], desert: !!opts.desert, spice: { A: 0, B: 0 }, rhythm: 0, log: [], events: [], over: null, active: null, rng: mkRng(opts.seed || Date.now()), leader: {}, round: 0 };
+  // Explicit preview-only definitions let future playable heroes enter isolated
+  // scenario tests without inserting unapproved art into the public CHARS roster.
+  // Existing CH definitions always take priority, preventing character overrides.
+  const resolveDef = id => CH[id] || opts.extraHeroDefs?.[id];
   let uid = 0;
   for (const [side, sq] of [['A', squadA], ['B', squadB]]) {
     if (!sq.length) { B.leader[side] = null; continue; }
-    const leadDef = CH[sq[0].id];
+    const leadDef = resolveDef(sq[0].id);
+    if (!leadDef) throw new Error('Unknown battle leader: ' + sq[0].id);
     B.leader[side] = leadDef.leader ? leadDef.id : null;
     sq.forEach((p, i) => {
-      const def = CH[p.id];
+      const def = resolveDef(p.id);
+      if (!def) throw new Error('Unknown battle hero: ' + p.id);
       const s = unitStats(def, p), sk = p.sk || autoSk(p.lvl), pm = pasMult(sk.passive || 1);
       s.maxHp = Math.round(s.maxHp * pm); s.dmg = Math.round(s.dmg * pm);
-      const u = { sk, uid: 'u' + (uid++), side, idx: i, def, ...s, hp: s.maxHp, shield: s.maxShield, glOn: !!(def.gl && p.gl), ultM: 0, glUsed: false, tm: 0, cd: { special: 0, ult: def.ult ? (def.ult.cd0 ?? 3) : 0 }, fx: {}, alive: true, intent: null, dmgBonus: 0, fearImmune: !!def.fearImm, counterChance: def.counter || 0, gear: p.gear || 1, relic: p.relic || 0 };
+      const u = { sk, uid: 'u' + (uid++), side, idx: i, def, ...s, hp: s.maxHp, shield: s.maxShield, glOn: !!(def.gl && p.gl), ultM: 0, glUsed: false, tm: 0, cd: { special: def.special?.cd0 ?? 0, ult: def.ult ? (def.ult.cd0 ?? 3) : 0 }, fx: {}, alive: true, intent: null, dmgBonus: 0, fearImmune: !!def.fearImm, counterChance: def.counter || 0, gear: p.gear || 1, relic: p.relic || 0 };
       if (def.armUp) u.arm += def.armUp; if (def.critUp) u.crit += def.critUp; if (def.potUp) u.pot += def.potUp;
       const L = B.leader[side];
       if (L === 'leto' && has(u, 'atr')) { u.arm += .1; u.dmgBonus += .1; u.counterChance = Math.max(u.counterChance, .25); }
@@ -49,7 +58,27 @@ function createBattle(squadA, squadB, opts = {}) {
       if (src.def.teamStartTM) for (const a of team) a.tm = Math.min(999, a.tm + src.def.teamStartTM);
     }
   }
+  // Recovered Greed passive: calculate team bonuses exactly once from the
+  // opening formation (not re-applied on resurrection or new waves).
+  for (const side of ['A', 'B']) {
+    const team = B.units.filter(a => a.side === side);
+    const greeds = team.filter(a => a.def.passive?.harkonnenGreed);
+    if (!greeds.length) continue;
+    const hark = team.filter(a => has(a, 'hark'));
+    const hasFeyd = team.some(a => a.def.id === 'feyd');
+    for (const a of hark) {
+      a.maxHp = Math.round(a.maxHp * (1 + .1 * hark.length));
+      a.hp = a.maxHp;
+      if (hasFeyd) a.critDamageBonus = (a.critDamageBonus || 0) + .2;
+    }
+  }
+  passiveTeamPotency(B);
   for (const u of B.units) if (u.def.id === 'duncan' && skLv(u, 'passive') >= 4) u.fx.taunt = 2;
+  // Data-driven leader mark, only for a hero whose leader kit explicitly enables it.
+  for (const side of ['A', 'B']) {
+    const leader = B.units.find(u => u.side === side && u.idx === 0);
+    if (leader?.def?.leader?.houseMark) markHouseVictim(B.units, side);
+  }
   if (opts.boss) {
     const R = opts.boss, T = RAID_TIERS[R.tier];
     B.raid = true; B.desert = true;
@@ -76,8 +105,8 @@ function ev(B, u, text, kind) { B.events.push({ uid: u.uid, text, kind }); }
 function nextActor(B) {
   const alive = living(B);
   let best = null, bestT = Infinity;
-  for (const u of alive) { const t = Math.max(0, 1000 - u.tm) / u.spd; if (t < bestT - 1e-9 || (Math.abs(t - bestT) < 1e-9 && u.spd > best.spd)) { bestT = t; best = u; } }
-  for (const u of alive) u.tm += u.spd * bestT;
+  for (const u of alive) { const t = Math.max(0, 1000 - u.tm) / (u.spd * horrorSpeedFactor(u)); if (t < bestT - 1e-9 || (Math.abs(t - bestT) < 1e-9 && u.spd > best.spd)) { bestT = t; best = u; } }
+  for (const u of alive) u.tm += u.spd * horrorSpeedFactor(u) * bestT;
   best.tm = 1000;
   return best;
 }
@@ -86,8 +115,8 @@ function previewOrder(B, n = 8) {
   const out = [];
   while (out.length < n && alive.length) {
     let best = null, bestT = Infinity;
-    for (const a of alive) { const t = Math.max(0, 1000 - a.tm) / a.u.spd; if (t < bestT) { bestT = t; best = a; } }
-    for (const a of alive) a.tm += a.u.spd * bestT;
+    for (const a of alive) { const t = Math.max(0, 1000 - a.tm) / (a.u.spd * horrorSpeedFactor(a.u)); if (t < bestT) { bestT = t; best = a; } }
+    for (const a of alive) a.tm += a.u.spd * horrorSpeedFactor(a.u) * bestT;
     best.tm = 0; out.push(best.u);
   }
   return out;
@@ -96,7 +125,9 @@ function previewOrder(B, n = 8) {
 function damageRaw(B, u, pct, why) {
   if (!u.alive) return;
   const d = Math.round(u.maxHp * pct);
+  const previousFraction=u.hp/u.maxHp;
   u.hp -= d; ev(B, u, '−' + d, 'raw');
+  supportEmergencyHeal(B,u,previousFraction,ev);
   if (u.hp <= 0) kill(B, u, null, why); else dunGuard(B, u);
 }
 // страж (def.guards): пока жив, подзащитные союзники не погибают — остаются с 1 здоровья
@@ -105,8 +136,10 @@ function kill(B, u, by) {
   const g = !B.over && u.alive && guardOf(B, u);
   if (g) { u.hp = 1; ev(B, u, '1 ОЗ', 'buff'); log(B, `${g.def.sn} не даёт ${u.def.sn} пасть: 1 здоровья.`, 'ctrl'); return; }
   u.hp = 0; u.alive = false; u.fx = {}; u.shield = 0; ev(B, u, '', 'death');
-  if (u.def.id === 'duncan' && !u.revived && !u.noRev && skLv(u, 'passive') >= 7) { u.revived = true; u.pendingRevive = true; log(B, `${u.def.sn} падает… но гхола не умирает дважды.`, 'death'); return; }
-  if (u.side === 'A' && B.cqGhola && !u.revived && !u.charmed && !u.noRev) { B.cqGhola = 0; u.revived = true; u.pendingRevive = true; u.revHp = .5; log(B, `${u.def.sn} падает… но аксолотлевый чан вернёт его в бой.`, 'death'); return; }
+  baronPreventRevival(B, u); // must run before scheduling any resurrection
+  if (u.def.id === 'duncan' && !u.revived && mayRevive(u) && skLv(u, 'passive') >= 7) { u.revived = true; u.pendingRevive = true; log(B, `${u.def.sn} падает… но гхола не умирает дважды.`, 'death'); return; }
+  if (u.side === 'A' && B.cqGhola && !u.revived && !u.charmed && mayRevive(u)) { B.cqGhola = 0; u.revived = true; u.pendingRevive = true; u.revHp = .5; log(B, `${u.def.sn} падает… но аксолотлевый чан вернёт его в бой.`, 'death'); return; }
+  baronDeathTriggers(B, u, ev); // only an irreversible death earns Greed and mark bonuses
   log(B, `${u.def.sn} выбывает из боя.`, 'death');
   if (u.side === 'A' && B.cqAvenge) { const al = B.units.filter(a => a.alive && a.side === u.side); for (const a of al) { a.fx.defUp = Math.max(a.fx.defUp || 0, 2); a.fx.counter = Math.max(a.fx.counter || 0, 2); } if (al.length) log(B, `Клятва сиетча: отряд мстит за ${u.def.sn} (Защита↑, Контратака).`); }
   if (by && by.alive && by.cqChain && by.side !== u.side && !B.over) { if (by === B.active) by.tmBonus = 999; else by.tm = 999; ev(B, by, 'Ещё ход', 'buff'); log(B, `Танец смерти: ${by.def.sn} сразу готов к новому удару.`); }
@@ -149,8 +182,11 @@ function hit(B, att, tgt, dt, m, opts = {}) {
   (B.shots ||= []).push({ a: att.uid, t: tgt.uid, dt });
   if (tgt.glOn && !tgt.glUsed) tgt.ultM = Math.min(100, tgt.ultM + 6);
   const eva = tgt.eva + (tgt.fx.evaUp ? .3 : 0) + (dt === 'blade' && tgt.def.evaBlade ? tgt.def.evaBlade : 0);
+  if (consumeForesight(tgt, dt)) { ev(B, tgt, 'Предвидение', 'miss'); log(B, `${tgt.def.sn} предвидит удар ${att.def.sn}.`, 'ctrl'); return false; }
   if (dt !== 'voice' && dt !== 'poison' && B.rng() < eva) { ev(B, tgt, 'Уклон', 'miss'); log(B, `${tgt.def.sn} уклоняется от атаки ${att.def.sn}.`); return false; }
-  let d = att.dmg * m * (0.9 + 0.2 * B.rng()) * (1 + att.dmgBonus);
+  let d = att.dmg * m * (0.9 + 0.2 * B.rng()) * (1 + att.dmgBonus) * horrorDamageFactor(att) * markedDamageFactor(tgt,att);
+  if (att.fx.attackUp) d *= 1.2;
+  if (att.fx.damageDown) d *= .8;
   if (B.leader[att.side] === 'baron' && has(att, 'hark') && tgt.fx.poison) d *= 1.4;
   if (att.def.fallenBonus) d *= 1 + att.def.fallenBonus * B.units.filter(x => x.side === att.side && !x.alive).length;
   if (opts.bonusDebuffed && isDebuffed(tgt)) d *= 1.5;
@@ -163,7 +199,7 @@ function hit(B, att, tgt, dt, m, opts = {}) {
   if (att.cqExec && tgt.hp / tgt.maxHp < .5) d *= 1 + att.cqExec;
   if (att.cqFury) d *= 1 + att.cqFury * B.units.filter(x => x.side === att.side && !x.alive).length;
   if (att.vsFac) for (const f of tgt.def.f) if (att.vsFac[f]) d *= 1 + att.vsFac[f];
-  const crit = B.rng() < att.crit; if (crit) d *= att.fx.critDown ? 1.25 : 1.5;
+  const crit = B.rng() < att.crit; if (crit) d *= att.fx.critDown ? 1.25 : 1.5 + (att.critDamageBonus || 0);
 
   if (dt === 'laser' && tgt.shield > 0) {
     log(B, `РЕАКЦИЯ ХОЛЬЦМАНА! Луч ${att.def.sn} коснулся щита ${tgt.def.sn}.`, 'holtz');
@@ -182,7 +218,9 @@ function hit(B, att, tgt, dt, m, opts = {}) {
   else if (dt === 'voice' || dt === 'poison') { toHp = d; }
   else { toShield = Math.min(tgt.shield, d); toHp = d - toShield; }
   if (tgt.cqLast && toHp >= tgt.hp) { toHp = Math.max(0, tgt.hp - 1); tgt.cqLast = 0; tgt.fx.evaUp = Math.max(tgt.fx.evaUp || 0, 2); ev(B, tgt, 'Предзнание', 'buff'); log(B, `${tgt.def.sn} предвидит смертельный удар и уходит от него (1 ОЗ, Уклонение↑).`, 'ctrl'); }
+  const previousFraction=tgt.hp/tgt.maxHp;
   tgt.shield -= toShield; tgt.hp -= toHp;
+  if(toHp)supportEmergencyHeal(B,tgt,previousFraction,ev);
   const what = toHp ? `${toHp}${toShield ? ` (+${toShield} по щиту)` : ''}` : `${toShield} по щиту`;
   ev(B, tgt, (toHp ? '−' + toHp : '◇−' + toShield) + (crit ? '!' : ''), toHp ? (crit ? 'crit' : 'dmg') : 'shield');
   log(B, `${att.def.sn} → ${tgt.def.sn}: ${what}${crit ? ', крит' : ''}${dt === 'fast' && toShield && !toHp ? ' — щит остановил пулю' : ''}.`);
@@ -202,13 +240,24 @@ function resist(B, att, tgt, k) {
   return B.rng() >= ch;
 }
 function applyFx(B, att, tgt, k, n, chance = 1) {
-  if (!tgt.alive) return;
+  if (!tgt.alive || !FX[k]) return;
+  if (!canApplyStatus(tgt, att, Boolean(FX[k].bad))) return;
   if (FX[k].bad) {
     if (B.rng() >= chance) return;
     if (resist(B, att, tgt, k)) { ev(B, tgt, 'Сопр.', 'miss'); log(B, `${tgt.def.sn} сопротивляется эффекту «${FX[k].n}».`); return; }
   }
   if (k === 'bleed') { tgt.bleedN = Math.min(5, (tgt.fx.bleed ? tgt.bleedN || 0 : 0) + 1); tgt.fx.bleed = n; }
   tgt.fx[k] = Math.max(tgt.fx[k] || 0, n);
+  if(k==='isolation' && att && att.side!==tgt.side)supportOnIsolation(B,att,tgt,{living,ev});
+  if (k === 'horror' && att && att.side !== tgt.side) {
+    const team = living(B, att.side), barons = team.filter(x => x.def.passive?.harkonnenGreed);
+    if (barons.length) {
+      if (team.some(x => x.def.id === 'rabban')) tgt.horrorStrength = 2;
+      for (const baron of barons) baron.fx.defUp = Math.max(baron.fx.defUp || 0, 2);
+      for (const ally of team) if (has(ally, 'hark') && canApplyStatus(ally, barons[0], false))
+        ally.fx.attackUp = Math.max(ally.fx.attackUp || 0, 2);
+    }
+  }
   ev(B, tgt, k === 'bleed' && tgt.bleedN > 1 ? `${FX[k].n} ×${tgt.bleedN}` : FX[k].n, FX[k].bad ? 'debuff' : 'buff');
   if (FX[k].bad && att && att.side !== tgt.side && B.leader[att.side] === 'erasmus' && (has(att, 'mach') || MENTAT(att))) for (const a of living(B, att.side)) if (has(a, 'mach') || MENTAT(a)) a.tm = Math.min(999, a.tm + 80);
 }
@@ -230,6 +279,7 @@ function validTargets(B, u, ab) {
 function abilityReady(B, u, key) {
   if (key === 'gl') return !!(u.glOn && !u.glUsed && glMeter(B, u) >= 100);
   const ab = u.def[key];
+  if (!ab) return false;
   if (key === 'basic') return true;
   if (u.cd[key] > 0) return false;
   if (ab.spice && B.spice[u.side] < ab.spice) return false;

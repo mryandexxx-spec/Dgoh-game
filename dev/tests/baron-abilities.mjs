@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import { BARON_LEGEND_ABILITIES as a, BARON_SKILL_KEYS, validateBaronAbilities } from '../src/data/baron-legend-abilities.js';
+assert.deepEqual(validateBaronAbilities(), []);
+assert.deepEqual(Object.keys(a), BARON_SKILL_KEYS);
+assert.equal(a.gl.name,'Падение Атрейдесов');
+assert.equal(a.basic.name,'Приказ Барона');
+assert.equal(a.special.name,'Власть через страх');
+assert.equal(a.powerful.name,'Глаза императора');
+assert.equal(a.passive.name,'Алчность');
+assert.equal(a.leader.name,'Дом Харконненов');
+assert.equal(a.basic.feydCanAttackTwice,true);
+assert.equal(a.special.initialCooldown,3);
+assert.equal(a.powerful.initialCooldown,4);
+assert.equal(a.passive.rabbanDoublesHorrorIntensity,true);
+assert.deepEqual(validateBaronAbilities({...a,powerful:{...a.powerful,cooldown:3}}),['Emperor eyes mismatch']);
+console.log('BH1 restored six authentic abilities: PASS');
