@@ -512,7 +512,7 @@ class Arena3D extends GameScene {
         const strength = w * w * (3 - 2 * w);
         T1.set(p.x + 2.2, p.y + 1.9, p.z + 4.7);
         B3.Vector3.LerpToRef(pos, T1, strength, pos);
-        T1.set(p.x - .7, p.y + 1.3, p.z);
+        T1.set(p.x + .45, p.y + 1.3, p.z);
         B3.Vector3.LerpToRef(look, T1, strength, look);
       }
     }
