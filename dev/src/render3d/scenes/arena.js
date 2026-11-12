@@ -490,7 +490,15 @@ class Arena3D extends GameScene {
         for (const m of o.mats) m.emissiveColor.set(o.phaseN >= 4 ? .25 : 0, 0, 0);
       } else {
         if (o.rise && o.dead && now >= o.rise) { o.dead = false; o.rise = now; this.ringFX(o, '#ffd27a', 1.4); this.healFX(o); this.shakeT = now; }
-        poseHuman(this, o, now, t, sp);
+        // One broken pose must not abort rendering, light cleanup or HUD
+        // projection for the entire battle. Retry on the next action/state.
+        const poseState = o.dead ? 'dead' : o.act ? o.act.t0 : 'idle';
+        if (o._poseFault !== poseState) try { poseHuman(this, o, now, t, sp); o._poseFault = null; }
+        catch (e) {
+          o._poseFault = poseState; o.act = null;
+          r.position.copyFrom(o.base); r.rotation.y = o.face;
+          errLog('arena-pose:' + uid, e);
+        }
         if (this.baronGL?.caster === o) {
           const G = this.baronGL, k = Math.max(0, Math.min(1, (now - G.t0) / G.dur));
           // Rise 0–0.7s, hold through the order, return during impact.

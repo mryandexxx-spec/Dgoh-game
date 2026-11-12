@@ -211,7 +211,9 @@ function poseModelClip(o, now, t, sp, stage) {
     for (const { node, p, q, s } of Object.values(rest)) {
       node.position.copyFromFloats(p[0], p[1], p[2]);
       node.scaling.copyFromFloats(s[0], s[1], s[2]);
-      node.rotationQuaternion.copyFromFloats(q[0], q[1], q[2], q[3]);
+      // Recover even if an older/additive pose has cleared a bone quaternion.
+      const rotation = node.rotationQuaternion || (node.rotationQuaternion = B3.Quaternion.Identity());
+      rotation.copyFromFloats(q[0], q[1], q[2], q[3]);
     }
     o.root._lastClip = clipName;
   }
