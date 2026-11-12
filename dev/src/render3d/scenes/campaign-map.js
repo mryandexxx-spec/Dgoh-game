@@ -116,18 +116,25 @@ class CampaignMapScene extends GameScene {
     const dx=e.clientX-p.x,dy=e.clientY-p.y;
     p.x=e.clientX;p.y=e.clientY;
     if(this.pointers.size===1){
-      const speed=this.radius/620;
-      this.cx -= dx*speed;this.cz -= dy*speed;
+      if(e.altKey || e.buttons===2) this.alpha+=dx*.006;
+      else { const speed=this.radius/620;this.cx-=dx*speed;this.cz-=dy*speed; }
     }else if(this.pointers.size===2){
       const list=[...this.pointers.values()],d=Math.hypot(list[0].x-list[1].x,list[0].y-list[1].y);
+      const ang=Math.atan2(list[0].y-list[1].y,list[0].x-list[1].x);
       if(this._pinchD){this.radius*=this._pinchD/Math.max(8,d);}
-      this._pinchD=d;
+      if(this._pinchA!==undefined) {
+        let da=ang-this._pinchA;
+        if(da>Math.PI)da-=Math.PI*2;
+        if(da< -Math.PI)da+=Math.PI*2;
+        this.alpha+=da*.65;
+      }
+      this._pinchD=d;this._pinchA=ang;
     }
     this.applyCamera();
   };
   pointerUp=e=>{
     const p=this.pointers.get(e.pointerId);
-    this.pointers.delete(e.pointerId); this._pinchD=null;
+    this.pointers.delete(e.pointerId); this._pinchD=null;this._pinchA=undefined;
     if(!p || Math.hypot(e.clientX-p.sx,e.clientY-p.sy)>9 || this.pointers.size)return;
     const hit=this.scene.pick(e.offsetX,e.offsetY);
     const id=hit?.pickedMesh?.metadata?.campaignNodeId;
@@ -151,7 +158,20 @@ class CampaignMapScene extends GameScene {
     for(const [name,fn] of [['pointerdown',this.pointerDown],['pointermove',this.pointerMove],
       ['pointerup',this.pointerUp],['pointercancel',this.pointerUp],['wheel',this.wheel]])
       this.cv.removeEventListener(name,fn);
-    this.pointers.clear();this._pinchD=null;
+    this.pointers.clear();this._pinchD=null;this._pinchA=undefined;
+  }
+  projectLabels(){
+    if(!this.labels?.length)return;
+    const w=this.w||1,h=this.h||1;
+    const vp=new B3.Viewport(0,0,w,h);
+    const matrix=this.scene.getTransformMatrix();
+    this.map.nodes.forEach((node,k)=>{
+      const el=this.labels[k]; if(!el)return;
+      const p=B3.Vector3.Project(new B3.Vector3(node.x,1.15,node.z),B3.Matrix.IdentityReadOnly,matrix,vp);
+      const valid=Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.z>0&&p.z<1&&p.x>24&&p.y>24&&p.x<w-24&&p.y<h-24;
+      el.style.visibility=valid?'visible':'hidden';
+      if(valid)el.style.transform=`translate3d(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px,0) translate(-50%,-50%)`;
+    });
   }
   onWake(){this.bind();this.engine.resize();this.applyCamera();}
   onSleep(){this.unbind();}
@@ -161,11 +181,13 @@ class CampaignMapScene extends GameScene {
   update(){
     const sz=cvSize(this.cv);
     if(sz.w!==this.w||sz.h!==this.h){this.w=sz.w;this.h=sz.h;this.engine.resize();}
-    this.scene.render();this.dirty=false;
+    this.scene.render();this.projectLabels();this.dirty=false;
   }
   mount(el){
+    this.labels=Array.from(el.querySelectorAll('[data-c20node]'));
     const dpr=gfx(this.small).dpr.camp;
     this.wake(el,{cls:'campaign20-canvas',first:true,dpr});
+    this.dirty=true;this.t0=performance.now();
   }
 }
 export function mountCampaignMap(el,map,onSelect,onFallback){
