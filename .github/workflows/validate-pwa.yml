@@ -57,6 +57,7 @@ jobs:
       - run: node tests/muad-dib-asset.mjs
       - run: node tests/muad-dib-skinning.mjs
       - run: node tests/muad-dib-babylon.mjs dist/pwa/index.html
+      - run: node tests/arena-animation-recovery.mjs dist/pwa/index.html
       - run: node tests/baron-legend-animation.mjs
       - run: node tests/baron-legend-skinning.mjs dist/pwa/index.html
       - run: node tests/baron-legend-cinematic.mjs dist/pwa/index.html
@@ -470,10 +471,47 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  arena-animation:
+    name: Arena animation continuity + HUD + lighting (MED/LOW)
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dune-validated-build
+          path: dev/dist
+      - run: node tools/ci-artifact.mjs verify
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          chrome-version: stable
+      - name: Real Muad Dib transitions, auto x4, HUD and light cleanup
+        run: node tests/smoke/arena-animation-recovery.mjs dist/pwa/index.html dist/arena-animation
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dune-arena-animation-${{ github.run_number }}
+          path: dev/dist/arena-animation/
+          if-no-files-found: ignore
+          retention-days: 14
+
   gate:
     name: All required checks passed
     if: always()
-    needs: [build, golden, ui, three-d, bh8-preview, bh98-procedural, md-ult1]
+    needs: [build, golden, ui, three-d, bh8-preview, bh98-procedural, md-ult1, arena-animation]
     runs-on: ubuntu-24.04
     steps:
       - name: Reject any failed or skipped required check

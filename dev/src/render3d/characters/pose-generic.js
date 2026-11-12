@@ -15,7 +15,10 @@ const lerpN = (a, b, k) => a + (b - a) * k;
 const STANCE = { guard: [-.35, -.5, -.25, -.45], gun: [-.28, -.55, -.12, -.35], shield: [-.5, -.8, -.95, -1.15], open: [-.25, -.4, -.25, -.4] };
 function poseHuman(A, o, now, t, sp) {
   if (o.anim && o.anim.pose) return o.anim.pose(A, o, now, t, sp);
-  if (o._rig) clearQ(o);
+  // Authored clips own their local bone quaternions. The procedural retargeter
+  // uses a different bind pose and must neither clear nor overwrite them.
+  const ownClips = !!o.root._clips;
+  if (o._rig && !ownClips) clearQ(o);
   const ph = o.phase, br = Math.sin(t * 2 + ph);
   const pos = o._pp || (o._pp = V3()); pos.copyFrom(o.base); let yaw = o.face, hipY = br * .008, hipX = Math.sin(t * .6 + ph) * .015, lean = .04 + br * .012, twist = 0, headX = 0, headY = Math.sin(t * .37 + ph) * .14;
   const st = STANCE[o.stance] || STANCE.gun;
@@ -82,7 +85,7 @@ function poseHuman(A, o, now, t, sp) {
     o.capeB[1].rotation.x = motion * .7;
     o.capeB[2].rotation.x = motion;
   }
-  if (MOCAP_OK && o.anim && o.anim.slash && a && o.act && a.kind === 'melee' && !o.dead) {      // motion-captured sword cut in the strike phase
+  if (!ownClips && MOCAP_OK && o.anim && o.anim.slash && a && o.act && a.kind === 'melee' && !o.dead) {      // motion-captured sword cut in the strike phase
     const k = remapK((now - a.t0) / a.dur, a), w = seg(k, .22, .3) * (1 - seg(k, .66, .74));
     if (w > 0) layerClip(o, 'slash', .14 + (k - .26) / .44 * .68, w);
   }
