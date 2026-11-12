@@ -10,7 +10,7 @@ const g = loadGame(html), R = g.run;
 // Historical meta golden covers the pre-BH9.7 roster. Preserve that exact cohort;
 // the new heroes are exercised by their separate BH9 suites rather than changing
 // legacy shop/roster/economy baselines simply by appearing in CHARS.
-g.get('CHARS').splice(0, g.get('CHARS').length, ...g.get('CHARS').filter(c => !['margot', 'yue'].includes(c.id)));
+g.get('CHARS').splice(0, g.get('CHARS').length, ...g.get('CHARS').filter(c => !['margot', 'yue', 'baron_legend'].includes(c.id)));
 const cases = [];
 let seed = 1000;
 const range = (a, b, st = 1) => { const o = []; for (let x = a; x <= b; x += st) o.push(x); return o; };
