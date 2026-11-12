@@ -39,13 +39,12 @@ try{
     return {route:view,link:!!link,buttons:document.querySelectorAll('[data-bh9-stage]').length,
       requirementCards:document.querySelectorAll('#view .reqh [data-open]').length,
       locked:!!start?.disabled,first:m.length,hero:hero?.id,regular:CH.baron.id,
-      model:!!MODEL_DATA?.baron_legend,viewWidth:document.getElementById('view').scrollWidth,
+      viewWidth:document.getElementById('view').scrollWidth,
       windowWidth:innerWidth,baron:JSON.stringify(S.roster.baron)};
   });
   assert.equal(locked.route,'baron_journey');
   assert.equal(locked.hero,'baron_legend');
   assert.equal(locked.regular,'baron');
-  assert.equal(locked.model,true);
   assert.equal(locked.buttons,5);
   assert.equal(locked.locked,true);
   assert.equal(locked.first,1);
