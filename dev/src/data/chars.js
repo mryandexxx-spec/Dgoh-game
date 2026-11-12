@@ -1,6 +1,7 @@
 // data/chars.js — строки 33–183 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import './fx.js'; // порядок исполнения
 import { BARON_FUTURE_KITS } from './baron-future-kits.js';
+import { BARON_LEGEND_KIT } from './baron-legend-kit.js';
 
 const CHARS = [
   { id: 'leto', n: 'Герцог Лето Атрейдес', sn: 'Лето', g: 'ЛА', f: ['atr'], role: 'sup', teamShield: .2,
@@ -143,6 +144,8 @@ CHARS.push(
 // Approved original concept art remains the target for future GLB/DGM assets.
 // Both heroes are ordinary locked characters; no leader or legendary GL ability.
 CHARS.push(...['margot','yue'].map(id => ({ ...BARON_FUTURE_KITS[id] })));
+// BH9.9: own public legendary hero; the ordinary baron remains untouched.
+CHARS.push({ ...BARON_LEGEND_KIT });
 const MENTAT = u => (u.def || u).prof === 'Ментат';
 const LIGHT_IDS = new Set(['leto', 'paul', 'jessica', 'gurney', 'duncan', 'thufir', 'stilgar', 'chani', 'kynes', 'fedaykin', 'muaddib', 'liet', 'atrguard']);
 CHARS.forEach(c => { c.side = c.f.includes('mach') ? 'mach' : LIGHT_IDS.has(c.id) || c.id === 'yue' ? 'light' : 'dark'; });
