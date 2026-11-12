@@ -16,7 +16,7 @@ const srv = await serve(path.dirname(html));
 const records = [];
 try {
   for (const [width, height, quality] of [[844, 390, 'med'], [667, 375, 'low']]) {
-    for (const [hero, portrait, disableLive] of [['muaddib', false, false], ['muaddib', true, false], ['muaddib', true, true], ['baron_legend', false, false]]) {
+    for (const [hero, portrait, disableLive, raid] of [['muaddib', false, false, false], ['muaddib', true, false, false], ['muaddib', true, true, false], ['baron_legend', false, false, false], ['muaddib', true, false, true]]) {
       const page = await browser.newPage(), errors = [];
       page.on('pageerror', e => errors.push(e.message));
       await page.setViewport({ width, height, deviceScaleFactor: 1, isMobile: true, hasTouch: true, isLandscape: true });
@@ -42,18 +42,22 @@ try {
           } finally { baker.dispose(); }
         });
       }
-      const start = await page.evaluate((id, disableLive) => {
+      const start = await page.evaluate((id, disableLive, raid) => {
         if (!CH[id]?.gl) throw Error('Missing playable legendary ultimate: ' + id);
         const friends = [id, ...Object.keys(CH).filter(k => k !== id && !CH[k].boss && !CH[k].legendary).slice(0, 4)];
         const enemies = Object.keys(CH).filter(k => !CH[k].boss && !friends.includes(k)).slice(0, 5);
         // The actual normal battle UI and the real GL action, not a synthetic HTML mock.
-        launch({ mode: 'camp', dlg: false, scene: 'court', i: 0, title: 'MD-ULT-1 battle smoke',
-          desert: false, squad: friends, enemy: enemies.map(k => enemyProg(k, 85, false)) });
+        launch({ mode: raid ? 'raid' : 'camp', dlg: false, scene: raid ? 'desert' : 'court', i: 0,
+          title: raid ? 'MD-ULT-3 real raid smoke' : 'MD-ULT-1 battle smoke',
+          desert: raid, squad: friends,
+          enemy: raid ? [] : enemies.map(k => enemyProg(k, 85, false)),
+          boss: raid ? { tier: 0, maxHp: 10000000, hp: 10000000 } : undefined });
         clearTimeout(BT.timer);
         const u = BT.B.units.find(x => x.side === 'A' && x.def.id === id);
         const target = BT.B.units.find(x => x.side === 'B');
         if (!u || !target) throw Error('Real battle hero/target missing');
         const actor = BT.arena?.units[u.uid];
+        if (id === 'muaddib' && !!BT.arena?.raid !== raid) throw Error('Wrong arena mode');
         if (id === 'muaddib' && !actor?.root?._clips?.[actor.root._clipNames?.ult]) throw Error('Muad-Dib spell clip missing');
         // Simulate an unavailable authored model without touching battle mechanics.
         if (disableLive && actor) actor.root._authored = 0;
@@ -91,8 +95,9 @@ try {
           title: cine.querySelector('.uctext b')?.textContent,
           heroName: cine.querySelector('.uctext span')?.textContent,
           rays: !!cine.querySelector('.ucrays'), sand: cine.querySelectorAll('.ucsand i').length,
-          bgFrame: BT.arena?.scene?.getFrameId?.() || 0 };
-      }, hero, disableLive);
+          bgFrame: BT.arena?.scene?.getFrameId?.() || 0,
+          raid: !!BT.arena?.raid, originalFacing: actor?.face || 0 };
+      }, hero, disableLive, raid);
       assert.equal(start.rays, true);
       assert.equal(start.sand, 26);
       assert.ok(start.title);
@@ -134,17 +139,24 @@ try {
         A._loop();
         const second=tr.node.rotationQuaternion.asArray();
         const center = A.project(o.root.position.add(V3(0, o.h * .5, 0)));
+        const off=A.camera.position.subtract(o.base), face=o.face;
+        const facingDot=off.x*Math.sin(face)+off.z*Math.cos(face);
+        const lightOff=A.glLight.position.subtract(o.base);
+        const keyLightDot=lightOff.x*Math.sin(face)+lightOff.z*Math.cos(face);
         return { playing:o.root._clip, first, second, trackChange:changes(tr),
-          camera:A.camera.position.asArray(), center };
+          camera:A.camera.position.asArray(), center, facingDot, keyLightDot, yaw:o.root.rotation.y };
       });
       if (hero === 'muaddib' && !disableLive) {
         assert.equal(motion?.playing, 'ult', 'real spell-cast DGM clip did not play');
         assert.ok(motion.trackChange > .001, 'spell cast has no animated rotation channels');
         assert.notDeepEqual(motion.second, motion.first, 'spell caster bones did not animate');
+        assert.ok(motion.facingDot > 3.0, 'front-facing caster camera required in raid and arena: ' + JSON.stringify({raid, motion}));
+        assert.ok(motion.keyLightDot > 2.5, 'key light must illuminate caster face: ' + JSON.stringify({raid, motion}));
+        assert.ok(Math.abs(Math.atan2(Math.sin(motion.yaw-start.originalFacing),Math.cos(motion.yaw-start.originalFacing))) < .12, 'spell should retain caster facing');
 
       }
       assert.equal(await page.$('.ultcine') !== null, true, 'cinematic vanished before screenshot');
-      const suffix = hero === 'muaddib' ? (disableLive ? 'baked-fallback' : portrait ? 'live-baked' : 'live-unbaked') : 'baron';
+      const suffix = hero === 'muaddib' ? (raid ? 'raid-live-baked' : disableLive ? 'baked-fallback' : portrait ? 'live-baked' : 'live-unbaked') : 'baron';
       await page.screenshot({ path: path.join(out, `${width}x${height}-${quality}-${suffix}.png`) });
       if (hero === 'muaddib' && !disableLive) {
         assert.ok(motion.center[0] > width * .09 && motion.center[0] < width * .51,
@@ -167,11 +179,11 @@ try {
       if (hero === 'muaddib') assert.equal(end.muaddibGlUsed, true, 'GL use not registered');
       assert.ok(start.bgFrame > 0 || end.frame > 0, 'WebGL did not render');
       assert.deepEqual(errors, [], 'browser JS errors');
-      records.push({ width, height, quality, portrait, disableLive, hero, start, end });
+      records.push({ width, height, quality, portrait, disableLive, hero, raid, start, motion, end });
       console.log('PASS MD-ULT-1', width, height, quality, hero, portrait ? 'baked' : 'fallback');
       await page.close();
     }
   }
 } finally { await browser.close(); await srv.close(); }
 fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(records, null, 2));
-assert.equal(records.length, 8);
+assert.equal(records.length, 10);
