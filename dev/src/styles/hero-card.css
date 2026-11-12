@@ -48,7 +48,10 @@
     line-clamp: 2;
     overflow: hidden;
   }
-  .hc[data-cid="muaddib"] .hcsk { gap: 5px; }
+  .hc[data-cid="muaddib"] .hcsk { gap: 5px; min-height: 51px; padding-top: 5px; padding-bottom: 5px; }
+  .hc[data-cid="muaddib"] .hcskt { min-width: 0; overflow: hidden; }
+  .hc[data-cid="muaddib"] .hcskt small { font-size: 10px; line-height: 1.15; }
+  /* Tall ability tiles scroll within the existing skill pane, never overlap. */
 }
 
 .hcskt small { display: block; font: 11px/1.2 var(--f-mono); color: var(--dust); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
