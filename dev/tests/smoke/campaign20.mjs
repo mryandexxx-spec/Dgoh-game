@@ -57,6 +57,43 @@ try {
     });
     assert.equal(metrics.scroll,false,'no campaign viewport scroll');
     assert.equal(metrics.sceneCanvas,true,'canvas exists');
+    // Native-feeling pan: drag the terrain right/down and verify the same
+    // mission marker follows that direction on the tilted/rotated 3D map.
+    // Also assert the first gesture remains responsive, not just the second.
+    const panChecks=await page.evaluate(async()=>{
+      document.querySelector('[data-c20node="4"]').click();
+      await new Promise(resolve=>setTimeout(resolve,560)); // camera focus tween
+      const canvas=document.querySelector('#c20world canvas');
+      const pin=document.querySelector('[data-c20node="4"]');
+      const point=()=>{const r=pin.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2];};
+      const tick=()=>new Promise(resolve=>setTimeout(resolve,240));
+      const gesture=async(dx,dy,id)=>{
+        const before=point();
+        const rect=canvas.getBoundingClientRect(),x=rect.left+rect.width*.5,y=rect.top+rect.height*.52;
+        const event=(type,px,py)=>canvas.dispatchEvent(new PointerEvent(type,{
+          bubbles:true,cancelable:true,pointerId:id,pointerType:'touch',isPrimary:true,
+          buttons:type==='pointerup'?0:1,clientX:px,clientY:py,
+        }));
+        event('pointerdown',x,y);
+        event('pointermove',x+dx,y+dy);
+        event('pointerup',x+dx,y+dy);
+        await tick();
+        const after=point();return [after[0]-before[0],after[1]-before[1]];
+      };
+      const horizontal=await gesture(28,0,71);
+      const backward=await gesture(-28,0,72);
+      const vertical=await gesture(0,22,73);
+      const upward=await gesture(0,-22,74);
+      return {horizontal,backward,vertical,upward,
+        canvasSame:canvas===document.querySelector('#c20world canvas')};
+    });
+    assert.ok(panChecks.horizontal[0]>4,'drag-right should move map RIGHT: '+JSON.stringify(panChecks));
+    assert.ok(panChecks.backward[0]<-4,'drag-left should move map LEFT: '+JSON.stringify(panChecks));
+    assert.ok(panChecks.vertical[1]>4,'drag-down should move map DOWN: '+JSON.stringify(panChecks));
+    assert.ok(panChecks.upward[1]<-4,'drag-up should move map UP: '+JSON.stringify(panChecks));
+    assert.equal(panChecks.canvasSame,true,'drag never remounts Babylon');
+    console.log('Campaign touch pan',w,JSON.stringify(panChecks));
+
     // C2.2: changing the selected mission must preserve the SAME Babylon canvas.
     await page.evaluate(()=>{window.__campaignCanvas = document.querySelector('#c20world canvas');});
     const firstSelected = await page.$eval('.c20-pin.on',el=>el.dataset.c20node);
