@@ -500,9 +500,9 @@ class Arena3D extends GameScene {
         const exit = Math.min(1, (1 - k) / .16);
         const w = Math.max(0, Math.min(entry, exit));
         const strength = w * w * (3 - 2 * w);
-        T1.set(p.x + 4.1, p.y + 2.3, p.z + 6.2);
+        T1.set(p.x + 2.2, p.y + 1.9, p.z + 4.7);
         B3.Vector3.LerpToRef(pos, T1, strength, pos);
-        T1.set(p.x + 1.65, p.y + 1.35, p.z);
+        T1.set(p.x + 1.05, p.y + 1.3, p.z);
         B3.Vector3.LerpToRef(look, T1, strength, look);
       }
     }
