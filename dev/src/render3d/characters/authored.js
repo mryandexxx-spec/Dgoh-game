@@ -127,6 +127,7 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
     const iris = basic3('#478aff');
     for (const side of [-1, 1]) {
       const eye = add(N.headfront, mk(bSph(.0095, 10), iris, side * .038, .014, .012, false));
+      eye.name = side < 0 ? 'muad_iris_L' : 'muad_iris_R';
       eye.isPickable = false;
     }
   }
