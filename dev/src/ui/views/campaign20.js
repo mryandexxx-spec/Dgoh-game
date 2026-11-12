@@ -30,6 +30,7 @@ export function campaign20Action(d) {
   return false;
 }
 export function campaign20Start() { page='home';legacy=false;selected=null;detail=false;chapterPicker=false; }
+export function campaign20Legacy() { legacy=true;detail=false;chapterPicker=false; }
 function homeHtml(){
   const completed=ck=>campNodes(ck).filter(i=>!!S.cleared[i]).length;
   return `<div class="c20 c20-home">
