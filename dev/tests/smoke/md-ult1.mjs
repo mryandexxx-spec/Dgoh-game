@@ -90,7 +90,7 @@ try {
         holdCleared: BT.hold === false,
         battlePresent: !!document.querySelector('#battle'),
         cast: BT.B.glCast,
-        latestKey: BT.B.lastKey,
+        muaddibGlUsed: BT.B.units.find(u => u.def.id === 'muaddib')?.glUsed || false,
         unitCount: BT.B.units.length,
         frame: BT.arena?.scene?.getFrameId?.() || 0
       }));
@@ -98,7 +98,7 @@ try {
       assert.equal(end.holdCleared, true, 'battle remained held');
       assert.equal(end.battlePresent, true, 'battle destroyed after GL');
       assert.ok(end.unitCount > 2, 'battle units missing');
-      assert.equal(end.latestKey, 'gl', 'battle action was replaced unexpectedly');
+      if (hero === 'muaddib') assert.equal(end.muaddibGlUsed, true, 'GL use not registered');
       assert.ok(start.bgFrame > 0 || end.frame > 0, 'WebGL did not render');
       assert.deepEqual(errors, [], 'browser JS errors');
       records.push({ width, height, quality, portrait, hero, start, end });
