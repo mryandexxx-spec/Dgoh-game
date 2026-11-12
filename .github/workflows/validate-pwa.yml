@@ -147,6 +147,8 @@ jobs:
           retention-days: 14
       - name: Package 8 real WebGL camera and formation (844/667)
         run: node tests/smoke/pkg8-layout.mjs dist/pwa/index.html dist/pkg8-shots
+      - name: Close arena + non-overlapping world HUD (MED/LOW/HIGH)
+        run: node tests/smoke/arena-framing-preview.mjs dist/pwa/index.html dist/arena-framing
       - name: Package 10 B1 real panorama (844/667, MED/LOW, three zones)
         run: node tests/smoke/pkg10-lobby.mjs dist/pwa/index.html dist/pkg10-shots
       - name: Package 9 HUD interactive phone check (844/667)
@@ -161,6 +163,14 @@ jobs:
         with:
           name: dune-pkg10-lobby-${{ github.run_number }}
           path: dev/dist/pkg10-shots/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload close arena and indicator checks
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-arena-framing-${{ github.run_number }}
+          path: dev/dist/arena-framing/
           if-no-files-found: ignore
           retention-days: 14
       - name: Upload package 9 real HUD screenshots
