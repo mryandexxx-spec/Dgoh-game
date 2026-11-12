@@ -21,12 +21,12 @@ function assetLoadProgress() {
   const total = a.reduce((n, x) => n + (x.total || 0), 0);
   const pending = a.filter(x => x.state === 'loading').length;
   const failed = a.filter(x => x.state === 'failed').length;
-  const unknown = a.filter(x => x.state === 'loading' && !x.total).length;
+  const unknown = a.filter(x => x.state === 'loading' && !x.known).length;
   return { loaded, total, pending, failed, unknown, count: a.length,
     finished: a.length > 0 && pending === 0, complete: a.length > 0 && pending === 0 && failed === 0 };
 }
 function progressEntry(u) {
-  const x = { loaded: 0, total: 0, state: 'loading' };
+  const x = { loaded: 0, total: 0, known: false, state: 'loading' };
   LOAD3.set(u, x); return x;
 }
 async function trackedFetch(u) {
@@ -35,17 +35,17 @@ async function trackedFetch(u) {
     const r = await fetch(u);
     if (!r.ok) { x.state = 'failed'; return r; }
     const size = Number(r.headers && r.headers.get && r.headers.get('content-length'));
-    if (Number.isFinite(size) && size > 0) x.total = size;
+    if (Number.isFinite(size) && size > 0) { x.total = size; x.known = true; }
     if (!r.body || typeof r.body.getReader !== 'function' || typeof ReadableStream !== 'function' || typeof Response !== 'function') {
       // Older fetch mocks/WebKit: count at least the announced size on completion.
-      x.loaded = x.total; x.state = 'done'; return r;
+      x.loaded = x.total; x.known = true; x.state = 'done'; return r;
     }
     const reader = r.body.getReader();
     const stream = new ReadableStream({
       async pull(controller) {
         try {
           const { done, value } = await reader.read();
-          if (done) { x.total = x.loaded; x.state = 'done'; controller.close(); return; }
+          if (done) { x.total = x.loaded; x.known = true; x.state = 'done'; controller.close(); return; }
           x.loaded += value.byteLength;
           if (x.loaded > x.total) x.total = x.loaded;
           controller.enqueue(value);
