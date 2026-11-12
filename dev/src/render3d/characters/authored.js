@@ -127,7 +127,7 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
   // Coordinates below are in the HeadFront local basis, offset 3 mm forward
   // from the textured eye surface; parent follows authored head animations.
   if (def.id === 'muaddib' && N.headfront) {
-    const MUAD_IRIS_LOCALS = [[-.0342, .1071, -.0101], [.0258, .1076, -.0107]];
+    const MUAD_IRIS_LOCALS = [[-0.0342, 0.1071, -0.0101], [0.0258, 0.1076, -0.0107]];
     const iris = basic3('#478aff');
     MUAD_IRIS_LOCALS.forEach(([x, y, z], i) => {
       const eye = add(N.headfront, mk(bSph(.0055, 10), iris, x, y, z, false));
