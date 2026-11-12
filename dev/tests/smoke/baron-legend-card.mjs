@@ -36,7 +36,7 @@ try {
     await page.evaluate(async () => {
       if (!await loadB3()) throw Error('3D engine failed to load');
       if (!MODEL_DATA.baron_legend) throw Error('Legendary Baron DGM not loaded');
-      if (!CH.baron || CH.baron_legend || !CH.margot || !CH.yue) throw Error('Public hero identity gate broken');
+      if (!CH.baron || !CH.baron_legend || !CH.margot || !CH.yue) throw Error('Public hero identity gate broken');
       closeInfo(true); // monthly calendar lives in #overlay2; closeOverlay only clears #overlay
       closeOverlay();
       openDetail('muaddib');
@@ -74,7 +74,7 @@ try {
         actions:['Приказ Барона','Власть через страх','Глаза императора','Падение Атрейдесов'].every(n => items.some(i => i.includes(n))),
         rosterUnchanged:JSON.stringify(S.roster) === window.__bh8CardBefore,
         youngBaronUnchanged:!!CH.baron && CH.baron.id === 'baron',
-        notPublic:!CH.baron_legend,
+        publicApproved:!!CH.baron_legend,
         infoLayerClear:!document.querySelector('#overlay2')?.innerHTML.trim(),
         topmost:!!document.elementFromPoint(innerWidth/2, innerHeight/2)?.closest('.hc'),
         frame:HERO_STAGE.scene.getFrameId(),
@@ -113,7 +113,7 @@ try {
     assert.equal(verdict.id, 'baron_legend');
     assert.equal(verdict.authored, true, 'Procedural fallback is not an approved DGM model');
     assert.equal(verdict.skinned, 11, 'Exactly 11 skinned meshes expected from legend DGM');
-    for (const key of ['heroCard','previewLocked','text','actions','rosterUnchanged','youngBaronUnchanged','notPublic','infoLayerClear','topmost'])
+    for (const key of ['heroCard','previewLocked','text','actions','rosterUnchanged','youngBaronUnchanged','publicApproved','infoLayerClear','topmost'])
       assert.equal(verdict[key], true, `${w}x${h} ${quality}: ${key}`);
     assert.equal(errors.length, 0, 'WebGL/browser console errors: '+JSON.stringify(errors));
     results.push({ resolution:`${w}x${h}`, quality, ...begin, ...verdict });
