@@ -96,7 +96,12 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
     let col = P.col; if (CTX.pbr) { col = col.slice(); for (let i = 0; i < col.length; i++) if (i % 4 !== 3) col[i] = Math.pow(col[i], 2.2); }
     vd.positions = P.pos; vd.normals = P.nor; if (!P.alb) vd.colors = col; if (P.uv) vd.uvs = P.uv; vd.indices = P.idx; vd.applyToMesh(me, false);
     me.setVerticesData(B3.VertexBuffer.MatricesIndicesKind, P.jj, false); me.setVerticesData(B3.VertexBuffer.MatricesWeightsKind, P.ww, false);
-    me.numBoneInfluencers = 4; me.skeleton = skel; me.parent = body; me.receiveShadows = true; me.isPickable = false; me.alwaysSelectAsActiveMesh = true;
+    me.numBoneInfluencers = 4; me.skeleton = skel; me.parent = body;
+    // Meshy bakes cloth/armor creases into its albedo. Thin overlapping
+    // polygons create severe self-shadow acne under the hero key light.
+    // Keep casting onto the podium/arena, but do not receive own shadowmap.
+    me.receiveShadows = !(def.id === 'duncan' && D.jointFormat === 'local-trs');
+    me.isPickable = false; me.alwaysSelectAsActiveMesh = true;
     // BH8: each material part in the owner's optimized legendary DGM uses a
     // *constant* sRGB vertex color, no albedo texture. In PBR on the phone its
     // vertex-color path washed the dark robe out to pale white. Set the exact
