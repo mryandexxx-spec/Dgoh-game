@@ -102,8 +102,14 @@ try {
       count++;sum+=l;if(l>70)bright++;
       minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
     }
+    // Actual decoded screenshot of the foreground GPU pixels, not a browser
+    // capture of a framebuffer that may have been discarded after present.
+    const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext('2d');const im=ctx.createImageData(w,h);
+    for(let y=0;y<h;y++)im.data.set(b.subarray((h-1-y)*w*4,(h-y)*w*4),y*w*4);
+    ctx.putImageData(im,0,0);
     return {pixels:count,meanLuma:count?sum/count:0,brightFraction:count?bright/count:0,
-      bounds:count?[minX,minY,maxX,maxY]:null,canvas:[w,h]};
+      bounds:count?[minX,minY,maxX,maxY]:null,canvas:[w,h],png:canvas.toDataURL('image/png')};
   });
   const area = visibility.canvas[0]*visibility.canvas[1];
   assert(visibility.pixels > Math.max(250,area*.004),
@@ -113,9 +119,10 @@ try {
   assert(visibility.bounds[2]-visibility.bounds[0] >= visibility.canvas[0]*.055 &&
          visibility.bounds[3]-visibility.bounds[1] >= visibility.canvas[1]*.20,
     'Duncan is out of frame or too small: '+JSON.stringify(visibility));
-  await page.screenshot({path:path.join(out,`duncan-${width}-${quality}.png`)});
-  fs.writeFileSync(path.join(out,`duncan-${width}-${quality}.json`),JSON.stringify(visibility,null,2));
-  console.log('Duncan visible pixel metrics',quality,JSON.stringify(visibility));
+  fs.writeFileSync(path.join(out,`duncan-${width}-${quality}.png`),Buffer.from(visibility.png.split(',')[1],'base64'));
+  const {png,...metrics}=visibility;
+  fs.writeFileSync(path.join(out,`duncan-${width}-${quality}.json`),JSON.stringify(metrics,null,2));
+  console.log('Duncan visible pixel metrics',quality,JSON.stringify(metrics));
   console.log('PASS Duncan Meshy WebGL',width,height,JSON.stringify(snapshot));
   await page.evaluate(()=>heroHold(false));await page.close();
  }
