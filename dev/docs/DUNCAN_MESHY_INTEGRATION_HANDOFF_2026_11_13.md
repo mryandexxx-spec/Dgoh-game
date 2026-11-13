@@ -1,6 +1,6 @@
 # Duncan Meshy model integration — work in progress (2026-11-13)
 
-This branch contains **source wiring only**, not the binary model files. Do **NOT** merge until the files below have been copied from the prepared `Dune_Duncan_Meshy_Integration_Staging.zip` package and the game has been validated.
+**2026-11-13 update:** Binary model, JPEG, source GLB, animation manifest, and conversion tools have now been uploaded to PR #53. **Do not merge until KTX2 generation, tests and visual review have passed.**
 
 ## Required files
 
@@ -29,7 +29,7 @@ Gameplay abilities, effects and balance are unchanged.
 
 ## Blockers before merging
 
-1. **Binary assets are not in this PR yet.** Upload from the staging package.
+1. **Binary model and JPEG are uploaded.** KTX2 is not yet uploaded; generate it before publishing.
 2. Visual review: Meshy rig lacks the old three-cloth-bone cape; evaluate clipping and cloth motion.
 3. Sword attachment: check if the mesh includes a sword on the back and the game adds a second sword to hand.
 4. Ult choreography: Meshy's triple combo is not the old eight-strike visual sequence. Do not claim visual parity.
