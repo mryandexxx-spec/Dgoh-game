@@ -31,6 +31,12 @@ export function campaign20Action(d) {
   if (d.c20side) { S.campTab=d.c20side;selected=null;detail=false;chapterPicker=false;return true; }
   if (d.c20chapter!==undefined) { const c=Number(d.c20chapter);if(nodeOpen(chapNodes(S.campTab,c)[0])){S.campCh[S.campTab]=c;selected=null;detail=false;chapterPicker=false;}return true; }
   if (d.c20dir){const ck=S.campTab,now=S.campCh[ck]||0,step=Number(d.c20dir),next=now+step;if(next>=0&&next<7&&nodeOpen(chapNodes(ck,next)[0])){S.campCh[ck]=next;selected=null;}return true;}
+  if (d.c20step!==undefined) {
+    const nodes=chapNodes(S.campTab,S.campCh[S.campTab]||0);
+    const at=nodes.indexOf(selected);
+    selected=nodes[Math.max(0,Math.min(nodes.length-1,at+(Number(d.c20step)||0)))]??selected;
+    detail=false;rewardPage=0;storyPage=0;return true;
+  }
   if (d.c20node!==undefined){selected=Number(d.c20node);detail=false;rewardPage=0;storyPage=0;return true;}
   return false;
 }
@@ -134,7 +140,12 @@ function mapHtml(setSel){
     <div class="c20-head"><button class="c20-back" data-c20="home">‹ ${ck==='C'?'Хроники':'Сюжет'}</button>${side}<span class="c20-progress">★ ${nodes.reduce((a,i)=>a+(S.cleared[i]||0),0)}/30</span></div>
     <div class="c20-chapbar"><button data-c20dir="-1" aria-label="Предыдущая глава">‹</button><button data-c20="chapters">ГЛАВА ${ROM7[c]} · ${esc(chapters[c].t)} ⌄</button><button data-c20dir="1" aria-label="Следующая глава">›</button></div>
     ${picker}
-    <div class="c20-world ${map?map.preset.theme:'no-map'}" id="c20world">${markers}${old}${map?'<button class="c20-recenter" data-c20focus="1" aria-label="Центрировать текущую миссию" title="К текущей миссии">◎</button>':''}</div>
+    <div class="c20-world ${map?map.preset.theme:'no-map'}" id="c20world">${markers}${old}${map?'<button class="c20-recenter" data-c20focus="1" aria-label="Центрировать текущую миссию" title="К текущей миссии">◎</button>':''}
+      ${map?.preset.theme==='arrakeen'? `<div class="c20-mission-nav" aria-label="Навигация по миссиям">
+        <button data-c20step="-1" aria-label="Предыдущая миссия" ${n.m===0?'disabled':''}>‹</button>
+        <span>${n.m+1} / 10</span>
+        <button data-c20step="1" aria-label="Следующая миссия" ${n.m===9?'disabled':''}>›</button>
+      </div>`:''}</div>
     <div class="c20-card"><div><strong>${n.m+1}. ${esc(n.n)}</strong><small>Ур. ${n.lvl} · ${starStr(stars,3)}</small></div><button class="btn" data-c20="detail">Подробнее</button><div class="c20-card-actions">${actions}</div></div>
     ${modalHtml(ck,n,chosen)}
   </div>`;
@@ -159,7 +170,7 @@ export function renderCampaign20(setSel) {
     template.innerHTML=html;
     const fresh=template.firstElementChild;
     const oldSelection=current.querySelector('.c20-pin.on')?.dataset.c20node;
-    for(const selector of ['.c20-head','.c20-chapbar','.c20-card','.c20-picker','.c20-modal'])
+    for(const selector of ['.c20-head','.c20-chapbar','.c20-card','.c20-picker','.c20-modal','.c20-mission-nav'])
       replacePart(current,fresh,selector);
     for(const pin of current.querySelectorAll('.c20-pin'))
       pin.classList.toggle('on',Number(pin.dataset.c20node)===chosen);
