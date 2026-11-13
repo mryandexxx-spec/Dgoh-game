@@ -119,7 +119,7 @@ class HeroStage extends Stage3D {
     // The Meshy Idle_11 face is in the stage's native forward orientation.
     // Do not apply the COMBAT-specific yaw correction here; the shader's
     // fixed UV orientation now shows the actual face/armor in this view.
-    o.root.rotation.y = this.y;
+    o.root.rotation.y = this.yaw;
     const H = o.h, ik = this.intro ? Math.min(1, (now - this.intro) / 1100) : 1, e = 1 - (1 - ik) ** 3;
     const asp = (this.w || 1) / (this.h || 1), dist = (H * 1.35 + .6) / Math.min(1, asp * 1.9) * 1.14;   // пакет 5: холст шире — запас под подиум
     this.camera.position.set(Math.sin(.25) * dist * (1.25 - .25 * e), H * .62 + .25 * (1 - e), Math.cos(.25) * dist * (1.25 - .25 * e)); this.camera.setTarget((this._tg || (this._tg = V3())).set(0, H * .52, 0)); this.camera.fov = .75;
