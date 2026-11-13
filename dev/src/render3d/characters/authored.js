@@ -123,7 +123,7 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
           // without changing the stage lights or affecting other characters.
           // Do not disable direct lights: highlights and form still react to them.
           m.emissiveTexture = t;
-          m.emissiveColor = new B3.Color3(.85, .85, .85);
+          m.emissiveColor = new B3.Color3(1.25, 1.25, 1.25);
         }
       }
     }, !(def.id === 'duncan' && D.jointFormat === 'local-trs'));
