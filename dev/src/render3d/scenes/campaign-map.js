@@ -55,10 +55,6 @@ class CampaignMapScene extends GameScene {
     const stone = this.material('stone', '#b6a17a');
     const roof = this.material('roof', '#554e3f');
     const road = this.material('route', '#d7ad69');
-    const clear = this.material('cleared', '#507f57');
-    const ready = this.material('ready', '#d9a74d');
-    const locked = this.material('locked', '#514b43');
-    const boss = this.material('boss', '#b45138');
     // Caladan: a continuous low-poly shoreline, not intersecting rectangular land/sea planes.
     // Terrain vertex elevations encode grass hills, coves and a steep waterline.
     // No dynamic shadows, height textures, RTT or procedural work in the frame loop.
@@ -143,7 +139,7 @@ class CampaignMapScene extends GameScene {
     const ready=this.material('ready','#d9a74d');
     const locked=this.material('locked','#514b43');
     const boss=this.material('boss','#b45138');
-    // Both chapters reuse the same mission-path and 3D marker contract. тонкие дешёвые цилиндры без текстур.
+    // Both chapters reuse the same mission-path and 3D marker contract.
     P.nodes.slice(1).forEach(([x,z],k)=>{
       const [px,pz]=P.nodes[k], dx=x-px, dz=z-pz, len=Math.hypot(dx,dz);
       const path=M.CreateBox('mission-route',{width:.26,height:.05,depth:len},S);
