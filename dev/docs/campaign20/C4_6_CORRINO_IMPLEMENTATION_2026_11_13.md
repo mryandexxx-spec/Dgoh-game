@@ -1,6 +1,6 @@
 # Campaign 2.0 · C4.6 «Дом Коррино» — implementation handoff (Draft)
 
-**Date:** 2026-11-13. **Status:** artistic concept AND real WebGL MED/LOW implementation ACCEPTED by owner on 2026-11-13 («Согласовано»); Draft PR #60 awaits separate merge/publish authorization.
+**Date:** 2026-11-13. **Status:** owner approved art («Согласовано») AND authorized release («Да») on 2026-11-13. PR #60 merged as `2a4e39ff`; v109 release commit and CI→Pages deployment underway.
 
 ## Artistic decision
 **«Цена императорской короны» — «Имперский путь».** A contiguous stylized imperial processional route joins different historical worlds without pretending they form one literal city:
@@ -34,4 +34,4 @@ Owner explicitly replied **«Согласовано»** after review of the seco
 - **Verified WebGL shots:** https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43489008045/artifacts/14068971483 (`corrino-first-844-med.png`, `corrino-first-667-low.png`, `corrino-844-med.png`, `corrino-667-low.png`)
 - Initial E3 failure was intermittent `memory-ix-dom.mjs` selection-modal assertion on LOW; identical code passed on rerun. All required checks SUCCESS. GitHub Pages publishing skipped.
 - Preserve 210 missions and original ID range 160–169 for `C:2`; preserve v101 gestures, 50/60px pins, previous C4.1–C4.5, economic rules and 2D fallback.
-- **Release gate remains CLOSED:** do not merge PR or publish Pages until the owner expressly authorizes release. Current `main` v108 unaffected.
+- **Release authorization GRANTED** in a separate user message («Да»), 2026-11-13. PR #60 merged as `2a4e39ff`, release version v109; only report publication as complete after Actions and Pages SUCCESS.
