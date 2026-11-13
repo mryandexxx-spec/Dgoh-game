@@ -28,16 +28,16 @@ export const CAMPAIGN_MAPS = Object.freeze({
     // Original Light-II m=0..9, sequential eastern desert approach -> city ->
     // palace. Mission IDs and campaign rewards are intentionally unchanged.
     nodes: Object.freeze([
-      [38,12], [33,5], [27,-1], [19,-5], [8,-5],
-      [-2,3], [-8,-4], [-13,-10], [-17,-1], [-19,7],
+      [38,12], [28,16], [27,-1], [14,-6], [8,-5],
+      [0,-5], [-8,-5], [-16,-5], [-24,-5], [-32,-5],
     ]),
     landmarks: Object.freeze([
-      {kind:'approach',x:36,z:10,size:9},
+      {kind:'approach',x:34,z:14,size:11},
       {kind:'harvester',x:27,z:-1,size:10},
       {kind:'city-gate',x:10,z:-5,size:7},
       {kind:'banquet',x:5,z:-5,size:8},
       {kind:'palace',x:-24,z:-14,size:17},
-      {kind:'duncan-gallery',x:-19,z:7,size:9},
+      {kind:'duncan-gallery',x:-32,z:-5,size:9},
     ]),
   }),
   'D:0': Object.freeze({
