@@ -292,7 +292,13 @@ class CampaignMapScene extends GameScene {
       const p=B3.Vector3.Project(new B3.Vector3(node.x,1.15,node.z),
         B3.Matrix.IdentityReadOnly,matrix,vp);
       const diameter=node.boss?60:50;
-      const visible=Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.z>0&&p.z<1
+      // Arrakeen's route spans the desert and palace. At the normal zoom,
+      // only nearby mission markers are shown; distant but technically
+      // projectable labels would otherwise mix unrelated chapter numbers.
+      // This is a world-space distance gate, never a fixed screen-grid.
+      const local=this.map.preset.theme!=='arrakeen'
+        || Math.hypot(node.x-this.cx,node.z-this.cz)<=Math.min(30,this.radius*.96);
+      const visible=local&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.z>0&&p.z<1
         &&p.x>diameter/2+3&&p.y>diameter/2+3
         &&p.x<w-diameter/2-3&&p.y<h-diameter/2-3;
       return {node,el:this.labels[k],x:p.x,y:p.y,diameter,visible};
