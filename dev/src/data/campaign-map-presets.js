@@ -23,7 +23,7 @@ export const CAMPAIGN_MAPS = Object.freeze({
     theme: 'arrakeen', bounds: [-36, 42, -25, 24],
     // SWGOH-style local sequence: start on the current mission, keep 2-4
     // consecutive neighboring pins legible, explore the rest by accepted swipe.
-    camera: { target: [27, 0, 0], alpha: 1.13, beta: .96, radius: 31,
+    camera: { target: [27, 0, 0], alpha: 1.13, beta: .96, radius: 27,
       minRadius: 23, maxRadius: 66, turnLimit: .3 },
     // Original Light-II m=0..9, sequential eastern desert approach -> city ->
     // palace. Mission IDs and campaign rewards are intentionally unchanged.
