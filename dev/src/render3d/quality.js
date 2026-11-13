@@ -123,7 +123,7 @@ function glowOnly(G, keep = []) {
   T._shouldRenderMesh = m => (K.has(m) || glowy(m.material)) && base(m);
 }
 function glowy(M) {
-  if (!M) return false; if (M.disableLighting || M.emissiveTexture) return true;
+  if (!M || M._duncanNoGlow) return false; if (M.disableLighting || M.emissiveTexture) return true;
   const c = M.emissiveColor; return !!c && c.r + c.g + c.b > .02;
 }
 
