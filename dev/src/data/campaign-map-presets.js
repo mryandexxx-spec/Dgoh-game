@@ -64,8 +64,8 @@ export const CAMPAIGN_MAPS = Object.freeze({
     theme: 'corrino-chronicles', bounds: [-57, 57, -27, 32],
     // Local camera frames neighboring numbered chapters only, not all ten.
     // World coordinates are stable; mission ID/progression is unchanged.
-    camera: { target: [-48, 0, -2], alpha: -1.42, beta: .96,
-      radius: 27, minRadius: 23, maxRadius: 66, turnLimit: .3 },
+    camera: { target: [-48, 0, -2], alpha: -1.42, beta: .88,
+      radius: 24, minRadius: 22, maxRadius: 66, turnLimit: .3 },
     nodes: Object.freeze([
       [-49,-2],[-39,-2],[-29,-2],[-19,-2],[-9,-2],
       [3,-2],[15,-2],[27,-2],[39,-2],[49,-2],
