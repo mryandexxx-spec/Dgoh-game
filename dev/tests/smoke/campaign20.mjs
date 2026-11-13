@@ -168,7 +168,7 @@ try {
     // C4.1: switching between Caladan and Giedi Prime reuses the shared EngineHost,
     // but creates a genuinely different industrial scene with the same 10 real missions.
     await page.evaluate(()=>document.querySelector('[data-c20side="D"]').click());
-    await page.waitForSelector('.c20-world.giedi');
+    await page.waitForSelector('.c20-map');
     await page.evaluate(()=>document.querySelector('[data-c20="chapters"]').click());
     await page.waitForSelector('[data-c20chapter="0"]');
     await page.evaluate(()=>document.querySelector('[data-c20chapter="0"]').click());
