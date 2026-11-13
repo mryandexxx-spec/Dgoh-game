@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Campaign 2.0 / C4.1 — Гиеди Прайм / художественный макет</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101115;color:#e8dcc2;font-family:"IBM Plex Sans",Arial,sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 20px;border-bottom:1px solid #4b463a;background:#16191a;flex-wrap:wrap}
+header strong{font-family:Georgia,serif;font-size:22px;font-weight:normal;letter-spacing:.06em} header p{font-size:12px;color:#aaa091;margin:4px 0}
+nav{display:flex;gap:8px}nav button{cursor:pointer;border:1px solid #6e5a3d;background:#211f1b;color:#e7c79c;padding:9px 12px;border-radius:5px}
+nav button.on{background:#956e40;color:#16120c}main{padding:24px 12px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.stage{position:relative;overflow:hidden;isolation:isolate;background:#1e2023;border:2px solid #746346;box-shadow:0 15px 50px #0009;width:844px;height:390px;transform-origin:top center}
+.stage.small{width:667px;height:375px}
+.world{position:absolute;inset:0;width:100%;height:100%}.shroud{position:absolute;inset:0;background:linear-gradient(90deg,#0d1115ad 0%,transparent 28%,transparent 80%,#0b0c0d55),linear-gradient(0deg,#111213d1,transparent 22%,transparent 74%,#1013136e);pointer-events:none}
+.head,.chapter,.foot,.card{position:absolute;z-index:5}.head{left:10px;right:10px;top:7px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.head button,.chapter button{border:1px solid #94754b;background:#1c2021df;color:#e8cfaa;padding:7px 10px;letter-spacing:.03em;font-size:11px}
+.head .sides{display:flex;gap:0}.sides button{padding:7px 16px}.sides .on{background:#92703e;color:#100d09}
+.chapter{left:50%;transform:translateX(-50%);top:42px;display:flex;gap:2px;white-space:nowrap}.chapter button{background:#22211cdb}
+.pin{position:absolute;z-index:3;border-radius:50%;border:2px solid #d4b277;box-shadow:0 0 0 3px #111b1eac,0 0 17px #f4a947a3;background:radial-gradient(circle at 38% 30%,#a18145,#352d21);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;color:#fff0d5;font-weight:700;width:48px;height:48px}
+.pin::after{content:"◆";font-size:8px;font-weight:normal;color:#f7d18c}.pin.lock{border-color:#777979;box-shadow:0 0 0 3px #17191caf;background:radial-gradient(circle,#43484b,#1b1d1e);color:#adb0ae}.pin.lock::after{content:"⌑";color:#acb2b0}
+.pin.done{border-color:#a2c0ad;background:radial-gradient(circle,#3d635d,#1c302c);box-shadow:0 0 0 3px #141b1b,0 0 9px #568979}.pin.done::after{content:"★★★";font-size:7px;color:#d4e9dc}
+.pin.boss{width:58px;height:58px;border-color:#e4a86b;background:radial-gradient(circle at 35% 28%,#a54f37,#3c2322);font-size:17px}
+.card{left:12px;bottom:11px;width:344px;min-height:64px;padding:9px 12px;background:#151817ec;border:1px solid #a58755;box-shadow:0 0 0 1px #302d28}
+.card strong{font-size:13px;font-family:Georgia,serif;font-weight:400;letter-spacing:.03em}.card small{font-size:10px;display:block;color:#b5a894;margin:6px 0}.card .actions{display:flex;gap:6px}.card button{background:#83653c;color:#fff0d7;border:1px solid #ad8749;padding:5px 9px;font-size:10px}
+.foot{right:11px;bottom:10px;font:11px Georgia,serif;letter-spacing:.15em;color:#d6a96c;text-shadow:0 1px 3px #000}
+.notes{max-width:844px;width:100%;color:#c4b6a0;font-size:13px;line-height:1.5}.notes strong{color:#f1d5a9}details{max-width:844px;width:100%;border:1px solid #4d453a;padding:10px 14px;background:#18191b;color:#c4b6a0}
+.stage.small .pin{width:43px;height:43px}.stage.small .pin.boss{width:51px;height:51px}.stage.small .card{width:298px}.stage.small .foot{display:none}
+@media(max-width:880px){main{overflow:auto;align-items:flex-start}.stage,.notes,details{flex-shrink:0}}
+</style></head>
+<body>
+<header><div><strong>C4.1 / Гиеди Прайм</strong><p>Художественный HTML/SVG-концепт · не WebGL · не финальные позиции миссий</p></div>
+<nav><button id="wide" class="on" onclick="size(false)">844 × 390</button><button id="small" onclick="size(true)">667 × 375</button></nav></header>
+<main>
+<div class="stage" id="stage">
+<svg class="world" viewBox="0 0 844 390" preserveAspectRatio="none" aria-label="Схема индустриального города Гиеди Прайм">
+<defs>
+<linearGradient id="sky" x2=".2" y2="1"><stop stop-color="#2c302e"/><stop offset=".49" stop-color="#545247"/><stop offset="1" stop-color="#1c2425"/></linearGradient>
+<linearGradient id="metal" x1="0" x2="1" y2="1"><stop stop-color="#3d403d"/><stop offset=".5" stop-color="#222b2b"/><stop offset="1" stop-color="#0b1315"/></linearGradient>
+<linearGradient id="floor" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="#4e5148"/><stop offset=".45" stop-color="#292f30"/><stop offset="1" stop-color="#101819"/></linearGradient>
+<radialGradient id="smog"><stop stop-color="#aaa38a" stop-opacity=".35"/><stop offset="1" stop-color="#c4b99d" stop-opacity="0"/></radialGradient>
+<filter id="glow"><feGaussianBlur stdDeviation="4"/></filter>
+<pattern id="grit" width="20" height="18" patternUnits="userSpaceOnUse"><path d="M 0 0 L 20 18" stroke="#727364" stroke-opacity=".08"/></pattern>
+</defs>
+<rect width="844" height="390" fill="url(#sky)"/>
+<ellipse cx="540" cy="104" rx="300" ry="90" fill="url(#smog)"/>
+<!-- Far factories / unique smokestack skyline -->
+<path d="M0 188V141h52V116h11V60h18v78h17V107h57v39h22V93h15V25h23v117h24V97h43v48h44V83h14V46h21v103h48v-34h22V66h17v82h57V106h23V31h29v119h44V98h17V53h20v110h55V97h45v60h47v-28h37V192Z" fill="#1b2325"/>
+<g fill="#384041" stroke="#67706b" stroke-width="1.4">
+<path d="M60 135h34v53H60z M284 147h66v38h-66z M532 155h70v34h-70z M687 146h89v43h-89z"/>
+<path d="M345 66h92l25 18v75H315V83Z" fill="#161e20" stroke="#646a62" stroke-width="2"/>
+<path d="M350 72h82v67h-82z" fill="#343d3e"/><path d="M368 58h48v89h-48z" fill="#222a2d"/>
+<path d="M385 28h13v102h-13z" fill="#141e20"/>
+</g>
+<!-- diagonal perspective ground, trench, roads -->
+<path d="M0 192 406 158 844 188 844 390H0Z" fill="url(#floor)"/>
+<path d="M0 243 410 186 844 264V311L418 231 0 302Z" fill="#10191c"/>
+<path d="M0 244 410 192 844 269" fill="none" stroke="#9f7648" stroke-width="4" opacity=".7"/>
+<path d="M0 303 418 237 844 313" fill="none" stroke="#a97a46" stroke-width="3" opacity=".55"/>
+<path d="M0 192 406 158 844 188 844 390H0Z" fill="url(#grit)"/>
+<!-- left deep cargo pits -->
+<path d="M0 206 212 190 290 254 103 290 0 258Z" fill="#111a1b" stroke="#64716c" stroke-width="2"/>
+<path d="M39 220 187 204 241 249 105 271Z" fill="#343a38" stroke="#90754e" stroke-width="2"/>
+<path d="M77 223 99 219 149 252 129 256Z M138 214l15-2 47 32-15 3Z" fill="#172021"/>
+<!-- central Feyd gladiator ring -->
+<ellipse cx="446" cy="232" rx="131" ry="62" fill="#121b1d" stroke="#77796b" stroke-width="8"/>
+<ellipse cx="446" cy="232" rx="108" ry="43" fill="#353633" stroke="#b98a53" stroke-width="4"/>
+<ellipse cx="446" cy="232" rx="86" ry="28" fill="#252b2a"/>
+<path d="M322 216q124-57 247 0" stroke="#c39a5d" stroke-width="2" fill="none" opacity=".7"/>
+<!-- right shipyard -->
+<path d="M590 188 840 199 844 307 601 267Z" fill="#263232" stroke="#6b6c5e" stroke-width="2"/>
+<path d="M632 190v82M704 193v92M786 198v94" stroke="#0d1718" stroke-width="14"/>
+<path d="M650 176h116v18H650z" fill="#4a4d47"/>
+<path d="M669 141h8v73h-8zM741 128h8v90h-8z" fill="#151e20"/>
+<path d="M679 150h73v5h-73z" stroke="#8a886f" stroke-width="4"/>
+<path d="M760 209q-34 15-60 7l-19 27 100 7Z" fill="#1a2326" stroke="#807b66" stroke-width="2"/>
+<!-- route overlay -->
+<path d="M93 223Q140 179 185 225T299 258Q370 310 401 236Q470 170 521 228T633 253Q710 226 748 230" fill="none" stroke="#e8bd7a" stroke-width="4" stroke-dasharray="5 8" opacity=".8"/>
+<!-- warning light banks -->
+<g fill="#efb763">
+<circle cx="96" cy="180" r="3"/><circle cx="203" cy="182" r="3"/><circle cx="288" cy="190" r="3"/><circle cx="584" cy="182" r="3"/><circle cx="726" cy="182" r="3"/>
+</g>
+<g fill="#e9a044" opacity=".5" filter="url(#glow)"><circle cx="96" cy="180" r="8"/><circle cx="203" cy="182" r="8"/><circle cx="584" cy="182" r="8"/><circle cx="726" cy="182" r="8"/></g>
+<path d="M35 173h36M497 122h38M756 145h40" stroke="#d8ab71" stroke-width="2" opacity=".5"/>
+</svg>
+<div class="shroud"></div>
+<div class="head"><button>‹ Сюжет</button><div class="sides"><button>Светлые</button><button class="on">Тёмные</button></div><button>★ 3/30</button></div>
+<div class="chapter"><button>‹</button><button>ГЛАВА I · ГИЕДИ ПРАЙМ ⌄</button><button>›</button></div>
+<div class="pin done" style="left:8%;top:49%">1</div>
+<div class="pin done" style="left:18%;top:55%">2</div>
+<div class="pin lock" style="left:28%;top:71%">3</div>
+<div class="pin lock" style="left:37%;top:63%">4</div>
+<div class="pin lock" style="left:47%;top:53%">5</div>
+<div class="pin" style="left:54%;top:74%">6</div>
+<div class="pin lock" style="left:64%;top:58%">7</div>
+<div class="pin lock" style="left:73%;top:73%">8</div>
+<div class="pin lock" style="left:82%;top:57%">9</div>
+<div class="pin boss" style="left:91%;top:69%">10</div>
+<div class="card"><strong>6. Тренировки Фейда</strong><small>Ур. 3 · ☆☆☆ · Арена дома Харконненов</small><div class="actions"><button>В БОЙ</button><button>ПОДРОБНЕЕ</button></div></div>
+<div class="foot">ДОМ ХАРКОННЕНОВ / ГИЕДИ ПРАЙМ</div>
+</div>
+<p class="notes"><strong>Идея C4.1:</strong> индустриальная Гиеди Прайм с тремя узнаваемыми силуэтами — цитаделью, ареной Фейда и корабельными доками. Это демонстрация композиции и художественного языка, а не результат Babylon. Номера привязаны к 10 настоящим сюжетным миссиям тёмной главы I; позиционирование в сцене будет откалибровано на настоящем WebGL и мобильных viewport.</p>
+<details><summary>Что проверять при художественном согласовании</summary><p>Контраст с природным Каладаном, читабельность 50/60px узлов поверх серой индустриальной среды, выразительность арены Фейда, масштаб верфей, различие «пройдено / открыто / закрыто / босс». Стили, геометрия и размещение остаются предметом согласования до реализации C4.1.</p></details>
+</main>
+<script>function size(v){document.getElementById("stage").classList.toggle("small",v);document.getElementById("wide").classList.toggle("on",!v);document.getElementById("small").classList.toggle("on",v)}</script>
+</body></html>
