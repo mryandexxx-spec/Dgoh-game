@@ -88,6 +88,7 @@ export const SPLIT = [
   [3272, 'render3d/scenes/campaign-atreides-chronicles.js'],
   [3272, 'render3d/scenes/campaign-harkonnen-chronicles.js'],
   [3272, 'render3d/scenes/campaign-corrino-chronicles.js'],
+  [3272, 'render3d/scenes/campaign-butlerian-jihad.js'],
   [3272, 'render3d/scenes/campaign-map.js'],
   [3272, 'ui/views/campaign20.js'],
   [3282, 'ui/views/camp.js'],

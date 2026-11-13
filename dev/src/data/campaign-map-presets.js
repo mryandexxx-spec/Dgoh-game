@@ -59,6 +59,29 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'imperial-gate',x:35,z:15,size:14},
     ]),
   }),
+  'C:3': Object.freeze({
+    id: 'chronicles-butlerian-jihad', title: 'Хроники · Шрам освобождения',
+    theme: 'butlerian-jihad', bounds: [-63, 65, -25, 33],
+    // The connected route is a material war atlas, not a literal single planet.
+    camera: { target: [-55, 0, -4], alpha: -1.42, beta: .99,
+      radius: 27, minRadius: 24, maxRadius: 66, turnLimit: .3 },
+    nodes: Object.freeze([
+      [-55,-4],[-44,-1],[-33,2],[-22,1],[-11,-2],
+      [2,-3],[15,-1],[28,2],[41,0],[54,-3],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'omnius-city',x:-55,z:22,size:20},
+      {kind:'league-outpost',x:-44,z:16,size:10},
+      {kind:'earth-crater',x:-33,z:17,size:18},
+      {kind:'cymek-arsenal',x:-22,z:18,size:18},
+      {kind:'evacuation-port',x:-11,z:19,size:18},
+      {kind:'jihad-revolt',x:2,z:15,size:18},
+      {kind:'proto-mentats',x:15,z:19,size:16},
+      {kind:'rossak-sisters',x:28,z:21,size:17},
+      {kind:'serena-memorial',x:41,z:17,size:14},
+      {kind:'omnius-legions',x:55,z:25,size:20},
+    ]),
+  }),
   'C:2': Object.freeze({
     id: 'chronicles-house-corrino', title: 'Хроники · Дом Коррино',
     theme: 'corrino-chronicles', bounds: [-57, 57, -27, 32],

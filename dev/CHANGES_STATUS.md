@@ -10,7 +10,7 @@
 
 ## Открыто
 
-**Следующая кампания C4.7:** `C:3` «Батлерианский джихад», уровни 40–52, миссии 170–179. На текущем этапе художественная концепция ещё не утверждена; смотреть `dev/src/data/campaigns.js` и [C4.6 v109 handoff](docs/campaign20/C4_6_V109_RELEASE_HANDOFF_2026_11_13.md). Сначала автономно изучить 10 миссий, предложить самостоятельную Babylon-географию и мобильный ракурс MED/LOW, представить концепцию для художественного согласования; **до такого согласования не внедрять и не выпускать**.
+**C4.7 v110 — выпуск разрешён владельцем 14.11.2026, публикация контролируется:** художественная приёмка реальных WebGL MED/LOW («Ок»), полный [PR #62 CI #43520953114](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43520953114) SUCCESS после исправления [arena HUD drift #63](https://github.com/mryandexxx-spec/Dgoh-game/issues/63). [PR #62](https://github.com/mryandexxx-spec/Dgoh-game/pull/62) включает 3D карту `C:3` и исправление HUD, выпуск `v110` по validated artifact → main → Pages. Точный релизный CI и Pages подтвердить по факту; не объявлять завершённым раньше. После публикации остаётся **проверка на физическом iPhone**. [Handoff](docs/campaign20/C4_7_V110_RELEASE_HANDOFF_2026_11_14.md).
 
 **Релизная инфраструктура:** дублирующий отдельный [Publish Dune GoH PWA #43504314965](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43504314965) получил failure проверки SHA после успешной встроенной публикации v109 и [Pages #43504272925](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43504272925). Проверить взаимодействие двух оркестраторов, устранить дубль отдельным PR; не ослаблять запрет выпуска без validated SHA.
 
@@ -134,6 +134,16 @@
 - Проверить после релиза: фактические кадры персонажа в бою и карточке, плащ Attack/Hit/Death, быструю смену персонажей, отсутствие артефактов/перегрева и корректный кеш обновления.
 
 ## Записи
+
+## v110 — Campaign 2.0 C4.7 «Батлерианский джихад» + фикс world-HUD (14.11.2026)
+
+- **Владелец:** художественная концепция и реальные WebGL MED/LOW приняты («Ок»), затем отдельное разрешение «CI прошел, выпускай» (14.11.2026). [PR #62](https://github.com/mryandexxx-spec/Dgoh-game/pull/62) включает отдельный технический фикс [PR #64](https://github.com/mryandexxx-spec/Dgoh-game/pull/64) без двойного применения.
+- **Сделано:** самостоятельная непрерывная историческая карта `C:3` «Шрам освобождения», машинный город Омниуса → Лига → разрушенная Земля → кимеки → эвакуация → восстание → истоки ментатов → сёстры Россак → мемориал Серены → легионы машин. Исходные ID **170–179**, уровни 40–52, десять узлов, 210 прежних миссий, экономика, сохранения и ранее принятые главы — неизменны. Babylon GameScene/EngineHost, свайп v101, 50/60px pin, последовательные номера, CSS 2D fallback.
+- **HUD:** [issue #63](https://github.com/mryandexxx-spec/Dgoh-game/issues/63) — исправлена реальная рассинхронизация от `.battle.quake .bwrap` в 3D; DOM shake оставлен только для 2D, 3D использует свой camera shake. Строгая регрессионная проверка `<1px` сохранена, добавлен принудительный `quake` на MED/LOW.
+- **Замеры/кадры:** реальные Chromium WebGL кадры 844×390 MED / 667×375 LOW из [artifact #14080378421](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43515556172/artifacts/14080378421); автоматические 3D lifecycle/ресурсы SUCCESS; **физические измерения iPhone FPS и нагрева отсутствуют**.
+- **Проверки:** полный [PR #62 CI #43520953114](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43520953114) **SUCCESS**, [PR #64 CI #43520835928](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43520835928) **SUCCESS**: архитектура, golden, 3D, мобильный WebGL, HUD recovery, 2D/DOM/PWA. Перед merge поднята версия до 110; новый CI на точном release-кандидате **обязателен**.
+- **Публикация:** разрешена владельцем, но факт выпуска подтверждать только по успешным главному CI `main`, встроенному `Publish verified PWA to GitHub Pages` и отдельному Pages run для **точного SHA**. [Release handoff](docs/campaign20/C4_7_V110_RELEASE_HANDOFF_2026_11_14.md). Дублирующий `Publish Dune GoH PWA` не запускать посредством сообщения `release:`: встроенный SHA-validated publish-job — источник истины.
+- **После публикации на iPhone:** проверить свайп по C:3 от №1 до №10, pinch/recenter, босс, бой/симуляцию/возврат, MED/LOW, 2D fallback, стабильность HUD после GL+auto x4, FPS и нагрев.
 
 ## v109 — Campaign 2.0 C4.6 «Дом Коррино» (13.11.2026)
 
