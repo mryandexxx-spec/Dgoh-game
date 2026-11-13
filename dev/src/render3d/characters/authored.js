@@ -123,7 +123,7 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
           // without changing the stage lights or affecting other characters.
           // Do not disable direct lights: highlights and form still react to them.
           m.emissiveTexture = t;
-          m.emissiveColor = new B3.Color3(.34, .34, .34);
+          m.emissiveColor = new B3.Color3(.85, .85, .85);
         }
       }
     });
@@ -203,7 +203,7 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
       Idle: 'Combat_Stance', Attack: 'Double_Combo_Attack',
       special: 'Sword_Parry_Backward', ult: 'Triple_Combo_Attack',
       Hit: 'Hit_Reaction', Death: 'Dead', Revive: 'Stand_Up10',
-      Showcase: 'Lower_Weapon_Look_Raise'
+      Showcase: 'Idle_11'
     };
     root._clipRest = Object.fromEntries(D.joints.map(([nm, p, , q, scale]) =>
       [nm, { node: N[nm], p: p.slice(), q: (q || [0, 0, 0, 1]).slice(), s: (scale || [1, 1, 1]).slice() }]));
