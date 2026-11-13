@@ -34,6 +34,10 @@ function poseHuman(A, o, now, t, sp) {
     if (a && !o.dead && a.kind === 'cast' && !a.fx && now - a.t0 > a.dur * .3) {
       a.fx = 1; A.castFX(o);
     }
+    // Meshy glTF forward is quarter-turned from the legacy +Z combat actor.
+    // This correction was checked against four real WebGL cardinal views.
+    // Apply after melee facing so hit reactions and attacks still face target.
+    o.root.rotation.y += Math.PI / 2;
     poseModelClip(o, now, t, sp, A);
     return;
   }
