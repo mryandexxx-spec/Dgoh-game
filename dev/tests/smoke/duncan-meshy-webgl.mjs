@@ -73,6 +73,14 @@ try {
    poseHuman(HERO_STAGE,o,now,1.3,1);
    return {result,parts:o.root.getChildMeshes().filter(m=>m.skeleton).map(m=>({name:m.name,vertices:m.getTotalVertices()})),swordMeshes:o.wpn.getChildMeshes().length};
   });
+  // The action-state smoke above drives poseHuman with synthetic timestamps.
+  // Re-run the REAL HeroStage update before taking visual screenshots:
+  // it restores portrait camera, showcase clip and intended display yaw.
+  await page.evaluate(() => {
+    const now=performance.now();
+    HERO_STAGE.tick(now,now/1000);
+    HERO_STAGE.scene.render();
+  });
   assert.equal(snapshot.parts.length,1,'Expected a single optimized skinned Meshy part');
   assert(snapshot.parts[0].vertices>10000,'Duncan Meshy geometry did not load');
   assert.equal(snapshot.swordMeshes,0,'Duplicated procedural sword on top of Meshy skinned blade');
