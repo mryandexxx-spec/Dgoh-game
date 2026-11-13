@@ -1,6 +1,6 @@
 # Campaign 2.0 · C4.7 `C:3` «Батлерианский джихад» — утверждённая концепция и handoff этапа B
 
-**База исследования:** `main` `c2f8d6b22afa61f71c3b0721c283affebc745560` (после v109). Прочитаны C4.6 v109 release handoff, ARCHITECTURE, PROJECT_INSTRUCTIONS, CHANGES_STATUS «Открыто», campaign20 README/SPEC/IMPLEMENTATION_PLAN, campaigns.js, presets, scene renderer, Corrino/Harkonnen builders и C4.6 handoff. **Концепция согласована: реализация разрешена только в отдельном Draft PR.** Merge, Pages и изменения принятых карт не разрешены.
+**База исследования:** `main` `c2f8d6b22afa61f71c3b0721c283affebc745560` (после v109). Прочитаны C4.6 v109 release handoff, ARCHITECTURE, PROJECT_INSTRUCTIONS, CHANGES_STATUS «Открыто», campaign20 README/SPEC/IMPLEMENTATION_PLAN, campaigns.js, presets, scene renderer, Corrino/Harkonnen builders и C4.6 handoff. **Концепция и реальные WebGL MED/LOW согласованы владельцем.** Отдельное разрешение на выпуск получено 14.11.2026 («CI прошел, выпускай»). Релиз v110 проходит validated PR CI → main CI → Pages; уже принятые карты не изменяются.
 
 ## Концепт: «Шрам освобождения»
 *Машинная симметрия ломается человеческой волей.* Не переокрашенная фабрика, дворец и не десять изолированных постаментов. 3D-панорама как **материальный военный атлас хроник**: единый узнаваемый «шрам» в рельефе проходит по областям разных миров/эпох; разломы и узкие навигационные перемычки обозначают монтаж архивной истории, **не утверждая**, будто Земля, Лига и Россак находятся в одном городе. Игрок следует единому маршруту в открытом рельефе свайпами, карта не содержит перелистывающих кнопок.
@@ -48,7 +48,7 @@
 ## Открытый технический вопрос, НЕ В РАМКАХ ЭТОГО PR
 Дублирующий publish workflow после v109, `Publish Dune GoH PWA #43504314965`; устранить отдельно, не ослабляя validated-SHA guard.
 
-**Статус:** художественная концепция и реальные WebGL-кадры третьей итерации **СОГЛАСОВАНЫ** владельцем («Ок», 14.11.2026). Этап B в Draft PR; **merge и Pages НЕ разрешены**, полный CI не зелёный из-за отдельной блокировки арены.
+**Статус:** художественная концепция и реальные WebGL-кадры третьей итерации **СОГЛАСОВАНЫ** владельцем («Ок», 14.11.2026). Этап B закончен; **merge и Pages разрешены владельцем**, полный [PR CI #43520953114](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43520953114) SUCCESS после устранения HUD drift. Публикацию подтверждать только после успешного main-CI/Pages.
 
 ## Реализация в рабочей ветке
 
@@ -57,6 +57,6 @@
 - Preset: `C:3`, 10 исходных координат миссий (IDs 170–179); общий GameScene, 50/60px, 2D CSS fallback.
 - Smoke: `dev/tests/smoke/campaign20.mjs`, снимки `jihad-{844-med,667-low}.png` и `jihad-first-*` после CI.
 - Реальные WebGL MED `844×390` и LOW `667×375` проанализированы; кадры третьей итерации художественно утверждены владельцем. [CI #43515556172](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43515556172), [скриншоты #14080378421](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43515556172/artifacts/14080378421) (`jihad-first-844-med.png`, `jihad-first-667-low.png`, `jihad-844-med.png`, `jihad-667-low.png`).
-- Campaign smoke MED/LOW, golden, архитектура, E3, 3D lifecycle/resources — SUCCESS. **Полный CI FAIL** после двух одинаковых ошибок `arena-animation-recovery.mjs` — `flash-expired HUD projection drift u0`; отдельно [issue #63](https://github.com/mryandexxx-spec/Dgoh-game/issues/63). Нельзя считать полный gate пройденным.
-- Физические измерения FPS/нагрева и жестов на iPhone не представлены. PR остаётся Draft до зелёного CI и отдельного релизного разрешения.
+- Campaign smoke MED/LOW, golden, архитектура, E3, 3D lifecycle/resources — SUCCESS. **ИСТОРИЧЕСКИЙ FAIL** был на первоначальном CI; **ошибка исправлена**, новый полный [CI #43520953114](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43520953114) SUCCESS, см. [issue #63](https://github.com/mryandexxx-spec/Dgoh-game/issues/63).
+- Физические измерения FPS/нагрева и жестов на iPhone не представлены. Отдельное релизное разрешение дано 14.11.2026; готовится v110, проверки на физическом iPhone ещё впереди.
 - Отдельная задача релизных workflow v109 не входит в этот PR.
