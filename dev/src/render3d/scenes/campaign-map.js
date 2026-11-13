@@ -1,4 +1,4 @@
-// Campaign 2.0 · C2/C4 — Каладан, Гиеди Прайм, Арракин на общем EngineHost.
+// Campaign 2.0 · C2/C4 — Каладан, Гиеди, Арракин, Заговор на общем EngineHost.
 // Нет собственного Engine, render loop, rAF, таймера или DOM-измерений в update().
 import { B3, HAS_GL, HAS3D, loadB3, cvSize } from '../base.js';
 import { engineHost } from '../engine-host.js';
@@ -7,6 +7,7 @@ import { gfx } from '../quality.js';
 import { campaignPanDelta, campaignPinch, campaignTwist } from '../campaign-gestures.js';
 import { buildGiediPrime } from './campaign-giedi.js';
 import { buildArrakeen } from './campaign-arrakeen.js';
+import { buildConspiracy } from './campaign-conspiracy.js';
 
 let ACTIVE = null;
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -17,7 +18,8 @@ class CampaignMapScene extends GameScene {
     this.small = Math.min(innerWidth, innerHeight) < 600;
     this.scene = new B3.Scene(this.engine);
     this.scene.useRightHandedSystem = true;
-    this.scene.clearColor = map.preset.theme === 'giedi'
+    this.scene.clearColor = map.preset.theme === 'conspiracy'
+      ? new B3.Color4(.075,.103,.14,1) : map.preset.theme === 'giedi'
       ? new B3.Color4(.14,.17,.17,1) : map.preset.theme === 'arrakeen'
         ? new B3.Color4(.71,.57,.40,1) : new B3.Color4(.12,.18,.16,1);
     this.scene.skipPointerMovePicking = true;
@@ -35,9 +37,9 @@ class CampaignMapScene extends GameScene {
     this.cam.minZ = .1; this.cam.maxZ = 250; this.cam.inputs.clear();
     this.scene.activeCamera = this.cam;
     const hemi = new B3.HemisphericLight('caladan-sky', new B3.Vector3(0, 1, 0), this.scene);
-    hemi.intensity = map.preset.theme === 'giedi' ? .79 : .88;
+    hemi.intensity = map.preset.theme === 'conspiracy' ? .85 : map.preset.theme === 'giedi' ? .79 : .88;
     const sun = new B3.DirectionalLight('caladan-sun', new B3.Vector3(-.65,-1,-.45), this.scene);
-    sun.intensity = map.preset.theme === 'giedi' ? .48 : .62;
+    sun.intensity = map.preset.theme === 'conspiracy' ? .54 : map.preset.theme === 'giedi' ? .48 : .62;
     this.makeGeometry();
     this.applyCamera();
   }
@@ -49,6 +51,11 @@ class CampaignMapScene extends GameScene {
   }
   makeGeometry() {
     const M = B3.MeshBuilder, S = this.scene, P = this.map.preset;
+    if(P.theme==='conspiracy') {
+      buildConspiracy(B3,S,(name,color)=>this.material(name,color));
+      this.makeMissionGeometry();
+      return;
+    }
     if(P.theme==='giedi') {
       buildGiediPrime(B3,S,(name,color)=>this.material(name,color));
       this.makeMissionGeometry();
@@ -144,7 +151,7 @@ class CampaignMapScene extends GameScene {
   }
   makeMissionGeometry() {
     const M=B3.MeshBuilder,S=this.scene,P=this.map.preset;
-    const road=this.material('route',P.theme==='giedi'?'#aa8458':P.theme==='arrakeen'?'#efd098':'#d7ad69');
+    const road=this.material('route',P.theme==='conspiracy'?'#d8b37e':P.theme==='giedi'?'#aa8458':P.theme==='arrakeen'?'#efd098':'#d7ad69');
     const clear=this.material('cleared','#507f57');
     const ready=this.material('ready','#d9a74d');
     const locked=this.material('locked','#514b43');
@@ -174,7 +181,8 @@ class CampaignMapScene extends GameScene {
     this.alpha=clamp(this.alpha,c.alpha-c.turnLimit,c.alpha+c.turnLimit);
     this.beta=clamp(this.beta,.76,1.12); this.radius=clamp(this.radius,c.minRadius,c.maxRadius);
     const [xmin,xmax,zmin,zmax]=this.map.preset.theme==='arrakeen'
-      ? [-34,40,-22,22] : [-21,21,-12,13];
+      ? [-34,40,-22,22] : this.map.preset.theme==='conspiracy'
+        ? [-44,44,-22,25] : [-21,21,-12,13];
     this.cx=clamp(this.cx,xmin,xmax); this.cz=clamp(this.cz,zmin,zmax);
     const q=this.radius*Math.sin(this.beta);
     this.cam.position.set(this.cx+q*Math.cos(this.alpha),
@@ -296,7 +304,7 @@ class CampaignMapScene extends GameScene {
       // only nearby mission markers are shown; distant but technically
       // projectable labels would otherwise mix unrelated chapter numbers.
       // This is a world-space distance gate, never a fixed screen-grid.
-      const local=this.map.preset.theme!=='arrakeen'
+      const local=!['arrakeen','conspiracy'].includes(this.map.preset.theme)
         || Math.hypot(node.x-this.cx,node.z-this.cz)<=Math.min(30,this.radius*.96);
       const visible=local&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.z>0&&p.z<1
         &&p.x>diameter/2+3&&p.y>diameter/2+3
