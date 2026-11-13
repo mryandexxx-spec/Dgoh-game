@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>C4.3 · Заговор — концепт 844 / 667</title>
+<style>
+:root{color-scheme:dark;--bronze:#d6b985;--ink:#0d141d}
+*{box-sizing:border-box}body{margin:0;background:#10141b;color:#e9e0d0;font-family:system-ui,-apple-system,sans-serif}
+header{max-width:1040px;margin:24px auto 12px;padding:0 16px}h1{font-size:25px;margin:0 0 8px;font-weight:740;letter-spacing:.03em}
+p{max-width:850px;margin:4px 0 8px;color:#b7bdc3;font-size:14px;line-height:1.5}
+.tag{font:11px ui-monospace,monospace;color:#d6b985;letter-spacing:.15em}
+section{max-width:1100px;margin:24px auto;padding:0 16px}.cap{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 8px;font-size:14px;color:#cdd0d4}.cap span{color:#9ea5ac;font-size:12px}
+.phone{background:#101923;border:2px solid #816a4f;border-radius:10px;overflow:hidden;box-shadow:0 18px 55px #0007}
+.p844{width:844px;max-width:100%}.p667{width:667px;max-width:100%}
+.head{height:42px;padding:6px 12px;background:#171e26;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #49443a;font-size:12px}
+.head strong{letter-spacing:.1em;color:#e9c894}.head small{color:#9ba5b2}
+.scroll{height:256px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:#a88956 #1b2732;touch-action:pan-x;overscroll-behavior-x:contain}
+.track{width:2040px;height:100%}.track svg{display:block;width:2040px;height:100%}
+.footer{height:90px;padding:10px 12px;background:linear-gradient(90deg,#2b2824,#171b20);border-top:1px solid #786247;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.mission{min-width:0}.mission strong{display:block;color:#f1d8af;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mission small{color:#a7b0ba;font-size:11px}.actions{display:flex;gap:8px;align-items:center;white-space:nowrap}
+.actions em{font-style:normal;color:#d8bd8c;border:1px solid #8d6c46;padding:7px 11px;border-radius:3px;font-size:12px}
+aside{border-top:1px solid #2f3d4a;margin-top:22px;padding:14px 0 22px;color:#aeb5bc;font-size:13px;line-height:1.6;max-width:845px}
+</style></head><body>
+<header><div class="tag">CAMPAIGN 2.0 / DARK II / DESIGN ONLY</div><h1>Заговор · операция «Тихий трон»</h1>
+<p>От погрузочных дворов Харконненов через тайные шахты сардаукаров к холодному имперскому мосту. Десять миссий находятся на одном длинном маршруте: показываем лишь соседние номера, остальное открывается свайпом по карте.</p></header>
+<section><div class="cap"><b>iPhone · 844×390</b><span>Проведи по карте влево и вправо →</span></div>
+<div class="phone p844"><div class="head"><strong>КАМПАНИЯ 2.0</strong><span>ТЁМНЫЕ · ГЛАВА II · ЗАГОВОР</span><small>★ 0/30</small></div><div class="scroll"><div class="track"></div></div><div class="footer"><div class="mission"><strong>01 · Тайный посланник</strong><small>Тайная миссия графа Фенринга</small></div><div class="actions"><em>ДЕТАЛИ МИССИИ</em></div></div></div></section>
+<section><div class="cap"><b>iPhone · 667×375</b><span>Те же реальные позиции маршрута, более узкое окно</span></div>
+<div class="phone p667"><div class="head"><strong>КАМПАНИЯ 2.0</strong><span>ТЁМНЫЕ · ГЛАВА II</span><small>★ 0/30</small></div><div class="scroll" style="height:250px"><div class="track"></div></div><div class="footer" style="height:83px"><div class="mission"><strong>01 · Тайный посланник</strong><small>Свайп по 3D-карте →</small></div><div class="actions"><em>МИССИЯ</em></div></div></div></section>
+<section><aside>Художественный HTML/SVG-макет, не игровая сборка и не WebGL. Элементы в «подвале» изображают существующую карточку миссии, а не новый UI. В самой игре никаких стрелок навигации и фиксированной экранной сетки не будет. Размер маркеров: обычные 50 px, босс 60 px. Принятые свайпы v101 останутся без изменений.</aside></section>
+<script>
+const labels=['Тайный посланник','Сардаукары','Ключ от щитов','Следы ментата','Перевозка войск','Ложные донесения','Агенты ордена','Последняя проверка','Отправка флота','Ментат Атрейдесов'];
+const P=[[170,173],[358,134],[546,185],[734,155],[922,170],[1110,129],[1298,185],[1486,146],[1674,170],[1862,156]];
+const toPath=P.map((p,i)=>(i?'L':'M')+p.join(' ')).join(' ');
+const mission=P.map(([x,y],i)=>'<g transform="translate('+x+' '+y+')"><circle r="'+(i===9?30:25)+'" fill="'+(i===9?'#452723':'#322c24')+'" stroke="'+(i===9?'#db7667':'#dfb46a')+'" stroke-width="3"/><circle r="'+(i===9?34:29)+'" fill="none" stroke="#0c1620" stroke-width="3"/><text y="9" text-anchor="middle" font-size="27" font-family="Georgia,serif" font-weight="700" fill="#fff3d8">'+(i+1)+'</text><text y="49" text-anchor="middle" font-size="11" font-family="sans-serif" fill="#f3d6a3" paint-order="stroke" stroke="#0c141e" stroke-width="3">'+labels[i]+'</text></g>').join('');
+const building=(x,w,h,col)=>'<rect x="'+x+'" y="'+(234-h)+'" width="'+w+'" height="'+h+'" fill="'+col+'"/><rect x="'+(x+7)+'" y="'+(230-h)+'" width="'+(w-14)+'" height="7" fill="#64717b" opacity=".6"/>';
+let towers='';for(let i=0;i<17;i++){const x=i*111+90;const h=34+i%4*16;towers+=building(x,42,h,i<6?'#34404c':i<12?'#44515e':'#77838b');}
+const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2040 256" aria-label="Широкая карта операции Заговор; свайп"><defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#15202c"/><stop offset="1" stop-color="#293440"/></linearGradient><linearGradient id="bridge" x2="0" y2="1"><stop stop-color="#98a6ad"/><stop offset="1" stop-color="#485763"/></linearGradient></defs><rect width="2040" height="256" fill="url(#sky)"/><path d="M0 100L190 85 470 94 760 62 1100 77 1460 42 2040 28V256H0Z" fill="#283542"/><path d="M0 125L340 105 580 125 850 93 1100 116 1450 92 1840 113 2040 82V256H0Z" fill="#202c39"/><g opacity=".8">'+towers+'</g><path d="M0 223H670V250H0ZM670 223H1280V249H670Z" fill="#444e58"/><path d="M1340 221H2040V255H1340Z" fill="#7b858b"/><path d="M790 50V235M850 50V235M910 50V235" stroke="#101b25" stroke-width="15"/><rect x="765" y="49" width="176" height="18" fill="#76828b"/><rect x="802" y="68" width="36" height="132" fill="#1b2633" stroke="#b28d5a" stroke-width="3"/><rect x="980" y="84" width="235" height="92" rx="7" fill="#27323f" stroke="#6a7680" stroke-width="8"/><rect x="1050" y="93" width="78" height="74" fill="#141e2a"/><rect x="1240" y="50" width="28" height="164" fill="#77868e"/><rect x="1410" y="29" width="25" height="193" fill="#8d9a9f"/><path d="M1490 227V62Q1650 -29 1800 62V227" fill="none" stroke="url(#bridge)" stroke-width="43"/><path d="M1515 205V76Q1650 2 1776 76V205" fill="none" stroke="#1b2933" stroke-width="12"/><path d="M1830 67L1980 33 2014 85 1866 113Z" fill="#87939c" stroke="#ccd3d8" stroke-width="3"/><path d="M130 222L840 218 1410 217 1910 215" stroke="#d3a864" stroke-width="6" stroke-dasharray="15 10" opacity=".5"/><path d="'+toPath+'" stroke="#0b141f" stroke-width="11" opacity=".7" fill="none"/><path d="'+toPath+'" stroke="#c59a60" stroke-width="4" stroke-dasharray="10 8" fill="none"/><text x="118" y="43" font-size="19" fill="#c4a278" letter-spacing="3">ГРУЗОВОЙ ДВОР</text><text x="802" y="30" font-size="20" fill="#c4a278" letter-spacing="3">ШАХТА ЛЕГИОНА</text><text x="1510" y="24" font-size="19" fill="#d4dee0" letter-spacing="3">ИМПЕРСКИЙ СЕКТОР</text>'+mission+'</svg>';
+document.querySelectorAll('.track').forEach(el=>{el.innerHTML=svg});
+</script></body></html>
