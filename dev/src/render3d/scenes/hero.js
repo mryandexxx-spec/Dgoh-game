@@ -116,7 +116,10 @@ class HeroStage extends Stage3D {
     if (this.auto && !this.drag && (!this.resumeT || now > this.resumeT)) this.yaw += Math.sin(t * .35) * .0025;
     if (!this.drag) { this.yaw += this.yawV / 60; this.yawV *= .92; }
     poseHuman(this, o, now, t, 1);
-    o.root.rotation.y = this.yaw + (o.def?.id === 'duncan' && o.root._clipRest ? Math.PI / 2 : 0);
+    // The calm Meshy Idle_11 is oriented differently from its combat clips.
+    // Its original forward axis faces the portrait camera without the +90°
+    // combat correction; applying that correction shows only a side silhouette.
+    o.root.rotation.y = this.yaw;
     const H = o.h, ik = this.intro ? Math.min(1, (now - this.intro) / 1100) : 1, e = 1 - (1 - ik) ** 3;
     const asp = (this.w || 1) / (this.h || 1), dist = (H * 1.35 + .6) / Math.min(1, asp * 1.9) * 1.14;   // пакет 5: холст шире — запас под подиум
     this.camera.position.set(Math.sin(.25) * dist * (1.25 - .25 * e), H * .62 + .25 * (1 - e), Math.cos(.25) * dist * (1.25 - .25 * e)); this.camera.setTarget((this._tg || (this._tg = V3())).set(0, H * .52, 0)); this.camera.fov = .75;
