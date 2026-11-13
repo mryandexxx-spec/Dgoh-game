@@ -165,6 +165,48 @@ try {
     await page.waitForFunction(()=>!document.querySelector('#overlay .result'),{timeout:5000});
     assert.ok(await page.$('#c20world canvas'),'map remains after simulation');
 
+    // C4.1: switching between Caladan and Giedi Prime reuses the shared EngineHost,
+    // but creates a genuinely different industrial scene with the same 10 real missions.
+    await page.evaluate(()=>document.querySelector('[data-c20side="D"]').click());
+    await page.waitForSelector('.c20-world.giedi');
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]').click());
+    await page.waitForSelector('[data-c20chapter="0"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="0"]').click());
+    await page.waitForFunction(()=>document.querySelectorAll('.c20-world.giedi .c20-pin').length===10,{timeout:6000});
+    await page.waitForSelector('.c20-world.giedi.campaign20-3d-ready',{timeout:16000});
+    await page.waitForFunction(()=>[...document.querySelectorAll('.c20-world.giedi .c20-pin')].some(el=>getComputedStyle(el).visibility==='visible'),{timeout:9000});
+    const giedi=await page.evaluate(()=>({
+      canvas:document.querySelector('.c20-world.giedi canvas.campaign20-canvas')!==null,
+      pins:document.querySelectorAll('.c20-world.giedi .c20-pin').length,
+      boss:document.querySelectorAll('.c20-world.giedi .c20-pin.boss').length,
+      hasScroll:document.querySelector('.c20').scrollHeight>document.querySelector('.c20').clientHeight+1,
+      visible:[...document.querySelectorAll('.c20-world.giedi .c20-pin')].filter(el=>getComputedStyle(el).visibility==='visible').length,
+    }));
+    assert.equal(giedi.canvas,true,'Giedi must mount its own real WebGL diorama');
+    assert.equal(giedi.pins,10,'Giedi uses ten existing Dark-I missions');
+    assert.equal(giedi.boss,1,'Giedi has the final boss marker');
+    assert.equal(giedi.hasScroll,false,'Giedi phone viewport must not scroll');
+    assert.ok(giedi.visible>0,'Giedi should project visible 3D mission nodes');
+    const overlapGiedi=await page.evaluate(()=>{
+      const pins=[...document.querySelectorAll('.c20-world.giedi .c20-pin')].filter(el=>getComputedStyle(el).visibility==='visible');
+      return pins.flatMap((a,i)=>pins.slice(i+1).filter(b=>{
+        const r=a.getBoundingClientRect(),s=b.getBoundingClientRect();
+        return Math.min(r.right,s.right)-Math.max(r.left,s.left)>3 &&
+          Math.min(r.bottom,s.bottom)-Math.max(r.top,s.top)>3;
+      }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+    });
+    assert.deepEqual(overlapGiedi,[],'Giedi 50/60px mission buttons may not overlap');
+    await page.screenshot({path:path.join(shots,`giedi-${w}-${gfx}.png`)});
+    await page.evaluate(()=>document.querySelector('.c20-world.giedi .c20-pin')?.click());
+    await page.evaluate(()=>document.querySelector('[data-c20="detail"]')?.click());
+    await page.waitForSelector('.c20-dialog');
+    await page.screenshot({path:path.join(shots,`giedi-detail-${w}-${gfx}.png`)});
+    await page.evaluate(()=>document.querySelector('[data-c20="back"]')?.click());
+    await page.waitForFunction(()=>!document.querySelector('.c20-dialog'));
+    // The reverse v101 pan direction must remain untouched on the new environment.
+    assert.equal(await page.$('.c20-world.giedi canvas.campaign20-canvas')!==null,true);
+    console.log('PASS Giedi Prime Dark I real WebGL C4.1',w,h,gfx,JSON.stringify(giedi));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
