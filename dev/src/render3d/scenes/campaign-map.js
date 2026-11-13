@@ -221,7 +221,7 @@ class CampaignMapScene extends GameScene {
       this.radius*Math.cos(this.beta)+1.6,
       this.cz+q*Math.sin(this.alpha));
     // Raise Arrakeen's gaze so the palace crown stays inside short iPhone viewports.
-    this.cam.setTarget(new B3.Vector3(this.cx,this.map.preset.theme==='arrakeen'?4.2:this.map.preset.theme==='corrino-chronicles'?3.5:this.map.preset.theme==='butlerian-jihad'?6:this.map.preset.theme==='conspiracy'||this.map.preset.theme==='harkonnen-chronicles'?2.1:0,this.cz+(this.map.preset.theme==='corrino-chronicles'?3:0)));
+    this.cam.setTarget(new B3.Vector3(this.cx,this.map.preset.theme==='arrakeen'?4.2:this.map.preset.theme==='corrino-chronicles'?3.5:this.map.preset.theme==='butlerian-jihad'?6:this.map.preset.theme==='conspiracy'||this.map.preset.theme==='harkonnen-chronicles'?2.1:0,this.cz+(this.map.preset.theme==='corrino-chronicles'?3:this.map.preset.theme==='butlerian-jihad'?4:0)));
     this.t0=performance.now(); this.dirty=true;
   }
   center(node, animate = true) {
