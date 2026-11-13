@@ -48,10 +48,14 @@ try {
     const camera=s.camera.position.subtract(head.getAbsolutePosition());
     forward.y=camera.y=0;
     return {facing:B3.Vector3.Dot(forward.normalize(),camera.normalize()),
-      ccw:m.sideOrientation===B3.StandardMaterial.CounterClockWiseSideOrientation,
+      rightHanded:s.scene.useRightHandedSystem,
+      determinant:m.computeWorldMatrix(true).determinant(),
+      ccw:(m.material.sideOrientation ?? m.sideOrientation)===B3.StandardMaterial.CounterClockWiseSideOrientation,
+      doubleSided:!m.material.backFaceCulling && m.material.twoSidedLighting,
       glowTexture:!!m.material.emissiveTexture};
   });
-  assert(portrait.ccw && portrait.facing>.80 && !portrait.glowTexture,
+  assert(portrait.rightHanded && Number.isFinite(portrait.determinant) && portrait.determinant>0 &&
+    portrait.ccw && portrait.doubleSided && portrait.facing>.80 && !portrait.glowTexture,
     'Duncan exterior surface / portrait facing: '+JSON.stringify(portrait));
   const snapshot=await page.evaluate(()=>{
    const o=HERO_STAGE.o,clips=o.root._clips,names=o.root._clipNames;
