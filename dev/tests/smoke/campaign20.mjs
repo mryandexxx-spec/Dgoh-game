@@ -334,6 +334,54 @@ try {
     console.log('PASS Conspiracy Dark II real WebGL C4.3',w,h,gfx,
       JSON.stringify({conspiracyLast,conspiracyFirst}));
 
+    // C4.4: five distinct historical districts, original ten C:0 missions.
+    // Side switch is owned by the Chronicles cover, not the story-side buttons.
+    await page.evaluate(()=>document.querySelector('[data-c20="home"]')?.click());
+    await page.waitForSelector('.c20-home',{timeout:7000});
+    await page.evaluate(()=>document.querySelector('[data-c20="chron"]')?.click());
+    await page.waitForSelector('.c20-map',{timeout:7000});
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="0"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="0"]').click());
+    await page.waitForFunction(()=>document.querySelectorAll('.c20-world.atreides-chronicles .c20-pin').length===10,{timeout:7000});
+    await page.waitForSelector('.c20-world.atreides-chronicles.campaign20-3d-ready',{timeout:18000});
+    const checkChronicles=async(label)=>{
+      await page.waitForFunction(()=>[...document.querySelectorAll('.c20-world.atreides-chronicles .c20-pin')]
+        .some(el=>getComputedStyle(el).visibility==='visible'),{timeout:9000});
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.atreides-chronicles');
+        const pins=[...world.querySelectorAll('.c20-pin')];
+        const visible=pins.filter(el=>getComputedStyle(el).visibility==='visible');
+        const nums=visible.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const overlaps=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3 &&
+            Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {nums,pins:pins.length,boss:pins.filter(p=>p.classList.contains('boss')).length,
+          overlaps,canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          pager:world.querySelectorAll('[data-c20step],.c20-mission-nav').length};
+      });
+      assert.equal(state.pins,10,'Chronicles preserves ten original missions');
+      assert.equal(state.boss,1,'Chronicles final Harkonnen boss');
+      assert.equal(state.canvas,true,'Chronicles uses real Babylon');
+      assert.equal(state.pager,0,'Chronicles navigates by swipe, not buttons');
+      assert.deepEqual(state.overlaps,[],'Chronicles world pins do not overlap');
+      assert.ok(state.nums.length>=2,label+' two nearby mission pins: '+JSON.stringify(state));
+      assert.ok(state.nums.every((n,i)=>i===0||n===state.nums[i-1]+1),
+        label+' visible mission numbers must be consecutive: '+JSON.stringify(state));
+      return state;
+    };
+    const chronLast=await checkChronicles('selected historical district');
+    await page.screenshot({path:path.join(shots,`chronicles-${w}-${gfx}.png`)});
+    await page.evaluate(()=>document.querySelector('.c20-world.atreides-chronicles .c20-pin')?.click());
+    await new Promise(resolve=>setTimeout(resolve,550));
+    const chronFirst=await checkChronicles('Caladan historical entrance');
+    console.log('Chronicle end-to-end positions',w,gfx,JSON.stringify({chronLast,chronFirst}));
+    assert.ok(chronFirst.nums.includes(1),'chronicle opening must display the old duke: '+JSON.stringify(chronFirst));
+    await page.screenshot({path:path.join(shots,`chronicles-first-${w}-${gfx}.png`)});
+    console.log('PASS Atreides Chronicles C4.4 WebGL',w,h,gfx,JSON.stringify({chronLast,chronFirst}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();

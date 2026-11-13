@@ -8,6 +8,7 @@ import { campaignPanDelta, campaignPinch, campaignTwist } from '../campaign-gest
 import { buildGiediPrime } from './campaign-giedi.js';
 import { buildArrakeen } from './campaign-arrakeen.js';
 import { buildConspiracy } from './campaign-conspiracy.js';
+import { buildAtreidesChronicles } from './campaign-atreides-chronicles.js';
 
 let ACTIVE = null;
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -18,7 +19,8 @@ class CampaignMapScene extends GameScene {
     this.small = Math.min(innerWidth, innerHeight) < 600;
     this.scene = new B3.Scene(this.engine);
     this.scene.useRightHandedSystem = true;
-    this.scene.clearColor = map.preset.theme === 'conspiracy'
+    this.scene.clearColor = map.preset.theme === 'atreides-chronicles'
+      ? new B3.Color4(.10,.14,.19,1) : map.preset.theme === 'conspiracy'
       ? new B3.Color4(.075,.103,.14,1) : map.preset.theme === 'giedi'
       ? new B3.Color4(.14,.17,.17,1) : map.preset.theme === 'arrakeen'
         ? new B3.Color4(.71,.57,.40,1) : new B3.Color4(.12,.18,.16,1);
@@ -51,6 +53,11 @@ class CampaignMapScene extends GameScene {
   }
   makeGeometry() {
     const M = B3.MeshBuilder, S = this.scene, P = this.map.preset;
+    if(P.theme==='atreides-chronicles') {
+      buildAtreidesChronicles(B3,S,(name,color)=>this.material(name,color));
+      this.makeMissionGeometry();
+      return;
+    }
     if(P.theme==='conspiracy') {
       buildConspiracy(B3,S,(name,color)=>this.material(name,color));
       this.makeMissionGeometry();
@@ -182,7 +189,8 @@ class CampaignMapScene extends GameScene {
     this.beta=clamp(this.beta,.76,1.12); this.radius=clamp(this.radius,c.minRadius,c.maxRadius);
     const [xmin,xmax,zmin,zmax]=this.map.preset.theme==='arrakeen'
       ? [-34,40,-22,22] : this.map.preset.theme==='conspiracy'
-        ? [-44,44,-22,25] : [-21,21,-12,13];
+        ? [-44,44,-22,25] : this.map.preset.theme==='atreides-chronicles'
+          ? [-45,49,-22,23] : [-21,21,-12,13];
     this.cx=clamp(this.cx,xmin,xmax); this.cz=clamp(this.cz,zmin,zmax);
     const q=this.radius*Math.sin(this.beta);
     this.cam.position.set(this.cx+q*Math.cos(this.alpha),
@@ -304,7 +312,7 @@ class CampaignMapScene extends GameScene {
       // only nearby mission markers are shown; distant but technically
       // projectable labels would otherwise mix unrelated chapter numbers.
       // This is a world-space distance gate, never a fixed screen-grid.
-      const local=!['arrakeen','conspiracy'].includes(this.map.preset.theme)
+      const local=!['arrakeen','conspiracy','atreides-chronicles'].includes(this.map.preset.theme)
         || Math.hypot(node.x-this.cx,node.z-this.cz)<=Math.min(30,this.radius*.96);
       const visible=local&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.z>0&&p.z<1
         &&p.x>diameter/2+3&&p.y>diameter/2+3
@@ -332,6 +340,25 @@ class CampaignMapScene extends GameScene {
         e.el.style.transform=`translate3d(${e.x.toFixed(1)}px,${e.y.toFixed(1)}px,0) translate(-50%,-50%)`;
         shown.push(e);
       }
+    }
+    // Chronicles spans different historical places. On narrow phone screens
+    // collision culling may hide mission 8 while retaining 7,9,10. Show only
+    // one contiguous run of the actual world-projected pins, never an
+    // artificial screen-space grid; scrolling reveals the other segments.
+    if(this.map.preset.theme==='atreides-chronicles'&&shown.length>1){
+      const ordered=[...shown].sort((a,b)=>a.node.number-b.node.number);
+      const runs=[];
+      for(const e of ordered){
+        const last=runs.at(-1);
+        if(last&&last.at(-1).node.number+1===e.node.number)last.push(e);
+        else runs.push([e]);
+      }
+      const selectedNumber=focus?.number??1;
+      runs.sort((a,b)=>b.length-a.length
+        ||Math.min(...a.map(e=>Math.abs(e.node.number-selectedNumber)))
+          -Math.min(...b.map(e=>Math.abs(e.node.number-selectedNumber))));
+      const keep=new Set(runs[0]);
+      for(const e of shown)if(!keep.has(e))e.el.style.visibility='hidden';
     }
   }
   onWake(){this.bind();this.engine.resize();this.applyCamera();}

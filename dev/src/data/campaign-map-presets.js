@@ -59,6 +59,27 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'imperial-gate',x:35,z:15,size:14},
     ]),
   }),
+  'C:0': Object.freeze({
+    id: 'chronicles-house-atreides', title: 'Хроники · Дом Атрейдесов',
+    theme: 'atreides-chronicles', bounds: [-49, 51, -22, 25],
+    // Five historical places, not a literal single-planet landscape.
+    // Local camera shows successive world-space pins; continue with v101 swipe.
+    camera: { target: [-40, 0, 0], alpha: -1.42, beta: .96,
+      radius: 27, minRadius: 23, maxRadius: 66, turnLimit: .3 },
+    nodes: Object.freeze([
+      [-40,-1],[-30,-1],[-21,0],[-11,-1],[-2,0],
+      [11,0],[23,-1],[33,0],[40,-1],[47,1],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'old-duke-ring',x:-40,z:10,size:13},
+      {kind:'harkonnen-hunt',x:-24,z:12,size:19},
+      {kind:'ix-towers',x:-3,z:11,size:17},
+      {kind:'landsraad',x:12,z:13,size:15},
+      {kind:'atreides-refuge',x:24,z:11,size:7},
+      {kind:'ginaz-school',x:36,z:9,size:15},
+      {kind:'reprisal',x:45,z:12,size:8},
+    ]),
+  }),
   'D:0': Object.freeze({
     id: 'giedi-prime-harkonnen', title: 'Гиеди Прайм · Чёрный город',
     theme: 'giedi', bounds: [-30, 30, -22, 23],
