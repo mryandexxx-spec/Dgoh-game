@@ -82,6 +82,7 @@ export const SPLIT = [
   [3272, 'data/campaign-map-presets.js'],
   [3272, 'logic/campaign-map.js'],
   [3272, 'render3d/campaign-gestures.js'],
+  [3272, 'render3d/scenes/campaign-giedi.js'],
   [3272, 'render3d/scenes/campaign-map.js'],
   [3272, 'ui/views/campaign20.js'],
   [3282, 'ui/views/camp.js'],

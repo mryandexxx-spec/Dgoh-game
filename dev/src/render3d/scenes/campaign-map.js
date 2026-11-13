@@ -1,10 +1,11 @@
-// Campaign 2.0 · C2 — мобильная диорама Каладана на общем EngineHost.
+// Campaign 2.0 · C2/C4 — Каладан и Гиеди Прайм на общем EngineHost.
 // Нет собственного Engine, render loop, rAF, таймера или DOM-измерений в update().
 import { B3, HAS_GL, HAS3D, loadB3, cvSize } from '../base.js';
 import { engineHost } from '../engine-host.js';
 import { GameScene } from '../game-scene.js';
 import { gfx } from '../quality.js';
 import { campaignPanDelta, campaignPinch, campaignTwist } from '../campaign-gestures.js';
+import { buildGiediPrime } from './campaign-giedi.js';
 
 let ACTIVE = null;
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -15,7 +16,8 @@ class CampaignMapScene extends GameScene {
     this.small = Math.min(innerWidth, innerHeight) < 600;
     this.scene = new B3.Scene(this.engine);
     this.scene.useRightHandedSystem = true;
-    this.scene.clearColor = new B3.Color4(.12, .18, .16, 1);
+    this.scene.clearColor = map.preset.theme === 'giedi'
+      ? new B3.Color4(.14,.17,.17,1) : new B3.Color4(.12,.18,.16,1);
     this.scene.skipPointerMovePicking = true;
     const c = map.preset.camera;
     const current=map.nodes.find(n=>n.open&&!n.stars) || map.nodes.filter(n=>n.open).at(-1);
@@ -28,9 +30,9 @@ class CampaignMapScene extends GameScene {
     this.cam.minZ = .1; this.cam.maxZ = 250; this.cam.inputs.clear();
     this.scene.activeCamera = this.cam;
     const hemi = new B3.HemisphericLight('caladan-sky', new B3.Vector3(0, 1, 0), this.scene);
-    hemi.intensity = .88;
+    hemi.intensity = map.preset.theme === 'giedi' ? .79 : .88;
     const sun = new B3.DirectionalLight('caladan-sun', new B3.Vector3(-.65,-1,-.45), this.scene);
-    sun.intensity = .62;
+    sun.intensity = map.preset.theme === 'giedi' ? .48 : .62;
     this.makeGeometry();
     this.applyCamera();
   }
@@ -42,16 +44,17 @@ class CampaignMapScene extends GameScene {
   }
   makeGeometry() {
     const M = B3.MeshBuilder, S = this.scene, P = this.map.preset;
+    if(P.theme==='giedi') {
+      buildGiediPrime(B3,S,(name,color)=>this.material(name,color));
+      this.makeMissionGeometry();
+      return;
+    }
     const grass = this.material('grass', '#4a6044');
     const coast = this.material('rock', '#9a8d6c');
     const sea = this.material('sea', '#184c5a');
     const stone = this.material('stone', '#b6a17a');
     const roof = this.material('roof', '#554e3f');
     const road = this.material('route', '#d7ad69');
-    const clear = this.material('cleared', '#507f57');
-    const ready = this.material('ready', '#d9a74d');
-    const locked = this.material('locked', '#514b43');
-    const boss = this.material('boss', '#b45138');
     // Caladan: a continuous low-poly shoreline, not intersecting rectangular land/sea planes.
     // Terrain vertex elevations encode grass hills, coves and a steep waterline.
     // No dynamic shadows, height textures, RTT or procedural work in the frame loop.
@@ -127,7 +130,16 @@ class CampaignMapScene extends GameScene {
       const scale=.66+(k%4)*.13;
       tree.scaling.setAll(scale);leaves.scaling.setAll(scale);
     }
-    // Дорога явно соединяет миссии; тонкие дешёвые цилиндры без текстур.
+    this.makeMissionGeometry();
+  }
+  makeMissionGeometry() {
+    const M=B3.MeshBuilder,S=this.scene,P=this.map.preset;
+    const road=this.material('route',P.theme==='giedi'?'#aa8458':'#d7ad69');
+    const clear=this.material('cleared','#507f57');
+    const ready=this.material('ready','#d9a74d');
+    const locked=this.material('locked','#514b43');
+    const boss=this.material('boss','#b45138');
+    // Both chapters reuse the same mission-path and 3D marker contract.
     P.nodes.slice(1).forEach(([x,z],k)=>{
       const [px,pz]=P.nodes[k], dx=x-px, dz=z-pz, len=Math.hypot(dx,dz);
       const path=M.CreateBox('mission-route',{width:.26,height:.05,depth:len},S);

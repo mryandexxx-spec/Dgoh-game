@@ -1,4 +1,4 @@
-// Campaign 2.0 — единый экран, C2: 3D-пилот Каладана; остальные главы пока в старом UI.
+// Campaign 2.0 — C2 Каладан + C4.1 Гиеди Прайм; остальные главы пока в старом UI.
 // Состояния экрана только в памяти; сохранения, порядок NODES и экономика не меняются.
 import { S } from '../../core/state.js';
 import { CAMP_DEF, CAMP_KEYS, NODES, ROM7, campNodes, chapNodes, nodeOpen, nodeCost, nodeEn } from '../../data/campaigns.js';
@@ -125,7 +125,7 @@ function mapHtml(setSel){
     style="--px:${(p.x+28)/56*100}%;--py:${(p.z+18)/36*100}%"
     data-c20node="${p.id}" title="${esc(p.title)}" aria-label="Миссия ${p.number}: ${esc(p.title)}">
     <b>${p.number}</b><small>${p.stars?'★'.repeat(p.stars):p.open?'◆':'⌑'}</small></button>`).join(''):'';
-  const old=map?'':`<p class="c20-pending">3D-карта этой главы будет подготовлена после Каладана. Можно продолжать играть через прежнюю кампанию.</p><button class="btn" data-c20legacy="1">Открыть классическую карту</button>`;
+  const old=map?'':`<p class="c20-pending">3D-карта этой главы пока готовится. Можно продолжать играть через прежнюю кампанию.</p><button class="btn" data-c20legacy="1">Открыть классическую карту</button>`;
   const enough=enGet(en)>=cost;
   const actions=open?`<button class="btn go ${enough?'':'lack'}" data-node="${chosen}">В бой <small>${amt(en,cost)}</small></button>
     ${stars===3?`<button class="btn ${enough?'':'lack'}" data-sim="${chosen}">Симуляция <small>${amt(en,cost)}</small></button>`:'<span class="c20-locked">Симуляция после 3★</span>'}`:
@@ -134,7 +134,7 @@ function mapHtml(setSel){
     <div class="c20-head"><button class="c20-back" data-c20="home">‹ ${ck==='C'?'Хроники':'Сюжет'}</button>${side}<span class="c20-progress">★ ${nodes.reduce((a,i)=>a+(S.cleared[i]||0),0)}/30</span></div>
     <div class="c20-chapbar"><button data-c20dir="-1" aria-label="Предыдущая глава">‹</button><button data-c20="chapters">ГЛАВА ${ROM7[c]} · ${esc(chapters[c].t)} ⌄</button><button data-c20dir="1" aria-label="Следующая глава">›</button></div>
     ${picker}
-    <div class="c20-world ${map?'caladan':'no-map'}" id="c20world">${markers}${old}${map?'<button class="c20-recenter" data-c20focus="1" aria-label="Центрировать текущую миссию" title="К текущей миссии">◎</button>':''}</div>
+    <div class="c20-world ${map?map.preset.theme:'no-map'}" id="c20world">${markers}${old}${map?'<button class="c20-recenter" data-c20focus="1" aria-label="Центрировать текущую миссию" title="К текущей миссии">◎</button>':''}</div>
     <div class="c20-card"><div><strong>${n.m+1}. ${esc(n.n)}</strong><small>Ур. ${n.lvl} · ${starStr(stars,3)}</small></div><button class="btn" data-c20="detail">Подробнее</button><div class="c20-card-actions">${actions}</div></div>
     ${modalHtml(ck,n,chosen)}
   </div>`;
