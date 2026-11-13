@@ -30,7 +30,7 @@ export function buildButlerianJihad(B3, scene, material) {
     o.rotation.y=Math.atan2(-dx,dz);return o;
   };
   // Shared continuous terrain: the long fracture is a single navigational spine.
-  box('historic scar foundation',0,-1.5,5,138,2.5,62,voidstone);
+  box('historic scar foundation',0,-1.5,5,180,2.5,68,voidstone);
   for(let i=0;i<11;i++){
     const x=-61+i*12.2,z=i%3===0?-.6:i%3===1?1.3:0;
     const mat=i<2?machine:i<5?ash:i<8?rock:stone;
@@ -39,8 +39,20 @@ export function buildButlerianJihad(B3, scene, material) {
     box('near edge masonry',x,-.01,-13,11.8,.16,2.1,i<3?steel:i<6?clay:rock);
     box('rear strata',x,-.34,18,12.1,.44,25,i<2?machine:i<5?ash:i<8?rock:dark);
   }
-  span('north edge of history scar',-62,-7,62,-5,.11,.3,.08,dark);
-  span('ember fracture line',-62,5,62,6,.14,.22,.08,ember);
+  // Bookends keep real low-phone framing filled rather than showing open void.
+  // They do not contain extra missions or alter camera bounds.
+  box('outer enslaved territory',-77,-.16,5,30,.36,43,machine);
+  box('outer Omnius garrison',77,-.16,5,31,.36,43,rock);
+  for(const x of [-81,-73]){
+    box('distant machine outwork',x,5.2,17,5,10,6,dark);
+    box('distant machine outwork signal',x,6,13.9,.3,7,.2,cold);
+  }
+  for(const x of [71,80]){
+    box('outer machine siege redoubt',x,4.8,19,5.2,9.4,5.8,voidstone);
+    box('outer legion banner light',x,5.3,16,.3,8,.2,cold);
+  }
+  span('north edge of history scar',-84,-7,84,-5,.11,.3,.08,dark);
+  span('ember fracture line',-84,5,84,6,.14,.22,.08,ember);
   for(let i=0;i<16;i++){
     const o=box('fracture fragments',-61+i*8.1,.07,-8.6+(i%4)*.8,4.7,.10,.55,i%4?dark:ash);
     o.rotation.y=.16+(i%3)*.21;
@@ -170,17 +182,22 @@ export function buildButlerianJihad(B3, scene, material) {
   // 10: Omnius' army; threat of the next battle, NOT Omnius' final death.
   box('Omnius legion parade field',55,.05,16,24,.3,25,machine);
   for(const x of [46.5,63.5]){
-    box('Synchronization gate monolith',x,9.8,19,4.5,19.5,6.4,voidstone);
-    box('Synchronization cold vertical line',x,10,15.6,.45,17.6,.19,cold);
-    box('Synchronization upper cap',x,20.1,19,6,1.2,7.3,steel);
+    box('Synchronization gate monolith',x,7.4,19,4.5,14.6,6.4,voidstone);
+    box('Synchronization cold vertical line',x,7.5,15.6,.45,13,.19,cold);
+    box('Synchronization upper cap',x,15.2,19,6,1.2,7.3,steel);
   }
-  box('Synchronization gate top',55,20.2,19,18,2.6,6,dark);
-  box('legion staging void',55,7,24.5,11,13,1.2,voidstone);
-  for(let i=0;i<4;i++)box('command machine data slit',55,8+i*3.1,23.75,7,.25,.18,cold);
+  box('Synchronization gate top',55,15.3,19,18,2.2,6,dark);
+  box('legion staging void',55,5.9,24.5,11,10.7,1.2,voidstone);
+  for(let i=0;i<3;i++)box('command machine data slit',55,4.5+i*3.0,23.75,7,.25,.18,cold);
   for(let row=0;row<3;row++)for(let i=0;i<5;i++){
     const x=48+i*3.5,z=28+row*3.1,h=2.4+row*.65;
     cyl('machine army legionary',x,h/2,z,1.35,h,machine,5);
     box('machine legion eye',x,h*.82,z-.73,.65,.19,.14,cold);
+  }
+  // Flanking angular approach walls frame the boss marker without covering it.
+  for(const x of [47,62]){
+    box('legion approach wing',x,3.4,9,2.2,6.6,5.5,machine);
+    box('legion forward luminous seam',x,3.5,6.15,.32,4.7,.16,cold);
   }
   box('Omnius command war engine',55,8.5,36,7,10,6,steel);
   cyl('Omnius war engine crest',55,15.3,36,5.5,4.7,dark,6,.3);
