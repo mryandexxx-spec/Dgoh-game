@@ -68,3 +68,12 @@ No release/version bump while integration is unverified.
 **Checks:** duncan-meshy-webgl.mjs waits for albedo readiness, compares GPU foreground/background coverage and luminance, saves two real WebGL frames and four cardinal-yaw captures, checks rig/clips and verifies Attack/special/ult/death/Ghola/recovery at speeds x1/x2/x4. Duncan smoke passed on code commit dada7b75c54e6811602d31d33f1f34d4b6fc7764 in Actions #43422792355 with artifact dune-duncan-meshy-781. Final entire workflow status is separate.
 
 **Remaining blockers:** Triple_Combo_Attack does not reproduce the original eight-strike ultimate choreography; battle-facing/cloth clipping and real iPhone Safari review are not fully accepted. KTX2 asset is not committed; JPEG fallback works. Do not merge or publish and do not bump release version without the owner's permission.
+
+## 2026-11-13 portrait refinement — further validation required
+
+- The baked-albedo emissive contribution was raised to 1.25 for the imported Duncan only (other heroes unchanged). The latest GPU capture at 844×390 MED / 667×375 LOW showed visible body/texture with measured mean luma ~122/~121, but face detail is still compromised by the head-down source pose; this is not final visual acceptance.
+- Targeted hero-only fill reuses existing `rim2` (no extra light) and restores its position/intensity when switching to another hero; Duncan-only additive backdrop halo alpha becomes .045 and restores .20 for other heroes.
+- Verified real WebGL captures for four existing animation candidates (Idle_11, Combat_Stance, Lower_Weapon_Look_Raise, Long_Breathe_and_Look_Around) at 25/50/75% of each clip. None gives an unequivocally better calm full-body hero card; retain Idle_11. See artifact `dune-duncan-meshy-788` from Actions #43424938160.
+- The latest portrait change adds a small local head lift (-.24 radians about local X) **after** imported showcase clip sampling in `HeroStage.tick()`; this affects only the card and must be judged in fresh GPU frames. The clip animator resets the source pose each frame so it must not accumulate.
+- Smoke additionally gates `tex.invertY===false`, finite skinned bounds after real stage tick, and restored rim/halo values after navigating from Duncan to Leto. It captures live GPU pixels, not browser screenshots of a released backbuffer.
+- Real battle facing, cape clipping, PWA on physical iPhone, and the original eight-strike ultimate choreography remain open. Maintain Draft; do not merge/deploy based on green CI alone.
