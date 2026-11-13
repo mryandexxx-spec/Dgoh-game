@@ -1,6 +1,6 @@
 // render3d/characters/authored.js — строки 1454–1511 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { MODEL_DATA, assetUrl, ktx2For } from '../../assets/models.js';
-import { ANIM3 } from './pose-duncan.js';
+import { ANIM3, DUNCAN_COMBO } from './pose-duncan.js';
 import { HERO3 } from './rig.js';
 import { add, bBox, bCyl, bSph, grp } from '../geometry.js';
 import { basic3, col3, mat3, mk } from '../materials.js';
@@ -113,9 +113,11 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
     if (legendSolid) me.useVertexColors = false;
     const m = mat3(legendColor, P.material || MODEL_MAT[k] || {}); me.material = m; if (m._lit) mats.push(m);
     if (def.id === 'duncan' && localTrs) {
-      // Meshy's albedo is used as an emissive *fill*, not as a glowing VFX.
-      // GlowLayer otherwise picks up emissiveTexture and washes the entire
-      // body/face into a grey ghost silhouette on MED/LOW.
+      // Raw glTF indices are CCW. Babylon defaults handmade meshes in
+      // right-handed scenes to CW, exposing the inside of the head and armor.
+      me.sideOrientation = B3.StandardMaterial.CounterClockWiseSideOrientation;
+      m.backFaceCulling = false; // source Material_0.doubleSided
+      m.twoSidedLighting = true;
       m._duncanNoGlow = true;
       me.metadata = { ...(me.metadata || {}), duncanNoGlow: true };
       for (const layer of CTX.scene.effectLayers) {
@@ -127,13 +129,9 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
       else {
         m.diffuseTexture = t;
         if (def.id === 'duncan' && D.jointFormat === 'local-trs') {
-          // Meshy's baked albedo contains skin, cloth and armor illumination.
-          // Reuse that exact texture as a modest light-independent fill on the
-          // StandardMaterial. This preserves fine albedo details on MED/LOW
-          // without changing the stage lights or affecting other characters.
-          // Do not disable direct lights: highlights and form still react to them.
-          m.emissiveTexture = t;
-          m.emissiveColor = new B3.Color3(1.25, 1.25, 1.25);
+          // The source atlas is very dark (median channel 38 on mapped vertices).
+          // Scale the diffuse sample only. Direct lights still describe the form.
+          t.level = 1.65;
         }
       }
     }, !(def.id === 'duncan' && D.jointFormat === 'local-trs'));
@@ -246,7 +244,13 @@ function poseModelClip(o, now, t, sp, stage) {
     const showcase = clips[names.Showcase];
     u = ((t + (o.phase || 0)) % showcase.duration) / showcase.duration;
   }
-  const clipName = names[name] || name, clip = clips[clipName]; if (!clip) return;
+  let clipName = names[name] || name;
+  if (name === 'ult' && o.def.id === 'duncan' && o.root._clipRest) {
+    const part = DUNCAN_COMBO.find(section => u < section.end) || DUNCAN_COMBO[2];
+    clipName = part.clip;
+    u = (u - part.start) / (part.end - part.start);
+  }
+  const clip = clips[clipName]; if (!clip) return;
   // A GLB's model-level fall offset must never leak into an authored revive
   // or subsequent idle; the source clip owns the skeleton's local pose.
   if (o.root._clipRest && name !== 'Death') {

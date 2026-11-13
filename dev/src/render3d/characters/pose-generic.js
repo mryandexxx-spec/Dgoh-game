@@ -1,6 +1,6 @@
 // render3d/characters/pose-generic.js — строки 1666–1738 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { MOCAP_OK, clearQ, layerClip } from './mocap.js';
-import { seg } from './pose-duncan.js';
+import { seg, DUNCAN_CONTACTS } from './pose-duncan.js';
 import './procedural.js'; // порядок исполнения
 import { V3, addScaled } from '../materials.js';
 import { B3 } from '../base.js';
@@ -19,6 +19,18 @@ function poseHuman(A, o, now, t, sp) {
     // with the old procedural Duncan animator.
     // Unlike the old procedural animator, the imported clip branch must
     // explicitly release finished actions or Duncan gets stuck in Attack.
+    const combo = o.act && o.act.ab === o.def.ult && !o.dead;
+    if (combo) {
+      const action = o.act, progress = (now - action.t0) / action.dur;
+      let strike = action.strikesPlayed || 0;
+      while (strike < DUNCAN_CONTACTS.length && progress >= DUNCAN_CONTACTS[strike]) {
+        const last = strike === DUNCAN_CONTACTS.length - 1;
+        A.slashFX(action.to.add(action.dir.scale(.8)), Math.atan2(action.dir.x, action.dir.z) + strike * .8, last);
+        for (const target of action.tg || []) A.sparkFX?.(target, last ? 2 : 1);
+        if (last && A.shakeT !== undefined) A.shakeT = now;
+        action.strikesPlayed = ++strike;
+      }
+    }
     if (o.act && now >= o.act.t0 + o.act.dur) o.act = null;
     const a = o.act;
     o.root.position.copyFrom(o.base);
@@ -26,18 +38,14 @@ function poseHuman(A, o, now, t, sp) {
     if (a && !o.dead && (a.kind === 'melee' || a.kind === 'aoe')) {
       const k = Math.min(1, Math.max(0, (now - a.t0) / a.dur));
       const face = Math.atan2(a.dir.x, a.dir.z);
-      const travel = k < .26 ? ease(k / .26) : k > .7 ? 1 - ease((k - .7) / .3) : 1;
+      const travel = combo ? (k < .06 ? ease(k / .06) : k > .86 ? 1 - ease((k - .86) / .14) : 1) : k < .26 ? ease(k / .26) : k > .7 ? 1 - ease((k - .7) / .3) : 1;
       B3.Vector3.LerpToRef(o.base, a.to, travel, o.root.position);
       o.root.rotation.y = face;
-      if (!a.fx && k > .5) { a.fx = 1; A.slashFX(a.to.add(a.dir.scale(.8)), face, a.kind === 'aoe'); }
+      if (!combo && !a.fx && k > .5) { a.fx = 1; A.slashFX(a.to.add(a.dir.scale(.8)), face, a.kind === 'aoe'); }
     }
     if (a && !o.dead && a.kind === 'cast' && !a.fx && now - a.t0 > a.dur * .3) {
       a.fx = 1; A.castFX(o);
     }
-    // Meshy glTF forward is quarter-turned from the legacy +Z combat actor.
-    // This correction was checked against four real WebGL cardinal views.
-    // Apply after melee facing so hit reactions and attacks still face target.
-    o.root.rotation.y += Math.PI / 2;
     poseModelClip(o, now, t, sp, A);
     return;
   }

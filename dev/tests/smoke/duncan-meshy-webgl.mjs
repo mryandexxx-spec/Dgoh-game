@@ -36,9 +36,23 @@ try {
     const mesh = stage?.o?.root?.getChildMeshes().find(m => m.skeleton);
     const mat = mesh?.material;
     const tex = mat && (mat.albedoTexture || mat.diffuseTexture);
-    return !!tex && tex.isReady() && tex.invertY === false;
+    return !!tex && tex.isReady() && tex.invertY === false && /duncan-meshy-alb/.test(tex.url || tex.name);
   }, {timeout:30000});
   await page.evaluate(async()=>{await HERO_STAGE.scene.whenReadyAsync();heroHold(true);});
+  const portrait=await page.evaluate(()=>{
+    const s=HERO_STAGE,o=s.o,m=o.root.getChildMeshes().find(v=>v.skeleton);
+    s.intro=0;s.auto=false;o.phase=0;s.tick(10000,1);
+    const head=o.head, nose=o.root._clipRest.headfront.node;
+    head.computeWorldMatrix(true);nose.computeWorldMatrix(true);
+    const forward=nose.getAbsolutePosition().subtract(head.getAbsolutePosition());
+    const camera=s.camera.position.subtract(head.getAbsolutePosition());
+    forward.y=camera.y=0;
+    return {facing:B3.Vector3.Dot(forward.normalize(),camera.normalize()),
+      ccw:m.sideOrientation===B3.StandardMaterial.CounterClockWiseSideOrientation,
+      glowTexture:!!m.material.emissiveTexture};
+  });
+  assert(portrait.ccw && portrait.facing>.80 && !portrait.glowTexture,
+    'Duncan exterior surface / portrait facing: '+JSON.stringify(portrait));
   const snapshot=await page.evaluate(()=>{
    const o=HERO_STAGE.o,clips=o.root._clips,names=o.root._clipNames;
    const keys=['Idle','Attack','special','ult','Hit','Death','Revive','Showcase'];
@@ -84,7 +98,9 @@ try {
        const q=o.R.hand.rotationQuaternion?.asArray();
        if(!q?.every(Number.isFinite)||!Number.isFinite(o.root.rotation.y))
          throw Error('Duncan invalid animation pose x'+speed+' '+state);
+       const action=o.act;
        poseHuman(HERO_STAGE,o,now+1800,(now+1800)/1000,speed);
+       if(state==='ult' && action.strikesPlayed!==8)throw Error('Missing ultimate contacts at x'+speed);
        if(o.act!==null || o.root._clip!=='Showcase')
          throw Error('Duncan stuck after x'+speed+' '+state);
        result.push({speed,state,clip:expected,recovered:true});
@@ -159,12 +175,12 @@ try {
     };
     hero.setEnabled(false);const a=take();
     hero.setEnabled(true);const b=take();
-    let count=0,bright=0,sum=0,minX=w,maxX=-1,minY=h,maxY=-1;
+    let count=0,bright=0,clipped=0,sum=0,minX=w,maxX=-1,minY=h,maxY=-1;
     for(let y=3;y<h-3;y++)for(let x=3;x<w-3;x++){
       const i=(y*w+x)*4,dr=Math.abs(a[i]-b[i]),dg=Math.abs(a[i+1]-b[i+1]),db=Math.abs(a[i+2]-b[i+2]);
       if(dr+dg+db<48)continue;
       const l=.2126*b[i]+.7152*b[i+1]+.0722*b[i+2];
-      count++;sum+=l;if(l>70)bright++;
+      count++;sum+=l;if(l>70)bright++;if(l>245)clipped++;
       minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
     }
     // Actual decoded screenshot of the foreground GPU pixels, not a browser
@@ -174,12 +190,13 @@ try {
     for(let y=0;y<h;y++)im.data.set(b.subarray((h-1-y)*w*4,(h-y)*w*4),y*w*4);
     ctx.putImageData(im,0,0);
     return {pixels:count,meanLuma:count?sum/count:0,brightFraction:count?bright/count:0,
-      bounds:count?[minX,minY,maxX,maxY]:null,canvas:[w,h],png:canvas.toDataURL('image/png')};
+      clippedFraction:clipped/Math.max(1,count),bounds:count?[minX,minY,maxX,maxY]:null,canvas:[w,h],png:canvas.toDataURL('image/png')};
   });
   fs.writeFileSync(path.join(out,`duncan-${width}-${quality}.png`),Buffer.from(visibility.png.split(',')[1],'base64'));
   const {png,...metrics}=visibility;
   fs.writeFileSync(path.join(out,`duncan-${width}-${quality}.json`),JSON.stringify(metrics,null,2));
   console.log('Duncan visible pixel metrics',quality,JSON.stringify(metrics));
+  assert(metrics.clippedFraction < .08, 'Duncan blown highlights: '+JSON.stringify(metrics));
   const area = visibility.canvas[0]*visibility.canvas[1];
   assert(visibility.pixels > Math.max(250,area*.004),
     'Duncan not visibly rendered: '+JSON.stringify(metrics)+' stage '+JSON.stringify(stageRestore));
@@ -255,6 +272,24 @@ try {
       return {id:st.def?.id,rimZ:st.rim2.position.z,
         rimIntensity:st.rim2.intensity,haloAlpha:st.halo?.material?.alpha};
     });
+    await page.waitForFunction(()=>{
+      const s=HERO_STAGE;s.scene.render();
+      return s.o.root.getChildMeshes().filter(m=>m.isEnabled() && m.getTotalVertices()>0)
+        .every(m=>m.material && m.material.isReady(m));
+    },{timeout:25000});
+    const control=await page.evaluate(()=>{
+      const s=HERO_STAGE,gl=s.engine._gl,w=gl.drawingBufferWidth,h=gl.drawingBufferHeight;
+      s.intro=0;s.tick(performance.now(),1);
+      function read(){s.scene.render();const b=new Uint8Array(w*h*4);
+        gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,b);return b;}
+      s.o.root.setEnabled(false);const bg=read();s.o.root.setEnabled(true);const fg=read();
+      let pixels=0;for(let i=0;i<fg.length;i+=4)if(Math.abs(bg[i]-fg[i])+Math.abs(bg[i+1]-fg[i+1])+Math.abs(bg[i+2]-fg[i+2])>64)pixels++;
+      const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d'),im=ctx.createImageData(w,h);
+      for(let y=0;y<h;y++)im.data.set(fg.subarray((h-1-y)*w*4,(h-y)*w*4),y*w*4);
+      ctx.putImageData(im,0,0);return {pixels,root:s.o.root.scaling.asArray(),positions:s.o.root.getChildMeshes().slice(0,3).map(m=>({name:m.name,en:m.isEnabled(),pos:m.getAbsolutePosition().asArray()})),png:c.toDataURL()};
+    });
+    fs.writeFileSync(path.join(out,'leto-after-duncan-med.png'),Buffer.from(control.png.split(',')[1],'base64'));
+    assert(control.pixels>1000,'Leto disappeared after switching from Duncan '+JSON.stringify({...control,png:undefined}));
     assert.equal(other.id,'leto','Could not switch hero after Duncan');
     assert(Math.abs(other.rimZ+2.2)<1e-4 && Math.abs(other.rimIntensity-1.1)<1e-4 &&
       Math.abs(other.haloAlpha-.20)<1e-4,

@@ -75,7 +75,7 @@ class HeroStage extends Stage3D {
   buildHero(def) {
     const S = this.scene, m0 = new Set(S.materials), k0 = new Set(S.skeletons), t0 = new Set(S.textures);
     const o = makeHuman3(def, { scene: S, shadows: this.shadows, pbr: true });
-    o.own = { mats: S.materials.filter(m => !m0.has(m)), sks: S.skeletons.filter(x => !k0.has(x)), tex: S.textures.filter(x => !t0.has(x)) };
+    o.own = { mats: S.materials.filter(m => !m0.has(m)), sks: S.skeletons.filter(x => !k0.has(x)), tex: S.textures.filter(x => !t0.has(x) && x !== S.environmentBRDFTexture && x !== S.environmentTexture) };
     o.base = V3(0, 0, 0); o.face = 0; o.side = 'A'; o.phase = 0; o.def = def; return o;
   }
   dropHero(o) {
@@ -89,7 +89,7 @@ class HeroStage extends Stage3D {
     if (this.def !== def || !this.o) {
       if (this.o) this.o.root.setEnabled(false);
       let o = this.pool.get(def.id); if (!o) { o = this.buildHero(def); this.pool.set(def.id, o); }
-      this.warmEnd(o); o.root.setEnabled(true); this.o = o; this.def = def; this.yaw = -.35; this.auto = true; this.intro = performance.now();
+      this.warmEnd(o); o.root.setEnabled(true); this.o = o; this.def = def; this.yaw = def.id === 'duncan' && o.root._clipRest ? 0 : -.35; this.auto = true; this.intro = performance.now();
     }
     const keep = new Set([def.id, ...this.want.map(d => d.id)]);
     for (const [id, o] of this.pool) if (!keep.has(id)) { this.dropHero(o); this.pool.delete(id); }
@@ -106,10 +106,12 @@ class HeroStage extends Stage3D {
     if (def.id === 'duncan' && this.o?.root._clipRest) {
       this.rim2.position.set(2.5, 3.0, 3.0);
       this.rim2.direction.set(-.55, -.46, -.70);
-      this.rim2.intensity = 1.65;
+      this.rim2.diffuse.set(1, .94, .88);
+      this.rim2.intensity = 3.4;
     } else {
       this.rim2.position.set(2.6, 2.6, -2.2);
       this.rim2.direction.set(-.6, -.4, .6);
+      this.rim2.diffuse.copyFrom(col3('#ffa860'));
       this.rim2.intensity = 1.1;
     }
   }
@@ -152,9 +154,9 @@ class HeroStage extends Stage3D {
     const asp = (this.w || 1) / (this.h || 1),
       // The single-piece Meshy skin is visibly slimmer in the portrait than
       // the other authored heroes. Only Duncan gets a small camera push-in.
-      portraitScale = o.def?.id === 'duncan' && o.root._clipRest ? .89 : 1,
+      portraitScale = o.def?.id === 'duncan' && o.root._clipRest ? .77 : 1,
       dist = (H * 1.35 + .6) / Math.min(1, asp * 1.9) * 1.14 * portraitScale;   // пакет 5: холст шире — запас под подиум
-    this.camera.position.set(Math.sin(.25) * dist * (1.25 - .25 * e), H * .62 + .25 * (1 - e), Math.cos(.25) * dist * (1.25 - .25 * e)); this.camera.setTarget((this._tg || (this._tg = V3())).set(0, H * .52, 0)); this.camera.fov = .75;
+    this.camera.position.set(Math.sin(.25) * dist * (1.25 - .25 * e), H * .62 + .25 * (1 - e), Math.cos(.25) * dist * (1.25 - .25 * e)); this.camera.setTarget((this._tg || (this._tg = V3())).set(0, H * (portraitScale < 1 ? .44 : .52), 0)); this.camera.fov = .75;
     if (this.pipe.depthOfFieldEnabled) this.pipe.depthOfField.focusDistance = dist * 1000;
     const fk = this.flashT ? Math.max(0, 1 - (now - this.flashT) / 900) : 0;
     this.key.intensity = 1.7 + fk * 2; this.ring.scaling.setAll(1 + fk * .15); if (this.glow) this.glow.intensity = .6 + fk;
