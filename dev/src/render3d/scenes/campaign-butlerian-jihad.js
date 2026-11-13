@@ -194,6 +194,22 @@ export function buildButlerianJihad(B3, scene, material) {
     cyl('machine army legionary',x,h/2,z,1.35,h,machine,5);
     box('machine legion eye',x,h*.82,z-.73,.65,.19,.14,cold);
   }
+  // Actual visible ranks before the gate. Three instanced pieces per unit
+  // (body / mind casing / cold visor), no 36 independent source geometries.
+  // The soldiers stand deep behind the boss marker, keeping 60px hit targets clear.
+  const bodySource=box('legion body source',0,1.8,0,1.45,2.2,1.1,machine);
+  const headSource=cyl('legion head source',0,3.34,0,1.2,1.05,steel,6);
+  const eyeSource=box('legion visor source',0,3.42,-.59,.86,.22,.12,cold);
+  bodySource.setEnabled(false);headSource.setEnabled(false);eyeSource.setEnabled(false);
+  for(let row=0;row<3;row++)for(let i=0;i<4;i++){
+    const x=49.4+i*3.7+(row%2)*.35,z=9.7+row*3.3;
+    const torso=bodySource.createInstance('front legion torso');
+    torso.position.set(x,1.8,z);
+    const head=headSource.createInstance('front legion head');
+    head.position.set(x,3.34,z);
+    const visor=eyeSource.createInstance('front legion visor');
+    visor.position.set(x,3.42,z-.59);
+  }
   // Flanking angular approach walls frame the boss marker without covering it.
   for(const x of [47,62]){
     box('legion approach wing',x,3.4,9,2.2,6.6,5.5,machine);
