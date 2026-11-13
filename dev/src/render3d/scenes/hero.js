@@ -121,7 +121,11 @@ class HeroStage extends Stage3D {
     // fixed UV orientation now shows the actual face/armor in this view.
     o.root.rotation.y = this.yaw;
     const H = o.h, ik = this.intro ? Math.min(1, (now - this.intro) / 1100) : 1, e = 1 - (1 - ik) ** 3;
-    const asp = (this.w || 1) / (this.h || 1), dist = (H * 1.35 + .6) / Math.min(1, asp * 1.9) * 1.14;   // пакет 5: холст шире — запас под подиум
+    const asp = (this.w || 1) / (this.h || 1),
+      // The single-piece Meshy skin is visibly slimmer in the portrait than
+      // the other authored heroes. Only Duncan gets a small camera push-in.
+      portraitScale = o.def?.id === 'duncan' && o.root._clipRest ? .89 : 1,
+      dist = (H * 1.35 + .6) / Math.min(1, asp * 1.9) * 1.14 * portraitScale;   // пакет 5: холст шире — запас под подиум
     this.camera.position.set(Math.sin(.25) * dist * (1.25 - .25 * e), H * .62 + .25 * (1 - e), Math.cos(.25) * dist * (1.25 - .25 * e)); this.camera.setTarget((this._tg || (this._tg = V3())).set(0, H * .52, 0)); this.camera.fov = .75;
     if (this.pipe.depthOfFieldEnabled) this.pipe.depthOfField.focusDistance = dist * 1000;
     const fk = this.flashT ? Math.max(0, 1 - (now - this.flashT) / 900) : 0;
