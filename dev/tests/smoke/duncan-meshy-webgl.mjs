@@ -126,6 +126,18 @@ try {
   assert(stageRestore.after.meshMin?.every(Number.isFinite) && stageRestore.after.meshMax?.every(Number.isFinite),
     'Duncan skinned bounds became non-finite after hero tick: '+JSON.stringify(stageRestore));
 
+  const glowGuard=await page.evaluate(()=>{
+    const stage=HERO_STAGE,m=stage.o.root.getChildMeshes().find(x=>x.skeleton);
+    const gl=stage.glow,thin=gl && (gl._thinEffectLayer || gl);
+    return {tag:!!m?.metadata?.duncanNoGlow,material:!!m?.material?._duncanNoGlow,
+      inGlow:thin?._shouldRenderMesh ? !!thin._shouldRenderMesh(m) : null,
+      layerEnabled:!!gl};
+  });
+  assert(glowGuard.tag && glowGuard.material,
+    'Duncan baked albedo must never be treated as emissive VFX: '+JSON.stringify(glowGuard));
+  if(glowGuard.layerEnabled && glowGuard.inGlow !== null)
+    assert.equal(glowGuard.inGlow,false,
+      'Duncan glowing skinned mesh washes out face/armor: '+JSON.stringify(glowGuard));
   assert.equal(snapshot.parts.length,1,'Expected a single optimized skinned Meshy part');
   assert(snapshot.parts[0].vertices>10000,'Duncan Meshy geometry did not load');
   assert.equal(snapshot.swordMeshes,0,'Duplicated procedural sword on top of Meshy skinned blade');
