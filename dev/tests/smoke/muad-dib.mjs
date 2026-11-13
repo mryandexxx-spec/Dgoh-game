@@ -43,6 +43,14 @@ try{
       HERO_STAGE.auto=false;HERO_STAGE.yaw=-.3;
       heroHold(true);
       await HERO_STAGE.scene.whenReadyAsync();
+      // LOW on a slower software GPU can finish the game's delayed login
+      // calendar *during* whenReadyAsync(). Dismiss only that unrelated modal
+      // after all asynchronous scene startup, not before it.
+      const lateCalendar=document.querySelector('#overlay2 .calsheet');
+      if(lateCalendar) {
+        closeInfo(true);
+        document.querySelector('#overlay2').replaceChildren();
+      }
       for(let i=0;i<3;i++)HERO_STAGE.scene.render();
       const card=document.querySelector('#overlay .hc');
       const rect=card?.getBoundingClientRect();
