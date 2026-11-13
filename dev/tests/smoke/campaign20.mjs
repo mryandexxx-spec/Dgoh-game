@@ -238,6 +238,31 @@ try {
     assert.equal(arrakeen.allWithin,true,'every Arrakeen marker is fully inside the map viewport');
     assert.equal(arrakeen.scroll,false,'no iPhone scroll');
     assert.deepEqual(arrakeen.collisions,[],'Arrakeen mission hit targets cannot overlap');
+    // All mission buttons must remain attached to the 3D world, not fabricated
+    // in a fixed screen grid. Out-of-frame missions remain reachable via pager.
+    const nav = await page.evaluate(()=>{
+      const world=document.querySelector('.c20-world.arrakeen');
+      return {buttons:world.querySelectorAll('.c20-mission-nav [data-c20step]').length,
+        count:world.querySelector('.c20-mission-nav span')?.textContent.trim()};
+    });
+    assert.equal(nav.buttons,2,'Arrakeen has compact mission navigation');
+    const beforeNav=await page.evaluate(()=>({
+      pin:document.querySelector('.c20-pin.on')?.dataset.c20node,
+      canvas:document.querySelector('.c20-world.arrakeen canvas')
+    }));
+    await page.evaluate(()=>{
+      const world=document.querySelector('.c20-world.arrakeen');
+      (world.querySelector('[data-c20step="1"]:not(:disabled)')
+        ||world.querySelector('[data-c20step="-1"]:not(:disabled)'))?.click();
+    });
+    const afterNav=await page.evaluate(()=>({
+      pin:document.querySelector('.c20-pin.on')?.dataset.c20node,
+      canvas:document.querySelector('.c20-world.arrakeen canvas')
+    }));
+    assert.notEqual(afterNav.pin,beforeNav.pin,'pager selects another original world mission');
+    assert.equal(afterNav.canvas,beforeNav.canvas,'navigation preserves Babylon scene');
+    // Return to the entry overview in the next chapter transition only;
+    // mission navigation itself focuses the actual world coordinate.
     await page.screenshot({path:path.join(shots,`arrakeen-${w}-${gfx}.png`)});
     await page.evaluate(()=>document.querySelector('.c20-world.arrakeen .c20-pin')?.click());
     await page.evaluate(()=>document.querySelector('[data-c20="detail"]')?.click());
