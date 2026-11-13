@@ -489,6 +489,54 @@ try {
     await page.screenshot({path:path.join(shots,`corrino-first-${w}-${gfx}.png`)});
     console.log('PASS Corrino Chronicles C4.6 real WebGL',w,h,gfx,JSON.stringify({corrinoEnd,corrinoStart}));
 
+    // C4.7: independent Butlerian Jihad geography with original C:3 nodes.
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="3"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="3"]').click());
+    await page.waitForFunction(()=>document.querySelectorAll('.c20-world.butlerian-jihad .c20-pin').length===10,{timeout:7000});
+    await page.waitForSelector('.c20-world.butlerian-jihad.campaign20-3d-ready',{timeout:20000});
+    const checkJihad=async(label)=>{
+      await page.waitForFunction(()=>[...document.querySelectorAll('.c20-world.butlerian-jihad .c20-pin')]
+        .some(p=>getComputedStyle(p).visibility==='visible'),{timeout:9000});
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.butlerian-jihad');
+        const all=[...world.querySelectorAll('.c20-pin')];
+        const visible=all.filter(p=>getComputedStyle(p).visibility==='visible');
+        const nums=visible.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const rect=world.getBoundingClientRect();
+        const overlaps=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3 &&
+            Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {nums,ids:all.map(p=>Number(p.dataset.c20node)),
+          boss:all.filter(p=>p.classList.contains('boss')).length,
+          canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          within:visible.every(p=>{const r=p.getBoundingClientRect();return r.left>=rect.left+1&&r.right<=rect.right-1&&r.top>=rect.top+1&&r.bottom<=rect.bottom-1;}),
+          overlaps,pager:world.querySelectorAll('[data-c20step],.c20-mission-nav').length,
+          fallbackCoords:all.every(p=>p.style.getPropertyValue('--px')&&p.style.getPropertyValue('--py'))};
+      });
+      assert.deepEqual(state.ids,Array.from({length:10},(_,i)=>i+170),'C:3 original 170–179');
+      assert.equal(state.boss,1,'C:3 only original final boss');
+      assert.equal(state.canvas,true,'C:3 real Babylon canvas');
+      assert.equal(state.pager,0,'C:3 navigation via v101 swipes only');
+      assert.equal(state.fallbackCoords,true,'C:3 2D fallback pin placement');
+      assert.equal(state.within,true,'C:3 labels inside MED/LOW viewport');
+      assert.deepEqual(state.overlaps,[],'C:3 50/60px marker collisions');
+      assert.ok(state.nums.length>=2,label+' requires two adjacent pins '+JSON.stringify(state));
+      assert.ok(state.nums.every((n,i)=>!i||n===state.nums[i-1]+1),
+        label+' requires consecutive visible numbers '+JSON.stringify(state));
+      return state;
+    };
+    const jihadEnd=await checkJihad('Omnius army finale');
+    await page.screenshot({path:path.join(shots,`jihad-${w}-${gfx}.png`)});
+    await page.evaluate(()=>document.querySelector('.c20-world.butlerian-jihad .c20-pin')?.click());
+    await new Promise(resolve=>setTimeout(resolve,560));
+    const jihadStart=await checkJihad('machine city opening');
+    assert.ok(jihadStart.nums.includes(1),'C:3 first machine city pin visible');
+    await page.screenshot({path:path.join(shots,`jihad-first-${w}-${gfx}.png`)});
+    console.log('PASS Butlerian Jihad C4.7 real WebGL',w,h,gfx,JSON.stringify({jihadEnd,jihadStart}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
