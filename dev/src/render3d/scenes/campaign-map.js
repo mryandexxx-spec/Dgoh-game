@@ -174,7 +174,7 @@ class CampaignMapScene extends GameScene {
     this.alpha=clamp(this.alpha,c.alpha-c.turnLimit,c.alpha+c.turnLimit);
     this.beta=clamp(this.beta,.76,1.12); this.radius=clamp(this.radius,c.minRadius,c.maxRadius);
     const [xmin,xmax,zmin,zmax]=this.map.preset.theme==='arrakeen'
-      ? [-32,35,-20,22] : [-21,21,-12,13];
+      ? [-34,40,-22,22] : [-21,21,-12,13];
     this.cx=clamp(this.cx,xmin,xmax); this.cz=clamp(this.cz,zmin,zmax);
     const q=this.radius*Math.sin(this.beta);
     this.cam.position.set(this.cx+q*Math.cos(this.alpha),
