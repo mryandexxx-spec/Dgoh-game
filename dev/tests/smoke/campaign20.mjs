@@ -30,8 +30,24 @@ try {
     await page.waitForSelector('[data-v="camp"]',{timeout:18000});
     // Login calendar is intentionally opened on boot. Dismiss it via its real
     // Close button before performing physical touch/click checks on the campaign.
-    await page.evaluate(()=>document.querySelector('#overlay2 button[data-iclose="1"]')?.click());
-    await page.waitForFunction(()=>!document.querySelector('#overlay2 .detail'),{timeout:5000});
+    // The calendar appears asynchronously on some LOW SwiftShader boots.
+    // Keep dismissing its real close control until it is absent on a stable tick.
+    // This is not a shortcut through campaign/gameplay UI.
+    let calendarClosed=false;
+    for(let attempt=0;attempt<32;attempt++){
+      const hadOverlay=await page.evaluate(()=>{
+        const detail=document.querySelector('#overlay2 .detail');
+        if(!detail)return false;
+        document.querySelector('#overlay2 button[data-iclose="1"]')?.click();
+        return true;
+      });
+      await new Promise(resolve=>setTimeout(resolve,180));
+      if(!hadOverlay){
+        const stillClosed=await page.evaluate(()=>!document.querySelector('#overlay2 .detail'));
+        if(stillClosed){calendarClosed=true;break;}
+      }
+    }
+    assert.equal(calendarClosed,true,'boot calendar must be dismissed before campaign navigation');
     await page.evaluate(()=>document.querySelector('[data-v="camp"]').click());
     await page.waitForSelector('.c20-home',{timeout:5000});
     assert.equal(await page.$$eval('.c20-cover',a=>a.length),2,'two campaign covers');
