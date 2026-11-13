@@ -14,6 +14,26 @@ const unmapK = (c, a) => !a || !a.f1 ? c : c <= .34 ? c / .34 * a.f1 : c <= .6 ?
 const lerpN = (a, b, k) => a + (b - a) * k;
 const STANCE = { guard: [-.35, -.5, -.25, -.45], gun: [-.28, -.55, -.12, -.35], shield: [-.5, -.8, -.95, -1.15], open: [-.25, -.4, -.25, -.4] };
 function poseHuman(A, o, now, t, sp) {
+  if (o.root._clips && o.def?.id === 'duncan') {
+    // Meshy rig uses its own bind pose: do not overwrite its bone transforms
+    // with the old procedural Duncan animator.
+    const a = o.act;
+    o.root.position.copyFrom(o.base);
+    o.root.rotation.y = o.face;
+    if (a && !o.dead && (a.kind === 'melee' || a.kind === 'aoe')) {
+      const k = Math.min(1, Math.max(0, (now - a.t0) / a.dur));
+      const face = Math.atan2(a.dir.x, a.dir.z);
+      const travel = k < .26 ? ease(k / .26) : k > .7 ? 1 - ease((k - .7) / .3) : 1;
+      B3.Vector3.LerpToRef(o.base, a.to, travel, o.root.position);
+      o.root.rotation.y = face;
+      if (!a.fx && k > .5) { a.fx = 1; A.slashFX(a.to.add(a.dir.scale(.8)), face, a.kind === 'aoe'); }
+    }
+    if (a && !o.dead && a.kind === 'cast' && !a.fx && now - a.t0 > a.dur * .3) {
+      a.fx = 1; A.castFX(o);
+    }
+    poseModelClip(o, now, t, sp, A);
+    return;
+  }
   if (o.anim && o.anim.pose) return o.anim.pose(A, o, now, t, sp);
   // Authored clips own their local bone quaternions. The procedural retargeter
   // uses a different bind pose and must neither clear nor overwrite them.
