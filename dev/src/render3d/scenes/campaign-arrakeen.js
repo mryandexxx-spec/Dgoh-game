@@ -46,7 +46,7 @@ export function buildArrakeen(B3, scene, material) {
   const rn=[];B3.VertexData.ComputeNormals(rv,ri,rn);
   ridge.updateVerticesData(B3.VertexBuffer.NormalKind,rn);
   // Nested defended terraces; outside eastern gate the terrain opens into dunes.
-  box('Arrakeen city plinth',-12,.35,-5,42,.9,31,rock);
+  box('Arrakeen city plinth',-12,-.20,-5,42,.4,31,rock);
   for(const z of [-20,10])box('Arrakeen fortified wall',-12,1.35,z,44,3,1.3,wall);
   box('Western fortified wall',-34,1.35,-5,1.3,3,31,wall);
   for(const z of [-18,-10,-2,6]) {
@@ -70,9 +70,9 @@ export function buildArrakeen(B3, scene, material) {
       || Math.hypot(x+6,z-4)<4 || Math.hypot(x+25,z-4)<4)continue;
     const h=2+(i%4)*.65;
     const house=base.createInstance('Arrakeen block '+i);
-    house.position.set(x,.65+h/2,z);house.scaling.y=h/3;
+    house.position.set(x,.08+h/2,z);house.scaling.y=h/3;
     const cap=roof.createInstance('Arrakeen roof '+i);
-    cap.position.set(x,.68+h,z);
+    cap.position.set(x,.11+h,z);
   }
   // Palace of House Atreides, elevated behind the densely built city.
   box('Atreides palace platform',-24,1.1,-14,17,2,11,rock);
