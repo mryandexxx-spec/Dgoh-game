@@ -377,7 +377,8 @@ try {
     await page.evaluate(()=>document.querySelector('.c20-world.atreides-chronicles [data-c20node="0"]')?.click());
     await new Promise(resolve=>setTimeout(resolve,550));
     const chronFirst=await checkChronicles('Caladan historical entrance');
-    assert.ok(chronFirst.nums.includes(1),'chronicle opening must display the old duke');
+    console.log('Chronicle end-to-end positions',w,gfx,JSON.stringify({chronLast,chronFirst}));
+    assert.ok(chronFirst.nums.includes(1),'chronicle opening must display the old duke: '+JSON.stringify(chronFirst));
     await page.screenshot({path:path.join(shots,`chronicles-first-${w}-${gfx}.png`)});
     console.log('PASS Atreides Chronicles C4.4 WebGL',w,h,gfx,JSON.stringify({chronLast,chronFirst}));
 
