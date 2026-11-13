@@ -20,19 +20,23 @@ export const CAMPAIGN_MAPS = Object.freeze({
   }),
   'L:1': Object.freeze({
     id: 'arrakeen-atreides', title: 'Арракин · Дворец и пустыня',
-    theme: 'arrakeen', bounds: [-36, 40, -25, 24],
-    camera: { target: [-1, 0, -3], alpha: 1.13, beta: .88, radius: 53,
-      minRadius: 22, maxRadius: 74, turnLimit: .3 },
-    overview: true, // Only initial entry starts as a geographic panorama, not at the final boss.
-    // Existing Light-II chapter, ordered by m=0..9; no changes to NODES.
+    theme: 'arrakeen', bounds: [-36, 42, -25, 24],
+    // SWGOH-style local sequence: start on the current mission, keep 2-4
+    // consecutive neighboring pins legible, explore the rest by accepted swipe.
+    camera: { target: [27, 0, 0], alpha: 1.13, beta: .96, radius: 31,
+      minRadius: 23, maxRadius: 66, turnLimit: .3 },
+    // Original Light-II m=0..9, sequential eastern desert approach -> city ->
+    // palace. Mission IDs and campaign rewards are intentionally unchanged.
     nodes: Object.freeze([
-      [-27,5],[-13,-12],[23,-1],[30,14],[-15,-1],
-      [-3,5],[8,-5],[-23,-9],[5,8],[-19,7],
+      [38,12], [33,5], [27,-1], [19,-5], [8,-5],
+      [-2,3], [-8,-4], [-13,-10], [-17,-1], [-19,7],
     ]),
     landmarks: Object.freeze([
-      {kind:'palace',x:-24,z:-14,size:17},
-      {kind:'shield-wall',x:10,z:-5,size:33},
+      {kind:'approach',x:36,z:10,size:9},
       {kind:'harvester',x:27,z:-1,size:10},
+      {kind:'city-gate',x:10,z:-5,size:7},
+      {kind:'banquet',x:5,z:-5,size:8},
+      {kind:'palace',x:-24,z:-14,size:17},
       {kind:'duncan-gallery',x:-19,z:7,size:9},
     ]),
   }),
