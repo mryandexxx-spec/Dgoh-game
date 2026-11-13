@@ -151,7 +151,10 @@ h2 { font-family: var(--f-display); font-weight: 400; font-size: 30px; letter-sp
 .flash.wormSmall { animation: fws .9s ease-out; background: linear-gradient(90deg, transparent 20%, rgb(207 143 94 / .55) 50%, transparent 80%); }
 @keyframes fws { from { opacity: 0; transform: translateX(-35%); } 30% { opacity: 1; } to { opacity: 0; transform: translateX(35%); } }
 .flash.worm { animation: fh 1s ease-out; background: radial-gradient(ellipse at 50% 100%, rgb(207 143 94 / .7), transparent 70%); }
-.battle.quake .bwrap { animation: quake .6s; }
+/* Only the 2D fallback shakes its DOM. In 3D the Arena camera already
+   applies shakeT; translating .bwrap while the WebGL canvas stays fixed
+   desynchronizes world-space labels from the actors by several pixels. */
+.battle.quake:not(.squad3d):not(.raid3d) .bwrap { animation: quake .6s; }
 @keyframes fh { from { opacity: 1; } to { opacity: 0; } }
 @keyframes quake { 20%, 60% { transform: translate(-4px, 2px); } 40%, 80% { transform: translate(4px, -2px); } }
 .result { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; background: rgb(14 9 5 / .72); padding: 16px; }
@@ -1449,6 +1452,10 @@ body:has(.c20) #notes{display:none!important;}
 /* C4.6 Corrino: ceremonial gold, Kaitain shadow, Salusa stone and Ix steel. */
 .c20-world.corrino-chronicles{background:linear-gradient(110deg,#101827 0%,#404b5a 35%,#343f4b 70%,#b99153 100%);border-color:#b99153}
 .c20-world.corrino-chronicles.c20-fallback::before{content:'ХРОНИКИ · ЦЕНА ИМПЕРАТОРСКОЙ КОРОНЫ';position:absolute;top:18%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.09em;color:#efd49b;opacity:.94}
+
+/* C4.7 Butlerian Jihad: machine steel gives way to human fires and Rossak slate. */
+.c20-world.butlerian-jihad{background:linear-gradient(108deg,#111c29 0%,#3c4e58 24%,#695548 48%,#706475 70%,#26313d 100%);border-color:#8b9696}
+.c20-world.butlerian-jihad.c20-fallback::before{content:'ХРОНИКИ · ШРАМ ОСВОБОЖДЕНИЯ';position:absolute;top:14%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.11em;color:#f0d8b2;opacity:.92;pointer-events:none}
 /* ===== landscape phones (primary orientation) ===== */
 @media (orientation: landscape) and (max-height: 520px) {
   header.top .wrap { padding-block: 4px 0; gap: 4px 14px; }
