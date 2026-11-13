@@ -130,5 +130,22 @@ export function buildCorrinoChronicles(B3, scene, material) {
     cylinder('lion head',x,9.9,27.8,2.65,2.1,gold,8);
   }
   for(const x of [37,53])box('inner imperial banner',x,11,29.5,2.6,8,.24,velvet);
+  // A compact, low-poly Lion emblem visible from the actual mission camera.
+  // Deliberately nearer than the rear throne so the golden silhouette survives LOW.
+  box('lion heraldic shield',45,10.5,7.2,7.6,8.7,.9,gold);
+  box('lion heraldic black inset',45,10.5,6.65,5.9,6.7,.28,basalt);
+  cylinder('lion emblem mane',45,11.1,6.24,3.6,.42,bronze,10);
+  cylinder('lion emblem face',45,11.1,5.95,2.1,.5,gold,8);
+  for(const x of [44.4,45.6])cylinder('lion heraldic eyes',x,11.5,5.64,.3,.14,voidMat,6);
+  for(const x of [42,48])cylinder('throne approach torch',x,5.1,6.6,.7,8.5,bronze,8);
+  // Bring the far facades forward as one monumental wall behind the promenade.
+  // Original z positions had hidden the palace and throne behind the short
+  // 390/375px mobile map crop: only column capitals remained on screen.
+  for(const mesh of scene.meshes){
+    if(mesh.name==='continuous imperial land' ||
+       mesh.name.includes('foreground') || mesh.name.includes('rear imperial') ||
+       mesh.name==='rear parapet') continue;
+    if(mesh.position.z>5)mesh.position.z=5+(mesh.position.z-5)*.45;
+  }
   // No emissive animated shaders, dynamic shadows, particles, render targets, or timers.
 }
