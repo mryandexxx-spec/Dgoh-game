@@ -1,6 +1,6 @@
 // Campaign 2.0 · C2.1 — география независима от сохранений и графического движка.
 // Позиции по x/z в локальном пространстве диорамы. Никакие индексы NODES не меняются.
-// C2 — Каладан, C4.1 — индустриальная Гиеди Прайм; остальные главы в legacy.
+// C2 Каладан; C4.1 Гиеди Прайм; C4.2 Арракин; остальные главы в legacy.
 export const CAMPAIGN_MAPS = Object.freeze({
   'L:0': Object.freeze({
     id: 'caladan-atreides', title: 'Каладан · Замок Атрейдесов',
@@ -16,6 +16,28 @@ export const CAMPAIGN_MAPS = Object.freeze({
       { kind: 'castle', x: -12, z: -10, size: 7 },
       { kind: 'harbor', x: 12, z: 3, size: 5 },
       { kind: 'spaceport', x: 23, z: 11, size: 4 },
+    ]),
+  }),
+  'L:1': Object.freeze({
+    id: 'arrakeen-atreides', title: 'Арракин · Дворец и пустыня',
+    theme: 'arrakeen', bounds: [-36, 42, -25, 24],
+    // SWGOH-style local sequence: start on the current mission, keep 2-4
+    // consecutive neighboring pins legible, explore the rest by accepted swipe.
+    camera: { target: [27, 0, 0], alpha: 1.13, beta: .96, radius: 27,
+      minRadius: 23, maxRadius: 66, turnLimit: .3 },
+    // Original Light-II m=0..9, sequential eastern desert approach -> city ->
+    // palace. Mission IDs and campaign rewards are intentionally unchanged.
+    nodes: Object.freeze([
+      [38,12], [28,16], [27,-1], [14,-6], [8,-5],
+      [0,-5], [-8,-5], [-16,-5], [-24,-5], [-32,-5],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'approach',x:34,z:14,size:11},
+      {kind:'harvester',x:27,z:-1,size:10},
+      {kind:'city-gate',x:10,z:-5,size:7},
+      {kind:'banquet',x:5,z:-5,size:8},
+      {kind:'palace',x:-24,z:-14,size:17},
+      {kind:'duncan-gallery',x:-32,z:-5,size:9},
     ]),
   }),
   'D:0': Object.freeze({

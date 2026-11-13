@@ -207,6 +207,74 @@ try {
     assert.equal(await page.$('.c20-world.giedi canvas.campaign20-canvas')!==null,true);
     console.log('PASS Giedi Prime Dark I real WebGL C4.1',w,h,gfx,JSON.stringify(giedi));
 
+    // C4.2: Arrakeen Light II is a distinct real Babylon map, not a recolored legacy fallback.
+    await page.evaluate(()=>document.querySelector('[data-c20side="L"]').click());
+    await page.waitForSelector('.c20-map');
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]').click());
+    await page.waitForSelector('[data-c20chapter="1"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="1"]').click());
+    await page.waitForFunction(()=>document.querySelectorAll('.c20-world.arrakeen .c20-pin').length===10,{timeout:6000});
+    await page.waitForSelector('.c20-world.arrakeen.campaign20-3d-ready',{timeout:16000});
+    await page.waitForFunction(()=>[...document.querySelectorAll('.c20-world.arrakeen .c20-pin')].some(el=>getComputedStyle(el).visibility==='visible'),{timeout:9000});
+    const arrakeen=await page.evaluate(()=>{
+      const world=document.querySelector('.c20-world.arrakeen');
+      const pins=[...world.querySelectorAll('.c20-pin')];
+      const visible=pins.filter(el=>getComputedStyle(el).visibility==='visible');
+      const allWithin=visible.every(pin=>{const p=pin.getBoundingClientRect(),r=world.getBoundingClientRect();return p.left>=r.left+1&&p.right<=r.right-1&&p.top>=r.top+1&&p.bottom<=r.bottom-1;});
+      const collisions=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
+        const r=a.getBoundingClientRect(),s=b.getBoundingClientRect();
+        return Math.min(r.right,s.right)-Math.max(r.left,s.left)>3 &&
+          Math.min(r.bottom,s.bottom)-Math.max(r.top,s.top)>3;
+      }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+      return {canvas:!!world.querySelector('canvas.campaign20-canvas'),
+        pins:pins.length,boss:world.querySelectorAll('.c20-pin.boss').length,
+        visible:visible.length,allWithin,scroll:document.querySelector('.c20').scrollHeight>
+          document.querySelector('.c20').clientHeight+1,collisions};
+    });
+    assert.equal(arrakeen.canvas,true,'Arrakeen must mount Babylon');
+    assert.equal(arrakeen.pins,10,'all ten original Light-II missions');
+    assert.equal(arrakeen.boss,1,'final Duncan boss');
+    assert.ok(arrakeen.visible>0,'world-projected Arrakeen pins visible');
+    assert.equal(arrakeen.allWithin,true,'every Arrakeen marker is fully inside the map viewport');
+    assert.equal(arrakeen.scroll,false,'no iPhone scroll');
+    assert.deepEqual(arrakeen.collisions,[],'Arrakeen mission hit targets cannot overlap');
+    // C4.2 route: never substitute a screen-space 5x2 matrix or pager.
+    // The local view may show only a few pins, but those pins must be consecutive.
+    const checkRoute=async(label)=>{
+      const result=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.arrakeen');
+        const nums=[...world.querySelectorAll('.c20-pin')]
+          .filter(el=>getComputedStyle(el).visibility==='visible')
+          .map(el=>Number(el.querySelector('b')?.textContent))
+          .sort((a,b)=>a-b);
+        return {nums,nav:world.querySelectorAll('[data-c20step],.c20-mission-nav').length,
+          world3d:!!world.querySelector('canvas.campaign20-canvas')};
+      });
+      assert.equal(result.nav,0,'no artificial navigation buttons');
+      assert.equal(result.world3d,true,'Babylon canvas retained');
+      assert.ok(result.nums.length>=2,label+' at least two pins should be visible: '+JSON.stringify(result));
+      assert.ok(result.nums.every((n,i)=>i===0||n===result.nums[i-1]+1),
+        label+' visible mission numbers must be consecutive: '+JSON.stringify(result));
+      return result;
+    };
+    const currentRoute=await checkRoute('current mission viewport');
+    await page.screenshot({path:path.join(shots,`arrakeen-${w}-${gfx}.png`)});
+    // Programmatically select mission 1 to validate the opposite, desert end of
+    // the swipable world without changing game progress or mission identifiers.
+    await page.evaluate(()=>document.querySelector('.c20-world.arrakeen .c20-pin b')?.closest('.c20-pin')?.click());
+    await new Promise(resolve=>setTimeout(resolve,510));
+    const approachRoute=await checkRoute('mission one / desert approach');
+    await page.screenshot({path:path.join(shots,`arrakeen-approach-${w}-${gfx}.png`)});
+    assert.ok(approachRoute.nums.includes(1),'desert entry frame must show mission 1');
+    console.log('Arrakeen consecutive local mission route',w,gfx,JSON.stringify({currentRoute,approachRoute}));
+    await page.evaluate(()=>document.querySelector('.c20-world.arrakeen .c20-pin')?.click());
+    await page.evaluate(()=>document.querySelector('[data-c20="detail"]')?.click());
+    await page.waitForSelector('.c20-dialog');
+    await page.screenshot({path:path.join(shots,`arrakeen-detail-${w}-${gfx}.png`)});
+    await page.evaluate(()=>document.querySelector('[data-c20="back"]')?.click());
+    await page.waitForFunction(()=>!document.querySelector('.c20-dialog'));
+    console.log('PASS Arrakeen Light II real WebGL C4.2',w,h,gfx,JSON.stringify(arrakeen));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
