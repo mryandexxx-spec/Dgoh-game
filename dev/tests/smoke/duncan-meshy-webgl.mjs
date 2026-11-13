@@ -69,6 +69,38 @@ try {
      if(!rot||!rot.every(Number.isFinite))throw Error('Invalid hand quaternion: '+state);
      result.push({state,clip:got,motion:o.root._motion,hand:rot});
    }
+   // Playback regression for game speeds ×1/×2/×4. No synthetic
+   // AnimationGroup is substituted: the real authored sampler is evaluated.
+   for(const speed of [1,2,4]){
+     const base=30000+speed*3000;
+     for(const state of ['basic','special','ult']){
+       const ab=o.def[state],now=base+['basic','special','ult'].indexOf(state)*4000;
+       o.dead=false;o.hitT=0;o.rise=0;
+       o.act={key:state,ab,kind:state==='special'?'cast':'melee',
+         t0:now-450,dur:1600,dir:V3(1,0,0),to:V3(1,0,0),fx:1};
+       poseHuman(HERO_STAGE,o,now,now/1000,speed);
+       const expected=state==='basic'?'Attack':state;
+       if(o.root._clip!==expected)throw Error('x'+speed+' '+state+' expected '+expected+' got '+o.root._clip);
+       const q=o.R.hand.rotationQuaternion?.asArray();
+       if(!q?.every(Number.isFinite)||!Number.isFinite(o.root.rotation.y))
+         throw Error('Duncan invalid animation pose x'+speed+' '+state);
+       poseHuman(HERO_STAGE,o,now+1800,(now+1800)/1000,speed);
+       if(o.act!==null || o.root._clip!=='Showcase')
+         throw Error('Duncan stuck after x'+speed+' '+state);
+       result.push({speed,state,clip:expected,recovered:true});
+     }
+     const death=base+18000;
+     o.act=null;o.dead=true;o.deathT=death-800;o.rise=0;
+     poseHuman(HERO_STAGE,o,death,death/1000,speed);
+     if(o.root._clip!=='Death')throw Error('Duncan death x'+speed);
+     o.dead=false;o.rise=death+50;
+     poseHuman(HERO_STAGE,o,death+750,(death+750)/1000,speed);
+     if(o.root._clip!=='Revive'||Math.abs(o.body.position.y)>1e-5)
+       throw Error('Duncan ghola revive x'+speed);
+     o.rise=0;
+     poseHuman(HERO_STAGE,o,death+2000,(death+2000)/1000,speed);
+     if(o.root._clip!=='Showcase')throw Error('Duncan idle recovery x'+speed);
+   }
    // Restore regular portrait pose before releasing the stage.
    poseHuman(HERO_STAGE,o,now,1.3,1);
    return {result,parts:o.root.getChildMeshes().filter(m=>m.skeleton).map(m=>({name:m.name,vertices:m.getTotalVertices()})),swordMeshes:o.wpn.getChildMeshes().length};
