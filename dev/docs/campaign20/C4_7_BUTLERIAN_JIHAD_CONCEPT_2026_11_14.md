@@ -1,6 +1,6 @@
 # Campaign 2.0 · C4.7 `C:3` «Батлерианский джихад» — утверждённая концепция и handoff этапа B
 
-**База исследования:** `main` `c2f8d6b22afa61f71c3b0721c283affebc745560` (после v109). Прочитаны C4.6 v109 release handoff, ARCHITECTURE, PROJECT_INSTRUCTIONS, CHANGES_STATUS «Открыто», campaign20 README/SPEC/IMPLEMENTATION_PLAN, campaigns.js, presets, scene renderer, Corrino/Harkonnen builders и C4.6 handoff. **Это не разрешение реализовать, сливать или публиковать.** Код, `main`, прежние карты не меняются.
+**База исследования:** `main` `c2f8d6b22afa61f71c3b0721c283affebc745560` (после v109). Прочитаны C4.6 v109 release handoff, ARCHITECTURE, PROJECT_INSTRUCTIONS, CHANGES_STATUS «Открыто», campaign20 README/SPEC/IMPLEMENTATION_PLAN, campaigns.js, presets, scene renderer, Corrino/Harkonnen builders и C4.6 handoff. **Концепция согласована: реализация разрешена только в отдельном Draft PR.** Merge, Pages и изменения принятых карт не разрешены.
 
 ## Концепт: «Шрам освобождения»
 *Машинная симметрия ломается человеческой волей.* Не переокрашенная фабрика, дворец и не десять изолированных постаментов. 3D-панорама как **материальный военный атлас хроник**: единый узнаваемый «шрам» в рельефе проходит по областям разных миров/эпох; разломы и узкие навигационные перемычки обозначают монтаж архивной истории, **не утверждая**, будто Земля, Лига и Россак находятся в одном городе. Игрок следует единому маршруту в открытом рельефе свайпами, карта не содержит перелистывающих кнопок.
@@ -49,3 +49,12 @@
 Дублирующий publish workflow после v109, `Publish Dune GoH PWA #43504314965`; устранить отдельно, не ослабляя validated-SHA guard.
 
 **Статус:** Художественная концепция **СОГЛАСОВАНА** ответом владельца «Ок» от 14.11.2026; разрешён этап B только в Draft PR. **Merge и Pages НЕ разрешены**. Фактические WebGL-кадры MED/LOW и тестовые метрики дописать после проверки CI.
+
+## Реализация в рабочей ветке
+
+- Draft PR: https://github.com/mryandexxx-spec/Dgoh-game/pull/62
+- Builder: `dev/src/render3d/scenes/campaign-butlerian-jihad.js`, статическая Babylon-геометрия 10 территорий.
+- Preset: `C:3`, 10 исходных координат миссий (IDs 170–179); общий GameScene, 50/60px, 2D CSS fallback.
+- Smoke: `dev/tests/smoke/campaign20.mjs`, снимки `jihad-{844-med,667-low}.png` и `jihad-first-*` после CI.
+- Проверка реальных WebGL-кадров, мобильной композиции, ресурсов и полного CI ещё требуется; до неё PR остаётся Draft.
+- Отдельная задача релизных workflow v109 не входит в этот PR.
