@@ -112,6 +112,16 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
       Math.round(Math.max(0, Math.min(1, P.col[i])) * 255).toString(16).padStart(2, '0')).join('') : '#ffffff';
     if (legendSolid) me.useVertexColors = false;
     const m = mat3(legendColor, P.material || MODEL_MAT[k] || {}); me.material = m; if (m._lit) mats.push(m);
+    if (def.id === 'duncan' && localTrs) {
+      // Meshy's albedo is used as an emissive *fill*, not as a glowing VFX.
+      // GlowLayer otherwise picks up emissiveTexture and washes the entire
+      // body/face into a grey ghost silhouette on MED/LOW.
+      m._duncanNoGlow = true;
+      me.metadata = { ...(me.metadata || {}), duncanNoGlow: true };
+      for (const layer of CTX.scene.effectLayers) {
+        if (layer instanceof B3.GlowLayer) layer.addExcludedMesh(me);
+      }
+    }
     if (P.alb) tex3(P.alb, CTX.scene, t => {
       if (m instanceof B3.PBRMaterial) m.albedoTexture = t;
       else {
