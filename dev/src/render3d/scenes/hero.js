@@ -134,6 +134,16 @@ class HeroStage extends Stage3D {
     if (this.auto && !this.drag && (!this.resumeT || now > this.resumeT)) this.yaw += Math.sin(t * .35) * .0025;
     if (!this.drag) { this.yaw += this.yawV / 60; this.yawV *= .92; }
     poseHuman(this, o, now, t, 1);
+    // Meshy's relaxed Idle_11 nods the head toward the floor. A small
+    // additive head lift makes the original face texture visible at 667px
+    // without modifying the source clip, combat poses or other heroes.
+    // poseModelClip restores the source quaternion each tick, so this does
+    // not accumulate across frames.
+    if (o.def?.id === 'duncan' && o.root._clipRest && o.head?.rotationQuaternion) {
+      const lift = this._duncanHeadLift ||
+        (this._duncanHeadLift = B3.Quaternion.RotationAxis(B3.Axis.X, -.24));
+      o.head.rotationQuaternion.multiplyInPlace(lift);
+    }
     // The Meshy Idle_11 face is in the stage's native forward orientation.
     // Do not apply the COMBAT-specific yaw correction here; the shader's
     // fixed UV orientation now shows the actual face/armor in this view.
