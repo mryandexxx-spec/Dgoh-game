@@ -133,3 +133,7 @@ body:has(.c20) #notes{display:none!important;}
   .c20-lootrow .btn{font-size:9px;min-height:23px}
   .c20-pages{height:23px}
 }
+
+/* C4.5: Gurney's underworld, distinct from the D:0 industrial skyline. */
+.c20-world.harkonnen-chronicles{background:linear-gradient(105deg,#151d23 0%,#303b3e 35%,#57483d 70%,#71807a 100%);border-color:#9b7b58}
+.c20-world.harkonnen-chronicles.c20-fallback::before{content:'ХРОНИКИ · ПУТЬ ГУРНИ ИЗ РАБСКИХ ЯМ';position:absolute;top:20%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.1em;color:#eed6a2;opacity:.9}

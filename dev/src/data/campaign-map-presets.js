@@ -59,6 +59,30 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'imperial-gate',x:35,z:15,size:14},
     ]),
   }),
+  'C:1': Object.freeze({
+    id: 'chronicles-house-harkonnen', title: 'Хроники · Дом Харконненов',
+    theme: 'harkonnen-chronicles', bounds: [-50, 51, -24, 25],
+    // Gurney's underworld journey: pit -> drain -> smugglers -> Harkonnen return
+    // -> burnt settlement -> Atreides refuge -> Rabban's final blockade.
+    // All labels are projected from these world coordinates, never a screen grid.
+    camera: { target: [-41, 0, -1], alpha: -1.42, beta: .96,
+      radius: 27, minRadius: 23, maxRadius: 66, turnLimit: .3 },
+    nodes: Object.freeze([
+      [-42,-2],[-33,-1],[-23,0],[-13,-1],[-3,0],
+      [8,0],[18,-1],[29,0],[39,-1],[47,1],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'slave-pit',x:-39,z:11,size:19},
+      {kind:'drain',x:-22,z:11,size:9},
+      {kind:'smuggler-market',x:-10,z:11,size:16},
+      {kind:'piter-watch',x:1,z:13,size:8},
+      {kind:'slave-arena',x:12,z:11,size:13},
+      {kind:'revenge-yard',x:20,z:12,size:9},
+      {kind:'burnt-village',x:31,z:11,size:11},
+      {kind:'atreides-refuge',x:40,z:13,size:10},
+      {kind:'rabban-blockade',x:47,z:11,size:9},
+    ]),
+  }),
   'C:0': Object.freeze({
     id: 'chronicles-house-atreides', title: 'Хроники · Дом Атрейдесов',
     theme: 'atreides-chronicles', bounds: [-49, 51, -22, 25],

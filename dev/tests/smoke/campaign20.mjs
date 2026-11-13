@@ -382,6 +382,50 @@ try {
     await page.screenshot({path:path.join(shots,`chronicles-first-${w}-${gfx}.png`)});
     console.log('PASS Atreides Chronicles C4.4 WebGL',w,h,gfx,JSON.stringify({chronLast,chronFirst}));
 
+    // C4.5: Gurney's ten unchanged Chronicles C:1 story missions.
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="1"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="1"]').click());
+    await page.waitForFunction(()=>document.querySelectorAll('.c20-world.harkonnen-chronicles .c20-pin').length===10,{timeout:7000});
+    await page.waitForSelector('.c20-world.harkonnen-chronicles.campaign20-3d-ready',{timeout:18000});
+    const checkGurney=async(label)=>{
+      await page.waitForFunction(()=>[...document.querySelectorAll('.c20-world.harkonnen-chronicles .c20-pin')].some(p=>getComputedStyle(p).visibility==='visible'),{timeout:9000});
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.harkonnen-chronicles');
+        const pins=[...world.querySelectorAll('.c20-pin')];
+        const visible=pins.filter(p=>getComputedStyle(p).visibility==='visible');
+        const nums=visible.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const overlap=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3 &&
+            Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        const rect=world.getBoundingClientRect();
+        return {nums,ids:pins.map(p=>p.dataset.c20node),boss:pins.filter(p=>p.classList.contains('boss')).length,
+          overlap,within:visible.every(p=>{const b=p.getBoundingClientRect();return b.left>=rect.left+1&&b.right<=rect.right-1&&b.top>=rect.top+1&&b.bottom<=rect.bottom-1;}),
+          canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          pager:world.querySelectorAll('[data-c20step],.c20-mission-nav').length};
+      });
+      assert.equal(state.ids.length,10,'C:1 original ten mission IDs');
+      assert.equal(new Set(state.ids).size,10,'C:1 mission IDs unique');
+      assert.equal(state.boss,1,'Rabban final boss mission');
+      assert.equal(state.canvas,true,'real Babylon mounted for C:1');
+      assert.equal(state.pager,0,'no mission pager');
+      assert.equal(state.within,true,'C:1 pins stay on screen');
+      assert.deepEqual(state.overlap,[],'C:1 50/60px pins do not overlap');
+      assert.ok(state.nums.length>=2,label+' nearby visible pins: '+JSON.stringify(state));
+      assert.ok(state.nums.every((n,i)=>i===0||n===state.nums[i-1]+1),label+' contiguous route: '+JSON.stringify(state));
+      return state;
+    };
+    const gurneyLast=await checkGurney('end route');
+    await page.screenshot({path:path.join(shots,`harkonnen-${w}-${gfx}.png`)});
+    await page.evaluate(()=>document.querySelector('.c20-world.harkonnen-chronicles .c20-pin')?.click());
+    await new Promise(resolve=>setTimeout(resolve,550));
+    const gurneyFirst=await checkGurney('slave pits');
+    assert.ok(gurneyFirst.nums.includes(1),'opening frame shows slave pit mission');
+    await page.screenshot({path:path.join(shots,`harkonnen-first-${w}-${gfx}.png`)});
+    console.log('PASS Harkonnen Chronicles C4.5 real WebGL',w,h,gfx,JSON.stringify({gurneyLast,gurneyFirst}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
