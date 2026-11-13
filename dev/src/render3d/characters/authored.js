@@ -50,12 +50,12 @@ function ktx2Fail(why) {
   if (KTX2_ST !== 0) return; KTX2_ST = -1; clearTimeout(KTX2_T); console.warn('KTX2 выключен, текстуры — JPEG:', why);
   for (const p of KTX2_PEND.splice(0)) p.fallback();
 }
-function tex3(url, scene, set) {
-  const jpg = () => set(new B3.Texture(url, scene, false, true));
+function tex3(url, scene, set, invertY = true) {
+  const jpg = () => set(new B3.Texture(url, scene, false, invertY));
   const b = ktx2For(url); if (KTX2_ST < 0 || !b || !ktx2Cfg()) return jpg();
   let t = null, done = false;
   const p = { fallback: () => { if (done) return; done = true; if (t) t.dispose(); if (!scene.isDisposed) jpg(); } };
-  t = new B3.Texture(url + '#ktx2', scene, { noMipmap: false, invertY: true, buffer: b, forcedExtension: '.ktx2',
+  t = new B3.Texture(url + '#ktx2', scene, { noMipmap: false, invertY, buffer: b, forcedExtension: '.ktx2',
     onLoad: () => { if (KTX2_ST === 0) { KTX2_ST = 1; clearTimeout(KTX2_T); }
       const i = KTX2_PEND.indexOf(p); if (i >= 0) KTX2_PEND.splice(i, 1); },
     onError: (m, e) => { console.warn('KTX2 → JPEG', url, m || e); const i = KTX2_PEND.indexOf(p); if (i >= 0) KTX2_PEND.splice(i, 1);
@@ -126,7 +126,7 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
           m.emissiveColor = new B3.Color3(.85, .85, .85);
         }
       }
-    });
+    }, !(def.id === 'duncan' && D.jointFormat === 'local-trs'));
     if (P.nrm) tex3(P.nrm, CTX.scene, t => { m.bumpTexture = t; t.level = k === 'skin' ? .7 : 1; m.invertNormalMapY = true; });
     if (P.orm && m instanceof B3.PBRMaterial) {          // R: ambient occlusion, G: roughness, B: metallic (baked in Blender)
       tex3(P.orm, CTX.scene, t => { m.metallicTexture = t; }); m.useAmbientOcclusionFromMetallicTextureRed = true; m.useRoughnessFromMetallicTextureGreen = true; m.useMetallnessFromMetallicTextureBlue = true;
