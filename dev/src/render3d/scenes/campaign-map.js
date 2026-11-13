@@ -341,6 +341,25 @@ class CampaignMapScene extends GameScene {
         shown.push(e);
       }
     }
+    // Chronicles spans different historical places. On narrow phone screens
+    // collision culling may hide mission 8 while retaining 7,9,10. Show only
+    // one contiguous run of the actual world-projected pins, never an
+    // artificial screen-space grid; scrolling reveals the other segments.
+    if(this.map.preset.theme==='atreides-chronicles'&&shown.length>1){
+      const ordered=[...shown].sort((a,b)=>a.node.number-b.node.number);
+      const runs=[];
+      for(const e of ordered){
+        const last=runs.at(-1);
+        if(last&&last.at(-1).node.number+1===e.node.number)last.push(e);
+        else runs.push([e]);
+      }
+      const selectedNumber=focus?.number??1;
+      runs.sort((a,b)=>b.length-a.length
+        ||Math.min(...a.map(e=>Math.abs(e.node.number-selectedNumber)))
+          -Math.min(...b.map(e=>Math.abs(e.node.number-selectedNumber))));
+      const keep=new Set(runs[0]);
+      for(const e of shown)if(!keep.has(e))e.el.style.visibility='hidden';
+    }
   }
   onWake(){this.bind();this.engine.resize();this.applyCamera();}
   onSleep(){this.unbind();}
