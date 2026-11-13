@@ -189,7 +189,8 @@ class CampaignMapScene extends GameScene {
     this.beta=clamp(this.beta,.76,1.12); this.radius=clamp(this.radius,c.minRadius,c.maxRadius);
     const [xmin,xmax,zmin,zmax]=this.map.preset.theme==='arrakeen'
       ? [-34,40,-22,22] : this.map.preset.theme==='conspiracy'
-        ? [-44,44,-22,25] : [-21,21,-12,13];
+        ? [-44,44,-22,25] : this.map.preset.theme==='atreides-chronicles'
+          ? [-45,49,-22,23] : [-21,21,-12,13];
     this.cx=clamp(this.cx,xmin,xmax); this.cz=clamp(this.cz,zmin,zmax);
     const q=this.radius*Math.sin(this.beta);
     this.cam.position.set(this.cx+q*Math.cos(this.alpha),
