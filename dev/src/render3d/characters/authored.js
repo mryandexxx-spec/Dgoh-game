@@ -107,7 +107,21 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
       Math.round(Math.max(0, Math.min(1, P.col[i])) * 255).toString(16).padStart(2, '0')).join('') : '#ffffff';
     if (legendSolid) me.useVertexColors = false;
     const m = mat3(legendColor, P.material || MODEL_MAT[k] || {}); me.material = m; if (m._lit) mats.push(m);
-    if (P.alb) tex3(P.alb, CTX.scene, t => { if (m.albedoTexture !== undefined && m instanceof B3.PBRMaterial) m.albedoTexture = t; else m.diffuseTexture = t; });
+    if (P.alb) tex3(P.alb, CTX.scene, t => {
+      if (m instanceof B3.PBRMaterial) m.albedoTexture = t;
+      else {
+        m.diffuseTexture = t;
+        if (def.id === 'duncan' && D.jointFormat === 'local-trs') {
+          // Meshy's baked albedo contains skin, cloth and armor illumination.
+          // Reuse that exact texture as a modest light-independent fill on the
+          // StandardMaterial. This preserves fine albedo details on MED/LOW
+          // without changing the stage lights or affecting other characters.
+          // Do not disable direct lights: highlights and form still react to them.
+          m.emissiveTexture = t;
+          m.emissiveColor = new B3.Color3(.34, .34, .34);
+        }
+      }
+    });
     if (P.nrm) tex3(P.nrm, CTX.scene, t => { m.bumpTexture = t; t.level = k === 'skin' ? .7 : 1; m.invertNormalMapY = true; });
     if (P.orm && m instanceof B3.PBRMaterial) {          // R: ambient occlusion, G: roughness, B: metallic (baked in Blender)
       tex3(P.orm, CTX.scene, t => { m.metallicTexture = t; }); m.useAmbientOcclusionFromMetallicTextureRed = true; m.useRoughnessFromMetallicTextureGreen = true; m.useMetallnessFromMetallicTextureBlue = true;
