@@ -45,3 +45,12 @@ No release/version bump while integration is unverified.
 - Repaired model-level fall-offset reset during Ghola revival and corrected showcase clip looping duration.
 - Source model has 66 joints / 16 clips and a single textured skin mesh; no separate cape cloth bones. Visual approval of cape and sword remains open.
 - Full new CI and WebGL smoke are **pending** on the latest branch commit; do not interpret earlier successful runs as validating these later changes.
+
+## 2026-11-13 visual quality gate (PR #53, diagnostic work)
+
+- Previous smoke proved that the skinned Meshy part and 16 clips exist, but did **not** prove that the JPEG albedo had decoded by capture time, that pixels actually contained Duncan, or that the result was adequately lit.
+- `tests/smoke/duncan-meshy-webgl.mjs` now waits for the actual skinned mesh's bound texture to become ready and reads foreground/background pixels from the *live Babylon/WebGL framebuffer* at both MED 844×390 and LOW 667×375.
+- The foreground/background difference must have non-trivial coverage, plausible on-screen bounds, mean luminance and bright-pixel fraction; every profile writes a JSON metrics file alongside its screenshot. This is a **heuristic quality gate**, not a substitute for human visual review. It needs evaluation against actual CI captures and known-good character controls before acceptance.
+- Important: the shared Engine sets `preserveDrawingBuffer: false`; reading `canvas.toDataURL()` after a render is unreliable. The gate uses immediate synchronous `gl.readPixels` after rendering both frames.
+- Converter specifies `materialMode: 'standard'` and one UV-mapped textured cloth part. PBR-specific adjustments cannot be assumed to resolve this asset's appearance. The converter also does not produce a KTX2; absence of that file selects the JPEG fallback.
+- **Not yet fixed/verified:** the root cause of the MED dark silhouette / LOW disappearance, actual WebGL output after any material correction, sword duplication, cape clipping, full animation transition/facing and eight-strike ultimate choreography. Do not merge or release. Keep draft.
