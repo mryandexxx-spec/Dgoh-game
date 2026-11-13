@@ -125,12 +125,12 @@
 
 ## Записи
 
-### v107 — Campaign 2.0 C4.5 «Дом Харконненов» (13.11.2026)
+### v107 — Campaign 2.0 C4.5 «Дом Харконненов» (13.11.2026) — принято, объединено и опубликовано
 
 - В «Хрониках Дюны», глава II `C:1`, реализована самостоятельная Babylon-география «Путь Гурни из рабских ям»: глубокие ярусы шахты, сточные трубы, подпольный рынок, башня Питера, арена, двор мести, сожжённая деревня, ворота Атрейдесов и финальная застава Раббана. Собственный модуль окружения и пресет 10 исходных миссий без изменений их ID, порядка, наград, GE2, свечей хроник, экономики или сохранений.
 - Движение камерой и свайпы v101, pinch/twist, единый EngineHost/GameScene и 2D fallback сохранены. 3D-маркеры 50/60 px привязаны к world-space, локально последовательные и без наложений, без новых кнопок переходов.
 - Владелец утвердил художественную концепцию и **принял настоящие WebGL MED 844×390 / LOW 667×375 кадры** словами «принимаю»; затем отдельно разрешил публикацию. Кадры начала и финала: [dune-campaign20-815](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43449992870/artifacts/14048869449).
-- Проверки: [PR CI #815](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43449992870) — SUCCESS (Golden, Campaign 2.0 smoke, E3 UI, 3D lifecycle, mandatory gates); [arena review](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43449992964) — SUCCESS. После ребейза на текущий `main` требуется повторное подтверждение объединённого CI.
+- Проверки: [PR CI #815](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43449992870) — SUCCESS (Golden, Campaign 2.0 smoke, E3 UI, 3D lifecycle, mandatory gates); [arena review](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43449992964) — SUCCESS. После объединения с v106 в `main` [CI v107 #43454954358](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43454954358) завершился SUCCESS; опубликован проверенный PWA-коммит `e68413440`, [Pages #43457686876](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43457686876) SUCCESS.
 - После выпуска на физическом iPhone: пролистать все 10 узлов на MED/LOW, отсутствие перекрытий, выбор/бой/симуляцию/возврат, pinch, рецентрирование, fallback и производительность. FPS и тепловые измерения на физическом устройстве пока отсутствуют.
 
 
