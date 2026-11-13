@@ -201,6 +201,38 @@ try {
       path.join(out,`duncan-yaw-${view.tag}.png`),
       Buffer.from(view.png.split(',')[1],'base64'));
   }
+
+  // Visual review of existing authored portrait candidates. Sample source
+  // animation at known phases while retaining the real Babylon camera,
+  // materials, skinned mesh and GPU post-processing. No mock frames.
+  if(quality === 'med'){
+    const candidates=await page.evaluate(()=>{
+      const stage=HERO_STAGE,o=stage.o, names=o.root._clipNames,original=names.Showcase;
+      const gl=stage.engine._gl,w=gl.drawingBufferWidth,h=gl.drawingBufferHeight;
+      const out=[];
+      for(const clipName of ['Idle_11','Combat_Stance','Lower_Weapon_Look_Raise','Long_Breathe_and_Look_Around']){
+        names.Showcase=clipName;
+        const duration=o.root._clips[clipName].duration;
+        for(const f of [.25,.5,.75]){
+          o.act=null;o.dead=false;o.rise=0;o.hitT=0;
+          poseHuman(stage,o,performance.now(),duration*f,1);
+          o.root.rotation.y=stage.yaw;
+          stage.scene.render();
+          const b=new Uint8Array(w*h*4);gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,b);
+          const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+          const c=cv.getContext('2d'),im=c.createImageData(w,h);
+          for(let y=0;y<h;y++)im.data.set(b.subarray((h-1-y)*w*4,(h-y)*w*4),y*w*4);
+          c.putImageData(im,0,0);
+          out.push({name:clipName,phase:f,png:cv.toDataURL('image/png')});
+        }
+      }
+      names.Showcase=original;
+      return out;
+    });
+    for(const v of candidates) fs.writeFileSync(
+      path.join(out,`duncan-candidate-${v.name}-${Math.round(v.phase*100)}.png`),
+      Buffer.from(v.png.split(',')[1],'base64'));
+  }
   console.log('PASS Duncan Meshy WebGL',width,height,JSON.stringify(snapshot));
   await page.evaluate(()=>heroHold(false));await page.close();
  }
