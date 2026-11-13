@@ -37,3 +37,11 @@ Gameplay abilities, effects and balance are unchanged.
 6. Run `node tools/build.mjs --target all`, `node tools/check-deps.mjs`, `node tools/check-bundle.mjs dist/pwa/app.js`, golden, phone/desktop WebGL 3D smoke, A/B MED/LOW, and service-worker smoke. Do not deploy until these pass.
 
 No release/version bump while integration is unverified.
+
+## 2026-11-13 dedicated WebGL review
+
+- Added `tests/smoke/duncan-meshy-webgl.mjs` to the UI job in `.github/workflows/validate-pwa.yml`; MED 844×390 and LOW 667×375 frames are stored in the `dune-duncan-meshy-<run_number>` Actions artifact.
+- Repaired Meshy-specific completed-action cleanup (otherwise the actor could remain stuck in Attack indefinitely).
+- Repaired model-level fall-offset reset during Ghola revival and corrected showcase clip looping duration.
+- Source model has 66 joints / 16 clips and a single textured skin mesh; no separate cape cloth bones. Visual approval of cape and sword remains open.
+- Full new CI and WebGL smoke are **pending** on the latest branch commit; do not interpret earlier successful runs as validating these later changes.
