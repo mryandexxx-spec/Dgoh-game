@@ -29,6 +29,15 @@ try {
    await loadB3();closeInfo(true);closeOverlay();openDetail('duncan');
   });
   await page.waitForFunction(()=>typeof HERO_STAGE!=='undefined' && !!HERO_STAGE?.o?.root?._clips && !!HERO_STAGE?.o?.root?._authored,{timeout:25000});
+  // The authored mesh can be present before its external JPEG has decoded.
+  // A green rig test is not sufficient if the portrait draws an untextured silhouette.
+  await page.waitForFunction(() => {
+    const stage = typeof HERO_STAGE !== 'undefined' && HERO_STAGE;
+    const mesh = stage?.o?.root?.getChildMeshes().find(m => m.skeleton);
+    const mat = mesh?.material;
+    const tex = mat && (mat.albedoTexture || mat.diffuseTexture);
+    return !!tex && tex.isReady();
+  }, {timeout:30000});
   await page.evaluate(async()=>{await HERO_STAGE.scene.whenReadyAsync();heroHold(true);});
   const snapshot=await page.evaluate(()=>{
    const o=HERO_STAGE.o,clips=o.root._clips,names=o.root._clipNames;
@@ -68,7 +77,50 @@ try {
   assert(snapshot.parts[0].vertices>10000,'Duncan Meshy geometry did not load');
   assert(snapshot.swordMeshes>0,'Game sword is not attached');
   assert.deepEqual(errors,[],'WebGL/page errors');
+  // Background-reference and foreground captures use the *same real WebGL scene*.
+  // Diffing them measures the character instead of relying on the existence of meshes.
+  const [withoutHero, withHero] = await page.evaluate(async () => {
+    const stage = HERO_STAGE, hero = stage.o.root;
+    // Capture only the Babylon canvas: UI glyphs are not evidence of a visible model.
+    const canvas = stage.cv;
+    const take = () => canvas.toDataURL('image/png');
+    hero.setEnabled(false); stage.scene.render(); const bg = take();
+    hero.setEnabled(true); stage.scene.render(); const fg = take();
+    return [bg, fg];
+  });
+  const visibility = await page.evaluate(async ([bg,fg]) => {
+    const decode = src => new Promise((resolve,reject) => {
+      const img = new Image(); img.onload = () => {
+        const c = document.createElement('canvas'); c.width=img.width; c.height=img.height;
+        const x=c.getContext('2d',{willReadFrequently:true}); x.drawImage(img,0,0);
+        resolve({w:c.width,h:c.height,p:x.getImageData(0,0,c.width,c.height).data});
+      }; img.onerror=reject; img.src=src;
+    });
+    const a=await decode(bg), b=await decode(fg);
+    if(a.w!==b.w || a.h!==b.h) throw Error('Duncan capture size changed');
+    let count=0, bright=0, sum=0, minX=a.w, maxX=-1, minY=a.h, maxY=-1;
+    // Ignore narrow outer canvas borders and antialiasing noise.
+    for(let y=3;y<a.h-3;y++)for(let x=3;x<a.w-3;x++){
+      const i=(y*a.w+x)*4, dr=Math.abs(a.p[i]-b.p[i]),dg=Math.abs(a.p[i+1]-b.p[i+1]),db=Math.abs(a.p[i+2]-b.p[i+2]);
+      if(dr+dg+db < 48) continue;
+      const l=.2126*b.p[i]+.7152*b.p[i+1]+.0722*b.p[i+2];
+      count++; sum+=l; if(l>70) bright++;
+      minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
+    }
+    return {pixels:count,meanLuma:count?sum/count:0,brightFraction:count?bright/count:0,
+      bounds:count?[minX,minY,maxX,maxY]:null,canvas:[a.w,a.h]};
+  },[withoutHero,withHero]);
+  const area = visibility.canvas[0]*visibility.canvas[1];
+  assert(visibility.pixels > Math.max(250,area*.004),
+    'Duncan not visibly rendered: '+JSON.stringify(visibility));
+  assert(visibility.meanLuma >= 32 && visibility.brightFraction >= .065,
+    'Duncan is an excessively dark silhouette: '+JSON.stringify(visibility));
+  assert(visibility.bounds[2]-visibility.bounds[0] >= visibility.canvas[0]*.055 &&
+         visibility.bounds[3]-visibility.bounds[1] >= visibility.canvas[1]*.20,
+    'Duncan is out of frame or too small: '+JSON.stringify(visibility));
   await page.screenshot({path:path.join(out,`duncan-${width}-${quality}.png`)});
+  fs.writeFileSync(path.join(out,`duncan-${width}-${quality}.json`),JSON.stringify(visibility,null,2));
+  console.log('Duncan visible pixel metrics',quality,JSON.stringify(visibility));
   console.log('PASS Duncan Meshy WebGL',width,height,JSON.stringify(snapshot));
   await page.evaluate(()=>heroHold(false));await page.close();
  }
