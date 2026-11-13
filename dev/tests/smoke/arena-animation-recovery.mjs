@@ -73,6 +73,15 @@ try{
    samples.push({label,...d});return d;
   };
   await sleep(500);const initial=await check('initial');
+  // Regression for issue #63: a 3D battle must never translate the DOM HUD
+  // independently of its WebGL canvas when the legacy quake class fires.
+  // The camera already implements the 3D shake. Keep the <1px HUD assertion.
+  await page.evaluate(()=>document.querySelector('.battle.pkg9')?.classList.add('quake'));
+  await sleep(130);
+  const quakeName=await page.evaluate(()=>getComputedStyle(document.querySelector('.battle.pkg9 .bwrap')).animationName);
+  assert.equal(quakeName,'none','3D quake cannot animate the HUD wrapper independently of the canvas');
+  await check('3d-quake-isolation');
+  await page.evaluate(()=>document.querySelector('.battle.pkg9')?.classList.remove('quake'));
   for(const speed of [1,4])for(let cycle=0;cycle<3;cycle++){
    await page.evaluate(speed=>{
     const u=BT.B.units.find(u=>u.def.id==='muaddib');BT.speed=speed;BT.auto=false;BT.waiting=u;BT.B.active=u;BT.B.actor=u.uid;
