@@ -75,7 +75,7 @@ try {
   });
   assert.equal(snapshot.parts.length,1,'Expected a single optimized skinned Meshy part');
   assert(snapshot.parts[0].vertices>10000,'Duncan Meshy geometry did not load');
-  assert(snapshot.swordMeshes>0,'Game sword is not attached');
+  assert.equal(snapshot.swordMeshes,0,'Duplicated procedural sword on top of Meshy skinned blade');
   assert.deepEqual(errors,[],'WebGL/page errors');
   // Background-reference and foreground captures use the *same real WebGL scene*.
   // Diffing them measures the character instead of relying on the existence of meshes.
