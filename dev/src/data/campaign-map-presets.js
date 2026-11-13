@@ -45,7 +45,7 @@ export const CAMPAIGN_MAPS = Object.freeze({
     theme: 'conspiracy', bounds: [-48, 46, -24, 27],
     // Camera follows original D:1 mission 0..9. A local viewport shows only
     // consecutive nearby pins. Further sections are explored with v101 swipes.
-    camera: { target: [-36, 0, 0], alpha: -1.13, beta: .96, radius: 27,
+    camera: { target: [-36, 0, 0], alpha: -1.42, beta: .96, radius: 27,
       minRadius: 23, maxRadius: 66, turnLimit: .3 },
     nodes: Object.freeze([
       [-39,-2],[-30,0],[-21,-2],[-12,1],[-3,0],
