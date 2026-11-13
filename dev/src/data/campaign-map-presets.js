@@ -1,6 +1,6 @@
 // Campaign 2.0 · C2.1 — география независима от сохранений и графического движка.
 // Позиции по x/z в локальном пространстве диорамы. Никакие индексы NODES не меняются.
-// Прототип: светлая глава I (Каладан), позже — отдельные пресеты для остальных глав.
+// C2 — Каладан, C4.1 — индустриальная Гиеди Прайм; остальные главы в legacy.
 export const CAMPAIGN_MAPS = Object.freeze({
   'L:0': Object.freeze({
     id: 'caladan-atreides', title: 'Каладан · Замок Атрейдесов',
@@ -16,6 +16,24 @@ export const CAMPAIGN_MAPS = Object.freeze({
       { kind: 'castle', x: -12, z: -10, size: 7 },
       { kind: 'harbor', x: 12, z: 3, size: 5 },
       { kind: 'spaceport', x: 23, z: 11, size: 4 },
+    ]),
+  }),
+  'D:0': Object.freeze({
+    id: 'giedi-prime-harkonnen', title: 'Гиеди Прайм · Чёрный город',
+    theme: 'giedi', bounds: [-30, 30, -22, 23],
+    camera: { target: [-3, 0, 0], alpha: -1.13, beta: .94, radius: 32,
+      minRadius: 22, maxRadius: 65, turnLimit: .3 },
+    // D:0 is exactly the ten original Dark-I NODES, not new campaign data.
+    // From industrial outskirts via mines and Feyd arena to the shipyard escape.
+    nodes: Object.freeze([
+      [-20,-10],[-13,-7],[-18,-2],[-12,5],[-5,2],
+      [4,2],[11,10],[16,3],[22,9],[25,15],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'citadel',x:-4,z:-22,size:17},
+      {kind:'pits',x:-20,z:-9,size:17},
+      {kind:'arena',x:4,z:2,size:15},
+      {kind:'shipyard',x:20,z:12,size:22},
     ]),
   }),
 });
