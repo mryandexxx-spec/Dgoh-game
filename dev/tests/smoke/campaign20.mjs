@@ -335,9 +335,8 @@ try {
       JSON.stringify({conspiracyLast,conspiracyFirst}));
 
     // C4.4: five distinct historical districts, original ten C:0 missions.
-    await page.evaluate(()=>document.querySelector('[data-c20="back"]')?.click());
     // Side switch is owned by the Chronicles cover, not the story-side buttons.
-    await page.evaluate(()=>document.querySelector('[data-c20="back"]')?.click());
+    await page.evaluate(()=>document.querySelector('[data-c20="home"]')?.click());
     await page.waitForSelector('.c20-home',{timeout:7000});
     await page.evaluate(()=>document.querySelector('[data-c20="chron"]')?.click());
     await page.waitForSelector('.c20-map',{timeout:7000});
