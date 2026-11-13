@@ -55,6 +55,7 @@ try {
      const got=o.root._clip;
      if(got!==expected)throw Error(state+' expected '+expected+' got '+got);
      if(state==='recover'&&o.act!==null)throw Error('Duncan action did not finish');
+     if(state==='revive'&&Math.abs(o.body.position.y)>1e-5)throw Error('Death fall offset leaked into Ghola revive');
      const rot=o.R.hand.rotationQuaternion?.asArray();
      if(!rot||!rot.every(Number.isFinite))throw Error('Invalid hand quaternion: '+state);
      result.push({state,clip:got,motion:o.root._motion,hand:rot});
