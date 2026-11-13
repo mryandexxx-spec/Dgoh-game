@@ -123,6 +123,30 @@ try {
   const {png,...metrics}=visibility;
   fs.writeFileSync(path.join(out,`duncan-${width}-${quality}.json`),JSON.stringify(metrics,null,2));
   console.log('Duncan visible pixel metrics',quality,JSON.stringify(metrics));
+  // Calibration frames: source Meshy animations may not face the game's
+  // +Z portrait convention. Render real GPU pixels at cardinal yaw offsets
+  // to identify the forward direction before changing combat facing.
+  if (quality === 'med') {
+    const views=await page.evaluate(()=>{
+      const stage=HERO_STAGE,root=stage.o.root,gl=stage.engine._gl;
+      const original=root.rotation.y,w=gl.drawingBufferWidth,h=gl.drawingBufferHeight;
+      const results=[];
+      for(const [tag,delta] of [['front0',0],['quarterPlus',Math.PI/2],['half',Math.PI],['quarterMinus',-Math.PI/2]]){
+        root.rotation.y=original+delta;stage.scene.render();
+        const b=new Uint8Array(w*h*4);gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,b);
+        const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+        const c=cv.getContext('2d'),im=c.createImageData(w,h);
+        for(let y=0;y<h;y++)im.data.set(b.subarray((h-1-y)*w*4,(h-y)*w*4),y*w*4);
+        c.putImageData(im,0,0);
+        results.push({tag,png:cv.toDataURL('image/png')});
+      }
+      root.rotation.y=original;
+      return results;
+    });
+    for (const view of views) fs.writeFileSync(
+      path.join(out,`duncan-yaw-${view.tag}.png`),
+      Buffer.from(view.png.split(',')[1],'base64'));
+  }
   console.log('PASS Duncan Meshy WebGL',width,height,JSON.stringify(snapshot));
   await page.evaluate(()=>heroHold(false));await page.close();
  }
