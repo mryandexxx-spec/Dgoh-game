@@ -54,3 +54,17 @@ No release/version bump while integration is unverified.
 - Important: the shared Engine sets `preserveDrawingBuffer: false`; reading `canvas.toDataURL()` after a render is unreliable. The gate uses immediate synchronous `gl.readPixels` after rendering both frames.
 - Converter specifies `materialMode: 'standard'` and one UV-mapped textured cloth part. PBR-specific adjustments cannot be assumed to resolve this asset's appearance. The converter also does not produce a KTX2; absence of that file selects the JPEG fallback.
 - **Not yet fixed/verified:** the root cause of the MED dark silhouette / LOW disappearance, actual WebGL output after any material correction, sword duplication, cape clipping, full animation transition/facing and eight-strike ultimate choreography. Do not merge or release. Keep draft.
+
+## 2026-11-13 repaired WebGL material and portrait (PR #53, still Draft)
+
+**Reproduced:** Original Actions #43408888603 artifact dune-duncan-meshy-758: MED nearly black and LOW empty in the old browser screenshot. Paused Puppeteer capture was not reliable because EngineHost uses preserveDrawingBuffer:false. New smoke samples synchronized gl.readPixels; both 844×390 MED and 667×375 LOW now draw Duncan.
+
+**Primary root cause verified:** convert-duncan-meshy.py preserves glTF UVs, but tex3 previously forced invertY:true. Meshy Duncan now uses invertY:false for JPEG and prospective KTX2 albedo only. Offline vertex/atlas sampling at head height found 341 skin-like pixels with correct orientation versus 66 with inverted orientation. Real WebGL showed restored face/cloth/armor colors.
+
+**Scoped fixes:** Original diffuse albedo is also used as modest emissive fill (.85); the imported Meshy mesh no longer receives thin-geometry self-shadow acne but still casts shadows. Removed the duplicate procedural sword. Portrait Showcase uses Idle_11, combat Idle stays Combat_Stance. Portrait yaw is native; Duncan-only camera distance is multiplied by .89. Combat pose has separate +90-degree facing correction, still requires actual battle review.
+
+**Real regression caught and fixed:** A mistaken this.y instead of this.yaw made the imported mesh world bounds non-finite and the hero invisible after HeroStage.tick(). Repaired, and the GPU smoke now calls real HeroStage.tick() before capture and writes PNG/JSON even when quality assertions fail.
+
+**Checks:** duncan-meshy-webgl.mjs waits for albedo readiness, compares GPU foreground/background coverage and luminance, saves two real WebGL frames and four cardinal-yaw captures, checks rig/clips and verifies Attack/special/ult/death/Ghola/recovery at speeds x1/x2/x4. Duncan smoke passed on code commit dada7b75c54e6811602d31d33f1f34d4b6fc7764 in Actions #43422792355 with artifact dune-duncan-meshy-781. Final entire workflow status is separate.
+
+**Remaining blockers:** Triple_Combo_Attack does not reproduce the original eight-strike ultimate choreography; battle-facing/cloth clipping and real iPhone Safari review are not fully accepted. KTX2 asset is not committed; JPEG fallback works. Do not merge or publish and do not bump release version without the owner's permission.
