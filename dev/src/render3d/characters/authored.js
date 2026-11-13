@@ -150,9 +150,9 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
     });
   }
   const R = { sh: N.shR, el: N.elR, hand: N.handR }, Lf = { sh: N.shL, el: N.elL, hand: N.handL }, LL = { hip: N.hipL, knee: N.kneeL, ank: N.ankL }, LR = { hip: N.hipR, knee: N.kneeR, ank: N.ankR };
-  // the sword stays procedural (shared look with the rest of the roster)
+  // Meshy Duncan already contains a skinned sword in the imported mesh.\n  // Do not add the old procedural weapon on top of the exported blade.
   const gp = D.grip ? D.grip.p : [0, -.04, .01], w = grp(R.hand, gp[0], gp[1], gp[2]), steel = mat3('#eef2f6', { metalness: .6, roughness: .18, emissive: '#1a1e24' }), gold = mat3('#b08a3a', { metalness: .6, roughness: .3 });
-  if (def.basic.dt === 'blade') {
+  if (def.basic.dt === 'blade' && !(def.id === 'duncan' && D.jointFormat === 'local-trs')) {
     if (def.id === 'muaddib') {
       // Muad'Dib carries a compact curved crysknife, not the shared 0.9m sword.
       // Keep the existing bone/grip and shadow behavior, with no new textures.
