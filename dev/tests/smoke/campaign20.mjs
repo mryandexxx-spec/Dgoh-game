@@ -275,6 +275,65 @@ try {
     await page.waitForFunction(()=>!document.querySelector('.c20-dialog'));
     console.log('PASS Arrakeen Light II real WebGL C4.2',w,h,gfx,JSON.stringify(arrakeen));
 
+    // C4.3 D:1: real Conspiracy environment, with a continuous swipe route.
+    // Only neighboring world-space numbers should fit at the camera's local zoom.
+    await page.evaluate(()=>document.querySelector('[data-c20side="D"]').click());
+    await page.waitForSelector('.c20-map');
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]').click());
+    await page.waitForSelector('[data-c20chapter="1"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="1"]').click());
+    await page.waitForFunction(()=>document.querySelectorAll('.c20-world.conspiracy .c20-pin').length===10,{timeout:6000});
+    await page.waitForSelector('.c20-world.conspiracy.campaign20-3d-ready',{timeout:18000});
+    const checkConspiracy=async(label)=>{
+      await page.waitForFunction(()=>[...document.querySelectorAll('.c20-world.conspiracy .c20-pin')]
+        .some(el=>getComputedStyle(el).visibility==='visible'),{timeout:9000});
+      const result=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.conspiracy');
+        const pins=[...world.querySelectorAll('.c20-pin')];
+        const visible=pins.filter(el=>getComputedStyle(el).visibility==='visible');
+        const nums=visible.map(el=>Number(el.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const rect=world.getBoundingClientRect();
+        const within=visible.every(el=>{const r=el.getBoundingClientRect();
+          return r.left>=rect.left+1&&r.right<=rect.right-1&&r.top>=rect.top+1&&r.bottom<=rect.bottom-1;});
+        const overlaps=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3
+            &&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {nums,pins:pins.length,boss:pins.filter(el=>el.classList.contains('boss')).length,
+          within,overlaps,canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          pager:world.querySelectorAll('[data-c20step],.c20-mission-nav').length,
+          scroll:document.querySelector('.c20').scrollHeight>document.querySelector('.c20').clientHeight+1};
+      });
+      assert.equal(result.pins,10,'D:1 original ten mission ids');
+      assert.equal(result.boss,1,'D:1 final Hawat boss');
+      assert.equal(result.canvas,true,'Conspiracy mounted real Babylon canvas');
+      assert.equal(result.pager,0,'no artificial mission navigation');
+      assert.equal(result.within,true,'Conspiracy visible markers fully inside map');
+      assert.deepEqual(result.overlaps,[],'Conspiracy mission markers do not overlap');
+      assert.equal(result.scroll,false,'Conspiracy has no viewport scroll');
+      assert.ok(result.nums.length>=2,label+' nearby markers should be visible: '+JSON.stringify(result));
+      assert.ok(result.nums.every((n,i)=>i===0||n===result.nums[i-1]+1),
+        label+' mission numbers must be consecutive: '+JSON.stringify(result));
+      return result;
+    };
+    const conspiracyLast=await checkConspiracy('imperial sector');
+    await page.screenshot({path:path.join(shots,`conspiracy-${w}-${gfx}.png`)});
+    // Select the existing first mission: standard selection must focus actual 3D position.
+    await page.evaluate(()=>document.querySelector('.c20-world.conspiracy .c20-pin b')?.closest('.c20-pin')?.click());
+    await new Promise(resolve=>setTimeout(resolve,550));
+    const conspiracyFirst=await checkConspiracy('covert cargo yard');
+    assert.ok(conspiracyFirst.nums.includes(1),'first route segment shows mission 1');
+    await page.screenshot({path:path.join(shots,`conspiracy-approach-${w}-${gfx}.png`)});
+    await page.evaluate(()=>document.querySelector('.c20-world.conspiracy .c20-pin')?.click());
+    await page.evaluate(()=>document.querySelector('[data-c20="detail"]')?.click());
+    await page.waitForSelector('.c20-dialog');
+    await page.screenshot({path:path.join(shots,`conspiracy-detail-${w}-${gfx}.png`)});
+    await page.evaluate(()=>document.querySelector('[data-c20="back"]')?.click());
+    await page.waitForFunction(()=>!document.querySelector('.c20-dialog'));
+    console.log('PASS Conspiracy Dark II real WebGL C4.3',w,h,gfx,
+      JSON.stringify({conspiracyLast,conspiracyFirst}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
