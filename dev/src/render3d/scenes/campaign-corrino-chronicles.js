@@ -58,29 +58,42 @@ export function buildCorrinoChronicles(B3, scene, material) {
   for(const z of [-7.3,2.8]){
     box('continuous gold curb',0,.45,z,108,.55,.38,bronze);
   }
-  // Kaitain I — funeral wing and coronation basilica: one readable colossal mass.
-  box('Kaitain palace terrace',-37,.75,13,35,1.5,27,stone);
-  box('Elrood memorial chamber',-49,5.2,17,10,9,8,basalt);
-  box('Elrood mourning pediment',-49,10.2,17,12,1.4,10,pale);
-  for(const x of [-53,-49,-45]) column(x,11,7,stone);
-  cylinder('memorial cenotaph',-49,1.9,15,3.1,2.2,voidMat,8);
-  const throneHall=box('great coronation hall',-32,7.3,18,19,14.5,15,stone);
-  box('coronation gold roof',-32,14.9,18,23,1.2,19,bronze);
-  box('gold dome lower tier',-32,17.3,18,14,3.7,12,gold);
-  cylinder('dynastic spire',-32,24,18,2.9,10,gold,8);
-  for(const x of [-41,-36,-31,-26,-21])column(x,8.9,10,pale);
-  for(const x of [-39,-25]){
-    box('palace dynastic tower',x,12,25,4.2,23,4.2,stone);
-    box('tower gilded crown',x,23.5,25,6,.8,6,gold);
+  // Kaitain: broad open ceremonial terraces rather than a tall flat wall.
+  // The dominant silhouette is a staggered triple-crown facade which fits a
+  // shallow 390px phone viewport from the actual mission camera.
+  box('Kaitain paved forecourt',-37,.22,8.5,40,.4,20,stone);
+  for(const x of [-54,-46]){
+    box('Elrood memorial wing',x,3.6,12,7,6.6,8,basalt);
+    box('mourning roof cornice',x,7.1,12,8,.55,9,pale);
+    box('mourning stepped pediment',x,8.1,12,5.5,1.4,6,bronze);
   }
-  for(let i=0;i<6;i++){
-    box('ascending coronation stair',-33, .35+i*.42,6+i*.95,21-i*.6,.38,1.05,pale);
+  cylinder('Elrood cenotaph',-49,1.1,6,3.5,2.2,voidMat,8);
+  for(const x of [-55,-50,-45])column(x,5.8,5.5,pale);
+  // Open facade: empty bays between pillars create strong visible depth.
+  for(const x of [-41,-36,-31,-26,-21])column(x,8.9,8.3,pale);
+  box('coronation cornice',-31,10.3,9.2,28,1,3,bronze);
+  box('coronation architrave',-31,11.5,10.5,21,1.5,5,pale);
+  box('coronation palace rear core',-31,6.2,16.5,21,11.9,8,basalt);
+  box('coronation central gold gable',-31,13.1,15.6,14,2.6,6,bronze);
+  // A shallow tiered crown reads as a palace roof, not a skyscraper.
+  for(const [w,y,d] of [[12,14.7,4.7],[8,16.0,3.4],[4.5,17.0,2.1]]){
+    box('stepped dynastic crown',-31,y,15.6,w,1.2,d,gold);
   }
+  for(const x of [-42,-20]){
+    box('low dynastic tower',x,9.3,17,3.6,17,4.2,stone);
+    box('tower battlement',x,18.1,17,5.2,.65,5.2,bronze);
+    box('tower inset',x,9.8,14.8,1.1,9.3,.18,basalt);
+  }
+  for(let i=0;i<5;i++){
+    box('ascending coronation stair',-32,.31+i*.33,3.3+i*1.05,21-i*.8,.26,1.06,i%2?pale:stone);
+  }
+  // Banners on short stone pylons, avoiding the former 23-unit masts.
   for(const x of [-45,-18]){
-    cylinder('imperial banner mast',x,12.5,3.8,.3,23,bronze,6);
-    const flag=box('corrino banner',x+1.5,19,3.8,3.1,6,.18,velvet);
-    flag.rotation.z=.07;
-    box('lion standard',x+1.3,19,3.7,1.1,1.2,.22,gold);
+    box('banner pylon',x,3.7,3.9,1.2,7.3,1.2,stone);
+    box('banner finial',x,7.8,3.9,1.9,.55,1.9,gold);
+    const banner=box('imperial crimson standard',x+1.2,5.4,3.85,2.4,3.7,.16,velvet);
+    banner.rotation.z=.05;
+    box('standard gold lion mark',x+1.1,5.2,3.7,.8,.95,.22,gold);
   }
   // Salusa Secundus — a harsh cliff-backed drill ground, distinct from Kaitain.
   box('Salusa fortress ridge',-8,3.4,15,20,6.4,19,salusa);
@@ -112,31 +125,43 @@ export function buildCorrinoChronicles(B3, scene, material) {
     box('Ix ruined war wall',x,2.6,23,3.3,5.2,6,salusa);
     box('Ix breach',x+1,5.3,23,2.8,1.3,4,stone);
   }
-  // Return to Kaitain: secret pact galleries and the climactic Lion Throne.
-  box('Kaitain final ceremonial approach',45,.8,13,21,1.5,26,stone);
-  for(const z of [8,15,22])for(const x of [37,53])column(x,z,9,stone);
-  box('Throne hall western wall',35,8.5,24,2.7,17,13,basalt);
-  box('Throne hall eastern wall',55,8.5,24,2.7,17,13,basalt);
-  box('great throne hall roof',45,17,24,24,2.3,16,bronze);
-  box('final apse',45,8.1,29,19,15,3.5,basalt);
-  for(let i=0;i<5;i++){
-    box('ascension steps',45,1.35+i*.58,20+i*1.5,16-i*1.5,.46,1.75,stone);
+  // Kaitain finale: a roofless nave in the near field. The lion throne must
+  // be a readable object, not a distant heraldic panel against a roof slab.
+  box('Kaitain lion throne forecourt',45,.46,9,25,.75,21,stone);
+  for(const x of [35.5,54.5]){
+    for(const z of [7,13,19])column(x,z,7.8,pale);
   }
-  box('Lion Throne plinth',45,5.1,28,10,1.4,8,bronze);
-  box('Lion Throne seat',45,6.4,27,5.4,1.5,3,gold);
-  box('Lion Throne tall back',45,11.2,29.1,6.8,10.7,1.7,gold);
-  for(const x of [40.7,49.3]){
-    cylinder('golden lion guardian',x,7,27.8,2.4,4.4,bronze,8);
-    cylinder('lion head',x,9.9,27.8,2.65,2.1,gold,8);
+  for(let i=0;i<4;i++){
+    box('throne approach stair',45,1.1+i*.42,8.5+i*1.5,15-i*.9,.38,1.6,pale);
   }
-  for(const x of [37,53])box('inner imperial banner',x,11,29.5,2.6,8,.24,velvet);
-  // A compact, low-poly Lion emblem visible from the actual mission camera.
-  // Deliberately nearer than the rear throne so the golden silhouette survives LOW.
-  box('lion heraldic shield',45,10.5,7.2,7.6,8.7,.9,gold);
-  box('lion heraldic black inset',45,10.5,6.65,5.9,6.7,.28,basalt);
-  cylinder('lion emblem mane',45,11.1,6.24,3.6,.42,bronze,10);
-  cylinder('lion emblem face',45,11.1,5.95,2.1,.5,gold,8);
-  for(const x of [44.4,45.6])cylinder('lion heraldic eyes',x,11.5,5.64,.3,.14,voidMat,6);
-  for(const x of [42,48])cylinder('throne approach torch',x,5.1,6.6,.7,8.5,bronze,8);
+  // Three open-sided frames reveal the throne from every local mission zoom.
+  for(const z of [14,19,24])arch('lion throne nave arch',45,z,19,11.2,basalt);
+  box('nave low gilded entablature',45,12.4,20,24,.85,9,bronze);
+  box('nave rear apse',45,7.0,27.5,19,13,2,basalt);
+  box('dynastic golden rib',45,13.8,27.1,15,.75,2,gold);
+  // Throne is deliberately advanced to z=17, under the open arches.
+  box('Lion throne grand dais',45,3.45,16.5,12,1.3,9,bronze);
+  box('Lion throne crimson carpet',45,4.18,14.8,6.9,.12,10,velvet);
+  box('Lion throne seat',45,5.2,18,5.4,1.7,3.3,gold);
+  box('Lion throne high back',45,9.3,19.65,6.6,8.1,1.35,gold);
+  box('Lion throne back dark relief',45,9.5,18.91,4.4,5.8,.12,velvet);
+  box('Lion crown crossbar',45,13.9,19.7,8.2,1.1,1.8,bronze);
+  for(const x of [40,50]){
+    cylinder('golden lion pedestal',x,5.4,17,2.5,3,bronze,8);
+    cylinder('golden lion head',x,7.6,16.6,2.7,2.3,gold,10);
+    for(const dx of [-.46,.46]){
+      cylinder('lion glint eye',x+dx,7.85,15.25,.28,.24,basalt,6);
+    }
+    box('lion cheek relief',x,6.65,15.2,1.5,.65,.32,gold);
+  }
+  for(const x of [35,55]){
+    box('nave banner',x,8.4,23,2.6,5.7,.16,velvet);
+    box('banner gold symbol',x,8.5,22.8,1.3,1.7,.22,gold);
+  }
+  // A route-side gateway frames the final mission without blocking its pin.
+  for(const x of [39,51]){
+    box('entrance torch plinth',x,1.65,4.4,1.2,3,1.2,basalt);
+    cylinder('entrance bronze beacon',x,3.45,4.4,1.3,.6,ember,8);
+  }
   // No emissive animated shaders, dynamic shadows, particles, render targets, or timers.
 }
