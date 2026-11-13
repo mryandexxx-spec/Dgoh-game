@@ -63,7 +63,7 @@ export const CAMPAIGN_MAPS = Object.freeze({
     id: 'chronicles-butlerian-jihad', title: 'Хроники · Шрам освобождения',
     theme: 'butlerian-jihad', bounds: [-63, 65, -25, 33],
     // The connected route is a material war atlas, not a literal single planet.
-    camera: { target: [-55, 0, -4], alpha: -1.42, beta: .91,
+    camera: { target: [-55, 0, -4], alpha: -1.42, beta: .99,
       radius: 27, minRadius: 24, maxRadius: 66, turnLimit: .3 },
     nodes: Object.freeze([
       [-55,-4],[-44,-1],[-33,2],[-22,1],[-11,-2],
