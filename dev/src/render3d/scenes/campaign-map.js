@@ -180,7 +180,8 @@ class CampaignMapScene extends GameScene {
     this.cam.position.set(this.cx+q*Math.cos(this.alpha),
       this.radius*Math.cos(this.beta)+1.6,
       this.cz+q*Math.sin(this.alpha));
-    this.cam.setTarget(new B3.Vector3(this.cx,0,this.cz));
+    // Raise Arrakeen's gaze so the palace crown stays inside short iPhone viewports.
+    this.cam.setTarget(new B3.Vector3(this.cx,this.map.preset.theme==='arrakeen'?4.2:0,this.cz));
     this.t0=performance.now(); this.dirty=true;
   }
   center(node, animate = true) {
