@@ -1,6 +1,6 @@
-# Campaign 2.0 — главный указатель (актуально на 2026-11-13)
+# Campaign 2.0 — главный указатель (актуально на 2026-11-14)
 
-**Статус:** C1–C3 и C4.1–C4.6 реализованы, художественно приняты и опубликованы; C4.6 (`C:2`) выпущена в **v109**. **C4.7 `C:3` «Батлерианский джихад»**: концепция «Шрам освобождения» согласована «Ок» (14.11.2026); реализация в [Draft PR #62](https://github.com/mryandexxx-spec/Dgoh-game/pull/62), [документ](C4_7_BUTLERIAN_JIHAD_CONCEPT_2026_11_14.md), [Issue #61](https://github.com/mryandexxx-spec/Dgoh-game/issues/61). Настоящие WebGL MED/LOW и CI ожидают проверки; **merge/Pages не разрешены**.
+**Статус:** C1–C3 и C4.1–C4.6 реализованы, художественно приняты и опубликованы; C4.6 (`C:2`) выпущена в **v109**. **C4.7 `C:3` «Батлерианский джихад»**: концепция «Шрам освобождения» согласована «Ок» (14.11.2026); реализация в [Draft PR #62](https://github.com/mryandexxx-spec/Dgoh-game/pull/62), [документ](C4_7_BUTLERIAN_JIHAD_CONCEPT_2026_11_14.md), [Issue #61](https://github.com/mryandexxx-spec/Dgoh-game/issues/61). **Настоящие WebGL MED/LOW художественно приняты владельцем («Ок», 14.11.2026)**, кадры [артефакт #14080378421](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43515556172/artifacts/14080378421). [CI #43515556172](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43515556172): Campaign 2.0, golden, E3 и lifecycle SUCCESS, полный gate BLOCKED одним независимым arena HUD drift ([issue #63](https://github.com/mryandexxx-spec/Dgoh-game/issues/63)); **merge/Pages не разрешены**.
 **Основная ветка:** `main`; для новых доработок создавать отдельную ветку и Draft PR, релиз — только после согласования.
 
 ## C4.6 · Дом Коррино — v109 опубликована и принята (13.11.2026)

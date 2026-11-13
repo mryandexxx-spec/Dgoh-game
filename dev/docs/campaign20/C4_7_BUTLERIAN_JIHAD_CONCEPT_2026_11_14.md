@@ -48,7 +48,7 @@
 ## Открытый технический вопрос, НЕ В РАМКАХ ЭТОГО PR
 Дублирующий publish workflow после v109, `Publish Dune GoH PWA #43504314965`; устранить отдельно, не ослабляя validated-SHA guard.
 
-**Статус:** Художественная концепция **СОГЛАСОВАНА** ответом владельца «Ок» от 14.11.2026; разрешён этап B только в Draft PR. **Merge и Pages НЕ разрешены**. Фактические WebGL-кадры MED/LOW и тестовые метрики дописать после проверки CI.
+**Статус:** художественная концепция и реальные WebGL-кадры третьей итерации **СОГЛАСОВАНЫ** владельцем («Ок», 14.11.2026). Этап B в Draft PR; **merge и Pages НЕ разрешены**, полный CI не зелёный из-за отдельной блокировки арены.
 
 ## Реализация в рабочей ветке
 
@@ -56,5 +56,7 @@
 - Builder: `dev/src/render3d/scenes/campaign-butlerian-jihad.js`, статическая Babylon-геометрия 10 территорий.
 - Preset: `C:3`, 10 исходных координат миссий (IDs 170–179); общий GameScene, 50/60px, 2D CSS fallback.
 - Smoke: `dev/tests/smoke/campaign20.mjs`, снимки `jihad-{844-med,667-low}.png` и `jihad-first-*` после CI.
-- Проверка реальных WebGL-кадров, мобильной композиции, ресурсов и полного CI ещё требуется; до неё PR остаётся Draft.
+- Реальные WebGL MED `844×390` и LOW `667×375` проанализированы; кадры третьей итерации художественно утверждены владельцем. [CI #43515556172](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43515556172), [скриншоты #14080378421](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43515556172/artifacts/14080378421) (`jihad-first-844-med.png`, `jihad-first-667-low.png`, `jihad-844-med.png`, `jihad-667-low.png`).
+- Campaign smoke MED/LOW, golden, архитектура, E3, 3D lifecycle/resources — SUCCESS. **Полный CI FAIL** после двух одинаковых ошибок `arena-animation-recovery.mjs` — `flash-expired HUD projection drift u0`; отдельно [issue #63](https://github.com/mryandexxx-spec/Dgoh-game/issues/63). Нельзя считать полный gate пройденным.
+- Физические измерения FPS/нагрева и жестов на iPhone не представлены. PR остаётся Draft до зелёного CI и отдельного релизного разрешения.
 - Отдельная задача релизных workflow v109 не входит в этот PR.
