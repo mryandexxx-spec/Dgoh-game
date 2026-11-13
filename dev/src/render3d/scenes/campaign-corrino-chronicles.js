@@ -138,14 +138,5 @@ export function buildCorrinoChronicles(B3, scene, material) {
   cylinder('lion emblem face',45,11.1,5.95,2.1,.5,gold,8);
   for(const x of [44.4,45.6])cylinder('lion heraldic eyes',x,11.5,5.64,.3,.14,voidMat,6);
   for(const x of [42,48])cylinder('throne approach torch',x,5.1,6.6,.7,8.5,bronze,8);
-  // Bring the far facades forward as one monumental wall behind the promenade.
-  // Original z positions had hidden the palace and throne behind the short
-  // 390/375px mobile map crop: only column capitals remained on screen.
-  for(const mesh of scene.meshes){
-    if(mesh.name==='continuous imperial land' ||
-       mesh.name.includes('foreground') || mesh.name.includes('rear imperial') ||
-       mesh.name==='rear parapet') continue;
-    if(mesh.position.z>5)mesh.position.z=5+(mesh.position.z-5)*.45;
-  }
   // No emissive animated shaders, dynamic shadows, particles, render targets, or timers.
 }
