@@ -79,37 +79,32 @@ try {
   assert.deepEqual(errors,[],'WebGL/page errors');
   // Background-reference and foreground captures use the *same real WebGL scene*.
   // Diffing them measures the character instead of relying on the existence of meshes.
-  const [withoutHero, withHero] = await page.evaluate(async () => {
-    const stage = HERO_STAGE, hero = stage.o.root;
-    // Capture only the Babylon canvas: UI glyphs are not evidence of a visible model.
-    const canvas = stage.cv;
-    const take = () => canvas.toDataURL('image/png');
-    hero.setEnabled(false); stage.scene.render(); const bg = take();
-    hero.setEnabled(true); stage.scene.render(); const fg = take();
-    return [bg, fg];
-  });
-  const visibility = await page.evaluate(async ([bg,fg]) => {
-    const decode = src => new Promise((resolve,reject) => {
-      const img = new Image(); img.onload = () => {
-        const c = document.createElement('canvas'); c.width=img.width; c.height=img.height;
-        const x=c.getContext('2d',{willReadFrequently:true}); x.drawImage(img,0,0);
-        resolve({w:c.width,h:c.height,p:x.getImageData(0,0,c.width,c.height).data});
-      }; img.onerror=reject; img.src=src;
-    });
-    const a=await decode(bg), b=await decode(fg);
-    if(a.w!==b.w || a.h!==b.h) throw Error('Duncan capture size changed');
-    let count=0, bright=0, sum=0, minX=a.w, maxX=-1, minY=a.h, maxY=-1;
-    // Ignore narrow outer canvas borders and antialiasing noise.
-    for(let y=3;y<a.h-3;y++)for(let x=3;x<a.w-3;x++){
-      const i=(y*a.w+x)*4, dr=Math.abs(a.p[i]-b.p[i]),dg=Math.abs(a.p[i+1]-b.p[i+1]),db=Math.abs(a.p[i+2]-b.p[i+2]);
-      if(dr+dg+db < 48) continue;
-      const l=.2126*b.p[i]+.7152*b.p[i+1]+.0722*b.p[i+2];
-      count++; sum+=l; if(l>70) bright++;
+  const visibility = await page.evaluate(() => {
+    const stage=HERO_STAGE, hero=stage.o.root, gl=stage.engine._gl;
+    const w=gl.drawingBufferWidth, h=gl.drawingBufferHeight;
+    // preserveDrawingBuffer:false: browser canvas.toDataURL() is NOT reliable.
+    // Read the actual backbuffer synchronously immediately after rendering.
+    const take=()=>{
+      stage.scene.render();
+      const p=new Uint8Array(w*h*4);
+      gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,p);
+      const err=gl.getError();
+      if(err!==gl.NO_ERROR)throw Error('WebGL readPixels failed: '+err);
+      return p;
+    };
+    hero.setEnabled(false);const a=take();
+    hero.setEnabled(true);const b=take();
+    let count=0,bright=0,sum=0,minX=w,maxX=-1,minY=h,maxY=-1;
+    for(let y=3;y<h-3;y++)for(let x=3;x<w-3;x++){
+      const i=(y*w+x)*4,dr=Math.abs(a[i]-b[i]),dg=Math.abs(a[i+1]-b[i+1]),db=Math.abs(a[i+2]-b[i+2]);
+      if(dr+dg+db<48)continue;
+      const l=.2126*b[i]+.7152*b[i+1]+.0722*b[i+2];
+      count++;sum+=l;if(l>70)bright++;
       minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
     }
     return {pixels:count,meanLuma:count?sum/count:0,brightFraction:count?bright/count:0,
-      bounds:count?[minX,minY,maxX,maxY]:null,canvas:[a.w,a.h]};
-  },[withoutHero,withHero]);
+      bounds:count?[minX,minY,maxX,maxY]:null,canvas:[w,h]};
+  });
   const area = visibility.canvas[0]*visibility.canvas[1];
   assert(visibility.pixels > Math.max(250,area*.004),
     'Duncan not visibly rendered: '+JSON.stringify(visibility));
