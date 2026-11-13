@@ -24,7 +24,10 @@ class CampaignMapScene extends GameScene {
     const c = map.preset.camera;
     const current=map.nodes.find(n=>n.open&&!n.stars) || map.nodes.filter(n=>n.open).at(-1);
     this.selectedId=current?.id ?? map.nodes[0]?.id;
-    this.cx=current?.x ?? c.target[0]; this.cz=current?.z ?? c.target[2];
+    // Arrakeen opens as a geographic panorama; selected mission stays selected.
+    // Caladan/Giedi retain their established current-node framing and v101 controls.
+    this.cx=map.preset.overview ? c.target[0] : (current?.x ?? c.target[0]);
+    this.cz=map.preset.overview ? c.target[2] : (current?.z ?? c.target[2]);
     this.alpha = c.alpha; this.beta = c.beta; this.radius = c.radius;
     this.t0 = performance.now(); this.dirty = true; this.pointers = new Map();
     this.cameraTween = null;
@@ -170,7 +173,9 @@ class CampaignMapScene extends GameScene {
     const c=this.map.preset.camera;
     this.alpha=clamp(this.alpha,c.alpha-c.turnLimit,c.alpha+c.turnLimit);
     this.beta=clamp(this.beta,.76,1.12); this.radius=clamp(this.radius,c.minRadius,c.maxRadius);
-    this.cx=clamp(this.cx,-21,21); this.cz=clamp(this.cz,-12,13);
+    const [xmin,xmax,zmin,zmax]=this.map.preset.theme==='arrakeen'
+      ? [-32,35,-20,22] : [-21,21,-12,13];
+    this.cx=clamp(this.cx,xmin,xmax); this.cz=clamp(this.cz,zmin,zmax);
     const q=this.radius*Math.sin(this.beta);
     this.cam.position.set(this.cx+q*Math.cos(this.alpha),
       this.radius*Math.cos(this.beta)+1.6,
