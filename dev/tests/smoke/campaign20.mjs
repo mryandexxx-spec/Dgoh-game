@@ -220,6 +220,7 @@ try {
       const world=document.querySelector('.c20-world.arrakeen');
       const pins=[...world.querySelectorAll('.c20-pin')];
       const visible=pins.filter(el=>getComputedStyle(el).visibility==='visible');
+      const allWithin=visible.every(pin=>{const p=pin.getBoundingClientRect(),r=world.getBoundingClientRect();return p.left>=r.left+1&&p.right<=r.right-1&&p.top>=r.top+1&&p.bottom<=r.bottom-1;});
       const collisions=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
         const r=a.getBoundingClientRect(),s=b.getBoundingClientRect();
         return Math.min(r.right,s.right)-Math.max(r.left,s.left)>3 &&
@@ -227,13 +228,14 @@ try {
       }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
       return {canvas:!!world.querySelector('canvas.campaign20-canvas'),
         pins:pins.length,boss:world.querySelectorAll('.c20-pin.boss').length,
-        visible:visible.length,scroll:document.querySelector('.c20').scrollHeight>
+        visible:visible.length,allWithin,scroll:document.querySelector('.c20').scrollHeight>
           document.querySelector('.c20').clientHeight+1,collisions};
     });
     assert.equal(arrakeen.canvas,true,'Arrakeen must mount Babylon');
     assert.equal(arrakeen.pins,10,'all ten original Light-II missions');
     assert.equal(arrakeen.boss,1,'final Duncan boss');
-    assert.ok(arrakeen.visible>0,'projected markers visible');
+    assert.equal(arrakeen.visible,10,'all ten Arrakeen mission pins visible in chapter overview');
+    assert.equal(arrakeen.allWithin,true,'every Arrakeen marker is fully inside the map viewport');
     assert.equal(arrakeen.scroll,false,'no iPhone scroll');
     assert.deepEqual(arrakeen.collisions,[],'Arrakeen mission hit targets cannot overlap');
     await page.screenshot({path:path.join(shots,`arrakeen-${w}-${gfx}.png`)});
