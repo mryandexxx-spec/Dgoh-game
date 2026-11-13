@@ -246,10 +246,10 @@ try {
         count:world.querySelector('.c20-mission-nav span')?.textContent.trim()};
     });
     assert.equal(nav.buttons,2,'Arrakeen has compact mission navigation');
-    const beforeNav=await page.evaluate(()=>({
-      pin:document.querySelector('.c20-pin.on')?.dataset.c20node,
-      canvas:document.querySelector('.c20-world.arrakeen canvas')
-    }));
+    const beforeNav=await page.evaluate(()=>{
+      window.__arrakeenNavCanvas=document.querySelector('.c20-world.arrakeen canvas');
+      return document.querySelector('.c20-pin.on')?.dataset.c20node;
+    });
     await page.evaluate(()=>{
       const world=document.querySelector('.c20-world.arrakeen');
       (world.querySelector('[data-c20step="1"]:not(:disabled)')
@@ -257,10 +257,10 @@ try {
     });
     const afterNav=await page.evaluate(()=>({
       pin:document.querySelector('.c20-pin.on')?.dataset.c20node,
-      canvas:document.querySelector('.c20-world.arrakeen canvas')
+      sameCanvas:window.__arrakeenNavCanvas===document.querySelector('.c20-world.arrakeen canvas')
     }));
-    assert.notEqual(afterNav.pin,beforeNav.pin,'pager selects another original world mission');
-    assert.equal(afterNav.canvas,beforeNav.canvas,'navigation preserves Babylon scene');
+    assert.notEqual(afterNav.pin,beforeNav,'pager selects another original world mission');
+    assert.equal(afterNav.sameCanvas,true,'navigation preserves Babylon scene');
     // Return to the entry overview in the next chapter transition only;
     // mission navigation itself focuses the actual world coordinate.
     await page.screenshot({path:path.join(shots,`arrakeen-${w}-${gfx}.png`)});
