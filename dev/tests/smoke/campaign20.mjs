@@ -374,7 +374,7 @@ try {
     };
     const chronLast=await checkChronicles('selected historical district');
     await page.screenshot({path:path.join(shots,`chronicles-${w}-${gfx}.png`)});
-    await page.evaluate(()=>document.querySelector('.c20-world.atreides-chronicles [data-c20node="0"]')?.click());
+    await page.evaluate(()=>document.querySelector('.c20-world.atreides-chronicles .c20-pin')?.click());
     await new Promise(resolve=>setTimeout(resolve,550));
     const chronFirst=await checkChronicles('Caladan historical entrance');
     console.log('Chronicle end-to-end positions',w,gfx,JSON.stringify({chronLast,chronFirst}));
