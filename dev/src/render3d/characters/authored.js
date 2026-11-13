@@ -212,8 +212,18 @@ function poseModelClip(o, now, t, sp, stage) {
       : names.ult && (action.ab === o.def?.ult || action.ab === o.def?.gl) ? 'ult' : 'Attack';
     u = Math.max(0, Math.min(1, (now - action.t0) / action.dur));
   }
-  if (name === 'Idle' && names.Showcase && stage?.showcase) name = 'Showcase';
+  if (name === 'Idle' && names.Showcase && stage?.showcase && clips[names.Showcase]) {
+    name = 'Showcase';
+    const showcase = clips[names.Showcase];
+    u = ((t + (o.phase || 0)) % showcase.duration) / showcase.duration;
+  }
   const clipName = names[name] || name, clip = clips[clipName]; if (!clip) return;
+  // A GLB's model-level fall offset must never leak into an authored revive
+  // or subsequent idle; the source clip owns the skeleton's local pose.
+  if (o.root._clipRest && name !== 'Death') {
+    o.body.position.y = 0;
+    o.body.rotation.x = 0;
+  }
   // Reset source bind transforms at transitions: some clips omit channels.
   // Otherwise a previous action can leave an arm / pelvis in the wrong pose.
   const rest = o.root._clipRest;
