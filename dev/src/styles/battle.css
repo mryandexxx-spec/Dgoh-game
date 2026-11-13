@@ -63,7 +63,10 @@
 .flash.wormSmall { animation: fws .9s ease-out; background: linear-gradient(90deg, transparent 20%, rgb(207 143 94 / .55) 50%, transparent 80%); }
 @keyframes fws { from { opacity: 0; transform: translateX(-35%); } 30% { opacity: 1; } to { opacity: 0; transform: translateX(35%); } }
 .flash.worm { animation: fh 1s ease-out; background: radial-gradient(ellipse at 50% 100%, rgb(207 143 94 / .7), transparent 70%); }
-.battle.quake .bwrap { animation: quake .6s; }
+/* Only the 2D fallback shakes its DOM. In 3D the Arena camera already
+   applies shakeT; translating .bwrap while the WebGL canvas stays fixed
+   desynchronizes world-space labels from the actors by several pixels. */
+.battle.quake:not(.squad3d):not(.raid3d) .bwrap { animation: quake .6s; }
 @keyframes fh { from { opacity: 1; } to { opacity: 0; } }
 @keyframes quake { 20%, 60% { transform: translate(-4px, 2px); } 40%, 80% { transform: translate(4px, -2px); } }
 .result { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; background: rgb(14 9 5 / .72); padding: 16px; }
