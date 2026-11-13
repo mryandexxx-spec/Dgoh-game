@@ -1,6 +1,6 @@
 // Campaign 2.0 · C2.1 — география независима от сохранений и графического движка.
 // Позиции по x/z в локальном пространстве диорамы. Никакие индексы NODES не меняются.
-// C2 — Каладан, C4.1 — индустриальная Гиеди Прайм; остальные главы в legacy.
+// C2 Каладан; C4.1 Гиеди Прайм; C4.2 Арракин; C4.3 Заговор; остальные главы в legacy.
 export const CAMPAIGN_MAPS = Object.freeze({
   'L:0': Object.freeze({
     id: 'caladan-atreides', title: 'Каладан · Замок Атрейдесов',
@@ -16,6 +16,68 @@ export const CAMPAIGN_MAPS = Object.freeze({
       { kind: 'castle', x: -12, z: -10, size: 7 },
       { kind: 'harbor', x: 12, z: 3, size: 5 },
       { kind: 'spaceport', x: 23, z: 11, size: 4 },
+    ]),
+  }),
+  'L:1': Object.freeze({
+    id: 'arrakeen-atreides', title: 'Арракин · Дворец и пустыня',
+    theme: 'arrakeen', bounds: [-36, 42, -25, 24],
+    // SWGOH-style local sequence: start on the current mission, keep 2-4
+    // consecutive neighboring pins legible, explore the rest by accepted swipe.
+    camera: { target: [27, 0, 0], alpha: 1.13, beta: .96, radius: 27,
+      minRadius: 23, maxRadius: 66, turnLimit: .3 },
+    // Original Light-II m=0..9, sequential eastern desert approach -> city ->
+    // palace. Mission IDs and campaign rewards are intentionally unchanged.
+    nodes: Object.freeze([
+      [38,12], [28,16], [27,-1], [14,-6], [8,-5],
+      [0,-5], [-8,-5], [-16,-5], [-24,-5], [-32,-5],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'approach',x:34,z:14,size:11},
+      {kind:'harvester',x:27,z:-1,size:10},
+      {kind:'city-gate',x:10,z:-5,size:7},
+      {kind:'banquet',x:5,z:-5,size:8},
+      {kind:'palace',x:-24,z:-14,size:17},
+      {kind:'duncan-gallery',x:-32,z:-5,size:9},
+    ]),
+  }),
+  'D:1': Object.freeze({
+    id: 'giedi-conspiracy', title: 'Заговор · Тихий трон',
+    theme: 'conspiracy', bounds: [-48, 46, -24, 27],
+    // Camera follows original D:1 mission 0..9. A local viewport shows only
+    // consecutive nearby pins. Further sections are explored with v101 swipes.
+    camera: { target: [-36, 0, 0], alpha: -1.42, beta: .96, radius: 27,
+      minRadius: 23, maxRadius: 66, turnLimit: .3 },
+    nodes: Object.freeze([
+      [-39,-2],[-30,0],[-21,-2],[-12,1],[-3,0],
+      [6,-1],[15,2],[24,0],[33,-1],[42,1],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'freight-yard',x:-37,z:12,size:20},
+      {kind:'sardaukar-lifts',x:-3,z:15,size:23},
+      {kind:'piter-desk',x:4,z:8,size:8},
+      {kind:'guild-fleet',x:27,z:19,size:17},
+      {kind:'imperial-gate',x:35,z:15,size:14},
+    ]),
+  }),
+  'C:0': Object.freeze({
+    id: 'chronicles-house-atreides', title: 'Хроники · Дом Атрейдесов',
+    theme: 'atreides-chronicles', bounds: [-49, 51, -22, 25],
+    // Five historical places, not a literal single-planet landscape.
+    // Local camera shows successive world-space pins; continue with v101 swipe.
+    camera: { target: [-40, 0, 0], alpha: -1.42, beta: .96,
+      radius: 27, minRadius: 23, maxRadius: 66, turnLimit: .3 },
+    nodes: Object.freeze([
+      [-40,-1],[-30,-1],[-21,0],[-11,-1],[-2,0],
+      [11,0],[23,-1],[33,0],[40,-1],[47,1],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'old-duke-ring',x:-40,z:10,size:13},
+      {kind:'harkonnen-hunt',x:-24,z:12,size:19},
+      {kind:'ix-towers',x:-3,z:11,size:17},
+      {kind:'landsraad',x:12,z:13,size:15},
+      {kind:'atreides-refuge',x:24,z:11,size:7},
+      {kind:'ginaz-school',x:36,z:9,size:15},
+      {kind:'reprisal',x:45,z:12,size:8},
     ]),
   }),
   'D:0': Object.freeze({

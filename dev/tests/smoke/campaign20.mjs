@@ -207,6 +207,181 @@ try {
     assert.equal(await page.$('.c20-world.giedi canvas.campaign20-canvas')!==null,true);
     console.log('PASS Giedi Prime Dark I real WebGL C4.1',w,h,gfx,JSON.stringify(giedi));
 
+    // C4.2: Arrakeen Light II is a distinct real Babylon map, not a recolored legacy fallback.
+    await page.evaluate(()=>document.querySelector('[data-c20side="L"]').click());
+    await page.waitForSelector('.c20-map');
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]').click());
+    await page.waitForSelector('[data-c20chapter="1"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="1"]').click());
+    await page.waitForFunction(()=>document.querySelectorAll('.c20-world.arrakeen .c20-pin').length===10,{timeout:6000});
+    await page.waitForSelector('.c20-world.arrakeen.campaign20-3d-ready',{timeout:16000});
+    await page.waitForFunction(()=>[...document.querySelectorAll('.c20-world.arrakeen .c20-pin')].some(el=>getComputedStyle(el).visibility==='visible'),{timeout:9000});
+    const arrakeen=await page.evaluate(()=>{
+      const world=document.querySelector('.c20-world.arrakeen');
+      const pins=[...world.querySelectorAll('.c20-pin')];
+      const visible=pins.filter(el=>getComputedStyle(el).visibility==='visible');
+      const allWithin=visible.every(pin=>{const p=pin.getBoundingClientRect(),r=world.getBoundingClientRect();return p.left>=r.left+1&&p.right<=r.right-1&&p.top>=r.top+1&&p.bottom<=r.bottom-1;});
+      const collisions=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
+        const r=a.getBoundingClientRect(),s=b.getBoundingClientRect();
+        return Math.min(r.right,s.right)-Math.max(r.left,s.left)>3 &&
+          Math.min(r.bottom,s.bottom)-Math.max(r.top,s.top)>3;
+      }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+      return {canvas:!!world.querySelector('canvas.campaign20-canvas'),
+        pins:pins.length,boss:world.querySelectorAll('.c20-pin.boss').length,
+        visible:visible.length,allWithin,scroll:document.querySelector('.c20').scrollHeight>
+          document.querySelector('.c20').clientHeight+1,collisions};
+    });
+    assert.equal(arrakeen.canvas,true,'Arrakeen must mount Babylon');
+    assert.equal(arrakeen.pins,10,'all ten original Light-II missions');
+    assert.equal(arrakeen.boss,1,'final Duncan boss');
+    assert.ok(arrakeen.visible>0,'world-projected Arrakeen pins visible');
+    assert.equal(arrakeen.allWithin,true,'every Arrakeen marker is fully inside the map viewport');
+    assert.equal(arrakeen.scroll,false,'no iPhone scroll');
+    assert.deepEqual(arrakeen.collisions,[],'Arrakeen mission hit targets cannot overlap');
+    // C4.2 route: never substitute a screen-space 5x2 matrix or pager.
+    // The local view may show only a few pins, but those pins must be consecutive.
+    const checkRoute=async(label)=>{
+      const result=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.arrakeen');
+        const nums=[...world.querySelectorAll('.c20-pin')]
+          .filter(el=>getComputedStyle(el).visibility==='visible')
+          .map(el=>Number(el.querySelector('b')?.textContent))
+          .sort((a,b)=>a-b);
+        return {nums,nav:world.querySelectorAll('[data-c20step],.c20-mission-nav').length,
+          world3d:!!world.querySelector('canvas.campaign20-canvas')};
+      });
+      assert.equal(result.nav,0,'no artificial navigation buttons');
+      assert.equal(result.world3d,true,'Babylon canvas retained');
+      assert.ok(result.nums.length>=2,label+' at least two pins should be visible: '+JSON.stringify(result));
+      assert.ok(result.nums.every((n,i)=>i===0||n===result.nums[i-1]+1),
+        label+' visible mission numbers must be consecutive: '+JSON.stringify(result));
+      return result;
+    };
+    const currentRoute=await checkRoute('current mission viewport');
+    await page.screenshot({path:path.join(shots,`arrakeen-${w}-${gfx}.png`)});
+    // Programmatically select mission 1 to validate the opposite, desert end of
+    // the swipable world without changing game progress or mission identifiers.
+    await page.evaluate(()=>document.querySelector('.c20-world.arrakeen .c20-pin b')?.closest('.c20-pin')?.click());
+    await new Promise(resolve=>setTimeout(resolve,510));
+    const approachRoute=await checkRoute('mission one / desert approach');
+    await page.screenshot({path:path.join(shots,`arrakeen-approach-${w}-${gfx}.png`)});
+    assert.ok(approachRoute.nums.includes(1),'desert entry frame must show mission 1');
+    console.log('Arrakeen consecutive local mission route',w,gfx,JSON.stringify({currentRoute,approachRoute}));
+    await page.evaluate(()=>document.querySelector('.c20-world.arrakeen .c20-pin')?.click());
+    await page.evaluate(()=>document.querySelector('[data-c20="detail"]')?.click());
+    await page.waitForSelector('.c20-dialog');
+    await page.screenshot({path:path.join(shots,`arrakeen-detail-${w}-${gfx}.png`)});
+    await page.evaluate(()=>document.querySelector('[data-c20="back"]')?.click());
+    await page.waitForFunction(()=>!document.querySelector('.c20-dialog'));
+    console.log('PASS Arrakeen Light II real WebGL C4.2',w,h,gfx,JSON.stringify(arrakeen));
+
+    // C4.3 D:1: real Conspiracy environment, with a continuous swipe route.
+    // Only neighboring world-space numbers should fit at the camera's local zoom.
+    await page.evaluate(()=>document.querySelector('[data-c20side="D"]').click());
+    await page.waitForSelector('.c20-map');
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]').click());
+    await page.waitForSelector('[data-c20chapter="1"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="1"]').click());
+    await page.waitForFunction(()=>document.querySelectorAll('.c20-world.conspiracy .c20-pin').length===10,{timeout:6000});
+    await page.waitForSelector('.c20-world.conspiracy.campaign20-3d-ready',{timeout:18000});
+    const checkConspiracy=async(label)=>{
+      await page.waitForFunction(()=>[...document.querySelectorAll('.c20-world.conspiracy .c20-pin')]
+        .some(el=>getComputedStyle(el).visibility==='visible'),{timeout:9000});
+      const result=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.conspiracy');
+        const pins=[...world.querySelectorAll('.c20-pin')];
+        const visible=pins.filter(el=>getComputedStyle(el).visibility==='visible');
+        const nums=visible.map(el=>Number(el.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const rect=world.getBoundingClientRect();
+        const within=visible.every(el=>{const r=el.getBoundingClientRect();
+          return r.left>=rect.left+1&&r.right<=rect.right-1&&r.top>=rect.top+1&&r.bottom<=rect.bottom-1;});
+        const overlaps=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3
+            &&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {nums,pins:pins.length,boss:pins.filter(el=>el.classList.contains('boss')).length,
+          within,overlaps,canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          pager:world.querySelectorAll('[data-c20step],.c20-mission-nav').length,
+          scroll:document.querySelector('.c20').scrollHeight>document.querySelector('.c20').clientHeight+1};
+      });
+      assert.equal(result.pins,10,'D:1 original ten mission ids');
+      assert.equal(result.boss,1,'D:1 final Hawat boss');
+      assert.equal(result.canvas,true,'Conspiracy mounted real Babylon canvas');
+      assert.equal(result.pager,0,'no artificial mission navigation');
+      assert.equal(result.within,true,'Conspiracy visible markers fully inside map');
+      assert.deepEqual(result.overlaps,[],'Conspiracy mission markers do not overlap');
+      assert.equal(result.scroll,false,'Conspiracy has no viewport scroll');
+      assert.ok(result.nums.length>=2,label+' nearby markers should be visible: '+JSON.stringify(result));
+      assert.ok(result.nums.every((n,i)=>i===0||n===result.nums[i-1]+1),
+        label+' mission numbers must be consecutive: '+JSON.stringify(result));
+      return result;
+    };
+    const conspiracyLast=await checkConspiracy('imperial sector');
+    await page.screenshot({path:path.join(shots,`conspiracy-${w}-${gfx}.png`)});
+    // Select the existing first mission: standard selection must focus actual 3D position.
+    await page.evaluate(()=>document.querySelector('.c20-world.conspiracy .c20-pin b')?.closest('.c20-pin')?.click());
+    await new Promise(resolve=>setTimeout(resolve,550));
+    const conspiracyFirst=await checkConspiracy('covert cargo yard');
+    assert.ok(conspiracyFirst.nums.includes(1),'first route segment shows mission 1');
+    await page.screenshot({path:path.join(shots,`conspiracy-approach-${w}-${gfx}.png`)});
+    await page.evaluate(()=>document.querySelector('.c20-world.conspiracy .c20-pin')?.click());
+    await page.evaluate(()=>document.querySelector('[data-c20="detail"]')?.click());
+    await page.waitForSelector('.c20-dialog');
+    await page.screenshot({path:path.join(shots,`conspiracy-detail-${w}-${gfx}.png`)});
+    await page.evaluate(()=>document.querySelector('[data-c20="back"]')?.click());
+    await page.waitForFunction(()=>!document.querySelector('.c20-dialog'));
+    console.log('PASS Conspiracy Dark II real WebGL C4.3',w,h,gfx,
+      JSON.stringify({conspiracyLast,conspiracyFirst}));
+
+    // C4.4: five distinct historical districts, original ten C:0 missions.
+    // Side switch is owned by the Chronicles cover, not the story-side buttons.
+    await page.evaluate(()=>document.querySelector('[data-c20="home"]')?.click());
+    await page.waitForSelector('.c20-home',{timeout:7000});
+    await page.evaluate(()=>document.querySelector('[data-c20="chron"]')?.click());
+    await page.waitForSelector('.c20-map',{timeout:7000});
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="0"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="0"]').click());
+    await page.waitForFunction(()=>document.querySelectorAll('.c20-world.atreides-chronicles .c20-pin').length===10,{timeout:7000});
+    await page.waitForSelector('.c20-world.atreides-chronicles.campaign20-3d-ready',{timeout:18000});
+    const checkChronicles=async(label)=>{
+      await page.waitForFunction(()=>[...document.querySelectorAll('.c20-world.atreides-chronicles .c20-pin')]
+        .some(el=>getComputedStyle(el).visibility==='visible'),{timeout:9000});
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.atreides-chronicles');
+        const pins=[...world.querySelectorAll('.c20-pin')];
+        const visible=pins.filter(el=>getComputedStyle(el).visibility==='visible');
+        const nums=visible.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const overlaps=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3 &&
+            Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {nums,pins:pins.length,boss:pins.filter(p=>p.classList.contains('boss')).length,
+          overlaps,canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          pager:world.querySelectorAll('[data-c20step],.c20-mission-nav').length};
+      });
+      assert.equal(state.pins,10,'Chronicles preserves ten original missions');
+      assert.equal(state.boss,1,'Chronicles final Harkonnen boss');
+      assert.equal(state.canvas,true,'Chronicles uses real Babylon');
+      assert.equal(state.pager,0,'Chronicles navigates by swipe, not buttons');
+      assert.deepEqual(state.overlaps,[],'Chronicles world pins do not overlap');
+      assert.ok(state.nums.length>=2,label+' two nearby mission pins: '+JSON.stringify(state));
+      assert.ok(state.nums.every((n,i)=>i===0||n===state.nums[i-1]+1),
+        label+' visible mission numbers must be consecutive: '+JSON.stringify(state));
+      return state;
+    };
+    const chronLast=await checkChronicles('selected historical district');
+    await page.screenshot({path:path.join(shots,`chronicles-${w}-${gfx}.png`)});
+    await page.evaluate(()=>document.querySelector('.c20-world.atreides-chronicles .c20-pin')?.click());
+    await new Promise(resolve=>setTimeout(resolve,550));
+    const chronFirst=await checkChronicles('Caladan historical entrance');
+    console.log('Chronicle end-to-end positions',w,gfx,JSON.stringify({chronLast,chronFirst}));
+    assert.ok(chronFirst.nums.includes(1),'chronicle opening must display the old duke: '+JSON.stringify(chronFirst));
+    await page.screenshot({path:path.join(shots,`chronicles-first-${w}-${gfx}.png`)});
+    console.log('PASS Atreides Chronicles C4.4 WebGL',w,h,gfx,JSON.stringify({chronLast,chronFirst}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
