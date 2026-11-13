@@ -8,6 +8,7 @@ import { campaignPanDelta, campaignPinch, campaignTwist } from '../campaign-gest
 import { buildGiediPrime } from './campaign-giedi.js';
 import { buildArrakeen } from './campaign-arrakeen.js';
 import { buildConspiracy } from './campaign-conspiracy.js';
+import { buildAtreidesChronicles } from './campaign-atreides-chronicles.js';
 
 let ACTIVE = null;
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -18,7 +19,8 @@ class CampaignMapScene extends GameScene {
     this.small = Math.min(innerWidth, innerHeight) < 600;
     this.scene = new B3.Scene(this.engine);
     this.scene.useRightHandedSystem = true;
-    this.scene.clearColor = map.preset.theme === 'conspiracy'
+    this.scene.clearColor = map.preset.theme === 'atreides-chronicles'
+      ? new B3.Color4(.10,.14,.19,1) : map.preset.theme === 'conspiracy'
       ? new B3.Color4(.075,.103,.14,1) : map.preset.theme === 'giedi'
       ? new B3.Color4(.14,.17,.17,1) : map.preset.theme === 'arrakeen'
         ? new B3.Color4(.71,.57,.40,1) : new B3.Color4(.12,.18,.16,1);
@@ -51,6 +53,11 @@ class CampaignMapScene extends GameScene {
   }
   makeGeometry() {
     const M = B3.MeshBuilder, S = this.scene, P = this.map.preset;
+    if(P.theme==='atreides-chronicles') {
+      buildAtreidesChronicles(B3,S,(name,color)=>this.material(name,color));
+      this.makeMissionGeometry();
+      return;
+    }
     if(P.theme==='conspiracy') {
       buildConspiracy(B3,S,(name,color)=>this.material(name,color));
       this.makeMissionGeometry();
@@ -304,7 +311,7 @@ class CampaignMapScene extends GameScene {
       // only nearby mission markers are shown; distant but technically
       // projectable labels would otherwise mix unrelated chapter numbers.
       // This is a world-space distance gate, never a fixed screen-grid.
-      const local=!['arrakeen','conspiracy'].includes(this.map.preset.theme)
+      const local=!['arrakeen','conspiracy','atreides-chronicles'].includes(this.map.preset.theme)
         || Math.hypot(node.x-this.cx,node.z-this.cz)<=Math.min(30,this.radius*.96);
       const visible=local&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.z>0&&p.z<1
         &&p.x>diameter/2+3&&p.y>diameter/2+3
