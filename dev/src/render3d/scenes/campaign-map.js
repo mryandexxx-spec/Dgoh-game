@@ -24,7 +24,6 @@ class CampaignMapScene extends GameScene {
     const c = map.preset.camera;
     const current=map.nodes.find(n=>n.open&&!n.stars) || map.nodes.filter(n=>n.open).at(-1);
     this.selectedId=current?.id ?? map.nodes[0]?.id;
-    this.overviewActive=!!map.preset.overview;
     // Arrakeen opens as a geographic panorama; selected mission stays selected.
     // Caladan/Giedi retain their established current-node framing and v101 controls.
     this.cx=map.preset.overview ? c.target[0] : (current?.x ?? c.target[0]);
@@ -186,7 +185,6 @@ class CampaignMapScene extends GameScene {
     this.t0=performance.now(); this.dirty=true;
   }
   center(node, animate = true) {
-    this.overviewActive=false;
     if(node)this.selectedId=node.id;
     const x = node?.x ?? this.map.preset.camera.target[0];
     const z = node?.z ?? this.map.preset.camera.target[2];
@@ -232,7 +230,6 @@ class CampaignMapScene extends GameScene {
       if(p.fromPin)try{this.screenEl.setPointerCapture(e.pointerId);}catch(_){}
     }
     this.cameraTween=null;
-    this.overviewActive=false;
     if(this.pointers.size===1){
       if(e.altKey || e.buttons===2) this.alpha+=dx*.006;
       else this.panPixels(dx,dy);
@@ -264,7 +261,6 @@ class CampaignMapScene extends GameScene {
   };
   wheel=e=>{
     if(e.cancelable)e.preventDefault();
-    this.overviewActive=false;
     this.radius*=e.deltaY>0?1.08:.92;this.applyCamera();
   };
   // Limited rotate: two-finger twist is not used for selection; a small deliberate horizontal
@@ -288,21 +284,6 @@ class CampaignMapScene extends GameScene {
   }
   projectLabels(){
     if(!this.labels?.length)return;
-    // The Arrakeen chapter covers a much wider territory than a phone's ~200px
-    // map window. In the geographic overview show ALL missions in an explicit
-    // compact two-row screen layout. On pan/zoom/focus return to actual 3D
-    // projection (the accepted v101 gestures and camera math stay unchanged).
-    if(this.overviewActive && this.map.preset.theme==='arrakeen') {
-      const w=this.stageWidth||1,h=this.stageHeight||1;
-      this.map.nodes.forEach((node,i)=>{
-        const el=this.labels[i];if(!el)return;
-        const col=i%5,row=Math.floor(i/5);
-        const x=w*(.105+col*.1975),y=h*(row===0?.26:.73);
-        el.style.visibility='visible';
-        el.style.transform=`translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) translate(-50%,-50%)`;
-      });
-      return;
-    }
     // UI viewport is cached at mount/resize, no DOM layout reads in the render loop.
     const w=this.stageWidth||1,h=this.stageHeight||1;
     const vp=new B3.Viewport(0,0,w,h);
