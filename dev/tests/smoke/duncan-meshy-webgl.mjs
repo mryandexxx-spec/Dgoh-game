@@ -28,7 +28,7 @@ try {
    window.openCalendar=()=>{};window.toast=()=>{};window.renderNotes=()=>{};
    await loadB3();closeInfo(true);closeOverlay();openDetail('duncan');
   });
-  await page.waitForFunction(()=>!!window.HERO_STAGE?.o?.root?._clips && !!window.HERO_STAGE?.o?.root?._authored,{timeout:25000});
+  await page.waitForFunction(()=>typeof HERO_STAGE!=='undefined' && !!HERO_STAGE?.o?.root?._clips && !!HERO_STAGE?.o?.root?._authored,{timeout:25000});
   await page.evaluate(async()=>{await HERO_STAGE.scene.whenReadyAsync();heroHold(true);});
   const snapshot=await page.evaluate(()=>{
    const o=HERO_STAGE.o,clips=o.root._clips,names=o.root._clipNames;
