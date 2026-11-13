@@ -16,6 +16,15 @@ function kf(k, keys) {
   for (let i = 1; i < keys.length; i++) if (k <= keys[i][0]) { const [t0, v0] = keys[i - 1], [t1, v1] = keys[i], e = smooth01((k - t0) / (t1 - t0)); return v0 + (v1 - v0) * e; }
   return keys[keys.length - 1][1];
 }
+// Normalized right-hand speed peaks in the source GLB. Play 3 + 2 + 3
+// contacts, retaining time for the approach and the final recovery.
+const DUNCAN_COMBO = [
+  { start: 0, end: .36, clip: 'Triple_Combo_Attack', contacts: [.17, .34, .51] },
+  { start: .36, end: .64, clip: 'Double_Combo_Attack', contacts: [.22, .41] },
+  { start: .64, end: 1, clip: 'Triple_Combo_Attack', contacts: [.17, .34, .51] }
+];
+const DUNCAN_CONTACTS = DUNCAN_COMBO.flatMap(part =>
+  part.contacts.map(u => part.start + u * (part.end - part.start)));
 ANIM3.duncan = {
   dur: key => (MOCAP_OK ? { basic: 1900, special: 1200, ult: 3200 } : { basic: 1150, special: 1200, ult: 2000 })[key] || null,
   hit: key => (MOCAP_OK ? { basic: .42, ult: .82 } : { basic: .58, ult: .82 })[key] || null,
@@ -144,3 +153,5 @@ function poseDuncan(A, o, now, t, sp) {
 
 
 export { ANIM3, smooth01, seg, kf, poseDuncan };
+
+export { DUNCAN_COMBO, DUNCAN_CONTACTS };

@@ -25,7 +25,7 @@ try{
     await page.setRequestInterception(true);
     page.on('request',req=>{
       // Babylon and all OTHER files remain reachable; a required model hangs.
-      if(/\/models\/duncan\.[a-f0-9]+\.dgm(?:\?|$)/.test(req.url())||/\/models\/duncan\.dgm(?:\?|$)/.test(req.url())){blocked++;return;}
+      if(/\/models\/duncan(?:-meshy)?\.[a-f0-9]+\.dgm(?:\?|$)/.test(req.url())||/\/models\/duncan(?:-meshy)?\.dgm(?:\?|$)/.test(req.url())){blocked++;return;}
       /^http:\/\/127\.0\.0\.1/.test(req.url())?req.continue():req.abort();
     });
     await page.goto(server.url(path.basename(html)),{waitUntil:'load'});

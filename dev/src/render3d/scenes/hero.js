@@ -75,7 +75,7 @@ class HeroStage extends Stage3D {
   buildHero(def) {
     const S = this.scene, m0 = new Set(S.materials), k0 = new Set(S.skeletons), t0 = new Set(S.textures);
     const o = makeHuman3(def, { scene: S, shadows: this.shadows, pbr: true });
-    o.own = { mats: S.materials.filter(m => !m0.has(m)), sks: S.skeletons.filter(x => !k0.has(x)), tex: S.textures.filter(x => !t0.has(x)) };
+    o.own = { mats: S.materials.filter(m => !m0.has(m)), sks: S.skeletons.filter(x => !k0.has(x)), tex: S.textures.filter(x => !t0.has(x) && x !== S.environmentBRDFTexture && x !== S.environmentTexture) };
     o.base = V3(0, 0, 0); o.face = 0; o.side = 'A'; o.phase = 0; o.def = def; return o;
   }
   dropHero(o) {
@@ -89,11 +89,31 @@ class HeroStage extends Stage3D {
     if (this.def !== def || !this.o) {
       if (this.o) this.o.root.setEnabled(false);
       let o = this.pool.get(def.id); if (!o) { o = this.buildHero(def); this.pool.set(def.id, o); }
-      this.warmEnd(o); o.root.setEnabled(true); this.o = o; this.def = def; this.yaw = -.35; this.auto = true; this.intro = performance.now();
+      this.warmEnd(o); o.root.setEnabled(true); this.o = o; this.def = def; this.yaw = def.id === 'duncan' && o.root._clipRest ? 0 : -.35; this.auto = true; this.intro = performance.now();
     }
     const keep = new Set([def.id, ...this.want.map(d => d.id)]);
     for (const [id, o] of this.pool) if (!keep.has(id)) { this.dropHero(o); this.pool.delete(id); }
     const tc = col3(TIER_COL[(prog0 || {}).gear || 1] || '#e8913f'); this.ring.material.emissiveColor = tc; this.rim.diffuse = def.side === 'dark' ? col3('#ff6a5a') : col3('#8fc0ff');
+    // Meshy's textured armor is dark on its +Z (front) side. Reuse the
+    // existing amber rim as a portrait fill for this one authored hero,
+    // rather than raising the global key/hemi or adding a fifth GPU light.
+    // Restore the original rim when navigating to any other hero in the pool.
+    // Reduce additive backdrop haze only for Duncan. The single dark
+    // textured armor mesh otherwise blends into the warm radial halo and
+    // loses material contrast even with correctly oriented UVs.
+    if (this.halo?.material) this.halo.material.alpha =
+      def.id === 'duncan' && this.o?.root._clipRest ? .045 : .20;
+    if (def.id === 'duncan' && this.o?.root._clipRest) {
+      this.rim2.position.set(2.5, 3.0, 3.0);
+      this.rim2.direction.set(-.55, -.46, -.70);
+      this.rim2.diffuse.set(1, .94, .88);
+      this.rim2.intensity = 3.4;
+    } else {
+      this.rim2.position.set(2.6, 2.6, -2.2);
+      this.rim2.direction.set(-.6, -.4, .6);
+      this.rim2.diffuse.copyFrom(col3('#ffa860'));
+      this.rim2.intensity = 1.1;
+    }
   }
   quiet(now) { return !(this.drag || Math.abs(this.yawV) > .02 || now - (this.intro || 0) < 1400 || (this.flashT && now - this.flashT < 1900)); }
   // прогрев соседа: два кадра на месте героя в масштабе 0,001 (тот же свет и тени → те же шейдеры, на экране не видно), затем выключить
@@ -115,10 +135,28 @@ class HeroStage extends Stage3D {
     const o = this.o; if (!o) return; this.prefetch(now);
     if (this.auto && !this.drag && (!this.resumeT || now > this.resumeT)) this.yaw += Math.sin(t * .35) * .0025;
     if (!this.drag) { this.yaw += this.yawV / 60; this.yawV *= .92; }
-    poseHuman(this, o, now, t, 1); o.root.rotation.y = this.yaw;
+    poseHuman(this, o, now, t, 1);
+    // Meshy's relaxed Idle_11 nods the head toward the floor. A small
+    // additive head lift makes the original face texture visible at 667px
+    // without modifying the source clip, combat poses or other heroes.
+    // poseModelClip restores the source quaternion each tick, so this does
+    // not accumulate across frames.
+    if (o.def?.id === 'duncan' && o.root._clipRest && o.head?.rotationQuaternion) {
+      const lift = this._duncanHeadLift ||
+        (this._duncanHeadLift = B3.Quaternion.RotationAxis(B3.Axis.X, -.24));
+      o.head.rotationQuaternion.multiplyInPlace(lift);
+    }
+    // The Meshy Idle_11 face is in the stage's native forward orientation.
+    // Do not apply the COMBAT-specific yaw correction here; the shader's
+    // fixed UV orientation now shows the actual face/armor in this view.
+    o.root.rotation.y = this.yaw;
     const H = o.h, ik = this.intro ? Math.min(1, (now - this.intro) / 1100) : 1, e = 1 - (1 - ik) ** 3;
-    const asp = (this.w || 1) / (this.h || 1), dist = (H * 1.35 + .6) / Math.min(1, asp * 1.9) * 1.14;   // пакет 5: холст шире — запас под подиум
-    this.camera.position.set(Math.sin(.25) * dist * (1.25 - .25 * e), H * .62 + .25 * (1 - e), Math.cos(.25) * dist * (1.25 - .25 * e)); this.camera.setTarget((this._tg || (this._tg = V3())).set(0, H * .52, 0)); this.camera.fov = .75;
+    const asp = (this.w || 1) / (this.h || 1),
+      // The single-piece Meshy skin is visibly slimmer in the portrait than
+      // the other authored heroes. Only Duncan gets a small camera push-in.
+      portraitScale = o.def?.id === 'duncan' && o.root._clipRest ? .77 : 1,
+      dist = (H * 1.35 + .6) / Math.min(1, asp * 1.9) * 1.14 * portraitScale;   // пакет 5: холст шире — запас под подиум
+    this.camera.position.set(Math.sin(.25) * dist * (1.25 - .25 * e), H * .62 + .25 * (1 - e), Math.cos(.25) * dist * (1.25 - .25 * e)); this.camera.setTarget((this._tg || (this._tg = V3())).set(0, H * (portraitScale < 1 ? .44 : .52), 0)); this.camera.fov = .75;
     if (this.pipe.depthOfFieldEnabled) this.pipe.depthOfField.focusDistance = dist * 1000;
     const fk = this.flashT ? Math.max(0, 1 - (now - this.flashT) / 900) : 0;
     this.key.intensity = 1.7 + fk * 2; this.ring.scaling.setAll(1 + fk * .15); if (this.glow) this.glow.intensity = .6 + fk;

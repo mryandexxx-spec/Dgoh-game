@@ -136,6 +136,18 @@ jobs:
         run: node tests/sw-install-stall.mjs
       - name: Core model stalled on iPhone must not block 3D lobby
         run: node tests/smoke/core-model-stall.mjs dist/pwa/index.html
+      - name: Duncan Meshy real WebGL rig and clips (844/667 MED/LOW)
+        run: |
+          node tests/smoke/duncan-meshy-webgl.mjs dist/pwa/index.html
+          node tests/smoke/duncan-meshy-arena.mjs dist/pwa/index.html
+      - name: Upload Duncan Meshy WebGL frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-duncan-meshy-${{ github.run_number }}
+          path: dev/dist/duncan-meshy-shots/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Optional Muad-Dib download must not block 3D lobby
         run: node tests/smoke/optional-model-boot.mjs dist/pwa/index.html
       - name: Campaign 2.0 camera-aligned touch geometry

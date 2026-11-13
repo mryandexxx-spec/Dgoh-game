@@ -1,6 +1,6 @@
 // render3d/characters/authored.js — строки 1454–1511 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { MODEL_DATA, assetUrl, ktx2For } from '../../assets/models.js';
-import { ANIM3 } from './pose-duncan.js';
+import { ANIM3, DUNCAN_COMBO } from './pose-duncan.js';
 import { HERO3 } from './rig.js';
 import { add, bBox, bCyl, bSph, grp } from '../geometry.js';
 import { basic3, col3, mat3, mk } from '../materials.js';
@@ -50,12 +50,12 @@ function ktx2Fail(why) {
   if (KTX2_ST !== 0) return; KTX2_ST = -1; clearTimeout(KTX2_T); console.warn('KTX2 выключен, текстуры — JPEG:', why);
   for (const p of KTX2_PEND.splice(0)) p.fallback();
 }
-function tex3(url, scene, set) {
-  const jpg = () => set(new B3.Texture(url, scene, false, true));
+function tex3(url, scene, set, invertY = true) {
+  const jpg = () => set(new B3.Texture(url, scene, false, invertY));
   const b = ktx2For(url); if (KTX2_ST < 0 || !b || !ktx2Cfg()) return jpg();
   let t = null, done = false;
   const p = { fallback: () => { if (done) return; done = true; if (t) t.dispose(); if (!scene.isDisposed) jpg(); } };
-  t = new B3.Texture(url + '#ktx2', scene, { noMipmap: false, invertY: true, buffer: b, forcedExtension: '.ktx2',
+  t = new B3.Texture(url + '#ktx2', scene, { noMipmap: false, invertY, buffer: b, forcedExtension: '.ktx2',
     onLoad: () => { if (KTX2_ST === 0) { KTX2_ST = 1; clearTimeout(KTX2_T); }
       const i = KTX2_PEND.indexOf(p); if (i >= 0) KTX2_PEND.splice(i, 1); },
     onError: (m, e) => { console.warn('KTX2 → JPEG', url, m || e); const i = KTX2_PEND.indexOf(p); if (i >= 0) KTX2_PEND.splice(i, 1);
@@ -96,7 +96,12 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
     let col = P.col; if (CTX.pbr) { col = col.slice(); for (let i = 0; i < col.length; i++) if (i % 4 !== 3) col[i] = Math.pow(col[i], 2.2); }
     vd.positions = P.pos; vd.normals = P.nor; if (!P.alb) vd.colors = col; if (P.uv) vd.uvs = P.uv; vd.indices = P.idx; vd.applyToMesh(me, false);
     me.setVerticesData(B3.VertexBuffer.MatricesIndicesKind, P.jj, false); me.setVerticesData(B3.VertexBuffer.MatricesWeightsKind, P.ww, false);
-    me.numBoneInfluencers = 4; me.skeleton = skel; me.parent = body; me.receiveShadows = true; me.isPickable = false; me.alwaysSelectAsActiveMesh = true;
+    me.numBoneInfluencers = 4; me.skeleton = skel; me.parent = body;
+    // Meshy bakes cloth/armor creases into its albedo. Thin overlapping
+    // polygons create severe self-shadow acne under the hero key light.
+    // Keep casting onto the podium/arena, but do not receive own shadowmap.
+    me.receiveShadows = !(def.id === 'duncan' && D.jointFormat === 'local-trs');
+    me.isPickable = false; me.alwaysSelectAsActiveMesh = true;
     // BH8: each material part in the owner's optimized legendary DGM uses a
     // *constant* sRGB vertex color, no albedo texture. In PBR on the phone its
     // vertex-color path washed the dark robe out to pale white. Set the exact
@@ -107,7 +112,29 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
       Math.round(Math.max(0, Math.min(1, P.col[i])) * 255).toString(16).padStart(2, '0')).join('') : '#ffffff';
     if (legendSolid) me.useVertexColors = false;
     const m = mat3(legendColor, P.material || MODEL_MAT[k] || {}); me.material = m; if (m._lit) mats.push(m);
-    if (P.alb) tex3(P.alb, CTX.scene, t => { if (m.albedoTexture !== undefined && m instanceof B3.PBRMaterial) m.albedoTexture = t; else m.diffuseTexture = t; });
+    if (def.id === 'duncan' && localTrs) {
+      // Raw glTF indices are CCW. Babylon defaults handmade meshes in
+      // right-handed scenes to CW, exposing the inside of the head and armor.
+      me.sideOrientation = B3.StandardMaterial.CounterClockWiseSideOrientation;
+      m.backFaceCulling = false; // source Material_0.doubleSided
+      m.twoSidedLighting = true;
+      m._duncanNoGlow = true;
+      me.metadata = { ...(me.metadata || {}), duncanNoGlow: true };
+      for (const layer of CTX.scene.effectLayers) {
+        if (layer instanceof B3.GlowLayer) layer.addExcludedMesh(me);
+      }
+    }
+    if (P.alb) tex3(P.alb, CTX.scene, t => {
+      if (m instanceof B3.PBRMaterial) m.albedoTexture = t;
+      else {
+        m.diffuseTexture = t;
+        if (def.id === 'duncan' && D.jointFormat === 'local-trs') {
+          // The source atlas is very dark (median channel 38 on mapped vertices).
+          // Scale the diffuse sample only. Direct lights still describe the form.
+          t.level = 1.65;
+        }
+      }
+    }, !(def.id === 'duncan' && D.jointFormat === 'local-trs'));
     if (P.nrm) tex3(P.nrm, CTX.scene, t => { m.bumpTexture = t; t.level = k === 'skin' ? .7 : 1; m.invertNormalMapY = true; });
     if (P.orm && m instanceof B3.PBRMaterial) {          // R: ambient occlusion, G: roughness, B: metallic (baked in Blender)
       tex3(P.orm, CTX.scene, t => { m.metallicTexture = t; }); m.useAmbientOcclusionFromMetallicTextureRed = true; m.useRoughnessFromMetallicTextureGreen = true; m.useMetallnessFromMetallicTextureBlue = true;
@@ -136,9 +163,9 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
     });
   }
   const R = { sh: N.shR, el: N.elR, hand: N.handR }, Lf = { sh: N.shL, el: N.elL, hand: N.handL }, LL = { hip: N.hipL, knee: N.kneeL, ank: N.ankL }, LR = { hip: N.hipR, knee: N.kneeR, ank: N.ankR };
-  // the sword stays procedural (shared look with the rest of the roster)
+  // Meshy Duncan already contains a skinned sword in the imported mesh.\n  // Do not add the old procedural weapon on top of the exported blade.
   const gp = D.grip ? D.grip.p : [0, -.04, .01], w = grp(R.hand, gp[0], gp[1], gp[2]), steel = mat3('#eef2f6', { metalness: .6, roughness: .18, emissive: '#1a1e24' }), gold = mat3('#b08a3a', { metalness: .6, roughness: .3 });
-  if (def.basic.dt === 'blade') {
+  if (def.basic.dt === 'blade' && !(def.id === 'duncan' && D.jointFormat === 'local-trs')) {
     if (def.id === 'muaddib') {
       // Muad'Dib carries a compact curved crysknife, not the shared 0.9m sword.
       // Keep the existing bone/grip and shadow behavior, with no new textures.
@@ -180,6 +207,12 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
     root._clipNames = { Idle: 'Idle_11', Attack: 'Right_Hand_Sword_Slash',
       special: 'Charged_Spell_Cast', ult: 'mage_soell_cast_1',
       Hit: 'Stand_Dodge', Death: 'Charged_Ground_Slam' };
+    if (def.id === 'duncan') root._clipNames = {
+      Idle: 'Combat_Stance', Attack: 'Double_Combo_Attack',
+      special: 'Sword_Parry_Backward', ult: 'Triple_Combo_Attack',
+      Hit: 'Hit_Reaction', Death: 'Dead', Revive: 'Stand_Up10',
+      Showcase: 'Idle_11'
+    };
     root._clipRest = Object.fromEntries(D.joints.map(([nm, p, , q, scale]) =>
       [nm, { node: N[nm], p: p.slice(), q: (q || [0, 0, 0, 1]).slice(), s: (scale || [1, 1, 1]).slice() }]));
   }
@@ -193,6 +226,9 @@ function poseModelClip(o, now, t, sp, stage) {
   const idle = clips[names.Idle || 'Idle']; if (!idle) return;
   let name = 'Idle', u = ((t + (o.phase || 0)) % idle.duration) / idle.duration;
   if (o.dead && now >= o.deathT) { name = 'Death'; u = Math.min(1, (now - o.deathT) / 950); }
+  else if (names.Revive && o.rise && now >= o.rise && now - o.rise < 1300) {
+    name = 'Revive'; u = Math.min(1, (now - o.rise) / 1300);
+  }
   else if (o.hitT && now >= o.hitT && now - o.hitT < 340 / Math.min(sp, 2)) {
     name = 'Hit'; u = (now - o.hitT) / (340 / Math.min(sp, 2));
   } else if (o.act) {
@@ -203,7 +239,24 @@ function poseModelClip(o, now, t, sp, stage) {
       : names.ult && (action.ab === o.def?.ult || action.ab === o.def?.gl) ? 'ult' : 'Attack';
     u = Math.max(0, Math.min(1, (now - action.t0) / action.dur));
   }
-  const clipName = names[name] || name, clip = clips[clipName]; if (!clip) return;
+  if (name === 'Idle' && names.Showcase && stage?.showcase && clips[names.Showcase]) {
+    name = 'Showcase';
+    const showcase = clips[names.Showcase];
+    u = ((t + (o.phase || 0)) % showcase.duration) / showcase.duration;
+  }
+  let clipName = names[name] || name;
+  if (name === 'ult' && o.def.id === 'duncan' && o.root._clipRest) {
+    const part = DUNCAN_COMBO.find(section => u < section.end) || DUNCAN_COMBO[2];
+    clipName = part.clip;
+    u = (u - part.start) / (part.end - part.start);
+  }
+  const clip = clips[clipName]; if (!clip) return;
+  // A GLB's model-level fall offset must never leak into an authored revive
+  // or subsequent idle; the source clip owns the skeleton's local pose.
+  if (o.root._clipRest && name !== 'Death') {
+    o.body.position.y = 0;
+    o.body.rotation.x = 0;
+  }
   // Reset source bind transforms at transitions: some clips omit channels.
   // Otherwise a previous action can leave an arm / pelvis in the wrong pose.
   const rest = o.root._clipRest;

@@ -48,6 +48,11 @@ try {
     },tag);
     const occlusion=await p.evaluate(async()=>{
       const s=HERO_STAGE,E=s.engine;
+      // Isolate backdrop occlusion from random dust/mote particle pixels.
+      // A drifting particle in the 5x5 probe can otherwise produce a false
+      // nonzero delta between the "background on/off" frames, especially LOW.
+      const particlesEnabled=s.scene.particlesEnabled;
+      s.scene.particlesEnabled=false;
       const w=E.getRenderWidth(),h=E.getRenderHeight();
       const at=B3.Vector3.Project(V3(0,1.25,0),s.o.root.getWorldMatrix(),s.scene.getTransformMatrix(),s.camera.viewport.toGlobal(w,h));
       const read=async enabled=>{
@@ -55,9 +60,11 @@ try {
         for(let i=0;i<4;i++)s.scene.render();
         return Array.from(await E.readPixels(Math.round(at.x)-2,h-Math.round(at.y)-2,5,5));
       };
-      const on=await read(true),off=await read(false);await read(true);
-      let delta=0;for(let i=0;i<on.length;i++)if(i%4!==3)delta=Math.max(delta,Math.abs(on[i]-off[i]));
-      return {delta,pixels:on.length,backgroundInGlow:s.glow?.hasMesh(s.halo)||s.glow?.hasMesh(s.bg)};
+      try {
+        const on=await read(true),off=await read(false);await read(true);
+        let delta=0;for(let i=0;i<on.length;i++)if(i%4!==3)delta=Math.max(delta,Math.abs(on[i]-off[i]));
+        return {delta,pixels:on.length,backgroundInGlow:s.glow?.hasMesh(s.halo)||s.glow?.hasMesh(s.bg)};
+      } finally { s.halo.setEnabled(true);s.bg.setEnabled(true);s.scene.particlesEnabled=particlesEnabled; }
     });
     console.log('BH4 opaque torso vs backdrop',tag,quality,JSON.stringify(occlusion));
     if(tag==='after') {

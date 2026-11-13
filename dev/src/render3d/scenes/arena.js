@@ -49,7 +49,7 @@ class Arena3D extends GameScene {
     const S = this.scene, Q = gfx(this.small);
     // emissive bloom for windows, eyes, rings, worm glow
     if (Q.glow) { this.glow = new B3.GlowLayer('glow', S, { mainTextureRatio: Q.glowRatio, blurKernelSize: Q.glowKernel }); this.glow.intensity = .55;
-    this.glow.addExcludedMesh(this.sky); if (this.ground) this.glow.addExcludedMesh(this.ground); for (const o of Object.values(this.units)) if (o.bubble) this.glow.addExcludedMesh(o.bubble); if (Q.glowSel) glowOnly(this.glow); }   // небо и земля исключены выше, как в HIGH
+    this.glow.addExcludedMesh(this.sky); if (this.ground) this.glow.addExcludedMesh(this.ground); for (const o of Object.values(this.units)) if (o.bubble) this.glow.addExcludedMesh(o.bubble); for (const mesh of S.meshes) if (mesh.metadata?.duncanNoGlow) this.glow.addExcludedMesh(mesh); if (Q.glowSel) glowOnly(this.glow); }   // небо и земля исключены выше, как в HIGH
     const tx = glowTex({ scene: S });
     const sp = this.sparks = new B3.ParticleSystem('sparks', 600, S); sp.particleTexture = tx; sp.emitter = V3(0, -50, 0); sp.minEmitBox = V3(-.15, -.2, -.15); sp.maxEmitBox = V3(.15, .2, .15);
     sp.direction1 = V3(-2.5, 1, -2.5); sp.direction2 = V3(2.5, 4, 2.5); sp.gravity = V3(0, -9, 0); sp.minLifeTime = .2; sp.maxLifeTime = .45; sp.minSize = .04; sp.maxSize = .1; sp.minEmitPower = 1; sp.maxEmitPower = 2.2;
