@@ -21,7 +21,7 @@ export const CAMPAIGN_MAPS = Object.freeze({
   'L:1': Object.freeze({
     id: 'arrakeen-atreides', title: 'Арракин · Дворец и пустыня',
     theme: 'arrakeen', bounds: [-36, 40, -25, 24],
-    camera: { target: [-1, 0, -3], alpha: -1.13, beta: .86, radius: 57,
+    camera: { target: [-1, 0, -3], alpha: 1.13, beta: .88, radius: 53,
       minRadius: 22, maxRadius: 74, turnLimit: .3 },
     overview: true, // Only initial entry starts as a geographic panorama, not at the final boss.
     // Existing Light-II chapter, ordered by m=0..9; no changes to NODES.
