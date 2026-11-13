@@ -36,7 +36,20 @@ export function buildCorrinoChronicles(B3, scene, material) {
     box(name+' immense lintel',x,h+.4,z,w+2,.95,2.8,mat);
   };
   // Two immense connected layers, not museum plinths for individual missions.
-  box('continuous imperial land',0,-1.05,1,112,1.6,54,basalt);
+  box('continuous imperial land',0,-1.05,1,150,1.6,84,basalt);
+  // Full-width ceremonial foreground eliminates a flat void at the
+  // right-hand edge of the Lion Throne and fills mobile crops with depth.
+  for(let i=0;i<19;i++){
+    const x=-70+i*8;
+    box('processional foreground stone',x,-.13,-16,7.7,.14,19,i%4===0?salusa:stone);
+    box('imperial outer border',x,.03,-24.5,7.6,.25,.46,i%3===0?gold:bronze);
+    box('foreground angled masonry',x,.23,-29,5.4,.42,2.3,basalt);
+  }
+  for(let i=0;i<17;i++){
+    const x=-68+i*8.5;
+    box('rear imperial foundation',x,.55,35,7.9,1.2,17,i%4===0?salusa:stone);
+    box('rear parapet',x,1.7,42,7.9,1.1,1.3,basalt);
+  }
   box('imperial processional causeway',0,.03,-2.3,108,.28,9,stone);
   for(let i=0;i<55;i++){
     const x=-53+i*2;
