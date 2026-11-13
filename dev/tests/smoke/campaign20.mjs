@@ -33,18 +33,19 @@ try {
     // The calendar appears asynchronously on some LOW SwiftShader boots.
     // Keep dismissing its real close control until it is absent on a stable tick.
     // This is not a shortcut through campaign/gameplay UI.
-    let calendarClosed=false;
-    for(let attempt=0;attempt<32;attempt++){
+    let calendarClosed=false,quietTicks=0;
+    for(let attempt=0;attempt<40;attempt++){
       const hadOverlay=await page.evaluate(()=>{
         const detail=document.querySelector('#overlay2 .detail');
         if(!detail)return false;
         document.querySelector('#overlay2 button[data-iclose="1"]')?.click();
         return true;
       });
+      quietTicks=hadOverlay?0:quietTicks+1;
       await new Promise(resolve=>setTimeout(resolve,180));
-      if(!hadOverlay){
-        const stillClosed=await page.evaluate(()=>!document.querySelector('#overlay2 .detail'));
-        if(stillClosed){calendarClosed=true;break;}
+      // Require a quiet boot interval, not one frame before the async calendar.
+      if(quietTicks>=7 && await page.evaluate(()=>!document.querySelector('#overlay2 .detail'))){
+        calendarClosed=true;break;
       }
     }
     assert.equal(calendarClosed,true,'boot calendar must be dismissed before campaign navigation');
