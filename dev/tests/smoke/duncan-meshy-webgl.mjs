@@ -108,11 +108,20 @@ try {
   // The action-state smoke above drives poseHuman with synthetic timestamps.
   // Re-run the REAL HeroStage update before taking visual screenshots:
   // it restores portrait camera, showcase clip and intended display yaw.
-  await page.evaluate(() => {
-    const now=performance.now();
-    HERO_STAGE.tick(now,now/1000);
-    HERO_STAGE.scene.render();
+  const stageRestore = await page.evaluate(() => {
+    const stage=HERO_STAGE,o=stage.o;
+    const state=()=>{
+      const m=o.root.getChildMeshes().find(x=>x.skeleton),bb=m?.getBoundingInfo()?.boundingBox;
+      return {enabled:o.root.isEnabled(),meshEnabled:m?.isEnabled(),root:o.root.position.asArray(),
+        scale:o.root.scaling.asArray(),yaw:o.root.rotation.y,heroYaw:stage.yaw,
+        camera:stage.camera.position.asArray(),clip:o.root._clip,
+        meshMin:bb?.minimumWorld?.asArray(),meshMax:bb?.maximumWorld?.asArray()};
+    };
+    const before=state(),now=performance.now();
+    stage.tick(now,now/1000);stage.scene.render();
+    return {before,after:state()};
   });
+  console.log('Duncan portrait restore diagnostic',quality,JSON.stringify(stageRestore));
   assert.equal(snapshot.parts.length,1,'Expected a single optimized skinned Meshy part');
   assert(snapshot.parts[0].vertices>10000,'Duncan Meshy geometry did not load');
   assert.equal(snapshot.swordMeshes,0,'Duplicated procedural sword on top of Meshy skinned blade');
@@ -151,18 +160,19 @@ try {
     return {pixels:count,meanLuma:count?sum/count:0,brightFraction:count?bright/count:0,
       bounds:count?[minX,minY,maxX,maxY]:null,canvas:[w,h],png:canvas.toDataURL('image/png')};
   });
-  const area = visibility.canvas[0]*visibility.canvas[1];
-  assert(visibility.pixels > Math.max(250,area*.004),
-    'Duncan not visibly rendered: '+JSON.stringify(visibility));
-  assert(visibility.meanLuma >= 32 && visibility.brightFraction >= .065,
-    'Duncan is an excessively dark silhouette: '+JSON.stringify(visibility));
-  assert(visibility.bounds[2]-visibility.bounds[0] >= visibility.canvas[0]*.055 &&
-         visibility.bounds[3]-visibility.bounds[1] >= visibility.canvas[1]*.20,
-    'Duncan is out of frame or too small: '+JSON.stringify(visibility));
   fs.writeFileSync(path.join(out,`duncan-${width}-${quality}.png`),Buffer.from(visibility.png.split(',')[1],'base64'));
   const {png,...metrics}=visibility;
   fs.writeFileSync(path.join(out,`duncan-${width}-${quality}.json`),JSON.stringify(metrics,null,2));
   console.log('Duncan visible pixel metrics',quality,JSON.stringify(metrics));
+  const area = visibility.canvas[0]*visibility.canvas[1];
+  assert(visibility.pixels > Math.max(250,area*.004),
+    'Duncan not visibly rendered: '+JSON.stringify(metrics)+' stage '+JSON.stringify(stageRestore));
+  assert(visibility.meanLuma >= 32 && visibility.brightFraction >= .065,
+    'Duncan is an excessively dark silhouette: '+JSON.stringify(metrics));
+  assert(visibility.bounds[2]-visibility.bounds[0] >= visibility.canvas[0]*.055 &&
+         visibility.bounds[3]-visibility.bounds[1] >= visibility.canvas[1]*.20,
+    'Duncan is out of frame or too small: '+JSON.stringify(metrics));
+
   // Calibration frames: source Meshy animations may not face the game's
   // +Z portrait convention. Render real GPU pixels at cardinal yaw offsets
   // to identify the forward direction before changing combat facing.
