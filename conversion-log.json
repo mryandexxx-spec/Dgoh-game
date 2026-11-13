@@ -1,0 +1,75 @@
+{
+  "source": "/mnt/data/Duncan_mobile_optimized_16clips.glb",
+  "output": "/mnt/data/duncan_game_package/dev/assets/models/duncan-meshy.dgm",
+  "joint_count": 66,
+  "triangle_count": 19355,
+  "clip_count": 16,
+  "clips": {
+    "Running": {
+      "seconds": 0.633,
+      "tracks": 66
+    },
+    "Walking": {
+      "seconds": 1.033,
+      "tracks": 66
+    },
+    "Combat_Stance": {
+      "seconds": 1.667,
+      "tracks": 65
+    },
+    "Dead": {
+      "seconds": 2.967,
+      "tracks": 65
+    },
+    "Double_Blade_Spin": {
+      "seconds": 5.667,
+      "tracks": 65
+    },
+    "Double_Combo_Attack": {
+      "seconds": 2.833,
+      "tracks": 65
+    },
+    "Hit_Reaction": {
+      "seconds": 1.633,
+      "tracks": 65
+    },
+    "Idle_11": {
+      "seconds": 1.867,
+      "tracks": 65
+    },
+    "Left_Slash": {
+      "seconds": 3.167,
+      "tracks": 65
+    },
+    "Long_Breathe_and_Look_Around": {
+      "seconds": 11.267,
+      "tracks": 65
+    },
+    "Lower_Weapon_Look_Raise": {
+      "seconds": 5.167,
+      "tracks": 65
+    },
+    "Right_Hand_Sword_Slash": {
+      "seconds": 1.5,
+      "tracks": 65
+    },
+    "Stand_Up10": {
+      "seconds": 7.667,
+      "tracks": 65
+    },
+    "Sword_Judgment": {
+      "seconds": 4.333,
+      "tracks": 65
+    },
+    "Sword_Parry_Backward": {
+      "seconds": 1.333,
+      "tracks": 65
+    },
+    "Triple_Combo_Attack": {
+      "seconds": 4.333,
+      "tracks": 65
+    }
+  },
+  "texture": "/mnt/data/duncan_game_package/dev/assets/tex/duncan-meshy-alb.jpg",
+  "bytes": 2403532
+}
