@@ -109,8 +109,8 @@ export function buildArrakeen(B3, scene, material) {
   box('Banquet reception court',5,.3,-5,7,.34,6,light);
   for(const x of [2.4,7.6])for(const z of [-7.5,-2.5])
     cyl('Banquet reception columns',x,1.7,z,.62,2.5,palace);
-  box('Duncan last stand passage',-19,2.3,7,4,4.2,9,wall);
-  box('Duncan gateway',-16.9,1.45,7,.25,2.4,2.3,dark);
+  box('Duncan last stand passage',-32,2.3,-5,4,4.2,9,wall);
+  box('Duncan gateway',-29.9,1.45,-5,.25,2.4,2.3,dark);
   // Distinct urban texture in the overview: sunlit streets, stepped blocks and
   // a few civic roofs between the uniform instanced low-rise buildings.
   for(const [x,z,w,d] of [[-10,0,6,3.6],[-1,-9,5,4],[3,0,4,6],[-20,1,5,3]]) {
@@ -125,11 +125,11 @@ export function buildArrakeen(B3, scene, material) {
     box('Desert approach road',x,.07,z,4.6,.16,2.2,sandstone,-.26);
   }
   box('Approach relay shelter',38,.75,14,3.2,1.7,2.6,wall);
-  box('Outer settlements',33,1.05,6,3.4,2.1,3,city);
+  box('Outer settlements',28,1.05,16,3.4,2.1,3,city);
   box('Arrival waystone',38,1.3,11,1.1,2.5,.8,bright);
   // Streets: irregular, broken up by fixed orientation landmarks.
-  box('Arrakeen spice bazaar',-4,.85,4,8,1.2,5,rock);
-  for(let i=0;i<4;i++)box('Spice market awning',-7+i*2,.95,5.4,1.7,.2,2,spice);
+  box('Arrakeen spice bazaar',0,.85,-5,8,1.2,5,rock);
+  for(let i=0;i<4;i++)box('Spice market awning',-3+i*2,.95,-3.6,1.7,.2,2,spice);
   box('Old Harkonnen palace wing',-12,3.6,-13,5,5.4,5,dark);
   box('Imperial landing platform',-26,.85,5,9,.65,6,light);
   cyl('Landing beacon',-29,1.8,7,.8,2.1,green);
@@ -152,10 +152,10 @@ export function buildArrakeen(B3, scene, material) {
   }
   // Mission four: worm evacuation trace heading back to the outer defenses.
   for(let i=0;i<5;i++){
-    const x=19+i*2.1,z=-5-i*.9;
+    const x=14+i*2.1,z=-6-i*.9;
     box('Evacuation churned sand',x,.2,z,2.4,.22,1.5,spice,.25);
   }
   // Mission nine: defenses just outside the Duncan gallery, before the finale.
-  cyl('Shield generator',-17,1.75,-1,3,3,green,10);
-  cyl('Shield generator crown',-17,3.45,-1,4,.45,light,10);
+  cyl('Shield generator',-24,1.75,-5,3,3,green,10);
+  cyl('Shield generator crown',-24,3.45,-5,4,.45,light,10);
 }
