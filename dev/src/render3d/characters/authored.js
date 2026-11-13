@@ -180,6 +180,12 @@ function makeModel3(def, D) { return withCtx(D.materialMode === 'standard' ? { p
     root._clipNames = { Idle: 'Idle_11', Attack: 'Right_Hand_Sword_Slash',
       special: 'Charged_Spell_Cast', ult: 'mage_soell_cast_1',
       Hit: 'Stand_Dodge', Death: 'Charged_Ground_Slam' };
+    if (def.id === 'duncan') root._clipNames = {
+      Idle: 'Combat_Stance', Attack: 'Double_Combo_Attack',
+      special: 'Sword_Parry_Backward', ult: 'Triple_Combo_Attack',
+      Hit: 'Hit_Reaction', Death: 'Dead', Revive: 'Stand_Up10',
+      Showcase: 'Lower_Weapon_Look_Raise'
+    };
     root._clipRest = Object.fromEntries(D.joints.map(([nm, p, , q, scale]) =>
       [nm, { node: N[nm], p: p.slice(), q: (q || [0, 0, 0, 1]).slice(), s: (scale || [1, 1, 1]).slice() }]));
   }
@@ -193,6 +199,9 @@ function poseModelClip(o, now, t, sp, stage) {
   const idle = clips[names.Idle || 'Idle']; if (!idle) return;
   let name = 'Idle', u = ((t + (o.phase || 0)) % idle.duration) / idle.duration;
   if (o.dead && now >= o.deathT) { name = 'Death'; u = Math.min(1, (now - o.deathT) / 950); }
+  else if (names.Revive && o.rise && now >= o.rise && now - o.rise < 1300) {
+    name = 'Revive'; u = Math.min(1, (now - o.rise) / 1300);
+  }
   else if (o.hitT && now >= o.hitT && now - o.hitT < 340 / Math.min(sp, 2)) {
     name = 'Hit'; u = (now - o.hitT) / (340 / Math.min(sp, 2));
   } else if (o.act) {
@@ -203,6 +212,7 @@ function poseModelClip(o, now, t, sp, stage) {
       : names.ult && (action.ab === o.def?.ult || action.ab === o.def?.gl) ? 'ult' : 'Attack';
     u = Math.max(0, Math.min(1, (now - action.t0) / action.dur));
   }
+  if (name === 'Idle' && names.Showcase && stage?.showcase) name = 'Showcase';
   const clipName = names[name] || name, clip = clips[clipName]; if (!clip) return;
   // Reset source bind transforms at transitions: some clips omit channels.
   // Otherwise a previous action can leave an arm / pelvis in the wrong pose.
