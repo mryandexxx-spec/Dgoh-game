@@ -17,6 +17,9 @@ function poseHuman(A, o, now, t, sp) {
   if (o.root._clips && o.def?.id === 'duncan') {
     // Meshy rig uses its own bind pose: do not overwrite its bone transforms
     // with the old procedural Duncan animator.
+    // Unlike the old procedural animator, the imported clip branch must
+    // explicitly release finished actions or Duncan gets stuck in Attack.
+    if (o.act && now >= o.act.t0 + o.act.dur) o.act = null;
     const a = o.act;
     o.root.position.copyFrom(o.base);
     o.root.rotation.y = o.face;
