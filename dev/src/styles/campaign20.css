@@ -137,3 +137,7 @@ body:has(.c20) #notes{display:none!important;}
 /* C4.5: Gurney's underworld, distinct from the D:0 industrial skyline. */
 .c20-world.harkonnen-chronicles{background:linear-gradient(105deg,#151d23 0%,#303b3e 35%,#57483d 70%,#71807a 100%);border-color:#9b7b58}
 .c20-world.harkonnen-chronicles.c20-fallback::before{content:'ХРОНИКИ · ПУТЬ ГУРНИ ИЗ РАБСКИХ ЯМ';position:absolute;top:20%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.1em;color:#eed6a2;opacity:.9}
+
+/* C4.6 Corrino: ceremonial gold, Kaitain shadow, Salusa stone and Ix steel. */
+.c20-world.corrino-chronicles{background:linear-gradient(110deg,#101827 0%,#404b5a 35%,#343f4b 70%,#b99153 100%);border-color:#b99153}
+.c20-world.corrino-chronicles.c20-fallback::before{content:'ХРОНИКИ · ЦЕНА ИМПЕРАТОРСКОЙ КОРОНЫ';position:absolute;top:18%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.09em;color:#efd49b;opacity:.94}
