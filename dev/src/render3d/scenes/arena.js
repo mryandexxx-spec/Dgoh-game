@@ -527,11 +527,16 @@ class Arena3D extends GameScene {
         const exit = Math.min(1, (1 - k) / .16);
         const w = Math.max(0, Math.min(entry, exit));
         const strength = w * w * (3 - 2 * w);
-        // Ally faces +X. Approach from +X to show the eyes and animated
-        // incantation, not the back/side of the dark cloak.
-        T1.set(p.x + 5.5, p.y + 2.5, p.z + 3.2);
+        // MD-ULT-3: the raid formation faces PI, standard allies PI/2.
+        // Rotate the approved three-quarter portrait camera into the caster's
+        // own facing space; a world-fixed +X camera films his back in raids.
+        // Use the persistent formation yaw (not o.act.dir / transient animation).
+        const delta = C.o.face - Math.PI / 2, cs = Math.cos(delta), sn = Math.sin(delta);
+        const ox = 5.5 * cs + 3.2 * sn, oz = -5.5 * sn + 3.2 * cs;
+        T1.set(p.x + ox, p.y + 2.5, p.z + oz);
         B3.Vector3.LerpToRef(pos, T1, strength, pos);
-        T1.set(p.x + 2.1, p.y + 1.6, p.z + .1);
+        T1.set(p.x + 2.1 * cs + .1 * sn, p.y + 1.6,
+          p.z - 2.1 * sn + .1 * cs);
         B3.Vector3.LerpToRef(look, T1, strength, look);
       }
     }
@@ -539,7 +544,12 @@ class Arena3D extends GameScene {
       // Follow the zoom camera so the illuminated side is the visible side.
       // This reuses the arena GL FX light and works on LOW as well as MED.
       const caster = this.muadCine.o.base;
-      this.glLight.position.set(caster.x + 3.6, caster.y + 3.1, caster.z + 2.5);
+      // Keep the front key light on the *same side* as the caster-relative
+      // camera for raid and normal fights; restore its state after the movie.
+      const delta = this.muadCine.o.face - Math.PI / 2;
+      const cs = Math.cos(delta), sn = Math.sin(delta);
+      this.glLight.position.set(caster.x + 3.6 * cs + 2.5 * sn,
+        caster.y + 3.1, caster.z - 3.6 * sn + 2.5 * cs);
       this.glLight.diffuse = this.glLight.diffuse || col3('#ffe7c9');
       this.glLight.diffuse.copyFromFloats(1, .84, .65);
       this.glLight.range = 16;
