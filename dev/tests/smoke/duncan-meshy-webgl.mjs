@@ -233,6 +233,21 @@ try {
       path.join(out,`duncan-candidate-${v.name}-${Math.round(v.phase*100)}.png`),
       Buffer.from(v.png.split(',')[1],'base64'));
   }
+
+  if(quality === 'med'){
+    // Navigate away after the real Duncan captures. The hero stage is pooled;
+    // Duncan-only fill and halo settings must not leak into the next card.
+    const other=await page.evaluate(()=>{
+      openDetail('leto');
+      const st=HERO_STAGE;
+      return {id:st.def?.id,rimZ:st.rim2.position.z,
+        rimIntensity:st.rim2.intensity,haloAlpha:st.halo?.material?.alpha};
+    });
+    assert.equal(other.id,'leto','Could not switch hero after Duncan');
+    assert(Math.abs(other.rimZ+2.2)<1e-4 && Math.abs(other.rimIntensity-1.1)<1e-4 &&
+      Math.abs(other.haloAlpha-.20)<1e-4,
+      'Duncan portrait fill/halo leaked into Leto: '+JSON.stringify(other));
+  }
   console.log('PASS Duncan Meshy WebGL',width,height,JSON.stringify(snapshot));
   await page.evaluate(()=>heroHold(false));await page.close();
  }
