@@ -1329,6 +1329,8 @@ body:has(.c20) #notes{display:none!important;}
  background:linear-gradient(145deg,#7b8965 0 37%,#51684c 38% 59%,#205969 60% 100%);
  touch-action:none}
 .c20-world.giedi{background:radial-gradient(ellipse at 70% 20%,#55534a,#303839 50%,#151d20 95%);border-color:#756549}
+.c20-world.atreides-chronicles{background:linear-gradient(110deg,#3b6061 0%,#252c35 30%,#426579 48%,#968676 66%,#465e6b 100%);border-color:#b39972}
+.c20-world.atreides-chronicles.c20-fallback::before{content:'ХРОНИКИ · ПУТЬ МОЛОДОГО ГЕРЦОГА';position:absolute;top:18%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.10em;color:#e1c99c;opacity:.9}
 .c20-world.conspiracy{background:radial-gradient(ellipse at 73% 30%,#65727d,#333e4b 47%,#121b27 97%);border-color:#a5875d}
 .c20-world.conspiracy.c20-fallback::before{content:'ЗАГОВОР · ТАЙНЫЙ ФЛОТ';position:absolute;top:24%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.12em;color:#d3b88e;opacity:.86}
 .c20-world.arrakeen{background:radial-gradient(ellipse at 78% 50%,#d5a467,#a8774a 52%,#674830 100%);border-color:#b89460}
