@@ -36,7 +36,7 @@ try {
     const mesh = stage?.o?.root?.getChildMeshes().find(m => m.skeleton);
     const mat = mesh?.material;
     const tex = mat && (mat.albedoTexture || mat.diffuseTexture);
-    return !!tex && tex.isReady();
+    return !!tex && tex.isReady() && tex.invertY === false;
   }, {timeout:30000});
   await page.evaluate(async()=>{await HERO_STAGE.scene.whenReadyAsync();heroHold(true);});
   const snapshot=await page.evaluate(()=>{
@@ -122,6 +122,10 @@ try {
     return {before,after:state()};
   });
   console.log('Duncan portrait restore diagnostic',quality,JSON.stringify(stageRestore));
+  assert(Number.isFinite(stageRestore.after.yaw),'Duncan portrait yaw is NaN');
+  assert(stageRestore.after.meshMin?.every(Number.isFinite) && stageRestore.after.meshMax?.every(Number.isFinite),
+    'Duncan skinned bounds became non-finite after hero tick: '+JSON.stringify(stageRestore));
+
   assert.equal(snapshot.parts.length,1,'Expected a single optimized skinned Meshy part');
   assert(snapshot.parts[0].vertices>10000,'Duncan Meshy geometry did not load');
   assert.equal(snapshot.swordMeshes,0,'Duplicated procedural sword on top of Meshy skinned blade');
