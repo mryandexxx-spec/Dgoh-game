@@ -426,6 +426,52 @@ try {
     await page.screenshot({path:path.join(shots,`harkonnen-first-${w}-${gfx}.png`)});
     console.log('PASS Harkonnen Chronicles C4.5 real WebGL',w,h,gfx,JSON.stringify({gurneyLast,gurneyFirst}));
 
+    // C4.6: The approved imperial road joins Kaitain, Salusa and Ix without
+    // touching the ten original Chronicles mission IDs or any other chapter.
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="2"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="2"]').click());
+    await page.waitForFunction(()=>document.querySelectorAll('.c20-world.corrino-chronicles .c20-pin').length===10,{timeout:7000});
+    await page.waitForSelector('.c20-world.corrino-chronicles.campaign20-3d-ready',{timeout:18000});
+    const checkCorrino=async(label)=>{
+      await page.waitForFunction(()=>[...document.querySelectorAll('.c20-world.corrino-chronicles .c20-pin')]
+        .some(p=>getComputedStyle(p).visibility==='visible'),{timeout:9000});
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.corrino-chronicles');
+        const all=[...world.querySelectorAll('.c20-pin')];
+        const visible=all.filter(p=>getComputedStyle(p).visibility==='visible');
+        const nums=visible.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const rect=world.getBoundingClientRect();
+        const overlaps=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3 &&
+            Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {nums,ids:all.map(p=>p.dataset.c20node),boss:all.filter(p=>p.classList.contains('boss')).length,
+          canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          within:visible.every(p=>{const r=p.getBoundingClientRect();return r.left>=rect.left+1&&r.right<=rect.right-1&&r.top>=rect.top+1&&r.bottom<=rect.bottom-1;}),
+          overlaps,pager:world.querySelectorAll('[data-c20step],.c20-mission-nav').length};
+      });
+      assert.equal(state.ids.length,10,'C:2 ten unchanged mission IDs');
+      assert.equal(new Set(state.ids).size,10,'C:2 unique existing mission IDs');
+      assert.equal(state.boss,1,'C:2 Golden Lion Throne boss');
+      assert.equal(state.canvas,true,'C:2 genuine Babylon canvas');
+      assert.equal(state.pager,0,'C:2 navigation uses accepted swipe only');
+      assert.equal(state.within,true,'C:2 labels remain inside phone viewport');
+      assert.deepEqual(state.overlaps,[],'C:2 50/60px targets cannot overlap');
+      assert.ok(state.nums.length>=2,label+' at least two consecutive visible mission labels: '+JSON.stringify(state));
+      assert.ok(state.nums.every((n,i)=>i===0||n===state.nums[i-1]+1),label+' continuous labels: '+JSON.stringify(state));
+      return state;
+    };
+    const corrinoEnd=await checkCorrino('Lion Throne route');
+    await page.screenshot({path:path.join(shots,`corrino-${w}-${gfx}.png`)});
+    await page.evaluate(()=>document.querySelector('.c20-world.corrino-chronicles .c20-pin')?.click());
+    await new Promise(resolve=>setTimeout(resolve,550));
+    const corrinoStart=await checkCorrino('Kaitain opening');
+    assert.ok(corrinoStart.nums.includes(1),'first Kaitain mission visibly selectable');
+    await page.screenshot({path:path.join(shots,`corrino-first-${w}-${gfx}.png`)});
+    console.log('PASS Corrino Chronicles C4.6 real WebGL',w,h,gfx,JSON.stringify({corrinoEnd,corrinoStart}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
