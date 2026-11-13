@@ -1,6 +1,6 @@
 // Campaign 2.0 · C2.1 — география независима от сохранений и графического движка.
 // Позиции по x/z в локальном пространстве диорамы. Никакие индексы NODES не меняются.
-// C2 Каладан; C4.1 Гиеди Прайм; C4.2 Арракин; остальные главы в legacy.
+// C2 Каладан; C4.1 Гиеди Прайм; C4.2 Арракин; C4.3 Заговор; остальные главы в legacy.
 export const CAMPAIGN_MAPS = Object.freeze({
   'L:0': Object.freeze({
     id: 'caladan-atreides', title: 'Каладан · Замок Атрейдесов',
@@ -38,6 +38,25 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'banquet',x:5,z:-5,size:8},
       {kind:'palace',x:-24,z:-14,size:17},
       {kind:'duncan-gallery',x:-32,z:-5,size:9},
+    ]),
+  }),
+  'D:1': Object.freeze({
+    id: 'giedi-conspiracy', title: 'Заговор · Тихий трон',
+    theme: 'conspiracy', bounds: [-48, 46, -24, 27],
+    // Camera follows original D:1 mission 0..9. A local viewport shows only
+    // consecutive nearby pins. Further sections are explored with v101 swipes.
+    camera: { target: [-36, 0, 0], alpha: -1.13, beta: .96, radius: 27,
+      minRadius: 23, maxRadius: 66, turnLimit: .3 },
+    nodes: Object.freeze([
+      [-39,-2],[-30,0],[-21,-2],[-12,1],[-3,0],
+      [6,-1],[15,2],[24,0],[33,-1],[42,1],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'freight-yard',x:-37,z:12,size:20},
+      {kind:'sardaukar-lifts',x:-3,z:15,size:23},
+      {kind:'piter-desk',x:4,z:8,size:8},
+      {kind:'guild-fleet',x:27,z:19,size:17},
+      {kind:'imperial-gate',x:35,z:15,size:14},
     ]),
   }),
   'D:0': Object.freeze({
