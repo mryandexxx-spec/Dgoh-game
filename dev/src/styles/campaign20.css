@@ -141,3 +141,7 @@ body:has(.c20) #notes{display:none!important;}
 /* C4.6 Corrino: ceremonial gold, Kaitain shadow, Salusa stone and Ix steel. */
 .c20-world.corrino-chronicles{background:linear-gradient(110deg,#101827 0%,#404b5a 35%,#343f4b 70%,#b99153 100%);border-color:#b99153}
 .c20-world.corrino-chronicles.c20-fallback::before{content:'ХРОНИКИ · ЦЕНА ИМПЕРАТОРСКОЙ КОРОНЫ';position:absolute;top:18%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.09em;color:#efd49b;opacity:.94}
+
+/* C4.7 Butlerian Jihad: machine steel gives way to human fires and Rossak slate. */
+.c20-world.butlerian-jihad{background:linear-gradient(108deg,#111c29 0%,#3c4e58 24%,#695548 48%,#706475 70%,#26313d 100%);border-color:#8b9696}
+.c20-world.butlerian-jihad.c20-fallback::before{content:'ХРОНИКИ · ШРАМ ОСВОБОЖДЕНИЯ';position:absolute;top:14%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.11em;color:#f0d8b2;opacity:.92;pointer-events:none}
