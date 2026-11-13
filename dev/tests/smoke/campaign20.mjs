@@ -238,32 +238,35 @@ try {
     assert.equal(arrakeen.allWithin,true,'every Arrakeen marker is fully inside the map viewport');
     assert.equal(arrakeen.scroll,false,'no iPhone scroll');
     assert.deepEqual(arrakeen.collisions,[],'Arrakeen mission hit targets cannot overlap');
-    // All mission buttons must remain attached to the 3D world, not fabricated
-    // in a fixed screen grid. Out-of-frame missions remain reachable via pager.
-    const nav = await page.evaluate(()=>{
-      const world=document.querySelector('.c20-world.arrakeen');
-      return {buttons:world.querySelectorAll('.c20-mission-nav [data-c20step]').length,
-        count:world.querySelector('.c20-mission-nav span')?.textContent.trim()};
-    });
-    assert.equal(nav.buttons,2,'Arrakeen has compact mission navigation');
-    const beforeNav=await page.evaluate(()=>{
-      window.__arrakeenNavCanvas=document.querySelector('.c20-world.arrakeen canvas');
-      return document.querySelector('.c20-pin.on')?.dataset.c20node;
-    });
-    await page.evaluate(()=>{
-      const world=document.querySelector('.c20-world.arrakeen');
-      (world.querySelector('[data-c20step="1"]:not(:disabled)')
-        ||world.querySelector('[data-c20step="-1"]:not(:disabled)'))?.click();
-    });
-    const afterNav=await page.evaluate(()=>({
-      pin:document.querySelector('.c20-pin.on')?.dataset.c20node,
-      sameCanvas:window.__arrakeenNavCanvas===document.querySelector('.c20-world.arrakeen canvas')
-    }));
-    assert.notEqual(afterNav.pin,beforeNav,'pager selects another original world mission');
-    assert.equal(afterNav.sameCanvas,true,'navigation preserves Babylon scene');
-    // Return to the entry overview in the next chapter transition only;
-    // mission navigation itself focuses the actual world coordinate.
+    // C4.2 route: never substitute a screen-space 5x2 matrix or pager.
+    // The local view may show only a few pins, but those pins must be consecutive.
+    const checkRoute=async(label)=>{
+      const result=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.arrakeen');
+        const nums=[...world.querySelectorAll('.c20-pin')]
+          .filter(el=>getComputedStyle(el).visibility==='visible')
+          .map(el=>Number(el.querySelector('b')?.textContent))
+          .sort((a,b)=>a-b);
+        return {nums,nav:world.querySelectorAll('[data-c20step],.c20-mission-nav').length,
+          world3d:!!world.querySelector('canvas.campaign20-canvas')};
+      });
+      assert.equal(result.nav,0,'no artificial navigation buttons');
+      assert.equal(result.world3d,true,'Babylon canvas retained');
+      assert.ok(result.nums.length>=2,label+' at least two pins should be visible: '+JSON.stringify(result));
+      assert.ok(result.nums.every((n,i)=>i===0||n===result.nums[i-1]+1),
+        label+' visible mission numbers must be consecutive: '+JSON.stringify(result));
+      return result;
+    };
+    const currentRoute=await checkRoute('current mission viewport');
     await page.screenshot({path:path.join(shots,`arrakeen-${w}-${gfx}.png`)});
+    // Programmatically select mission 1 to validate the opposite, desert end of
+    // the swipable world without changing game progress or mission identifiers.
+    await page.evaluate(()=>document.querySelector('.c20-world.arrakeen .c20-pin b')?.closest('.c20-pin')?.click());
+    await new Promise(resolve=>setTimeout(resolve,510));
+    const approachRoute=await checkRoute('mission one / desert approach');
+    await page.screenshot({path:path.join(shots,`arrakeen-approach-${w}-${gfx}.png`)});
+    assert.ok(approachRoute.nums.includes(1),'desert entry frame must show mission 1');
+    console.log('Arrakeen consecutive local mission route',w,gfx,JSON.stringify({currentRoute,approachRoute}));
     await page.evaluate(()=>document.querySelector('.c20-world.arrakeen .c20-pin')?.click());
     await page.evaluate(()=>document.querySelector('[data-c20="detail"]')?.click());
     await page.waitForSelector('.c20-dialog');
