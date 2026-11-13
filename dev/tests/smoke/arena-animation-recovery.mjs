@@ -54,10 +54,34 @@ try{
      sun:A.sun.intensity,ambient:A.scene.lights.find(l=>l.name==='hemi')?.intensity};
    });
    assert.deepEqual(d.faults,[],label+' swallowed arena exception');
-   for(const a of d.rects){const r=d.rows.find(r=>r.id===a.id);if(r)assert.ok(Math.abs(a.x-r.x)<1&&Math.abs(a.y-r.y)<1,label+' HUD projection drift '+a.id);}
+   for(const a of d.rects){
+    const r=d.rows.find(r=>r.id===a.id);if(!r)continue;
+    if(!(Math.abs(a.x-r.x)<1&&Math.abs(a.y-r.y)<1)){
+     const detail=await page.evaluate(id=>{
+      const A=BT.arena,row=A.worldHud.rows.get(id),el=row?.label,unit=el?.parentElement,field=document.getElementById('field');
+      const cr=A.cv.getBoundingClientRect(),fr=field?.getBoundingClientRect(),ur=unit?.getBoundingClientRect(),lr=el?.getBoundingClientRect();
+      return {id,bodyScroll:[scrollX,scrollY],cr:{x:cr.x,y:cr.y,w:cr.width,h:cr.height},fr:fr&&{x:fr.x,y:fr.y,w:fr.width,h:fr.height},
+       ur:ur&&{x:ur.x,y:ur.y,w:ur.width,h:ur.height},lr:lr&&{x:lr.x,y:lr.y,w:lr.width,h:lr.height},
+       fieldInset:A._hudInsets,origin:[A._hdx,A._hdy],dimensions:[A.w,A.h],
+       unitInline:unit?.getAttribute('style'),labelInline:el?.getAttribute('style'),
+       transform:el&&getComputedStyle(el).transform,row:row&&{x:row.x,y:row.y,w:row.w,h:row.h,ax:row.ax,ay:row.ay,dx:row.dx,dy:row.dy,seen:row.seen,dead:row.dead}};
+     },a.id);
+     console.error('ARENA_HUD_DRIFT_DIAG '+label+' '+JSON.stringify(detail));
+    }
+    assert.ok(Math.abs(a.x-r.x)<1&&Math.abs(a.y-r.y)<1,label+' HUD projection drift '+a.id);
+   }
    samples.push({label,...d});return d;
   };
   await sleep(500);const initial=await check('initial');
+  // Regression for issue #63: a 3D battle must never translate the DOM HUD
+  // independently of its WebGL canvas when the legacy quake class fires.
+  // The camera already implements the 3D shake. Keep the <1px HUD assertion.
+  await page.evaluate(()=>document.querySelector('.battle.pkg9')?.classList.add('quake'));
+  await sleep(130);
+  const quakeName=await page.evaluate(()=>getComputedStyle(document.querySelector('.battle.pkg9 .bwrap')).animationName);
+  assert.equal(quakeName,'none','3D quake cannot animate the HUD wrapper independently of the canvas');
+  await check('3d-quake-isolation');
+  await page.evaluate(()=>document.querySelector('.battle.pkg9')?.classList.remove('quake'));
   for(const speed of [1,4])for(let cycle=0;cycle<3;cycle++){
    await page.evaluate(speed=>{
     const u=BT.B.units.find(u=>u.def.id==='muaddib');BT.speed=speed;BT.auto=false;BT.waiting=u;BT.B.active=u;BT.B.actor=u.uid;
