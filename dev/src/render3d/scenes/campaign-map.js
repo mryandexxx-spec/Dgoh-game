@@ -1,4 +1,4 @@
-// Campaign 2.0 · C2/C4 — Каладан и Гиеди Прайм на общем EngineHost.
+// Campaign 2.0 · C2/C4 — Каладан, Гиеди Прайм, Арракин на общем EngineHost.
 // Нет собственного Engine, render loop, rAF, таймера или DOM-измерений в update().
 import { B3, HAS_GL, HAS3D, loadB3, cvSize } from '../base.js';
 import { engineHost } from '../engine-host.js';
@@ -6,6 +6,7 @@ import { GameScene } from '../game-scene.js';
 import { gfx } from '../quality.js';
 import { campaignPanDelta, campaignPinch, campaignTwist } from '../campaign-gestures.js';
 import { buildGiediPrime } from './campaign-giedi.js';
+import { buildArrakeen } from './campaign-arrakeen.js';
 
 let ACTIVE = null;
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -17,7 +18,8 @@ class CampaignMapScene extends GameScene {
     this.scene = new B3.Scene(this.engine);
     this.scene.useRightHandedSystem = true;
     this.scene.clearColor = map.preset.theme === 'giedi'
-      ? new B3.Color4(.14,.17,.17,1) : new B3.Color4(.12,.18,.16,1);
+      ? new B3.Color4(.14,.17,.17,1) : map.preset.theme === 'arrakeen'
+        ? new B3.Color4(.71,.57,.40,1) : new B3.Color4(.12,.18,.16,1);
     this.scene.skipPointerMovePicking = true;
     const c = map.preset.camera;
     const current=map.nodes.find(n=>n.open&&!n.stars) || map.nodes.filter(n=>n.open).at(-1);
@@ -46,6 +48,11 @@ class CampaignMapScene extends GameScene {
     const M = B3.MeshBuilder, S = this.scene, P = this.map.preset;
     if(P.theme==='giedi') {
       buildGiediPrime(B3,S,(name,color)=>this.material(name,color));
+      this.makeMissionGeometry();
+      return;
+    }
+    if(P.theme==='arrakeen') {
+      buildArrakeen(B3,S,(name,color)=>this.material(name,color));
       this.makeMissionGeometry();
       return;
     }
@@ -134,7 +141,7 @@ class CampaignMapScene extends GameScene {
   }
   makeMissionGeometry() {
     const M=B3.MeshBuilder,S=this.scene,P=this.map.preset;
-    const road=this.material('route',P.theme==='giedi'?'#aa8458':'#d7ad69');
+    const road=this.material('route',P.theme==='giedi'?'#aa8458':P.theme==='arrakeen'?'#efd098':'#d7ad69');
     const clear=this.material('cleared','#507f57');
     const ready=this.material('ready','#d9a74d');
     const locked=this.material('locked','#514b43');
