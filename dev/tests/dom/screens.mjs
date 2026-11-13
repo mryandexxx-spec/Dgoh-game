@@ -281,6 +281,36 @@ function normalizeApprovedGE1(src, isCurrent) {
   }
   return copy;
 }
+// Gear XIII → Other Memory: approved navigation-only differences.
+// Restore precisely the previous DOM for comparison while keeping every hero
+// level, skill, slot, currency, equipment state and unrelated UI assertion strict.
+function normalizeApprovedGearMemory(src, current) {
+  const copy = structuredClone(src);
+  if (!current) return copy;
+  const names = new Set(['detail:paul', 'detail:duncan', 'detail:baron', 'detail:erasmus', 'item:paul:0']);
+  for (const screen of copy.screens) {
+    if (!names.has(screen.name) || typeof screen.overlay !== 'string') continue;
+    let html = screen.overlay;
+    let memoryCount = 0;
+    html = html.replace(/<button class="hcmem( next)?" data-hcmem="([^"]+)"( disabled)? aria-label="Другая память — (максимум|продолжить развитие героя|условия открытия)">/g,
+      (_full, next, id, disabled) => {
+        assert.ok(!next || html.includes('Сн. XIII'), screen.name + ': next-stage badge requires XIII');
+        memoryCount++;
+        return '<button class="hcmem" data-hcmem="' + id + '"' + (disabled || '') + '>';
+      });
+    assert.equal(memoryCount, 1, screen.name + ': one Other Memory button');
+    html = html.replace('<b>Другая память ›</b>', '<b>Другая память</b>')
+      .replace('<b>Другая память </b>', '<b>Другая память</b>')
+      .replace('<small>следующий этап усиления</small>', '<small>можно пробудить</small>')
+      .replace('<small>нужно 7★ для пробуждения</small>', '<small>с 7★ и сн. XIII</small>');
+    html = html.replace(/<button class="btn hcbtn go" data-hcmem="([^"]+)" aria-label="Перейти к Другой памяти"><span>Снаряжение XIII — завершено<\/span><small>(?:Другая память — максимум|Дальнейшее усиление → Другая память)<\/small><\/button>/g,
+      '<span class="hccap hcmaxg">снаряжение — максимум</span>');
+    assert.ok(!html.includes('Дальнейшее усиление → Другая память'), screen.name + ': expected navigation-only delta');
+    screen.overlay = html;
+  }
+  return copy;
+}
+
 // Campaign 2.0: the approved landing screen replaces the legacy campaign DOM.
 // Retain strict golden comparison for every non-campaign screen, overlay, save,
 // rewards and source navigation. The separate mobile Campaign 2.0 smoke checks
@@ -313,7 +343,7 @@ else {
   if (!baseline) throw new Error('screens golden baseline missing');
   const parsed = JSON.parse(baseline);
   const want = normalizeApprovedCampaign20(normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGE1({ ...parsed.meta, screens: parsed.screens }, false))), false);
-  const got = normalizeApprovedCampaign20(normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedBH97(normalizeApprovedGE1(out, true)))), true);
+  const got = normalizeApprovedCampaign20(normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGearMemory(normalizeApprovedBH97(normalizeApprovedGE1(out, true)), true))), true);
   if (!isDeepStrictEqual(want, got)) {
     const changed = want.screens.filter((v, i) => !isDeepStrictEqual(v, got.screens[i])).map(x => x.name);
     console.error('Unapproved golden screen differences:', changed.join(', '));
