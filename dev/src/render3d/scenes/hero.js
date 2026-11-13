@@ -98,6 +98,11 @@ class HeroStage extends Stage3D {
     // existing amber rim as a portrait fill for this one authored hero,
     // rather than raising the global key/hemi or adding a fifth GPU light.
     // Restore the original rim when navigating to any other hero in the pool.
+    // Reduce additive backdrop haze only for Duncan. The single dark
+    // textured armor mesh otherwise blends into the warm radial halo and
+    // loses material contrast even with correctly oriented UVs.
+    if (this.halo?.material) this.halo.material.alpha =
+      def.id === 'duncan' && this.o?.root._clipRest ? .045 : .20;
     if (def.id === 'duncan' && this.o?.root._clipRest) {
       this.rim2.position.set(2.5, 3.0, 3.0);
       this.rim2.direction.set(-.55, -.46, -.70);
