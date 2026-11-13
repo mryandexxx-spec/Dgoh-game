@@ -59,6 +59,27 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'imperial-gate',x:35,z:15,size:14},
     ]),
   }),
+  'C:2': Object.freeze({
+    id: 'chronicles-house-corrino', title: 'Хроники · Дом Коррино',
+    theme: 'corrino-chronicles', bounds: [-57, 57, -27, 32],
+    // Local camera frames neighboring numbered chapters only, not all ten.
+    // World coordinates are stable; mission ID/progression is unchanged.
+    camera: { target: [-48, 0, -2], alpha: -1.42, beta: .88,
+      radius: 24, minRadius: 22, maxRadius: 66, turnLimit: .3 },
+    nodes: Object.freeze([
+      [-49,-2],[-39,-2],[-29,-2],[-19,-2],[-9,-2],
+      [3,-2],[15,-2],[27,-2],[39,-2],[49,-2],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'elrood-memorial',x:-49,z:17,size:11},
+      {kind:'coronation-palace',x:-32,z:18,size:22},
+      {kind:'salusa',x:-8,z:15,size:23},
+      {kind:'amal',x:12,z:11,size:16},
+      {kind:'ix-occupation',x:23,z:23,size:20},
+      {kind:'fenring-arcade',x:31,z:9,size:9},
+      {kind:'lion-throne',x:45,z:27,size:22},
+    ]),
+  }),
   'C:1': Object.freeze({
     id: 'chronicles-house-harkonnen', title: 'Хроники · Дом Харконненов',
     theme: 'harkonnen-chronicles', bounds: [-50, 51, -24, 25],

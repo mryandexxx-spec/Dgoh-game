@@ -10,6 +10,7 @@ import { buildArrakeen } from './campaign-arrakeen.js';
 import { buildConspiracy } from './campaign-conspiracy.js';
 import { buildAtreidesChronicles } from './campaign-atreides-chronicles.js';
 import { buildHarkonnenChronicles } from './campaign-harkonnen-chronicles.js';
+import { buildCorrinoChronicles } from './campaign-corrino-chronicles.js';
 
 let ACTIVE = null;
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -20,7 +21,8 @@ class CampaignMapScene extends GameScene {
     this.small = Math.min(innerWidth, innerHeight) < 600;
     this.scene = new B3.Scene(this.engine);
     this.scene.useRightHandedSystem = true;
-    this.scene.clearColor = map.preset.theme === 'harkonnen-chronicles'
+    this.scene.clearColor = map.preset.theme === 'corrino-chronicles'
+      ? new B3.Color4(.105,.12,.17,1) : map.preset.theme === 'harkonnen-chronicles'
       ? new B3.Color4(.105,.14,.16,1) : map.preset.theme === 'atreides-chronicles'
       ? new B3.Color4(.10,.14,.19,1) : map.preset.theme === 'conspiracy'
       ? new B3.Color4(.075,.103,.14,1) : map.preset.theme === 'giedi'
@@ -55,6 +57,11 @@ class CampaignMapScene extends GameScene {
   }
   makeGeometry() {
     const M = B3.MeshBuilder, S = this.scene, P = this.map.preset;
+    if(P.theme==='corrino-chronicles') {
+      buildCorrinoChronicles(B3,S,(name,color)=>this.material(name,color));
+      this.makeMissionGeometry();
+      return;
+    }
     if(P.theme==='harkonnen-chronicles') {
       buildHarkonnenChronicles(B3,S,(name,color)=>this.material(name,color));
       this.makeMissionGeometry();
@@ -198,14 +205,15 @@ class CampaignMapScene extends GameScene {
       ? [-34,40,-22,22] : this.map.preset.theme==='conspiracy'
         ? [-44,44,-22,25] : this.map.preset.theme==='atreides-chronicles'
           ? [-45,49,-22,23] : this.map.preset.theme==='harkonnen-chronicles'
-          ? [-46,49,-22,23] : [-21,21,-12,13];
+          ? [-46,49,-22,23] : this.map.preset.theme==='corrino-chronicles'
+          ? [-54,54,-24,30] : [-21,21,-12,13];
     this.cx=clamp(this.cx,xmin,xmax); this.cz=clamp(this.cz,zmin,zmax);
     const q=this.radius*Math.sin(this.beta);
     this.cam.position.set(this.cx+q*Math.cos(this.alpha),
       this.radius*Math.cos(this.beta)+1.6,
       this.cz+q*Math.sin(this.alpha));
     // Raise Arrakeen's gaze so the palace crown stays inside short iPhone viewports.
-    this.cam.setTarget(new B3.Vector3(this.cx,this.map.preset.theme==='arrakeen'?4.2:this.map.preset.theme==='conspiracy'||this.map.preset.theme==='harkonnen-chronicles'?2.1:0,this.cz));
+    this.cam.setTarget(new B3.Vector3(this.cx,this.map.preset.theme==='arrakeen'?4.2:this.map.preset.theme==='corrino-chronicles'?3.5:this.map.preset.theme==='conspiracy'||this.map.preset.theme==='harkonnen-chronicles'?2.1:0,this.cz+(this.map.preset.theme==='corrino-chronicles'?3:0)));
     this.t0=performance.now(); this.dirty=true;
   }
   center(node, animate = true) {
