@@ -104,9 +104,11 @@ export function buildArrakeen(B3, scene, material) {
     box('Palace rhythm of columns',x,3.8,-8.22,.72,3.5,.72,palace);
     box('Column capital',x,5.65,-8.22,1.12,.3,1.12,bright);
   }
-  // A sheltered banquet courtyard and arched passage, tied to chapter beats.
-  box('Banquet court',-14,.92,-1,9,.4,7,light);
-  for(const x of [-18,-10])for(const z of [-4,2])cyl('Banquet colonnade',x,2.1,z,.65,3.1,palace);
+  // Mission five: reception banquet in the outer gate courtyard; inner court
+  // and palace remain behind the walls for the later story beats.
+  box('Banquet reception court',5,.3,-5,7,.34,6,light);
+  for(const x of [2.4,7.6])for(const z of [-7.5,-2.5])
+    cyl('Banquet reception columns',x,1.7,z,.62,2.5,palace);
   box('Duncan last stand passage',-19,2.3,7,4,4.2,9,wall);
   box('Duncan gateway',-16.9,1.45,7,.25,2.4,2.3,dark);
   // Distinct urban texture in the overview: sunlit streets, stepped blocks and
@@ -116,6 +118,15 @@ export function buildArrakeen(B3, scene, material) {
     box('Urban shaded arcade',x,1.3,z,w*.76,2.1,d*.56,shadow);
     box('Urban raised cornice',x,2.52,z,w*.88,.28,d*.7,bright);
   }
+  // Missions 1-4: a readable desert approach runs from the arrival relay
+  // towards the harvester and the city's east gate. Low static silhouettes only.
+  for(let i=0;i<5;i++) {
+    const x=39-i*3.4,z=13-i*3;
+    box('Desert approach road',x,.07,z,4.6,.16,2.2,sandstone,-.26);
+  }
+  box('Approach relay shelter',38,.75,14,3.2,1.7,2.6,wall);
+  box('Outer settlements',33,1.05,6,3.4,2.1,3,city);
+  box('Arrival waystone',38,1.3,11,1.1,2.5,.8,bright);
   // Streets: irregular, broken up by fixed orientation landmarks.
   box('Arrakeen spice bazaar',-4,.85,4,8,1.2,5,rock);
   for(let i=0;i<4;i++)box('Spice market awning',-7+i*2,.95,5.4,1.7,.2,2,spice);
@@ -139,7 +150,12 @@ export function buildArrakeen(B3, scene, material) {
     const x=19+i*5.3;
     box('Sandworm rising trail',x,.17,11+Math.sin(i*.75)*4,3.1,.3,1.2,rock,.42);
   }
-  // Shield generator presents a distinct silhouette for mission nine.
-  cyl('Shield generator',5,1.75,8,3,3,green,10);
-  cyl('Shield generator crown',5,3.45,8,4,.45,light,10);
+  // Mission four: worm evacuation trace heading back to the outer defenses.
+  for(let i=0;i<5;i++){
+    const x=19+i*2.1,z=-5-i*.9;
+    box('Evacuation churned sand',x,.2,z,2.4,.22,1.5,spice,.25);
+  }
+  // Mission nine: defenses just outside the Duncan gallery, before the finale.
+  cyl('Shield generator',-17,1.75,-1,3,3,green,10);
+  cyl('Shield generator crown',-17,3.45,-1,4,.45,light,10);
 }
