@@ -94,6 +94,19 @@ class HeroStage extends Stage3D {
     const keep = new Set([def.id, ...this.want.map(d => d.id)]);
     for (const [id, o] of this.pool) if (!keep.has(id)) { this.dropHero(o); this.pool.delete(id); }
     const tc = col3(TIER_COL[(prog0 || {}).gear || 1] || '#e8913f'); this.ring.material.emissiveColor = tc; this.rim.diffuse = def.side === 'dark' ? col3('#ff6a5a') : col3('#8fc0ff');
+    // Meshy's textured armor is dark on its +Z (front) side. Reuse the
+    // existing amber rim as a portrait fill for this one authored hero,
+    // rather than raising the global key/hemi or adding a fifth GPU light.
+    // Restore the original rim when navigating to any other hero in the pool.
+    if (def.id === 'duncan' && o.root._clipRest) {
+      this.rim2.position.set(2.5, 3.0, 3.0);
+      this.rim2.direction.set(-.55, -.46, -.70);
+      this.rim2.intensity = 1.65;
+    } else {
+      this.rim2.position.set(2.6, 2.6, -2.2);
+      this.rim2.direction.set(-.6, -.4, .6);
+      this.rim2.intensity = 1.1;
+    }
   }
   quiet(now) { return !(this.drag || Math.abs(this.yawV) > .02 || now - (this.intro || 0) < 1400 || (this.flashT && now - this.flashT < 1900)); }
   // прогрев соседа: два кадра на месте героя в масштабе 0,001 (тот же свет и тени → те же шейдеры, на экране не видно), затем выключить
