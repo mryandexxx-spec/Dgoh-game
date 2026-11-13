@@ -63,7 +63,7 @@ function loadAssets3() {   // Promise: каждый ассет независи�
     // Muad'Dib v5 is a noncritical, optional hero asset: fetching it in the
     // shared bootstrap barrier can block *every* 3D scene on a slow iPhone/PWA.
     // It is fetched in parallel but never prevents Babylon/camp/other heroes.
-    ...['duncan', 'worm', ...(assetUrl('models/young-baron.dgm') ? ['young-baron'] : []), ...(assetUrl('models/baron-legend-mobile.dgm') ? ['baron-legend-mobile'] : [])].map(id => assetBytes(`models/${id}.dgm`).then(b => { MODEL_DATA[id === 'young-baron' ? 'baron' : id === 'baron-legend-mobile' ? 'baron_legend' : id] = parseDgm(b); })),
+    ...['duncan', 'worm', ...(assetUrl('models/young-baron.dgm') ? ['young-baron'] : []), ...(assetUrl('models/baron-legend-mobile.dgm') ? ['baron-legend-mobile'] : [])].map(id => assetBytes(id === 'duncan' && assetUrl('models/duncan-meshy.dgm') ? 'models/duncan-meshy.dgm' : `models/${id}.dgm`).then(b => { MODEL_DATA[id === 'young-baron' ? 'baron' : id === 'baron-legend-mobile' ? 'baron_legend' : id] = parseDgm(b); })),
     fetch(assetUrl('anim/mocap.json')).then(r => r.ok ? r.json() : Promise.reject(new Error('mocap.json: HTTP ' + r.status))).then(setMocap),
     (async () => { const u = assetUrl('env/desert.env'); if (!u) throw new Error('нет env/desert.env');
       setEnvHdr(u.endsWith('.txt') ? 'data:application/octet-stream;base64,' + (await (await fetch(u)).text()).trim() : u); })(),
