@@ -21,6 +21,8 @@ body:has(.c20) #notes{display:none!important;}
  background:linear-gradient(145deg,#7b8965 0 37%,#51684c 38% 59%,#205969 60% 100%);
  touch-action:none}
 .c20-world.sandworms-rebirth{background:linear-gradient(145deg,#242936 0%,#756f92 33%,#965d49 55%,#d9ba84 83%,#f0d5a4 100%);border-color:#c6a87e}
+.c20-world.sandworms-rebirth.c20-fallback [data-c20node="204"]{margin-top:-10px}
+.c20-world.sandworms-rebirth.c20-fallback [data-c20node="209"]{margin-top:12px}
 .c20-world.sandworms-rebirth.c20-fallback::before{content:'ХРОНИКИ · ПУЛЬС ГЛУБИН';position:absolute;top:14%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.12em;color:#f0d5a4;opacity:.9}
 .c20-world.giedi{background:radial-gradient(ellipse at 70% 20%,#55534a,#303839 50%,#151d20 95%);border-color:#756549}
 .c20-world.atreides-chronicles{background:linear-gradient(110deg,#3b6061 0%,#252c35 30%,#426579 48%,#968676 66%,#465e6b 100%);border-color:#b39972}

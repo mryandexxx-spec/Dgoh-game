@@ -5,12 +5,12 @@
 export function buildSandworms(B3,S,material,detail=true){
   const M=B3.MeshBuilder;
   const mat={
-    ground:material('pulse-earth','#ffffff'),salt:material('pulse-salt','#b5a9a9'),
+    ground:material('pulse-earth','#ffffff'),salt:material('pulse-salt','#8e8a90'),
     dark:material('pulse-black','#242936'),machine:material('pulse-machine','#3b4552'),
     metal:material('pulse-metal','#756f92'),edge:material('pulse-edge','#a6a2bc'),
     ash:material('pulse-ash','#965d49'),glass:material('pulse-fused-sand','#654e56'),
-    dune:material('pulse-dune','#c5a478'),gold:material('pulse-gold','#e1c38b'),
-    ivory:material('pulse-ivory','#d7cbbb'),olive:material('pulse-sandtrout','#a0a98a'),
+    dune:material('pulse-dune','#9f845f'),gold:material('pulse-gold','#c7a36e'),
+    ivory:material('pulse-ivory','#aaa092'),olive:material('pulse-sandtrout','#a0a98a'),
     memory:material('pulse-memory','#6b6b83'),human:material('pulse-human','#f0d5a4'),
     red:material('pulse-red','#aa614d'),
   };
@@ -35,7 +35,7 @@ export function buildSandworms(B3,S,material,detail=true){
   const ground=M.CreateGround('reborn desert uninterrupted terrain',
     {width:142,height:106,subdivisions:52},S);
   const vertices=ground.getVerticesData(B3.VertexBuffer.PositionKind),colors=[];
-  const stages=[[.24,.26,.32],[.46,.40,.43],[.65,.47,.36],[.83,.67,.46]];
+  const stages=[[.16,.18,.24],[.30,.28,.32],[.46,.35,.29],[.62,.49,.34]];
   const lerp=(a,b,t)=>a+(b-a)*t;
   for(let i=0;i<vertices.length;i+=3){
     const x=vertices[i],z=vertices[i+2];
@@ -63,9 +63,31 @@ export function buildSandworms(B3,S,material,detail=true){
   ground.setVerticesData(B3.VertexBuffer.ColorKind,colors);
   ground.useVertexColors=true;ground.material=mat.ground;ground.isPickable=false;
 
+  // Tapered dune crests as terrain sheets, not giant ellipsoid "eggs".
+  // Their narrow ends and edges meet the ground. LOW has fewer subdivisions.
   const ridge=(name,x,z,w,length,height,m,angle=0)=>{
-    const a=sphere(name,x,-height*.52,z,2,m,detail?10:6);
-    a.scaling.set(w/2,height,length/2);a.rotation.y=angle;return a;
+    const rows=detail?12:8,cols=detail?8:5;
+    const positions=[],indices=[];
+    for(let row=0;row<=rows;row++){
+      const t=row/rows,fade=Math.pow(Math.sin(Math.PI*t),.85);
+      for(let col=0;col<=cols;col++){
+        const u=2*col/cols-1;
+        positions.push(u*w*.5*fade,
+          -.25+height*fade*fade*(1-u*u), (t-.5)*length);
+      }
+    }
+    for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
+      const k=row*(cols+1)+col,n=k+cols+1;
+      indices.push(k,n,k+1,k+1,n,n+1);
+    }
+    const data=new B3.VertexData();
+    data.positions=positions;data.indices=indices;data.normals=[];
+    B3.VertexData.ComputeNormals(positions,indices,data.normals);
+    const mesh=new B3.Mesh(name,S);
+    data.applyToMesh(mesh);
+    mesh.position.set(x,0,z);mesh.rotation.y=angle;
+    mesh.material=m;mesh.isPickable=false;
+    return mesh;
   };
   // Broad organic crosswind folds behind the mission nodes; no ten platforms.
   for(let i=0;i<15;i++){
@@ -73,8 +95,8 @@ export function buildSandworms(B3,S,material,detail=true){
     const z=20-35*Math.sin(Math.PI*i/14)+10*Math.sin(phase*.8);
     const active=i<5?.6:i<9?.9:1.45;
     ridge('ancient delta sand fold '+i,x,z+13,8+active*6,14+active*8,
-      1.6+active*1.4,i<6?mat.salt:i<10?mat.dune:mat.gold,.27*Math.sin(phase));
-    if(detail&&i>5&&i%2===0)ridge('young dune '+i,x+3,z+19,7,15,1.4,mat.dune,-.35);
+      1.0+active*.9,i<6?mat.salt:i<10?mat.dune:mat.gold,.27*Math.sin(phase));
+    if(detail&&i>5&&i%2===0)ridge('young dune '+i,x+3,z+19,7,15,.9,mat.dune,-.35);
   }
   // 200: cold machine shards at the old salt coast.
   box('200 arrival scar',-53,-.1,37,25,.35,8,mat.glass);
@@ -180,11 +202,13 @@ export function buildSandworms(B3,S,material,detail=true){
   const worm=M.CreateTube('209 newborn sandworm gigantic arch',
     {path,radius:2.35,tessellation:10,cap:2},S);
   worm.material=mat.dune;worm.isPickable=false;
-  for(let i=2;i<14;i+=2){
-    const t=i/15;
-    const ring=sphere('209 worm body plate '+i,40+18*t,
-      1+12.5*Math.sin(Math.PI*t),25+6*Math.sin(Math.PI*t),4.65,mat.gold,8);
-    ring.scaling.set(1.1,.9,1.1);
+  // Narrow armor ribs follow the curved tube, avoiding a caterpillar shape.
+  for(let i=1;i<15;i+=2){
+    const t=i/15,dy=12.5*Math.PI*Math.cos(Math.PI*t);
+    const rib=cyl('209 worm annular rib '+i,40+18*t,
+      1+12.5*Math.sin(Math.PI*t),25+6*Math.sin(Math.PI*t),
+      5.05,.52,i%4===1?mat.gold:mat.dune,12);
+    rib.rotation.z=-Math.atan2(18,dy);
   }
   cyl('209 deep worm maw',57.2,2.3,24.7,5.4,.45,mat.dark,12)
     .rotation.x=Math.PI/2;

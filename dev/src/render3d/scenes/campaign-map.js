@@ -49,7 +49,7 @@ class CampaignMapScene extends GameScene {
     // Widen ONLY the boss framing so #9 and #10 plus the opposing silhouettes
     // remain visible on both phone viewports. Earlier chapters are untouched.
     if(map.preset.theme==='sandworms-rebirth' && current?.boss){
-      this.beta=1.1;this.radius=44;
+      this.beta=1.1;this.radius=50;
     }
     this.t0 = performance.now(); this.dirty = true; this.pointers = new Map();
     this.cameraTween = null;
@@ -258,7 +258,7 @@ class CampaignMapScene extends GameScene {
   center(node, animate = true) {
     if(node)this.selectedId=node.id;
     if(this.map.preset.theme==='sandworms-rebirth' && node){
-      this.radius=node.boss?44:this.map.preset.camera.radius;
+      this.radius=node.boss?50:this.map.preset.camera.radius;
       this.beta=node.boss?1.1:this.map.preset.camera.beta;
     }
     const x = node?.x ?? this.map.preset.camera.target[0];
