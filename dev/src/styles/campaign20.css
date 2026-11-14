@@ -149,3 +149,7 @@ body:has(.c20) #notes{display:none!important;}
 /* C4.8: interplanetary convoy acts, not a recolored C4.7 scar. */
 .c20-world.machine-crusade{background:linear-gradient(110deg,#0c1624 0%,#405662 26%,#93714b 45%,#243f52 62%,#a4483e 100%);border-color:#8199a0}
 .c20-world.machine-crusade.c20-fallback::before{content:'ХРОНИКИ · КОНВОЙ НЕПОКОРЁННЫХ';position:absolute;top:14%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.10em;color:#e5cba0;opacity:.94;pointer-events:none}
+
+/* C4.9: single besieged planet, cold Omnius core and warm human memory. */
+.c20-world.corrin-siege{background:radial-gradient(ellipse at 80% 29%,#607b82 0%,#2b3b46 37%,#151f28 88%);border-color:#81999d}
+.c20-world.corrin-siege.c20-fallback::before{content:'ХРОНИКИ · РАЗОРВАННЫЙ ВЕНЕЦ';position:absolute;top:12%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.10em;color:#e5cfac;opacity:.94;pointer-events:none}
