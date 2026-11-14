@@ -71,24 +71,24 @@ export function buildImperialSaltMirror(B3, scene, material, detail = true) {
 
   // Broad seams and shallow plating imply a reflective, dried salt mirror;
   // no dynamic reflection probes, glass, shader effects or moving water.
-  for(let i=0;i<17;i++){
-    const x=-79+i*9.5,z=-25+(i*13%16);
+  for(let i=0;i<(detail?17:8);i++){
+    const x=-79+i*(detail?9.5:21.5),z=-25+(i*13%16);
     line('salt fracture '+i,x,z,x+6-(i%3)*1.3,z+2.8+(i%3),-.25,.12,mat.seam);
     if(detail&&i%2===0)line('salt fracture branch '+i,x+3,z+1.4,x+4,z-1.2,-.24,.09,mat.seam);
   }
-  for(let i=0;i<7;i++){
-    const x=-72+i*23;
+  for(let i=0;i<(detail?7:4);i++){
+    const x=-72+i*(detail?23:48);
     box('salt evaporite plate '+i,x,-.26,31-(i%2)*5,13,.04,5,i%2?mat.crust:mat.bright,.12);
   }
   // Intact, uninterrupted Shield Wall. Every crag is behind the playable route.
-  for(let i=0;i<13;i++){
-    const x=-88+i*15.3,h=10+(i*7%9);
-    wedge('unbroken Shield Wall massif '+i,x,h*.47,55+(i%3)*3,20,h,18,
+  for(let i=0;i<(detail?13:9);i++){
+    const x=-88+i*(detail?15.3:22.8),h=10+(i*7%9);
+    wedge('unbroken Shield Wall massif '+i,x,h*.47,55+(i%3)*3,detail?20:27,h,18,
       i%3===0?mat.rockLight:mat.rock);
   }
-  for(let i=0;i<7;i++){
-    const x=-71+i*25;
-    wedge('static approaching storm shelf '+i,x,16+(i%3)*2.2,77,32,14+(i%3)*3,11,
+  for(let i=0;i<(detail?7:5);i++){
+    const x=-71+i*(detail?25:37);
+    wedge('static approaching storm shelf '+i,x,16+(i%3)*2.2,77,detail?32:40,14+(i%3)*3,11,
       i%2?mat.storm:mat.stormDark);
   }
 
@@ -151,8 +151,8 @@ export function buildImperialSaltMirror(B3, scene, material, detail = true) {
   // ID57: an open Landsraad circle, one ring of competing houses.
   cyl('57 Landsraad round assembly',34,.29,20,20,.58,mat.crust,16);
   cyl('57 empty negotiating centre',34,.38,20,9,.18,mat.shadow,16);
-  for(let i=0;i<7;i++){
-    const a=(i/7)*Math.PI*2,x=34+12.8*Math.cos(a),z=20+10*Math.sin(a);
+  for(let i=0;i<(detail?7:5);i++){
+    const a=(i/(detail?7:5))*Math.PI*2,x=34+12.8*Math.cos(a),z=20+10*Math.sin(a);
     cyl('57 house herald mast '+i,x,3.3,z,.32,6.6,mat.bronze,6);
     box('57 feudal house device '+i,x+.62,4.5,z,1.4,2.5,.18,
       i%3===0?mat.red:i%3===1?mat.steel:mat.gold);
@@ -160,7 +160,7 @@ export function buildImperialSaltMirror(B3, scene, material, detail = true) {
   // ID58: Fremen observation beyond court surveillance; the weather turns.
   wedge('58 far desert lookout rock',47,2.5,19,15,5,9,mat.rockLight);
   cyl('58 wind bearing instrument',46,6.8,15,.48,9.5,mat.steel,6);
-  for(let i=0;i<3;i++)box('58 still storm wind vane '+i,46+i*.3,11.1,15,4,.22,.4,mat.watch,i*1.04);
+  for(let i=0;i<(detail?3:1);i++)box('58 still storm wind vane '+i,46+i*.3,11.1,15,4,.22,.4,mat.watch,i*1.04);
   for(let i=0;i<3;i++)box('58 distant Fremen screen '+i,43+i*5,.7,32,3,1.4,.8,mat.shadow);
   // ID59: imperial victory display at an UNBROKEN Wall. Not the Arrakeen assault.
   box('59 grand legion reviewing floor',62,.22,20,28,.46,22,mat.shadow);
@@ -175,7 +175,7 @@ export function buildImperialSaltMirror(B3, scene, material, detail = true) {
   const soldier=cyl('padishah-sardaukar-body-template',0,.78,0,.78,1.5,mat.guard,6,.62);
   const helm=cyl('padishah-sardaukar-helm-template',0,1.83,0,.88,.60,mat.steel,6,.5);
   soldier.setEnabled(false);helm.setEnabled(false);
-  const rows=detail?5:3,columns=detail?9:6;
+  const rows=detail?4:3,columns=detail?8:6;
   for(let r=0;r<rows;r++)for(let k=0;k<columns;k++){
     const x=52+k*(detail?2.45:3.75),z=22+r*(detail?2.5:4);
     const b=soldier.createInstance('59 Salusa legion '+r+' '+k);
