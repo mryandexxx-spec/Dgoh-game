@@ -338,25 +338,33 @@ function normalizeApprovedCampaign20(src, current) {
 }
 // C4.12 «Сиетч Табр»: the newly available L:3 mission 31 intentionally
 // makes the existing Chani shard farm navigable through Campaign 2.0.
-// Approve precisely one new button, with its exact label and position, while
-// keeping ALL other golden DOM fields and all 43 other screens byte-strict.
+// Approve precisely four source-link buttons in that ONE screen (IDs 31,34,36,39),
+// while keeping ALL other golden DOM fields and the 43 other screens byte-strict.
 // Do not rebaseline the entire 44-screen archive for this single UI change.
 function normalizeApprovedC412(src, current) {
   const copy = structuredClone(src);
   const screen = copy.screens.find(s => s.name === 'info:shard:chani');
   assert.ok(screen && typeof screen.overlay2 === 'string',
     'C4.12: Chani shard source overlay must exist');
-  const button = '<button class="btn mini" data-c20farm="31">На карте</button>';
-  const count = screen.overlay2.split(button).length - 1;
+  // The late-save Chani shard overlay displays exactly these four L:3 farm
+  // sources. All four gain a map shortcut when the NEW Sietch preset exists.
+  // Mission 41 belongs to a still-unimplemented chapter and gets no shortcut.
+  const approved = [31,34,36,39];
+  const discovered = [...screen.overlay2.matchAll(/data-c20farm="(\d+)"/g)]
+    .map(m => Number(m[1]));
   if (current) {
-    assert.equal(count, 1, 'C4.12: exactly one approved mission 31 map action');
-    assert.ok(screen.overlay2.includes(
-      '<div class="srca">' + button +
-      '<button class="btn go mini " data-node="31">В бой</button>'),
-      'C4.12: map action must precede the unchanged battle action for mission 31');
-    screen.overlay2 = screen.overlay2.replace(button, '');
+    assert.deepEqual(discovered, approved,
+      'C4.12: only the four approved Chani farm sources expose new map actions');
+    for (const id of approved) {
+      const button = '<button class="btn mini" data-c20farm="' + id + '">На карте</button>';
+      assert.ok(screen.overlay2.includes('<div class="srca">' + button +
+        '<button class="btn go mini " data-node="' + id + '">В бой</button>'),
+        'C4.12: shortcut must precede unchanged battle button for mission ' + id);
+      screen.overlay2 = screen.overlay2.replace(button, '');
+    }
   } else {
-    assert.equal(count, 0, 'C4.12: original golden did not contain this map action');
+    assert.deepEqual(discovered, [],
+      'C4.12: legacy Chani shard golden had no L:3 map shortcuts');
   }
   return copy;
 }
