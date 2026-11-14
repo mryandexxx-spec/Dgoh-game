@@ -94,7 +94,7 @@ export const CAMPAIGN_MAPS = Object.freeze({
     // All mission markers stay on the playable ground; background machines
     // and the Coriolis front sit away from tap targets.
     camera: { target: [-58,0,-10], alpha: -1.28, beta: .97,
-      radius: 30, minRadius: 25, maxRadius: 60, turnLimit: .24 },
+      radius: 32, minRadius: 25, maxRadius: 60, turnLimit: .24 },
     nodes: Object.freeze([
       [-58,-10],[-46,-21],[-31,-27],[-16,-25],[-2,-16],
       [10,-4],[21,10],[35,19],[51,13],[64,2],
