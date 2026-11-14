@@ -10,6 +10,9 @@
 
 ## Открыто
 
+**C4.9 v112 — выпуск разрешён 14.11.2026, кандидат до main CI и Pages; физическая Safari-проверка открыта:** владелец принял реальный WebGL MED 844×390 / LOW 667×375 («Все ок»), затем отдельно разрешил релиз («Выпускаем»). [PR #68](https://github.com/mryandexxx-spec/Dgoh-game/pull/68), [Issue #67](https://github.com/mryandexxx-spec/Dgoh-game/issues/67). Художественно принятый [CI #43579708606](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43579708606) **SUCCESS**, [восемь WebGL кадров](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43579708606/artifacts/14108245684). На PR HEAD с `v112` заново необходимы ВСЕ обязательные SUCCESS, затем squash merge и **main Validate + встроенный Pages publish + фактический Pages deployment**. До их подтверждения не называть v112 опубликованной. После публикации проверить на iPhone Safari свайп v101, pinch/twist/recenter, 190–199, миссии/бой/симуляцию, 2D fallback, сохранения, FPS и нагрев; физических измерений ещё нет. [Release handoff](docs/campaign20/C4_9_V112_RELEASE_HANDOFF_2026_11_14.md).
+
+
 **C4.8 v111 — релиз одобрен 14.11.2026, публикация через CI:** глава `C:4` «Крестовый поход машин», художественная концепция «Конвой непокорённых» и финальные WebGL MED/LOW утверждены владельцем («Ок»), затем отдельно дана команда «Выпускай». [PR #66](https://github.com/mryandexxx-spec/Dgoh-game/pull/66), [Issue #65](https://github.com/mryandexxx-spec/Dgoh-game/issues/65). Исходные миссии 180–189, 52–64 ур.; уникальная Babylon-диорама трёх межпланетных актов. Полный технический [CI #43566991080](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43566991080) SUCCESS, [реальные кадры MED/LOW](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43566991080/artifacts/14103037144). **Публикация v111 пока не подтверждена:** необходимы SUCCESS после bump, merge, main CI и Pages по точному source SHA. После публикации остаётся физическая проверка iPhone Safari FPS/нагрева, свайпов, 2D fallback. [Handoff](docs/campaign20/C4_8_V111_RELEASE_HANDOFF_2026_11_14.md).
 
 **C4.7 v110 — опубликовано 14.11.2026, осталось проверить на физическом iPhone:** [PR #62](https://github.com/mryandexxx-spec/Dgoh-game/pull/62) включает 3D карту `C:3` и исправление [HUD drift #63](https://github.com/mryandexxx-spec/Dgoh-game/issues/63). После релизного [main CI #43524991698](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43524991698) **SUCCESS**, [Pages #43526439762](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43526439762) **SUCCESS**; финальный опубликованный `main` PWA SHA `d0dd7c55`. Физические FPS и нагрев iPhone не измерены. [Handoff](docs/campaign20/C4_7_V110_RELEASE_HANDOFF_2026_11_14.md).
@@ -136,6 +139,17 @@
 - Проверить после релиза: фактические кадры персонажа в бою и карточке, плащ Attack/Hit/Death, быструю смену персонажей, отсутствие артефактов/перегрева и корректный кеш обновления.
 
 ## Записи
+
+## v112 — Campaign 2.0 C4.9 «Битва за Коррин» (14.11.2026)
+
+- **Разрешение владельца:** этап A концепции «Разорванный венец» — «Ок», настоящие итоговые WebGL MED 844×390 / LOW 667×375 художественно приняты — «Все ок», отдельная команда **«Выпускаем»** 14.11.2026. [PR #68](https://github.com/mryandexxx-spec/Dgoh-game/pull/68), [Issue #67](https://github.com/mryandexxx-spec/Dgoh-game/issues/67).
+- **Реализовано:** новая самостоятельная планетарная осадная сцена Коррина, цепь орбитальных капсул «Мост Хретгир», нравственный выбор Абульурда, башня Эразма, последние кимеки, падение распределённой сети Омниуса в 196 и финальное полигональное ядро в 199. Только оригинальные **C:5 / 190–199**, уровни 64–76; 210 ID, баланс, награды, враги, экономика, сохранения, ранее выпущенные главы неизменны.
+- **Рендер/UX:** общий Babylon GameScene / EngineHost; статичные объекты и LOW-упрощение; отдельный preset `C:5`, мобильные 50/60px world-space метки, видимые локальные номера 1–2 и 8–10 без наложений; свайп v101, pinch/twist/recenter, 2D fallback и исходные карты сохранены. Отдельного render loop, glow, RTT и тяжелых эффектов нет.
+- **Приёмка:** реальные Chromium/SwiftShader [8 кадров MED/LOW](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43579708606/artifacts/14108245684); художественно приняты. [CI #43579708606](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43579708606) **SUCCESS**, в том числе Golden, E3, 3D lifecycle, WebGL и Arena; [framing CI #43579708490](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43579708490) **SUCCESS**. Для этого коммита с bump v112 нужен собственный зелёный PR CI, затем зелёные main CI и Pages.
+- **Выкатка:** владелец разрешил merge и Pages, но факт выпуска подтверждать только по исходному merge SHA, главному Validate с успешной задачей `Publish verified PWA to GitHub Pages`, публикационному root PWA SHA и точному Pages deployment. Не запускать второй `publish-pwa.yml`, заголовок merge-коммита не должен начинаться с `release:`.
+- **После выпуска на физическом iPhone:** 190–199 в «Хрониках» на MED 844×390 и LOW 667×375; свайп, pinch/twist/recenter, вход/бой/симуляция/возврат, WebGL→2D fallback и корректность обновления SW, 10–15 минут FPS/нагрев. CI SwiftShader не является измерением физического Safari.
+- [Release handoff v112](docs/campaign20/C4_9_V112_RELEASE_HANDOFF_2026_11_14.md).
+
 
 ## v111 — Campaign 2.0 C4.8 «Крестовый поход машин» (14.11.2026)
 

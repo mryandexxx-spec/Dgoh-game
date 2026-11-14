@@ -59,6 +59,29 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'imperial-gate',x:35,z:15,size:14},
     ]),
   }),
+  'C:5': Object.freeze({
+    id: 'chronicles-corrin-siege', title: 'Хроники · Разорванный венец',
+    theme: 'corrin-siege', bounds: [-68,72,-30,42],
+    // Single planetary siege, not interplanetary stages.
+    camera: { target: [-56,0,-14], alpha: -1.31, beta: .89,
+      radius: 29, minRadius: 25, maxRadius: 62, turnLimit: .24 },
+    nodes: Object.freeze([
+      [-56,-14],[-43,-7],[-30,-2],[-19,9],[-6,3],
+      [7,-3],[21,3],[34,9],[45,11],[58,15],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'league-fleet',x:-56,z:9,size:16},
+      {kind:'hostage-pylon',x:-43,z:11,size:13},
+      {kind:'abulurd-fork',x:-30,z:11,size:16},
+      {kind:'corrin-dropzone',x:-19,z:24,size:19},
+      {kind:'erasmus-eye',x:-6,z:19,size:14},
+      {kind:'last-cymeks',x:7,z:19,size:17},
+      {kind:'omnius-grid-collapse',x:21,z:20,size:20},
+      {kind:'hrethgir-anchor',x:34,z:25,size:18},
+      {kind:'human-memorial',x:45,z:18,size:15},
+      {kind:'omnius-heart',x:58,z:30,size:23},
+    ]),
+  }),
   'C:4': Object.freeze({
     id: 'chronicles-machine-crusade', title: 'Хроники · Конвой непокорённых',
     theme: 'machine-crusade', bounds: [-72, 72, -25, 32],

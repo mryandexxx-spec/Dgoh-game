@@ -13,6 +13,7 @@ import { buildHarkonnenChronicles } from './campaign-harkonnen-chronicles.js';
 import { buildCorrinoChronicles } from './campaign-corrino-chronicles.js';
 import { buildButlerianJihad } from './campaign-butlerian-jihad.js';
 import { buildMachineCrusade } from './campaign-machine-crusade.js';
+import { buildCorrinBattle } from './campaign-corrin-battle.js';
 
 let ACTIVE = null;
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -23,7 +24,8 @@ class CampaignMapScene extends GameScene {
     this.small = Math.min(innerWidth, innerHeight) < 600;
     this.scene = new B3.Scene(this.engine);
     this.scene.useRightHandedSystem = true;
-    this.scene.clearColor = map.preset.theme === 'machine-crusade'
+    this.scene.clearColor = map.preset.theme === 'corrin-siege'
+      ? new B3.Color4(.063,.094,.125,1) : map.preset.theme === 'machine-crusade'
       ? new B3.Color4(.047,.086,.141,1) : map.preset.theme === 'butlerian-jihad'
       ? new B3.Color4(.10,.14,.19,1) : map.preset.theme === 'corrino-chronicles'
       ? new B3.Color4(.105,.12,.17,1) : map.preset.theme === 'harkonnen-chronicles'
@@ -61,6 +63,11 @@ class CampaignMapScene extends GameScene {
   }
   makeGeometry() {
     const M = B3.MeshBuilder, S = this.scene, P = this.map.preset;
+    if(P.theme==='corrin-siege') {
+      buildCorrinBattle(B3,S,(name,color)=>this.material(name,color),gfx(this.small).level!=='low' && gfx(this.small).level!=='low30');
+      this.makeMissionGeometry();
+      return;
+    }
     if(P.theme==='machine-crusade') {
       buildMachineCrusade(B3,S,(name,color)=>this.material(name,color),gfx(this.small).level!=='low' && gfx(this.small).level!=='low30');
       this.makeMissionGeometry();
@@ -186,7 +193,7 @@ class CampaignMapScene extends GameScene {
   }
   makeMissionGeometry() {
     const M=B3.MeshBuilder,S=this.scene,P=this.map.preset;
-    const road=this.material('route',P.theme==='machine-crusade'?'#d5c19b':P.theme==='butlerian-jihad'?'#9aaab0':P.theme==='conspiracy'?'#d8b37e':P.theme==='giedi'?'#aa8458':P.theme==='arrakeen'?'#efd098':'#d7ad69');
+    const road=this.material('route',P.theme==='corrin-siege'?'#d7b78a':P.theme==='machine-crusade'?'#d5c19b':P.theme==='butlerian-jihad'?'#9aaab0':P.theme==='conspiracy'?'#d8b37e':P.theme==='giedi'?'#aa8458':P.theme==='arrakeen'?'#efd098':'#d7ad69');
     const clear=this.material('cleared','#507f57');
     const ready=this.material('ready','#d9a74d');
     const locked=this.material('locked','#514b43');
@@ -222,14 +229,15 @@ class CampaignMapScene extends GameScene {
           ? [-46,49,-22,23] : this.map.preset.theme==='corrino-chronicles'
           ? [-54,54,-24,30] : this.map.preset.theme==='butlerian-jihad'
             ? [-61,62,-23,31] : this.map.preset.theme==='machine-crusade'
-              ? [-70,70,-23,30] : [-21,21,-12,13];
+              ? [-70,70,-23,30] : this.map.preset.theme==='corrin-siege'
+               ? [-66,70,-28,40] : [-21,21,-12,13];
     this.cx=clamp(this.cx,xmin,xmax); this.cz=clamp(this.cz,zmin,zmax);
     const q=this.radius*Math.sin(this.beta);
     this.cam.position.set(this.cx+q*Math.cos(this.alpha),
       this.radius*Math.cos(this.beta)+1.6,
       this.cz+q*Math.sin(this.alpha));
     // Raise Arrakeen's gaze so the palace crown stays inside short iPhone viewports.
-    this.cam.setTarget(new B3.Vector3(this.cx,this.map.preset.theme==='arrakeen'?4.2:this.map.preset.theme==='corrino-chronicles'?3.5:this.map.preset.theme==='butlerian-jihad'?6:this.map.preset.theme==='machine-crusade'?5.7:this.map.preset.theme==='conspiracy'||this.map.preset.theme==='harkonnen-chronicles'?2.1:0,this.cz+(this.map.preset.theme==='corrino-chronicles'?3:this.map.preset.theme==='butlerian-jihad'?4:this.map.preset.theme==='machine-crusade'?3:0)));
+    this.cam.setTarget(new B3.Vector3(this.cx,this.map.preset.theme==='arrakeen'?4.2:this.map.preset.theme==='corrino-chronicles'?3.5:this.map.preset.theme==='butlerian-jihad'?6:this.map.preset.theme==='corrin-siege'?5.8:this.map.preset.theme==='machine-crusade'?5.7:this.map.preset.theme==='conspiracy'||this.map.preset.theme==='harkonnen-chronicles'?2.1:0,this.cz+(this.map.preset.theme==='corrino-chronicles'?3:this.map.preset.theme==='butlerian-jihad'?4:this.map.preset.theme==='corrin-siege'?4:this.map.preset.theme==='machine-crusade'?3:0)));
     this.t0=performance.now(); this.dirty=true;
   }
   center(node, animate = true) {
@@ -344,7 +352,7 @@ class CampaignMapScene extends GameScene {
       // only nearby mission markers are shown; distant but technically
       // projectable labels would otherwise mix unrelated chapter numbers.
       // This is a world-space distance gate, never a fixed screen-grid.
-      const local=!['arrakeen','conspiracy','atreides-chronicles','harkonnen-chronicles','butlerian-jihad','machine-crusade'].includes(this.map.preset.theme)
+      const local=!['arrakeen','conspiracy','atreides-chronicles','harkonnen-chronicles','butlerian-jihad','machine-crusade','corrin-siege'].includes(this.map.preset.theme)
         || Math.hypot(node.x-this.cx,node.z-this.cz)<=Math.min(30,this.radius*.96);
       const visible=local&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.z>0&&p.z<1
         &&p.x>diameter/2+3&&p.y>diameter/2+3
@@ -377,7 +385,7 @@ class CampaignMapScene extends GameScene {
     // collision culling may hide mission 8 while retaining 7,9,10. Show only
     // one contiguous run of the actual world-projected pins, never an
     // artificial screen-space grid; scrolling reveals the other segments.
-    if(['atreides-chronicles','harkonnen-chronicles','butlerian-jihad','machine-crusade'].includes(this.map.preset.theme)&&shown.length>1){
+    if(['atreides-chronicles','harkonnen-chronicles','butlerian-jihad','machine-crusade','corrin-siege'].includes(this.map.preset.theme)&&shown.length>1){
       const ordered=[...shown].sort((a,b)=>a.node.number-b.node.number);
       const runs=[];
       for(const e of ordered){
