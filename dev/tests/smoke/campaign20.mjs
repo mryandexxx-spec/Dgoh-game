@@ -825,6 +825,83 @@ try {
     }
     console.log('PASS C4.12 Heart of Water real WebGL',w,h,gfx,JSON.stringify({sietchEntry}));
 
+
+    // C4.13 Light V «Годы в пустыне»: approved Empty Harvest Ring.
+    // Preserve all IDs, story and gameplay; validate actual WebGL phone layouts.
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="4"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="4"]').click());
+    await page.waitForSelector('.c20-world.empty-harvest.campaign20-3d-ready',{timeout:20000});
+    const checkHarvest=async(label)=>{
+      await page.waitForFunction(()=>[...document.querySelectorAll('.c20-world.empty-harvest .c20-pin')]
+        .some(el=>getComputedStyle(el).visibility==='visible'),{timeout:9000});
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.empty-harvest');
+        const all=[...world.querySelectorAll('.c20-pin')];
+        const visible=all.filter(p=>getComputedStyle(p).visibility==='visible');
+        const nums=visible.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const rect=world.getBoundingClientRect();
+        // Real Babylon world projections make rejected/colliding neighbor
+        // diagnostics visible even when only the selected marker is shown.
+        const B=window.__B3;
+        const scene=B?.EngineStore?.Instances?.flatMap(e=>e.scenes||[])
+          .find(s=>s.activeCamera?.name==='campaign-camera');
+        const projection=scene?[48,49].map(id=>{
+          const n=id===48?[51,13]:[64,2];
+          const pos=B.Vector3.Project(new B.Vector3(n[0],1.15,n[1]),
+            B.Matrix.IdentityReadOnly,scene.getTransformMatrix(),
+            new B.Viewport(0,0,world.clientWidth,world.clientHeight));
+          const el=all.find(e=>Number(e.dataset.c20node)===id);
+          return {id,x:+pos.x.toFixed(1),y:+pos.y.toFixed(1),
+            visible:getComputedStyle(el).visibility,transform:el.style.transform};
+        }):[];
+        const overlap=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3
+            &&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {
+          nums, projection, stage:[world.clientWidth,world.clientHeight], ids:all.map(p=>Number(p.dataset.c20node)),
+          boss:all.filter(p=>p.classList.contains('boss')).length,
+          canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          within:visible.every(p=>{const b=p.getBoundingClientRect();
+            return b.left>=rect.left+1&&b.right<=rect.right-1
+              &&b.top>=rect.top+1&&b.bottom<=rect.bottom-1;}),
+          overlap,scroll:document.querySelector('.c20').scrollHeight>document.querySelector('.c20').clientHeight+1,
+          pager:world.querySelectorAll('[data-c20step],.c20-mission-nav').length,
+          fallbackCoords:all.every(p=>p.style.getPropertyValue('--px')&&p.style.getPropertyValue('--py')),
+        };
+      });
+      assert.deepEqual(state.ids,Array.from({length:10},(_,i)=>i+40),'L:4 original IDs 40–49');
+      assert.equal(state.boss,1,'L:4 only mission 49 has boss marker');
+      assert.equal(state.canvas,true,'L:4 shared real WebGL mounted');
+      assert.equal(state.pager,0,'L:4 retains swipe v101; no new map pagination');
+      assert.equal(state.fallbackCoords,true,'L:4 interactive 2D fallback coordinates');
+      assert.equal(state.scroll,false,'L:4 has no horizontal or vertical DOM scroll');
+      assert.equal(state.within,true,label+' all labels inside phone viewport');
+      assert.deepEqual(state.overlap,[],label+' 50/60px targets do not overlap');
+      assert.ok(state.nums.length>=2&&state.nums.length<=4,label+' needs 2–4 neighbors '+JSON.stringify(state));
+      assert.ok(state.nums.every((n,i)=>i===0||n===state.nums[i-1]+1),
+        label+' must show a single contiguous run '+JSON.stringify(state));
+      return state;
+    };
+    await page.screenshot({path:path.join(shots,'empty-harvest-entry-'+w+'-'+gfx+'.png')});
+    const harvestEntry=await checkHarvest('Empty Harvest entry');
+    assert.ok(harvestEntry.nums.includes(10),'Late-save entry focuses the original boss ID 49');
+    for(const [id,name] of [[40,'gurney-convoy'],[41,'sardaukar'],
+      [42,'harvester-grave'],[43,'coriolis'],[44,'baron-trap'],
+      [45,'spice-vault'],[46,'maker-riders'],[47,'gurney-reunion'],
+      [48,'water-of-life'],[49,'rabban']]){
+      await page.evaluate(id=>document.querySelector('[data-c20node="'+id+'"]')?.click(),id);
+      await new Promise(resolve=>setTimeout(resolve,560));
+      const state=await checkHarvest('Empty Harvest '+name);
+      assert.ok(state.nums.includes(id-39),
+        'L:4 selected '+name+' mission must remain visible '+JSON.stringify(state));
+      if([40,42,43,46,47,48,49].includes(id))
+        await page.screenshot({path:path.join(shots,'empty-harvest-'+name+'-'+w+'-'+gfx+'.png')});
+    }
+    console.log('PASS C4.13 Empty Harvest Ring real WebGL',w,h,gfx,JSON.stringify({harvestEntry}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();

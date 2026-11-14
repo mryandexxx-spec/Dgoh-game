@@ -87,6 +87,31 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'muaddib-terrace',x:70,z:24,size:21},
     ]),
   }),
+  'L:4': Object.freeze({
+    id: 'empty-harvest-ring', title: 'Годы в пустыне · Кольцо пустой жатвы',
+    theme: 'empty-harvest', bounds: [-70,78,-38,36],
+    // Original Light-V missions 40–49. Connected arc around a spent spice basin.
+    // All mission markers stay on the playable ground; background machines
+    // and the Coriolis front sit away from tap targets.
+    camera: { target: [-58,0,-10], alpha: -1.28, beta: .97,
+      radius: 30, minRadius: 25, maxRadius: 60, turnLimit: .24 },
+    nodes: Object.freeze([
+      [-58,-10],[-46,-21],[-31,-27],[-16,-25],[-2,-16],
+      [10,-4],[21,10],[35,19],[51,13],[64,2],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'gurney-smuggler-convoy',x:-58,z:0,size:14},
+      {kind:'sardaukar-footprints',x:-46,z:-8,size:12},
+      {kind:'burning-harvesters',x:-31,z:-12,size:20},
+      {kind:'coriolis-wind-front',x:-16,z:30,size:23},
+      {kind:'baron-ruins-trap',x:-2,z:2,size:13},
+      {kind:'buried-spice-vault',x:10,z:10,size:16},
+      {kind:'maker-rider-crest',x:21,z:28,size:16},
+      {kind:'gurney-reunion-yard',x:35,z:29,size:15},
+      {kind:'water-of-life-outer-guard',x:51,z:25,size:16},
+      {kind:'rabban-last-extraction',x:64,z:17,size:26},
+    ]),
+  }),
   'D:1': Object.freeze({
     id: 'giedi-conspiracy', title: 'Заговор · Тихий трон',
     theme: 'conspiracy', bounds: [-48, 46, -24, 27],
