@@ -45,6 +45,12 @@ class CampaignMapScene extends GameScene {
     this.cx=map.preset.overview ? c.target[0] : (current?.x ?? c.target[0]);
     this.cz=map.preset.overview ? c.target[2] : (current?.z ?? c.target[2]);
     this.alpha = c.alpha; this.beta = c.beta; this.radius = c.radius;
+    // C4.10 final tableau is deep in Z: the normal near-view shows only #10.
+    // Widen ONLY the boss framing so #9 and #10 plus the opposing silhouettes
+    // remain visible on both phone viewports. Earlier chapters are untouched.
+    if(map.preset.theme==='sandworms-rebirth' && current?.boss){
+      this.beta=1.1;this.radius=44;
+    }
     this.t0 = performance.now(); this.dirty = true; this.pointers = new Map();
     this.cameraTween = null;
     this.cam = new B3.UniversalCamera('campaign-camera', new B3.Vector3(0, 30, 30), this.scene);
@@ -246,11 +252,15 @@ class CampaignMapScene extends GameScene {
       this.radius*Math.cos(this.beta)+1.6,
       this.cz+q*Math.sin(this.alpha));
     // Raise Arrakeen's gaze so the palace crown stays inside short iPhone viewports.
-    this.cam.setTarget(new B3.Vector3(this.cx,this.map.preset.theme==='arrakeen'?4.2:this.map.preset.theme==='corrino-chronicles'?3.5:this.map.preset.theme==='butlerian-jihad'?6:this.map.preset.theme==='sandworms-rebirth'?4.6:this.map.preset.theme==='corrin-siege'?5.8:this.map.preset.theme==='machine-crusade'?5.7:this.map.preset.theme==='conspiracy'||this.map.preset.theme==='harkonnen-chronicles'?2.1:0,this.cz+(this.map.preset.theme==='corrino-chronicles'?3:this.map.preset.theme==='butlerian-jihad'?4:this.map.preset.theme==='sandworms-rebirth'?3.5:this.map.preset.theme==='corrin-siege'?4:this.map.preset.theme==='machine-crusade'?3:0)));
+    this.cam.setTarget(new B3.Vector3(this.cx,this.map.preset.theme==='arrakeen'?4.2:this.map.preset.theme==='corrino-chronicles'?3.5:this.map.preset.theme==='butlerian-jihad'?6:this.map.preset.theme==='sandworms-rebirth'?(this.selectedId===209?5:4.6):this.map.preset.theme==='corrin-siege'?5.8:this.map.preset.theme==='machine-crusade'?5.7:this.map.preset.theme==='conspiracy'||this.map.preset.theme==='harkonnen-chronicles'?2.1:0,this.cz+(this.map.preset.theme==='corrino-chronicles'?3:this.map.preset.theme==='butlerian-jihad'?4:this.map.preset.theme==='sandworms-rebirth'?(this.selectedId===209?-8:3.5):this.map.preset.theme==='corrin-siege'?4:this.map.preset.theme==='machine-crusade'?3:0)));
     this.t0=performance.now(); this.dirty=true;
   }
   center(node, animate = true) {
     if(node)this.selectedId=node.id;
+    if(this.map.preset.theme==='sandworms-rebirth' && node){
+      this.radius=node.boss?44:this.map.preset.camera.radius;
+      this.beta=node.boss?1.1:this.map.preset.camera.beta;
+    }
     const x = node?.x ?? this.map.preset.camera.target[0];
     const z = node?.z ?? this.map.preset.camera.target[2];
     if (!animate) { this.cameraTween=null;this.cx=x;this.cz=z;this.applyCamera();return; }
