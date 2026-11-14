@@ -7,18 +7,38 @@
 // Первая установка (новый профиль, C): install не качает ассеты, докачка заполняет кэш ассетов целиком, каждый ассет с сервера — один раз.
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { createRequire } from 'node:module';
 import { serve } from '../lib/serve.mjs';
 
 const require = createRequire(import.meta.url);
 const puppeteer = require('puppeteer-core');
 const args = process.argv.slice(2), opt = (k, d = null) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
-const [A, B, C] = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--chrome').map(d => path.resolve(d));
+const [sourceA, B, C] = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--chrome').map(d => path.resolve(d));
+let A = sourceA;
 const chrome = opt('--chrome') || process.env.CHROME_PATH || ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'].find(f => fs.existsSync(f));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const swVer = d => /const (?:VER = '|CACHE = 'dune-goh-)([0-9a-f]+)'/.exec(fs.readFileSync(path.join(d, 'sw.js'), 'utf8'))[1];
 // фаза 5, шаг 5: список ассетов и ленивых (фолбэк-JPEG к KTX2) из sw.js — при обновлении качаются только новые неленивые
 const swList = (d, k) => { const m = new RegExp(`const ${k} = (?:new Set\\()?(\\[[^\\]]*\\])`).exec(fs.readFileSync(path.join(d, 'sw.js'), 'utf8')); return m ? JSON.parse(m[1]) : []; };
+// Infrastructure/docs-only changes can produce exactly the deployed cache version.
+// Exercise a real cache-generation upgrade anyway, using a temporary baseline;
+// the candidate and published root must remain byte-for-byte untouched.
+if (swVer(A) === swVer(B)) {
+  const sw = fs.readFileSync(path.join(A, 'sw.js'), 'utf8');
+  const shell = JSON.parse(/const SHELL = (\{[^\n]*\});/.exec(sw)[1]);
+  const old = swVer(A), fixtureVersion = (old[0] === '0' ? '1' : '0') + old.slice(1);
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'dune-sw-baseline-'));
+  process.on('exit', () => fs.rmSync(fixture, { recursive: true, force: true }));
+  for (const file of [...Object.keys(shell), ...swList(A, 'ASSETS')]) {
+    const target = path.join(fixture, file);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.copyFileSync(path.join(A, file), target);
+  }
+  fs.writeFileSync(path.join(fixture, 'sw.js'), sw.replace("const VER = '" + old + "'", "const VER = '" + fixtureVersion + "'"));
+  A = fixture;
+  console.log(`Identical baseline/candidate cache: temporary baseline ${fixtureVersion} → actual candidate ${old}`);
+}
 let LOG = []; const srv = await serve(A, { onReq: (f, c) => LOG.push([f, c]) });
 const url = p => srv.url(p).replace('127.0.0.1', 'localhost');   // SW регистрируется только на https или localhost
 let fails = 0; const check = (ok, msg) => { console.log(`${ok ? 'PASS' : 'FAIL'} ${msg}`); if (!ok) fails++; };

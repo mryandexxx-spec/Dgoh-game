@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { resourceGrowth } from '../lib/resource-growth.mjs';
+const cycle=(meshes,textures)=>({after:{meshes,textures}});
+assert.equal(resourceGrowth([cycle(10,3),cycle(20,4)]).ok,false,'two total cycles cannot prove stable resources');
+assert.equal(resourceGrowth([cycle(10,3),cycle(20,4),cycle(20,4)]).ok,true,'warm-up growth is allowed, measured cycles are stable');
+assert.equal(resourceGrowth([cycle(10,3),cycle(20,4),cycle(21,4)]).ok,false,'mesh leak after warm-up');
+assert.equal(resourceGrowth([cycle(10,3),cycle(20,4),cycle(20,5)]).ok,false,'texture leak after warm-up');
+assert.equal(resourceGrowth([cycle(10,3),cycle(20,4),cycle(21,4),cycle(20,4)]).ok,false,'an intermediate retained-resource spike is not hidden by final sample');
+assert.equal(resourceGrowth([cycle(10,3),cycle(20,4),cycle(19,3)]).ok,true);
+for(const sample of [undefined,{meshes:NaN,textures:1},{meshes:1,textures:Infinity},{meshes:-1,textures:1}])assert.equal(resourceGrowth([cycle(10,3),cycle(20,4),{after:sample}]).ok,false);
+assert.equal(resourceGrowth([]).ok,false);
+console.log('PASS resource growth: warm-up, distinct measured cycles, leaks, intermediate growth, invalid/missing data.');
