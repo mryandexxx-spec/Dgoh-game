@@ -368,6 +368,34 @@ function normalizeApprovedC412(src, current) {
   }
   return copy;
 }
+function normalizeApprovedRosterDp(src, current) {
+  const copy = structuredClone(src);
+  if (!current) return copy;
+  const allowed = new Set([
+    'view:squad', 'detail:paul', 'detail:duncan',
+    'detail:baron', 'detail:erasmus', 'item:paul:0'
+  ]);
+  const ring = /(<span class="hpt(?: legend)?) dp-(light|dark|mach)(" style="--fc:var\(--[^)]+\);--side:var\(--(light|dark|mach)\);--rim:)/g;
+  for (const screen of copy.screens) {
+    for (const key of ['view', 'overlay', 'overlay2']) {
+      const html = screen[key];
+      if (typeof html !== 'string') continue;
+      const matches = [...html.matchAll(ring)];
+      if (!allowed.has(screen.name) || key !== 'view') {
+        assert.equal(matches.length, 0, screen.name + ': DP ring appeared outside approved roster');
+        continue;
+      }
+      assert.ok(matches.length > 0, screen.name + ': expected newly awakened portrait rings');
+      screen[key] = html.replace(ring, (_m, prefix, dpSide, suffix, heroSide) => {
+        assert.equal(dpSide, heroSide, screen.name + ': DP ring must match hero side');
+        return prefix + suffix;
+      });
+      assert.ok(!/<span class="hpt[^"]* dp-/.test(screen[key]),
+        screen.name + ': no unapproved DP class remains');
+    }
+  }
+  return copy;
+}
 if (rest.includes('--update')) writeGolden('screens', out);
 else {
   validateV86Legend(out);
@@ -375,7 +403,7 @@ else {
   if (!baseline) throw new Error('screens golden baseline missing');
   const parsed = JSON.parse(baseline);
   const want = normalizeApprovedCampaign20(normalizeApprovedC412(normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGE1({ ...parsed.meta, screens: parsed.screens }, false))), false), false);
-  const got = normalizeApprovedCampaign20(normalizeApprovedC412(normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGearMemory(normalizeApprovedBH97(normalizeApprovedGE1(out, true)), true))), true), true);
+  const got = normalizeApprovedCampaign20(normalizeApprovedC412(normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGearMemory(normalizeApprovedBH97(normalizeApprovedGE1(normalizeApprovedRosterDp(out, true), true)), true))), true), true);
   if (!isDeepStrictEqual(want, got)) {
     const changed = want.screens.filter((v, i) => !isDeepStrictEqual(v, got.screens[i])).map(x => x.name);
     console.error('Unapproved golden screen differences:', changed.join(', '));

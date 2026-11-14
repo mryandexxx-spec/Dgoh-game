@@ -12,7 +12,10 @@ const canPromote = p => { const n = SHARDS_NEXT[p.stars]; return !!(p.stars && n
 // o: { lead } — ромб «Л» (лидер отряда)
 function ptRound(d, p, o = {}) {
   const locked = !p.stars;
-  let h = `<span class="hpt${locked ? ' locked' : ''}${d.legendary ? ' legend' : ''}" style="--fc:var(--${d.f[0]});--side:var(--${d.side});--rim:${locked ? '#3a3028' : TIER_COL[p.gear]}">`
+  // Другая память (ДП1+) добавляет цветное свечение поверх обода снаряжения.
+  // Легендарный золотой контур — отдельный CSS-слой, не замена кольцу стороны/ДП.
+  const dp = !locked && p.relic > 0 ? ` dp-${d.side === 'light' ? 'light' : d.side === 'dark' ? 'dark' : 'mach'}` : '';
+  let h = `<span class="hpt${locked ? ' locked' : ''}${d.legendary ? ' legend' : ''}${dp}" style="--fc:var(--${d.f[0]});--side:var(--${d.side});--rim:${locked ? '#3a3028' : TIER_COL[p.gear]}">`
     + `<span class="ring"></span><span class="rim">${figureSVG(d)}</span>`;
   if (locked) h += `<span class="lock">${LOCK_SVG}</span>`;
   else {
