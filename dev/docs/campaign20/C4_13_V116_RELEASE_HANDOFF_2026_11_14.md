@@ -22,4 +22,14 @@ MED 844×390 и LOW 667×375 landscape, 40–49 свайп, pinch/twist/recenter
 
 ## Статус
 
-**Готово к подтверждённой публикации уже подготовленной v116.** Статус «опубликовано» только после успешного Pages и root PWA v116.
+**v116 ОПУБЛИКОВАНА, Pages подтверждён.** Включает C4.13 (40–49) и утверждённые рамки ростера; исходные ID/награды/сохранения не менялись.
+
+## Фактические доказательства выпуска v116
+
+- [PR #83 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/83), [исправление одноразового YAML #85 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/85) `875867cd16c24aa7df2fb49422020257596d4e7f`.
+- [Одноразовый dispatcher #43643541981 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43643541981) с явным `workflow_dispatch publish=true`.
+- [Release CI #43643649804 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43643649804): `All required checks passed` и `Publish verified PWA to GitHub Pages` — SUCCESS; Golden, WebGL MED/LOW, PWA/offline, lifecycles и бюджеты пройдены.
+- Корневой publication commit **`70a97c83dcc0d4ff689f58d253756d40f847284c`**, `dev/version.json=116`; реальный root `app.js` **`v116 · a2fe3534af`**, `sw.js` **`const VER = 'a2fe3534af'`**.
+- [Отдельный Pages build and deployment #43644584536 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43644584536) на точном root SHA. Production: https://mryandexxx-spec.github.io/Dgoh-game/.
+- Одноразовый `.github/workflows/release-v116-once.yml` после публикации удалён в cleanup PR; постоянный gate `workflow_dispatch publish=true` в Validate сохранён. На физическом iPhone Safari FPS, нагрев и батарея пока не измерены.
+- Далее [C4.14 «Прибытие императора»](C4_14_AFTER_V116_HANDOFF_2026_11_15.md), художественный этап A.
