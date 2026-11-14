@@ -1,6 +1,10 @@
 # Campaign 2.0 — главный указатель (актуально на 2026-11-14)
 
-## Текущая точка — C4.12 «Сиетч Табр» (`L:3`, 30–39), v115 ОПУБЛИКОВАНА 14.11.2026
+## Текущая задача — C4.13 «Годы в пустыне» (`L:4`, 40–49), художественный этап A после v115
+
+**Начать с [Issue #80](https://github.com/mryandexxx-spec/Dgoh-game/issues/80)** и [handoff после v115](C4_13_AFTER_V115_HANDOFF_2026_11_14.md). Светлая V, уровни 31–42, канонический переход от принятия Полом имени Муад’Диб к долгой партизанской войне с Харконненами: поля пряности, комбайны, штормы, фримены на червях, судьба Гурни и Вода жизни. **Только художественный этап A:** сначала 2–3 самостоятельные концепции и проект трёх актов / 10 landmarks / MED+LOW на согласование. Пока **без feature-ветки/PR, правок `dev/src`, bump v115, merge или публикации**.
+
+## Последний релиз — C4.12 «Сиетч Табр» (`L:3`, 30–39), v115 ОПУБЛИКОВАНА 14.11.2026
 
 **14.11.2026 владелец разрешил выпуск v115.** Художественная концепция [«Сердце воды»](C4_12_HEART_OF_WATER_CONCEPT_2026_11_14.md) и настоящие WebGL MED/LOW приняты. [Реализация PR #78 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/78), code SHA `a25240b4`; [полный PR CI #43628714583 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43628714583). [Issue #76](https://github.com/mryandexxx-spec/Dgoh-game/issues/76) содержит решения владельца. **Релиз v115 завершён:** [release PR #79 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/79) (merge `ba3cd350`), [release PR CI #43630988857 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43630988857), [main CI + verified PWA publish #43631382200 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43631382200), [Pages deployment #43631500937 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43631500937). Root publication SHA `82b4ecad`, `app.js`/`sw.js`: **`v115 · 59b91969b0`**. [Полный v115 release handoff](C4_12_V115_RELEASE_HANDOFF_2026_11_14.md).
 
