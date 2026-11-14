@@ -5,6 +5,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Explicitly approve publishing the validated PWA to GitHub Pages'
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -899,7 +905,7 @@ jobs:
 
   deploy-pages:
     name: Publish verified PWA to GitHub Pages
-    if: ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.plan.result == 'success' && needs.gate.result == 'success' && needs.plan.outputs.mode != 'docs' }}
+    if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.publish == true && github.ref == 'refs/heads/main' && needs.plan.result == 'success' && needs.gate.result == 'success' && needs.plan.outputs.mode != 'docs' }}
     needs: [plan, gate]
     runs-on: ubuntu-24.04
     permissions:
