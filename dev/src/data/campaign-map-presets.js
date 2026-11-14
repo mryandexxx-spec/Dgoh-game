@@ -59,6 +59,29 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'imperial-gate',x:35,z:15,size:14},
     ]),
   }),
+  'C:6': Object.freeze({
+    id: 'chronicles-sandworms-rebirth', title: 'Хроники · Пульс глубин',
+    theme: 'sandworms-rebirth', bounds: [-62,58,-40,42],
+    // Original global IDs 200–209, one S-shaped live desert basin.
+    camera: { target: [-48,0,22], alpha: -1.22, beta: .91,
+      radius: 28, minRadius: 24, maxRadius: 56, turnLimit: .24 },
+    nodes: Object.freeze([
+      [-48,22],[-35,30],[-19,26],[-7,13],[-9,-4],
+      [3,-18],[20,-27],[36,-20],[43,-3],[38,15],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'machine-needles',x:-50,z:38,size:17},
+      {kind:'ghost-ship-wake',x:-35,z:36,size:14},
+      {kind:'tleilaxu-ghola-memory',x:-19,z:36,size:15},
+      {kind:'glass-burn',x:-7,z:24,size:16},
+      {kind:'sandtrout-nursery',x:-9,z:7,size:12},
+      {kind:'sisterhood-sails',x:3,z:-9,size:14},
+      {kind:'face-dancer-masks',x:20,z:-17,size:12},
+      {kind:'human-last-circle',x:36,z:-8,size:16},
+      {kind:'new-worm-ridges',x:43,z:6,size:17},
+      {kind:'omnius-crest-and-worm',x:38,z:35,size:25},
+    ]),
+  }),
   'C:5': Object.freeze({
     id: 'chronicles-corrin-siege', title: 'Хроники · Разорванный венец',
     theme: 'corrin-siege', bounds: [-68,72,-30,42],

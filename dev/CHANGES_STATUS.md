@@ -10,6 +10,9 @@
 
 ## Открыто
 
+**C4.10 C:6 «Песчаные черви Дюны» — Draft, не выпущено:** художественная концепция «Пульс глубин» утверждена («Ок»). Новая диорама и MED/LOW WebGL приёмка на реальных кадрах обязательны до выпуска. Исходные 200–209, все 210 миссий, экономика и сохранения не меняются. Физическая Safari FPS/нагрев проверка открыта. [Issue #69](https://github.com/mryandexxx-spec/Dgoh-game/issues/69), [концепция](docs/campaign20/C4_10_PULSE_OF_DEPTHS_CONCEPT_2026_11_14.md).
+
+
 **C4.9 v112 — выпуск разрешён 14.11.2026, кандидат до main CI и Pages; физическая Safari-проверка открыта:** владелец принял реальный WebGL MED 844×390 / LOW 667×375 («Все ок»), затем отдельно разрешил релиз («Выпускаем»). [PR #68](https://github.com/mryandexxx-spec/Dgoh-game/pull/68), [Issue #67](https://github.com/mryandexxx-spec/Dgoh-game/issues/67). Художественно принятый [CI #43579708606](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43579708606) **SUCCESS**, [восемь WebGL кадров](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43579708606/artifacts/14108245684). На PR HEAD с `v112` заново необходимы ВСЕ обязательные SUCCESS, затем squash merge и **main Validate + встроенный Pages publish + фактический Pages deployment**. До их подтверждения не называть v112 опубликованной. После публикации проверить на iPhone Safari свайп v101, pinch/twist/recenter, 190–199, миссии/бой/симуляцию, 2D fallback, сохранения, FPS и нагрев; физических измерений ещё нет. [Release handoff](docs/campaign20/C4_9_V112_RELEASE_HANDOFF_2026_11_14.md).
 
 
