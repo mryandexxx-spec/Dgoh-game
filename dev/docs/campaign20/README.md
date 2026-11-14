@@ -1,16 +1,16 @@
 # Campaign 2.0 — главный указатель (актуально на 2026-11-14)
 
-**Статус:** C1–C3 и C4.1–C4.6 опубликованы до v109. **C4.7 `C:3` «Батлерианский джихад» — релиз v110 разрешён владельцем 14.11.2026.** Художественная концепция и реальные WebGL MED/LOW утверждены («Ок»). [PR #62](https://github.com/mryandexxx-spec/Dgoh-game/pull/62), [концепция](C4_7_BUTLERIAN_JIHAD_CONCEPT_2026_11_14.md), [v110 handoff](C4_7_V110_RELEASE_HANDOFF_2026_11_14.md). Исправление HUD от [issue #63](https://github.com/mryandexxx-spec/Dgoh-game/issues/63) включено; полный [PR CI #43520953114](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43520953114) SUCCESS. **Факт публикации подтверждается только отдельным main-CI и Pages; до этого статус — release candidate.**
+**Статус:** C1–C3 и C4.1–C4.7 опубликованы до **v110**, main CI и Pages подтверждены. **C4.8 `C:4` «Крестовый поход машин» — утверждена, релиз v111 разрешён владельцем 14.11.2026 («Выпускай»).** До окончания main CI и Pages v111 остаётся release candidate. [PR #66](https://github.com/mryandexxx-spec/Dgoh-game/pull/66), [художественная концепция](C4_8_MACHINE_CRUSADE_CONCEPT_2026_11_14.md), [handoff v111](C4_8_V111_RELEASE_HANDOFF_2026_11_14.md).
 
 **Основная ветка:** `main`; для новых доработок создавать отдельную ветку и Draft PR, релиз — только после согласования.
 
-## C4.8 · Крестовый поход машин — согласованная концепция, Draft PR (14.11.2026)
+## C4.8 · Крестовый поход машин — релиз-кандидат v111, выпуск разрешён (14.11.2026)
 
-**Этап A утверждён владельцем («Ок»).** Концепция «Конвой непокорённых»: три акта межпланетной военной диорамы, оригинальные миссии C:4 180–189, уровни 52–64. [Документ концепции](C4_8_MACHINE_CRUSADE_CONCEPT_2026_11_14.md), [Issue #65](https://github.com/mryandexxx-spec/Dgoh-game/issues/65), [Draft PR #66](https://github.com/mryandexxx-spec/Dgoh-game/pull/66). **Реализация и CI в работе; без разрешения владельца нельзя merge, повышать версию и публиковать Pages.**
+Владелец художественно принял «Конвой непокорённых» (C:4 180–189, уровни 52–64), затем отдельно разрешил выпуск («Выпускай»). [PR #66](https://github.com/mryandexxx-spec/Dgoh-game/pull/66), [концепция](C4_8_MACHINE_CRUSADE_CONCEPT_2026_11_14.md), [CI #43566991080 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43566991080), [MED/LOW WebGL](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43566991080/artifacts/14103037144), [release handoff v111](C4_8_V111_RELEASE_HANDOFF_2026_11_14.md). Перед публикацией необходим CI на версии v111, а после merge — SUCCESS main CI и Pages.
 
-## C4.7 · Батлерианский джихад — v110 release candidate (14.11.2026)
+## C4.7 · Батлерианский джихад — v110 опубликована (14.11.2026)
 
-Художественно принято по реальным WebGL MED/LOW, разрешено выпустить владельцем («CI прошел, выпускай»). Включены оригинальные 170–179 и исправление 3D world HUD. [Release handoff](C4_7_V110_RELEASE_HANDOFF_2026_11_14.md) и [PR #62](https://github.com/mryandexxx-spec/Dgoh-game/pull/62). Итоговый main-CI/Pages требуется проверить после merge.
+Художественно принято по реальным WebGL MED/LOW, разрешено выпустить владельцем («CI прошел, выпускай»). Включены оригинальные 170–179 и исправление 3D world HUD. [Release handoff](C4_7_V110_RELEASE_HANDOFF_2026_11_14.md) и [PR #62](https://github.com/mryandexxx-spec/Dgoh-game/pull/62). [Main CI #43524991698](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43524991698) и [Pages #43526439762](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43526439762) завершились SUCCESS.
 
 ## C4.6 · Дом Коррино — v109 опубликована и принята (13.11.2026)
 
