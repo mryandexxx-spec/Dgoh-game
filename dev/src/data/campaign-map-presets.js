@@ -87,6 +87,31 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'muaddib-terrace',x:70,z:24,size:21},
     ]),
   }),
+  'L:5': Object.freeze({
+    id: 'mirror-of-padishah', title: 'Прибытие императора · Зеркало Падишаха',
+    theme: 'imperial-salt', bounds: [-74,78,-32,41],
+    // Original Light VI global IDs 50–59: landing court, intrigue and the
+    // intact Shield Wall's last military parade. The invasion is L:6 only.
+    // The connected salt pan is traversed with approved v101 pan/pinch/twist.
+    camera: { target: [-60,0,-15], alpha: -1.36, beta: .96,
+      radius: 33, minRadius: 25, maxRadius: 66, turnLimit: .24 },
+    nodes: Object.freeze([
+      [-60,-15],[-47,-8],[-34,-1],[-20,-8],[-7,2],
+      [7,-4],[20,7],[33,-1],[47,-10],[63,4],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'imperial-reception',x:-61,z:3,size:20},
+      {kind:'grounded-padishah-frigate',x:-51,z:31,size:34},
+      {kind:'shield-wall-field-tents',x:-34,z:24,size:24},
+      {kind:'fenring-secret-watch',x:-19,z:26,size:14},
+      {kind:'gom-jabbar-chamber',x:-7,z:25,size:12},
+      {kind:'salusa-guard-watch',x:8,z:22,size:18},
+      {kind:'mohiam-pavilion',x:20,z:23,size:12},
+      {kind:'landsraad-assembly',x:34,z:20,size:20},
+      {kind:'fremen-storm-outlook',x:47,z:19,size:15},
+      {kind:'imperial-final-legion-parade',x:62,z:20,size:28},
+    ]),
+  }),
   'L:4': Object.freeze({
     id: 'empty-harvest-ring', title: 'Годы в пустыне · Кольцо пустой жатвы',
     theme: 'empty-harvest', bounds: [-70,78,-38,36],
