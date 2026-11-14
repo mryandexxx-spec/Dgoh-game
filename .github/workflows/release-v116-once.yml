@@ -1,0 +1,32 @@
+name: One-time owner-approved C4.13 v116 publication
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - dev/docs/campaign20/C4_13_V116_RELEASE_HANDOFF_2026_11_14.md
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  publish-v116-once:
+    name: Explicitly dispatch approved v116 Pages publication
+    if: ${{ github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release(campaign): publish v116') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Guard version and previous production before one-time publish dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(tr -d '\n' < dev/version.json)" = '{"v":116}'
+          grep -Fq "const VER = '59b91969b0'" sw.js
+          test -f dev/src/render3d/scenes/campaign-empty-harvest.js
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/validate-pwa.yml/dispatches" \
+            -f ref=main -f 'inputs[publish]=true'
+          echo "Explicit owner-approved v116 publish dispatch submitted for ${GITHUB_SHA}"
