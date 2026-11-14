@@ -1,5 +1,5 @@
 // 3D-смоук (фаза 3b, шаг 1): реальный WebGL (SwiftShader), цикл лагерь → окно героя → бой → выход ×N.
-//   node tests/smoke/3d.mjs <game.html> [--cycles 5] [--phone] [--shots dir] [--out file.json] [--chrome path] [--strict] [--gfx high|med|low] [--scene canyon|court|ruins…]
+//   node tests/smoke/3d.mjs <game.html> [--cycles 5] [--phone] [--shots dir] [--out file.json] [--chrome path] [--strict] [--resource-strict] [--gfx high|med|low] [--scene canyon|court|ruins…]
 //   node tests/smoke/3d.mjs <game.html> --tti 5 [--phone] [--net wifi|4g|none] [--cpu 3] — время до интерактивного лобби (фаза 4, шаг 5):
 //     папка страницы отдаётся по HTTP с gzip, каждый прогон — новый контекст без кэша; медиана: lobby (появилось лобби), tti (setTimeout(0) после него),
 //     b3 (готов Babylon), camp3d (смонтирован 3D-лагерь), load; плюс размер страницы и чанка
@@ -11,6 +11,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { serve } from '../lib/serve.mjs';
+import { resourceGrowth } from '../lib/resource-growth.mjs';
 
 const require = createRequire(import.meta.url);
 const puppeteer = require('puppeteer-core');
@@ -187,19 +188,23 @@ for (let c = 0; c < CYCLES; c++) {
 await browser.close();
 
 const last = cycles[cycles.length - 1], first = cycles[0];
+const growth = resourceGrowth(cycles);
 const maxCtx = Math.max(...cycles.flatMap(c => [c.camp.contexts, c.hero.contexts, c.battle.contexts, c.after.contexts]));
 const crit = {
-  'один WebGL-контекст': maxCtx <= 1,
+  'один WebGL-контекст': maxCtx === 1,
   'нет компиляций после wake': cycles.every(c => c.compilesAfterWake === 0),
   'листание героев без компиляций': cycles.every(c => !c.heroNavCompiles),
   'лагерь ↔ бой ≤ 400 мс': cycles.every(c => c.enterMs >= 0 && c.enterMs <= 400 && c.exitMs >= 0 && c.exitMs <= 400),
-  'нет роста meshes/textures': cycles.length < 2 || (last.after.meshes <= cycles[1].after.meshes && last.after.textures <= cycles[1].after.textures),
+  'нет роста meshes/textures': growth.ok,
   'нет ошибок консоли': errors.length === 0,
 };
-const res = { html: path.basename(html), mode: PHONE ? 'phone' : 'desktop', cycles: CYCLES, start, maxCtx, crit, errors: errors.slice(0, 20), cycleData: cycles };
+const res = { html: path.basename(html), mode: PHONE ? 'phone' : 'desktop', cycles: CYCLES, start, maxCtx, growth, crit, errors: errors.slice(0, 20), cycleData: cycles };
 console.log(`\n${res.mode}: контекстов макс ${maxCtx}; meshes ${first.after.meshes}→${last.after.meshes}, textures ${first.after.textures}→${last.after.textures}, materials ${first.after.materials}→${last.after.materials}; ошибок ${errors.length}`);
+console.log('Resource samples after warm-up:', JSON.stringify(growth));
 for (const [k, v] of Object.entries(crit)) console.log(`${v ? 'PASS' : 'FAIL'} ${k}`);
 if (errors.length) console.log(errors.slice(0, 5).join('\n'));
 if (OUT) { fs.mkdirSync(path.dirname(OUT), { recursive: true }); fs.writeFileSync(OUT, JSON.stringify(res, null, 1)); }
 await browser.close(); await SRV.close();   // фаза 5: иначе HTTP-сервер держит процесс
 if (has('--strict') && Object.values(crit).some(v => !v)) process.exit(1);
+
+if (has('--resource-strict') && ['один WebGL-контекст', 'нет роста meshes/textures', 'нет ошибок консоли'].some(k => !crit[k])) process.exitCode = 1;
