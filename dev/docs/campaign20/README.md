@@ -4,6 +4,10 @@
 
 **Основная ветка:** `main`; для новых доработок создавать отдельную ветку и Draft PR, релиз — только после согласования.
 
+## C4.9 · Битва за Коррин — этап B (Draft, 14.11.2026)
+
+Художественная концепция **«Разорванный венец»** утверждена владельцем («Ок»). Ветка `feat/campaign20-corrin-battle-20261114`; десять исходных 190–199, единая планетарная осада, орбитальный Хретгир, падение внешнего Всеразума в 196 и финальное ядро в 199. [Утверждённая концепция и приёмка](C4_9_CORRIN_BATTLE_CONCEPT_2026_11_14.md), [Issue #67](https://github.com/mryandexxx-spec/Dgoh-game/issues/67). **Не выпущено; merge/Pages только по отдельному разрешению.**
+
 ## C4.8 · Крестовый поход машин — релиз-кандидат v111, выпуск разрешён (14.11.2026)
 
 Владелец художественно принял «Конвой непокорённых» (C:4 180–189, уровни 52–64), затем отдельно разрешил выпуск («Выпускай»). [PR #66](https://github.com/mryandexxx-spec/Dgoh-game/pull/66), [концепция](C4_8_MACHINE_CRUSADE_CONCEPT_2026_11_14.md), [CI #43566991080 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43566991080), [MED/LOW WebGL](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43566991080/artifacts/14103037144), [release handoff v111](C4_8_V111_RELEASE_HANDOFF_2026_11_14.md). Перед публикацией необходим CI на версии v111, а после merge — SUCCESS main CI и Pages.
