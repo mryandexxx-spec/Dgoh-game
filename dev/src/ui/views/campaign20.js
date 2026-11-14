@@ -122,7 +122,7 @@ function mapHtml(setSel){
   const side=ck!=='C'?`<span class="c20-sides"><button class="${ck==='L'?'on light':''}" data-c20side="L">Светлые</button><button class="${ck==='D'?'on dark':''}" data-c20side="D">Тёмные</button></span>`:'';
   const picker=chapterPicker?`<div class="c20-picker">${chapters.map((ch,j)=>`<button data-c20chapter="${j}" ${nodeOpen(chapNodes(ck,j)[0])?'':'disabled'} class="${j===c?'on':''}">${ROM7[j]} · ${esc(ch.t)}</button>`).join('')}</div>`:'';
   const markers=map?map.nodes.map(p=>`<button class="c20-pin ${p.open?'':'locked'} ${p.boss?'boss':''} ${p.stars?'passed':''} ${p.id===selected?'on':''}"
-    style="--px:${map.preset.theme==='butlerian-jihad'?(p.x+63)/128*100:map.preset.theme==='corrino-chronicles'?(p.x+57)/114*100:(p.x+28)/56*100}%;--py:${map.preset.theme==='butlerian-jihad'?(p.z+25)/58*100:map.preset.theme==='corrino-chronicles'?(p.z+27)/59*100:(p.z+18)/36*100}%"
+    style="--px:${map.preset.theme==='machine-crusade'?(p.x+72)/144*100:map.preset.theme==='butlerian-jihad'?(p.x+63)/128*100:map.preset.theme==='corrino-chronicles'?(p.x+57)/114*100:(p.x+28)/56*100}%;--py:${map.preset.theme==='machine-crusade'?(p.z+25)/57*100:map.preset.theme==='butlerian-jihad'?(p.z+25)/58*100:map.preset.theme==='corrino-chronicles'?(p.z+27)/59*100:(p.z+18)/36*100}%"
     data-c20node="${p.id}" title="${esc(p.title)}" aria-label="Миссия ${p.number}: ${esc(p.title)}">
     <b>${p.number}</b><small>${p.stars?'★'.repeat(p.stars):p.open?'◆':'⌑'}</small></button>`).join(''):'';
   const old=map?'':`<p class="c20-pending">3D-карта этой главы пока готовится. Можно продолжать играть через прежнюю кампанию.</p><button class="btn" data-c20legacy="1">Открыть классическую карту</button>`;
