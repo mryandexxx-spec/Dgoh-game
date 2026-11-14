@@ -68,8 +68,8 @@ export function buildSietchTabr(B3, scene, material, detail = true) {
   // A continuous landform with nearly level ground at every world-space marker.
   // The northern ridge forms the sliced-off cave roof; the southern side opens
   // into the player's camera. No occluding complete ceiling and no RTT/shadows.
-  const nodes=[[-48,-19],[-41,-4],[-29,10],[-14,16],[-1,4],
-    [12,-9],[25,-20],[39,-12],[52,2],[66,11]];
+  const nodes=[[-48,-19],[-41,-4],[-29,10],[-14,9],[-1,4],
+    [12,-2],[25,-20],[39,-12],[52,2],[66,11]];
   const ground=M.CreateGround('Tabr continuous cave-to-dawn terrain',{
     width:176,height:88,subdivisions:detail?36:23,updatable:true},scene);
   const v=ground.getVerticesData(B3.VertexBuffer.PositionKind);
