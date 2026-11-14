@@ -55,6 +55,15 @@ export function buildMachineCrusade(B3, scene, material, detail = true) {
   cyl('act I dark cut stone',-50,-2.7,8,42,.7,mats.dark,9);
   box('act I narrow human landing ledge',-62,-.13,-3,18,.3,8,mats.ivory);
   box('act I Ginaz cliff shelf',-36,.1,13,17,.9,17,mats.rock);
+  // MED/LOW review: the opening camera looks past x=-62. Complete the
+  // machine-ship silhouette beyond the first node without inventing missions.
+  box('180 outer broken machine hull',-82,-.95,6,36,.55,25,mats.dark);
+  box('180 derelict battleship superstructure',-84,4.3,19,17,8,9,mats.hull);
+  for(const x of [-94,-87,-80,-73]){
+    const rib=box('180 giant ship dorsal frame',x,9.2,22,1.8,11.5,4,mats.steel);
+    rib.rotation.z=(x+85)*.018;
+    box('180 derelict ship signal',x,8.4,19.75,.3,5.2,.12,mats.blue);
+  }
 
   box('act II narrow shield carrier',-2,-.9,9,52,1.3,26,mats.hull);
   box('act II upper steel flight deck',-2,-.12,7,49,.25,18,mats.steel);
@@ -67,14 +76,22 @@ export function buildMachineCrusade(B3, scene, material, detail = true) {
   box('act III armoured centre ridge',48,.05,17,38,.7,11,mats.hull);
   box('act III offset command deck',59,.15,21,17,.7,15,mats.steel);
   for(const x of [30,41,52,65])box('act III broken rail',x,1.7,27,4.2,3.3,.9,mats.hull);
+  // This distant machine carrier fills the side beyond mission 189; it is
+  // clearly fleet architecture, NOT the final Omnius throne or another level.
+  box('189 extended fleet carrier deck',80,-.85,9,41,.55,27,mats.dark);
+  box('189 distant carrier spinal hull',82,1.1,23,34,3.2,9,mats.hull);
+  for(const x of [70,81,92]){
+    box('189 distant capital ship fin',x,6.3,26,3,8.5,4.2,mats.hull);
+    box('189 distant red warning slit',x,7,23.7,1.1,5,.22,mats.red);
+  }
 
   // The route crosses actual gaps, but does not fill them with one continuous terrain.
   span('convoy bridge from Ginaz',-29,-1,-25,2,.04,.85,mats.ivory,.14);
   span('convoy bridge toward broken fleet',25,0,30,1,.04,.85,mats.blue,.14);
   // Three large planet silhouettes are scenery, well behind the interactive lane.
-  sphere('Arrakis distant amber planet',-48,22,34,17,mats.spice,detail?14:8);
-  sphere('Ginaz pale horizon',-32,24,39,11,mats.rock,8);
-  sphere('red machine frontier',54,23,43,16,mats.red,detail?14:8);
+  sphere('Arrakis distant amber planet',-48,16,34,17,mats.spice,detail?14:8);
+  sphere('Ginaz pale horizon',-32,18,39,11,mats.rock,8);
+  sphere('red machine frontier',76,15,42,16,mats.red,detail?14:8);
 
   // 180 — Vorian: a split machine vessel faces a little warm human bridge.
   const wreck=box('180 machine ship broken spine',-66,6.5,17,11,12,12,mats.dark);
@@ -202,5 +219,14 @@ export function buildMachineCrusade(B3, scene, material, detail = true) {
   for(let k=0;k<(detail?4:2);k++){
     box('189 threatening fleet silhouette',45+k*7,10.5+(k%2)*2.4,38,5.7,1.9,2.3,mats.dark);
     box('189 machine fleet signal',45+k*7,10.4+(k%2)*2.4,36.8,3.2,.26,.18,mats.red);
+  }
+  // Genuine 844/667 WebGL review: the tall cymek head was cut by the HUD.
+  // Shorten Agamemnon only, preserving the boss marker and the existing camera.
+  // Geometry is adjusted once during construction, never on the frame loop.
+  for(const mesh of scene.meshes)if(
+    /^(189 Agamemnon|189 human brain|189 helmet|189 cymek|189 foot)/.test(mesh.name)
+  ){
+    mesh.position.y *= .73;
+    mesh.scaling.y *= .73;
   }
 }
