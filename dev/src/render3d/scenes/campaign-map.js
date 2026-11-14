@@ -61,7 +61,10 @@ class CampaignMapScene extends GameScene {
       this.beta=1.06;this.radius=38;
     }
     if(map.preset.theme==='empty-harvest' && current?.boss){
-      this.beta=1.06;this.radius=36;
+      // Last two mission markers need separated X projections on phone.
+      // The controlled oblique angle stays inside the original twist limit.
+      this.alpha=map.preset.camera.alpha-.21;
+      this.beta=1.06;this.radius=34;
     }
     if(map.preset.theme==='escape-rift' && current?.boss){
       this.beta=1.03;this.radius=38;
@@ -302,7 +305,8 @@ class CampaignMapScene extends GameScene {
       this.beta=node.boss?1.06:this.map.preset.camera.beta;
     }
     if(this.map.preset.theme==='empty-harvest' && node){
-      this.radius=node.boss?36:this.map.preset.camera.radius;
+      if(node.boss)this.alpha=this.map.preset.camera.alpha-.21;
+      this.radius=node.boss?34:this.map.preset.camera.radius;
       this.beta=node.boss?1.06:this.map.preset.camera.beta;
     }
     if(this.map.preset.theme==='escape-rift' && node){
