@@ -67,7 +67,7 @@ export const CAMPAIGN_MAPS = Object.freeze({
       radius: 29, minRadius: 25, maxRadius: 62, turnLimit: .24 },
     nodes: Object.freeze([
       [-56,-14],[-43,-7],[-30,-2],[-19,9],[-6,3],
-      [7,-7],[21,-3],[34,8],[45,2],[58,15],
+      [7,-3],[21,3],[34,9],[45,11],[58,15],
     ]),
     landmarks: Object.freeze([
       {kind:'league-fleet',x:-56,z:9,size:16},
