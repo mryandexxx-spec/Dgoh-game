@@ -50,3 +50,7 @@
 ### Разрешение на выпуск — v113 (14.11.2026)
 
 После художественной приёмки «Все ок» владелец **отдельно** дал прямую команду **«Выпускай»**. Снято художественное ограничение на слияние/публикацию. Последовательность выпуска: `dev/version.json` → 113, полный PR CI на release SHA, ready for review, squash merge, полный Validate на `main`, его проверенный build → Pages. Не объявлять релиз завершённым до реальных SUCCESS GitHub Actions и Pages. Физическая Safari-проверка FPS/нагрева остаётся последующим этапом.
+
+### Подтверждённая публикация v113 (14.11.2026)
+
+После отдельного «Выпускай» глава опубликована: [PR #71 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/71), [PR CI SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43592759733), [main CI + publish SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43593325880), [Pages deployment SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43593921987) на PWA SHA `2682c3f9d290`. Версия в опубликованном app.js — `v113 · db25b7661b`. Физический Safari FPS/нагрев не измерены. [Полный release handoff](C4_10_V113_RELEASE_HANDOFF_2026_11_14.md).

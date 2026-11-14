@@ -25,4 +25,11 @@
 В Safari/PWA открыть Хроники `C:6`, 200–209; убедиться в последовательности номеров (1–10) через свайп; проверить миссию/бой/симуляцию/возврат, pinch/twist/recenter, фарм-переходы, fallback без WebGL, SW/offline и сохранение прогресса. 10–15 минут FPS/нагрев/батарея — отдельная физическая проверка; Chromium SwiftShader не доказательство реального iPhone FPS.
 
 ## Релизный статус
-**ПЕРЕД PUBLISH: release candidate v113.** После merge/main Validate/Pages обновить фактические идентификаторы и окончательный статус в PR #71 и Issue #69.
+**ОПУБЛИКОВАНО: v113, 14.11.2026.** Фактические подтверждения:
+- [PR #71](https://github.com/mryandexxx-spec/Dgoh-game/pull/71) **MERGED** (squash) commit `caef37696791b5701f12ebdb9365fd82f49c1b68`. Ветка release candidate commit `d439ec16cfab6a383c8b31f6abf003a5db1d826a`.
+- [PR Validate #43592759733](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43592759733) **SUCCESS**, attempt 1 на точном v113 HEAD, обязательный gate зелёный.
+- [Main Validate + Publish #43593325880](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43593325880) **SUCCESS**, включая verified SHA-256, публикацию exact artifact и deploy-pages.
+- Публикационный root-PWA commit `2682c3f9d290624a0561cb1da16b41472b6cf565` с прямым parent merge SHA; message `Publish verified PWA from CI artifact`. В опубликованном `app.js` **`v113 · db25b7661b`**.
+- [Pages build and deployment #43593921987](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43593921987) **SUCCESS** на публикационном SHA `2682c3f9d290624a0561cb1da16b41472b6cf565`, jobs `build/deploy/report-build-status` SUCCESS.
+- Финальная игра: https://mryandexxx-spec.github.io/Dgoh-game/. Среда Pages сообщает успешный deployment; физическая проверка в Safari остаётся задачей владельца.
+
