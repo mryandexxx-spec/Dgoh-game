@@ -55,6 +55,9 @@ class CampaignMapScene extends GameScene {
     if(map.preset.theme==='sandworms-rebirth' && current?.boss){
       this.beta=1.1;this.radius=44;
     }
+    if(map.preset.theme==='sietch-water' && current?.boss){
+      this.beta=1.06;this.radius=38;
+    }
     if(map.preset.theme==='escape-rift' && current?.boss){
       this.beta=1.03;this.radius=38;
     }
@@ -283,8 +286,8 @@ class CampaignMapScene extends GameScene {
       this.beta=node.boss?1.1:this.map.preset.camera.beta;
     }
     if(this.map.preset.theme==='sietch-water' && node){
-      this.radius=node.boss?34:this.map.preset.camera.radius;
-      this.beta=node.boss?1.01:this.map.preset.camera.beta;
+      this.radius=node.boss?38:this.map.preset.camera.radius;
+      this.beta=node.boss?1.06:this.map.preset.camera.beta;
     }
     if(this.map.preset.theme==='escape-rift' && node){
       this.radius=node.boss?38:this.map.preset.camera.radius;
