@@ -1,38 +1,40 @@
-// Conservative CI selection: only a positive documentation allowlist avoids full CI.
 import fs from 'node:fs';
-import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-
-const SHA = /^[a-f0-9]{40}$/;
-export function classify(paths, { forceFull = false } = {}) {
-  const docs = p => /^(?:README\.md|dev\/(?:README|ARCHITECTURE|CHANGES_STATUS)\.md)$/.test(p)
-    || /^dev\/docs\/.+\.(?:md|html|png|jpg|jpeg|webp|svg)$/.test(p)
-    || p === 'dev/docs/ci/AUDIT_EVIDENCE_2026_11_14.json';
-  const documentation = !forceFull && paths.length > 0 && paths.every(docs);
-  const mode = documentation ? 'docs' : 'full';
-  // Full is also the fallback for unknown paths, so it includes real MED/LOW A/B.
-  return { mode, arena_ab: !documentation, reason: documentation ? 'Only allowlisted documentation changed' : 'Code, infrastructure, unknown/empty diff, or forced full run', paths };
+import { classify, validatePlan, RELEASE } from './ci-policy.mjs';
+import { inputs, changedPaths, campaignRegistryOnly, git } from './ci-inputs.mjs';
+import { findProof } from './ci-proof.mjs';
+export { classify, changedPaths };
+export async function planForEvent(eventName,event,head,cwd=process.cwd(),{lookup=findProof,env=process.env}={}) {
+  const key=inputs(cwd);
+  const base=eventName==='pull_request'?event.pull_request?.base?.sha:event.before;
+  let plan;
+  if(!['pull_request','push'].includes(eventName)) plan=classify([],{forceFull:true});
+  else {
+    try {
+      const paths=changedPaths(base,head,cwd);
+      let campaignRegistry=false;
+      if(paths.includes('dev/tools/split.config.mjs')) {
+        try {campaignRegistry=campaignRegistryOnly(base,head,cwd);} catch {}
+      }
+      plan=classify(paths,{campaignRegistry});
+    } catch {plan={...classify([],{forceFull:true}),reason:'Unavailable diff; full validation'};}
+  }
+  plan={...plan,...key};
+  if(plan.mode==='docs'||!['pull_request','push'].includes(eventName))return validatePlan(plan);
+  let proof;
+  try { proof=await lookup({eventName,event,head,repo:env.GITHUB_REPOSITORY,runId:env.GITHUB_RUN_ID,token:env.GITHUB_TOKEN,...key,required:plan.groups}); }
+  catch {plan.reason+='; proof unavailable, running selected checks';}
+  if(proof){
+    plan={...plan,proof,mode:proof.exact?'reuse':'release',groups:proof.exact?['build']:[...RELEASE],coverage:[...proof.coverage],reason:proof.exact?'Identical inputs: reuse verified build and coverage from run '+proof.run_id:'Only release version changed: rebuild + golden + PWA; inherit behavior checks from run '+proof.run_id};
+  }
+  return validatePlan(plan);
 }
-export function changedPaths(base, head, cwd = process.cwd()) {
-  if (!SHA.test(base || '') || !SHA.test(head || '') || /^0+$/.test(base)) throw Error('No usable base/head SHA');
-  const git = args => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 8 * 1024 * 1024 });
-  try { git(['cat-file', '-e', base + '^{commit}']); }
-  catch { git(['fetch', '--no-tags', '--depth=1', 'origin', base]); }
-  // No rename detection: a move is a deletion + addition, and BOTH paths are checked.
-  const raw = git(['diff', '--name-only', '--no-renames', '-z', base, head, '--']);
-  return raw.split('\0').filter(Boolean);
-}
-export function planForEvent(eventName, event, head, cwd) {
-  if (!['pull_request', 'push'].includes(eventName)) return classify([], { forceFull: true });
-  const base = eventName === 'pull_request' ? event.pull_request?.base?.sha : event.before;
-  try { return classify(changedPaths(base, head, cwd)); }
-  catch (error) { return { ...classify([], { forceFull: true }), reason: 'Unable to prove documentation-only diff; full CI', diagnostic: error.message.split('\n')[0] }; }
-}
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
-  const plan = planForEvent(process.env.GITHUB_EVENT_NAME, event, process.env.GITHUB_SHA);
-  console.log(JSON.stringify(plan, null, 2));
-  if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `mode=${plan.mode}\narena_ab=${plan.arena_ab}\n`);
-  if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
-    `### CI plan\n\nMode: **${plan.mode}**. ${plan.reason}.\n\nChanged paths: ${plan.paths.length}. MED/LOW A/B: ${plan.arena_ab ? 'required' : 'not selected'}.\n`);
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
+  if(git(['rev-parse','HEAD']).trim()!==process.env.GITHUB_SHA)throw Error('Checkout does not match event SHA');
+  const event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
+  const plan=await planForEvent(process.env.GITHUB_EVENT_NAME,event,process.env.GITHUB_SHA);
+  console.log(JSON.stringify(plan,null,2));
+  const out={mode:plan.mode,scope:plan.scope,reuse_run_id:plan.mode==='reuse'?plan.proof.run_id:'',decision:JSON.stringify(plan),...Object.fromEntries(['build','golden','pwa','ui','ui-campaign','campaign-lifecycle','ui-heroes','ui-arena','three-d','three-d-desktop','perf','bh8-preview','bh98-procedural','md-ult1','arena-animation','arena-ab'].map(k=>[k,String(plan.groups.includes(k))]))};
+  if(process.env.GITHUB_OUTPUT)fs.appendFileSync(process.env.GITHUB_OUTPUT,Object.entries(out).map(([k,v])=>k+'='+v).join('\n')+'\n');
+  if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,`### CI plan\n\nMode: **${plan.mode}**, scope: **${plan.scope}**. ${plan.reason}.\n\n| Job | Required |\n|---|---|\n`+Object.entries(out).filter(([k])=>plan.groups.includes(k)||['golden','pwa','ui-campaign','campaign-lifecycle','three-d','three-d-desktop','arena-ab'].includes(k)).map(([k,v])=>`| ${k} | ${v} |`).join('\n')+'\n');
 }

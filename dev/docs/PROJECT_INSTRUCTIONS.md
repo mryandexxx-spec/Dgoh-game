@@ -25,6 +25,7 @@
 - Всегда критиковать предложения владельца (баланс, сложность, интерес, производительность iPhone, профили, архитектура), предлагать улучшения, ждать ответа и только потом брать в работу.
 
 ## Проверки и выкатка
+- CI-сценарии и подтверждённое переиспользование результатов — `ci/STAGE3_MINIMAL_SCENARIOS_AND_PROMOTION.md`; текущие input keys и покрытие обязательны. Нет доказательства — выполнять проверки текущего diff.
 - Сборка: `node tools/build.mjs --deploy` (`dist/artifact.html` + файлы по `dist/artifact-files.json`; PWA — в корень репозитория).
 - Между шагами: check-deps, check-bundle, `node tests/run.mjs dist/pwa/index.html --no-dom`. Перед выкаткой: golden на обеих сборках (`npm test`); render3d — `tests/smoke/3d.mjs --cycles 3 --resource-strict` (desktop и `--phone`: один прогрев + два измеряемых цикла); DOM/CSS — `tests/smoke/dom.mjs` (desktop и `--phone`); новая статика/SW — `tests/smoke/sw.mjs`. Эталоны (`--update`) — только при осознанном изменении и только после согласия владельца; до согласия работа держится в отдельной ветке.
 - Каждая доработка: номер в `dev/version.json` +1 (выводится в футере), коммит и push в `main`. (В Claude дополнительно публиковался `dist/artifact.html` в артефакт claude.ai — вне Claude этот шаг пропускается; основная поставка — GitHub Pages из корня.)
