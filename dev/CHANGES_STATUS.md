@@ -10,7 +10,7 @@
 
 ## Открыто
 
-**C4.11 — художественный этап A, `L:2` «Бегство», 20–29 (после v113):** открыть новую самостоятельную 3D-географию для главы III Светлой стороны. [Issue #72](https://github.com/mryandexxx-spec/Dgoh-game/issues/72), [handoff для нового чата](docs/campaign20/C4_11_AFTER_V113_HANDOFF_2026_11_14.md). Сначала прочитать оригинальные десять миссий в `CAMP_DEF.L.chapters[2]`, предложить 2–3 концепции и согласовать одну с владельцем; **без изменений игрового кода, version bump, Draft PR, merge и Pages до художественного утверждения**. Существующие 11 из 21 окружений остаются принятыми.
+**C4.11 — v114 «Бегство» / «Разлом Бури», выпуск разрешён 14.11.2026:** художественный этап A утверждён, реальная WebGL MED/LOW приёмка подтверждена «Все ок»; [PR #74](https://github.com/mryandexxx-spec/Dgoh-game/pull/74) MERGED `fbd78fce`, [CI #43599896818](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43599896818) SUCCESS. Владелец отдельно дал «Выпускай». **v114 считать кандидатом до успешного релизного PR CI, main CI и Pages**. [Release handoff](docs/campaign20/C4_11_V114_RELEASE_HANDOFF_2026_11_14.md). После публикации проверить на физическом iPhone Safari 20–29, жесты v101, 2D fallback, переходы в бой/симуляцию и нагрев/FPS: Chromium не доказывает реальную производительность Safari.
 
 **C4.10 v113 — опубликована и дополнительно принята владельцем после релиза 14.11.2026 («Все ок»):** [PR #71](https://github.com/mryandexxx-spec/Dgoh-game/pull/71) MERGED, [main CI #43593325880](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43593325880) SUCCESS, [Pages #43593921987](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43593921987) SUCCESS; [handoff](docs/campaign20/C4_10_V113_RELEASE_HANDOFF_2026_11_14.md). **Физические замеры iPhone Safari FPS/нагрева/батареи не представлены**; при желании собрать отдельно. Положительный отзыв не равен численному замеру.
 
@@ -148,6 +148,16 @@
 - Проверить после релиза: фактические кадры персонажа в бою и карточке, плащ Attack/Hit/Death, быструю смену персонажей, отсутствие артефактов/перегрева и корректный кеш обновления.
 
 ## Записи
+
+## v114 — Campaign 2.0 C4.11 «Бегство» · «Разлом Бури» (14.11.2026)
+
+- **Разрешения владельца:** художественная концепция «Разлом Бури» утверждена, настоящие WebGL MED 844×390 / LOW 667×375 кадры приняты **«Все ок»**, затем отдельно даны разрешения **«Сливай»** и **«Выпускай»** (14.11.2026). [Issue #72](https://github.com/mryandexxx-spec/Dgoh-game/issues/72), [реализационный PR #74](https://github.com/mryandexxx-spec/Dgoh-game/pull/74).
+- **Геймплей и сюжет:** Светлая сторона III `L:2`, уровни 13–20, исходные ID **20–29** — Пол и Джессика уходят от сардаукаров, буря, экологическая станция Кайнса, ущелье, признаки червя, видение, последняя стоянка Кайнса, палатка, следы и спасение фрименами. Уникальная непрерывная ночная Babylon-диорама с естественными гранёными скалами и открытой пустыней. Исходные 210 ID, враги, босс `bashar / legion / legion / trooper`, награды, экономика, прогресс и сохранения **не изменены**.
+- **Технически:** `campaign-escape.js`, отдельный `L:2` preset, GameScene/EngineHost, статичная HIGH/MED и упрощённая LOW геометрия; 2–4 локально последовательных 50/60px маркера, свайп v101, pinch/twist/recenter, интерактивный 2D fallback. Уникальных опубликованных карт Campaign 2.0 после v114 — **12 из 21**.
+- **Приёмка и замеры:** финальные [настоящие WebGL MED/LOW кадры](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43599896818/artifacts/14116076586); художественная приёмка владельца зафиксирована в [C4.11 implementation handoff](docs/campaign20/C4_11_ESCAPE_RIFT_IMPLEMENTATION_2026_11_14.md). [Полный PR CI #43599896818 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43599896818) — Golden, Campaign mobile WebGL, UI, ресурсные lifecycle-гейты, MED/LOW budgets. Физические FPS/нагрев Safari не измерены, нельзя заявлять численные улучшения.
+- **Релиз v114:** `dev/version.json=114`, [release handoff](docs/campaign20/C4_11_V114_RELEASE_HANDOFF_2026_11_14.md); до **SUCCESS PR на точном v114 HEAD**, merge и **SUCCESS main Validate / verified Pages / фактического Pages deployment** считать кандидатом. Ветка source release не должна менять исходные бои, данные и рендер.
+- **Проверка после публикации на iPhone:** открыть `Сюжет → Светлая → III «Бегство»`, 20–29 на 844×390 MED / 667×375 LOW; последовательный свайп от миссии 1 до 10, pinch/twist/recenter, босс, вход в бой, симуляция, возврат, 2D fallback, обновление service worker, офлайн, сохранения, 10–15 мин FPS и нагрев. Отзыв «Все ок» — художественная приёмка кадров, не физическое измерение.
+
 
 ## v113 — Campaign 2.0 C4.10 «Песчаные черви Дюны» · «Пульс глубин» (14.11.2026)
 
