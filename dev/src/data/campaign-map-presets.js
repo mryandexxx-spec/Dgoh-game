@@ -40,6 +40,30 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'duncan-gallery',x:-32,z:-5,size:9},
     ]),
   }),
+  'L:2': Object.freeze({
+    id: 'escape-storm-rift', title: 'Бегство · Разлом Бури',
+    theme: 'escape-rift', bounds: [-66,66,-27,33],
+    // The original Light-III IDs 20–29 follow one broken canyon-to-dunes route.
+    // Initial focus uses the first open node; later nodes emerge by v101 pan.
+    camera: { target: [-56,0,-10], alpha: -1.33, beta: .94, radius: 29,
+      minRadius: 24, maxRadius: 64, turnLimit: .24 },
+    nodes: Object.freeze([
+      [-56,-10],[-44,-1],[-33,-8],[-21,3],[-9,8],
+      [3,2],[15,6],[27,-5],[40,0],[53,8],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'night-ornithopter',x:-55,z:1,size:12},
+      {kind:'storm-over-wall',x:-44,z:16,size:15},
+      {kind:'ecologist-station',x:-33,z:-16,size:10},
+      {kind:'canyon-ambush',x:-21,z:14,size:15},
+      {kind:'singing-sand',x:-9,z:16,size:12},
+      {kind:'spice-vision',x:3,z:13.5,size:9},
+      {kind:'kynes-diversion',x:16,z:17,size:9},
+      {kind:'stillsuit-tent',x:27,z:-13,size:9},
+      {kind:'exposed-tracks',x:40,z:-7,size:12},
+      {kind:'fremen-rescue',x:53,z:29,size:18},
+    ]),
+  }),
   'D:1': Object.freeze({
     id: 'giedi-conspiracy', title: 'Заговор · Тихий трон',
     theme: 'conspiracy', bounds: [-48, 46, -24, 27],

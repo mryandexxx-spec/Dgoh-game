@@ -706,6 +706,68 @@ try {
     }
     console.log('PASS C4.10 Pulse of Depths WebGL',w,h,gfx,JSON.stringify({wormsEnd}));
 
+
+    // C4.11 Light III «Бегство»: all original IDs 20–29 on one canyon-to-dunes
+    // scene. Real Chromium/SwiftShader in MED 844×390 and LOW 667×375.
+    await page.evaluate(()=>document.querySelector('.c20-back')?.click());
+    await page.waitForSelector('.c20-home',{timeout:7000});
+    await page.evaluate(()=>document.querySelector('[data-c20="story"]')?.click());
+    await page.waitForSelector('.c20-map',{timeout:7000});
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="2"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="2"]').click());
+    await page.waitForSelector('.c20-world.escape-rift.campaign20-3d-ready',{timeout:20000});
+    const checkEscape=async(label)=>{
+      await page.waitForFunction(()=>[...document.querySelectorAll('.c20-world.escape-rift .c20-pin')]
+        .some(el=>getComputedStyle(el).visibility==='visible'),{timeout:9000});
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.escape-rift');
+        const all=[...world.querySelectorAll('.c20-pin')];
+        const visible=all.filter(p=>getComputedStyle(p).visibility==='visible');
+        const nums=visible.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const rect=world.getBoundingClientRect();
+        const overlaps=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3
+            &&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {
+          nums,ids:all.map(p=>Number(p.dataset.c20node)),
+          boss:all.filter(p=>p.classList.contains('boss')).length,
+          canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          within:visible.every(p=>{const b=p.getBoundingClientRect();
+            return b.left>=rect.left+1&&b.right<=rect.right-1&&b.top>=rect.top+1&&b.bottom<=rect.bottom-1;}),
+          overlaps,scroll:document.querySelector('.c20').scrollHeight>document.querySelector('.c20').clientHeight+1,
+          pager:world.querySelectorAll('[data-c20step],.c20-mission-nav').length,
+          fallbackCoords:all.every(p=>p.style.getPropertyValue('--px')&&p.style.getPropertyValue('--py')),
+        };
+      });
+      assert.deepEqual(state.ids,Array.from({length:10},(_,i)=>i+20),'L:2 original IDs 20–29');
+      assert.equal(state.boss,1,'L:2 original final mission is the only boss');
+      assert.equal(state.canvas,true,'L:2 shared GameScene mounted real WebGL');
+      assert.equal(state.pager,0,'L:2 uses v101 swipe, without new navigation buttons');
+      assert.equal(state.fallbackCoords,true,'L:2 has projected 2D fallback coordinates');
+      assert.equal(state.scroll,false,'L:2 landscape map must not scroll');
+      assert.equal(state.within,true,'L:2 markers fully inside map viewport');
+      assert.deepEqual(state.overlaps,[],'L:2 50/60px markers must not overlap');
+      assert.ok(state.nums.length>=2&&state.nums.length<=4,label+' needs 2–4 nearby markers '+JSON.stringify(state));
+      assert.ok(state.nums.every((n,i)=>!i||n===state.nums[i-1]+1),
+        label+' locally consecutive markers '+JSON.stringify(state));
+      return state;
+    };
+    const escapeAtEntry=await checkEscape('escape chapter entry');
+    for(const [id,name] of [[20,'ornithopter'],[21,'storm'],[22,'ecologist'],
+      [23,'canyon'],[24,'singing-sand'],[25,'vision'],[26,'kynes'],
+      [27,'tent'],[28,'tracks'],[29,'fremen-rescue']]){
+      await page.evaluate(id=>document.querySelector(`[data-c20node="${id}"]`)?.click(),id);
+      await new Promise(resolve=>setTimeout(resolve,550));
+      const state=await checkEscape('Escape '+name);
+      assert.ok(state.nums.includes(id-19),'L:2 selected '+name+' must remain visible '+JSON.stringify(state));
+      if([20,23,25,27,28,29].includes(id))
+        await page.screenshot({path:path.join(shots,`escape-${name}-${w}-${gfx}.png`)});
+    }
+    console.log('PASS C4.11 Escape Rift real WebGL',w,h,gfx,JSON.stringify({escapeAtEntry}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
