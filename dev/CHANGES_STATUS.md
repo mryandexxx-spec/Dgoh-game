@@ -10,6 +10,8 @@
 
 ## Открыто
 
+**v116 — рамки «Другой памяти» и отдельное золото легенд (релиз-кандидат, 15.11.2026):** владелец принял настоящий ростер в браузерных кадрах MED 844×390, LOW 667×375 и desktop («Принимаю, выпускай»). [PR #82 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/82), squash commit `c4588b23`, [полный CI совместимости C4.13 #43641063310 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43641063310). Версия поднимается до v116, но **Pages требует отдельного ручного workflow_dispatch publish=true**, автоматическая публикация после merge отключена после C4.13. При публикации текущего main вместе с рамками будет включена и C4.13 — её самостоятельный выпускной gate нужно соблюдать; не считать опубликованной до реального Pages SUCCESS. На физическом iPhone Safari проверить читаемость колец, звёзд, бейджей и FPS/нагрев.
+
 **CI — дальнейшие замеры и настройки:** новый fast main publish проверен; реальные времена минимального campaign/release-сценария уточнить на следующей соответствующей доработке. Настройки Pages source и branch protection в этом аудите не подтверждены (ранее чтение protection возвращало 403); автоматические branch-based Pages builds находятся вне управления YAML этого workflow. Это не блокирует подтверждённую exact-artifact публикацию.
 
 **C4.12 — v115 ОПУБЛИКОВАНА, Светлая IV `L:3` «Сиетч Табр» (30–39):** владелец принял художественную концепцию «Сердце воды» и настоящие WebGL MED/LOW кадры («Ок»), отдельно разрешил одно точечное Golden-изменение для кнопок «На карте» у Чани, затем merge и «Выпускай». [Issue #76](https://github.com/mryandexxx-spec/Dgoh-game/issues/76), [PR #78 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/78) `a25240b4`, [CI #43628714583 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43628714583), [handoff v115](docs/campaign20/C4_12_V115_RELEASE_HANDOFF_2026_11_14.md). **Выпуск v115 подтверждён:** [release PR #79 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/79), [release CI #43630988857 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43630988857), [main CI/verified publish #43631382200 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43631382200), [Pages #43631500937 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43631500937), root PWA SHA `82b4ecad`, version/cache `v115 · 59b91969b0`. После публикации проверить iPhone Safari (MED/LOW, 30–39, жесты v101, выбор миссии/бой/симуляция, источники Чани, fallback, SW/offline, FPS/нагрев/батарея).
@@ -151,6 +153,15 @@
 - Проверить после релиза: фактические кадры персонажа в бою и карточке, плащ Attack/Hit/Death, быструю смену персонажей, отсутствие артефактов/перегрева и корректный кеш обновления.
 
 ## Записи
+
+## v116 — UI ростера: свечение ДП по сторонам и золотые венцы легенд (15.11.2026)
+
+- **Принято владельцем:** реальные браузерные кадры ростера на desktop, MED 844×390 и LOW 667×375; команда «Принимаю, выпускай» после визуальной приёмки. [PR #82 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/82), source commit `c4588b2305e20e40f308df7f29f030201e4818e1`.
+- **Реализация:** в `ui/portrait.js` при `p.relic>0` добавлен внешний светящийся контур (светлая сторона — синий; тёмная — красный; машины — нейтральный серебристо-голубой). Внутренний `TIER_COL[p.gear]` сохранён. Для `d.legendary` добавлен независимый золотой контур, также поверх ДП; закрытые легенды остаются приглушёнными. Звёзды, знаки лидера, уровни, ДП, снаряжение, осколки не менялись.
+- **Технически:** только CSS и разметка ростера без новых ассетов, бесконечных анимаций или новых WebGL эффектов. Сохранения, прогресс, бой, экономика не менялись. Регрессии защищены `roster-rings.mjs` и точечной нормализацией шести одобренных DOM-экранов.
+- **Проверки:** начальный полный CI [#43637392989 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43637392989); после объединения с кодом C4.13 новый полный [CI #43641063310 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43641063310) — Golden PWA+artifact, PWA offline/update, 3D lifecycle desktop/phone, MED/LOW, модели и финальный gate.
+- **Публикация:** готовится отдельный выпускной PR `v115→v116`. В `main` также находится художественно принятая, но ранее merge-only C4.13; CI теперь требует самостоятельный `workflow_dispatch` с `publish=true` для Pages. Успешный CI не равен публикации. Выпуск подтверждать только по Pages SUCCESS и производственному app.js/footer.
+- **На физическом iPhone Safari:** ростер и герои с ДП0/ДП1+/легендой+ДП, нормальная окантовка снаряжения, положение звёзд/уровня/бейджей, скролл и тапы, MED/LOW 844×390 и 667×375, прогрев 10–15 минут, FPS/нагрев и PWA offline после обновления.
 
 ## v115 — Campaign 2.0 C4.12 «Сиетч Табр» · «Сердце воды» (14.11.2026)
 
