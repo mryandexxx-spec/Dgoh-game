@@ -4,7 +4,9 @@
 
 ## Approval
 
-The owner approved the artistic concept «Разлом Бури» and authorized a separate feature branch, Draft PR and implementation. Merge, version bump and publication were explicitly NOT authorized.
+14.11.2026: the owner approved the artistic concept «Разлом Бури» and authorized a separate feature branch, Draft PR and implementation.
+
+**14.11.2026 — artistic acceptance of finished stage B is confirmed by the owner: «Все ок».** The acceptance refers to the actual final MED 844×390 and LOW 667×375 WebGL frames, not the concept mockups. This does **not** authorize merge, changing v113 or publication.
 
 ## Source of truth
 
@@ -40,6 +42,8 @@ The final battle keeps bashar, legion, legion, trooper. Fremen are openly visibl
 
 ## Validation and release gate
 
-Before owner acceptance, inspect genuine browser-rendered MED/LOW frames and pass required CI, golden, lifecycle, usability and performance gates. Compare measurement against the last release; greater than 10% regression requires explicit owner approval. Chromium is not a measurement of physical Safari FPS, thermals or battery. No additional Engine, render loop, 3D animation, controls or new navigation buttons.
+**Stage B final code HEAD:** `b401668293ff63c1802deb9922c1201169cd2cfd`. [Required PR CI #43599896818](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43599896818) **SUCCESS**, including real Campaign WebGL MED/LOW, Golden, desktop/phone lifecycle, E3 UI and camp/battle budgets; Pages publish **SKIPPED**. [Final genuine WebGL artifact](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43599896818/artifacts/14116076586) captured six milestones on both profiles and was accepted by the owner («Все ок»).
 
-Keep the PR a draft. DO NOT merge, bump v113 or publish GitHub Pages without separate owner authorization.
+Artistic acceptance and CI gates are complete for the tested code commit. Physical iPhone Safari FPS/temperature/battery have not been measured. The existing MED/LOW budget gates passed; a separate numerical baseline comparison or real Safari thermal measurement is not claimed. Any measured regression exceeding 10% requires explicit owner approval. Chromium is not a measurement of physical Safari FPS, thermals or battery. No additional Engine, render loop, 3D animation, controls or new navigation buttons.
+
+**Next gate:** obtain separate authorization for merge and, independently, for version bump / publication. Keep PR #74 a draft meanwhile. DO NOT merge, bump v113 or publish GitHub Pages on the basis of artistic acceptance alone.
