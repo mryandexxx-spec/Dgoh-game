@@ -16,6 +16,7 @@ import { buildMachineCrusade } from './campaign-machine-crusade.js';
 import { buildCorrinBattle } from './campaign-corrin-battle.js';
 import { buildSandworms } from './campaign-sandworms.js';
 import { buildEscapeRift } from './campaign-escape.js';
+import { buildSietchTabr } from './campaign-sietch.js';
 
 let ACTIVE = null;
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -26,7 +27,8 @@ class CampaignMapScene extends GameScene {
     this.small = Math.min(innerWidth, innerHeight) < 600;
     this.scene = new B3.Scene(this.engine);
     this.scene.useRightHandedSystem = true;
-    this.scene.clearColor = map.preset.theme === 'escape-rift'
+    this.scene.clearColor = map.preset.theme === 'sietch-water'
+      ? new B3.Color4(.083,.125,.14,1) : map.preset.theme === 'escape-rift'
       ? new B3.Color4(.045,.091,.132,1) : map.preset.theme === 'sandworms-rebirth'
       ? new B3.Color4(.21,.19,.24,1) : map.preset.theme === 'corrin-siege'
       ? new B3.Color4(.063,.094,.125,1) : map.preset.theme === 'machine-crusade'
@@ -53,6 +55,9 @@ class CampaignMapScene extends GameScene {
     if(map.preset.theme==='sandworms-rebirth' && current?.boss){
       this.beta=1.1;this.radius=44;
     }
+    if(map.preset.theme==='sietch-water' && current?.boss){
+      this.beta=1.06;this.radius=38;
+    }
     if(map.preset.theme==='escape-rift' && current?.boss){
       this.beta=1.03;this.radius=38;
     }
@@ -62,9 +67,9 @@ class CampaignMapScene extends GameScene {
     this.cam.minZ = .1; this.cam.maxZ = 250; this.cam.inputs.clear();
     this.scene.activeCamera = this.cam;
     const hemi = new B3.HemisphericLight('caladan-sky', new B3.Vector3(0, 1, 0), this.scene);
-    hemi.intensity = map.preset.theme === 'escape-rift' ? .97 : map.preset.theme === 'conspiracy' ? .85 : map.preset.theme === 'giedi' ? .79 : .88;
+    hemi.intensity = map.preset.theme === 'sietch-water' ? .99 : map.preset.theme === 'escape-rift' ? .97 : map.preset.theme === 'conspiracy' ? .85 : map.preset.theme === 'giedi' ? .79 : .88;
     const sun = new B3.DirectionalLight('caladan-sun', new B3.Vector3(-.65,-1,-.45), this.scene);
-    sun.intensity = map.preset.theme === 'escape-rift' ? .46 : map.preset.theme === 'conspiracy' ? .54 : map.preset.theme === 'giedi' ? .48 : .62;
+    sun.intensity = map.preset.theme === 'sietch-water' ? .48 : map.preset.theme === 'escape-rift' ? .46 : map.preset.theme === 'conspiracy' ? .54 : map.preset.theme === 'giedi' ? .48 : .62;
     this.makeGeometry();
     this.applyCamera();
   }
@@ -76,6 +81,12 @@ class CampaignMapScene extends GameScene {
   }
   makeGeometry() {
     const M = B3.MeshBuilder, S = this.scene, P = this.map.preset;
+    if(P.theme==='sietch-water') {
+      buildSietchTabr(B3,S,(name,color)=>this.material(name,color),
+        gfx(this.small).level!=='low' && gfx(this.small).level!=='low30');
+      this.makeMissionGeometry();
+      return;
+    }
     if(P.theme==='escape-rift') {
       buildEscapeRift(B3,S,(name,color)=>this.material(name,color),
         gfx(this.small).level!=='low' && gfx(this.small).level!=='low30');
@@ -218,7 +229,7 @@ class CampaignMapScene extends GameScene {
   }
   makeMissionGeometry() {
     const M=B3.MeshBuilder,S=this.scene,P=this.map.preset;
-    const road=this.material('route',P.theme==='escape-rift'?'#bb9e79':P.theme==='sandworms-rebirth'?'#e1c38b':P.theme==='corrin-siege'?'#d7b78a':P.theme==='machine-crusade'?'#d5c19b':P.theme==='butlerian-jihad'?'#9aaab0':P.theme==='conspiracy'?'#d8b37e':P.theme==='giedi'?'#aa8458':P.theme==='arrakeen'?'#efd098':'#d7ad69');
+    const road=this.material('route',P.theme==='sietch-water'?'#d1b58a':P.theme==='escape-rift'?'#bb9e79':P.theme==='sandworms-rebirth'?'#e1c38b':P.theme==='corrin-siege'?'#d7b78a':P.theme==='machine-crusade'?'#d5c19b':P.theme==='butlerian-jihad'?'#9aaab0':P.theme==='conspiracy'?'#d8b37e':P.theme==='giedi'?'#aa8458':P.theme==='arrakeen'?'#efd098':'#d7ad69');
     const clear=this.material('cleared','#507f57');
     const ready=this.material('ready','#d9a74d');
     const locked=this.material('locked','#514b43');
@@ -247,7 +258,8 @@ class CampaignMapScene extends GameScene {
     const c=this.map.preset.camera;
     this.alpha=clamp(this.alpha,c.alpha-c.turnLimit,c.alpha+c.turnLimit);
     this.beta=clamp(this.beta,.76,1.12); this.radius=clamp(this.radius,c.minRadius,c.maxRadius);
-    const [xmin,xmax,zmin,zmax]=this.map.preset.theme==='escape-rift'
+    const [xmin,xmax,zmin,zmax]=this.map.preset.theme==='sietch-water'
+      ? [-63,78,-36,30] : this.map.preset.theme==='escape-rift'
       ? [-64,64,-25,31] : this.map.preset.theme==='sandworms-rebirth'
       ? [-60,56,-38,40] : this.map.preset.theme==='arrakeen'
       ? [-34,40,-22,22] : this.map.preset.theme==='conspiracy'
@@ -264,7 +276,7 @@ class CampaignMapScene extends GameScene {
       this.radius*Math.cos(this.beta)+1.6,
       this.cz+q*Math.sin(this.alpha));
     // Raise Arrakeen's gaze so the palace crown stays inside short iPhone viewports.
-    this.cam.setTarget(new B3.Vector3(this.cx,this.map.preset.theme==='escape-rift'?3.2:this.map.preset.theme==='arrakeen'?4.2:this.map.preset.theme==='corrino-chronicles'?3.5:this.map.preset.theme==='butlerian-jihad'?6:this.map.preset.theme==='sandworms-rebirth'?(this.selectedId===209?5:4.6):this.map.preset.theme==='corrin-siege'?5.8:this.map.preset.theme==='machine-crusade'?5.7:this.map.preset.theme==='conspiracy'||this.map.preset.theme==='harkonnen-chronicles'?2.1:0,this.cz+(this.map.preset.theme==='escape-rift'?3.5:this.map.preset.theme==='corrino-chronicles'?3:this.map.preset.theme==='butlerian-jihad'?4:this.map.preset.theme==='sandworms-rebirth'?(this.selectedId===209?-15:3.5):this.map.preset.theme==='corrin-siege'?4:this.map.preset.theme==='machine-crusade'?3:0)));
+    this.cam.setTarget(new B3.Vector3(this.cx,this.map.preset.theme==='sietch-water'?2.2:this.map.preset.theme==='escape-rift'?3.2:this.map.preset.theme==='arrakeen'?4.2:this.map.preset.theme==='corrino-chronicles'?3.5:this.map.preset.theme==='butlerian-jihad'?6:this.map.preset.theme==='sandworms-rebirth'?(this.selectedId===209?5:4.6):this.map.preset.theme==='corrin-siege'?5.8:this.map.preset.theme==='machine-crusade'?5.7:this.map.preset.theme==='conspiracy'||this.map.preset.theme==='harkonnen-chronicles'?2.1:0,this.cz+(this.map.preset.theme==='sietch-water'?2:this.map.preset.theme==='escape-rift'?3.5:this.map.preset.theme==='corrino-chronicles'?3:this.map.preset.theme==='butlerian-jihad'?4:this.map.preset.theme==='sandworms-rebirth'?(this.selectedId===209?-15:3.5):this.map.preset.theme==='corrin-siege'?4:this.map.preset.theme==='machine-crusade'?3:0)));
     this.t0=performance.now(); this.dirty=true;
   }
   center(node, animate = true) {
@@ -272,6 +284,10 @@ class CampaignMapScene extends GameScene {
     if(this.map.preset.theme==='sandworms-rebirth' && node){
       this.radius=node.boss?44:this.map.preset.camera.radius;
       this.beta=node.boss?1.1:this.map.preset.camera.beta;
+    }
+    if(this.map.preset.theme==='sietch-water' && node){
+      this.radius=node.boss?38:this.map.preset.camera.radius;
+      this.beta=node.boss?1.06:this.map.preset.camera.beta;
     }
     if(this.map.preset.theme==='escape-rift' && node){
       this.radius=node.boss?38:this.map.preset.camera.radius;
@@ -387,9 +403,9 @@ class CampaignMapScene extends GameScene {
       // only nearby mission markers are shown; distant but technically
       // projectable labels would otherwise mix unrelated chapter numbers.
       // This is a world-space distance gate, never a fixed screen-grid.
-      const local=!['arrakeen','conspiracy','atreides-chronicles','harkonnen-chronicles','butlerian-jihad','machine-crusade','corrin-siege','sandworms-rebirth','escape-rift'].includes(this.map.preset.theme)
+      const local=!['arrakeen','conspiracy','atreides-chronicles','harkonnen-chronicles','butlerian-jihad','machine-crusade','corrin-siege','sandworms-rebirth','escape-rift','sietch-water'].includes(this.map.preset.theme)
         || Math.hypot(node.x-this.cx,node.z-this.cz)<=
-          (this.map.preset.theme==='escape-rift'?Math.min(25,this.radius*.84):Math.min(30,this.radius*.96));
+          (['escape-rift','sietch-water'].includes(this.map.preset.theme)?Math.min(25,this.radius*.84):Math.min(30,this.radius*.96));
       const visible=local&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.z>0&&p.z<1
         &&p.x>diameter/2+3&&p.y>diameter/2+3
         &&p.x<w-diameter/2-3&&p.y<h-diameter/2-3;
@@ -421,7 +437,7 @@ class CampaignMapScene extends GameScene {
     // collision culling may hide mission 8 while retaining 7,9,10. Show only
     // one contiguous run of the actual world-projected pins, never an
     // artificial screen-space grid; scrolling reveals the other segments.
-    if(['atreides-chronicles','harkonnen-chronicles','butlerian-jihad','machine-crusade','corrin-siege','sandworms-rebirth','escape-rift'].includes(this.map.preset.theme)&&shown.length>1){
+    if(['atreides-chronicles','harkonnen-chronicles','butlerian-jihad','machine-crusade','corrin-siege','sandworms-rebirth','escape-rift','sietch-water'].includes(this.map.preset.theme)&&shown.length>1){
       const ordered=[...shown].sort((a,b)=>a.node.number-b.node.number);
       const runs=[];
       for(const e of ordered){
@@ -435,7 +451,7 @@ class CampaignMapScene extends GameScene {
           -Math.min(...b.map(e=>Math.abs(e.node.number-selectedNumber))));
       // At most four local markers in the narrow Escape Rift, retaining a
       // contiguous subset nearest the selected node. Other chapters unchanged.
-      const selectedRun=this.map.preset.theme==='escape-rift'&&runs[0].length>4
+      const selectedRun=['escape-rift','sietch-water'].includes(this.map.preset.theme)&&runs[0].length>4
         ? [...runs[0]].sort((a,b)=>Math.abs(a.node.number-selectedNumber)
           -Math.abs(b.node.number-selectedNumber)).slice(0,4)
         :runs[0];

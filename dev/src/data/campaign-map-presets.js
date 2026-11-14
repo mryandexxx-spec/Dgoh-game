@@ -64,6 +64,29 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'fremen-rescue',x:53,z:29,size:18},
     ]),
   }),
+  'L:3': Object.freeze({
+    id: 'sietch-tabr-heart-of-water', title: 'Сиетч Табр · Сердце воды',
+    theme: 'sietch-water', bounds: [-65,80,-38,32],
+    // Original Light-IV NODES 30–39; one continuous physical cave-to-desert.
+    camera: { target: [-48,0,-19], alpha: -1.27, beta: .95, radius: 30,
+      minRadius: 25, maxRadius: 60, turnLimit: .24 },
+    nodes: Object.freeze([
+      [-48,-19],[-41,-4],[-29,10],[-14,9],[-1,4],
+      [12,-2],[25,-20],[39,-12],[52,2],[66,11],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'jamis-circle',x:-48,z:-19,size:9},
+      {kind:'sacred-water-reservoir',x:-47,z:14,size:25},
+      {kind:'chani-knife-gallery',x:-28,z:17,size:10},
+      {kind:'dew-traps',x:-14,z:25,size:14},
+      {kind:'raided-warehouse',x:0,z:16,size:12},
+      {kind:'maker-thumper',x:12,z:2,size:11},
+      {kind:'rabban-raids',x:25,z:-31,size:13},
+      {kind:'false-trail',x:44,z:-25,size:12},
+      {kind:'prophecy-gallery',x:52,z:18,size:14},
+      {kind:'muaddib-terrace',x:70,z:24,size:21},
+    ]),
+  }),
   'D:1': Object.freeze({
     id: 'giedi-conspiracy', title: 'Заговор · Тихий трон',
     theme: 'conspiracy', bounds: [-48, 46, -24, 27],
