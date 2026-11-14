@@ -26,7 +26,7 @@ supply routes and low escarpments connect all ten physical locations without jum
 | 9 | 48 | Вода жизни | Sealed refuge light slit and Fremen defensive perimeter | 51 | 13 |
 | 10 | 49 | Жатва Раббана | Final giant extractor, red Rabban banners and barricades | 64 | 2 |
 
-Act I (40–42) «Разорвать поток»: Gur­ney's separate smuggler story, Sardaukar and burned extractors.
+Act I (40–42) «Разорвать поток»: Gurney's separate smuggler story, Sardaukar and burned extractors.
 Act II (43–46) «Неделя вне неба»: static Coriolis front, ruin ambush, buried spice, maker riders.
 Act III (47–49) «Человек, пророк и Зверь»: Gurney recognises Paul in **47** (not 40);
 Life-water rite is inside the closed refuge while defenders hold the exterior in 48;
@@ -47,7 +47,7 @@ uses the same coordinates. High background silhouettes are placed behind buttons
 ## Camera / mobile UX
 Initial target (-58,-10), alpha -1.28, beta .97, radius 30,
 minRadius 25, maxRadius 60, turnLimit .24.
-Boss focus uses beta 1.06 and radius 36, pending genuine phone WebGL proof.
+Boss focus is alpha -1.49 (within existing turnLimit), beta 1.06 and radius 34. A real 844x390 MED projection initially placed #9 at (464.4,99.1) and #10 at (412.9,137.7), too close for the approved 50/60px collision guard; the angle was corrected for subsequent verification.
 Final target anchored to current boss (64,2), not a jump to Arrakeen.
 
 MED 844x390 and LOW 667x375: 2–4 **local consecutive** mission numbers,
