@@ -660,7 +660,21 @@ try {
           return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3
             &&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
         }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
-        return {nums,ids:all.map(p=>Number(p.dataset.c20node)),
+        // Capture Babylon's real projection if a narrow viewport hides #9.
+        const B=window.__B3;
+        const scene=B?.EngineStore?.Instances?.flatMap(engine=>engine.scenes||[])
+          .find(scene=>scene.activeCamera?.name==='campaign-camera');
+        const projection=scene?[208,209].map(id=>{
+          const n=id===208?[43,-3]:[38,15];
+          const p=B.Vector3.Project(new B.Vector3(n[0],1.15,n[1]),
+            B.Matrix.IdentityReadOnly,scene.getTransformMatrix(),
+            new B.Viewport(0,0,world.clientWidth,world.clientHeight));
+          const el=all.find(q=>Number(q.dataset.c20node)===id);
+          return {id,x:+p.x.toFixed(1),y:+p.y.toFixed(1),
+            shown:getComputedStyle(el).visibility,style:el.style.transform};
+        }):[];
+        return {nums,projection,stage:[world.clientWidth,world.clientHeight],
+          ids:all.map(p=>Number(p.dataset.c20node)),
           boss:all.filter(p=>p.classList.contains('boss')).length,
           canvas:!!world.querySelector('canvas.campaign20-canvas'),
           within:visible.every(p=>{const r=p.getBoundingClientRect();return r.left>=rect.left+1&&r.right<=rect.right-1&&r.top>=rect.top+1;}),
@@ -679,6 +693,7 @@ try {
         label+' visible numbers must be consecutive '+JSON.stringify(state));
       return state;
     };
+    await page.screenshot({path:path.join(shots,`sandworms-debug-end-${w}-${gfx}.png`)});
     const wormsEnd=await checkSandworms('end of war');
     assert.ok(wormsEnd.nums.includes(10),'C:6 boss visible at chapter entry');
     await page.screenshot({path:path.join(shots,`sandworms-end-${w}-${gfx}.png`)});
