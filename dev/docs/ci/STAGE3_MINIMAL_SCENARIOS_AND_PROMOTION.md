@@ -57,3 +57,9 @@ Replay действительного diff C4.10 (`f930524c` → `caef3769`) в�
 ## Обновление базы перед слиянием
 
 Основная ветка обновлена до v114 / C4.11, main `61637885f2cb977cef6a506f83089122fee80719`. Изменения игры сохранены. Старое доказательство v113 неприменимо к новым входам: необходим свежий CI этого PR, затем main сможет использовать его exact artifact при совпадении фактического merge tree.
+
+## Условие публикации после намеренных skipped
+
+Первый main run после PR #73 (#43608836029) подтвердил reuse за 43 с, но GitHub пропустил deploy: неявный success() учитывал намеренно skipped задания в цепочке. Условие deploy теперь содержит явный status-check `!cancelled()` и требует `needs.plan.result == success` и `needs.gate.result == success`. Документы, PR, не-main ref, отмена или неуспешный gate не публикуются. Статический regression-тест закрепляет присутствие status-check и проверяет таблицу допустимых/запрещённых состояний.
+
+Основание: [GitHub status-check functions](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions), [needs и skipped dependencies](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idneeds).

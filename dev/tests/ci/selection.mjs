@@ -65,3 +65,24 @@ try {
  git(['mv','dev/src/moved.js','dev/docs/moved.md']);const back=commit();assert.equal(classify(changedPaths(moved,back,dir)).mode,'full');
 } finally {fs.rmSync(dir,{recursive:true,force:true});}
 console.log('PASS CI scope/gate/input keys: docs-after-code, version-only behavior inheritance, mixed/unknown, registry changes, renames, dirty inputs and baseline changes.');
+
+// GitHub inserts implicit success() unless a status-check function is present.
+// A reuse run has intentionally skipped ancestors; publication must depend on
+// the explicit plan/gate results, while still refusing canceled workflows.
+const workflow=fs.readFileSync(new URL('../../../.github/workflows/validate-pwa.yml',import.meta.url),'utf8');
+const deploy=workflow.match(/^  deploy-pages:\n[\s\S]*?^    if: \$\{\{ (.*?) \}\}$/m)?.[1];
+assert.ok(deploy,'publication condition exists');
+assert.match(deploy,/!\s*cancelled\(\)/,'override implicit success() for skipped ancestors');
+assert.match(deploy,/needs\.plan\.result == 'success'/);
+assert.match(deploy,/needs\.gate\.result == 'success'/);
+const publish=Function('github','needs','cancelled','return ('+deploy+')');
+const github={event_name:'push',ref:'refs/heads/main'};
+const ready={plan:{result:'success',outputs:{mode:'reuse'}},gate:{result:'success'},golden:{result:'skipped'},renderer:{result:'skipped'}};
+assert.equal(publish(github,ready,()=>false),true,'validated reuse may publish despite skipped ancestors');
+assert.equal(publish(github,ready,()=>true),false,'canceled workflow cannot publish');
+for(const mode of ['full','campaign','release','pwa','tests'])assert.equal(publish(github,{...ready,plan:{...ready.plan,outputs:{mode}}},()=>false),true);
+assert.equal(publish(github,{...ready,plan:{...ready.plan,outputs:{mode:'docs'}}},()=>false),false);
+for(const key of ['plan','gate'])for(const result of ['failure','cancelled','skipped'])assert.equal(publish(github,{...ready,[key]:{...ready[key],result}},()=>false),false);
+assert.equal(publish({...github,event_name:'pull_request'},ready,()=>false),false);
+assert.equal(publish({...github,ref:'refs/heads/feature'},ready,()=>false),false);
+console.log('PASS publication condition: explicit status override, successful plan/gate, reuse skips, cancellation, docs, PR and non-main refusals.');

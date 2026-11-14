@@ -899,7 +899,7 @@ jobs:
 
   deploy-pages:
     name: Publish verified PWA to GitHub Pages
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.plan.outputs.mode != 'docs' }}
+    if: ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.plan.result == 'success' && needs.gate.result == 'success' && needs.plan.outputs.mode != 'docs' }}
     needs: [plan, gate]
     runs-on: ubuntu-24.04
     permissions:
