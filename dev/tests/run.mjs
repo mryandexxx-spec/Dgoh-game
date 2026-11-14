@@ -7,7 +7,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
 if (!args[0] || args[0].startsWith('--')) { console.error('node tests/run.mjs <game.html> [--update] [--no-dom]'); process.exit(2); }
 const pass = args.filter(a => a !== '--no-dom');
-const suites = ['golden/battles.mjs', 'golden/meta.mjs', 'golden/saves.mjs', ...(args.includes('--no-dom') ? [] : ['dom/screens.mjs'])];
+const suites = ['roster-rings.mjs', 'golden/battles.mjs', 'golden/meta.mjs', 'golden/saves.mjs', ...(args.includes('--no-dom') ? [] : ['dom/screens.mjs'])];
 let fail = 0;
 for (const s of suites) {
   console.log(`\n== ${s}`);
