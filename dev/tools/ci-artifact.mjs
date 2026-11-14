@@ -2,7 +2,9 @@
 // Usage: node tools/ci-artifact.mjs make|verify|stage [dist-directory]
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import crypto from 'node:crypto';
+import { inputs, SCHEMA, git } from './ci-inputs.mjs';
 import { fileURLToPath } from 'node:url';
 const DEV = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.resolve(DEV, '..');
@@ -18,6 +20,8 @@ const read = () => JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
 const stageFiles = ['index.html', 'app.js', 'app.css', 'sw.js', 'babylon3d.js'];
 function verify() {
   const manifest = read();
+  const current = inputs(REPO);
+  if (manifest.provenance?.schema !== SCHEMA || manifest.provenance.fingerprint !== current.fingerprint || manifest.provenance.behavior !== current.behavior) throw new Error('Build provenance / current inputs mismatch');
   const expectedVersion = JSON.parse(fs.readFileSync(path.join(DEV, 'version.json'), 'utf8')).v;
   if (manifest.version !== expectedVersion) throw new Error('Unexpected version ' + manifest.version);
   const actual = allFiles(DIR).filter(f => f !== MANIFEST).map(rel).sort();
@@ -40,24 +44,28 @@ if (action === 'make') {
   const cache = /const VER = '([a-f0-9]{10})'/.exec(sw)?.[1];
   if (!cache) throw new Error('Missing cache version');
   const hashes = Object.fromEntries(allFiles(DIR).filter(f => f !== MANIFEST).map(f => [rel(f), hash(f)]).sort(([a],[b])=>a.localeCompare(b)));
-  fs.writeFileSync(MANIFEST, JSON.stringify({ version, cache, hashes }, null, 2) + '\n');
+  const provenance = { schema: SCHEMA, ...inputs(REPO), source_sha: process.env.GITHUB_SHA || git(['rev-parse','HEAD'],REPO).trim(), run_id: Number(process.env.GITHUB_RUN_ID || 0) };
+  fs.writeFileSync(MANIFEST, JSON.stringify({ version, cache, hashes, provenance }, null, 2) + '\n');
   verify();
 } else if (action === 'verify') {
   verify();
-} else if (action === 'stage') {
+} else if (action === 'stage' || action === 'rehearse') {
   verify();
+  const targetRoot = action === 'rehearse' ? fs.mkdtempSync(path.join(os.tmpdir(), 'dune-stage-')) : REPO;
+  try {
   const pwa = path.join(DIR, 'pwa');
   const assets = path.join(pwa, 'assets');
   if (!stageFiles.every(f => fs.existsSync(path.join(pwa, f))) || !fs.existsSync(assets))
     throw new Error('Incomplete PWA');
-  for (const f of stageFiles) fs.copyFileSync(path.join(pwa, f), path.join(REPO, f));
-  fs.rmSync(path.join(REPO, 'assets'), { recursive: true, force: true });
-  fs.cpSync(assets, path.join(REPO, 'assets'), { recursive: true });
-  for (const f of stageFiles) if (hash(path.join(REPO, f)) !== hash(path.join(pwa, f)))
+  for (const f of stageFiles) fs.copyFileSync(path.join(pwa, f), path.join(targetRoot, f));
+  fs.rmSync(path.join(targetRoot, 'assets'), { recursive: true, force: true });
+  fs.cpSync(assets, path.join(targetRoot, 'assets'), { recursive: true });
+  for (const f of stageFiles) if (hash(path.join(targetRoot, f)) !== hash(path.join(pwa, f)))
     throw new Error('Staging mismatch: ' + f);
   for (const f of allFiles(assets)) {
-    const target = path.join(REPO, 'assets', path.relative(assets, f));
+    const target = path.join(targetRoot, 'assets', path.relative(assets, f));
     if (hash(target) !== hash(f)) throw new Error('Staging mismatch: ' + rel(f));
   }
   console.log('Published files staged byte-for-byte from tested build');
+  } finally { if (action === 'rehearse') fs.rmSync(targetRoot, { recursive: true, force: true }); }
 } else throw new Error('Usage: node tools/ci-artifact.mjs make|verify|stage [dist-directory]');

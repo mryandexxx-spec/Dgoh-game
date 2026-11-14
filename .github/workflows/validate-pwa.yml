@@ -8,10 +8,11 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: validate-pwa-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   plan:
@@ -20,21 +21,42 @@ jobs:
     timeout-minutes: 3
     outputs:
       mode: ${{ steps.scope.outputs.mode }}
-      arena_ab: ${{ steps.scope.outputs.arena_ab }}
+      scope: ${{ steps.scope.outputs.scope }}
+      decision: ${{ steps.scope.outputs.decision }}
+      reuse_run_id: ${{ steps.scope.outputs.reuse_run_id }}
+      build: ${{ steps.scope.outputs['build'] }}
+      golden: ${{ steps.scope.outputs['golden'] }}
+      pwa: ${{ steps.scope.outputs['pwa'] }}
+      ui: ${{ steps.scope.outputs['ui'] }}
+      ui-campaign: ${{ steps.scope.outputs['ui-campaign'] }}
+      campaign-lifecycle: ${{ steps.scope.outputs['campaign-lifecycle'] }}
+      ui-heroes: ${{ steps.scope.outputs['ui-heroes'] }}
+      ui-arena: ${{ steps.scope.outputs['ui-arena'] }}
+      three-d: ${{ steps.scope.outputs['three-d'] }}
+      three-d-desktop: ${{ steps.scope.outputs['three-d-desktop'] }}
+      perf: ${{ steps.scope.outputs['perf'] }}
+      bh8-preview: ${{ steps.scope.outputs['bh8-preview'] }}
+      bh98-procedural: ${{ steps.scope.outputs['bh98-procedural'] }}
+      md-ult1: ${{ steps.scope.outputs['md-ult1'] }}
+      arena-animation: ${{ steps.scope.outputs['arena-animation'] }}
+      arena-ab: ${{ steps.scope.outputs['arena-ab'] }}
     steps:
       - uses: actions/checkout@v4
       - name: Test CI selection and resource-result validation
         run: |
           node dev/tests/ci/selection.mjs
+          node dev/tests/ci/proof.mjs
           node dev/tests/ci/resource-growth.mjs
       - name: Determine scope from the actual git diff
         id: scope
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: node dev/tools/ci-plan.mjs
 
   build:
     name: Build once + architecture + SHA-256 manifest
     needs: plan
-    if: ${{ needs.plan.outputs.mode == 'full' }}
+    if: ${{ needs.plan.outputs['build'] == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     defaults:
@@ -47,45 +69,93 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: dev/package-lock.json
-      - run: npm ci
-      - run: node tools/check-deps.mjs
-      - run: npm run build
-      - run: node tools/check-bundle.mjs dist/pwa/app.js
-      - run: node tests/arena-hud-layout.mjs dist/pwa/index.html
-      - run: node tests/smoke/young-baron-cpu.mjs dist/pwa/index.html
-      - run: node tests/baron-legend-contract.mjs
-      - run: node tests/baron-legend-progress.mjs
-      - run: node tests/baron-future-heroes.mjs
-      - run: node tests/baron-approved-data.mjs
-      - run: node tests/baron-bh9-encounters.mjs
-      - run: node tests/baron-bh9-battle.mjs
-      - run: node tests/baron-bh9-event.mjs
-      - run: node tests/baron-bh99-public-journey.mjs
-      - run: node tests/baron-bh9-hero-kits.mjs
-      - run: node tests/baron-bh94-story-events.mjs
-      - run: node tests/baron-bh95-integration.mjs
-      - run: node tests/baron-bh96-story-screen.mjs
-      - run: node tests/baron-bh97-character-release.mjs
-      - run: node tests/baron-horror.mjs
-      - run: node tests/baron-abilities.mjs
-      - run: node tests/baron-mechanics.mjs
-      - run: node tests/baron-gl-greed.mjs
-      - run: node tests/baron-staged-kit.mjs
-      - run: node tests/baron-roster-integration.mjs
-      - run: node tests/baron-legend-model-asset.mjs
-      - run: node tests/muad-dib-asset.mjs
-      - run: node tests/muad-dib-skinning.mjs
-      - run: node tests/muad-dib-babylon.mjs dist/pwa/index.html
-      - run: node tests/arena-animation-recovery.mjs dist/pwa/index.html
-      - run: node tests/baron-legend-animation.mjs
-      - run: node tests/baron-legend-skinning.mjs dist/pwa/index.html
-      - run: node tests/baron-legend-cinematic.mjs dist/pwa/index.html
-      - run: node tests/smoke/gear-e3.mjs
-      - run: node tests/smoke/gear-ge1.mjs
-      - run: node tests/smoke/memory-ix.mjs dist/pwa/index.html
-      - run: node tests/smoke/v83-v85.mjs dist/pwa/index.html
-      - run: node tests/smoke/jihad-j1.mjs dist/pwa/index.html
-      - run: node tools/ci-artifact.mjs make
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: npm ci
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tools/check-deps.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: npm run build
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tools/check-bundle.mjs dist/pwa/app.js
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/arena-hud-layout.mjs dist/pwa/index.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/smoke/young-baron-cpu.mjs dist/pwa/index.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-legend-contract.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-legend-progress.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-future-heroes.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-approved-data.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-bh9-encounters.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-bh9-battle.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-bh9-event.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-bh99-public-journey.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-bh9-hero-kits.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-bh94-story-events.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-bh95-integration.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-bh96-story-screen.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-bh97-character-release.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-horror.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-abilities.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-mechanics.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-gl-greed.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-staged-kit.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-roster-integration.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-legend-model-asset.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/muad-dib-asset.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/muad-dib-skinning.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/muad-dib-babylon.mjs dist/pwa/index.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/arena-animation-recovery.mjs dist/pwa/index.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-legend-animation.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-legend-skinning.mjs dist/pwa/index.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/baron-legend-cinematic.mjs dist/pwa/index.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/smoke/gear-e3.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/smoke/gear-ge1.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/smoke/memory-ix.mjs dist/pwa/index.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/smoke/v83-v85.mjs dist/pwa/index.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tests/smoke/jihad-j1.mjs dist/pwa/index.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        run: node tools/ci-artifact.mjs make
+      - name: Download proven build without rebuilding
+        if: ${{ needs.plan.outputs.mode == 'reuse' }}
+        env:
+          PLAN: ${{ needs.plan.outputs.decision }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node tools/ci-download.mjs
+      - name: Verify reused build against current inputs and SHA-256
+        if: ${{ needs.plan.outputs.mode == 'reuse' }}
+        run: node tools/ci-artifact.mjs verify
       - name: Upload the only production build
         uses: actions/upload-artifact@v4
         with:
@@ -97,7 +167,7 @@ jobs:
   golden:
     name: Golden (200 battles, meta, saves, 41 screens; PWA + artifact)
     needs: [plan, build]
-    if: ${{ needs.plan.outputs.mode == 'full' }}
+    if: ${{ needs.plan.outputs['golden'] == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     defaults:
@@ -126,10 +196,10 @@ jobs:
           npx playwright install chromium
       - run: npm test
 
-  ui:
-    name: E3 iPhone UI + DOM idle layout
+  pwa:
+    name: PWA update + offline + boot fallback
     needs: [plan, build]
-    if: ${{ needs.plan.outputs.mode == 'full' }}
+    if: ${{ needs.plan.outputs['pwa'] == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -159,11 +229,39 @@ jobs:
         run: node tests/smoke/core-model-stall.mjs dist/pwa/index.html
       - name: Optional Muad-Dib download must not block 3D lobby
         run: node tests/smoke/optional-model-boot.mjs dist/pwa/index.html
+      - name: PWA update and offline assets
+        run: node tests/smoke/sw.mjs .. dist/pwa
+
+  ui:
+    name: E3 iPhone UI + DOM idle layout
+    needs: [plan, build]
+    if: ${{ needs.plan.outputs['ui'] == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dune-validated-build
+          path: dev/dist
+      - run: node tools/ci-artifact.mjs verify
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          chrome-version: stable
+      - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
       - run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
       - run: node tests/smoke/memory-ix-dom.mjs dist/pwa/index.html
       - run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
-      - name: PWA update and offline assets
-        run: node tests/smoke/sw.mjs .. dist/pwa
       - name: Upload E3 screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -176,7 +274,7 @@ jobs:
   ui-campaign:
     name: Campaign 2.0 + lobby mobile WebGL
     needs: [plan, build]
-    if: ${{ needs.plan.outputs.mode == 'full' }}
+    if: ${{ needs.plan.outputs['ui-campaign'] == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -223,10 +321,40 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  campaign-lifecycle:
+    name: Campaign lifecycle (MED/LOW phone + HIGH desktop)
+    needs: [plan, build]
+    if: ${{ needs.plan.outputs['campaign-lifecycle'] == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dune-validated-build
+          path: dev/dist
+      - run: node tools/ci-artifact.mjs verify
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          chrome-version: stable
+      - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+      - name: Verify campaign mount/render/dispose and stable resources
+        run: node tests/smoke/campaign-lifecycle.mjs dist/pwa/index.html
+
   ui-heroes:
     name: Duncan + Muad Dib + Young Baron mobile WebGL
     needs: [plan, build]
-    if: ${{ needs.plan.outputs.mode == 'full' }}
+    if: ${{ needs.plan.outputs['ui-heroes'] == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -286,7 +414,7 @@ jobs:
   ui-arena:
     name: Arena framing + HUD + idle DOM
     needs: [plan, build]
-    if: ${{ needs.plan.outputs.mode == 'full' }}
+    if: ${{ needs.plan.outputs['ui-arena'] == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -350,7 +478,7 @@ jobs:
   three-d:
     name: 3D lifecycle + memory + WebGL console (phone)
     needs: [plan, build]
-    if: ${{ needs.plan.outputs.mode == 'full' }}
+    if: ${{ needs.plan.outputs['three-d'] == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 16
     defaults:
@@ -392,7 +520,7 @@ jobs:
   three-d-desktop:
     name: 3D lifecycle + memory + WebGL console (desktop)
     needs: [plan, build]
-    if: ${{ needs.plan.outputs.mode == 'full' }}
+    if: ${{ needs.plan.outputs['three-d-desktop'] == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 16
     defaults:
@@ -434,7 +562,7 @@ jobs:
   perf:
     name: Camp + battle budgets (MED/LOW phone)
     needs: [plan, build]
-    if: ${{ needs.plan.outputs.mode == 'full' }}
+    if: ${{ needs.plan.outputs['perf'] == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 16
     defaults:
@@ -517,7 +645,7 @@ jobs:
   bh8-preview:
     name: BH8 legendary Baron WebGL frames (844/667 MED/LOW)
     needs: [plan, build]
-    if: ${{ needs.plan.outputs.mode == 'full' }}
+    if: ${{ needs.plan.outputs['bh8-preview'] == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     defaults:
@@ -560,7 +688,7 @@ jobs:
   bh98-procedural:
     name: BH9.8 Margot + Yue procedural WebGL cards, battle and 2D fallback (844/667 MED/LOW)
     needs: [plan, build]
-    if: ${{ needs.plan.outputs.mode == 'full' }}
+    if: ${{ needs.plan.outputs['bh98-procedural'] == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -612,7 +740,7 @@ jobs:
   md-ult1:
     name: MD-ULT-1 real GL cinematic MED LOW (baked and missing)
     needs: [plan, build]
-    if: ${{ needs.plan.outputs.mode == 'full' }}
+    if: ${{ needs.plan.outputs['md-ult1'] == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     defaults:
@@ -651,7 +779,7 @@ jobs:
   arena-animation:
     name: Arena animation continuity + HUD + lighting (MED/LOW)
     needs: [plan, build]
-    if: ${{ needs.plan.outputs.mode == 'full' }}
+    if: ${{ needs.plan.outputs['arena-animation'] == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     defaults:
@@ -689,7 +817,7 @@ jobs:
   arena-ab:
     name: Arena A/B (${{ matrix.gfx }})
     needs: [plan, build]
-    if: ${{ needs.plan.outputs.arena_ab == 'true' }}
+    if: ${{ needs.plan.outputs['arena-ab'] == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     strategy:
@@ -731,7 +859,7 @@ jobs:
   gate:
     name: All required checks passed
     if: always()
-    needs: [plan, build, golden, ui, ui-campaign, ui-heroes, ui-arena, three-d, three-d-desktop, perf, bh8-preview, bh98-procedural, md-ult1, arena-animation, arena-ab]
+    needs: [plan, build, golden, pwa, ui, ui-campaign, campaign-lifecycle, ui-heroes, ui-arena, three-d, three-d-desktop, perf, bh8-preview, bh98-procedural, md-ult1, arena-animation, arena-ab]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -740,23 +868,38 @@ jobs:
           RESULTS: ${{ toJSON(needs) }}
         run: node dev/tools/ci-gate.mjs
       - name: Download the same validated build for deployment rehearsal
-        if: ${{ needs.plan.outputs.mode == 'full' }}
+        if: ${{ needs.plan.outputs.mode != 'docs' }}
         uses: actions/download-artifact@v4
         with:
           name: dune-validated-build
           path: dev/dist
       - name: Stage, verify bytes, and ensure no source changed
-        if: ${{ needs.plan.outputs.mode == 'full' }}
+        if: ${{ needs.plan.outputs.mode != 'docs' }}
         shell: bash
         run: |
           cd dev
-          node tools/ci-artifact.mjs stage
+          node tools/ci-artifact.mjs rehearse
           cd ..
           git diff --exit-code -- dev
 
+      - name: Certify verified inputs, test coverage and build artifact
+        if: ${{ needs.plan.outputs.mode != 'docs' }}
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node dev/tools/ci-receipt.mjs
+      - name: Publish immutable validation receipt
+        if: ${{ needs.plan.outputs.mode != 'docs' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-validation-receipt
+          path: dev/ci-receipt/receipt.json
+          if-no-files-found: error
+          retention-days: 14
+
   deploy-pages:
     name: Publish verified PWA to GitHub Pages
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.plan.outputs.mode == 'full' }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.plan.outputs.mode != 'docs' }}
     needs: [plan, gate]
     runs-on: ubuntu-24.04
     permissions:
@@ -775,6 +918,8 @@ jobs:
         with:
           name: dune-validated-build
           path: dev/dist
+      - name: Bind publication to current main with identical tested inputs
+        run: node dev/tools/ci-current-main.mjs
       - name: Verify exact validated release bits and SHA-256
         run: node dev/tools/ci-artifact.mjs verify
       - name: Stage exact validated files into the repository root

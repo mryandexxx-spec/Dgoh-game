@@ -1,0 +1,21 @@
+// Published only AFTER the required gate and exact-build staging rehearsal.
+import fs from 'node:fs';
+import path from 'node:path';
+import { checkGate } from './ci-gate.mjs';
+import { SCHEMA, inputs } from './ci-inputs.mjs';
+const needs=JSON.parse(process.env.RESULTS),plan=checkGate(needs);
+const key=inputs();
+if(key.fingerprint!==plan.fingerprint||key.behavior!==plan.behavior)throw Error('Plan/checkout mismatch');
+const manifest=JSON.parse(fs.readFileSync('dev/dist/ci-manifest.json','utf8'));
+if(manifest.provenance?.fingerprint!==key.fingerprint)throw Error('Build/receipt mismatch');
+const repo=process.env.GITHUB_REPOSITORY,run=Number(process.env.GITHUB_RUN_ID);
+const response=await fetch(`https://api.github.com/repos/${repo}/actions/runs/${run}/artifacts?per_page=100`,{headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN,Accept:'application/vnd.github+json'},signal:AbortSignal.timeout(15000)});
+if(!response.ok)throw Error('Cannot bind build artifact: '+response.status);
+const {artifacts}=await response.json();
+const build=artifacts.find(a=>a.name==='dune-validated-build'&&!a.expired);
+if(!build||!/^sha256:[a-f0-9]{64}$/.test(build.digest||''))throw Error('Missing immutable build artifact digest');
+const event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
+const receipt={schema:SCHEMA,repository:repo,event:process.env.GITHUB_EVENT_NAME,run_id:run,attempt:Number(process.env.GITHUB_RUN_ATTEMPT),source_sha:process.env.GITHUB_SHA,head_sha:event.pull_request?.head?.sha||process.env.GITHUB_SHA,pr_number:event.pull_request?.number||null,...key,coverage:plan.coverage,plan,build_artifact_id:build.id,build_digest:build.digest,build_origin:manifest.provenance};
+fs.mkdirSync('dev/ci-receipt',{recursive:true});
+fs.writeFileSync(path.join('dev/ci-receipt','receipt.json'),JSON.stringify(receipt,null,2)+'\n');
+console.log('Certified validation coverage:',receipt.coverage.join(', '),'build artifact',build.id);
