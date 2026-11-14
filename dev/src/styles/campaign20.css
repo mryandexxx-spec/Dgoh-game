@@ -178,3 +178,8 @@ body:has(.c20) #notes{display:none!important;}
  clip-path:polygon(0 35%,15% 0,31% 28%,48% 11%,65% 40%,78% 7%,100% 45%,100% 100%,0 100%);
  pointer-events:none;
 }
+
+/* C4.12 Light IV: water-honoring carved sietch, warm cave to sunrise desert. */
+.c20-world.sietch-water{background:linear-gradient(107deg,#142b34 0%,#2c4b4d 27%,#5d655b 47%,#977451 70%,#d1a775 100%);border-color:#b19878}
+.c20-world.sietch-water.c20-fallback::before{content:'СИЕТЧ ТАБР · СЕРДЦЕ ВОДЫ';position:absolute;top:9%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.11em;color:#f0d7aa;opacity:.92;pointer-events:none}
+.c20-world.sietch-water.c20-fallback::after{content:'';position:absolute;inset:24% 0 auto 0;height:23%;background:linear-gradient(180deg,#102c38a8,#29586580 70%,transparent);clip-path:polygon(0 25%,22% 0,39% 40%,57% 8%,73% 42%,100% 11%,100% 100%,0 100%);pointer-events:none}
