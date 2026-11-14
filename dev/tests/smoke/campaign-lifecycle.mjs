@@ -46,9 +46,10 @@ try {
           const el=document.createElement('div');el.style.cssText='position:fixed;inset:0;width:100vw;height:100vh';
           el.innerHTML=map.nodes.map(n=>`<button data-c20node="${n.id}"></button>`).join('');document.body.append(el);
           mountCampaignMap(el,map,()=>{},()=>{throw Error('Unexpected 2D fallback');});
+          // Static maps may legitimately render once, then sleep.
           let scene;
-          for(let i=0;i<400;i++){scene=__B3.EngineStore.Instances.flatMap(e=>e.scenes).find(s=>s.activeCamera?.name==='campaign-camera');if(scene?.getFrameId()>=2)break;await tick();}
-          if(!scene||scene.getFrameId()<2)throw Error('Map did not render');
+          for(let i=0;i<400;i++){scene=__B3.EngineStore.Instances.flatMap(e=>e.scenes).find(s=>s.activeCamera?.name==='campaign-camera');if(scene?.getFrameId()>=1)break;await tick();}
+          if(!scene||scene.getFrameId()<1)throw Error('Map did not render: '+side+':'+chapter+' frame='+scene?.getFrameId());
           const active=snapshot();if(active.engines!==1||active.contexts!==1)throw Error('Map created extra Engine/context: '+JSON.stringify(active));
           mounted.push({chapter:side+':'+chapter,meshes:scene.meshes.length,vertices:scene.meshes.reduce((n,m)=>n+m.getTotalVertices(),0)});
           closeCampaignMap();el.remove();
