@@ -42,10 +42,32 @@ export function buildEmptyHarvestRing(B3, scene, material, detail = true) {
     const dx=x2-x1,dz=z2-z1;
     return box(name,(x1+x2)/2,y,(z1+z2)/2,width,.10,Math.hypot(dx,dz),tint,Math.atan2(-dx,dz));
   };
+  // Tapered sculpted sand crests use ONE low-poly static mesh per dune.
+  // Unlike box-shaped ridges they return to the continuous terrain at the ends.
+  const ridge=(name,x,z,w,length,height,tint,angle=0)=>{
+    const rows=detail?9:6,cols=detail?7:4;
+    const p=[],tri=[];
+    for(let j=0;j<=rows;j++){
+      const t=j/rows,fade=Math.pow(Math.sin(Math.PI*t),.9);
+      for(let i=0;i<=cols;i++){
+        const u=2*i/cols-1;
+        p.push(u*w*.5*fade,-.28+height*fade*(1-u*u),(t-.5)*length);
+      }
+    }
+    for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
+      const a=j*(cols+1)+i,b=a+cols+1;
+      tri.push(a,b,a+1,a+1,b,b+1);
+    }
+    const data=new B3.VertexData();data.positions=p;data.indices=tri;data.normals=[];
+    B3.VertexData.ComputeNormals(p,tri,data.normals);
+    const mesh=new B3.Mesh(name,scene);data.applyToMesh(mesh);
+    mesh.position.set(x,0,z);mesh.rotation.y=angle;
+    mesh.material=tint;mesh.isPickable=false;return mesh;
+  };
   const coords=[[-58,-10],[-46,-21],[-31,-27],[-16,-25],[-2,-16],
     [10,-4],[21,10],[35,19],[51,13],[64,2]];
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-  const ground=M.CreateGround('40-49 connected spice basin',{width:174,height:106,subdivisions:detail?48:28,updatable:true},scene);
+  const ground=M.CreateGround('40-49 connected spice basin',{width:250,height:170,subdivisions:detail?52:32,updatable:true},scene);
   const positions=ground.getVerticesData(B3.VertexBuffer.PositionKind);
   const indices=ground.getIndices();
   const colors=[];
@@ -76,10 +98,13 @@ export function buildEmptyHarvestRing(B3, scene, material, detail = true) {
   ground.useVertexColors=true;ground.material=mat.terrain;ground.isPickable=false;
   // One central excavated basin, with a low industrial scar and no navigation island.
   for(let j=0;j<7;j++) {
-    const x=-43+j*17,z=29+3*Math.sin(j*.7);
-    const ridge=box('background long dune crest '+j,x,.5,z,16,1.4,3.3,
+    const x=-43+j*17,z=33+4*Math.sin(j*.7);
+    ridge('background wind-shaped dune '+j,x,z,10+j%3*2,23,1.5+j%3*.24,
       j%2?mat.dark:mat.sand,.18*Math.cos(j));
-    ridge.scaling.y=1+j%3*.25;
+  }
+  for(let j=0;j<5;j++) {
+    const x=-51+j*24,z=-42-(j%2)*3;
+    ridge('foreground low sand fold '+j,x,z,8,21,.85,mat.sand,.24*Math.sin(j));
   }
   for(let j=0;j<6;j++) {
     const x=-27+j*17,z=-34+(j%2)*2.2;
