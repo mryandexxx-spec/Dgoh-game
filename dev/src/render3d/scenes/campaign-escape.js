@@ -68,7 +68,7 @@ export function buildEscapeRift(B3, scene, material, detail = true) {
   // Terrain is one continuous rock-and-sand surface, not ten floating islands.
   // Keep the ground under all world-space mission markers almost level.
   const ground=M.CreateGround('Escape continuous night desert',{
-    width:146,height:73,subdivisions:detail?44:28,updatable:true},scene);
+    width:240,height:112,subdivisions:detail?44:28,updatable:true},scene);
   const verts=ground.getVerticesData(B3.VertexBuffer.PositionKind);
   const indices=ground.getIndices(),colors=[];
   const clamp01=n=>Math.max(0,Math.min(1,n));
