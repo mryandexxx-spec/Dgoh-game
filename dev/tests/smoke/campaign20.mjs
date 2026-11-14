@@ -641,6 +641,71 @@ try {
     }
     console.log('PASS Corrin C4.9 real WebGL',w,h,gfx,JSON.stringify({corrinFirst,corrinEnd}));
 
+    // C4.10: reborn desert basin, all original 200–209 IDs, real mobile WebGL.
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="6"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="6"]').click());
+    await page.waitForFunction(()=>document.querySelectorAll('.c20-world.sandworms-rebirth .c20-pin').length===10,{timeout:7000});
+    await page.waitForSelector('.c20-world.sandworms-rebirth.campaign20-3d-ready',{timeout:20000});
+    const checkSandworms=async(label)=>{
+      await page.waitForFunction(()=>[...document.querySelectorAll('.c20-world.sandworms-rebirth .c20-pin')].some(p=>getComputedStyle(p).visibility==='visible'),{timeout:9000});
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.sandworms-rebirth');
+        const all=[...world.querySelectorAll('.c20-pin')];
+        const visible=all.filter(p=>getComputedStyle(p).visibility==='visible');
+        const nums=visible.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const rect=world.getBoundingClientRect();
+        const overlaps=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3
+            &&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        // Capture Babylon's real projection if a narrow viewport hides #9.
+        const B=window.__B3;
+        const scene=B?.EngineStore?.Instances?.flatMap(engine=>engine.scenes||[])
+          .find(scene=>scene.activeCamera?.name==='campaign-camera');
+        const projection=scene?[208,209].map(id=>{
+          const n=id===208?[43,-3]:[38,15];
+          const p=B.Vector3.Project(new B.Vector3(n[0],1.15,n[1]),
+            B.Matrix.IdentityReadOnly,scene.getTransformMatrix(),
+            new B.Viewport(0,0,world.clientWidth,world.clientHeight));
+          const el=all.find(q=>Number(q.dataset.c20node)===id);
+          return {id,x:+p.x.toFixed(1),y:+p.y.toFixed(1),
+            shown:getComputedStyle(el).visibility,style:el.style.transform};
+        }):[];
+        return {nums,projection,stage:[world.clientWidth,world.clientHeight],
+          ids:all.map(p=>Number(p.dataset.c20node)),
+          boss:all.filter(p=>p.classList.contains('boss')).length,
+          canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          within:visible.every(p=>{const r=p.getBoundingClientRect();return r.left>=rect.left+1&&r.right<=rect.right-1&&r.top>=rect.top+1;}),
+          overlaps,pager:world.querySelectorAll('[data-c20step],.c20-mission-nav').length,
+          fallbackCoords:all.every(p=>p.style.getPropertyValue('--px')&&p.style.getPropertyValue('--py'))};
+      });
+      assert.deepEqual(state.ids,Array.from({length:10},(_,i)=>i+200),'C:6 IDs 200–209');
+      assert.equal(state.boss,1,'C:6 only one final boss');
+      assert.equal(state.canvas,true,'C:6 actual WebGL canvas');
+      assert.equal(state.pager,0,'C:6 v101 swipe without extra page controls');
+      assert.equal(state.fallbackCoords,true,'C:6 fallback coordinates');
+      assert.equal(state.within,true,'C:6 markers inside phone viewport');
+      assert.deepEqual(state.overlaps,[],'C:6 no projected marker overlaps');
+      assert.ok(state.nums.length>=2&&state.nums.length<=4,label+' needs 2–4 nearby pins '+JSON.stringify(state));
+      assert.ok(state.nums.every((n,i)=>!i||n===state.nums[i-1]+1),
+        label+' visible numbers must be consecutive '+JSON.stringify(state));
+      return state;
+    };
+    await page.screenshot({path:path.join(shots,`sandworms-debug-end-${w}-${gfx}.png`)});
+    const wormsEnd=await checkSandworms('end of war');
+    assert.ok(wormsEnd.nums.includes(10),'C:6 boss visible at chapter entry');
+    await page.screenshot({path:path.join(shots,`sandworms-end-${w}-${gfx}.png`)});
+    for(const [id,name] of [[200,'machine-return'],[203,'burn'],[204,'sandtrout'],[206,'faces'],[208,'new-worms'],[209,'omnius-crest']]){
+      await page.evaluate(id=>document.querySelector(`[data-c20node="${id}"]`)?.click(),id);
+      await new Promise(resolve=>setTimeout(resolve,560));
+      const state=await checkSandworms(name);
+      assert.ok(state.nums.includes(id-199),'C:6 '+name+' selected mission visible '+JSON.stringify(state));
+      await page.screenshot({path:path.join(shots,`sandworms-${name}-${w}-${gfx}.png`)});
+    }
+    console.log('PASS C4.10 Pulse of Depths WebGL',w,h,gfx,JSON.stringify({wormsEnd}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
