@@ -846,8 +846,12 @@ try {
         const B=window.__B3;
         const scene=B?.EngineStore?.Instances?.flatMap(e=>e.scenes||[])
           .find(s=>s.activeCamera?.name==='campaign-camera');
-        const projection=scene?[48,49].map(id=>{
-          const n=id===48?[51,13]:[64,2];
+        const focusId=Number(all.find(e=>e.classList.contains('on'))?.dataset.c20node??49);
+        const coords=[[-58,-10],[-46,-21],[-31,-27],[-16,-25],[-2,-16],
+          [10,-4],[21,10],[35,19],[51,13],[64,2]];
+        const projection=scene?[focusId-1,focusId,focusId+1]
+          .filter(id=>id>=40&&id<=49).map(id=>{
+          const n=coords[id-40];
           const pos=B.Vector3.Project(new B.Vector3(n[0],1.15,n[1]),
             B.Matrix.IdentityReadOnly,scene.getTransformMatrix(),
             new B.Viewport(0,0,world.clientWidth,world.clientHeight));
@@ -894,11 +898,12 @@ try {
       [48,'water-of-life'],[49,'rabban']]){
       await page.evaluate(id=>document.querySelector('[data-c20node="'+id+'"]')?.click(),id);
       await new Promise(resolve=>setTimeout(resolve,560));
+      // Capture the failing view too: visual review must not depend on a
+      // successful visibility assertion for the current scene revision.
+      await page.screenshot({path:path.join(shots,'empty-harvest-'+name+'-'+w+'-'+gfx+'.png')});
       const state=await checkHarvest('Empty Harvest '+name);
       assert.ok(state.nums.includes(id-39),
         'L:4 selected '+name+' mission must remain visible '+JSON.stringify(state));
-      if([40,42,43,46,47,48,49].includes(id))
-        await page.screenshot({path:path.join(shots,'empty-harvest-'+name+'-'+w+'-'+gfx+'.png')});
     }
     console.log('PASS C4.13 Empty Harvest Ring real WebGL',w,h,gfx,JSON.stringify({harvestEntry}));
 
