@@ -1,6 +1,6 @@
 # CI, этап 3 — минимальные сценарии и переиспользование проверенной сборки
 
-Кандидат PR #73; перед слиянием обновлён до опубликованной v114. Причина: C4.10 потребовал 6:02 для документальной приёмки, 6:05 для выпускного PR и 7:24 для main. Полный diff PR повторно включал ранее проверенный код.
+Внедрено в main через PR #73 и #77 14.11.2026; игровая версия v114 сохранена. Причина: C4.10 потребовал 6:02 для документальной приёмки, 6:05 для выпускного PR и 7:24 для main. Полный diff PR повторно включал ранее проверенный код.
 
 ## Выбор сценария
 
@@ -63,3 +63,10 @@ Replay действительного diff C4.10 (`f930524c` → `caef3769`) в�
 Первый main run после PR #73 (#43608836029) подтвердил reuse за 43 с, но GitHub пропустил deploy: неявный success() учитывал намеренно skipped задания в цепочке. Условие deploy теперь содержит явный status-check `!cancelled()` и требует `needs.plan.result == success` и `needs.gate.result == success`. Документы, PR, не-main ref, отмена или неуспешный gate не публикуются. Статический regression-тест закрепляет присутствие status-check и проверяет таблицу допустимых/запрещённых состояний.
 
 Основание: [GitHub status-check functions](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions), [needs и skipped dependencies](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idneeds).
+
+## Подтверждённое включение в main
+
+- PR #73 слит коммитом `0085973245f1a9f4bc4e89a4313842e50cbeca35`; его первый main reuse занял 43 с, но deploy был skipped из-за неявного status-check.
+- PR #77 исправил условие публикации и слит коммитом `67244cc56cb0bfa5282dcec2ed2598767ac35fa7`. Полный PR CI [#43611019274](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43611019274) SUCCESS.
+- Реальный [main CI #43611761072](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43611761072) **SUCCESS за 77 с**, включая reuse, gate и **[Pages publish SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43611761072/job/132498341863)**. Повторные browser/golden задания намеренно skipped с подтверждённым покрытием.
+- Скачана точная сборка из PR-run #43611019274, ZIP и все 188 файлов проверены; current-main guard и byte-for-byte staging прошли. Опубликованная игра осталась **v114 · 41ae5b6ad1**. Это проверка настоящей публикации, а не только dry-run или fixtures.
