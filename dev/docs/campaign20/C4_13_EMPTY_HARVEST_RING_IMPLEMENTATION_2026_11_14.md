@@ -45,9 +45,9 @@ uses the same coordinates. High background silhouettes are placed behind buttons
 - Static idle maintained by the existing GameScene mode contract; dispose/restore uses host.
 
 ## Camera / mobile UX
-Initial target (-58,-10), alpha -1.28, beta .97, radius 30,
+Initial target (-58,-10), alpha -1.28, beta .97, radius 32,
 minRadius 25, maxRadius 60, turnLimit .24.
-Boss focus is alpha -1.49 (within existing turnLimit), beta 1.06 and radius 34. A real 844x390 MED projection initially placed #9 at (464.4,99.1) and #10 at (412.9,137.7), too close for the approved 50/60px collision guard; the angle was corrected for subsequent verification.
+Regular non-boss camera target applies a southward Z offset of -6 to retain #2 inside the short LOW stage; final boss target uses +3. Boss focus is alpha -1.49 (within existing turnLimit), beta 1.06 and radius 34. A real 844x390 MED projection initially placed #9 at (464.4,99.1) and #10 at (412.9,137.7), too close for the approved 50/60px collision guard; the angle was corrected for subsequent verification.
 Final target anchored to current boss (64,2), not a jump to Arrakeen.
 
 MED 844x390 and LOW 667x375: 2–4 **local consecutive** mission numbers,
