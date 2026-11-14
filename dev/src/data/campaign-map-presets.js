@@ -68,11 +68,11 @@ export const CAMPAIGN_MAPS = Object.freeze({
     id: 'sietch-tabr-heart-of-water', title: 'Сиетч Табр · Сердце воды',
     theme: 'sietch-water', bounds: [-65,80,-38,32],
     // Original Light-IV NODES 30–39; one continuous physical cave-to-desert.
-    camera: { target: [-48,0,-19], alpha: -1.27, beta: 1.05, radius: 35,
+    camera: { target: [-48,0,-19], alpha: -1.27, beta: .95, radius: 30,
       minRadius: 25, maxRadius: 60, turnLimit: .24 },
     nodes: Object.freeze([
-      [-48,-19],[-41,-4],[-29,10],[-14,16],[-1,4],
-      [12,-9],[25,-20],[39,-12],[52,2],[66,11],
+      [-48,-19],[-41,-4],[-29,10],[-14,9],[-1,4],
+      [12,-2],[25,-20],[39,-12],[52,2],[66,11],
     ]),
     landmarks: Object.freeze([
       {kind:'jamis-circle',x:-48,z:-19,size:9},
