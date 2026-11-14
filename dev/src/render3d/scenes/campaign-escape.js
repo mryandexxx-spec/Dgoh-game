@@ -48,10 +48,11 @@ export function buildEscapeRift(B3, scene, material, detail = true) {
       -w*.37,h*.70,-d*.25, w*.22,h*1.04,-d*.29,
        w*.37,h*.62, d*.24,-w*.19,h*.87, d*.34,
     ];
-    const faces=[0,2,1,0,3,2,4,5,6,4,6,7];
+    // Outside-facing winding: top normals point up and every side out.
+    const faces=[0,1,2,0,2,3,4,6,5,4,7,6];
     for(let j=0;j<4;j++){
       const n=(j+1)%4;
-      faces.push(j,n,n+4,j,n+4,j+4);
+      faces.push(j,n+4,n,j,j+4,n+4);
     }
     const data=new B3.VertexData();
     data.positions=pts;data.indices=faces;data.normals=[];
