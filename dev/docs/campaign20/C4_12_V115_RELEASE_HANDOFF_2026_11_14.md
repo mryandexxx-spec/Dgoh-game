@@ -39,4 +39,12 @@ C4.13 — Светлая V `L:4` «Годы в пустыне», исходны�
 
 ## Статус
 
-**v115 release-кандидат; подтверждение CI и фактической Pages публикации добавить после выполнения вышеуказанных шагов.**
+**v115 ОПУБЛИКОВАНА 14.11.2026.** Фактические доказательства:
+
+- [Release PR #79 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/79), release HEAD `fefb36ca4ac0c95564902c68f6c680d004d375a6`, squash merge SHA `ba3cd350585842d9dd28579105c0f1a3d346a748`.
+- [PR release CI #43630988857 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43630988857) на точном `fefb36ca`; golden battles/meta/saves/screens на artifact и PWA, SW/offline, сборка SHA-256, final required gate. Принятое поведение 3D наследуется только по доказанному input-key CI proof от полного [C4.12 CI #43628714583 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43628714583).
+- [Main Validate + verified PWA publish #43631382200 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43631382200) на `ba3cd350`. Job `All required checks passed` и `Publish verified PWA to GitHub Pages` — **SUCCESS**; staging провёл точную SHA-256 проверку.
+- Root publication commit `82b4ecad4f6b301d45da449aa1a3861c058386e8` («Publish verified PWA from CI artifact»), обновил только `app.js`, `app.css`, `sw.js` относительно release merge. В корневом `app.js` проверено **`v115 · 59b91969b0`**, в `sw.js` — `const VER = '59b91969b0'`.
+- [Pages build and deployment #43631500937 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43631500937) на точном root publication SHA `82b4ecad`. Предыдущий автоматический source build #43631382086 на кодовом merge до root-publication не был релизной выкладкой и завершился failure; он **замещён успешным Pages deployment на правильных release-файлах**.
+- Production URL: https://mryandexxx-spec.github.io/Dgoh-game/. Прямой HTTP-доступ к Pages из рабочей среды недоступен; доказательства — штатный verified deployment GitHub и исходники root PWA.
+- **Сюжетный этап C4.12 опубликован; готово 13/21 авторских карт.** На физическом iPhone Safari FPS/нагрев/батарея ещё не измерены. Следующий авторский этап — **C4.13 L:4 «Годы в пустыне» (40–49)**.
