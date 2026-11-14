@@ -768,6 +768,63 @@ try {
     }
     console.log('PASS C4.11 Escape Rift real WebGL',w,h,gfx,JSON.stringify({escapeAtEntry}));
 
+    // C4.12 Light IV «Сиетч Табр»: ten original mission IDs 30–39 on an
+    // independent cave-to-desert Babylon world, not a reused Escape Rift.
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="3"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="3"]').click());
+    await page.waitForSelector('.c20-world.sietch-water.campaign20-3d-ready',{timeout:20000});
+    const checkSietch=async(label)=>{
+      await page.waitForFunction(()=>[...document.querySelectorAll('.c20-world.sietch-water .c20-pin')]
+        .some(el=>getComputedStyle(el).visibility==='visible'),{timeout:9000});
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.sietch-water');
+        const all=[...world.querySelectorAll('.c20-pin')];
+        const visible=all.filter(p=>getComputedStyle(p).visibility==='visible');
+        const nums=visible.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const rect=world.getBoundingClientRect();
+        const overlaps=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3
+            &&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {
+          nums,ids:all.map(p=>Number(p.dataset.c20node)),
+          boss:all.filter(p=>p.classList.contains('boss')).length,
+          canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          within:visible.every(p=>{const b=p.getBoundingClientRect();
+            return b.left>=rect.left+1&&b.right<=rect.right-1&&b.top>=rect.top+1&&b.bottom<=rect.bottom-1;}),
+          overlaps,scroll:document.querySelector('.c20').scrollHeight>document.querySelector('.c20').clientHeight+1,
+          pager:world.querySelectorAll('[data-c20step],.c20-mission-nav').length,
+          fallbackCoords:all.every(p=>p.style.getPropertyValue('--px')&&p.style.getPropertyValue('--py')),
+        };
+      });
+      assert.deepEqual(state.ids,Array.from({length:10},(_,i)=>i+30),'L:3 original IDs 30–39');
+      assert.equal(state.boss,1,'L:3 only final mission is boss');
+      assert.equal(state.canvas,true,'L:3 shared GameScene mounted real WebGL');
+      assert.equal(state.pager,0,'L:3 keeps v101 controls, no new navigation buttons');
+      assert.equal(state.fallbackCoords,true,'L:3 has interactive 2D fallback coordinates');
+      assert.equal(state.scroll,false,'L:3 mobile landscape map cannot scroll');
+      assert.equal(state.within,true,'L:3 markers fully inside mobile map');
+      assert.deepEqual(state.overlaps,[],'L:3 50/60px markers do not overlap');
+      assert.ok(state.nums.length>=2&&state.nums.length<=4,label+' needs 2–4 neighbors '+JSON.stringify(state));
+      assert.ok(state.nums.every((n,i)=>!i||n===state.nums[i-1]+1),
+        label+' local sequence must be contiguous '+JSON.stringify(state));
+      return state;
+    };
+    const sietchEntry=await checkSietch('Sietch entry');
+    for(const [id,name] of [[30,'jamis'],[31,'water'],[32,'knife'],[33,'dew'],
+      [34,'warehouse'],[35,'worm'],[36,'raiders'],[37,'false-trail'],
+      [38,'prophecy'],[39,'muaddib']]){
+      await page.evaluate(id=>document.querySelector('[data-c20node="'+id+'"]')?.click(),id);
+      await new Promise(resolve=>setTimeout(resolve,550));
+      const state=await checkSietch('Sietch '+name);
+      assert.ok(state.nums.includes(id-29),'L:3 selected '+name+' visible '+JSON.stringify(state));
+      if([30,31,32,33,35,36,38,39].includes(id))
+        await page.screenshot({path:path.join(shots,'sietch-'+name+'-'+w+'-'+gfx+'.png')});
+    }
+    console.log('PASS C4.12 Heart of Water real WebGL',w,h,gfx,JSON.stringify({sietchEntry}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
