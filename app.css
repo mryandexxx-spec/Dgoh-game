@@ -1468,6 +1468,27 @@ body:has(.c20) #notes{display:none!important;}
 /* C4.9: single besieged planet, cold Omnius core and warm human memory. */
 .c20-world.corrin-siege{background:radial-gradient(ellipse at 80% 29%,#607b82 0%,#2b3b46 37%,#151f28 88%);border-color:#81999d}
 .c20-world.corrin-siege.c20-fallback::before{content:'ХРОНИКИ · РАЗОРВАННЫЙ ВЕНЕЦ';position:absolute;top:12%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.10em;color:#e5cfac;opacity:.94;pointer-events:none}
+
+/* C4.11 Light III: «Разлом Бури», moonlit canyon and Fremen rescue.
+   The same ten original interactive nodes remain usable without WebGL. */
+.c20-world.escape-rift{
+ background:linear-gradient(112deg,#0b1c2d 0%,#293e4b 26%,#59616a 47%,
+   #756a60 69%,#ba9470 100%);
+ border-color:#8c8d89;
+}
+.c20-world.escape-rift.c20-fallback::before{
+ content:'БЕГСТВО · РАЗЛОМ БУРИ';
+ position:absolute;top:13%;left:12px;right:12px;text-align:center;
+ font:12px var(--f-mono);letter-spacing:.11em;color:#e4cda9;
+ opacity:.92;pointer-events:none;
+}
+.c20-world.escape-rift.c20-fallback::after{
+ content:'';position:absolute;left:0;right:0;top:16%;height:43%;
+ background:linear-gradient(157deg,transparent 0 22%,#1b303e7a 23% 27%,
+   transparent 28% 46%,#293e4b87 47% 55%,transparent 56% 100%);
+ clip-path:polygon(0 35%,15% 0,31% 28%,48% 11%,65% 40%,78% 7%,100% 45%,100% 100%,0 100%);
+ pointer-events:none;
+}
 /* ===== landscape phones (primary orientation) ===== */
 @media (orientation: landscape) and (max-height: 520px) {
   header.top .wrap { padding-block: 4px 0; gap: 4px 14px; }
