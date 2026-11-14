@@ -11,6 +11,7 @@ export function buildMachineCrusade(B3, scene, material, detail = true) {
     dark: material('crusade-dark', '#182631'),
     steel: material('crusade-steel', '#8199a0'),
     blue: material('crusade-blue', '#65a2b7'),
+    mind: material('crusade-mind', '#aedfe7'),
     spice: material('crusade-spice', '#ce8c43'),
     dune: material('crusade-dune', '#93714b'),
     ivory: material('crusade-ivory', '#d5c19b'),
@@ -199,7 +200,12 @@ export function buildMachineCrusade(B3, scene, material, detail = true) {
   }
   box('189 Agamemnon chest',59,12,22,8,5.5,5.5,mats.steel);
   box('189 Agamemnon armoured spine',59,7.8,22,4,5,3,mats.hull);
-  cyl('189 human brain capsule',59,16.1,21,4.1,3.4,mats.blue,10,3.4);
+  // The cyan human brain capsule must read as a distinct rounded silhouette,
+  // rather than another rectangular machine turret in the mobile framing.
+  sphere('189 human brain capsule',59,16.7,17,5.4,mats.mind,12);
+  for(const x of [55.6,62.4])
+    box('189 cymek capsule guard',x,16.5,17.6,.9,5.5,1.6,mats.dark);
+  box('189 human brain lens',59,15.9,14.4,3.8,.55,.35,mats.mind);
   box('189 helmet shell',59,18.35,21,5.5,1.2,4.3,mats.dark);
   for(let i=0;i<6;i++){
     const side=i<3?-1:1, row=i%3;
