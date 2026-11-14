@@ -55,7 +55,8 @@ export function buildCorrinBattle(B3, scene, material, detail = true) {
   }
   // Hrethgir is a chain of ORBITAL freight modules with warm hostage windows.
   // Its arc stretches above the siege; it is NOT a literal ground bridge.
-  for(let i=0;i<14;i++){
+  for(let i=0;i<11;i++){
+    // The orbital chain is torn above 197. Its far end must not cross the final brain.
     const t=i/13,x=-60+t*123,y=11.5+3.5*Math.sin(Math.PI*t),z=18+4*Math.sin(Math.PI*t);
     box('Hrethgir orbital hostage capsule '+i,x,y,z,6,1.5,2.6,mat.wall)
       .rotation.z=.18*Math.cos(Math.PI*t);
