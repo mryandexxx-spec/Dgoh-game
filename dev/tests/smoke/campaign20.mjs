@@ -841,13 +841,27 @@ try {
         const visible=all.filter(p=>getComputedStyle(p).visibility==='visible');
         const nums=visible.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
         const rect=world.getBoundingClientRect();
+        // Real Babylon world projections make rejected/colliding neighbor
+        // diagnostics visible even when only the selected marker is shown.
+        const B=window.__B3;
+        const scene=B?.EngineStore?.Instances?.flatMap(e=>e.scenes||[])
+          .find(s=>s.activeCamera?.name==='campaign-camera');
+        const projection=scene?[48,49].map(id=>{
+          const n=id===48?[51,13]:[64,2];
+          const pos=B.Vector3.Project(new B.Vector3(n[0],1.15,n[1]),
+            B.Matrix.IdentityReadOnly,scene.getTransformMatrix(),
+            new B.Viewport(0,0,world.clientWidth,world.clientHeight));
+          const el=all.find(e=>Number(e.dataset.c20node)===id);
+          return {id,x:+pos.x.toFixed(1),y:+pos.y.toFixed(1),
+            visible:getComputedStyle(el).visibility,transform:el.style.transform};
+        }):[];
         const overlap=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
           const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
           return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3
             &&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
         }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
         return {
-          nums, ids:all.map(p=>Number(p.dataset.c20node)),
+          nums, projection, stage:[world.clientWidth,world.clientHeight], ids:all.map(p=>Number(p.dataset.c20node)),
           boss:all.filter(p=>p.classList.contains('boss')).length,
           canvas:!!world.querySelector('canvas.campaign20-canvas'),
           within:visible.every(p=>{const b=p.getBoundingClientRect();
@@ -871,9 +885,9 @@ try {
         label+' must show a single contiguous run '+JSON.stringify(state));
       return state;
     };
-    const harvestEntry=await checkHarvest('Empty Harvest entry');
-    assert.ok(harvestEntry.nums.includes(1),'L:4 entry shows original mission 40');
     await page.screenshot({path:path.join(shots,'empty-harvest-entry-'+w+'-'+gfx+'.png')});
+    const harvestEntry=await checkHarvest('Empty Harvest entry');
+    assert.ok(harvestEntry.nums.includes(10),'Late-save entry focuses the original boss ID 49');
     for(const [id,name] of [[40,'gurney-convoy'],[41,'sardaukar'],
       [42,'harvester-grave'],[43,'coriolis'],[44,'baron-trap'],
       [45,'spice-vault'],[46,'maker-riders'],[47,'gurney-reunion'],
