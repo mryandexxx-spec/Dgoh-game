@@ -145,3 +145,7 @@ body:has(.c20) #notes{display:none!important;}
 /* C4.7 Butlerian Jihad: machine steel gives way to human fires and Rossak slate. */
 .c20-world.butlerian-jihad{background:linear-gradient(108deg,#111c29 0%,#3c4e58 24%,#695548 48%,#706475 70%,#26313d 100%);border-color:#8b9696}
 .c20-world.butlerian-jihad.c20-fallback::before{content:'ХРОНИКИ · ШРАМ ОСВОБОЖДЕНИЯ';position:absolute;top:14%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.11em;color:#f0d8b2;opacity:.92;pointer-events:none}
+
+/* C4.8: interplanetary convoy acts, not a recolored C4.7 scar. */
+.c20-world.machine-crusade{background:linear-gradient(110deg,#0c1624 0%,#405662 26%,#93714b 45%,#243f52 62%,#a4483e 100%);border-color:#8199a0}
+.c20-world.machine-crusade.c20-fallback::before{content:'ХРОНИКИ · КОНВОЙ НЕПОКОРЁННЫХ';position:absolute;top:14%;left:12px;right:12px;text-align:center;font:12px var(--f-mono);letter-spacing:.10em;color:#e5cba0;opacity:.94;pointer-events:none}

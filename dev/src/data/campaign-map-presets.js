@@ -59,6 +59,29 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'imperial-gate',x:35,z:15,size:14},
     ]),
   }),
+  'C:4': Object.freeze({
+    id: 'chronicles-machine-crusade', title: 'Хроники · Конвой непокорённых',
+    theme: 'machine-crusade', bounds: [-72, 72, -25, 32],
+    // Three-act interplanetary chronicle, not literal planetary geography.
+    camera: { target: [-62, 0, -2], alpha: -1.42, beta: .96,
+      radius: 29, minRadius: 24, maxRadius: 60, turnLimit: .27 },
+    nodes: Object.freeze([
+      [-62,-2],[-49,1],[-36,-1],[-22,2],[-8,0],
+      [6,2],[19,-2],[32,1],[45,-2],[59,1],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'vorian-ship-choice',x:-62,z:17,size:15},
+      {kind:'arrakis-spice-basin',x:-49,z:16,size:18},
+      {kind:'ginaz-duelling-ring',x:-36,z:16,size:15},
+      {kind:'holtzman-shields',x:-22,z:17,size:17},
+      {kind:'human-navigation-dock',x:-8,z:21,size:15},
+      {kind:'omnius-quarantine',x:6,z:18,size:16},
+      {kind:'arrakis-refuge',x:19,z:16,size:16},
+      {kind:'broken-houses-pact',x:32,z:16,size:14},
+      {kind:'void-frontier-fleet',x:45,z:19,size:18},
+      {kind:'agamemnon-cymek-command',x:59,z:22,size:19},
+    ]),
+  }),
   'C:3': Object.freeze({
     id: 'chronicles-butlerian-jihad', title: 'Хроники · Шрам освобождения',
     theme: 'butlerian-jihad', bounds: [-63, 65, -25, 33],
