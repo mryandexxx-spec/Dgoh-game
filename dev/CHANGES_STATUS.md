@@ -10,7 +10,7 @@
 
 ## Открыто
 
-**C4.10 C:6 «Песчаные черви Дюны» — художественно ПРИНЯТО 14.11.2026, Draft, НЕ выпущено:** «Пульс глубин» прошёл реальную WebGL MED 844×390 / LOW 667×375 приёмку; владелец подтвердил «Все ок». [CI #43590545775](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43590545775) SUCCESS (attempt 3, отдельный нестабильный тест арены), [WebGL кадры](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43590545775/artifacts/14112485804), [PR #71](https://github.com/mryandexxx-spec/Dgoh-game/pull/71). **Merge/release/Pages ещё НЕ разрешены.** Исходные 200–209, все 210 миссий, экономика и сохранения не меняются. Физическая Safari FPS/нагрев проверка открыта. [Issue #69](https://github.com/mryandexxx-spec/Dgoh-game/issues/69), [концепция](docs/campaign20/C4_10_PULSE_OF_DEPTHS_CONCEPT_2026_11_14.md).
+**C4.10 C:6 «Песчаные черви Дюны» — художественно принято, релиз v113 РАЗРЕШЁН 14.11.2026, выпуск через CI в работе:** «Пульс глубин» прошёл реальную WebGL MED 844×390 / LOW 667×375 приёмку; владелец подтвердил «Все ок». [CI #43590545775](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43590545775) SUCCESS (attempt 3, отдельный нестабильный тест арены), [WebGL кадры](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43590545775/artifacts/14112485804), [PR #71](https://github.com/mryandexxx-spec/Dgoh-game/pull/71). **Владелец отдельно разрешил «Выпускай» 14.11.2026; merge/main CI/Pages допустимы после обязательного зелёного PR CI на точном v113 release HEAD.** Исходные 200–209, все 210 миссий, экономика и сохранения не меняются. Физическая Safari FPS/нагрев проверка открыта. [Issue #69](https://github.com/mryandexxx-spec/Dgoh-game/issues/69), [концепция](docs/campaign20/C4_10_PULSE_OF_DEPTHS_CONCEPT_2026_11_14.md).
 
 **CI, этап 2 (кандидат PR #70):** [документация реализации](docs/ci/STAGE2_CI_SELECTION_AND_ARENA.md). Документационный diff получает короткий CI с обязательным gate; неизвестный/смешанный diff и ручной запуск — полный. Arena A/B MED/LOW включён в основной Validate на единой сборке, дублирующий workflow удалён. Resource gate исправляется на один прогрев + два измеряемых цикла с JSON и ненулевым exit code при нарушении. Первый этап ранее прошёл Validate за 5:54; свежий полный CI этапа 2 проверить перед merge.
 
@@ -145,6 +145,16 @@
 - Проверить после релиза: фактические кадры персонажа в бою и карточке, плащ Attack/Hit/Death, быструю смену персонажей, отсутствие артефактов/перегрева и корректный кеш обновления.
 
 ## Записи
+
+## v113 — Campaign 2.0 C4.10 «Песчаные черви Дюны» · «Пульс глубин» (14.11.2026)
+
+- **Разрешения владельца:** художественный этап A утверждён «Ок», реальная WebGL MED 844×390 / LOW 667×375 композиция принята «Все ок», отдельно дано **«Выпускай»** (14.11.2026). [Issue #69](https://github.com/mryandexxx-spec/Dgoh-game/issues/69), [PR #71](https://github.com/mryandexxx-spec/Dgoh-game/pull/71).
+- **Изменения:** последняя глава Хроник `C:6`, уровни 76–85, оригинальные глобальные **200–209**, новая единая соляная впадина с S-образной дельтой от наступления машин к живым червям. Эпизоды: машины, корабль-невидимка, гхолы, выжженная пустыня, песчаная форель, Сёстры, лицеделы, последний человеческий оплот, новые черви и гребень Омниуса. **210 ID, исходные враги, награды, баланс, экономика, сюжет и сохранения неизменны**.
+- **3D и UX:** новый Babylon builder `campaign-sandworms.js`, preset `C:6`, общий EngineHost/GameScene; статичный low-poly рельеф и кольцевая дуга червя. MED/LOW сохранены, 2–4 последовательных маркера, в финальном LOW видны №9–10 без overlap, один босс 60px. Свайпы v101, pinch/twist/recenter, 2D fallback и предыдущие главы не затронуты.
+- **Художественная/техническая приёмка:** [WebGL MED/LOW кадры](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43590545775/artifacts/14112485804) по миссиям 200, 203, 204, 206, 208, 209 и [Validate #43590545775](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43590545775) **SUCCESS**, attempt 3. Два первых прогона задел независимый нестабильный `flash-expired HUD projection drift u0` тест арены, исправлений тестовых требований нет.
+- **Выпуск v113:** release commit с `dev/version.json=113`, записью в журнале и [handoff](docs/campaign20/C4_10_V113_RELEASE_HANDOFF_2026_11_14.md). **Проверить полный PR Validate на релизном SHA**, затем ready + squash merge, **main Validate SUCCESS**, в нём `Publish verified PWA to GitHub Pages` SUCCESS, root-PWA SHA и Pages deployment SUCCESS. До этого не утверждать, что v113 опубликована.
+- **На физическом iPhone:** 200–209, последовательные номера, клик/бой/симуляция/фарм, свайп, pinch/twist/recenter, 2D fallback, обновление SW и сохранение прогресса; 10–15 минут FPS/нагрев и батарея. Тесты SwiftShader не измеряют iPhone Safari.
+
 
 ## v112 — Campaign 2.0 C4.9 «Битва за Коррин» (14.11.2026)
 
