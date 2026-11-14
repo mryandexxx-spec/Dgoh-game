@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - dev/docs/campaign20/C4_13_V116_RELEASE_HANDOFF_2026_11_14.md
+      - .github/workflows/release-v116-once.yml
 
 permissions:
   contents: read
@@ -13,7 +14,7 @@ permissions:
 jobs:
   publish-v116-once:
     name: Explicitly dispatch approved v116 Pages publication
-    if: ${{ github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release(campaign): publish v116') }}
+    if: "${{ github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release(campaign): publish v116') }}"
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     steps:
