@@ -56,13 +56,14 @@ export function buildCorrinBattle(B3, scene, material, detail = true) {
   // Hrethgir is a chain of ORBITAL freight modules with warm hostage windows.
   // Its arc stretches above the siege; it is NOT a literal ground bridge.
   for(let i=0;i<14;i++){
-    const t=i/13,x=-60+t*123,y=19+7*Math.sin(Math.PI*t),z=23+7*Math.sin(Math.PI*t);
+    const t=i/13,x=-60+t*123,y=11.5+3.5*Math.sin(Math.PI*t),z=18+4*Math.sin(Math.PI*t);
     box('Hrethgir orbital hostage capsule '+i,x,y,z,6,1.5,2.6,mat.wall)
       .rotation.z=.18*Math.cos(Math.PI*t);
     box('Hrethgir warm window '+i,x,y+.17,z-1.36,3.1,.42,.12,mat.human);
+    box('Hrethgir linking truss '+i,x+4.2,y,z,2.8,.65,1,mat.steel);
     if(i%3===0)box('Hrethgir cold coupling '+i,x+3.3,y,z,1.15,1.8,1.5,mat.steel);
   }
-  box('Hrethgir severed spar',35,26,28,5,.7,1.8,mat.red).rotation.z=-.38;
+  box('Hrethgir severed spar',35,16,23,5,.7,1.8,mat.red).rotation.z=-.38;
   // Concentric walls of the single massive machine citadel.
   for(const [d,h,m] of [[58,2.8,mat.black],[45,3.5,mat.wall],[32,4.5,mat.black]])
     cyl('Corrin machine defensive belt '+d,58,h/2,27,d,h,m,12);
@@ -139,16 +140,18 @@ export function buildCorrinBattle(B3, scene, material, detail = true) {
   cyl('199 dark core aperture',58,5.14,30,15,.35,mat.bed,12);
   for(let i=0;i<8;i++){
     const a=i*Math.PI/4,x=58+8.6*Math.sin(a),z=30+8.6*Math.cos(a);
-    const blade=box('199 enormous iris blade '+i,x,11.4,z,3,12,2.2,mat.wall);
-    blade.rotation.y=a;blade.rotation.z=.18*Math.cos(a);
-    box('199 iris silver seam '+i,x,16.4,z,1.8,.75,.7,mat.rim).rotation.y=a;
+    // Front blades are broken down: never cover the actual mind silhouette.
+    const front=Math.cos(a)<-.2;
+    const blade=box('199 enormous iris blade '+i,x,front?6.5:9.1,z,front?2.2:2.7,front?4.4:9,1.7,mat.wall);
+    blade.rotation.y=a;blade.rotation.z=.13*Math.cos(a);
+    box('199 iris silver seam '+i,x,front?8.8:13.6,z,1.5,.7,.5,mat.rim).rotation.y=a;
   }
-  sphere('199 autonomous Omnius polyhedral intelligence',58,12.1,30,10.5,mat.energy,detail?10:6);
-  cyl('199 central crystalline optic',58,12.1,23.9,4.7,2.5,mat.center,6,1.2)
+  sphere('199 autonomous Omnius polyhedral intelligence',58,9.5,26,9.6,mat.energy,detail?10:6);
+  cyl('199 central crystalline optic',58,9.5,20.9,4.7,2.5,mat.center,6,1.2)
     .rotation.x=Math.PI/2;
-  for(const [x,z] of [[51,23],[65,23],[51,37],[65,37]]){
-    box('199 protected mind conduit '+x+' '+z,x,6.1,z,2.1,9.2,2.1,mat.black);
-    if(detail)box('199 last living signal '+x+' '+z,x,9.7,z-1.13,.9,1.8,.2,mat.energy);
+  for(const [x,z] of [[49,23],[67,23],[49,37],[67,37]]){
+    box('199 protected mind conduit '+x+' '+z,x,4.6,z,2.1,6.7,2.1,mat.black);
+    if(detail)box('199 last living signal '+x+' '+z,x,7.1,z-1.13,.9,1.6,.2,mat.energy);
   }
   box('199 last human foothold',58,.16,19,9,.4,5,mat.ash);
   mast('199 final human light',51,17,3.5);
