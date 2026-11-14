@@ -24,7 +24,7 @@ try {
       Object.defineProperty(navigator,'serviceWorker',{value:undefined});
       window.__mapContexts=[];
       const get=HTMLCanvasElement.prototype.getContext;
-      HTMLCanvasElement.prototype.getContext=function(type,options){const c=get.call(this,type,options);if(c&&/webgl/.test(type)&&!window.__mapContexts.includes(c))window.__mapContexts.push(c);return c;};
+      HTMLCanvasElement.prototype.getContext=function(type,options){const c=get.call(this,type,options);if(c&&/webgl/.test(type)&&!window.__mapContexts.some(ref=>ref.deref()===c))window.__mapContexts.push(new WeakRef(c));return c;};
     },save,gfx);
     await page.goto(server.url(path.basename(html)),{waitUntil:'load'});
     await page.evaluate(async()=>{await loadB3();closeInfo(true);closeOverlay();view='squad';render();});
@@ -34,9 +34,11 @@ try {
       const result=await page.evaluate(async()=>{
         const tick=()=>new Promise(r=>setTimeout(r,25));
         const snapshot=()=>{
+          window.gc?.();
+          window.__mapContexts=window.__mapContexts.filter(ref=>ref.deref());
           const engines=__B3.EngineStore.Instances.filter(e=>!e.isDisposed);
           const scenes=engines.flatMap(e=>e.scenes).filter(s=>!s.cameras.some(c=>c.name==='bc'));
-          return {engines:engines.length,contexts:window.__mapContexts.filter(c=>!c.isContextLost()).length,scenes:scenes.length,meshes:scenes.reduce((n,s)=>n+s.meshes.length,0),textures:scenes.reduce((n,s)=>n+s.textures.length,0)};
+          return {engines:engines.length,contexts:window.__mapContexts.map(ref=>ref.deref()).filter(c=>c&&!c.isContextLost()).length,scenes:scenes.length,meshes:scenes.reduce((n,s)=>n+s.meshes.length,0),textures:scenes.reduce((n,s)=>n+s.textures.length,0)};
         };
         const mounted=[];
         for(const [side,chapter] of [['L',0],['C',CAMP_DEF.C.chapters.length-1]]){
@@ -47,7 +49,7 @@ try {
           let scene;
           for(let i=0;i<400;i++){scene=__B3.EngineStore.Instances.flatMap(e=>e.scenes).find(s=>s.activeCamera?.name==='campaign-camera');if(scene?.getFrameId()>=2)break;await tick();}
           if(!scene||scene.getFrameId()<2)throw Error('Map did not render');
-          const active=snapshot();if(active.engines!==1||active.contexts!==1)throw Error('Map created extra Engine/context');
+          const active=snapshot();if(active.engines!==1||active.contexts!==1)throw Error('Map created extra Engine/context: '+JSON.stringify(active));
           mounted.push({chapter:side+':'+chapter,meshes:scene.meshes.length,vertices:scene.meshes.reduce((n,m)=>n+m.getTotalVertices(),0)});
           closeCampaignMap();el.remove();
           if(__B3.EngineStore.Instances.some(e=>e.scenes.some(s=>s.activeCamera?.name==='campaign-camera')))throw Error('Campaign scene survived dispose');
