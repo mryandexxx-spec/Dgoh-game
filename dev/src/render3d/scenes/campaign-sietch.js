@@ -71,7 +71,7 @@ export function buildSietchTabr(B3, scene, material, detail = true) {
   const nodes=[[-48,-19],[-41,-4],[-29,10],[-14,9],[-1,4],
     [12,-2],[25,-20],[39,-12],[52,2],[66,11]];
   const ground=M.CreateGround('Tabr continuous cave-to-dawn terrain',{
-    width:176,height:88,subdivisions:detail?36:23,updatable:true},scene);
+    width:260,height:124,subdivisions:detail?36:23,updatable:true},scene);
   const v=ground.getVerticesData(B3.VertexBuffer.PositionKind);
   const ids=ground.getIndices(),colors=[];
   const clamp=(a,l,h)=>Math.max(l,Math.min(h,a));
@@ -221,18 +221,25 @@ export function buildSietchTabr(B3, scene, material, detail = true) {
   if(detail)for(let i=0;i<3;i++)
     box('38 spy grille '+i,54.8+i*1.1,2.25,15.1,.11,.58,.18,mat.enemy);
 
-  // 39 — Paul's new name: witnesses around a sunrise stone terrace.
-  // Boss button remains on the approach, fully below the high background ridge.
-  cliff('39 final natural witness terrace',69,24,21,12,5.5,mat.arch,.10);
-  box('39 open sunlit step',67,.46,18,13.5,.82,4.6,mat.cut,.05);
-  cyl('39 tribal oath platform',70,1.10,23.2,8.0,.65,mat.arch,12);
-  for(const [i,x,z] of [[0,64,22],[1,66,27],[2,73,27],[3,76,22]]){
-    cyl('39 still Fremen witness '+i,x,1.85,z,.74,1.8,mat.cloth,6,.43);
-    sphere('39 witness head '+i,x,3.01,z,.78,mat.cloth);
+  // 39 — The witnesses and Paul step FORWARD from the rock, toward the route.
+  // The oath is legible beside the boss pin even at a 667px LOW viewport.
+  // All lighting and the amber rising sun are static emissive materials.
+  cliff('39 final natural witness cliff',70,28,23,11,4.8,mat.arch,.10);
+  box('39 open sunlit stage',70,.64,19,15.0,1.16,7.1,mat.cut,.07);
+  cyl('39 stepped oath circle',71,1.36,20.0,8.7,.50,mat.arch,14);
+  for(const [i,x,z] of [[0,63,19],[1,66,24],[2,77,24],[3,79,19]]){
+    cyl('39 Fremen witness '+i,x,2.12,z,.94,2.3,mat.cloth,7,.56);
+    sphere('39 witness head '+i,x,3.60,z,1.04,mat.dark);
   }
-  cyl('39 Paul silhouette',70,2.38,23.2,.90,2.0,mat.dark,7,.58);
-  sphere('39 Paul head',70,3.63,23.2,.94,mat.dark);
-  box('39 sun edge behind terrace',73,4.3,29,12,.24,.65,mat.sunrise,.11);
+  cyl('39 Paul Muad Dib silhouette',72,2.30,18.1,1.20,2.8,mat.dark,8,.77);
+  sphere('39 Paul Muad Dib head',72,4.13,18.1,1.20,mat.dark);
+  box('39 Paul wind cloak',72,1.65,19.0,1.90,2.05,.30,mat.cloth,.08);
+  // Monumental, faceted sunrise appears behind the witnesses, not on a HUD.
+  sphere('39 first sunrise disc',72,8.5,30,7.0,mat.sunrise);
+  for(const [i,x] of [[0,60],[1,82]]){
+    cyl('39 carved dawn standard '+i,x,3.1,24,.80,6.0,mat.arch,7,.50);
+    box('39 static amber standard '+i,x,6.2,24,1.25,.45,.42,mat.warm);
+  }
   // The raid is contextual: distant crates and silhouettes, NOT a second boss.
   for(let i=0;i<3;i++){
     box('39 distant raid cargo '+i,78+i*3.4,.65,6+i*3,
