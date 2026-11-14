@@ -14,8 +14,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  plan:
+    name: Select required checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      mode: ${{ steps.scope.outputs.mode }}
+      arena_ab: ${{ steps.scope.outputs.arena_ab }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test CI selection and resource-result validation
+        run: |
+          node dev/tests/ci/selection.mjs
+          node dev/tests/ci/resource-growth.mjs
+      - name: Determine scope from the actual git diff
+        id: scope
+        run: node dev/tools/ci-plan.mjs
+
   build:
     name: Build once + architecture + SHA-256 manifest
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     defaults:
@@ -77,7 +96,8 @@ jobs:
 
   golden:
     name: Golden (200 battles, meta, saves, 41 screens; PWA + artifact)
-    needs: build
+    needs: [plan, build]
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     defaults:
@@ -108,7 +128,8 @@ jobs:
 
   ui:
     name: E3 iPhone UI + DOM idle layout
-    needs: build
+    needs: [plan, build]
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -154,7 +175,8 @@ jobs:
 
   ui-campaign:
     name: Campaign 2.0 + lobby mobile WebGL
-    needs: build
+    needs: [plan, build]
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -203,7 +225,8 @@ jobs:
 
   ui-heroes:
     name: Duncan + Muad Dib + Young Baron mobile WebGL
-    needs: build
+    needs: [plan, build]
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -262,7 +285,8 @@ jobs:
 
   ui-arena:
     name: Arena framing + HUD + idle DOM
-    needs: build
+    needs: [plan, build]
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -325,7 +349,8 @@ jobs:
 
   three-d:
     name: 3D lifecycle + memory + WebGL console (phone)
-    needs: build
+    needs: [plan, build]
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 16
     defaults:
@@ -354,22 +379,20 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          node tests/smoke/3d.mjs dist/pwa/index.html --cycles 2 --phone | tee dist/smoke-phone.log
-          grep -Fq 'PASS один WebGL-контекст' dist/smoke-phone.log
-          grep -Fq 'PASS нет роста meshes/textures' dist/smoke-phone.log
-          grep -Fq 'PASS нет ошибок консоли' dist/smoke-phone.log
+          node tests/smoke/3d.mjs dist/pwa/index.html --cycles 3 --phone --resource-strict --out dist/smoke-phone.json | tee dist/smoke-phone.log
       - name: Upload 3D diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dune-3d-smoke-phone-${{ github.run_number }}
-          path: dev/dist/smoke-*.log
+          path: dev/dist/smoke-*
           if-no-files-found: ignore
           retention-days: 14
 
   three-d-desktop:
     name: 3D lifecycle + memory + WebGL console (desktop)
-    needs: build
+    needs: [plan, build]
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 16
     defaults:
@@ -398,22 +421,20 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          node tests/smoke/3d.mjs dist/pwa/index.html --cycles 2 | tee dist/smoke-desktop.log
-          grep -Fq 'PASS один WebGL-контекст' dist/smoke-desktop.log
-          grep -Fq 'PASS нет роста meshes/textures' dist/smoke-desktop.log
-          grep -Fq 'PASS нет ошибок консоли' dist/smoke-desktop.log
+          node tests/smoke/3d.mjs dist/pwa/index.html --cycles 3 --resource-strict --out dist/smoke-desktop.json | tee dist/smoke-desktop.log
       - name: Upload 3D diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dune-3d-smoke-desktop-${{ github.run_number }}
-          path: dev/dist/smoke-*.log
+          path: dev/dist/smoke-*
           if-no-files-found: ignore
           retention-days: 14
 
   perf:
     name: Camp + battle budgets (MED/LOW phone)
-    needs: build
+    needs: [plan, build]
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 16
     defaults:
@@ -495,7 +516,8 @@ jobs:
 
   bh8-preview:
     name: BH8 legendary Baron WebGL frames (844/667 MED/LOW)
-    needs: build
+    needs: [plan, build]
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     defaults:
@@ -537,7 +559,8 @@ jobs:
 
   bh98-procedural:
     name: BH9.8 Margot + Yue procedural WebGL cards, battle and 2D fallback (844/667 MED/LOW)
-    needs: build
+    needs: [plan, build]
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -588,7 +611,8 @@ jobs:
 
   md-ult1:
     name: MD-ULT-1 real GL cinematic MED LOW (baked and missing)
-    needs: build
+    needs: [plan, build]
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     defaults:
@@ -626,7 +650,8 @@ jobs:
 
   arena-animation:
     name: Arena animation continuity + HUD + lighting (MED/LOW)
-    needs: build
+    needs: [plan, build]
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     defaults:
@@ -661,33 +686,67 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  arena-ab:
+    name: Arena A/B (${{ matrix.gfx }})
+    needs: [plan, build]
+    if: ${{ needs.plan.outputs.arena_ab == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        gfx: [med, low]
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dune-validated-build
+          path: dev/dist
+      - run: node tools/ci-artifact.mjs verify
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          chrome-version: stable
+      - name: Compare deployed baseline with the exact candidate build
+        run: node tests/smoke/ab.mjs ../index.html dist/pwa/index.html --phone --gfx ${{ matrix.gfx }},${{ matrix.gfx }} --out dist/arena-ab-${{ matrix.gfx }}
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dune-arena-ab-${{ matrix.gfx }}-${{ github.run_number }}
+          path: dev/dist/arena-ab-${{ matrix.gfx }}/
+          if-no-files-found: ignore
+          retention-days: 14
+
   gate:
     name: All required checks passed
     if: always()
-    needs: [build, golden, ui, ui-campaign, ui-heroes, ui-arena, three-d, three-d-desktop, perf, bh8-preview, bh98-procedural, md-ult1, arena-animation]
+    needs: [plan, build, golden, ui, ui-campaign, ui-heroes, ui-arena, three-d, three-d-desktop, perf, bh8-preview, bh98-procedural, md-ult1, arena-animation, arena-ab]
     runs-on: ubuntu-24.04
     steps:
-      - name: Reject any failed or skipped required check
+      - uses: actions/checkout@v4
+      - name: Reject failed checks and unexpected skips
         env:
           RESULTS: ${{ toJSON(needs) }}
-        run: |
-          python3 - <<'PY'
-          import json, os, sys
-          jobs = json.loads(os.environ['RESULTS'])
-          bad = {key: value['result'] for key, value in jobs.items() if value['result'] != 'success'}
-          print('Required checks:', {key: value['result'] for key, value in jobs.items()})
-          if bad:
-              print('FAIL:', bad, file=sys.stderr)
-              sys.exit(1)
-          PY
-      - name: Rehearse publishing the exact CI build (no push)
-        uses: actions/checkout@v4
+        run: node dev/tools/ci-gate.mjs
       - name: Download the same validated build for deployment rehearsal
+        if: ${{ needs.plan.outputs.mode == 'full' }}
         uses: actions/download-artifact@v4
         with:
           name: dune-validated-build
           path: dev/dist
       - name: Stage, verify bytes, and ensure no source changed
+        if: ${{ needs.plan.outputs.mode == 'full' }}
         shell: bash
         run: |
           cd dev
@@ -697,8 +756,8 @@ jobs:
 
   deploy-pages:
     name: Publish verified PWA to GitHub Pages
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    needs: gate
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.plan.outputs.mode == 'full' }}
+    needs: [plan, gate]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
