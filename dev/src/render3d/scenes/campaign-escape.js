@@ -39,6 +39,30 @@ export function buildEscapeRift(B3, scene, material, detail = true) {
     const o=box(name,(ax+bx)/2,y,(az+bz)/2,width,.13,Math.hypot(bx-ax,bz-az),tint);
     o.rotation.y=Math.atan2(ax-bx,bz-az);return o;
   };
+  // Faceted tapering geological outcrops, not flat-topped building boxes.
+  // Shared single material, static mesh, no additional textures or GPU passes.
+  const rock=(name,x,z,w,d,h,tint,angle=0)=>{
+    const pts=[
+      -w*.5,-.45,-d*.5, w*.5,-.45,-d*.5,
+       w*.5,-.45, d*.5,-w*.5,-.45, d*.5,
+      -w*.37,h*.70,-d*.25, w*.22,h*1.04,-d*.29,
+       w*.37,h*.62, d*.24,-w*.19,h*.87, d*.34,
+    ];
+    const faces=[0,2,1,0,3,2,4,5,6,4,6,7];
+    for(let j=0;j<4;j++){
+      const n=(j+1)%4;
+      faces.push(j,n,n+4,j,n+4,j+4);
+    }
+    const data=new B3.VertexData();
+    data.positions=pts;data.indices=faces;data.normals=[];
+    B3.VertexData.ComputeNormals(pts,faces,data.normals);
+    const mesh=new B3.Mesh(name,scene);
+    data.applyToMesh(mesh);
+    mesh.convertToFlatShadedMesh();
+    mesh.position.set(x,0,z);mesh.rotation.y=angle;
+    mesh.material=tint;mesh.isPickable=false;
+    return mesh;
+  };
   const nodes=[[-56,-10],[-44,-1],[-33,-8],[-21,3],[-9,8],
     [3,2],[15,6],[27,-5],[40,0],[53,8]];
   // Terrain is one continuous rock-and-sand surface, not ten floating islands.
@@ -67,18 +91,18 @@ export function buildEscapeRift(B3, scene, material, detail = true) {
   ground.updateVerticesData(B3.VertexBuffer.NormalKind,normals);
   ground.setVerticesData(B3.VertexBuffer.ColorKind,colors);
   ground.useVertexColors=true;ground.material=mat.terrain;ground.isPickable=false;
-  // Distinctive jagged cliffs bound the canyon on both sides. The foreground
-  // cliffs remain low so they cannot hide the interactive route on a phone.
-  for(let i=0;i<12;i++){
-    const x=-63+i*10.5,z=20+3.1*Math.sin(i*.92),h=7+(i%4)*2.1;
-    const rock=box('north canyon broken wall '+i,x,h*.47-.4,z,7.7,h,5.4,
+  // Jagged north wall breaks into gaps; beyond Kynes' diversion it opens to
+  // free dunes, a crucial contrast with the tight canyon and C4.10 salt basin.
+  for(let i=0;i<8;i++){
+    const x=-63+i*11.2,z=20+3.1*Math.sin(i*.92),h=6.4+(i%4)*1.7;
+    rock('north canyon fractured escarpment '+i,x,z,10.5,8.4,h,
       i%3?mat.stone:mat.cliff,(i%3-1)*.13);
-    if(detail)cyl('moonlit north cliff crown '+i,x+.8,h-.1,z,4,2.9,
-      mat.rim,5,.9).rotation.z=(i%3-1)*.12;
+    if(detail&&i%2===0)rock('moon rim on broken cliff '+i,x+3,z+1,
+      2.1,2.6,h*.72,mat.rim,.16);
   }
-  for(let i=0;i<7;i++){
-    const x=-60+i*12.2,z=-24+1.5*Math.sin(i),h=3.5+(i%3)*1.1;
-    box('low south canyon ledge '+i,x,h*.45-.45,z,8,h,4.7,mat.cliff,.1*(i%3-1));
+  for(let i=0;i<6;i++){
+    const x=-60+i*12.2,z=-24+1.5*Math.sin(i),h=3.7+(i%3)*1.2;
+    rock('low south canyon teeth '+i,x,z,10.4,6.2,h,mat.cliff,(i%3-1)*.11);
   }
   // A low wind-shaped dune, used on the exposed third act and the worm trace.
   const ridge=(name,x,z,width,length,height,tint,angle=0)=>{
@@ -136,10 +160,10 @@ export function buildEscapeRift(B3, scene, material, detail = true) {
     box('22 condenser cap '+i,-38.1+i*5.1,2.35,-18.3,1.6,.35,1.3,mat.metal);
   }
 
-  // 23 — Tight canyon ambush: two visibly opposing asymmetric rock masses.
-  box('23 upper canyon overhang',-22,7.5,14,10.2,14.9,6.5,mat.cliff,.13);
-  cyl('23 fractured pinnacle',-16,8.8,13,5.1,17,mat.stone,5,1.3);
-  box('23 south canyon jaw',-20,3.0,-13,9.1,5.7,4.6,mat.stone,-.24);
+  // 23 — Tight canyon ambush with asymmetric true-rock silhouettes.
+  rock('23 upper canyon overhang',-22,14,12.1,8.5,12,mat.cliff,.13);
+  rock('23 fractured pinnacle',-16,14,6.5,6.3,15,mat.stone,-.22);
+  rock('23 south canyon jaw',-20,-14,10.2,6.1,6.1,mat.stone,-.24);
   for(let i=0;i<3;i++)box('23 hidden sentry silhouette '+i,-24+i*3.5,1.1,11,
     .65,2.0,.5,mat.enemy);
 
@@ -185,30 +209,40 @@ export function buildEscapeRift(B3, scene, material, detail = true) {
     sphere('28 search lamp '+i,43+i*3,2.1,-13-i%2*1.5,.75,mat.enemyEye);
   }
 
-  // 29 — Basin encircled by Sardaukar. Fremens rise on the rock ridge ABOVE.
-  // Boss marker at (53,8) is deliberately left clear.
-  ridge('29 surrounding dry basin',54,16,21,19,2.0,mat.sand,.1);
+  // 29 — Desert encirclement BELOW a broken crescent of Fremen rock.
+  // No visible sietch: the open sand and elevated human silhouettes carry
+  // the resolution. Boss marker (53,8) remains unobstructed.
+  ridge('29 surrounding dry basin',54,17,23,19,1.55,mat.sand,.1);
   for(const [i,x,z] of [[0,45,2],[1,50,-3],[2,59,1],[3,63,6]]){
     cyl('29 Sardaukar legion body '+i,x,1.25,z,1.15,2.2,mat.enemy,6,.75);
     sphere('29 Sardaukar helmet '+i,x,2.75,z,1.12,mat.rim);
     box('29 legion weapon '+i,x+.86,1.95,z,.22,3,.24,mat.shadow).rotation.z=-.16;
   }
-  cyl('29 Bashar commander',48,1.6,6,1.7,2.7,mat.enemy,7,1.08);
-  sphere('29 Bashar helmet',48,3.4,6,1.45,mat.rim);
-  // Jagged crescent ridge makes the rescue readable in wide / narrow iPhone crops.
-  for(let i=0;i<5;i++){
-    const x=42+i*5.7,z=28+(i%2)*2.5,h=5+(i%3)*1.2;
-    box('29 rising Fremen watch ridge '+i,x,h*.5-.3,z,8,h,5.5,
-      i%2?mat.cliff:mat.stone,(i%3-1)*.11);
+  cyl('29 Bashar commander',43,1.6,11,1.7,2.7,mat.enemy,7,1.08);
+  sphere('29 Bashar helmet',43,3.4,11,1.45,mat.rim);
+  // Three/five cliffs, all naturally angled, with one high central pinnacle.
+  const teeth=[
+    [43,26,8,6.3,5.8],[48,28,10,7.2,7.3],[54,26,9,8,10.1],
+    [60,28,10,7.8,6.8],[66,26,8.5,6.5,5.9],
+  ];
+  for(const [i,[x,z,w,d,h]] of teeth.entries()){
+    rock('29 Fremen natural rock crescent '+i,x,z,w,d,h,
+      i%2?mat.cliff:mat.stone,(i-2)*.1);
+    // A thin cold moonlit edge separates the ridge from the night sky.
+    if(detail)strip('29 faint rim of the Fremen ridge '+i,x-w*.28,z-d*.34,
+      x+w*.18,z-d*.22,h*.77,.24,mat.rim);
   }
-  const fremen=detail?[[47,28,6.6],[52,30.4,9.4],[57,28,7.7],[62,31,8.2],[65,29,7]]:[
-    [47,28,6.6],[52,30.4,9.4],[59,30,7.9]];
-  for(const [i,figure] of fremen.entries()){
-    const [x,z,y]=figure,isStilgar=i===1;
-    cyl('29 Fremen emerging silhouette '+i,x,y+.85,z,1.15,isStilgar?2.7:2.15,
-      mat.shadow,5,.62);
-    sphere('29 Fremen headwrap '+i,x,y+2.35,z,isStilgar?1.2:1.02,mat.cloth);
-    box('29 Fremen crysknife silhouette '+i,x+.75,y+1.65,z,.2,1.9,.23,mat.rim)
-      .rotation.z=-.24;
+  const fremen=detail?[[45,26,5.9],[49,28,7.3],[54,26,10.4],
+    [60,28,6.9],[66,26,6.0]]:[[45,26,5.9],[54,26,10.4],[66,26,6.0]];
+  for(const [i,[x,z,y]] of fremen.entries()){
+    const isStilgar=x===54,coat=isStilgar?3.75:3.05;
+    cyl('29 Fremen rising cloak '+i,x,y+coat*.5,z,isStilgar?2.2:1.7,
+      coat,mat.cloth,5,.7);
+    sphere('29 Fremen wrapped head '+i,x,y+coat+.33,z,
+      isStilgar?1.55:1.32,mat.rim);
+    box('29 Fremen moonlit cloak edge '+i,x+.69,y+coat*.51,z-.52,
+      .18,coat*.76,.18,mat.rim).rotation.z=-.1;
+    box('29 Fremen crysknife '+i,x+1.17,y+coat*.65,z-.25,
+      .17,2.05,.2,mat.gold).rotation.z=-.30;
   }
 }
