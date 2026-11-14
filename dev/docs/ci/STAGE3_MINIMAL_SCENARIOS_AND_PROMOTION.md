@@ -45,3 +45,11 @@ Main-push ищет PR, чей `merge_commit_sha` равен фактическо
 Node-тесты проверяют выбор всех сценариев, реальный Git diff/переименования, input keys, dirty inputs, документацию после кода и version-only наследование; отказы доказательства при fork/stale/missing/altered данных и привязку к точному merge. Отдельно проверяется строгий gate и повреждённые ZIP hashes.
 
 В GitHub первый run должен выполнить full, создать receipt и пройти новый lifecycle. Затем отдельный документационный коммит в том же PR проверяет реальный reuse без изменения игры. Итоговые run IDs и времена записываются в PR. Promotion main проверяется фикстурами точного/неверного merge; реальный push main выполняется после согласования PR.
+
+## Фактическая проверка кандидата
+
+Полный [CI #43597107294](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43597107294) прошёл SUCCESS за **6:24** на коде `36f792455c9ba1e4e3aee4cdb1f88616a70c66dc`. Созданы immutable `dune-validated-build` и `dune-validation-receipt`. Новый campaign lifecycle прошёл на MED/LOW phone и HIGH desktop; длительность задания 52 с.
+
+Replay действительного diff C4.10 (`f930524c` → `caef3769`) выбрал campaign и шесть необходимых групп; изменение split registry подтверждено как добавление только строк campaign-модулей.
+
+Эта запись добавлена отдельным **только документационным** коммитом после успешного full. Его повторный CI проверяет реальное переиспользование в том же PR с игровым кодом. Итог повторного прогона фиксируется в [PR #73](https://github.com/mryandexxx-spec/Dgoh-game/pull/73), без изменения версии или игровых исходников.
