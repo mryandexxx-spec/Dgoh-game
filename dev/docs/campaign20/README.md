@@ -1,14 +1,14 @@
 # Campaign 2.0 — главный указатель (актуально на 2026-11-14)
 
-**Статус:** C1–C3 и C4.1–C4.7 опубликованы до **v110**, main CI и Pages подтверждены. **C4.8 `C:4` «Крестовый поход машин» — утверждена, релиз v111 разрешён владельцем 14.11.2026 («Выпускай»).** До окончания main CI и Pages v111 остаётся release candidate. [PR #66](https://github.com/mryandexxx-spec/Dgoh-game/pull/66), [художественная концепция](C4_8_MACHINE_CRUSADE_CONCEPT_2026_11_14.md), [handoff v111](C4_8_V111_RELEASE_HANDOFF_2026_11_14.md).
+**Статус на начало выпуска C4.9:** опубликована **v111** до главы C4.8 включительно; последняя художественно принятая C4.9 `C:5` (190–199) разрешена владельцем к релизу **v112** («Выпускаем» 14.11.2026), но до PR CI, main CI и Pages **v112 остаётся релиз-кандидатом**. [PR #68](https://github.com/mryandexxx-spec/Dgoh-game/pull/68), [release handoff v112](C4_9_V112_RELEASE_HANDOFF_2026_11_14.md); v111 [handoff](C4_8_V111_RELEASE_HANDOFF_2026_11_14.md).
 
 **Основная ветка:** `main`; для новых доработок создавать отдельную ветку и Draft PR, релиз — только после согласования.
 
-## C4.9 · Битва за Коррин — этап B (Draft, 14.11.2026)
+## C4.9 · Битва за Коррин — релиз-кандидат v112, выпуск разрешён (14.11.2026)
 
-Художественная концепция **«Разорванный венец»** и финальные WebGL MED/LOW **приняты владельцем («Все ок», 14.11.2026)**. [Draft PR #68](https://github.com/mryandexxx-spec/Dgoh-game/pull/68), ветка `feat/campaign20-corrin-battle-20261114`; десять исходных 190–199, единая планетарная осада, орбитальный Хретгир, падение внешнего Всеразума в 196 и финальное ядро в 199. Полный [CI #43579708606](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43579708606) **SUCCESS** на художественно принятом коде, [WebGL MED/LOW кадры](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43579708606/artifacts/14108245684). [Документация C4.9](C4_9_CORRIN_BATTLE_CONCEPT_2026_11_14.md), [Issue #67](https://github.com/mryandexxx-spec/Dgoh-game/issues/67). Документирующие коммиты после приёмки требуют собственного CI. **Не выпущено; merge/bump/Pages только по отдельному разрешению.**
+Концепция **«Разорванный венец»** и финальные WebGL MED/LOW **приняты владельцем («Все ок»)**, затем отдельно дана команда **«Выпускаем»** 14.11.2026. [PR #68](https://github.com/mryandexxx-spec/Dgoh-game/pull/68), глава `C:5`, 190–199, единая осада Коррина и орбитальный Хретгир, падение сети Омниуса в 196 и его финального ядра в 199. Принятый [CI #43579708606](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43579708606) **SUCCESS**, [8 WebGL MED/LOW кадров](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43579708606/artifacts/14108245684). [Полная концепция](C4_9_CORRIN_BATTLE_CONCEPT_2026_11_14.md), [релизный handoff v112](C4_9_V112_RELEASE_HANDOFF_2026_11_14.md), [Issue #67](https://github.com/mryandexxx-spec/Dgoh-game/issues/67). **Повторный PR CI после bump v112, затем merge/main CI/Pages обязательны.**
 
-## C4.8 · Крестовый поход машин — релиз-кандидат v111, выпуск разрешён (14.11.2026)
+## C4.8 · Крестовый поход машин — v111 опубликована (14.11.2026)
 
 Владелец художественно принял «Конвой непокорённых» (C:4 180–189, уровни 52–64), затем отдельно разрешил выпуск («Выпускай»). [PR #66](https://github.com/mryandexxx-spec/Dgoh-game/pull/66), [концепция](C4_8_MACHINE_CRUSADE_CONCEPT_2026_11_14.md), [CI #43566991080 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43566991080), [MED/LOW WebGL](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43566991080/artifacts/14103037144), [release handoff v111](C4_8_V111_RELEASE_HANDOFF_2026_11_14.md). Перед публикацией необходим CI на версии v111, а после merge — SUCCESS main CI и Pages.
 
