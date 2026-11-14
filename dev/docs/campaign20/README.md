@@ -1,9 +1,16 @@
 # Campaign 2.0 — главный указатель (актуально на 2026-11-14)
 
+## Текущая точка продолжения — C4.11, Светлая III «Бегство» (этап A)
+
+**v113 C4.10 опубликована и дополнительно принята владельцем после выпуска («Все ок», 14.11.2026).** Последний подтверждённый PWA SHA — `2682c3f9`, документационный handoff в `main`. Все семь 3D-окружений Хроник `C:0`–`C:6` готовы; вместе с `L:0`, `L:1`, `D:0`, `D:1` это **11 из 21** окружений Campaign 2.0. Исходная игровая структура по-прежнему **210 миссий**.
+
+**Новая задача:** [Issue #72 — C4.11 `L:2` «Бегство» (20–29)](https://github.com/mryandexxx-spec/Dgoh-game/issues/72), [handoff C4.11](C4_11_AFTER_V113_HANDOFF_2026_11_14.md). Исходный сюжет — `CAMP_DEF.L.chapters[2]`, уровни 13–20, ночное бегство Пола и Джессики, преследование сардаукарами, буря, экологическая станция, каньон и выход фрименов. **Сначала 2–3 самостоятельные художественные концепции и согласование; реализацию/PR/релиз не начинать без отдельного утверждения.** Реальные iPhone Safari FPS/нагрев для v113 не замерены.
+
+### Ниже — исторические передачи этапов
+
+
 **C4.10 · «Песчаные черви Дюны», `C:6`, 200–209 — v113 ОПУБЛИКОВАНА 14.11.2026.** [PR #71 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/71), [PR CI SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43592759733), [main Validate/Publish SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43593325880), [Pages SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43593921987), опубликованный PWA SHA `2682c3f9`; футер `v113 · db25b7661b`. [Реальные WebGL MED/LOW кадры](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43590545775/artifacts/14112485804), [концепция](C4_10_PULSE_OF_DEPTHS_CONCEPT_2026_11_14.md), [v113 release handoff](C4_10_V113_RELEASE_HANDOFF_2026_11_14.md). Исходные миссии, баланс, сохранения неизменны; физическая iPhone Safari-проверка FPS/нагрева пока открыта.
 
-
-**C4.10 · C:6 «Песчаные черви Дюны» — «Пульс глубин» утверждён владельцем, реализуется в Draft PR; выпуск НЕ разрешён.** [Issue #69](https://github.com/mryandexxx-spec/Dgoh-game/issues/69), [художественная концепция](C4_10_PULSE_OF_DEPTHS_CONCEPT_2026_11_14.md). Исходные 200–209 остаются неизменны; требуется реальная WebGL MED/LOW приёмка.
 
 
 **Статус на начало выпуска C4.9:** опубликована **v111** до главы C4.8 включительно; последняя художественно принятая C4.9 `C:5` (190–199) разрешена владельцем к релизу **v112** («Выпускаем» 14.11.2026), но до PR CI, main CI и Pages **v112 остаётся релиз-кандидатом**. [PR #68](https://github.com/mryandexxx-spec/Dgoh-game/pull/68), [release handoff v112](C4_9_V112_RELEASE_HANDOFF_2026_11_14.md); v111 [handoff](C4_8_V111_RELEASE_HANDOFF_2026_11_14.md).
