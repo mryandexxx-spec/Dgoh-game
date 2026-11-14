@@ -33,4 +33,10 @@ Safari/PWA на iPhone в landscape: `Сюжет → Светлая сторон
 
 ## Статус
 
-**v114 — release candidate.** Не объявлять опубликованной до SUCCESS PR CI, main validated publication, Pages deployment и проверки `v114` на опубликованном сайте.
+**v114 ОПУБЛИКОВАНА 14.11.2026** (версия подтверждена в корневом `app.js`; прямой HTTP-запрос к GitHub Pages из этой среды не прошёл). Доказательства:
+- [Release PR #75 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/75), release HEAD `765be8b9bc1fe70673ba1bd14ebe299194961faf`, squash-merge commit `48ab5c5973fa689ccb2e3d1ce70ce173d1c4bb28`.
+- [PR Validate #43605610632](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43605610632) **SUCCESS** (полный gate на точном v114 HEAD).
+- [Main Validate + verified Pages publish #43606151061](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43606151061) **SUCCESS**, обязательный gate, подпись SHA-256 артефакта, `Publish verified PWA to GitHub Pages` SUCCESS.
+- Из этого CI создан root-PWA commit `175551a2133737200bbc106f8d1a332cb1c6906e` (публикация в `main`), в root `app.js` подтверждено `v114 · 41ae5b6ad1`.
+- [Pages build and deployment #43606690817](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43606690817) **SUCCESS** именно для root PWA SHA `175551a2`.
+- Production URL: https://mryandexxx-spec.github.io/Dgoh-game/. Физическая Safari-проверка остаётся открытой.
