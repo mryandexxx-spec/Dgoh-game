@@ -112,6 +112,30 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'imperial-final-legion-parade',x:62,z:20,size:28},
     ]),
   }),
+  'L:6': Object.freeze({
+    id: 'shield-wall-scar', title: 'Битва за Арракин · Шрам Защитной стены',
+    theme: 'shield-wall-scar', bounds: [-80,80,-41,47],
+    // Light VII, original global IDs 60–69. One connected crossing of the
+    // physically breached Shield Wall into Arrakeen and Shaddam's final camp.
+    camera: { target: [-68,0,-13], alpha: -1.34, beta: .99,
+      radius: 34, minRadius: 25, maxRadius: 66, turnLimit: .24 },
+    nodes: Object.freeze([
+      [-70,-15],[-54,-8],[-38,0],[-22,3],[-8,-2],
+      [7,8],[21,-3],[35,6],[49,-3],[64,9],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'coriolis-desert-front',x:-70,z:13,size:24},
+      {kind:'shield-wall-atomic-breach',x:-49,z:4,size:27},
+      {kind:'colossal-maker-invasion',x:-32,z:22,size:52},
+      {kind:'sardaukar-broken-legion',x:-22,z:24,size:20},
+      {kind:'shaddam-battle-tent',x:-7,z:30,size:27},
+      {kind:'harkonnen-reckoning',x:8,z:28,size:14},
+      {kind:'fenring-shadow-gallery',x:21,z:25,size:10},
+      {kind:'knife-duel-circle',x:35,z:27,size:17},
+      {kind:'last-imperial-guard',x:51,z:27,size:15},
+      {kind:'empty-desert-throne',x:64,z:28,size:16},
+    ]),
+  }),
   'L:4': Object.freeze({
     id: 'empty-harvest-ring', title: 'Годы в пустыне · Кольцо пустой жатвы',
     theme: 'empty-harvest', bounds: [-70,78,-38,36],
