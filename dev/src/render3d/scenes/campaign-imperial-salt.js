@@ -105,32 +105,32 @@ export function buildImperialSaltMirror(B3, scene, material, detail = true) {
     box('50 imperial hanging standard '+x,x+1.1,7.1,4,2.2,4.5,.22,mat.red);
     box('50 lion device '+x,x+1.1,7.3,3.8,.7,1.2,.25,mat.gold);
   }
-  // ID51: unmistakable monumental grounded transport, brought forward
-  // from the cropped horizon, framed by crimson fins and gold armour.
-  // The salt route and its mission buttons stay in front of the landing bay.
-  wedge('51 padishah great transport armored hull',-53,10.5,20,42,9,18,mat.iron);
-  box('51 imperial gilded dorsal spine',-54,15.3,19.5,33,2.7,5,mat.gold,.04);
-  wedge('51 prow of the Padishah transport',-27,9.1,20,21,5,10,mat.steel);
-  box('51 dark stern hangar opening',-74,7.9,16.6,2.8,6,8,mat.wine);
-  for(const x of [-68,-43]){
-    box('51 heavy landing support '+x,x,4.8,13,3.4,9.6,3.5,mat.iron);
-    box('51 planted golden landing foot '+x,x,.48,13,8,.9,7,mat.bronze);
+  // ID51: monumental ship aligned with the actual MOBILE camera, rather
+  // than hidden above the steep horizon. Its landed prow stands to the right
+  // of the open ID50 reception square; interactive route stays unobstructed.
+  wedge('51 padishah great transport armored hull',-40,6.2,9,42,7.4,16,mat.steel);
+  box('51 imperial gilded dorsal spine',-40,10.8,9,31,2.2,5,mat.gold,.04);
+  wedge('51 prow of the Padishah transport',-17,5.8,9,18,5,9,mat.iron);
+  box('51 dark stern hangar opening',-61.5,4.9,8,2.8,5.1,8,mat.wine);
+  for(const x of [-54,-29]){
+    box('51 heavy landing support '+x,x,3.3,3.2,3.4,6.6,3.5,mat.iron);
+    box('51 planted golden landing foot '+x,x,.44,3.2,8,.88,7,mat.bronze);
   }
-  for(const [i,z] of [[0,11],[1,30]]){
-    const fin=wedge('51 crimson swept imperial wing '+i,-57,12,z,23,3.5,5,mat.red);
-    fin.rotation.z=i?-.14:.14;
-    box('51 gilded wing-edge '+i,-56,13,z,15,.45,.72,mat.gold);
+  for(const [i,z] of [[0,-.5],[1,19]]){
+    const fin=wedge('51 crimson swept imperial wing '+i,-44,8.25,z,23,3.5,5,mat.red);
+    fin.rotation.z=i?-.13:.13;
+    box('51 gilded wing-edge '+i,-43,9.3,z,15,.42,.72,mat.gold);
   }
-  for(const x of [-64,-52,-40]){
-    wedge('51 imperial tall dorsal fin '+x,x,17.3,19.5,5.8,6.3,3.4,mat.red);
-    box('51 gold heraldic vertical inset '+x,x,19.1,17.7,.42,2.4,.20,mat.gold);
+  for(const x of [-52,-40,-28]){
+    wedge('51 imperial tall dorsal fin '+x,x,11.65,9,5.8,4.5,3.4,mat.red);
+    box('51 gold heraldic vertical inset '+x,x,12.7,7.3,.42,2.3,.20,mat.gold);
   }
-  box('51 immense plated waist',-54,10.7,10.7,28,1.3,.42,mat.gold);
+  box('51 immense plated waist',-40,7.0,.8,28,1.3,.42,mat.gold);
   if(detail){
-    for(const x of [-69,-61,-53,-45,-37])
-      box('51 gold-set side plating '+x,x,11.7,10.46,4.6,.8,.24,mat.steel);
+    for(const x of [-54,-47,-40,-33,-26])
+      box('51 gold-set side plating '+x,x,8,.48,4.6,.72,.24,mat.iron);
   }
-  // Sparse, static orbital silhouettes only: do not fake a second ground fleet.
+  // A few remote orbiting silhouettes, static as they would be in a painting.
   for(let i=0;i<(detail?4:2);i++){
     const remote=wedge('51 distant imperial orbital ship '+i,-28+i*22,26+i%2*2,68,
       6.8,1.5,3,mat.steel);remote.rotation.y=.17;
