@@ -80,15 +80,20 @@ export function buildImperialSaltMirror(B3, scene, material, detail = true) {
     const x=-72+i*(detail?23:48);
     box('salt evaporite plate '+i,x,-.26,31-(i%2)*5,13,.04,5,i%2?mat.crust:mat.bright,.12);
   }
-  // Intact, uninterrupted Shield Wall. Every crag is behind the playable route.
+  // A low uninterrupted escarpment anchors the horizon INSIDE 844/667
+  // landscape viewports. Taller monoliths rise immediately behind the shelf;
+  // their crests remain visible rather than being cropped above the canvas.
+  box('shield-wall-unbroken-continuous-foot',0,2.2,43,214,5.0,9,mat.rock);
   for(let i=0;i<(detail?13:9);i++){
-    const x=-88+i*(detail?15.3:22.8),h=10+(i*7%9);
-    wedge('unbroken Shield Wall massif '+i,x,h*.47,55+(i%3)*3,detail?20:27,h,18,
-      i%3===0?mat.rockLight:mat.rock);
+    const x=-91+i*(detail?15.3:22.8),h=7+(i*5%6);
+    wedge('unbroken Shield Wall massif '+i,x,5.3+h*.36,50+(i%3)*1.6,
+      detail?20:27,h,14,i%3===0?mat.rockLight:mat.rock);
+    if(detail&&i%2===0)
+      box('shield wall sunlit weathered ledge '+i,x,4.6,38,11,.42,1.6,mat.rockLight,.06);
   }
   for(let i=0;i<(detail?7:5);i++){
     const x=-71+i*(detail?25:37);
-    wedge('static approaching storm shelf '+i,x,16+(i%3)*2.2,77,detail?32:40,14+(i%3)*3,11,
+    wedge('static approaching storm shelf '+i,x,13+(i%3)*1.5,74,detail?32:40,10+(i%3)*2,11,
       i%2?mat.storm:mat.stormDark);
   }
 
@@ -100,24 +105,35 @@ export function buildImperialSaltMirror(B3, scene, material, detail = true) {
     box('50 imperial hanging standard '+x,x+1.1,7.1,4,2.2,4.5,.22,mat.red);
     box('50 lion device '+x,x+1.1,7.3,3.8,.7,1.2,.25,mat.gold);
   }
-  // ID51: the enormous grounded transport; orbital ships are small distant glyphs.
-  // The main body and fins are behind the route, never in the mission hit plane.
-  wedge('51 padishah frigate primary hull',-51,13,31,34,8,15,mat.iron);
-  box('51 great frigate spine',-52,18.5,31,24,3,5,mat.steel,.08);
-  wedge('51 forward keel',-32,11,31,17,5,7,mat.steel);
-  for(const x of [-64,-42]){
-    box('51 landed frigate strut '+x,x,5,27,3.4,10,3,mat.iron);
-    box('51 landed frigate foot '+x,x,.32,27,7,.64,6,mat.bronze);
+  // ID51: unmistakable monumental grounded transport, brought forward
+  // from the cropped horizon, framed by crimson fins and gold armour.
+  // The salt route and its mission buttons stay in front of the landing bay.
+  wedge('51 padishah great transport armored hull',-53,10.5,20,42,9,18,mat.iron);
+  box('51 imperial gilded dorsal spine',-54,15.3,19.5,33,2.7,5,mat.gold,.04);
+  wedge('51 prow of the Padishah transport',-27,9.1,20,21,5,10,mat.steel);
+  box('51 dark stern hangar opening',-74,7.9,16.6,2.8,6,8,mat.wine);
+  for(const x of [-68,-43]){
+    box('51 heavy landing support '+x,x,4.8,13,3.4,9.6,3.5,mat.iron);
+    box('51 planted golden landing foot '+x,x,.48,13,8,.9,7,mat.bronze);
   }
-  for(const z of [22,40]){
-    const wing=box('51 long crimson ship fin '+z,-58,13,z,18,.45,4.3,mat.red,.05);
-    wing.rotation.z=-.12;
+  for(const [i,z] of [[0,11],[1,30]]){
+    const fin=wedge('51 crimson swept imperial wing '+i,-57,12,z,23,3.5,5,mat.red);
+    fin.rotation.z=i?-.14:.14;
+    box('51 gilded wing-edge '+i,-56,13,z,15,.45,.72,mat.gold);
   }
+  for(const x of [-64,-52,-40]){
+    wedge('51 imperial tall dorsal fin '+x,x,17.3,19.5,5.8,6.3,3.4,mat.red);
+    box('51 gold heraldic vertical inset '+x,x,19.1,17.7,.42,2.4,.20,mat.gold);
+  }
+  box('51 immense plated waist',-54,10.7,10.7,28,1.3,.42,mat.gold);
   if(detail){
-    for(const x of [-66,-57,-48,-39]){
-      box('51 plated gold hull inset '+x,x,15.9,22.8,3.8,.45,.24,mat.gold);
-    }
-    for(let i=0;i<4;i++)wedge('51 remote orbital frigate '+i,-30+i*17,29+i%2*2,68,6,1.4,2.7,mat.steel);
+    for(const x of [-69,-61,-53,-45,-37])
+      box('51 gold-set side plating '+x,x,11.7,10.46,4.6,.8,.24,mat.steel);
+  }
+  // Sparse, static orbital silhouettes only: do not fake a second ground fleet.
+  for(let i=0;i<(detail?4:2);i++){
+    const remote=wedge('51 distant imperial orbital ship '+i,-28+i*22,26+i%2*2,68,
+      6.8,1.5,3,mat.steel);remote.rotation.y=.17;
   }
   // ID52: temporary capital in two ranks, with clear slots between roofs.
   const tent=(id,x,z,w,tint)=>{
@@ -162,30 +178,41 @@ export function buildImperialSaltMirror(B3, scene, material, detail = true) {
   cyl('58 wind bearing instrument',46,6.8,15,.48,9.5,mat.steel,6);
   for(let i=0;i<(detail?3:1);i++)box('58 still storm wind vane '+i,46+i*.3,11.1,15,4,.22,.4,mat.watch,i*1.04);
   for(let i=0;i<3;i++)box('58 distant Fremen screen '+i,43+i*5,.7,32,3,1.4,.8,mat.shadow);
-  // ID59: imperial victory display at an UNBROKEN Wall. Not the Arrakeen assault.
-  box('59 grand legion reviewing floor',62,.22,20,28,.46,22,mat.shadow);
-  for(const x of [50,73]){
-    box('59 ceremonial review pillar '+x,x,5.1,17,2.5,10,2.5,mat.rock);
-    box('59 imperial pillar crest '+x,x,10.7,17,4,.6,4,mat.gold);
-    box('59 parade crimson drape '+x,x+1.6,7.9,17,2.8,4.7,.18,mat.red);
+  // ID59: a grand legion review, not the invasion. Static regiment, intact Wall.
+  // Bring the sardaukar forward so they read as figures, not tiny horizon dots.
+  box('59 panoramic imperial parade square',62,.10,17.5,31,.40,27,mat.shadow);
+  for(const x of [48.6,75.4]){
+    box('59 monumental imperial pillar '+x,x,4.8,26,2.8,9.6,2.8,mat.rock);
+    box('59 golden pillar capital '+x,x,9.75,26,4.1,.7,4.1,mat.gold);
+    box('59 blood-crimson long hanging flag '+x,x+1.63,6.5,25.9,2.9,5.1,.27,mat.red);
   }
-  box('59 imperial officer tribune',62,1.1,31,17,2.2,5.6,mat.crust);
-  box('59 central golden tribunal line',62,2.4,29.1,16,.24,.4,mat.gold);
-  // Shared invisible template meshes: draw-call-friendly Sardaukar formation.
-  const soldier=cyl('padishah-sardaukar-body-template',0,.78,0,.78,1.5,mat.guard,6,.62);
-  const helm=cyl('padishah-sardaukar-helm-template',0,1.83,0,.88,.60,mat.steel,6,.5);
-  soldier.setEnabled(false);helm.setEnabled(false);
-  const rows=detail?4:3,columns=detail?8:6;
+  box('59 imperial triumphal arch lintel',62,9.95,26,30,1.3,2.4,mat.gold);
+  box('59 imperial crimson arch inlay',62,9.72,24.62,21,.65,.22,mat.red);
+  box('59 imperial command dais',62,1.25,31,18,2.5,7,mat.crust);
+  box('59 massive golden command dais face',62,2.2,27.4,17,.82,.24,mat.gold);
+  if(detail){
+    for(let i=0;i<4;i++)box('59 sunlit gilded processional tile '+i,
+      53+i*6,.37,4,3.8,.10,1.1,mat.gold);
+  }
+  // One mesh per body part TEMPLATE, many instances: silhouette remains
+  // readable on mobile without one draw call or material per soldier.
+  const soldier=cyl('padishah-sardaukar-body-template',0,1.16,0,1.08,2.35,mat.guard,6,.72);
+  const helm=cyl('padishah-sardaukar-helm-template',0,2.82,0,1.08,.86,mat.steel,6,.66);
+  const pike=cyl('padishah-sardaukar-ceremonial-pike-template',0,2,0,.11,3.95,mat.gold,5);
+  soldier.setEnabled(false);helm.setEnabled(false);pike.setEnabled(false);
+  const rows=detail?6:4,columns=detail?11:8;
   for(let r=0;r<rows;r++)for(let k=0;k<columns;k++){
-    const x=52+k*(detail?2.45:3.75),z=22+r*(detail?2.5:4);
-    const b=soldier.createInstance('59 Salusa legion '+r+' '+k);
-    b.position.set(x,.83,z);b.isPickable=false;
-    const h=helm.createInstance('59 Salusa helm '+r+' '+k);
-    h.position.set(x,2.1,z);h.isPickable=false;
+    const x=50.3+k*(detail?2.36:3.35),z=7.2+r*(detail?2.7:4.1);
+    const b=soldier.createInstance('59 Sardaukar full regiment '+r+' '+k);
+    b.position.set(x,1.29,z);b.isPickable=false;
+    const h=helm.createInstance('59 Sardaukar helmet '+r+' '+k);
+    h.position.set(x,2.93,z);h.isPickable=false;
+    const p=pike.createInstance('59 Sardaukar upright gilded standard '+r+' '+k);
+    p.position.set(x+.68,1.97,z);p.isPickable=false;
   }
-  if(detail)for(let i=0;i<5;i++){
-    const x=56+i*3.4;
-    line('59 parade polished rank line '+i,x,16,x,18,.23,.16,mat.gold);
+  if(detail)for(let i=0;i<6;i++){
+    const x=51+i*4.4;
+    line('59 parade orderly golden procession line '+i,x,4.1,x,5.8,.35,.15,mat.gold);
   }
   // EngineHost puts the scene into static after the camera/HUD settle.
 }
