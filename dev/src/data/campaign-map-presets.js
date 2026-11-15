@@ -243,9 +243,9 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {target:[-16,4,36],alpha:-1.30,beta:.99,radius:32},
       {target:[1,3.5,33],alpha:-1.24,beta:.97,radius:32},
       {target:[18,3,23],alpha:-1.28,beta:1.04,radius:33},
-      {target:[31,4,11],alpha:-1.35,beta:1.00,radius:33},
+      {target:[31,4,11],alpha:-1.35,beta:1.00,radius:33,lowRadius:26},
       {target:[31,3,-14],alpha:-1.40,beta:.92,radius:44},
-      {target:[29,3,-22],alpha:-1.44,beta:1.05,radius:40},
+      {target:[29,3,-22],alpha:-1.44,beta:1.05,radius:40,lowRadius:32},
     ]),
     landmarks: Object.freeze([
       {kind:'heir-open-arena',x:-55,z:-7,size:16},
