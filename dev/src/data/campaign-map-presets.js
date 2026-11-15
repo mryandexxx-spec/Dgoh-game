@@ -260,6 +260,44 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'heir-gurney-broken-lyre',x:25,z:-19,size:16},
     ]),
   }),
+  'D:5': Object.freeze({
+    id: 'salusa-wind-erased-march', title: 'Легионы Салусы · Марш, стёртый ветром',
+    theme: 'salusa-wind-march', bounds: [-74,72,-36,39],
+    // Dark VI canonical global mission IDs 120–129. One continuous Arrakis
+    // story atlas: imperial geometry breaks under wind, rock and Muad'Dib.
+    camera: { target: [-60,0,-20], alpha: -1.32, beta: .98,
+      radius: 32, minRadius: 25, maxRadius: 60, turnLimit: .28 },
+    nodes: Object.freeze([
+      [-60,-20],[-47,-17],[-34,-14],[-21,-11],[-8,-6],
+      [5,0],[18,6],[31,10],[44,14],[58,18],
+    ]),
+    // Independent artistic framing per mission, translated by the native
+    // v101 world camera during pan, pinch, twist and recenter.
+    focuses: Object.freeze([
+      {target:[-60,3.4,-12],alpha:-1.26,beta:.94,radius:31},
+      {target:[-47,3.3,-9],alpha:-1.28,beta:.96,radius:31},
+      {target:[-34,3.4,-7],alpha:-1.29,beta:.98,radius:32},
+      {target:[-21,3.8,-4],alpha:-1.30,beta:1.00,radius:32},
+      {target:[-8,4.0,3],alpha:-1.34,beta:1.03,radius:33},
+      {target:[5,4.7,7],alpha:-1.41,beta:1.05,radius:34},
+      {target:[18,3.8,13],alpha:-1.36,beta:.99,radius:33},
+      {target:[31,4.3,19],alpha:-1.33,beta:1.01,radius:34},
+      {target:[42,3.8,20],alpha:-1.38,beta:1.04,radius:35},
+      {target:[53,4.8,26],alpha:-1.46,beta:1.06,radius:40},
+    ]),
+    landmarks: Object.freeze([
+      {kind:'salusa-landing-wedges',x:-60,z:-11,size:15},
+      {kind:'salusa-ordered-ranks',x:-47,z:-2,size:11},
+      {kind:'salusa-broken-victory-line',x:-34,z:3,size:12},
+      {kind:'salusa-silent-captive',x:-21,z:0,size:10},
+      {kind:'salusa-coriolis-shears',x:-8,z:9,size:18},
+      {kind:'salusa-death-gorge',x:5,z:13,size:18},
+      {kind:'salusa-hidden-water',x:18,z:18,size:14},
+      {kind:'salusa-worm-furrows',x:31,z:26,size:22},
+      {kind:'salusa-retreat',x:44,z:23,size:16},
+      {kind:'salusa-muad-dib',x:58,z:33,size:19},
+    ]),
+  }),
   'D:1': Object.freeze({
     id: 'giedi-conspiracy', title: 'Заговор · Тихий трон',
     theme: 'conspiracy', bounds: [-48, 46, -24, 27],

@@ -41,7 +41,7 @@ try {
           return {engines:engines.length,contexts:window.__mapContexts.map(ref=>ref.deref()).filter(c=>c&&!c.isContextLost()).length,scenes:scenes.length,meshes:scenes.reduce((n,s)=>n+s.meshes.length,0),textures:scenes.reduce((n,s)=>n+s.textures.length,0)};
         };
         const mounted=[];
-        for(const [side,chapter] of [['L',0],['L',5],['L',6],['D',2],['D',3],['D',4],['C',CAMP_DEF.C.chapters.length-1]]){
+        for(const [side,chapter] of [['L',0],['L',5],['L',6],['D',2],['D',3],['D',4],['D',5],['C',CAMP_DEF.C.chapters.length-1]]){
           const map=chapterMap(side,chapter,S.cleared);if(!map)throw Error('Missing campaign map');
           const el=document.createElement('div');el.style.cssText='position:fixed;inset:0;width:100vw;height:100vh';
           el.innerHTML=map.nodes.map(n=>`<button data-c20node="${n.id}"></button>`).join('');document.body.append(el);
