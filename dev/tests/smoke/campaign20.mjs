@@ -1287,6 +1287,109 @@ try {
     console.log('PASS C4.17 Iron Quota real WebGL',w,h,gfx,
       JSON.stringify({quotaEntry,quotaGeometry}));
 
+
+    // C4.18 Dark V: one static crescent-shaped "Empty Crown" art atlas.
+    // 22 genuine Chromium/SwiftShader screenshots: entry + 10 selected missions
+    // for MED 844x390 and LOW 667x375. No synthetic renders or screen-pager.
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="4"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="4"]').click());
+    await page.waitForSelector('.c20-world.heir-crown.campaign20-3d-ready',{timeout:20000});
+    await new Promise(resolve=>setTimeout(resolve,530));
+    const heirGeometry=await page.evaluate(()=>{
+      const B=window.__B3;
+      const scene=B?.EngineStore?.Instances?.flatMap(e=>e.scenes||[])
+        .find(s=>s.activeCamera?.name==='campaign-camera');
+      const meshes=scene?.meshes||[];
+      const has=n=>meshes.some(m=>m.name===n);
+      return {
+        meshes:meshes.length,vertices:meshes.reduce((n,m)=>n+m.getTotalVertices(),0),
+        arena:has('110 arena open fighting crescent'),
+        blade:has('111 immense ceremonial poisoned blade'),
+        baron:has('112 baron assassination alcove black recess'),
+        spice:has('113 amber sealed spice load 0'),
+        mohiam:has('114 Mohiam absolute silence screen 1'),
+        duel:has('115 triangular blade duel boundary 1'),
+        witch:has('116 BG whispered veiled silhouette'),
+        wedding:has('117 arranged marriage tall seat'),
+        ambush:has('118 destroyed spice convoy broken sled'),
+        gurney:has('119 broken warrior poet steel lyre blade 0'),
+        void:has('heir empty throne central void'),
+        paths:meshes.filter(m=>m.name.startsWith('heir crown continuous promenade ')).length,
+        context:!!scene&&!!scene.activeCamera,
+        reusedQuota:meshes.some(m=>m.name==='102 colossal spice harvester hull'),
+        reusedConspiracy:meshes.some(m=>m.name==='Deep freight elevator shaft'),
+      };
+    });
+    for(const key of ['arena','blade','baron','spice','mohiam','duel','witch',
+      'wedding','ambush','gurney','void','context'])
+      assert.equal(heirGeometry[key],true,'D:4 landmark '+key);
+    assert.equal(heirGeometry.paths,9,'D:4 nine physically connected curved promenade pieces');
+    assert.equal(heirGeometry.reusedQuota,false,'D:4 does not repeat D:3 harvester');
+    assert.equal(heirGeometry.reusedConspiracy,false,'D:4 does not repeat D:1 freight lifts');
+    assert.ok(heirGeometry.meshes<=(gfx==='med'?165:136),
+      'D:4 geometry mesh budget '+JSON.stringify(heirGeometry));
+    assert.ok(heirGeometry.vertices<=(gfx==='med'?8200:7100),
+      'D:4 geometry vertex budget '+JSON.stringify(heirGeometry));
+
+    const heirProblems=[];
+    const checkHeir=async(label)=>{
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.heir-crown');
+        const all=[...world.querySelectorAll('.c20-pin')];
+        const shown=all.filter(p=>getComputedStyle(p).visibility==='visible');
+        const nums=shown.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const viewport=world.getBoundingClientRect();
+        const overlaps=shown.flatMap((a,i)=>shown.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3
+            &&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {
+          ids:all.map(p=>Number(p.dataset.c20node)),
+          selected:Number(all.find(p=>p.classList.contains('on'))?.dataset.c20node),
+          nums,overlaps,within:shown.every(p=>{const b=p.getBoundingClientRect();
+            return b.left>=viewport.left+1&&b.right<=viewport.right-1
+              &&b.top>=viewport.top+1&&b.bottom<=viewport.bottom-1;}),
+          boss:all.filter(p=>p.classList.contains('boss')).length,
+          fallback:all.every(p=>p.style.getPropertyValue('--px')&&p.style.getPropertyValue('--py')),
+          canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          scroll:document.querySelector('.c20').scrollHeight>document.querySelector('.c20').clientHeight+1,
+        };
+      });
+      try{
+        assert.deepEqual(state.ids,Array.from({length:10},(_,i)=>i+110),'D:4 canonical IDs');
+        assert.equal(state.boss,1,'D:4 final mission 119 alone is boss');
+        assert.equal(state.canvas,true,'D:4 shared WebGL canvas');
+        assert.equal(state.fallback,true,'D:4 all ten interactive 2D fallback positions');
+        assert.equal(state.scroll,false,'D:4 no vertical scrolling');
+        assert.equal(state.within,true,label+' all pins within phone bounds '+JSON.stringify(state));
+        assert.deepEqual(state.overlaps,[],label+' pin buttons must not overlap');
+        assert.ok(state.nums.length>=2&&state.nums.length<=4,
+          label+' two to four local world markers '+JSON.stringify(state));
+        assert.ok(state.nums.every((n,i)=>!i||n===state.nums[i-1]+1),
+          label+' markers sequential '+JSON.stringify(state));
+        assert.ok(state.nums.includes(state.selected-109),
+          label+' selected world marker visible '+JSON.stringify(state));
+      }catch(e){heirProblems.push(label+': '+e.message);}
+      console.log('HEIR CAMERA',label,JSON.stringify(state));
+      return state;
+    };
+    const heirEntry=await checkHeir('Heir entry');
+    await page.screenshot({path:path.join(shots,'heir-crown-entry-'+w+'-'+gfx+'.png')});
+    for(const [id,name] of [[110,'arena'],[111,'poisoned-blade'],
+      [112,'baron-assassination'],[113,'spice-convoy'],[114,'mohiam'],
+      [115,'giedi-duel'],[116,'desert-witch'],[117,'wedding'],
+      [118,'caravan-trap'],[119,'gurney-warrior-poet']]){
+      await page.evaluate(id=>document.querySelector('[data-c20node="'+id+'"]')?.click(),id);
+      await new Promise(resolve=>setTimeout(resolve,570));
+      await page.screenshot({path:path.join(shots,'heir-crown-'+name+'-'+w+'-'+gfx+'.png')});
+      await checkHeir('Heir '+name);
+    }
+    assert.deepEqual(heirProblems,[],'D:4 all eleven actual WebGL camera frames');
+    console.log('PASS C4.18 Heir Empty Crown real WebGL',w,h,gfx,
+      JSON.stringify({heirEntry,heirGeometry}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
