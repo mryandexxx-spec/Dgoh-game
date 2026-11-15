@@ -1518,6 +1518,28 @@ body:has(.c20) #notes{display:none!important;}
   clip-path:polygon(0 32%,9% 12%,18% 37%,30% 2%,40% 20%,51% 0,62% 29%,73% 5%,83% 23%,94% 0,100% 22%,100% 100%,0 100%);
   pointer-events:none;z-index:0
 }
+
+/* C4.15: the broken Shield Wall is a NEGATIVE space between two rock masses,
+   unlike C4.14's intact horizon. All fallback markers stay interactive. */
+.c20-world.shield-wall-scar{
+  background:linear-gradient(110deg,#464951 0%,#967252 27%,#d2a573 43%,
+    #8c7059 63%,#704c4b 82%,#46383e 100%);
+  border-color:#c19d73
+}
+.c20-world.shield-wall-scar.c20-fallback::before{
+  content:'БИТВА ЗА АРРАКИН · ШРАМ ЗАЩИТНОЙ СТЕНЫ';
+  position:absolute;top:7%;left:12px;right:12px;text-align:center;
+  font:12px var(--f-mono);letter-spacing:.09em;color:#f7dfb4;
+  opacity:.96;pointer-events:none;z-index:1
+}
+.c20-world.shield-wall-scar.c20-fallback::after{
+  content:'';position:absolute;inset:21% 0 auto;height:34%;
+  background:linear-gradient(180deg,#33383ddc,#66574dd0 65%,#a78768a8);
+  clip-path:polygon(0 18%,8% 9%,18% 31%,24% 0%,29% 32%,31% 100%,
+    38% 100%,40% 23%,46% 6%,52% 37%,60% 20%,66% 42%,
+    74% 14%,82% 31%,90% 9%,100% 25%,100% 100%,0 100%);
+  pointer-events:none;z-index:0
+}
 /* ===== landscape phones (primary orientation) ===== */
 @media (orientation: landscape) and (max-height: 520px) {
   header.top .wrap { padding-block: 4px 0; gap: 4px 14px; }
