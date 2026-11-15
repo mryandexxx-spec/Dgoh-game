@@ -1,6 +1,6 @@
 # Campaign 2.0 — C4.17 «Правление Зверя» / «Железная квота» · v120 release handoff
 
-Дата: 15.11.2026. **Статус на момент подготовки release PR: v120 кандидат. НЕ НАЗЫВАТЬ опубликованной до официального validated PWA / Pages / сверки root cache.**
+Дата: 15.11.2026. **Статус: v120 ОПУБЛИКОВАНА. Официальный validated publish, отдельный Pages deployment и root cache проверены.**
 
 ## Утверждение и реализация
 - Владелец утвердил концепцию «Железная квота», затем принял 22 настоящих Chromium/SwiftShader WebGL MED 844×390 и LOW 667×375 кадра («Ок»), затем отдельно дал команду **«Сливай и публикуй»**.
@@ -23,6 +23,14 @@
 - Guard проверяет точный main squash title, Git SHA, `version.json=120`, старый root SW `5433bc45aa`, наличие принятого D:3 кода, lifecycle и WebGL тестов. Только после успешных guard запускает официальный workflow `validate-pwa.yml` с `publish=true`.
 - Далее обязательны официальный full gate SUCCESS, публикационная синхронизация root из **того же SHA-256 validated artifact**, отдельный Pages deployment SUCCESS и фактическая сверка root `dev/version.json=120`, `app.js` v120, нового `sw.js` cache и совпадающих хешей. **Без этих доказательств выпуск считается незавершённым**.
 - После подтверждённого выпуска удалить одноразовый workflow документальным cleanup PR и записать точные CI, commit и SW SHA в handoff и журнал. Дальнейшую публикацию этот cleanup не вызывает.
+
+## Подтверждённый выпуск v120 — 15.11.2026
+- [Релизный PR #103 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/103), squash commit **`9b1a8b2bd3bdf11ba7af6d371fc5dad545cf4994`**; [полный release PR CI #43713420203 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43713420203).
+- [main CI #43713999317 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43713999317); [одноразовый guard #43713999321 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43713999321) подтвердил exact release title, v120, старый SW, approved D:3 и отправил только официальный `workflow_dispatch publish=true`.
+- [Официальный validated publish #43714007861 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43714007861) выполнил full required gate и проверил **188 SHA-256 файлов v120 · `5c7310b18b`**. `Publish verified PWA to GitHub Pages` = SUCCESS; root sync коммит **`8b25fff32095700e21d8b0960f5a3694c481a9db`**.
+- [Отдельный Pages deployment #43714744797 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43714744797) на exact root source `8b25fff32095700e21d8b0960f5a3694c481a9db`.
+- GitHub `main` проверен: `dev/version.json={"v":120}`, root `sw.js` VER=`5c7310b18b`, `SHELL.app.js` SHA-256 prefix `3c8fdab2df9a8213`. Production: https://mryandexxx-spec.github.io/Dgoh-game/. **v120 ОПУБЛИКОВАНА.**
+- Одноразовый workflow `release-v120-once.yml` удаляется в отдельном документационном cleanup PR; повторная публикация не выполняется.
 
 ## Физический iPhone Safari / PWA — открыто
 Проверить ландшафтный режим 100–109 MED/LOW, видимость маршрута, выбор миссии и переход в бой/симуляцию, жесты swipe/pinch/twist/recenter, fallback WebGL off, offline и SW update, FPS/нагрев/батарею 10–15 минут. Chromium/SwiftShader и художественная приёмка не являются физическими замерами.
