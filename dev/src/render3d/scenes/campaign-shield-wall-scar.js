@@ -90,18 +90,20 @@ export function buildShieldWallScar(B3, scene, material, detail = true) {
   // is preserved between z=-9 and z=15: the worm route genuinely crosses it.
   // Short broken shoulders frame a navigable opening without becoming a
   // foreground blind wall when viewed from the existing south-facing camera.
-  box('61 shield-scar-left-foot',-49,1.8,-16,13,4.4,9,mat.rock);
+  box('61 shield-scar-left-foot',-49,1.0,-18,7.5,2.6,5.5,mat.rock);
   box('61 shield-scar-right-foot',-49,2.0,24,13,4.9,16,mat.rock);
   for(const [side,zBase] of [['left',-16],['right',24]]){
     const n=detail?3:2;
     for(let i=0;i<n;i++){
       const z=zBase+(i-(n-1)/2)*(detail?6:9);
-      wedge('61 shield-scar-'+side+'-broken-spire-'+i,-49,6.4+(i%3)*1.5,z,
-        14,11+(i%3)*3,detail?7.5:10,i%2?mat.rock:mat.fracture);
+      wedge('61 shield-scar-'+side+'-broken-spire-'+i,-49,
+        (side==='left'?4.4:6.4)+(i%3)*1.5,z,
+        side==='left'?8.5:14,side==='left'?7.3:11+(i%3)*3,
+        side==='left'?4.8:(detail?7.5:10),i%2?mat.rock:mat.fracture);
     }
   }
-  for(const [i,z] of [[0,-11],[1,17]]){
-    wedge('61 atom-broken wall face '+i,-48,4.2,z,12,8,7,mat.fractureLight);
+  for(const [i,z] of [[0,-3],[1,17]]){
+    wedge('61 atom-broken wall face '+i,-48,i?4.2:2.4,z,i?12:7,i?8:4.8,i?7:5,mat.fractureLight);
     for(let j=0;j<(detail?4:2);j++){
       wedge('61 shattered wall boulder '+i+'-'+j,-48+(j%2)*6,1.1,z+(i?1:-1)*j*3,
         4.5,2.8,5,j%2?mat.rock:mat.fracture);
