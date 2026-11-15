@@ -6,9 +6,17 @@
 
 **v120 ОПУБЛИКОВАНА 15.11.2026** по отдельной команде владельца «Сливай и публикуй». [Release PR #103 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/103) `9b1a8b2`, [full release PR CI #43713420203 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43713420203), [main CI #43713999317 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43713999317), [одноразовый guard #43713999321 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43713999321), [official validated publish #43714007861 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43714007861), [отдельный Pages #43714744797 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43714744797). Root PWA commit `8b25fff32095700e21d8b0960f5a3694c481a9db`, `dev/version.json=120`, SW cache **`5c7310b18b`**, 188 validated SHA-256 files. [Полная передача v120](C4_17_V120_RELEASE_HANDOFF_2026_11_15.md). Исходные 210 миссий, диалоги, награды, баланс, экономика и сохранения не менялись. Физические iPhone/Safari тесты остаются открытыми.
 
-## Следующий художественный этап — C4.18 «Наследник» · Тёмная V `D:4` (110–119)
+## C4.18 «Наследник» / «Венец без трона» · v121 — релиз-кандидат
 
-**Начать новый чат с [Issue #105](https://github.com/mryandexxx-spec/Dgoh-game/issues/105) и [передачи C4.18 после v120](C4_18_AFTER_V120_HANDOFF_2026_11_15.md).** 19-я из 21 авторских карт ещё не создана: Dark V `D:4`, канонические миссии 110–119, уровни 31–42. Источник — `CAMP_DEF.D.chapters[4]`: Фейд-Раута, арена Гиеди Прайм, придворные интриги, Мохиам, караваны и месть Гурни. В `campaign-map-presets.js` нет пресета `D:4`. **Только художественный этап A**: 2–3 самостоятельные концепции и подробное предложение на утверждение владельцу. Без игрового кода, feature PR, version bump, merge или release до отдельных команд; физическая проверка iPhone/Safari предыдущих глав открыта.
+**19-я из 21** авторских карт Campaign 2.0, Тёмная V `D:4`, миссии 110–119, уровни 31–42. Реализована одна статичная 3D-диорама-подкова с символическим пустым центром, десятью уникальными ориентирами и фокусами; без изменения сюжетных и боевых данных. [Issue #105](https://github.com/mryandexxx-spec/Dgoh-game/issues/105); [Implementation PR #107 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/107) `178502971cd28886fecc4c4f1732054dbf443cde`. Владелец принял художественную реализацию и дал команду «Сливай и выпускай».
+
+[Финальный implementation CI SUCCESS #43724511596](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43724511596) и [22 настоящих WebGL MED 844×390 / LOW 667×375 кадра](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43724511596/artifacts/14165793936); lifecycle MED/HIGH 134 meshes / 7610 vertices, LOW 117 / 6751, все три цикла PASS. Golden/PWA/architecture/perf PASS.
+
+**v121 выпуск отдельно готовится:** [release handoff](C4_18_V121_RELEASE_HANDOFF_2026_11_15.md), релизная ветка `release/c4-18-v121-validated`, отдельный fail-closed validated GitHub Pages publish. На момент записи в production остаётся **v120**; не называть v121 опубликованной до Pages SUCCESS и сверки версии и SW. Физическая Safari/PWA проверка на iPhone остаётся открытой.
+
+## Следующая глава после v121 — C4.19, Тёмная VI `D:5`
+
+Следующим **отдельным художественным этапом A** займёмся только после подтверждённого выпуска v121; главный источник — `CAMP_DEF.D.chapters[5]`. Сначала концепция на утверждение, без автоматической реализации.
 
 ## Последний опубликованный релиз — C4.16 «Ночь длинных ножей» / «Гаснущая корона» · v119
 
