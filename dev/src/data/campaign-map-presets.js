@@ -207,7 +207,7 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {target:[22,3,-1],alpha:-1.34,beta:.99,radius:32},
       {target:[36,3,-15],alpha:-1.26,beta:.97,radius:33},
       {target:[49,3.5,-4],alpha:-1.30,beta:1.01,radius:33},
-      {target:[62,4,12],alpha:-1.40,beta:1.05,radius:38},
+      {target:[57,3.5,0],alpha:-1.40,beta:1.04,radius:46},
     ]),
     landmarks: Object.freeze([
       {kind:'governor-punishment-podium',x:-61,z:-10,size:16},
