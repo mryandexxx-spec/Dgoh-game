@@ -298,6 +298,42 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'salusa-muad-dib',x:58,z:33,size:19},
     ]),
   }),
+  'D:6': Object.freeze({
+    id: 'last-stake-broken-seal', title: 'Последняя ставка · Сломанная печать',
+    theme: 'broken-seal', bounds: [-72,72,-34,35],
+    // Final Dark VII canonical global IDs 130–139; 21st independent 3D map.
+    // Three contiguous imperial defense lines collapse into a last dawn.
+    camera: {target:[-60,0,-18],alpha:-1.30,beta:.96,
+      radius:33,minRadius:25,maxRadius:60,turnLimit:.26},
+    nodes: Object.freeze([
+      [-60,-18],[-44,-18],[-28,-18],[-28,-1],[-12,4],
+      [4,4],[20,4],[20,20],[40,20],[60,20],
+    ]),
+    focuses: Object.freeze([
+      {target:[-60,3.9,-12],alpha:-1.30,beta:.96,radius:33},
+      {target:[-44,3.9,-11],alpha:-1.31,beta:.97,radius:33},
+      {target:[-28,4.2,-10],alpha:-1.36,beta:1.00,radius:34},
+      {target:[-28,4.0,6],alpha:-1.32,beta:1.00,radius:34},
+      {target:[-12,3.9,11],alpha:-1.30,beta:.98,radius:33},
+      {target:[4,4.0,11],alpha:-1.32,beta:1.01,radius:33},
+      {target:[20,3.9,11],alpha:-1.33,beta:1.00,radius:33},
+      {target:[20,4.0,27],alpha:-1.35,beta:1.03,radius:35},
+      {target:[40,4.0,27],alpha:-1.32,beta:1.04,radius:36},
+      {target:[57,4.7,26],alpha:-1.42,beta:1.05,radius:39},
+    ]),
+    landmarks: Object.freeze([
+      {kind:'seal-command-orders',x:-60,z:-6,size:12},
+      {kind:'seal-blind-storm-post',x:-44,z:-7,size:10},
+      {kind:'seal-dead-transmitter',x:-28,z:-6,size:12},
+      {kind:'seal-worm-tent-anchors',x:-28,z:9,size:16},
+      {kind:'seal-last-sardaukar-line',x:-12,z:21,size:15},
+      {kind:'seal-baron-evacuation',x:4,z:15,size:12},
+      {kind:'seal-fenring-choice',x:20,z:15,size:11},
+      {kind:'seal-heir-duel-diamond',x:20,z:30,size:12},
+      {kind:'seal-last-empty-parade',x:40,z:32,size:15},
+      {kind:'seal-broken-imperial-signet',x:60,z:29,size:17},
+    ]),
+  }),
   'D:1': Object.freeze({
     id: 'giedi-conspiracy', title: 'Заговор · Тихий трон',
     theme: 'conspiracy', bounds: [-48, 46, -24, 27],
