@@ -1,12 +1,22 @@
 # Campaign 2.0 — главный указатель (15.11.2026)
 
+## C4.17 «Правление Зверя» / «Железная квота» · релиз-кандидат v120
+
+**Художественно принята и слита в main:** [Issue #100](https://github.com/mryandexxx-spec/Dgoh-game/issues/100), [PR #102 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/102) `2679f819d1427c25083c22430ba405f5b655ca9a`; [полный art CI #43709919830 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43709919830), [main CI #43713070854 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43713070854). 18-я из 21 самостоятельных Babylon-карт: Dark IV `D:3`, канонические ID 100–109, уровни 21–30. Одна солнечная промышленная долина: приказ Раббана, цистерны, комбайн, засада, пост Кайнса, выжженный сиетч, караван, фримены, закупоренные колодцы и Стилгар. [22 настоящих WebGL MED/LOW PNG](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43709919830/artifacts/14160197145); lifecycle MED 154/7527, LOW 127/6655, HIGH 154/7527, 3× и без роста ресурсов.
+
+**Владелец отдельно разрешил «Сливай и публикуй» 15.11.2026.** В релизном PR готовится `dev/version.json=120`; **выпуск ещё не подтверждён**, пока официальный validated publish, Pages deployment и root cache не имеют SUCCESS. [v120 release handoff](C4_17_V120_RELEASE_HANDOFF_2026_11_15.md). Канон всех 210 миссий, диалоги, награды, баланс, экономика и сохранения не менялись. Физические iPhone/Safari тесты остаются открытыми.
+
+## Следующий художественный этап после v120 — C4.18 · Тёмная V `D:4`
+
+Начать с исходного `CAMP_DEF.D.chapters[4]` и нового Issue/handoff, только после подтверждённой публикации v120. Новую карту разрабатывать отдельно: концепции → утверждение → feature-ветка/Draft PR → WebGL MED/LOW и CI → отдельно merge/release.
+
 ## Последний опубликованный релиз — C4.16 «Ночь длинных ножей» / «Гаснущая корона» · v119
 
 **Художественно принята и слита в main**, [Issue #95](https://github.com/mryandexxx-spec/Dgoh-game/issues/95), [PR #97 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/97), squash `49cec8a7f3605b2325666a65159d756b1aad84bf`; [финальный CI #43699423185 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43699423185). 17-я из 21 отдельной карт Campaign 2.0: Dark III `D:2`, исходные ID 90–99, уровни 13–20. Утверждённая композиция «Гаснущая корона»: отключённые генераторы, ночной штурм стены и казарм, галерея Дункана, ангар, Хават, пылающий Звёздный зал, Лето, выход к песку и последний приказ. [Настоящие WebGL MED/LOW кадры](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43699423185/artifacts/14155673174), целевой lifecycle MED 190/8479, LOW 150/7191, HIGH 190/8479, Golden/PWA/perf SUCCESS.
 
 **v119 опубликована 15.11.2026** после отдельной команды владельца «Сливай и выпускай»: [release PR #98 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/98), [release PR CI #43701560974 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43701560974), [main CI #43702047971 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43702047971), [одноразовый publish guard #43702047965 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43702047965), [official validated publish #43702058210 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43702058210), [Pages #43702687728 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43702687728). Root PWA `d948026965b837f7b9923f9ee608d18e3ca9a46d`, `dev/version.json=119`, cache **`5433bc45aa`**, 188 SHA-256 validated files. [Полный handoff v119](C4_16_V119_RELEASE_HANDOFF_2026_11_15.md). Исходные 210 миссий, сюжет, враги/боссы, награды, экономика и сохранения не менялись. Safari/iPhone остаётся отдельной проверкой.
 
-## Следующий художественный этап — C4.17 «Правление Зверя» · Тёмная IV `D:3` (100–109)
+## Исторический handoff: старт C4.17 после v119 — Тёмная IV `D:3` (100–109)
 
 **Начало следующего чата:** [Issue #100 — C4.17 «Правление Зверя»](https://github.com/mryandexxx-spec/Dgoh-game/issues/100) и [C4.17 handoff после v119](C4_17_AFTER_V119_HANDOFF_2026_11_15.md). 17/21 авторских карт опубликованы, 4 тёмные главы D:3..D:6 остаются. Следующая — оригинальные миссии 100–109, уровни 21–30, главы `CAMP_DEF.D.chapters[3]` и мотивы дневной добычи пряности, давления Раббана и фрименского сопротивления. Начать только художественный этап A: 2–3 различные концепции, выбор одной владельцем, затем отдельное разрешение на реализацию. Не создавать игровые feature-ветки/PR, не менять канон, версию, не выполнять merge/release без разрешения.
 
