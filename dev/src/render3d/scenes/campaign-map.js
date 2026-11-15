@@ -105,9 +105,9 @@ class CampaignMapScene extends GameScene {
     this.cam.minZ = .1; this.cam.maxZ = 250; this.cam.inputs.clear();
     this.scene.activeCamera = this.cam;
     const hemi = new B3.HemisphericLight('caladan-sky', new B3.Vector3(0, 1, 0), this.scene);
-    hemi.intensity = map.preset.theme === 'salusa-wind-march' ? .95 : map.preset.theme === 'heir-crown','salusa-wind-march' ? .89 : map.preset.theme === 'iron-quota' ? .96 : map.preset.theme === 'fading-crown' ? .64 : map.preset.theme === 'shield-wall-scar' ? .94 : map.preset.theme === 'imperial-salt' ? .92 : map.preset.theme === 'empty-harvest' ? .94 : map.preset.theme === 'sietch-water' ? .99 : map.preset.theme === 'escape-rift' ? .97 : map.preset.theme === 'conspiracy' ? .85 : map.preset.theme === 'giedi' ? .79 : .88;
+    hemi.intensity = map.preset.theme === 'salusa-wind-march' ? .95 : map.preset.theme === 'heir-crown' ? .89 : map.preset.theme === 'iron-quota' ? .96 : map.preset.theme === 'fading-crown' ? .64 : map.preset.theme === 'shield-wall-scar' ? .94 : map.preset.theme === 'imperial-salt' ? .92 : map.preset.theme === 'empty-harvest' ? .94 : map.preset.theme === 'sietch-water' ? .99 : map.preset.theme === 'escape-rift' ? .97 : map.preset.theme === 'conspiracy' ? .85 : map.preset.theme === 'giedi' ? .79 : .88;
     const sun = new B3.DirectionalLight('caladan-sun', new B3.Vector3(-.65,-1,-.45), this.scene);
-    sun.intensity = map.preset.theme === 'salusa-wind-march' ? .59 : map.preset.theme === 'heir-crown','salusa-wind-march' ? .52 : map.preset.theme === 'iron-quota' ? .61 : map.preset.theme === 'fading-crown' ? .38 : map.preset.theme === 'shield-wall-scar' ? .56 : map.preset.theme === 'imperial-salt' ? .54 : map.preset.theme === 'empty-harvest' ? .56 : map.preset.theme === 'sietch-water' ? .48 : map.preset.theme === 'escape-rift' ? .46 : map.preset.theme === 'conspiracy' ? .54 : map.preset.theme === 'giedi' ? .48 : .62;
+    sun.intensity = map.preset.theme === 'salusa-wind-march' ? .59 : map.preset.theme === 'heir-crown' ? .52 : map.preset.theme === 'iron-quota' ? .61 : map.preset.theme === 'fading-crown' ? .38 : map.preset.theme === 'shield-wall-scar' ? .56 : map.preset.theme === 'imperial-salt' ? .54 : map.preset.theme === 'empty-harvest' ? .56 : map.preset.theme === 'sietch-water' ? .48 : map.preset.theme === 'escape-rift' ? .46 : map.preset.theme === 'conspiracy' ? .54 : map.preset.theme === 'giedi' ? .48 : .62;
     this.makeGeometry();
     this.applyCamera();
   }
@@ -309,7 +309,7 @@ class CampaignMapScene extends GameScene {
   }
   makeMissionGeometry() {
     const M=B3.MeshBuilder,S=this.scene,P=this.map.preset;
-    const road=this.material('route',P.theme==='heir-crown','salusa-wind-march'?'#dbc3a1':P.theme==='iron-quota'?'#e0bd84':P.theme==='fading-crown'?'#bf986d':P.theme==='shield-wall-scar'?'#dbb07e':P.theme==='imperial-salt'?'#e0bd89':P.theme==='empty-harvest'?'#e4c18a':P.theme==='sietch-water'?'#d1b58a':P.theme==='escape-rift'?'#bb9e79':P.theme==='sandworms-rebirth'?'#e1c38b':P.theme==='corrin-siege'?'#d7b78a':P.theme==='machine-crusade'?'#d5c19b':P.theme==='butlerian-jihad'?'#9aaab0':P.theme==='conspiracy'?'#d8b37e':P.theme==='giedi'?'#aa8458':P.theme==='arrakeen'?'#efd098':'#d7ad69');
+    const road=this.material('route',P.theme==='salusa-wind-march'?'#d9c29d':P.theme==='heir-crown'?'#dbc3a1':P.theme==='iron-quota'?'#e0bd84':P.theme==='fading-crown'?'#bf986d':P.theme==='shield-wall-scar'?'#dbb07e':P.theme==='imperial-salt'?'#e0bd89':P.theme==='empty-harvest'?'#e4c18a':P.theme==='sietch-water'?'#d1b58a':P.theme==='escape-rift'?'#bb9e79':P.theme==='sandworms-rebirth'?'#e1c38b':P.theme==='corrin-siege'?'#d7b78a':P.theme==='machine-crusade'?'#d5c19b':P.theme==='butlerian-jihad'?'#9aaab0':P.theme==='conspiracy'?'#d8b37e':P.theme==='giedi'?'#aa8458':P.theme==='arrakeen'?'#efd098':'#d7ad69');
     const clear=this.material('cleared','#507f57');
     const ready=this.material('ready','#d9a74d');
     const locked=this.material('locked','#514b43');
