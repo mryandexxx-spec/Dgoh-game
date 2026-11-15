@@ -2,7 +2,7 @@
 
 ## C4.20 «Последняя ставка» / «Сломанная печать» — feature Draft (v122 без изменения)
 
-**Этап A утверждён владельцем; этап B реализован в [Draft PR #117](https://github.com/mryandexxx-spec/Dgoh-game/pull/117).** [Утверждённый art/tech handoff](C4_20_BROKEN_SEAL_APPROVED_2026_11_16.md) · [full implementation CI #43770272585 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43770272585) · [22 настоящих WebGL PNG](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43770272585/artifacts/14184247500). MED/HIGH 111 meshes/6779 vertices; LOW 102/6099; lifecycle ×3 PASS. **Художественный просмотр WebGL кадров ожидает владельца; без merge/release/version bump.**
+**Этап A утверждён владельцем; этап B реализован в [Draft PR #117](https://github.com/mryandexxx-spec/Dgoh-game/pull/117).** [Утверждённый art/tech handoff](C4_20_BROKEN_SEAL_APPROVED_2026_11_16.md) · [full implementation CI #43770272585 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43770272585) · [22 настоящих WebGL PNG](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43770272585/artifacts/14184247500). MED/HIGH 111 meshes/6779 vertices; LOW 102/6099; lifecycle ×3 PASS. **Художественная приёмка 22 WebGL-кадров подтверждена владельцем («Ок», 16.11.2026); без merge/release/version bump до отдельных разрешений.**
 
 ## Последний опубликованный релиз — C4.19 «Легионы Салусы» / «Марш, стёртый ветром» · v122
 

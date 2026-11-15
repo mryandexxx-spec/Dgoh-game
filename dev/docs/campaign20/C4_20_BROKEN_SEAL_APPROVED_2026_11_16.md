@@ -1,6 +1,6 @@
 # Campaign 2.0 · C4.20 «Последняя ставка» / «Сломанная печать»
 
-**Дата:** 16.11.2026. **Статус:** художественный этап A принят владельцем («Ок»); реализация этапа B сохранена в отдельной feature-ветке и [Draft PR #117](https://github.com/mryandexxx-spec/Dgoh-game/pull/117). **Не сливать и не выпускать без отдельного разрешения.** Production остаётся **v122**.
+**Дата:** 16.11.2026. **Статус:** этап A и художественная WebGL-приёмка этапа B подтверждены владельцем («Ок»); реализация этапа B сохранена в отдельной feature-ветке и [Draft PR #117](https://github.com/mryandexxx-spec/Dgoh-game/pull/117). **Не сливать и не выпускать без отдельного разрешения.** Production остаётся **v122**.
 
 ## Канон (не менять)
 Dark VII `D:6`, уровни 57–70, оригинальные глобальные 130–139:
@@ -29,8 +29,8 @@ Dark VII `D:6`, уровни 57–70, оригинальные глобальн�
 ## Подтверждённая реализация и проверки (feature PR, не release)
 - [Draft PR #117](https://github.com/mryandexxx-spec/Dgoh-game/pull/117), feature-ветка `feature/c4-20-broken-seal-final-map`.
 - [Полный implementation CI #43770272585 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43770272585) для игрового commit `87ccb2676d4777938ca6001e2c276a6ede414d44`. Build, architecture, bundle, Golden, PWA/offline, campaign WebGL smoke, strict lifecycle и final gate прошли.
-- [Артефакт настоящей WebGL-галереи #14184247500](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43770272585/artifacts/14184247500): entry + 10 фокусов × MED 844×390 и LOW 667×375 = **22 PNG**. Доказаны 2–4 последовательных маркера, выбранный в кадре, без overlap/clip/vertical scroll; 139 — единственный босс. Визуальная художественная приёмка этих PNG владельцем **ещё открыта**.
+- [Артефакт настоящей WebGL-галереи #14184247500](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43770272585/artifacts/14184247500): entry + 10 фокусов × MED 844×390 и LOW 667×375 = **22 PNG**. Доказаны 2–4 последовательных маркера, выбранный в кадре, без overlap/clip/vertical scroll; 139 — единственный босс. **Художественная приёмка подтверждена владельцем ответом «Ок» 16.11.2026.** Отдельное разрешение на merge и release пока отсутствует.
 - Реальный strict lifecycle ×3: MED/HIGH **111 meshes / 6779 vertices**, LOW **102 / 6099**. Без роста сцен/текстур/контекстов. Это ниже v122 D:5: MED/HIGH 119/7745, LOW 107/6664. Цифры SwiftShader — не физический iPhone FPS.
-- Осталось: владелец рассматривает 22 настоящих кадра и принимает/возвращает на правки; после этого отдельное разрешение на merge, затем отдельно на release. Физический Safari/PWA iPhone (жесты, бой, fallback, offline, FPS/нагрев/батарея 10–15 минут) не подменять автоматическими тестами.
+- Художественная приёмка 22 WebGL-кадров получена. Осталось: отдельное разрешение на merge, затем отдельно на release. Физический Safari/PWA iPhone (жесты, бой, fallback, offline, FPS/нагрев/батарея 10–15 минут) не подменять автоматическими тестами.
 
 **Запрет:** не делать merge, version bump, official validated publish и GitHub Pages release в рамках Draft PR без отдельного указания владельца.
