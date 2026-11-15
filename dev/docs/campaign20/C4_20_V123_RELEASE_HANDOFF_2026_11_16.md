@@ -2,7 +2,7 @@
 
 Дата: 16.11.2026. Владелец художественно принял концепцию и 22 настоящих WebGL MED/LOW кадра и отдельно дал команду **«Сливай и публикуй»**.
 
-**До доказанного официального publish и GitHub Pages deployment v123 — только кандидат.**
+**v123 ОПУБЛИКОВАНА И ПОДТВЕРЖДЕНА:** официальный `workflow_dispatch publish=true` прошёл SUCCESS, verified root содержит `v123 / 4d27cefa0a · 188 SHA-256 files`, отдельный Pages deployment SUCCESS на точном коммите. После выпуска одноразовый guard удалён docs-only cleanup PR.
 
 ## Принятая реализация
 - 21-я из 21 оригинальных самостоятельных карт Campaign 2.0; Dark VII `D:6`, 130–139, уровни 57–70.
@@ -19,6 +19,14 @@
 4. One-time guard на push `main` с exact release title проверяет checkout SHA, `version.json=123`, **предыдущий** cache SW v122, файл карты D:6, интеграцию, smoke/lifecycle, после чего один раз отправляет *официальный* `workflow_dispatch` `validate-pwa.yml`, `publish=true`. Никаких самостоятельных копий PWA вне проверенного workflow.
 5. Официальный validated publish требует SUCCESS всех required jobs и gate, реального `Publish verified PWA to GitHub Pages`, проверенной сборки и SHA-256 receipt, синхронизации PWA root. Затем отдельно проверить GitHub Pages deployment SUCCESS на точном опубликованном root SHA, `dev/version.json=123`, `app.js` v123, новый `sw.js` cache (не `8ad3787e3c`). **Не утверждать выпуск до этого.**
 6. После доказанного выпуска — docs-only cleanup PR удаляет одноразовый guard, фиксирует подлинные PR/run/artifact/SHA, при необходимости закрывает issue. Не dispatch второй `publish=true`.
+
+## Подтверждённый выпуск v123 — 16.11.2026
+- [Release PR #118 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/118), точный squash `159df1eedc2edbff6080cebbc411e6d51487c5c8`, заголовок `release(campaign): publish v123`, [релизный CI #43775010726 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43775010726).
+- [Main CI #43775707698 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43775707698); [one-time guard #43775707738 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43775707738) отправил один официальный `publish=true`.
+- [Официальный validated publish #43775717747 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43775717747), все required checks + gate и `Publish verified PWA to GitHub Pages` SUCCESS; `v123 / 4d27cefa0a · 188 SHA-256 files`. [Validated production artifact](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43775717747/artifacts/14186630821), [receipt artifact](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43775717747/artifacts/14185919607), [Pages artifact](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43775717747/artifacts/14186313601), [22 новых WEBGL PNG](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43775717747/artifacts/14185783406).
+- PWA root sync `98c81d89c7c3ef811921ce7eeec7672af99a6372` («Publish verified PWA from CI artifact»), `dev/version.json={"v":123}`, root `sw.js` `VER='4d27cefa0a'` (предыдущий v122: `8ad3787e3c`).
+- [Отдельный GitHub Pages deployment #43776592185 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43776592185) на **exact PWA root SHA `98c81d89c7c3...`**; production: https://mryandexxx-spec.github.io/Dgoh-game/.
+- После доказанного выпуска одноразовый guard `release-v123-once.yml` удаляется через docs-only cleanup PR; повторного `publish=true` не требуется.
 
 ## Проверка на реальном iPhone остаётся открытой
 Safari/PWA landscape на физическом iPhone: 130–139, жесты pan/pinch/twist/recenter, выбор/бой/симуляция, 2D fallback, update/offline, FPS/нагрев/батарея 10–15 минут. Chromium/SwiftShader не равен iPhone.
