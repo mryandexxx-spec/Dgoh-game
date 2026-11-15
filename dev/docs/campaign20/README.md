@@ -1,12 +1,12 @@
 # Campaign 2.0 — главный указатель (16.11.2026)
 
-## C4.20 «Последняя ставка» / «Сломанная печать» — v123 validated release candidate
+## C4.20 «Последняя ставка» / «Сломанная печать» — v123 опубликована 16.11.2026
 
 **Финальная 21-я из 21 карта Campaign 2.0, Dark VII `D:6` (130–139).** Владелец утвердил концепцию и 22 WebGL MED/LOW кадра, отдельно дал «Сливай и публикуй»; [implementation PR #117 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/117) `2875d735`; [full implementation CI #43770272585 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43770272585); [22 реальных WebGL PNG](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43770272585/artifacts/14184247500). Строгий lifecycle ×3: MED/HIGH 111/6779, LOW 102/6099. [v123 validated release handoff](C4_20_V123_RELEASE_HANDOFF_2026_11_16.md).
 
-**Статус на момент release PR — кандидат, не опубликовано:** v123 официально подтвердить только после `workflow_dispatch publish=true`, root PWA sync и отдельного GitHub Pages deployment SUCCESS; текущая официально подтверждённая production пока v122. Физический Safari/iPhone остаётся непроверенным.
+**v123 опубликована и подтверждена:** [release PR #118 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/118), [релизный CI #43775010726 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43775010726), [официальный publish #43775717747 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43775717747), [Pages #43776592185 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43776592185). Root `98c81d89`, `dev/version.json=123`, cache `4d27cefa0a`, 188 SHA-256 файлов. Игра: https://mryandexxx-spec.github.io/Dgoh-game/. Физический Safari/iPhone остаётся непроверенным.
 
-## Последний опубликованный релиз — C4.19 «Легионы Салусы» / «Марш, стёртый ветром» · v122
+## Предыдущий опубликованный релиз — C4.19 «Легионы Салусы» / «Марш, стёртый ветром» · v122
 
 **v122 ОПУБЛИКОВАНА 15.11.2026:** Тёмная VI `D:5`, миссии 120–129, уровни 43–56, 20-я из 21 самостоятельных Babylon 3D карт. [Issue #110](https://github.com/mryandexxx-spec/Dgoh-game/issues/110), [Implementation PR #112 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/112) `3d0da968f2d6`, [Implementation CI #43753939000 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43753939000), [22 настоящих WebGL PNG MED/LOW](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43753939000/artifacts/14177742425). Канон 210 миссий, награды, экономика, сохранения без изменений; lifecycle MED/HIGH 119 meshes/7745 vertices, LOW 107/6664, 3× PASS.
 
