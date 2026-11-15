@@ -1,6 +1,6 @@
 # Campaign 2.0 — C4.16 «Ночь длинных ножей» / «Гаснущая корона» · v119 release handoff
 
-Дата: 15.11.2026. **Статус: релиз-кандидат v119; публикация подтверждается только отдельным validated PWA + Pages.** Этот документ готовится в release-ветке, до SUCCESS нельзя называть v119 опубликованной.
+Дата: 15.11.2026. **Статус: v119 ОПУБЛИКОВАНА. Официальный validated PWA, отдельный Pages deployment и root cache проверены.**
 
 ## Согласование владельца и C4.16
 - [Issue #95](https://github.com/mryandexxx-spec/Dgoh-game/issues/95) — художественная концепция «Гаснущая корона» утверждена владельцем; затем приняты 22 настоящих WebGL кадра MED/LOW («Ок»).
@@ -18,10 +18,11 @@
 ## Версия и публикационный контракт
 - Предыдущая подтверждённая версия: `dev/version.json=118`, root `app.js` футер `v118 · 25bfb36516`, `sw.js VER=25bfb36516`.
 - В release PR: **только** `dev/version.json` 118→119, журнал и документация Campaign 2.0, одноразовый fail-closed workflow. Не менять C4.16/gameplay/saves/assets.
-- Release PR CI должен завершиться SUCCESS; merge только с точным заголовком `release(campaign): publish v119`.
-- Одноразовый workflow проверяет `main`, точный заголовок, version 119, прежний root SW, утверждённый D:2 код. Только после этого вызывает официальный `.github/workflows/validate-pwa.yml` через `workflow_dispatch publish=true`.
-- Проверить официальный publish CI (full required gate, immutable SHA-256 validated artifact, production root sync), отдельный Pages deployment SUCCESS, точный новый `app.js` footer v119, root SW VER и их согласованность. До этого статус **НЕ ОПУБЛИКОВАНА**.
-- После SUCCESS удалить одноразовый workflow документационным cleanup PR без повторного version bump/release; обновить фактические run IDs, хеш и статус в этом файле, `dev/docs/campaign20/README.md` и `dev/CHANGES_STATUS.md`.
+- [Release PR #98 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/98) с точным squash-заголовком `release(campaign): publish v119` и SHA `b8b454d45093ec96071a2061b8ee344c1e48fb28`; [release PR CI #43701560974 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43701560974).
+- [main CI #43702047971 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43702047971). [Одноразовый guard #43702047965 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43702047965) проверил main, заголовок, version 119, прежний root SW и утверждённый D:2 код, отправив только официальный `workflow_dispatch publish=true`.
+- [Официальный validated publish #43702058210 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43702058210): полный gate, exact validated build **v119 · 5433bc45aa**, **188 SHA-256 files**, `Publish verified PWA to GitHub Pages` SUCCESS, verified root sync commit **`d948026965b837f7b9923f9ee608d18e3ca9a46d`**.
+- [Отдельный Pages build and deployment #43702687728 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43702687728), точный source commit `d948026965b837f7b9923f9ee608d18e3ca9a46d`; в `main` подтверждены `dev/version.json={"v":119}`, root `sw.js VER='5433bc45aa'`, новая validated PWA с футером `v119 · 5433bc45aa`. Production: https://mryandexxx-spec.github.io/Dgoh-game/. **v119 ОПУБЛИКОВАНА.**
+- После публикации одноразовый workflow `release-v119-once.yml` удаляется в отдельном документационном cleanup PR **без** version bump или повторной публикации. Release handoff, `dev/docs/campaign20/README.md` и `dev/CHANGES_STATUS.md` обновлены тем же документальным закрытием.
 
 ## Открыто на физическом iPhone
 iPhone Safari/PWA landscape: все 90–99 на MED/LOW, архитектура и номер 99, swipe/pinch/twist/recenter, 2D fallback, бой и симуляция, offline/SW update, FPS/нагрев/батарея 10–15 минут. Chromium/SwiftShader не подменяет физическую приёмку. Аналогичная Safari/PWA-проверка C4.15 60–69 остаётся открытой.
