@@ -960,6 +960,31 @@ try {
     await new Promise(resolve=>setTimeout(resolve,500));
     await page.screenshot({path:path.join(shots,'imperial-salt-entry-'+w+'-'+gfx+'.png')});
     const imperialEntry=await checkImperial('Imperial Salt entry');
+    // Art iteration B2: ensure the improved silhouettes remain actual WebGL
+    // meshes on MED and LOW, not CSS overlays or a screenshot-only mockup.
+    const imperialGeometry=await page.evaluate(()=>{
+      const B=window.__B3;
+      const scene=B?.EngineStore?.Instances?.flatMap(e=>e.scenes||[])
+        .find(s=>s.activeCamera?.name==='campaign-camera');
+      const meshes=scene?.meshes||[];
+      const find=name=>meshes.find(m=>m.name===name);
+      const ship=find('51 padishah great transport armored hull');
+      const wall=find('shield-wall-unbroken-continuous-foot');
+      const arch=find('59 imperial triumphal arch lintel');
+      return {
+        shipZ:ship?.position.z,wallZ:wall?.position.z,
+        archZ:arch?.position.z,
+        legion:meshes.filter(m=>m.name.startsWith('59 Sardaukar full regiment ')).length,
+        hasHullInsignia:!!find('51 imperial gilded dorsal spine'),
+        hasCrimsonBanners:!!find('59 blood-crimson long hanging flag 48.6'),
+      };
+    });
+    assert.ok(imperialGeometry.shipZ<=22,'L:5 frontal imperial transport must be inside camera-readable zone '+JSON.stringify(imperialGeometry));
+    assert.equal(imperialGeometry.wallZ,43,'L:5 intact continuous visible Shield Wall');
+    assert.equal(imperialGeometry.archZ,26,'L:5 triumphal arch behind Sardaukar regiment');
+    assert.equal(imperialGeometry.hasHullInsignia,true,'L:5 gilded monumental ship silhouette');
+    assert.equal(imperialGeometry.hasCrimsonBanners,true,'L:5 imperial banners are built in Babylon');
+    assert.equal(imperialGeometry.legion,gfx==='med'?66:32,'L:5 instanced regiment HIGH/MED vs LOW');
     for(const [id,name] of [[50,'imperial-court'],[51,'orbital-fleet'],
       [52,'wall-tents'],[53,'fenring-spies'],[54,'gom-jabbar'],
       [55,'salusa-sentries'],[56,'mohiam-intrigue'],[57,'landsraad'],
