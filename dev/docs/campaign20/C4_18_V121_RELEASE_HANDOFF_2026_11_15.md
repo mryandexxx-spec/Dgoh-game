@@ -1,6 +1,6 @@
 # Campaign 2.0 — C4.18 «Наследник» / «Венец без трона» — v121 validated release handoff
 
-Дата: 15.11.2026. **Релиз разрешён владельцем: «Сливай и выпускай».** На момент подготовки этого файла v121 — release candidate; не обозначать опубликованной до официального validated publish, Pages deployment и фактической сверки корня.
+Дата: 15.11.2026. **v121 ОПУБЛИКОВАНА И ПОДТВЕРЖДЕНА.** Владелец дал отдельную команду «Сливай и выпускай»; официальный validated publish и отдельный GitHub Pages deployment выполнены успешно, файлы сверены с тестовым SHA-256 артефактом.
 
 ## Утверждение и реализация
 - Художественная концепция и 22 настоящих WebGL PNG MED 844×390 / LOW 667×375 приняты владельцем («Ок», «Все ок»), затем отдельно дана команда merge+release «Сливай и выпускай».
@@ -23,8 +23,15 @@
 - Официальная публикация требует всех required CI/receipt PASS и stage из идентичного SHA-256 validated artifact, sync PWA root, отдельный GitHub Pages deployment SUCCESS и сверку `dev/version.json=121`, app.js v121, изменённого `sw.js` cache, hashes. **До этих доказательств выпуск НЕ опубликован.**
 - После завершения удалить одноразовый workflow отдельным cleanup PR, обновить статус журнала и release handoff, не запускать publish повторно.
 
-## Подтверждённый выпуск v121
-_PENDING: заполнить после verified publication, не выдавать release candidate за продакшен._
+## Подтверждённый выпуск v121 — 15.11.2026
+
+- [Release PR #108 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/108), squash **`0ace9e878724b1de9f98d8177f1c827c100b106c`**, точное название `release(campaign): publish v121`. [Full release PR CI #43742998526 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43742998526).
+- [main CI #43743577876 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43743577876) на exact release SHA; [одноразовый guard #43743577871 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43743577871) проверил v121, предыдущий SW `5c7310b18b`, принятый D:4 код и CI-тесты; отправил единственный `publish=true`.
+- [Официальный validated publish #43743591453 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43743591453) — `workflow_dispatch`, все required CI и финальный gate SUCCESS, затем `Publish verified PWA to GitHub Pages` SUCCESS; `Verified build v121 / 9f55a9a721 · 188 SHA-256 files`, staged byte-for-byte without rebuild, [публикуемый артефакт](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43743591453/artifacts/14173671996).
+- Публикационный sync root commit **`c17770f89b762ca642fdb6b05578d31157df3774`** (`Publish verified PWA from CI artifact`), `dev/version.json={"v":121}`, root `sw.js` `VER='9f55a9a721'`, `SHELL['app.js']` SHA-256 prefix **`19da181e64f9df78`**. Ранее production v120 имела SW `5c7310b18b`.
+- [Отдельный GitHub Pages deployment #43744361527 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43744361527) на **exact root SHA `c17770f89...`**. Production: https://mryandexxx-spec.github.io/Dgoh-game/. **v121 опубликована.**
+- Одноразовый release guard удаляется отдельным документационным cleanup PR после публикации; повторная отправка `publish=true` отсутствует. Физические Safari/PWA iPhone проверки остаются открытыми.
+
 
 ## Дальше
 После публикации остаются две главы Dark `D:5` (C4.19) и `D:6` (C4.20). Для следующей главы — только новый художественный этап A по канону и отдельное согласование.
