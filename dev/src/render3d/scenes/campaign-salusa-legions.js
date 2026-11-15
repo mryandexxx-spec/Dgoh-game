@@ -44,7 +44,7 @@ export function buildSalusaWindMarch(B3, scene, material, detail = true) {
   // One connected land surface, color-baked from salt to dunes. There are
   // no isolated islands, mission screens or camera-dependent missing paths.
   const land=M.CreateGround('salusa one connected wind eroded ground',
-    {width:222,height:148,subdivisions:detail?36:24,updatable:true},scene);
+    {width:222,height:148,subdivisions:detail?32:20,updatable:true},scene);
   const positions=land.getVerticesData(B3.VertexBuffer.PositionKind),colors=[];
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   for(let i=0;i<positions.length;i+=3){
@@ -158,7 +158,7 @@ export function buildSalusaWindMarch(B3, scene, material, detail = true) {
   }
   for(let i=0;i<2;i++){
     const ridge=M.CreateSphere('127 distant worm emerging back '+i,
-      {diameter:6,segments:8},scene);
+      {diameter:6,segments:detail?5:4},scene);
     ridge.position.set(30+i*7,1.25,29+i*3);
     ridge.scaling.set(1.15,.69,1.8);
     ridge.material=i?mat.rock:mat.sandDeep;ridge.isPickable=false;
@@ -181,7 +181,7 @@ export function buildSalusaWindMarch(B3, scene, material, detail = true) {
   // This final dune is not a throne, castle or supernatural glowing statue.
   for(let i=0;i<3;i++){
     const crest=M.CreateSphere('129 empty muad dib dune horizon '+i,
-      {diameter:7,segments:8},scene);
+      {diameter:7,segments:detail?5:4},scene);
     crest.position.set(54+i*4,1.3+i*.42,31+i*2.5);
     crest.scaling.set(2.15-i*.2,.51,1.1);
     crest.material=mat.sand;crest.isPickable=false;
