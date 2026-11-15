@@ -1490,6 +1490,104 @@ try {
     console.log('PASS C4.19 Salusa Wind-Erased March actual WebGL',w,h,gfx,
       JSON.stringify({salusaEntry,salusaGeometry}));
 
+
+    // C4.20 Dark VII (130–139): final independent WebGL map «Broken Seal».
+    // Save exactly 22 *real* SwiftShader frames across MED/LOW (entry + 10 focuses).
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="6"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="6"]').click());
+    await page.waitForSelector('.c20-world.broken-seal.campaign20-3d-ready',{timeout:20000});
+    await new Promise(resolve=>setTimeout(resolve,540));
+    const sealGeometry=await page.evaluate(()=>{
+      const B=window.__B3;
+      const scene=B?.EngineStore?.Instances?.flatMap(e=>e.scenes||[])
+        .find(s=>s.activeCamera?.name==='campaign-camera');
+      const meshes=scene?.meshes||[],has=n=>meshes.some(m=>m.name===n);
+      return {
+        meshes:meshes.length,vertices:meshes.reduce((n,m)=>n+m.getTotalVertices(),0),
+        ground:has('130-139 broken seal continuous imperial command ground'),
+        orders:has('130 Shaddam immutable strategic table'),
+        storm:has('131 blind storm observation mast'),
+        atom:has('132 broken transmitter tower'),
+        worms:has('133 worm in camp deep sand furrow 0'),
+        guard:has('134 last guard left shield line'),
+        baron:has('135 Baron evacuation sled broken hull'),
+        fenring:has('136 Fenring unclaimed dagger'),
+        feyd:has('137 heir diamond duel ground'),
+        parade:has('138 last parade empty assembly lane'),
+        seal:has('139 broken imperial seal left half'),
+        paths:meshes.filter(m=>m.name.startsWith('seal connected defense route segment ')).length,
+        canvas:!!scene?.activeCamera,
+        noOldThrone:!has('69 empty golden throne back'),
+        noOldWormMaw:!has('62 Shai-Hulud mouth rim'),
+      };
+    });
+    for(const key of ['ground','orders','storm','atom','worms','guard','baron',
+      'fenring','feyd','parade','seal','canvas','noOldThrone','noOldWormMaw'])
+      assert.equal(sealGeometry[key],true,'D:6 unique WebGL landmark '+key);
+    assert.equal(sealGeometry.paths,9,'D:6 nine connected physical defense routes');
+    assert.ok(sealGeometry.meshes<=(gfx==='med'?130:112),
+      'D:6 target mesh budget '+JSON.stringify(sealGeometry));
+    assert.ok(sealGeometry.vertices<=(gfx==='med'?8400:7000),
+      'D:6 target vertex budget '+JSON.stringify(sealGeometry));
+
+    const sealProblems=[];
+    const checkSeal=async(label)=>{
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.broken-seal');
+        const all=[...world.querySelectorAll('.c20-pin')];
+        const shown=all.filter(p=>getComputedStyle(p).visibility==='visible');
+        const nums=shown.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const viewport=world.getBoundingClientRect();
+        const overlaps=shown.flatMap((a,i)=>shown.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3
+            &&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {
+          ids:all.map(p=>Number(p.dataset.c20node)),
+          selected:Number(all.find(p=>p.classList.contains('on'))?.dataset.c20node),
+          nums,overlaps,within:shown.every(p=>{const b=p.getBoundingClientRect();
+            return b.left>=viewport.left+1&&b.right<=viewport.right-1
+              &&b.top>=viewport.top+1&&b.bottom<=viewport.bottom-1;}),
+          boss:all.filter(p=>p.classList.contains('boss')).length,
+          fallback:all.every(p=>p.style.getPropertyValue('--px')&&p.style.getPropertyValue('--py')),
+          canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          scroll:document.querySelector('.c20').scrollHeight>document.querySelector('.c20').clientHeight+1,
+        };
+      });
+      try{
+        assert.deepEqual(state.ids,Array.from({length:10},(_,i)=>i+130),'D:6 canonical IDs');
+        assert.equal(state.boss,1,'D:6 final 139 is the only boss');
+        assert.equal(state.canvas,true,'D:6 real shared WebGL');
+        assert.equal(state.fallback,true,'D:6 all ten interactive 2D fallback coordinates');
+        assert.equal(state.scroll,false,'D:6 no vertical scroll');
+        assert.equal(state.within,true,label+' clips pins '+JSON.stringify(state));
+        assert.deepEqual(state.overlaps,[],label+' overlapping pins');
+        assert.ok(state.nums.length>=2&&state.nums.length<=4,
+          label+' needs 2–4 local markers '+JSON.stringify(state));
+        assert.ok(state.nums.every((n,i)=>!i||n===state.nums[i-1]+1),
+          label+' markers must be consecutive '+JSON.stringify(state));
+        assert.ok(state.nums.includes(state.selected-129),
+          label+' selected marker invisible '+JSON.stringify(state));
+      }catch(e){sealProblems.push(label+': '+e.message);}
+      console.log('BROKEN SEAL CAMERA',label,JSON.stringify(state));
+      return state;
+    };
+    const sealEntry=await checkSeal('Broken Seal entry');
+    await page.screenshot({path:path.join(shots,'broken-seal-entry-'+w+'-'+gfx+'.png')});
+    for(const [id,name] of [[130,'command'],[131,'storm'],[132,'atomic-strike'],
+      [133,'worm-breach'],[134,'last-guard'],[135,'baron-escape'],
+      [136,'fenring-choice'],[137,'heir-duel'],[138,'last-parade'],[139,'fall-of-seal']]){
+      await page.evaluate(id=>document.querySelector('[data-c20node="'+id+'"]')?.click(),id);
+      await new Promise(resolve=>setTimeout(resolve,570));
+      await page.screenshot({path:path.join(shots,'broken-seal-'+name+'-'+w+'-'+gfx+'.png')});
+      await checkSeal('Broken Seal '+name);
+    }
+    assert.deepEqual(sealProblems,[],'D:6 all eleven MED/LOW real WebGL frames');
+    console.log('PASS C4.20 Last Stake Broken Seal genuine WebGL',w,h,gfx,
+      JSON.stringify({sealEntry,sealGeometry}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
