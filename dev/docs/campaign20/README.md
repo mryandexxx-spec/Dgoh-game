@@ -1,5 +1,11 @@
 # Campaign 2.0 — главный указатель (15.11.2026)
 
+## C4.19 «Легионы Салусы» — v122 validated release candidate (ожидает публикации)
+
+Владелец отдельно разрешил «Сливай и выпускай». [Issue #110](https://github.com/mryandexxx-spec/Dgoh-game/issues/110), [Implementation PR #112 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/112) `3d0da968f2d6`, [CI #43753939000 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43753939000) и [22 настоящих WebGL MED/LOW PNG](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43753939000/artifacts/14177742425). Уже в `main` 20 из 21 авторских Babylon-карт: Тёмная VI `D:5` миссии 120–129, уровни 43–56; канон/экономика/сохранения неизменны. Жизненный цикл MED/HIGH 119 meshes/7745 vertices, LOW 107/6664, 3× PASS.
+
+Релизная ветка `release/c4-19-v122-validated` готовится отдельно: версия `dev/version.json` 121→122, required CI, fail-closed `workflow_dispatch publish=true`, SHA-256 validated artifact и GitHub Pages deployment. До доказанного Pages SUCCESS текущая опубликованная версия — **v121**. [Release handoff](C4_19_V122_RELEASE_HANDOFF_2026_11_15.md). Следующая художественная глава: C4.20, Тёмная VII `D:6` (130–139), только отдельное согласование.
+
 ## Последний опубликованный релиз — C4.18 «Наследник» / «Венец без трона» · v121
 
 **v121 ОПУБЛИКОВАНА 15.11.2026:** Тёмная V `D:4`, оригинальные миссии 110–119, уровни 31–42, 19-я из 21 авторских Babylon-карт. Художественно принята и [Implementation PR #107 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/107) `178502971cd`; [финальный art CI #43724511596 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43724511596), [22 настоящих MED/LOW WebGL кадра](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43724511596/artifacts/14165793936). Оригинальный канон, 210 миссий, баланс, экономика и сохранения не изменены. Lifecycle MED/HIGH **134 meshes / 7610 vertices**, LOW **117 / 6751**, 3× без утечек.
