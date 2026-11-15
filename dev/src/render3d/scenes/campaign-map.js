@@ -61,7 +61,11 @@ class CampaignMapScene extends GameScene {
     this.alpha = c.alpha; this.beta = c.beta; this.radius = c.radius;
     if(map.preset.theme==='iron-quota'){
       const f=map.preset.focuses?.[map.nodes.findIndex(n=>n.id===this.selectedId)];
-      if(f){this.alpha=f.alpha;this.beta=f.beta;this.radius=f.radius;}
+      if(f){
+        this.alpha=f.alpha;this.beta=f.beta;
+        const level=gfx(this.small).level;
+        this.radius=(level==='low'||level==='low30')&&f.lowRadius?f.lowRadius:f.radius;
+      }
     }
     // C4.10 final tableau is deep in Z: the normal near-view shows only #10.
     // Widen ONLY the boss framing so #9 and #10 plus the opposing silhouettes
@@ -354,7 +358,11 @@ class CampaignMapScene extends GameScene {
     if(node)this.selectedId=node.id;
     if(this.map.preset.theme==='iron-quota' && node){
       const f=this.map.preset.focuses?.[this.map.nodes.findIndex(n=>n.id===node.id)];
-      if(f){this.alpha=f.alpha;this.beta=f.beta;this.radius=f.radius;}
+      if(f){
+        this.alpha=f.alpha;this.beta=f.beta;
+        const level=gfx(this.small).level;
+        this.radius=(level==='low'||level==='low30')&&f.lowRadius?f.lowRadius:f.radius;
+      }
     }
     if(this.map.preset.theme==='fading-crown' && node){
       this.alpha=this.map.preset.camera.alpha;
