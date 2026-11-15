@@ -1185,6 +1185,103 @@ try {
     console.log('PASS C4.16 Fading Crown real WebGL',w,h,gfx,
       JSON.stringify({crownEntry,crownGeometry}));
 
+
+    // C4.17 Dark IV: original 100–109 on one static "Iron Quota" industrial
+    // Arrakis valley. Every screenshot is an actual Chromium/SwiftShader WebGL
+    // camera selection, never a mock or 2D fallback.
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="3"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="3"]').click());
+    await page.waitForSelector('.c20-world.iron-quota.campaign20-3d-ready',{timeout:20000});
+    await new Promise(resolve=>setTimeout(resolve,530));
+    const quotaGeometry=await page.evaluate(()=>{
+      const B=window.__B3;
+      const scene=B?.EngineStore?.Instances?.flatMap(e=>e.scenes||[])
+        .find(s=>s.activeCamera?.name==='campaign-camera');
+      const meshes=scene?.meshes||[];
+      const has=name=>meshes.some(m=>m.name===name);
+      return {
+        meshes:meshes.length,
+        governor:has('100 Beast governor military dais'),
+        taxes:has('101 requisition cistern main tank'),
+        harvester:has('102 colossal spice harvester hull'),
+        ambush:has('103 wrecked patrol vehicle'),
+        kynes:has('104 Kynes survey base'),
+        burnedSietch:has('105 abandoned sietch dark opening'),
+        caravan:has('106 abandoned spice cargo skid'),
+        resistance:has('107 Fremen cloth signal'),
+        blockedWater:has('108 water blockade locked gate'),
+        final:has('109 final iron defensive crescent'),
+        roads:meshes.filter(m=>m.name.startsWith('quota continuous freight road ')).length,
+        guards:meshes.filter(m=>m.name.startsWith('quota stationary guard ')).length,
+        native:!!scene&&!!scene.activeCamera,
+        repeatedWorm:meshes.some(m=>m.name.includes('Shai-Hulud circular maw')),
+        repeatedStarHall:meshes.some(m=>m.name.includes('burning star hall central sigil'))
+      };
+    });
+    for(const key of ['governor','taxes','harvester','ambush','kynes','burnedSietch',
+      'caravan','resistance','blockedWater','final','native'])
+      assert.equal(quotaGeometry[key],true,'D:3 native landmark '+key);
+    assert.equal(quotaGeometry.roads,9,'D:3 nine physical connected route pieces');
+    assert.equal(quotaGeometry.guards,gfx==='med'?14:7,'D:3 MED/LOW static instanced troops');
+    assert.equal(quotaGeometry.repeatedWorm,false,'D:3 does not clone C:6 worms');
+    assert.equal(quotaGeometry.repeatedStarHall,false,'D:3 does not clone D:2 palace');
+    assert.ok(quotaGeometry.meshes<=(gfx==='med'?205:160),
+      'D:3 mobile mesh budget '+JSON.stringify(quotaGeometry));
+    const checkQuota=async(label)=>{
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.iron-quota');
+        const all=[...world.querySelectorAll('.c20-pin')];
+        const shown=all.filter(p=>getComputedStyle(p).visibility==='visible');
+        const nums=shown.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const viewport=world.getBoundingClientRect();
+        const overlaps=shown.flatMap((a,i)=>shown.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3
+            &&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {
+          ids:all.map(p=>Number(p.dataset.c20node)),
+          selected:Number(all.find(p=>p.classList.contains('on'))?.dataset.c20node),
+          nums,overlaps,within:shown.every(p=>{const b=p.getBoundingClientRect();
+            return b.left>=viewport.left+1&&b.right<=viewport.right-1
+              &&b.top>=viewport.top+1&&b.bottom<=viewport.bottom-1;}),
+          boss:all.filter(p=>p.classList.contains('boss')).length,
+          fallback:all.every(p=>p.style.getPropertyValue('--px')&&p.style.getPropertyValue('--py')),
+          canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          scroll:document.querySelector('.c20').scrollHeight>document.querySelector('.c20').clientHeight+1,
+        };
+      });
+      assert.deepEqual(state.ids,Array.from({length:10},(_,i)=>i+100),'D:3 canonical IDs');
+      assert.equal(state.boss,1,'D:3 final mission 109 alone is boss');
+      assert.equal(state.canvas,true,'D:3 shared WebGL canvas mounted');
+      assert.equal(state.fallback,true,'D:3 ten playable fallback positions');
+      assert.equal(state.scroll,false,'D:3 no vertical mobile scrolling');
+      assert.equal(state.within,true,label+' visible markers fully onscreen '+JSON.stringify(state));
+      assert.deepEqual(state.overlaps,[],label+' markers never overlap');
+      assert.ok(state.nums.length>=2&&state.nums.length<=4,
+        label+' shows two to four local missions '+JSON.stringify(state));
+      assert.ok(state.nums.every((n,i)=>!i||n===state.nums[i-1]+1),
+        label+' markers consecutive '+JSON.stringify(state));
+      assert.ok(state.nums.includes(state.selected-99),
+        label+' selected marker visible '+JSON.stringify(state));
+      return state;
+    };
+    const quotaEntry=await checkQuota('Iron Quota entry');
+    await page.screenshot({path:path.join(shots,'iron-quota-entry-'+w+'-'+gfx+'.png')});
+    for(const [id,name] of [[100,'governor'],[101,'water-tax'],
+      [102,'spice-harvester'],[103,'fremen-ambush'],[104,'kynes-ecology'],
+      [105,'burned-sietch'],[106,'missing-caravan'],[107,'fremen-signals'],
+      [108,'blocked-wells'],[109,'stilgar-rabban']]){
+      await page.evaluate(id=>document.querySelector('[data-c20node="'+id+'"]')?.click(),id);
+      await new Promise(resolve=>setTimeout(resolve,570));
+      await page.screenshot({path:path.join(shots,'iron-quota-'+name+'-'+w+'-'+gfx+'.png')});
+      const state=await checkQuota('Iron Quota '+name);
+      assert.ok(state.nums.includes(id-99),'D:3 '+name+' focus visible '+JSON.stringify(state));
+    }
+    console.log('PASS C4.17 Iron Quota real WebGL',w,h,gfx,
+      JSON.stringify({quotaEntry,quotaGeometry}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
