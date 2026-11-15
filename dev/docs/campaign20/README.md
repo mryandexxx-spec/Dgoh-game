@@ -1,17 +1,17 @@
 # Campaign 2.0 — главный указатель (15.11.2026)
 
-## C4.15 «Битва за Арракин» · «Шрам Защитной стены» — релизный кандидат v118
+## Последний опубликованный релиз — C4.15 «Битва за Арракин» · «Шрам Защитной стены», v118
 
-**Художественно принято, исходный код слит в main, выпуск v118 разрешён.** [Issue #90](https://github.com/mryandexxx-spec/Dgoh-game/issues/90), [PR #92 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/92), Light VII L:6 (60–69, 57–70 ур.). Шестнадцатая из 21 самостоятельной карты: буря, атомный пролом, гигантские черви, разрушенный Арракин, ставка Шаддама и пустой трон. Исходные 210 миссий, диалоги, враги, баланс, сохранения неизменны.
+**Художественно принято, код слит в main, v118 ОПУБЛИКОВАНА 15.11.2026.** [Issue #90](https://github.com/mryandexxx-spec/Dgoh-game/issues/90), [PR #92 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/92), Light VII L:6 (60–69, 57–70 ур.). Шестнадцатая из 21 самостоятельной карты: буря, атомный пролом, гигантские черви, разрушенный Арракин, ставка Шаддама и пустой трон. Исходные 210 миссий, диалоги, враги, баланс, сохранения неизменны.
 
-**Важно:** до official Pages SUCCESS версия v118 не считается опубликованной; production сейчас v117. [Полный релизный handoff v118](C4_15_V118_RELEASE_HANDOFF_2026_11_15.md), [WebGL/Golden/PWA CI #43689895701 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43689895701), [main CI #43691646475 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43691646475). Отдельно необходима проверка на физическом iPhone Safari.
+**Проверенный выпуск:** [PR #93 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/93), [PR CI #43692066708 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43692066708), [official publish #43692643421 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43692643421), [Pages #43693224667 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43693224667). Production v118: `app.js`/`sw.js` cache `25bfb36516`, root SHA `b4a2f5d34`. [Полная передача v118](C4_15_V118_RELEASE_HANDOFF_2026_11_15.md). Физическая Safari-проверка остаётся открытой.
 
-## Последняя опубликованная версия — v117, C4.14 «Прибытие императора»
+## Предыдущая опубликованная версия — v117, C4.14 «Прибытие императора»
 
-**«Зеркало Падишаха» опубликовано 15.11.2026:** Light VI L:5, исходные 50–59, неповреждённая Защитная стена и парад сардаукаров. [PR #87 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/87), [релиз #88 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/88). [CI/Pages #43685018421 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43685018421), [Pages #43685592345 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43685592345). Root SW VER=687dd0b25e (v117), до нового validated release. [Подробный v117 handoff](C4_14_V117_RELEASE_HANDOFF_2026_11_15.md).
+**«Зеркало Падишаха» опубликовано 15.11.2026:** Light VI L:5, исходные 50–59, неповреждённая Защитная стена и парад сардаукаров. [PR #87 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/87), [релиз #88 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/88). [CI/Pages #43685018421 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43685018421), [Pages #43685592345 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43685592345). Исторический root cache v117: 687dd0b25e. [Подробный v117 handoff](C4_14_V117_RELEASE_HANDOFF_2026_11_15.md).
 ## Предыдущий релиз — v116 (C4.13 + рамки ростера)
 
-**v116 опубликована 15.11.2026:** C4.13 «Годы в пустыне» (Светлая V `L:4`, 40–49) и утверждённые рамки ДП и золото легенд. [Validated PWA/Pages #43643649804 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43643649804), [Pages deployment #43644584536 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43644584536), root SW `a2fe3534af`. [Handoff v116](C4_13_V116_RELEASE_HANDOFF_2026_11_14.md). После завершения v117 этот раздел станет историческим.
+**v116 опубликована 15.11.2026:** C4.13 «Годы в пустыне» (Светлая V `L:4`, 40–49) и утверждённые рамки ДП и золото легенд. [Validated PWA/Pages #43643649804 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43643649804), [Pages deployment #43644584536 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43644584536), root SW `a2fe3534af`. [Handoff v116](C4_13_V116_RELEASE_HANDOFF_2026_11_14.md). Это исторический релиз.
 
 ## Предыдущий релиз — C4.12 «Сиетч Табр» (`L:3`, 30–39), v115 ОПУБЛИКОВАНА 14.11.2026
 
