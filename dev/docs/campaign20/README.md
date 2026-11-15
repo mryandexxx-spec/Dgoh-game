@@ -1,12 +1,14 @@
 # Campaign 2.0 — главный указатель (15.11.2026)
 
-## C4.19 «Легионы Салусы» — v122 validated release candidate (ожидает публикации)
+## Последний опубликованный релиз — C4.19 «Легионы Салусы» / «Марш, стёртый ветром» · v122
 
-Владелец отдельно разрешил «Сливай и выпускай». [Issue #110](https://github.com/mryandexxx-spec/Dgoh-game/issues/110), [Implementation PR #112 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/112) `3d0da968f2d6`, [CI #43753939000 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43753939000) и [22 настоящих WebGL MED/LOW PNG](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43753939000/artifacts/14177742425). Уже в `main` 20 из 21 авторских Babylon-карт: Тёмная VI `D:5` миссии 120–129, уровни 43–56; канон/экономика/сохранения неизменны. Жизненный цикл MED/HIGH 119 meshes/7745 vertices, LOW 107/6664, 3× PASS.
+**v122 ОПУБЛИКОВАНА 15.11.2026:** Тёмная VI `D:5`, миссии 120–129, уровни 43–56, 20-я из 21 самостоятельных Babylon 3D карт. [Issue #110](https://github.com/mryandexxx-spec/Dgoh-game/issues/110), [Implementation PR #112 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/112) `3d0da968f2d6`, [Implementation CI #43753939000 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43753939000), [22 настоящих WebGL PNG MED/LOW](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43753939000/artifacts/14177742425). Канон 210 миссий, награды, экономика, сохранения без изменений; lifecycle MED/HIGH 119 meshes/7745 vertices, LOW 107/6664, 3× PASS.
 
-Релизная ветка `release/c4-19-v122-validated` готовится отдельно: версия `dev/version.json` 121→122, required CI, fail-closed `workflow_dispatch publish=true`, SHA-256 validated artifact и GitHub Pages deployment. До доказанного Pages SUCCESS текущая опубликованная версия — **v121**. [Release handoff](C4_19_V122_RELEASE_HANDOFF_2026_11_15.md). Следующая художественная глава: C4.20, Тёмная VII `D:6` (130–139), только отдельное согласование.
+По отдельной команде владельца «Сливай и выпускай» — [release PR #113 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/113) `6ba3da1810e7`, [release CI #43761318100 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43761318100), [main CI #43761986252 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43761986252), [one-shot guard #43761986250 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43761986250), [official validated publish #43761996195 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43761996195) и [Pages #43762773320 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43762773320). Root `c6dd5a91091cb830a5ea4f30ddfad07d0a43861c`, `dev/version.json=122`, app.js `v122 · 8ad3787e3c`, SW cache `8ad3787e3c`, 188 verified SHA-256 files. [Полная передача v122](C4_19_V122_RELEASE_HANDOFF_2026_11_15.md); [игра на GitHub Pages](https://mryandexxx-spec.github.io/Dgoh-game/). Физический iPhone Safari, жесты/бой/fallback/offline и FPS/нагрев/батарея ещё не измерены.
 
-## Последний опубликованный релиз — C4.18 «Наследник» / «Венец без трона» · v121
+**Следующий художественный этап:** C4.20, Тёмная VII `D:6`, миссии 130–139. Начать с канонического `CAMP_DEF.D.chapters[6]` и 2–3 новых художественных концепций; не повторять существующие карты, не создавать код/PR до утверждения владельца.
+
+## Предыдущий опубликованный релиз — C4.18 «Наследник» / «Венец без трона» · v121
 
 **v121 ОПУБЛИКОВАНА 15.11.2026:** Тёмная V `D:4`, оригинальные миссии 110–119, уровни 31–42, 19-я из 21 авторских Babylon-карт. Художественно принята и [Implementation PR #107 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/107) `178502971cd`; [финальный art CI #43724511596 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43724511596), [22 настоящих MED/LOW WebGL кадра](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43724511596/artifacts/14165793936). Оригинальный канон, 210 миссий, баланс, экономика и сохранения не изменены. Lifecycle MED/HIGH **134 meshes / 7610 vertices**, LOW **117 / 6751**, 3× без утечек.
 
@@ -22,11 +24,9 @@
 
 Подробные реализации, тесты и публикационные SHA: [полный v121 release handoff](C4_18_V121_RELEASE_HANDOFF_2026_11_15.md). [Issue #105](https://github.com/mryandexxx-spec/Dgoh-game/issues/105) и [Implementation PR #107 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/107).
 
-## Следующий художественный этап — C4.19 «Легионы Салусы», Тёмная VI `D:5` (120–129)
+## Исторический handoff: C4.19 после v121
 
-**Начало нового чата:** первым делом открыть [Issue #110](https://github.com/mryandexxx-spec/Dgoh-game/issues/110) и [handoff C4.19 после подтверждённой v121](C4_19_AFTER_V121_HANDOFF_2026_11_15.md). **20-я из 21** самостоятельных 3D-карт Campaign 2.0, уровни 43–56, канон `CAMP_DEF.D.chapters[5]`: императорские сардаукары на солончаках, дисциплина против песка, Буря Кориолиса, ущелье смерти, вода сиетча, черви, отступление и встреча с Муад'Дибом. В `campaign-map-presets.js` отдельного `D:5` пока нет.
-
-**Только художественный этап A:** предложить 2–3 разные концепции одной оригинальной географии, подробно раскрыть лучшую и запросить утверждение. Не повторять C4.18 и не копировать карту C4.14 «Зеркало Падишаха» или C4.17 «Железная квота». Без кода, feature PR, bump версии, merge или публикации до отдельных решений владельца.
+[Issue #110](https://github.com/mryandexxx-spec/Dgoh-game/issues/110) и [C4.19 после v121](C4_19_AFTER_V121_HANDOFF_2026_11_15.md) описывают художественный старт (историческая постановка); реальный результат — опубликованный v122 выше.
 
 ## Последний опубликованный релиз — C4.16 «Ночь длинных ножей» / «Гаснущая корона» · v119
 

@@ -2,7 +2,7 @@
 
 Дата: 15.11.2026. Владелец принял 22 настоящих WebGL PNG и отдельно дал команду «Сливай и выпускай».
 
-**Статус до завершения workflow:** v122 только кандидат релиза. Не называть опубликованным до SUCCESS официального `workflow_dispatch publish=true`, реального GitHub Pages deployment и сверки PWA root.
+**v122 ОПУБЛИКОВАНА И ПОДТВЕРЖДЕНА:** официальный validated `workflow_dispatch publish=true` и отдельный GitHub Pages deployment SUCCESS; опубликованная PWA root точно сверена с CI-артефактом.
 
 ## Художественная реализация — DONE
 - Тёмная сторона VI `D:5`, оригинальные миссии 120–129, уровни 43–56, 20-я из 21 оригинальных 3D-карт Campaign 2.0. Следующая после неё — `D:6` C4.20.
@@ -24,3 +24,14 @@
 
 ## Открытая реальная мобильная проверка
 Физический Safari/PWA iPhone landscape не проверен: миссии 120–129, pan/pinch/twist/recenter, выбор/бой/симуляция, 2D fallback, SW offline и 10–15 минут FPS/нагрев/батарея. Chromium SwiftShader — автоматизированные WebGL доказательства, не физический телефон.
+
+## Подтверждённый выпуск v122 — 15.11.2026
+- [Release PR #113 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/113), squash `6ba3da1810e7035ac159872889a693aae94738f2`, с точным заголовком `release(campaign): publish v122`; [полный release PR CI #43761318100 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43761318100).
+- [Main CI #43761986252 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43761986252), [одноразовый guard #43761986250 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43761986250) отправил ровно один официальный `publish=true`.
+- [Официальный validated publish #43761996195 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43761996195): все required checks и gate успешны, `Publish verified PWA to GitHub Pages` SUCCESS. Exact validated `v122 / 8ad3787e3c · 188 SHA-256 files`, без пересборки на стадии публикации; [production build artifact](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43761996195/artifacts/14181200940), [receipt artifact](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43761996195/artifacts/14181250807), [Pages artifact](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43761996195/artifacts/14180338424).
+- PWA-root sync commit `c6dd5a91091cb830a5ea4f30ddfad07d0a43861c` («Publish verified PWA from CI artifact»). `dev/version.json={"v":122}`, `app.js` содержит **`v122 · 8ad3787e3c`**, `sw.js` **`VER='8ad3787e3c'`**. Предыдущий production v121 имел `9f55a9a721`.
+- [Отдельный GitHub Pages deployment #43762773320 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43762773320) на **exact root SHA `c6dd5a91091c...`**, production: https://mryandexxx-spec.github.io/Dgoh-game/.
+- После доказанного выпуска удаляется одноразовый `release-v122-once.yml` через отдельный docs-only cleanup PR; повторного `publish=true` не требуется. На физическом Safari/iPhone 120–129 и FPS/нагрев/батарея остаются открытыми.
+
+## Следующая глава
+C4.20 Тёмная VII `D:6` — последние 10 авторских миссий карты (130–139). Следующий художественный этап A начинать отдельным чатом после чтения этого handoff, главного `campaign20/README.md`, `ARCHITECTURE.md`, `CHANGES_STATUS.md` и исходного `CAMP_DEF.D.chapters[6]`; не менять канон без прямого запроса.
