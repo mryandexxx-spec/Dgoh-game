@@ -1390,6 +1390,106 @@ try {
     console.log('PASS C4.18 Heir Empty Crown real WebGL',w,h,gfx,
       JSON.stringify({heirEntry,heirGeometry}));
 
+
+    // C4.19 Dark VI (120–129): the approved "Wind-Erased March".
+    // Each of 22 images is a genuine Chromium/SwiftShader WebGL frame:
+    // initial map + ten selected world-space focuses in MED and LOW.
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="5"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="5"]').click());
+    await page.waitForSelector('.c20-world.salusa-wind-march.campaign20-3d-ready',{timeout:20000});
+    await new Promise(resolve=>setTimeout(resolve,530));
+    const salusaGeometry=await page.evaluate(()=>{
+      const B=window.__B3;
+      const scene=B?.EngineStore?.Instances?.flatMap(e=>e.scenes||[])
+        .find(s=>s.activeCamera?.name==='campaign-camera');
+      const meshes=scene?.meshes||[],has=n=>meshes.some(m=>m.name===n);
+      return {
+        meshes:meshes.length,vertices:meshes.reduce((n,m)=>n+m.getTotalVertices(),0),
+        ground:has('salusa one connected wind eroded ground'),
+        landing:has('120 black triangular drop wedge 0'),
+        ranks:has('121 unbroken sardaukar shield rank 0'),
+        blood:has('122 first blood fallen red standard'),
+        prisoner:has('123 silent Fremen cloak'),
+        storm:has('124 coriolis slanted dune blade 2'),
+        gorge:has('125 death gorge upper fang 0'),
+        water:has('126 hidden water blue slit'),
+        worms:has('127 sandworm horizon deep furrow 0'),
+        retreat:has('128 retreating sardaukar silhouette 0'),
+        prophet:has('129 lone human muad dib cloak'),
+        joined:meshes.filter(m=>m.name.startsWith('salusa contiguous march segment ')).length,
+        canvas:!!scene?.activeCamera,
+        noIndustrialCopy:!has('102 colossal spice harvester hull'),
+        noThroneCopy:!has('heir empty throne central void'),
+      };
+    });
+    for(const key of ['ground','landing','ranks','blood','prisoner','storm','gorge',
+      'water','worms','retreat','prophet','canvas','noIndustrialCopy','noThroneCopy'])
+      assert.equal(salusaGeometry[key],true,'D:5 unique WebGL landmark '+key);
+    assert.equal(salusaGeometry.joined,9,'D:5 has nine connected land route segments');
+    assert.ok(salusaGeometry.meshes<=(gfx==='med'?150:135),
+      'D:5 mesh budget '+JSON.stringify(salusaGeometry));
+    assert.ok(salusaGeometry.vertices<=(gfx==='med'?8200:7100),
+      'D:5 vertex budget '+JSON.stringify(salusaGeometry));
+
+    const salusaProblems=[];
+    const checkSalusa=async(label)=>{
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.salusa-wind-march');
+        const all=[...world.querySelectorAll('.c20-pin')];
+        const shown=all.filter(p=>getComputedStyle(p).visibility==='visible');
+        const nums=shown.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const viewport=world.getBoundingClientRect();
+        const overlaps=shown.flatMap((a,i)=>shown.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3
+            &&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {
+          ids:all.map(p=>Number(p.dataset.c20node)),
+          selected:Number(all.find(p=>p.classList.contains('on'))?.dataset.c20node),
+          nums,overlaps,within:shown.every(p=>{const b=p.getBoundingClientRect();
+            return b.left>=viewport.left+1&&b.right<=viewport.right-1
+              &&b.top>=viewport.top+1&&b.bottom<=viewport.bottom-1;}),
+          boss:all.filter(p=>p.classList.contains('boss')).length,
+          fallback:all.every(p=>p.style.getPropertyValue('--px')&&p.style.getPropertyValue('--py')),
+          canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          scroll:document.querySelector('.c20').scrollHeight>document.querySelector('.c20').clientHeight+1,
+        };
+      });
+      try{
+        assert.deepEqual(state.ids,Array.from({length:10},(_,i)=>i+120),'D:5 canonical IDs');
+        assert.equal(state.boss,1,'D:5 129 is sole boss');
+        assert.equal(state.canvas,true,'D:5 native WebGL canvas');
+        assert.equal(state.fallback,true,'D:5 all ten 2D fallback coordinates');
+        assert.equal(state.scroll,false,'D:5 no vertical scroll');
+        assert.equal(state.within,true,label+' pins clipped '+JSON.stringify(state));
+        assert.deepEqual(state.overlaps,[],label+' pins must not overlap');
+        assert.ok(state.nums.length>=2&&state.nums.length<=4,
+          label+' needs 2–4 local markers '+JSON.stringify(state));
+        assert.ok(state.nums.every((n,i)=>!i||n===state.nums[i-1]+1),
+          label+' marker order not contiguous '+JSON.stringify(state));
+        assert.ok(state.nums.includes(state.selected-119),
+          label+' selected pin invisible '+JSON.stringify(state));
+      }catch(e){salusaProblems.push(label+': '+e.message);}
+      console.log('SALUSA CAMERA',label,JSON.stringify(state));
+      return state;
+    };
+    const salusaEntry=await checkSalusa('Salusa entry');
+    await page.screenshot({path:path.join(shots,'salusa-march-entry-'+w+'-'+gfx+'.png')});
+    for(const [id,name] of [[120,'landing'],[121,'discipline'],
+      [122,'first-blood'],[123,'fremen-captive'],[124,'coriolis'],
+      [125,'death-gorge'],[126,'hidden-water'],[127,'sandworms'],
+      [128,'retreat'],[129,'muad-dib']]){
+      await page.evaluate(id=>document.querySelector('[data-c20node="'+id+'"]')?.click(),id);
+      await new Promise(resolve=>setTimeout(resolve,570));
+      await page.screenshot({path:path.join(shots,'salusa-march-'+name+'-'+w+'-'+gfx+'.png')});
+      await checkSalusa('Salusa '+name);
+    }
+    assert.deepEqual(salusaProblems,[],'D:5 all eleven MED/LOW real WebGL frames');
+    console.log('PASS C4.19 Salusa Wind-Erased March actual WebGL',w,h,gfx,
+      JSON.stringify({salusaEntry,salusaGeometry}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
