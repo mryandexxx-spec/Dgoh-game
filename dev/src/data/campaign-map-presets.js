@@ -236,7 +236,7 @@ export const CAMPAIGN_MAPS = Object.freeze({
     // Individual world-space art framing: alpha, beta and radius remain
     // within native v101 camera limits; lowRadius is optional per profile.
     focuses: Object.freeze([
-      {target:[-55,3,-9], alpha:-1.34,beta:.99,radius:33},
+      {target:[-57,3,-7], alpha:-1.34,beta:.92,radius:42},
       {target:[-59,3,6], alpha:-1.39,beta:.99,radius:32},
       {target:[-49,4,21],alpha:-1.43,beta:.97,radius:32},
       {target:[-34,3,31],alpha:-1.36,beta:1.02,radius:33},
@@ -244,7 +244,7 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {target:[1,3.5,33],alpha:-1.24,beta:.97,radius:32},
       {target:[18,3,23],alpha:-1.28,beta:1.04,radius:33},
       {target:[31,4,11],alpha:-1.35,beta:1.00,radius:33},
-      {target:[37,3,-6],alpha:-1.40,beta:1.02,radius:33},
+      {target:[31,3,-14],alpha:-1.40,beta:.92,radius:44},
       {target:[29,3,-22],alpha:-1.44,beta:1.05,radius:40},
     ]),
     landmarks: Object.freeze([
