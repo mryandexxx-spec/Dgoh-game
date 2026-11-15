@@ -185,6 +185,43 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'duke-last-order-bastion',x:62,z:12,size:18},
     ]),
   }),
+  'D:3': Object.freeze({
+    id: 'beast-iron-quota', title: 'Правление Зверя · Железная квота',
+    theme: 'iron-quota', bounds: [-75,75,-36,48],
+    // Original dark IV global missions 100–109; one physical extraction valley.
+    // Ten connected world nodes, NEVER ten separate mission screens.
+    camera: { target: [-61,0,-22], alpha: -1.31, beta: .98,
+      radius: 32, minRadius: 25, maxRadius: 58, turnLimit: .22 },
+    nodes: Object.freeze([
+      [-61,-22],[-48,-12],[-34,2],[-19,17],[-4,26],
+      [9,13],[22,-4],[36,-20],[49,-9],[63,8],
+    ]),
+    // Individual look targets are translated with native v101 pan; none are pages.
+    focuses: Object.freeze([
+      {target:[-61,3,-17],alpha:-1.30,beta:.97,radius:32},
+      {target:[-48,3,-7],alpha:-1.28,beta:.97,radius:32},
+      {target:[-35,4,6],alpha:-1.27,beta:.97,radius:34},
+      {target:[-18,3,21],alpha:-1.40,beta:.99,radius:31},
+      {target:[-5,3,29],alpha:-1.35,beta:.98,radius:32},
+      {target:[9,3.5,17],alpha:-1.38,beta:1.01,radius:33,lowRadius:27},
+      {target:[22,3,-1],alpha:-1.34,beta:.99,radius:32,lowRadius:27},
+      {target:[36,3,-15],alpha:-1.26,beta:.97,radius:33},
+      {target:[49,3.5,-4],alpha:-1.30,beta:1.01,radius:33},
+      {target:[57,3.5,0],alpha:-1.40,beta:1.04,radius:46},
+    ]),
+    landmarks: Object.freeze([
+      {kind:'governor-punishment-podium',x:-61,z:-10,size:16},
+      {kind:'water-tax-cistern',x:-48,z:0,size:13},
+      {kind:'colossal-spice-harvester',x:-34,z:14,size:23},
+      {kind:'patrol-dune-ambush',x:-19,z:28,size:15},
+      {kind:'kynes-ecology-sensors',x:-4,z:37,size:14},
+      {kind:'burned-sietch-mouth',x:9,z:25,size:17},
+      {kind:'vanished-spice-caravan',x:22,z:8,size:13},
+      {kind:'fremen-resistance-stones',x:36,z:-8,size:16},
+      {kind:'sealed-water-wells',x:49,z:4,size:17},
+      {kind:'rabban-stilgar-confrontation',x:63,z:20,size:23},
+    ]),
+  }),
   'D:1': Object.freeze({
     id: 'giedi-conspiracy', title: 'Заговор · Тихий трон',
     theme: 'conspiracy', bounds: [-48, 46, -24, 27],

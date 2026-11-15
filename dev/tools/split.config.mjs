@@ -98,6 +98,7 @@ export const SPLIT = [
   [3272, 'render3d/scenes/campaign-imperial-salt.js'],
   [3272, 'render3d/scenes/campaign-shield-wall-scar.js'],
   [3272, 'render3d/scenes/campaign-fading-crown.js'],
+  [3272, 'render3d/scenes/campaign-iron-quota.js'],
   [3272, 'render3d/scenes/campaign-map.js'],
   [3272, 'ui/views/campaign20.js'],
   [3282, 'ui/views/camp.js'],
