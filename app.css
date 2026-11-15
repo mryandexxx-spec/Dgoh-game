@@ -1540,6 +1540,25 @@ body:has(.c20) #notes{display:none!important;}
     74% 14%,82% 31%,90% 9%,100% 25%,100% 100%,0 100%);
   pointer-events:none;z-index:0
 }
+
+/* C4.20 «Сломанная печать» — a field command that dissolves into the final dawn.
+   WebGL owns geometry; 2D fallback is deliberately interactive and cheap. */
+.c20-world.broken-seal {
+  background:linear-gradient(108deg,#34434b 0%,#545653 28%,#937960 58%,#dec49c 100%);
+  border-color:#bc9c71
+}
+.c20-world.broken-seal.c20-fallback::before {
+  content:'ПОСЛЕДНЯЯ СТАВКА · СЛОМАННАЯ ПЕЧАТЬ';
+  position:absolute;top:10%;left:10px;right:10px;text-align:center;
+  font:11px var(--f-mono);letter-spacing:.10em;color:#f5d8af;
+  opacity:.92;pointer-events:none
+}
+.c20-world.broken-seal.c20-fallback::after {
+  content:'';position:absolute;inset:34% 0 auto 0;height:24%;
+  background:linear-gradient(180deg,#28353d99,#7f65566b 62%,transparent);
+  clip-path:polygon(0 30%,16% 35%,25% 5%,31% 65%,40% 20%,52% 76%,61% 15%,75% 56%,100% 12%,100% 100%,0 100%);
+  pointer-events:none
+}
 /* ===== landscape phones (primary orientation) ===== */
 @media (orientation: landscape) and (max-height: 520px) {
   header.top .wrap { padding-block: 4px 0; gap: 4px 14px; }
