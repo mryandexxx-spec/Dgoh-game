@@ -222,6 +222,44 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'rabban-stilgar-confrontation',x:63,z:20,size:23},
     ]),
   }),
+  'D:4': Object.freeze({
+    id: 'harkonnen-heir-empty-crown', title: 'Наследник · Венец без трона',
+    theme: 'heir-crown', bounds: [-69,52,-36,46],
+    // Original canonical Dark-V IDs 110–119. A physical crescent-shaped
+    // story atlas, not a literal interplanetary road or ten screen-based pages.
+    camera: { target: [-55,0,-16], alpha: -1.34, beta: .99,
+      radius: 33, minRadius: 25, maxRadius: 60, turnLimit: .25 },
+    nodes: Object.freeze([
+      [-55,-16],[-59,0],[-49,15],[-34,26],[-16,31],
+      [1,28],[18,19],[31,6],[37,-11],[25,-25],
+    ]),
+    // Individual world-space art framing: alpha, beta and radius remain
+    // within native v101 camera limits; lowRadius is optional per profile.
+    focuses: Object.freeze([
+      {target:[-55,3,-9], alpha:-1.34,beta:.99,radius:33},
+      {target:[-59,3,6], alpha:-1.39,beta:.99,radius:32},
+      {target:[-49,4,21],alpha:-1.43,beta:.97,radius:32},
+      {target:[-34,3,31],alpha:-1.36,beta:1.02,radius:33},
+      {target:[-16,4,36],alpha:-1.30,beta:.99,radius:32},
+      {target:[1,3.5,33],alpha:-1.24,beta:.97,radius:32},
+      {target:[18,3,23],alpha:-1.28,beta:1.04,radius:33},
+      {target:[31,4,11],alpha:-1.35,beta:1.00,radius:33},
+      {target:[37,3,-6],alpha:-1.40,beta:1.02,radius:33},
+      {target:[29,3,-22],alpha:-1.44,beta:1.05,radius:40},
+    ]),
+    landmarks: Object.freeze([
+      {kind:'heir-open-arena',x:-55,z:-7,size:16},
+      {kind:'heir-poisoned-blade',x:-59,z:7,size:11},
+      {kind:'heir-baron-alcove',x:-49,z:22,size:13},
+      {kind:'heir-spice-sleds',x:-34,z:33,size:14},
+      {kind:'heir-mohiam-screens',x:-16,z:39,size:13},
+      {kind:'heir-triangle-duel',x:1,z:35,size:13},
+      {kind:'heir-desert-witch-fissure',x:18,z:25,size:12},
+      {kind:'heir-wedding-thrones',x:31,z:12,size:13},
+      {kind:'heir-caravan-trap',x:37,z:-4,size:14},
+      {kind:'heir-gurney-broken-lyre',x:25,z:-19,size:16},
+    ]),
+  }),
   'D:1': Object.freeze({
     id: 'giedi-conspiracy', title: 'Заговор · Тихий трон',
     theme: 'conspiracy', bounds: [-48, 46, -24, 27],
