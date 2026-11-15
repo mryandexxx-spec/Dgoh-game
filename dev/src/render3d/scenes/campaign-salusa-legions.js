@@ -6,8 +6,9 @@ export function buildSalusaWindMarch(B3, scene, material, detail = true) {
   const mat={
     ground:material('salusa-vertex-sand','#ffffff'),
     salt:material('salusa-matte-salt','#a79c84'),
-    sand:material('salusa-storm-sand','#b39a70'),
-    sandDeep:material('salusa-deep-dune','#866b53'),
+    sand:material('salusa-storm-sand','#ad855e'),
+    sandDeep:material('salusa-deep-dune','#8a6046'),
+    track:material('salusa-soft-wind-erased-track','#95866c'),
     basalt:material('salusa-black-landing-metal','#30383e'),
     rock:material('salusa-canyon-brown','#6d5a4d'),
     shadow:material('salusa-cave-shadow','#242a2d'),
@@ -24,6 +25,13 @@ export function buildSalusaWindMarch(B3, scene, material, detail = true) {
     const m=M.CreateCylinder(name,{diameter:diam,height,tessellation:edges},scene);
     m.position.set(x,y,z);m.material=tint;m.isPickable=false;return m;
   };
+  const spire=(name,x,y,z,diam,height,tint,lean=0)=>{
+    const m=M.CreateCylinder(name,{
+      diameterBottom:diam,diameterTop:diam*.12,height,tessellation:5
+    },scene);
+    m.position.set(x,y,z);m.rotation.z=lean;m.rotation.y=.16;
+    m.material=tint;m.isPickable=false;return m;
+  };
   const join=(name,a,b,y,width,tint)=>{
     const dx=b[0]-a[0],dz=b[1]-a[1];
     return box(name,(a[0]+b[0])/2,y,(a[1]+b[1])/2,
@@ -36,15 +44,21 @@ export function buildSalusaWindMarch(B3, scene, material, detail = true) {
   // One connected land surface, color-baked from salt to dunes. There are
   // no isolated islands, mission screens or camera-dependent missing paths.
   const land=M.CreateGround('salusa one connected wind eroded ground',
-    {width:154,height:100,subdivisions:detail?32:20,updatable:true},scene);
+    {width:222,height:148,subdivisions:detail?36:24,updatable:true},scene);
   const positions=land.getVerticesData(B3.VertexBuffer.PositionKind),colors=[];
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   for(let i=0;i<positions.length;i+=3){
     const x=positions[i],z=positions[i+2],t=clamp((x+58)/124,0,1);
-    const ripple=Math.sin(x*.13+z*.25)*.11+Math.sin(x*.075-z*.11)*.10;
-    positions[i+1]=-.43+ripple*(.4+t*.7);
-    const v=.016*Math.sin(x*.23+z*.14);
-    colors.push(.57+.15*t+v,.54+.075*t+v,.48-.09*t+v,1);
+    const pathZ=-20+(x+60)*.303;
+    const away=clamp((Math.abs(z-pathZ)-5)/22,0,1);
+    const dune=(Math.sin(x*.088+z*.15)+1)*.9+
+      (Math.cos(x*.06-z*.12)+1)*.68;
+    const ripples=.08*Math.sin(x*.29+z*.33);
+    positions[i+1]=-.48+away*dune*(.65+t*.7)+ripples;
+    const v=.029*Math.sin(x*.12+z*.19);
+    // Regional color shifts without extra lighting passes: salt -> storm ->
+    // warm open desert. Color, not a screen transition, links the three acts.
+    colors.push(.50+.20*t+v,.48+.10*t+v,.43-.10*t+v,1);
   }
   land.updateVerticesData(B3.VertexBuffer.PositionKind,positions);
   const normals=[];B3.VertexData.ComputeNormals(positions,land.getIndices(),normals);
@@ -54,16 +68,16 @@ export function buildSalusaWindMarch(B3, scene, material, detail = true) {
   // Nine wide, physically joined stretches lie on the same land surface.
   // The thin native CampaignMapScene path is an additional route cue.
   for(let i=1;i<points.length;i++){
-    join('salusa contiguous march segment '+i,points[i-1],points[i],-.16,7.2,
-      i<3?mat.salt:i<5?mat.sand:i<7?mat.rock:mat.sandDeep);
+    join('salusa contiguous march segment '+i,points[i-1],points[i],-.34,
+      i<3?4.1:2.8,mat.track);
   }
   // Wind has a diagonal grammar, quite unlike the imperial palace mirror and
   // the industrial valley. All sheets remain static and behind interactive pins.
   for(let i=0;i<(detail?8:5);i++){
-    const x=-49+i*15,z=-5+i*4.2;
-    const crest=box('salusa crosswind raised seam '+i,x,.55,z,1.1,1.1,14,
+    const x=-49+i*15,z=-3+i*4.2;
+    const crest=box('salusa crosswind raised seam '+i,x,.45,z,1.3,.8,15,
       i<3?mat.salt:mat.sandDeep,-.44);
-    crest.rotation.z=i%2?.1:-.08;
+    crest.rotation.z=i%2?.07:-.11;
   }
 
   // 120: three black triangular transport wedges, aligned into a landfall
@@ -102,26 +116,30 @@ export function buildSalusaWindMarch(B3, scene, material, detail = true) {
 
   // 124: immense sloping, frozen Coriolis sand walls sever the ranks.
   for(let i=0;i<5;i++){
-    const x=-16+i*3.3,h=3.9+i*.64;
-    const ridge=box('124 coriolis slanted dune blade '+i,x,h/2,7+i*.7,
-      2.2,h,11,mat.sandDeep,-.48);
-    ridge.rotation.z=-.20+i*.032;
+    const x=-16+i*3.5,h=3.6+i*.7;
+    spire('124 coriolis slanted dune blade '+i,x,h/2,8+i*1.5,
+      4.8,h,mat.sandDeep,-.23+i*.035);
+  }
+  if(detail){
+    const shear=box('124 coriolis diagonal sand wall',-6,2.1,13,
+      1.3,4.2,20,mat.sand,-.42);
+    shear.rotation.z=-.31;
   }
   if(detail)box('124 torn storm military marker',-9,2.6,1,.6,5.1,.65,mat.flag,-.13);
 
   // 125: a narrow tooth-walled passage, sculpted as one part of the
   // surrounding terrain. Gaps keep the local pin rays unobstructed.
   for(let i=0;i<4;i++){
-    const x=.5+i*3.1,z=13+(i%2)*1.5,h=6+i*.95;
-    const tooth=box('125 death gorge upper fang '+i,x,h/2,z,
-      2.5,h,3.7,mat.rock,-.15);
-    tooth.rotation.z=i%2?.18:-.11;
+    const x=.5+i*3.1,z=14+(i%2)*1.8,h=6.3+i*1.0;
+    spire('125 death gorge upper fang '+i,x,h/2,z,
+      4.8,h,mat.rock,i%2?.16:-.14);
   }
   for(let i=0;i<3;i++){
-    const x=2+i*4.2,h=4.7+i*.65;
-    box('125 death gorge lower fang '+i,x,h/2,-6.5,2.7,h,3.2,mat.shadow,.21);
+    const x=2+i*4.2,h=4.2+i*.9;
+    spire('125 death gorge lower fang '+i,x,h/2,-6.5,
+      4.6,h,mat.shadow,.20);
   }
-  box('125 gorge bottleneck lintel',7,5.0,14,8,1.15,2.0,mat.rock,-.18);
+  box('125 gorge broken lintel',7,4.5,17,7.3,1.05,2.0,mat.rock,-.18);
 
   // 126: visible cave cut, a single cold water glint and solid roof.
   box('126 secret sietch cave black mouth',18,3.0,18,10,6.0,.5,mat.shadow);
@@ -139,9 +157,14 @@ export function buildSalusaWindMarch(B3, scene, material, detail = true) {
       .63,1.6,mat.sandDeep);
   }
   for(let i=0;i<2;i++){
-    const ridge=box('127 distant worm emerging back '+i,31+i*7,2.5,29+i*2,
-      4.2,3.8,3,mat.rock,.4);
-    ridge.rotation.z=.12;
+    const ridge=M.CreateSphere('127 distant worm emerging back '+i,
+      {diameter:6,segments:8},scene);
+    ridge.position.set(30+i*7,1.25,29+i*3);
+    ridge.scaling.set(1.15,.69,1.8);
+    ridge.material=i?mat.rock:mat.sandDeep;ridge.isPickable=false;
+    if(detail)for(let k=0;k<2;k++)
+      box('127 worm armor rib '+i+' '+k,29+i*7+k*2,3.1,27+i*3,
+        .75,1.3,6,mat.rock,-.2);
   }
 
   // 128: first retreat in centuries, figures FACE THE PREVIOUS NODE.
@@ -157,9 +180,11 @@ export function buildSalusaWindMarch(B3, scene, material, detail = true) {
   // 129: the prophet remains HUMAN scale. Negative space is the monument.
   // This final dune is not a throne, castle or supernatural glowing statue.
   for(let i=0;i<3;i++){
-    const crest=box('129 empty muad dib dune horizon '+i,55+i*3.5,
-      .85+i*.66,30+i*2,17-i*3,1.2+i*.52,4.3,mat.sand,.12);
-    crest.rotation.z=.08-i*.035;
+    const crest=M.CreateSphere('129 empty muad dib dune horizon '+i,
+      {diameter:7,segments:8},scene);
+    crest.position.set(54+i*4,1.3+i*.42,31+i*2.5);
+    crest.scaling.set(2.15-i*.2,.51,1.1);
+    crest.material=mat.sand;crest.isPickable=false;
   }
   const cloak=box('129 lone human muad dib cloak',59,5.4,33.5,1.75,4.0,.85,mat.shadow,.10);
   cloak.rotation.z=-.06;
