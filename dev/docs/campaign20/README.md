@@ -6,9 +6,9 @@
 
 **v120 ОПУБЛИКОВАНА 15.11.2026** по отдельной команде владельца «Сливай и публикуй». [Release PR #103 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/103) `9b1a8b2`, [full release PR CI #43713420203 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43713420203), [main CI #43713999317 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43713999317), [одноразовый guard #43713999321 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43713999321), [official validated publish #43714007861 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43714007861), [отдельный Pages #43714744797 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43714744797). Root PWA commit `8b25fff32095700e21d8b0960f5a3694c481a9db`, `dev/version.json=120`, SW cache **`5c7310b18b`**, 188 validated SHA-256 files. [Полная передача v120](C4_17_V120_RELEASE_HANDOFF_2026_11_15.md). Исходные 210 миссий, диалоги, награды, баланс, экономика и сохранения не менялись. Физические iPhone/Safari тесты остаются открытыми.
 
-## Следующий художественный этап после v120 — C4.18 · Тёмная V `D:4`
+## Следующий художественный этап — C4.18 «Наследник» · Тёмная V `D:4` (110–119)
 
-Начать с исходного `CAMP_DEF.D.chapters[4]` и нового Issue/handoff, только после подтверждённой публикации v120. Новую карту разрабатывать отдельно: концепции → утверждение → feature-ветка/Draft PR → WebGL MED/LOW и CI → отдельно merge/release.
+**Начать новый чат с [Issue #105](https://github.com/mryandexxx-spec/Dgoh-game/issues/105) и [передачи C4.18 после v120](C4_18_AFTER_V120_HANDOFF_2026_11_15.md).** 19-я из 21 авторских карт ещё не создана: Dark V `D:4`, канонические миссии 110–119, уровни 31–42. Источник — `CAMP_DEF.D.chapters[4]`: Фейд-Раута, арена Гиеди Прайм, придворные интриги, Мохиам, караваны и месть Гурни. В `campaign-map-presets.js` нет пресета `D:4`. **Только художественный этап A**: 2–3 самостоятельные концепции и подробное предложение на утверждение владельцу. Без игрового кода, feature PR, version bump, merge или release до отдельных команд; физическая проверка iPhone/Safari предыдущих глав открыта.
 
 ## Последний опубликованный релиз — C4.16 «Ночь длинных ножей» / «Гаснущая корона» · v119
 
