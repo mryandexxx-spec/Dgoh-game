@@ -147,7 +147,7 @@ export function buildIronQuota(B3, scene, material, detail=true) {
     const x=final?(side?68:55)+(i%3)*1.8:-66+(i%5)*2.4;
     const z=final?(side?19:15)+(i%3)*1.2:-17+(i%3)*1.65;
     const soldier=body.createInstance('quota stationary guard '+i);
-    soldier.position.set(x,1.35,z);soldier.material=side?mat.fremen:mat.iron;
+    soldier.position.set(x,1.35,z);
     soldier.isPickable=false;
     const helmet=head.createInstance('quota stationary helmet '+i);
     helmet.position.set(x,2.5,z);helmet.isPickable=false;
