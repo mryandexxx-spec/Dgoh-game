@@ -1,6 +1,6 @@
 # Campaign 2.0 — C4.14 «Прибытие императора» / «Зеркало Падишаха»: выпуск v117
 
-Дата: 15.11.2026. **Статус: выпуск v117 разрешён; Pages-публикация ожидает фактического подтверждения.** Не путать CI SUCCESS с опубликованной игрой.
+Дата: 15.11.2026. **Статус: v117 ОПУБЛИКОВАНА, verified PWA + GitHub Pages подтверждены 15.11.2026.**
 
 ## Приёмка владельцем
 - Художественная приёмка — «Да» после настоящих WebGL кадров MED 844×390 / LOW 667×375.
@@ -27,3 +27,14 @@
 
 ## Приёмка на физическом iPhone
 Проверить Safari/PWA landscape MED 844×390 и LOW 667×375: Светлая VI 50–59, читаемость корабля/цельной стены/парада, доступность 2–4 последовательных меток, свайп/pinch/twist/recenter, вход и выход миссий, бой/симуляцию, 2D fallback при отключённом WebGL, обновление кэша/офлайн и существующие сохранения; отдельно FPS, нагрев и батарею 10–15 мин. Автоматический Chromium/SwiftShader — не физическая проверка.
+
+## Фактический релиз v117 — подтверждённые доказательства
+
+- **Owner-approved source:** [C4.14 PR #87 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/87), commit `3ef90adf2fab1cf1becae0c1fda80c4659a79b4c`.
+- **Релизный PR:** [#88 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/88), squash `07ceb98b3468b21aa78ed1a7ddbaa21edb2188c8`, `dev/version.json=117`; [полный PR CI #43684436314 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43684436314).
+- **Проверенный main:** [push CI #43684999820 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43684999820) переиспользовал точные байты с SHA-256, без пропуска gate.
+- **Разрешённая публикация:** [one-time dispatcher #43684999855 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43684999855) на root-baseline v116 отправил `workflow_dispatch publish=true`; [официальный release CI #43685018421 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43685018421) прошёл full plan / все обязательные проверки / gate / staging / **Publish verified PWA to GitHub Pages SUCCESS**.
+- **Новая production PWA:** корневой commit `1cb5dc1e155e1c292869537175213c19ae68784d`; `app.js` содержит **`APP_VER="v117 · 687dd0b25e"`**; `sw.js` содержит **`const VER = '687dd0b25e'`**; `dev/version.json=117`. Production URL: https://mryandexxx-spec.github.io/Dgoh-game/.
+- **Отдельная публикация Pages:** [pages build and deployment #43685592345 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43685592345) именно на root commit `1cb5dc1...`. Прямой HTTP-чтение production URL из этой инструментальной среды недоступно; подтверждения основаны на GitHub Actions + root файлах, не на замерах физического Safari.
+- **Cleanup:** одноразовый workflow `.github/workflows/release-v117-once.yml` удаляется отдельным документационным PR без пересборки или повторной публикации игры.
+- **Следующий этап:** C4.15, Светлая VII `L:6`, оригинальные 60–69; художественный этап A отдельно, без автоматического изменения канона.
