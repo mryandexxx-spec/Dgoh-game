@@ -10,6 +10,8 @@
 
 ## Открыто
 
+**v117 — C4.14 «Зеркало Падишаха», Светлая VI `L:5` (50–59) — ВЫПУСК СОГЛАСОВАН, ПУБЛИКАЦИЯ В ПРОЦЕССЕ (15.11.2026):** владелец принял реальные WebGL кадры MED/LOW («Да»), отдельно разрешил merge («Сливай») и релиз («Выпускай»). [Исходный PR #87 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/87), коммит `3ef90adf2fab1cf1becae0c1fda80c4659a79b4c`; [финальный CI #43682659731 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43682659731), [main CI #43683979698 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43683979698). Version bump 116→117 и отдельный owner-approved publish=true подготовлены. **Не считать опубликованным до успешных CI gate, Publish verified PWA и Pages deployment, плюс проверки root app.js/sw.js v117.** Физический iPhone Safari FPS/нагрев и батарея не измерены; после релиза проверить 50–59, swipe/pinch/twist/recenter, миссию/бой/симуляцию и 2D fallback.
+
 **v116 — ОПУБЛИКОВАНА 15.11.2026: рамки ДП и отдельное золото легенд, вместе с C4.13:** владелец принял настоящий ростер в браузерных кадрах MED 844×390, LOW 667×375 и desktop («Принимаю, выпускай»). [PR #82 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/82), squash commit `c4588b23`, [полный CI совместимости C4.13 #43641063310 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43641063310). **v116 успешно выпущена:** [ручной publish workflow #43643649804 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43643649804) с `publish=true`, [отдельный Pages deployment #43644584536 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43644584536), root PWA SHA `70a97c83`, кэш `v116 · a2fe3534af`. В выпуск вошла художественно принятая C4.13 `L:4` (40–49); версия `dev/version.json=116`. На физическом iPhone Safari проверить читаемость колец, звёзд, бейджей и FPS/нагрев.
 
 **CI — дальнейшие замеры и настройки:** новый fast main publish проверен; реальные времена минимального campaign/release-сценария уточнить на следующей соответствующей доработке. Настройки Pages source и branch protection в этом аудите не подтверждены (ранее чтение protection возвращало 403); автоматические branch-based Pages builds находятся вне управления YAML этого workflow. Это не блокирует подтверждённую exact-artifact публикацию.
@@ -153,6 +155,15 @@
 - Проверить после релиза: фактические кадры персонажа в бою и карточке, плащ Attack/Hit/Death, быструю смену персонажей, отсутствие артефактов/перегрева и корректный кеш обновления.
 
 ## Записи
+
+## v117 — Campaign 2.0 C4.14 «Прибытие императора» · «Зеркало Падишаха» (15.11.2026)
+
+- **Решения владельца:** художественный стиль и все 10 реальных мобильных WebGL-ракурсов MED 844×390 и LOW 667×375 приняты («Да»). После этого отдельно разрешены слияние («Сливай») и публикация («Выпускай»).
+- **Состав:** отдельная статичная низкополигональная карта `L:5` для исходных ID 50–59 — ослепительный солончак, цельная Защитная стена, огромный императорский транспорт, шатры двора, Фенринг/Мохиам, Ландсраад и строевой парад сардаукаров с триумфальной аркой. **15/21 авторских окружений** после выпуска. Исходные 210 миссий/ID, враги, награды, экономика, сохранения и баланс не менялись.
+- **Мобильный UX:** единый Babylon EngineHost/GameScene, HIGH/MED/LOW, неподвижный idle, LOW-упрощение, 2D fallback, 2–4 последовательных маркера 50/60px без перекрытия и обрезания, жесты v101 без изменений. Парад — инстансированные 66 (MED) / 32 (LOW) фигур. Новых шейдеров/рендер-циклов/бесконечной анимации нет.
+- **Художественная и техническая приёмка:** [PR #87 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/87), исходный коммит `3ef90adf2fab1cf1becae0c1fda80c4659a79b4c`; [итоговый CI #43682659731 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43682659731) с реальными WebGL MED/LOW, golden, PWA/offline, lifecycle MED/LOW/HIGH и бюджетами. [Main CI #43683979698 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43683979698). Замер физического Safari не предоставлен, регрессии жизненного цикла не выявлены.
+- **Релиз:** `dev/version.json=117`; отдельное разрешение владельца получено 15.11.2026. Публикация через проверенную one-time dispatch схему: release PR → успешный CI → squash merge → точечный `workflow_dispatch publish=true` → gate → verified deployment → GitHub Pages. **Статус до проверки фактического Pages: подготовка, не опубликовано.** [Handoff](docs/campaign20/C4_14_V117_RELEASE_HANDOFF_2026_11_15.md).
+- **На физическом iPhone Safari:** главы Светлой VI 50–59 на MED 844×390 / LOW 667×375, масштаб и читаемость корабля и стены, маркеры, свайп/pinch/twist/recenter, вход в миссию/бой/симуляцию, возврат, fallback при WebGL-off, обновление SW, сохранения и offline, FPS/нагрев/батарея в течение 10–15 минут.
 
 ## v116 — UI ростера: свечение ДП по сторонам и золотые венцы легенд (15.11.2026)
 
