@@ -1,14 +1,18 @@
 # Campaign 2.0 — главный указатель (15.11.2026)
 
-## Последний опубликованный релиз — C4.15 «Битва за Арракин» · «Шрам Защитной стены», v118
+## C4.16 — «Ночь длинных ножей» / «Гаснущая корона» · релиз-кандидат v119
 
-## Следующий художественный этап — C4.16 «Ночь длинных ножей», Тёмная III `D:2` (90–99)
+**Художественно принята и слита в main**, [Issue #95](https://github.com/mryandexxx-spec/Dgoh-game/issues/95), [PR #97 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/97), squash `49cec8a7f3605b2325666a65159d756b1aad84bf`; [финальный CI #43699423185 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43699423185). 17-я из 21 отдельной карт Campaign 2.0: Dark III `D:2`, исходные ID 90–99, уровни 13–20. Утверждённая композиция «Гаснущая корона»: отключённые генераторы, ночной штурм стены и казарм, галерея Дункана, ангар, Хават, пылающий Звёздный зал, Лето, выход к песку и последний приказ. [Настоящие WebGL MED/LOW кадры](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43699423185/artifacts/14155673174), целевой lifecycle MED 190/8479, LOW 150/7191, HIGH 190/8479, Golden/PWA/perf SUCCESS.
 
-**Стартовать с [Issue #95](https://github.com/mryandexxx-spec/Dgoh-game/issues/95) и [handoff после v118](C4_16_AFTER_V118_HANDOFF_2026_11_15.md).** Светлая сторона и «Хроники» завершены; 16/21 авторских карт готовы, следующие пять карт — `D:2..D:6`. C4.16 — ночной захват Арракина глазами Харконненов и Коррино при отключённых щитах: штурм ворот, оборона Дункана, ангар, пленение Хавата, огонь Звёздного зала и последние часы герцога Лето. Канон: `CAMP_DEF.D.chapters[2]` в `dev/src/data/campaigns.js`, исходные ID 90–99, уровни 13–20. **Только художественный этап A: 2–3 разных концепции, выбор и проработка, затем отдельное утверждение. Не менять игровой код, версию, не создавать PR реализации, не выполнять merge или релиз до новых команд.**
+**Владелец отдельно разрешил «Сливай и выпускай» 15.11.2026.** В релизной ветке подготавливается v119; **публикация ещё не подтверждена** до SUCCESS официального validated Pages и точного root footer/SW. [Handoff и release-gates](C4_16_V119_RELEASE_HANDOFF_2026_11_15.md). Исходные 210 миссий, сюжет, враги/боссы, награды, экономика и сохранения не менялись. Safari/iPhone остаётся отдельной проверкой.
 
-**Художественно принято, код слит в main, v118 ОПУБЛИКОВАНА 15.11.2026.** [Issue #90](https://github.com/mryandexxx-spec/Dgoh-game/issues/90), [PR #92 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/92), Light VII L:6 (60–69, 57–70 ур.). Шестнадцатая из 21 самостоятельной карты: буря, атомный пролом, гигантские черви, разрушенный Арракин, ставка Шаддама и пустой трон. Исходные 210 миссий, диалоги, враги, баланс, сохранения неизменны.
+## Следующий художественный этап после v119 — C4.17 «Правление Зверя» · Тёмная IV `D:3` (100–109)
 
-**Проверенный выпуск:** [PR #93 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/93), [PR CI #43692066708 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43692066708), [official publish #43692643421 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43692643421), [Pages #43693224667 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43693224667). Production v118: `app.js`/`sw.js` cache `25bfb36516`, root SHA `b4a2f5d34`. [Полная передача v118](C4_15_V118_RELEASE_HANDOFF_2026_11_15.md). Физическая Safari-проверка остаётся открытой.
+Следующая из оставшихся четырёх глав Тёмной стороны (`D:3..D:6`). После подтверждённой публикации C4.16 начать самостоятельный художественный этап A, сверяясь с `CAMP_DEF.D.chapters[3]`; никаких автоматических изменений или branch/PR следующей главы.
+
+## Предыдущий опубликованный релиз — C4.15 «Битва за Арракин» / «Шрам Защитной стены», v118
+
+**v118 подтверждённо опубликована 15.11.2026.** [Issue #90](https://github.com/mryandexxx-spec/Dgoh-game/issues/90), [PR #92 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/92), [release #93 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/93), [cleanup #94 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/94). Light VII `L:6`, ID 60–69, 16-я авторская карта «Шрам Защитной стены». [Официальный publish #43692643421 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43692643421); [Pages #43693224667 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43693224667); `app.js`/SW `v118 · 25bfb36516`. [Handoff v118](C4_15_V118_RELEASE_HANDOFF_2026_11_15.md). Физическая iPhone Safari проверка остаётся открытой.
 
 ## Предыдущая опубликованная версия — v117, C4.14 «Прибытие императора»
 
