@@ -1,12 +1,12 @@
 # Campaign 2.0 — главный указатель (актуально на 2026-11-15)
 
-## Текущий выпуск — C4.14 «Прибытие императора», v117 (Pages ещё не подтверждена)
+## Последний релиз — C4.14 «Прибытие императора», v117 ОПУБЛИКОВАНА 15.11.2026
 
-**15.11.2026 владелец принял** реальные WebGL MED/LOW кадры «Зеркала Падишаха» и отдельно разрешил «Сливай» и «Выпускай». [PR #87 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/87), исходный main `3ef90adf2fab1cf1becae0c1fda80c4659a79b4c`; [CI #43682659731 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43682659731). Светлая VI `L:5`, оригинальные 50–59, солончак, корабль Шаддама, шатры двора, целая Защитная стена, сардаукары. Исходные ID, враги, награды, экономика, сохранения не менялись. С выпуском v117 будет 15/21 уникальных карт.
+**«Зеркало Падишаха» утверждено, слито и опубликовано.** Светлая VI `L:5`, оригинальные 50–59, уникальный солончак, корабль Шаддама, двор, цельная Защитная стена, финальный парад сардаукаров; 15/21 самостоятельных Campaign20 карт. [PR #87 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/87), [release PR #88 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/88); [полный release CI #43685018421 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43685018421), [Pages deployment #43685592345 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43685592345) для root SHA `1cb5dc1e`.
 
-**Версия v117 готовится к точной проверенной публикации** через однократный `workflow_dispatch publish=true`; release CI/Pages/root app.js ещё необходимо подтвердить. [Полный handoff](C4_14_V117_RELEASE_HANDOFF_2026_11_15.md). На физическом iPhone Safari FPS/нагрев/батарея остаются непроверенными.
+**Production:** https://mryandexxx-spec.github.io/Dgoh-game/ · `dev/version.json=117` · `app.js: v117 · 687dd0b25e` · `sw.js VER=687dd0b25e`. [Полная передача v117](C4_14_V117_RELEASE_HANDOFF_2026_11_15.md). Не менялись 210 ID, баланс, враги, награды, экономика и сохранения. **Физические iPhone Safari FPS/нагрев/батарея ещё не измерены.**
 
-## Последний подтверждённый релиз — v116 (C4.13 + рамки ростера)
+## Предыдущий релиз — v116 (C4.13 + рамки ростера)
 
 **v116 опубликована 15.11.2026:** C4.13 «Годы в пустыне» (Светлая V `L:4`, 40–49) и утверждённые рамки ДП и золото легенд. [Validated PWA/Pages #43643649804 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43643649804), [Pages deployment #43644584536 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43644584536), root SW `a2fe3534af`. [Handoff v116](C4_13_V116_RELEASE_HANDOFF_2026_11_14.md). После завершения v117 этот раздел станет историческим.
 
