@@ -979,7 +979,7 @@ try {
         hasCrimsonBanners:!!find('59 blood-crimson long hanging flag 48.6'),
       };
     });
-    assert.ok(imperialGeometry.shipZ<=22,'L:5 frontal imperial transport must be inside camera-readable zone '+JSON.stringify(imperialGeometry));
+    assert.ok(imperialGeometry.shipZ<=12,'L:5 frontal imperial transport must be inside camera-readable zone '+JSON.stringify(imperialGeometry));
     assert.equal(imperialGeometry.wallZ,43,'L:5 intact continuous visible Shield Wall');
     assert.equal(imperialGeometry.archZ,26,'L:5 triumphal arch behind Sardaukar regiment');
     assert.equal(imperialGeometry.hasHullInsignia,true,'L:5 gilded monumental ship silhouette');
