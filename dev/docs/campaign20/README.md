@@ -1,15 +1,14 @@
-# Campaign 2.0 — главный указатель (актуально на 2026-11-15)
+# Campaign 2.0 — главный указатель (15.11.2026)
 
-## Следующая задача — C4.15 «Битва за Арракин» (художественный этап A)
+## C4.15 «Битва за Арракин» · «Шрам Защитной стены» — релизный кандидат v118
 
-**Начать с [Issue #90](https://github.com/mryandexxx-spec/Dgoh-game/issues/90) и [handoff после v117](C4_15_AFTER_V117_HANDOFF_2026_11_15.md).** Светлая VII `L:6`, исходные миссии **60–69**, уровни **57–70**: буря, пролом Защитной стены, гигантские черви, падение легионов, шатёр Шаддама, Фейд и «Трон пустыни». Источник канона `CAMP_DEF.L.chapters[6]` / `STORY[11]`. Сначала 2–3 самостоятельные художественные концепции на утверждение. **Нет feature PR/правок игровой логики/merge/публикации без отдельных разрешений.** Прошлая C4.14 опубликована в v117, её повторно не согласовывать.
+**Художественно принято, исходный код слит в main, выпуск v118 разрешён.** [Issue #90](https://github.com/mryandexxx-spec/Dgoh-game/issues/90), [PR #92 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/92), Light VII L:6 (60–69, 57–70 ур.). Шестнадцатая из 21 самостоятельной карты: буря, атомный пролом, гигантские черви, разрушенный Арракин, ставка Шаддама и пустой трон. Исходные 210 миссий, диалоги, враги, баланс, сохранения неизменны.
 
-## Последний релиз — C4.14 «Прибытие императора», v117 ОПУБЛИКОВАНА 15.11.2026
+**Важно:** до official Pages SUCCESS версия v118 не считается опубликованной; production сейчас v117. [Полный релизный handoff v118](C4_15_V118_RELEASE_HANDOFF_2026_11_15.md), [WebGL/Golden/PWA CI #43689895701 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43689895701), [main CI #43691646475 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43691646475). Отдельно необходима проверка на физическом iPhone Safari.
 
-**«Зеркало Падишаха» утверждено, слито и опубликовано.** Светлая VI `L:5`, оригинальные 50–59, уникальный солончак, корабль Шаддама, двор, цельная Защитная стена, финальный парад сардаукаров; 15/21 самостоятельных Campaign20 карт. [PR #87 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/87), [release PR #88 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/88); [полный release CI #43685018421 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43685018421), [Pages deployment #43685592345 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43685592345) для root SHA `1cb5dc1e`.
+## Последняя опубликованная версия — v117, C4.14 «Прибытие императора»
 
-**Production:** https://mryandexxx-spec.github.io/Dgoh-game/ · `dev/version.json=117` · `app.js: v117 · 687dd0b25e` · `sw.js VER=687dd0b25e`. [Полная передача v117](C4_14_V117_RELEASE_HANDOFF_2026_11_15.md). Не менялись 210 ID, баланс, враги, награды, экономика и сохранения. **Физические iPhone Safari FPS/нагрев/батарея ещё не измерены.**
-
+**«Зеркало Падишаха» опубликовано 15.11.2026:** Light VI L:5, исходные 50–59, неповреждённая Защитная стена и парад сардаукаров. [PR #87 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/87), [релиз #88 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/88). [CI/Pages #43685018421 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43685018421), [Pages #43685592345 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43685592345). Root SW VER=687dd0b25e (v117), до нового validated release. [Подробный v117 handoff](C4_14_V117_RELEASE_HANDOFF_2026_11_15.md).
 ## Предыдущий релиз — v116 (C4.13 + рамки ростера)
 
 **v116 опубликована 15.11.2026:** C4.13 «Годы в пустыне» (Светлая V `L:4`, 40–49) и утверждённые рамки ДП и золото легенд. [Validated PWA/Pages #43643649804 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43643649804), [Pages deployment #43644584536 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43644584536), root SW `a2fe3534af`. [Handoff v116](C4_13_V116_RELEASE_HANDOFF_2026_11_14.md). После завершения v117 этот раздел станет историческим.
