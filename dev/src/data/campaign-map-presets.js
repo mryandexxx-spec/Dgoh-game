@@ -161,6 +161,30 @@ export const CAMPAIGN_MAPS = Object.freeze({
       {kind:'rabban-last-extraction',x:64,z:17,size:26},
     ]),
   }),
+  'D:2': Object.freeze({
+    id: 'night-long-knives', title: 'Ночь длинных ножей · Гаснущая корона',
+    theme: 'fading-crown', bounds: [-75,75,-32,46],
+    // Original Dark-III global IDs 90–99; chronological invasion, not L:6.
+    // Camera pans between 2–4 nearby consecutive world-projected mission pins.
+    camera: { target: [-60,0,-13], alpha: -1.30, beta: .98,
+      radius: 32, minRadius: 24, maxRadius: 65, turnLimit: .24 },
+    nodes: Object.freeze([
+      [-60,-13],[-47,-5],[-34,5],[-20,15],[-5,22],
+      [9,12],[23,1],[36,-8],[49,-17],[62,-5],
+    ]),
+    landmarks: Object.freeze([
+      {kind:'shield-generators-dark',x:-60,z:-1,size:15},
+      {kind:'opened-city-gate',x:-47,z:5,size:14},
+      {kind:'atreides-barracks',x:-34,z:17,size:19},
+      {kind:'duncan-gallery',x:-20,z:28,size:26},
+      {kind:'ornithopter-hangar',x:-5,z:34,size:27},
+      {kind:'mentat-archive',x:9,z:22,size:17},
+      {kind:'burning-star-hall',x:23,z:12,size:19},
+      {kind:'duke-detention-stair',x:36,z:13,size:15},
+      {kind:'sand-postern',x:49,z:-8,size:15},
+      {kind:'duke-last-order-bastion',x:62,z:12,size:18},
+    ]),
+  }),
   'D:1': Object.freeze({
     id: 'giedi-conspiracy', title: 'Заговор · Тихий трон',
     theme: 'conspiracy', bounds: [-48, 46, -24, 27],
