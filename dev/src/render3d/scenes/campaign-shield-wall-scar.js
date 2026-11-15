@@ -88,14 +88,16 @@ export function buildShieldWallScar(B3, scene, material, detail = true) {
 
   // 61: TWO physically separated Shield Wall shoulders. A 24-unit open gap
   // is preserved between z=-9 and z=15: the worm route genuinely crosses it.
-  box('61 shield-scar-left-foot',-49,2.0,-35,14,5,52,mat.rock);
-  box('61 shield-scar-right-foot',-49,2.1,41,14,5,52,mat.rock);
-  for(const [side,zBase] of [['left',-35],['right',41]]){
-    const n=detail?5:3;
+  // Short broken shoulders frame a navigable opening without becoming a
+  // foreground blind wall when viewed from the existing south-facing camera.
+  box('61 shield-scar-left-foot',-49,1.8,-16,13,4.4,9,mat.rock);
+  box('61 shield-scar-right-foot',-49,2.0,24,13,4.9,16,mat.rock);
+  for(const [side,zBase] of [['left',-16],['right',24]]){
+    const n=detail?3:2;
     for(let i=0;i<n;i++){
-      const z=zBase+(i-(n-1)/2)*(detail?10:17);
-      wedge('61 shield-scar-'+side+'-broken-spire-'+i,-49,6.8+(i%3)*1.4,z,
-        15,10+(i%3)*3,detail?13:21,i%2?mat.rock:mat.fracture);
+      const z=zBase+(i-(n-1)/2)*(detail?6:9);
+      wedge('61 shield-scar-'+side+'-broken-spire-'+i,-49,6.4+(i%3)*1.5,z,
+        14,11+(i%3)*3,detail?7.5:10,i%2?mat.rock:mat.fracture);
     }
   }
   for(const [i,z] of [[0,-11],[1,17]]){
@@ -112,30 +114,36 @@ export function buildShieldWallScar(B3, scene, material, detail = true) {
 
   // 62: giant worm, partly hidden behind dunes. Segmented silhouette but
   // no skinning/animation. The maw is a readable dark circle on the near side.
-  const wormParts=detail?7:4;
-  for(let i=0;i<wormParts;i++){
-    const t=i/(wormParts-1),x=-53+59*t,z=22+8*Math.sin(t*Math.PI);
-    const y=3.6+3.3*Math.sin(t*Math.PI);
-    const rib=cyl('62 Shai-Hulud colossal body '+i,x,y,z,
-      10.6+1.7*Math.sin(t*Math.PI),detail?11.6:19,mat.worm,detail?9:6);
-    rib.rotation.z=Math.PI/2+(t-.5)*.22;
-    if(detail)for(const sign of [-1,1]){
-      const seam=cyl('62 giant plated body rib '+i+' '+sign,x+sign*2.25,y,z,
-        11.15, .42,mat.wormRib,9);
-      seam.rotation.z=Math.PI/2+(t-.5)*.22;
-    }
+  // An ascending organic arc, emerging from the dune, replaces the straight
+  // cylinder train: Shai-Hulud must NEVER read as an industrial pipe.
+  const wormPath=[
+    new B3.Vector3(-56,.3,38),new B3.Vector3(-48,1.2,34),
+    new B3.Vector3(-42,3.4,30),new B3.Vector3(-37,6.7,26),
+    new B3.Vector3(-33,10.3,22),new B3.Vector3(-32,7,17),
+  ];
+  const wormBody=M.CreateTube('62 Shai-Hulud colossal rising body',{
+    path:wormPath,radius:5.5,tessellation:detail?12:7,
+    cap:B3.Mesh.CAP_ALL
+  },scene);
+  wormBody.material=mat.worm;wormBody.isPickable=false;
+  for(let i=0;i<(detail?4:2);i++){
+    const p=wormPath[i+1];
+    wedge('62 organic dune-backed dorsal plate '+i,p.x,p.y+4.2,p.z,
+      5.4,1.65,7.8,mat.wormRib);
   }
-  const mouth=cyl('62 Shai-Hulud circular maw',-32,5.9,15.5,11.4,.8,mat.maw,detail?12:8);
+  const mouth=cyl('62 Shai-Hulud circular maw',-32,7,15.6,11.8,.8,mat.maw,detail?14:9);
   mouth.rotation.x=Math.PI/2;
   const mawRim=M.CreateTorus('62 Shai-Hulud mouth rim',
-    {diameter:11.5,thickness:1.4,tessellation:detail?16:10},scene);
-  mawRim.position.set(-32,5.9,15.05);mawRim.rotation.x=Math.PI/2;
+    {diameter:12.1,thickness:1.28,tessellation:detail?18:11},scene);
+  mawRim.position.set(-32,7,15.2);mawRim.rotation.x=Math.PI/2;
   mawRim.material=mat.wormRib;mawRim.isPickable=false;
-  if(detail)for(let i=0;i<10;i++){
-    const a=i*Math.PI/5;
-    const fang=cyl('62 worm tooth '+i,-32+4.4*Math.cos(a),5.9+4.4*Math.sin(a),14.75,
-      1.1,2.1,mat.tooth,5,0);
-    fang.rotation.x=Math.PI/2;
+  const nTeeth=detail?14:8;
+  for(let i=0;i<nTeeth;i++){
+    const a=i*Math.PI*2/nTeeth;
+    const fang=cyl('62 inward-pointing worm fang '+i,
+      -32+4.7*Math.cos(a),7+4.7*Math.sin(a),14.65,
+      1.6,2.55,mat.tooth,5,0);
+    fang.rotation.z=a+Math.PI/2;
   }
   for(const [i,x,z] of [[0,-46,7],[1,-23,11],[2,-5,16]]){
     wedge('62 static displaced sand wave '+i,x,1.1,z,17,3.1,7,mat.dust);
@@ -169,16 +177,20 @@ export function buildShieldWallScar(B3, scene, material, detail = true) {
 
   const tent=(name,x,z,w,d,height,tint)=>{
     box(name+' raised plinth',x,.24,z,w,.48,d,mat.shadow);
-    const canopy=wedge(name+' massive sloping roof',x,height*.61,z,w,height*.73,d,tint);
-    canopy.rotation.y=.07;
+    // Four sloping faces with a high crest: an unmistakable imperial tent,
+    // not the long red warehouse silhouette of the first WebGL candidate.
+    const canopy=cyl(name+' massive sloping roof',x,height*.78,z,w,
+      height*.95,tint,4,2.8);
+    canopy.scaling.z=d/w;canopy.rotation.y=Math.PI/4;
+    cyl(name+' gilded rooftop finial',x,height*1.46,z,.38,height*.36,mat.brass,5,.12);
     for(const side of [-1,1]){
       box(name+' banner '+side,x+side*w*.37,height*.52,z-d*.3,
         w*.13,height*.66,.25,mat.banner);
     }
   };
   // 64: Shaddam's field command tent, with a large readable frontage.
-  tent('64 Padishah colossal battle tent',-7,30,27,22,12,mat.banner);
-  box('64 huge imperial entrance',-7,3.0,17.7,9,5.7,.48,mat.darkBanner);
+  tent('64 Padishah colossal battle tent',-7,26,29,23,14,mat.banner);
+  box('64 huge imperial entrance',-7,3.0,14.4,9,5.7,.48,mat.darkBanner);
   for(const x of [-18,4])cyl('64 bronze standard '+x,x,5,14,.45,10,mat.brass,6);
   // 65: Harkonnen debts, distinctly smaller and dark, inside the SAME camp.
   tent('65 Harkonnen broken pavilion',8,28,14,13,7,mat.darkBanner);
@@ -192,10 +204,10 @@ export function buildShieldWallScar(B3, scene, material, detail = true) {
   line('66 Fenring unchosen path',18,16,24,19,.08,.26,mat.brass);
 
   // 67: crisp open knife duel ring, no 3D characters or new combat mechanics.
-  cyl('67 Feyd Muaddib open knife ring',35,.13,27,17,.36,mat.fracture,18);
-  cyl('67 knife duel sand circle',35,.36,27,12,.13,mat.dust,18);
+  cyl('67 Feyd Muaddib open knife ring',35,.13,19,20,.36,mat.fracture,18);
+  cyl('67 knife duel sand circle',35,.36,19,14,.13,mat.dust,18);
   for(let i=0;i<(detail?8:4);i++){
-    const a=i*Math.PI*2/(detail?8:4),x=35+11*Math.cos(a),z=27+9*Math.sin(a);
+    const a=i*Math.PI*2/(detail?8:4),x=35+12*Math.cos(a),z=19+9*Math.sin(a);
     cyl('67 torn duel standard '+i,x,2.6,z,.3,5,mat.iron,5);
   }
   // 68: last guarded threshold; the throne is visible behind it.
@@ -212,13 +224,15 @@ export function buildShieldWallScar(B3, scene, material, detail = true) {
     h.position.set(x,2.86,20.8);h.isPickable=false;
   }
   // 69: field throne after the fall. No Kaitain hall or intact L:5 parade.
-  box('69 deserted imperial throne plinth',64,.83,27,15,1.8,11,mat.fracture);
-  box('69 empty golden throne seat',64,2.4,28,6,2.2,4.2,mat.brass);
-  box('69 empty golden throne back',64,5.5,29.6,6.8,5.6,1.5,mat.brass);
-  for(const x of [61.7,66.3])
-    box('69 throne gilt corner '+x,x,7.95,29.35,1.0,1.8,1.8,mat.fractureLight);
-  box('69 broken crimson imperial standard',72,3.7,34,1,7.3,.8,mat.banner,.29);
-  wedge('69 torn standard fallen cloth',75,1.1,35,9,2.4,5.4,mat.banner);
+  box('69 deserted imperial throne plinth',64,.83,20.5,17,1.8,12,mat.fracture);
+  box('69 empty golden throne seat',64,2.6,21,8,2.3,5.0,mat.brass);
+  box('69 empty golden throne back',64,7.4,23.2,9,9.7,1.9,mat.brass);
+  for(const x of [60.6,67.4]){
+    box('69 throne gilt corner '+x,x,12.15,23.1,1.05,2.2,2.2,mat.fractureLight);
+    cyl('69 field throne lion standard '+x,x,4.9,25.2,2.6,9,mat.brass,5,1.5);
+  }
+  box('69 broken crimson imperial standard',74,4.0,27,1,8,.8,mat.banner,.29);
+  wedge('69 torn standard fallen cloth',75,1.1,28,9,2.4,5.4,mat.banner);
   for(let i=0;i<(detail?5:3);i++)
     line('69 throne dust and trailing footprints '+i,59+i*2,14,60+i*2,19,.08,.16,mat.dust);
   // Shared CampaignMapScene owns route, HUD, gestures, wake/static, and disposal.
