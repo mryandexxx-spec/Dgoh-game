@@ -95,6 +95,7 @@ export const SPLIT = [
   [3272, 'render3d/scenes/campaign-escape.js'],
   [3272, 'render3d/scenes/campaign-sietch.js'],
   [3272, 'render3d/scenes/campaign-empty-harvest.js'],
+  [3272, 'render3d/scenes/campaign-imperial-salt.js'],
   [3272, 'render3d/scenes/campaign-map.js'],
   [3272, 'ui/views/campaign20.js'],
   [3282, 'ui/views/camp.js'],

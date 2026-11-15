@@ -907,6 +907,98 @@ try {
     }
     console.log('PASS C4.13 Empty Harvest Ring real WebGL',w,h,gfx,JSON.stringify({harvestEntry}));
 
+
+    // C4.14 Light VI «Прибытие императора»: the approved Mirror of Padishah.
+    // Ten original 50–59 nodes; no invasions, walls breached or new mechanics.
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="5"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="5"]').click());
+    await page.waitForSelector('.c20-world.imperial-salt.campaign20-3d-ready',{timeout:20000});
+    const checkImperial=async(label)=>{
+      await page.waitForFunction(()=>[...document.querySelectorAll('.c20-world.imperial-salt .c20-pin')]
+        .some(p=>getComputedStyle(p).visibility==='visible'),{timeout:9000});
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.imperial-salt');
+        const all=[...world.querySelectorAll('.c20-pin')];
+        const visible=all.filter(p=>getComputedStyle(p).visibility==='visible');
+        const nums=visible.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const rect=world.getBoundingClientRect();
+        const overlap=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3
+            &&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {
+          ids:all.map(p=>Number(p.dataset.c20node)),nums,
+          selected:Number(all.find(p=>p.classList.contains('on'))?.dataset.c20node),
+          boss:all.filter(p=>p.classList.contains('boss')).length,
+          canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          pager:world.querySelectorAll('[data-c20step],.c20-mission-nav').length,
+          fallbackCoords:all.every(p=>p.style.getPropertyValue('--px')&&p.style.getPropertyValue('--py')),
+          scroll:document.querySelector('.c20').scrollHeight>document.querySelector('.c20').clientHeight+1,
+          within:visible.every(p=>{const b=p.getBoundingClientRect();
+            return b.left>=rect.left+1&&b.right<=rect.right-1
+              &&b.top>=rect.top+1&&b.bottom<=rect.bottom-1;}),
+          overlap
+        };
+      });
+      assert.deepEqual(state.ids,Array.from({length:10},(_,i)=>i+50),'L:5 original IDs 50–59');
+      assert.equal(state.boss,1,'L:5 only mission 59 is a boss');
+      assert.equal(state.canvas,true,'L:5 actual shared Babylon WebGL');
+      assert.equal(state.pager,0,'L:5 unchanged v101 camera gesture controls');
+      assert.equal(state.fallbackCoords,true,'L:5 ten interactive 2D fallback positions');
+      assert.equal(state.scroll,false,'L:5 no extra campaign scroll on phone');
+      assert.equal(state.within,true,label+' no cropped pins '+JSON.stringify(state));
+      assert.deepEqual(state.overlap,[],label+' no overlapping 50/60px buttons');
+      assert.ok(state.nums.length>=2&&state.nums.length<=4,label+' has 2–4 nearby pins '+JSON.stringify(state));
+      assert.ok(state.nums.every((n,i)=>!i||n===state.nums[i-1]+1),
+        label+' shows consecutive pins '+JSON.stringify(state));
+      assert.ok(state.nums.includes(state.selected-49),
+        label+' retains the currently selected marker '+JSON.stringify(state));
+      return state;
+    };
+    await new Promise(resolve=>setTimeout(resolve,500));
+    await page.screenshot({path:path.join(shots,'imperial-salt-entry-'+w+'-'+gfx+'.png')});
+    const imperialEntry=await checkImperial('Imperial Salt entry');
+    // Art iteration B2: ensure the improved silhouettes remain actual WebGL
+    // meshes on MED and LOW, not CSS overlays or a screenshot-only mockup.
+    const imperialGeometry=await page.evaluate(()=>{
+      const B=window.__B3;
+      const scene=B?.EngineStore?.Instances?.flatMap(e=>e.scenes||[])
+        .find(s=>s.activeCamera?.name==='campaign-camera');
+      const meshes=scene?.meshes||[];
+      const find=name=>meshes.find(m=>m.name===name);
+      const ship=find('51 padishah great transport armored hull');
+      const wall=find('shield-wall-unbroken-continuous-foot');
+      const arch=find('59 imperial triumphal arch lintel');
+      return {
+        shipZ:ship?.position.z,wallZ:wall?.position.z,
+        archZ:arch?.position.z,
+        legion:meshes.filter(m=>m.name.startsWith('59 Sardaukar full regiment ')).length,
+        hasHullInsignia:!!find('51 imperial gilded dorsal spine'),
+        hasCrimsonBanners:!!find('59 blood-crimson long hanging flag 48.6'),
+      };
+    });
+    assert.ok(imperialGeometry.shipZ<=12,'L:5 frontal imperial transport must be inside camera-readable zone '+JSON.stringify(imperialGeometry));
+    assert.equal(imperialGeometry.wallZ,43,'L:5 intact continuous visible Shield Wall');
+    assert.equal(imperialGeometry.archZ,26,'L:5 triumphal arch behind Sardaukar regiment');
+    assert.equal(imperialGeometry.hasHullInsignia,true,'L:5 gilded monumental ship silhouette');
+    assert.equal(imperialGeometry.hasCrimsonBanners,true,'L:5 imperial banners are built in Babylon');
+    assert.equal(imperialGeometry.legion,gfx==='med'?66:32,'L:5 instanced regiment HIGH/MED vs LOW');
+    for(const [id,name] of [[50,'imperial-court'],[51,'orbital-fleet'],
+      [52,'wall-tents'],[53,'fenring-spies'],[54,'gom-jabbar'],
+      [55,'salusa-sentries'],[56,'mohiam-intrigue'],[57,'landsraad'],
+      [58,'storm-front'],[59,'legion-parade']]){
+      await page.evaluate(id=>document.querySelector('[data-c20node="'+id+'"]')?.click(),id);
+      await new Promise(resolve=>setTimeout(resolve,560));
+      // Screens are actual WebGL even on assertion failure; visual review gate.
+      await page.screenshot({path:path.join(shots,'imperial-salt-'+name+'-'+w+'-'+gfx+'.png')});
+      const state=await checkImperial('Imperial Salt '+name);
+      assert.ok(state.nums.includes(id-49),
+        'L:5 selected '+name+' is visible '+JSON.stringify(state));
+    }
+    console.log('PASS C4.14 Mirror of Padishah real WebGL',w,h,gfx,JSON.stringify({imperialEntry}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
