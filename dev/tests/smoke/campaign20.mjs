@@ -999,6 +999,95 @@ try {
     }
     console.log('PASS C4.14 Mirror of Padishah real WebGL',w,h,gfx,JSON.stringify({imperialEntry}));
 
+
+    // C4.15 Light VII: real WebGL "Shield Wall Scar", ten original IDs 60–69.
+    // L:5's intact Wall remains untouched; this physically broken Wall is L:6.
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="6"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="6"]').click());
+    await page.waitForSelector('.c20-world.shield-wall-scar.campaign20-3d-ready',{timeout:20000});
+    await new Promise(resolve=>setTimeout(resolve,520));
+    const scarGeometry=await page.evaluate(()=>{
+      const B=window.__B3;
+      const scene=B?.EngineStore?.Instances?.flatMap(e=>e.scenes||[])
+        .find(s=>s.activeCamera?.name==='campaign-camera');
+      const meshes=scene?.meshes||[];
+      const named=n=>meshes.find(m=>m.name===n);
+      return {
+        left:!!named('61 shield-scar-left-foot'),
+        right:!!named('61 shield-scar-right-foot'),
+        continuous:!!named('shield-wall-unbroken-continuous-foot'),
+        worm:!!named('62 Shai-Hulud circular maw'),
+        wormRim:!!named('62 Shai-Hulud mouth rim'),
+        brokenLegion:meshes.filter(m=>m.name.startsWith('63 broken legion trooper ')).length,
+        battleTent:!!named('64 Padishah colossal battle tent massive sloping roof'),
+        knifeRing:!!named('67 Feyd Muaddib open knife ring'),
+        throne:!!named('69 empty golden throne back'),
+      };
+    });
+    assert.equal(scarGeometry.left,true,'L:6 separated left Shield Wall shoulder');
+    assert.equal(scarGeometry.right,true,'L:6 separated right Shield Wall shoulder');
+    assert.equal(scarGeometry.continuous,false,'L:6 no intact wall inherited from L:5');
+    for(const k of ['worm','wormRim','battleTent','knifeRing','throne'])
+      assert.equal(scarGeometry[k],true,'L:6 Babylon landmark '+k);
+    assert.equal(scarGeometry.brokenLegion,gfx==='med'?28:12,
+      'L:6 instanced LOW/MED broken-legion budget');
+    const checkScar=async(label)=>{
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.shield-wall-scar');
+        const all=[...world.querySelectorAll('.c20-pin')];
+        const visible=all.filter(p=>getComputedStyle(p).visibility==='visible');
+        const nums=visible.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const rect=world.getBoundingClientRect();
+        const overlap=visible.flatMap((a,i)=>visible.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3
+            &&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {
+          ids:all.map(p=>Number(p.dataset.c20node)),nums,
+          selected:Number(all.find(p=>p.classList.contains('on'))?.dataset.c20node),
+          boss:all.filter(p=>p.classList.contains('boss')).length,
+          canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          fallbackCoords:all.every(p=>p.style.getPropertyValue('--px')&&p.style.getPropertyValue('--py')),
+          within:visible.every(p=>{const b=p.getBoundingClientRect();
+            return b.left>=rect.left+1&&b.right<=rect.right-1
+              &&b.top>=rect.top+1&&b.bottom<=rect.bottom-1;}),
+          scroll:document.querySelector('.c20').scrollHeight>document.querySelector('.c20').clientHeight+1,
+          overlap
+        };
+      });
+      assert.deepEqual(state.ids,Array.from({length:10},(_,i)=>i+60),'L:6 original 60–69 IDs');
+      assert.equal(state.boss,1,'L:6 original final boss');
+      assert.equal(state.canvas,true,'L:6 real Babylon shared canvas');
+      assert.equal(state.fallbackCoords,true,'L:6 2D route has ten interactive positions');
+      assert.equal(state.within,true,label+' pins fully onscreen '+JSON.stringify(state));
+      assert.equal(state.scroll,false,'L:6 no mobile campaign scroll');
+      assert.deepEqual(state.overlap,[],label+' no overlapping pins');
+      assert.ok(state.nums.length>=2&&state.nums.length<=4,
+        label+' two to four local pins '+JSON.stringify(state));
+      assert.ok(state.nums.every((n,i)=>!i||n===state.nums[i-1]+1),
+        label+' consecutive nodes '+JSON.stringify(state));
+      assert.ok(state.nums.includes(state.selected-59),
+        label+' selected marker visible '+JSON.stringify(state));
+      return state;
+    };
+    const scarEntry=await checkScar('Shield Wall Scar entry');
+    await page.screenshot({path:path.join(shots,'shield-wall-scar-entry-'+w+'-'+gfx+'.png')});
+    for(const [id,name] of [[60,'coriolis-storm'],[61,'atomic-breach'],
+      [62,'worms-in-city'],[63,'broken-legion'],[64,'padishah-tent'],
+      [65,'harkonnen-reckoning'],[66,'fenring-doubt'],[67,'knife-duel'],
+      [68,'imperial-guard'],[69,'empty-throne']]){
+      await page.evaluate(id=>document.querySelector('[data-c20node="'+id+'"]')?.click(),id);
+      await new Promise(resolve=>setTimeout(resolve,570));
+      // Always write actual Chromium/SwiftShader WebGL frames for owner review.
+      await page.screenshot({path:path.join(shots,'shield-wall-scar-'+name+'-'+w+'-'+gfx+'.png')});
+      const state=await checkScar('Shield Wall Scar '+name);
+      assert.ok(state.nums.includes(id-59),
+        'L:6 selected '+name+' visible '+JSON.stringify(state));
+    }
+    console.log('PASS C4.15 Shield Wall Scar real WebGL',w,h,gfx,JSON.stringify({scarEntry,scarGeometry}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
