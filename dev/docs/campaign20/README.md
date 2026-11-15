@@ -1,14 +1,14 @@
 # Campaign 2.0 — главный указатель (15.11.2026)
 
-## C4.16 — «Ночь длинных ножей» / «Гаснущая корона» · релиз-кандидат v119
+## Последний опубликованный релиз — C4.16 «Ночь длинных ножей» / «Гаснущая корона» · v119
 
 **Художественно принята и слита в main**, [Issue #95](https://github.com/mryandexxx-spec/Dgoh-game/issues/95), [PR #97 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/97), squash `49cec8a7f3605b2325666a65159d756b1aad84bf`; [финальный CI #43699423185 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43699423185). 17-я из 21 отдельной карт Campaign 2.0: Dark III `D:2`, исходные ID 90–99, уровни 13–20. Утверждённая композиция «Гаснущая корона»: отключённые генераторы, ночной штурм стены и казарм, галерея Дункана, ангар, Хават, пылающий Звёздный зал, Лето, выход к песку и последний приказ. [Настоящие WebGL MED/LOW кадры](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43699423185/artifacts/14155673174), целевой lifecycle MED 190/8479, LOW 150/7191, HIGH 190/8479, Golden/PWA/perf SUCCESS.
 
-**Владелец отдельно разрешил «Сливай и выпускай» 15.11.2026.** В релизной ветке подготавливается v119; **публикация ещё не подтверждена** до SUCCESS официального validated Pages и точного root footer/SW. [Handoff и release-gates](C4_16_V119_RELEASE_HANDOFF_2026_11_15.md). Исходные 210 миссий, сюжет, враги/боссы, награды, экономика и сохранения не менялись. Safari/iPhone остаётся отдельной проверкой.
+**v119 опубликована 15.11.2026** после отдельной команды владельца «Сливай и выпускай»: [release PR #98 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/98), [release PR CI #43701560974 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43701560974), [main CI #43702047971 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43702047971), [одноразовый publish guard #43702047965 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43702047965), [official validated publish #43702058210 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43702058210), [Pages #43702687728 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43702687728). Root PWA `d948026965b837f7b9923f9ee608d18e3ca9a46d`, `dev/version.json=119`, cache **`5433bc45aa`**, 188 SHA-256 validated files. [Полный handoff v119](C4_16_V119_RELEASE_HANDOFF_2026_11_15.md). Исходные 210 миссий, сюжет, враги/боссы, награды, экономика и сохранения не менялись. Safari/iPhone остаётся отдельной проверкой.
 
-## Следующий художественный этап после v119 — C4.17 «Правление Зверя» · Тёмная IV `D:3` (100–109)
+## Следующий художественный этап — C4.17 «Правление Зверя» · Тёмная IV `D:3` (100–109)
 
-Следующая из оставшихся четырёх глав Тёмной стороны (`D:3..D:6`). После подтверждённой публикации C4.16 начать самостоятельный художественный этап A, сверяясь с `CAMP_DEF.D.chapters[3]`; никаких автоматических изменений или branch/PR следующей главы.
+Следующая из оставшихся четырёх глав Тёмной стороны (`D:3..D:6`). Начать самостоятельный художественный этап A, сверяясь с `CAMP_DEF.D.chapters[3]`; никаких автоматических изменений или branch/PR следующей главы.
 
 ## Предыдущий опубликованный релиз — C4.15 «Битва за Арракин» / «Шрам Защитной стены», v118
 
