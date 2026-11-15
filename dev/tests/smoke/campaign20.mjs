@@ -1088,6 +1088,103 @@ try {
     }
     console.log('PASS C4.15 Shield Wall Scar real WebGL',w,h,gfx,JSON.stringify({scarEntry,scarGeometry}));
 
+    // C4.16 Dark III (90–99): approved "Fading Crown" midnight invasion.
+    // Real Chromium/SwiftShader screenshot of EVERY selected world-space mission
+    // in both MED 844x390 and LOW 667x375; no screenshot mocks/2D substitution.
+    await page.evaluate(()=>document.querySelector('[data-c20side="D"]').click());
+    await page.waitForSelector('.c20-map');
+    await page.evaluate(()=>document.querySelector('[data-c20="chapters"]')?.click());
+    await page.waitForSelector('[data-c20chapter="2"]');
+    await page.evaluate(()=>document.querySelector('[data-c20chapter="2"]').click());
+    await page.waitForSelector('.c20-world.fading-crown.campaign20-3d-ready',{timeout:20000});
+    await new Promise(resolve=>setTimeout(resolve,520));
+    const crownGeometry=await page.evaluate(()=>{
+      const B=window.__B3;
+      const scene=B?.EngineStore?.Instances?.flatMap(e=>e.scenes||[])
+        .find(s=>s.activeCamera?.name==='campaign-camera');
+      const meshes=scene?.meshes||[];
+      const has=name=>meshes.some(m=>m.name===name);
+      return {
+        meshCount:meshes.length,
+        generators:has('90 shield generator plinth'),
+        gate:has('91 gate lintel'),
+        barracks:has('92 barracks rear block'),
+        duncan:has('93 Duncan gallery rear wall'),
+        ornithopter:has('94 ornithopter fuselage'),
+        hawat:has('95 tactical data desk'),
+        starHall:has('96 burning star hall central sigil'),
+        leto:has('97 detention lintel'),
+        sand:has('98 secret escape gate'),
+        lastOrder:has('99 last-order barred gate'),
+        roads:meshes.filter(m=>m.name.startsWith('night-invasion-stone-road-')).length,
+        troops:meshes.filter(m=>m.name.startsWith('night siege sardaukar ')).length,
+        copiedScar:meshes.some(m=>m.name.includes('Shai-Hulud circular maw')||
+          m.name.includes('shield-scar-left-foot')),
+      };
+    });
+    for(const k of ['generators','gate','barracks','duncan','ornithopter',
+      'hawat','starHall','leto','sand','lastOrder'])
+      assert.equal(crownGeometry[k],true,'D:2 native Babylon landmark '+k);
+    assert.equal(crownGeometry.roads,9,'ten nodes joined by nine real stone road segments');
+    assert.equal(crownGeometry.troops,gfx==='med'?18:8,'D:2 instanced MED/LOW siege');
+    assert.equal(crownGeometry.copiedScar,false,'no C4.15 atomic breach or worm repeated');
+    assert.ok(crownGeometry.meshCount<=(gfx==='med'?220:150),
+      'D:2 projected mesh-count budget '+JSON.stringify(crownGeometry));
+    const checkCrown=async(label)=>{
+      const state=await page.evaluate(()=>{
+        const world=document.querySelector('.c20-world.fading-crown');
+        const all=[...world.querySelectorAll('.c20-pin')];
+        const shown=all.filter(p=>getComputedStyle(p).visibility==='visible');
+        const nums=shown.map(p=>Number(p.querySelector('b')?.textContent)).sort((a,b)=>a-b);
+        const viewport=world.getBoundingClientRect();
+        const overlaps=shown.flatMap((a,i)=>shown.slice(i+1).filter(b=>{
+          const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();
+          return Math.min(x.right,y.right)-Math.max(x.left,y.left)>3
+            &&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>3;
+        }).map(b=>[a.dataset.c20node,b.dataset.c20node]));
+        return {
+          ids:all.map(p=>Number(p.dataset.c20node)),
+          selected:Number(all.find(p=>p.classList.contains('on'))?.dataset.c20node),
+          nums,overlaps,within:shown.every(p=>{const b=p.getBoundingClientRect();
+            return b.left>=viewport.left+1&&b.right<=viewport.right-1
+              &&b.top>=viewport.top+1&&b.bottom<=viewport.bottom-1;}),
+          boss:all.filter(p=>p.classList.contains('boss')).length,
+          fallback:all.every(p=>p.style.getPropertyValue('--px')&&p.style.getPropertyValue('--py')),
+          canvas:!!world.querySelector('canvas.campaign20-canvas'),
+          scroll:document.querySelector('.c20').scrollHeight>document.querySelector('.c20').clientHeight+1,
+        };
+      });
+      assert.deepEqual(state.ids,Array.from({length:10},(_,i)=>i+90),'D:2 original IDs');
+      assert.equal(state.boss,1,'D:2 final Leto boss remains mission 99');
+      assert.equal(state.canvas,true,'D:2 WebGL is mounted on shared canvas');
+      assert.equal(state.fallback,true,'D:2 2D fallback has ten clickable positions');
+      assert.equal(state.scroll,false,'D:2 no vertical scrolling');
+      assert.equal(state.within,true,label+' markers not clipped '+JSON.stringify(state));
+      assert.deepEqual(state.overlaps,[],label+' no 50/60px marker collision');
+      assert.ok(state.nums.length>=2&&state.nums.length<=4,
+        label+' local 2-4 pins '+JSON.stringify(state));
+      assert.ok(state.nums.every((n,i)=>!i||n===state.nums[i-1]+1),
+        label+' consecutive visible pins '+JSON.stringify(state));
+      assert.ok(state.nums.includes(state.selected-89),
+        label+' selected pin remains visible '+JSON.stringify(state));
+      return state;
+    };
+    const crownEntry=await checkCrown('Fading Crown entry');
+    await page.screenshot({path:path.join(shots,'fading-crown-entry-'+w+'-'+gfx+'.png')});
+    for(const [id,name] of [[90,'shield-failure'],[91,'outer-gate'],
+      [92,'barracks'],[93,'duncan-gallery'],[94,'ornithopter-hangar'],
+      [95,'hawat-captured'],[96,'star-hall'],[97,'captive-duke'],
+      [98,'sand-threshold'],[99,'last-order']]){
+      await page.evaluate(id=>document.querySelector('[data-c20node="'+id+'"]')?.click(),id);
+      await new Promise(resolve=>setTimeout(resolve,570));
+      // Screenshot is written before assertions, even for a failing camera frame.
+      await page.screenshot({path:path.join(shots,'fading-crown-'+name+'-'+w+'-'+gfx+'.png')});
+      const state=await checkCrown('Fading Crown '+name);
+      assert.ok(state.nums.includes(id-89),'D:2 '+name+' selected '+JSON.stringify(state));
+    }
+    console.log('PASS C4.16 Fading Crown real WebGL',w,h,gfx,
+      JSON.stringify({crownEntry,crownGeometry}));
+
     assert.deepEqual(errors,[],'no JS page errors: '+errors.join('|'));
     console.log('PASS Campaign 2.0',w,h,gfx,JSON.stringify(metrics));
     await page.close();
