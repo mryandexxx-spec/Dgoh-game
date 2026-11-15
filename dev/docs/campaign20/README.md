@@ -1,5 +1,9 @@
 # Campaign 2.0 — главный указатель (15.11.2026)
 
+## C4.20 «Последняя ставка» / «Сломанная печать» — feature Draft (v122 без изменения)
+
+**Этап A утверждён владельцем; этап B реализован в [Draft PR #117](https://github.com/mryandexxx-spec/Dgoh-game/pull/117).** [Утверждённый art/tech handoff](C4_20_BROKEN_SEAL_APPROVED_2026_11_16.md) · [full implementation CI #43770272585 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43770272585) · [22 настоящих WebGL PNG](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43770272585/artifacts/14184247500). MED/HIGH 111 meshes/6779 vertices; LOW 102/6099; lifecycle ×3 PASS. **Художественный просмотр WebGL кадров ожидает владельца; без merge/release/version bump.**
+
 ## Последний опубликованный релиз — C4.19 «Легионы Салусы» / «Марш, стёртый ветром» · v122
 
 **v122 ОПУБЛИКОВАНА 15.11.2026:** Тёмная VI `D:5`, миссии 120–129, уровни 43–56, 20-я из 21 самостоятельных Babylon 3D карт. [Issue #110](https://github.com/mryandexxx-spec/Dgoh-game/issues/110), [Implementation PR #112 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/112) `3d0da968f2d6`, [Implementation CI #43753939000 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43753939000), [22 настоящих WebGL PNG MED/LOW](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43753939000/artifacts/14177742425). Канон 210 миссий, награды, экономика, сохранения без изменений; lifecycle MED/HIGH 119 meshes/7745 vertices, LOW 107/6664, 3× PASS.
