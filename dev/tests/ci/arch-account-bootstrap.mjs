@@ -66,7 +66,9 @@ assert.deepEqual(incoming('logic/cinematic-preference.js'),[
 
 const newModules=new Set(['logic/account-rules.js','logic/cinematic-preference.js','data/gear-cap.js']);
 assert.equal(SPLIT.length,162,'expected 159 original modules + 3 new pure modules');
-assert.equal(SPLIT[0][1],'logic/cinematic-preference.js');
+assert.equal(SPLIT[0][1],'data/gear-cap.js');
+assert.equal(SPLIT[1][1],'logic/cinematic-preference.js',
+  'the previously first module must retain its relative position');
 const names=SPLIT.filter(([,name])=>!newModules.has(name)).map(([,name])=>name);
 assert.equal(names.length,159,'no old module can disappear');
 let hash=2166136261;
