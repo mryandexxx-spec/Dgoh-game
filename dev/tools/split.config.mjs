@@ -4,6 +4,8 @@
 // line hints are retained; new public legend modules share their dependency's
 // nearest preceding line hint. Check-bundle still compares the entire order.
 export const SPLIT = [
+  // ARCH-01B3: pure cinematic setting reached before baseline modules.
+  [4966, 'logic/cinematic-preference.js'],
   [1, 'data/fx.js'],
   [33, 'data/baron-future-kits.js'],
   [33, 'data/baron-legend-abilities.js'],
@@ -75,6 +77,8 @@ export const SPLIT = [
   [3210, 'logic/progress.js'],
   [3210, 'logic/roster.js'],
   [3210, 'logic/skill-up.js'],
+  // ARCH-01B3: pure account rules precede the first named consumer of account rules.
+  [4966, 'logic/account-rules.js'],
   [3210, 'logic/rewards.js'],
   [3234, 'core/errlog.js'],
   [3252, 'ui/common.js'],
