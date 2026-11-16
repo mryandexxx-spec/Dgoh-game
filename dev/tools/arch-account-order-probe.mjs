@@ -30,7 +30,7 @@ function measurement(order) {
   const extras=order.filter(x=>!baseline.includes(x));
   const moved=baseline.map((name,i)=>({name,was:i,now:observed.indexOf(name)})).filter(x=>x.was!==x.now);
   const first=baseline.findIndex((x,i)=>observed[i]!==x);
-  return {modules:order.length, extras, displaced:moved.length,
+  return {modules:order.length, extras, extraPositions:extras.map(name=>({name,index:order.indexOf(name)})), displaced:moved.length,
     firstMismatch:first, expected:baseline[first]??null, actual:observed[first]??null,
     swapCost:moved.reduce((s,x)=>s+Math.abs(x.now-x.was),0)/2,
     positions:['logic/account.js','ui/wiring.js','ui/overlays/profile.js','ui/fx-text.js','ui/battle/battle-ui.js',
@@ -112,6 +112,24 @@ const cases=[
   ['rules all + cine + fx wire',{'ui/fx-text.js':uiFXReplace},true,'all'],
   ['rules all + cine, fx untouched',{},true,'all'],
 ];
+
+function allJS(path0) {
+  return fs.readdirSync(path0,{withFileTypes:true}).flatMap(e=>{
+    const p=path.join(path0,e.name);
+    return e.isDirectory()?allJS(p):e.isFile()&&e.name.endsWith('.js')?[p]:[];
+  });
+}
+const importers=[];
+for(const file of allJS(dir)){
+  const source=fs.readFileSync(file,'utf8');
+  for(const line of source.split('\n').filter(x=>/^import\s/.test(x)&&/account\.js/.test(x))){
+    if(/['"][^'"]*account\.js['"]/.test(line))importers.push({
+      source:path.relative(dir,file).replaceAll('\\','/'),import:line.trim()
+    });
+  }
+}
+console.log('ARCH-B3-ACCOUNT-IMPORTERS '+JSON.stringify(importers));
+
 for(const [name,patches,cine,rulesMode] of cases){
  try{console.log('ARCH-B3-PROBE '+JSON.stringify(await run(name,patches,!!cine,rulesMode)));}
  catch(e){console.log('ARCH-B3-ERROR '+name+': '+e.message);process.exitCode=1;}
