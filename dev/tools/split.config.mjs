@@ -60,6 +60,8 @@ export const SPLIT = [
   [2586, 'render3d/scenes/baker.js'],
   [2668, 'assets/models.js'],
   [2671, 'data/story.js'],
+  // ARCH-01C2a: new data module evaluates after story, before generated NODES.
+  [2729, 'data/campaign-energy.js'],
   [2729, 'data/campaigns.js'],
   [2893, 'data/glyphs.js'],
   [3023, 'data/journeys.js'],

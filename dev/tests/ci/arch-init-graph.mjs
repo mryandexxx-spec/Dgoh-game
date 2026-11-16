@@ -54,3 +54,6 @@ console.log('ARCH-01B topology diagnostics: PASS; ' + first.modules + ' modules,
 await import('./arch01c1a-gear-cap.mjs');
 // ARCH-01C1b: verify real data/logic boundary and explicit bootstrap service wiring.
 await import('./arch01c1b-journey-runtime.mjs');
+
+// ARCH-01C2a: new pure energy module and exact baseline reduction.
+await import('./arch01c2a-campaign-energy.mjs');

@@ -64,8 +64,8 @@ assert.deepEqual(incoming('logic/cinematic-preference.js'),[
   'render3d/scenes/arena.js','ui/overlays/battle-settings.js',
 ].sort(), 'early cinematic setting must be isolated from account');
 
-const newModules=new Set(['logic/account-rules.js','logic/cinematic-preference.js','data/gear-cap.js','logic/journey-gates.js']);
-assert.equal(SPLIT.length,163,'expected 159 original modules + 4 additive modules');
+const newModules=new Set(['logic/account-rules.js','logic/cinematic-preference.js','data/gear-cap.js','logic/journey-gates.js','data/campaign-energy.js']);
+assert.equal(SPLIT.length,164,'expected 159 original modules + 5 additive modules');
 assert.equal(SPLIT[0][1],'data/gear-cap.js');
 assert.equal(SPLIT[1][1],'logic/cinematic-preference.js',
   'the previously first module must retain its relative position');
