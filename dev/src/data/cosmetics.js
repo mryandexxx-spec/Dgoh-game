@@ -1,7 +1,5 @@
 // data/cosmetics.js — строки 4826–4855 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import '../logic/stats.js'; // порядок исполнения
-import { prog } from '../logic/progress.js';
-import { S } from '../core/state.js';
 import { WORM_IMG } from '../assets/models.js';
 import { CH } from './chars.js';
 
@@ -27,7 +25,17 @@ const TITLES = {
   raid3: 'Победитель Старика пустыни', legend: 'Свидетель легенды', jihad: 'Покоритель Джихада', thinker: 'Повелитель машин', ix: 'Хранитель архива Икса',
 };
 const FREE = { title: ['novice'], frame: ['basic', 'bronze'], ava: [] };
-const unlocked = (kind, id) => FREE[kind].includes(id) || !!S.unlocks[kind][id] || (kind === 'ava' && id.startsWith('hero:') && CH[id.slice(5)] && prog(id.slice(5)).stars > 0);
+// ARCH-01C3a1: compatibility API; live account entitlement rule is owned by logic.
+// Registration from ui/wiring.js is guaranteed before start(), with no eager S reads.
+let cosmeticUnlockRule = null;
+function bindCosmeticUnlockRule(rule) {
+  if (cosmeticUnlockRule) throw new Error('Cosmetics unlocked rule already initialized');
+  cosmeticUnlockRule = rule;
+}
+function unlocked(kind, id) {
+  if (!cosmeticUnlockRule) throw new Error('Cosmetics unlocked rule not initialized');
+  return cosmeticUnlockRule(kind, id);
+}
 
 
-export { EMBLEMS, FRAMES, TITLES, FREE, unlocked };
+export { EMBLEMS, FRAMES, TITLES, FREE, unlocked, bindCosmeticUnlockRule };
