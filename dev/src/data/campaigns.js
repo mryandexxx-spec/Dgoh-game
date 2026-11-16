@@ -3,7 +3,7 @@ import { STORY } from './story.js';
 import { BATTLE_WATER, CANDLE_COST } from './campaign-energy.js';
 import { ghash } from './looks.js';
 import { CH } from './chars.js';
-import { sRng } from '../core/rng.js';
+import { sRng } from './seeded-rng.js';
 
 // ===== Campaigns: Light, Dark, Chronicles (original retelling, no quotations) =====
 // mission: [title, fragment, dialogue?]; dialogue lines: [speaker, text, side] — speaker may be a hero id or a plain name
