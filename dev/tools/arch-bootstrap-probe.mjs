@@ -138,3 +138,58 @@ for (const c of cases) {
   try { console.log('ORDER-PROBE '+JSON.stringify(await probe(c.name,c.patches,c.variants))); }
   catch(err){ console.error('ORDER-PROBE FAIL '+c.name+': '+err.message);process.exitCode=1; }
 }
+
+if (process.argv.includes('--search')) {
+  const uiModules=allFiles(path.join(src,'ui'))
+    .map(p=>path.relative(src,p).split(path.sep).join('/'))
+    .sort();
+  function prependUI(from,target) {
+    const a=path.posix.relative(path.posix.dirname(from),target);
+    const imp=(a.startsWith('.')?a:'./'+a);
+    return t=>"import '"+imp+"'; // ARCH-01B2 virtual order probe\n"+t;
+  }
+  const sort=(a,b)=>a.displaced-b.displaced||a.adjacentSwapCost-b.adjacentSwapCost;
+  const experiments=[
+    {label:'stats',file:'logic/stats.js',target:'ui/views/trials.js'},
+    {label:'account',file:'logic/account.js',target:'ui/wiring.js'},
+  ];
+  const bestCandidates={};
+  for(const e of experiments) {
+    const found=[];
+    for(const ui of uiModules) {
+      if(ui===e.target)continue;
+      const patches={
+        [e.file]:without(e.file),
+        [ui]:prependUI(ui,e.target),
+      };
+      try {
+        const m=await probe(e.label+':'+ui,patches);
+        found.push({ui,displaced:m.displaced,
+          swap:m.adjacentSwapCost,firstMismatch:m.firstMismatch});
+      } catch(err) {
+        console.log('ORDER-SEARCH-ERROR '+e.label+':'+ui+' '+err.message.slice(0,180));
+      }
+    }
+    found.sort((a,b)=>a.displaced-b.displaced||a.swap-b.swap);
+    bestCandidates[e.label]=found.slice(0,5);
+    console.log('ORDER-SEARCH '+JSON.stringify({type:e.label,tried:found.length,top:found.slice(0,10)}));
+  }
+  const combos=[];
+  for(const a of bestCandidates.stats)
+    for(const b of bestCandidates.account) {
+      if(a.ui===b.ui)continue;
+      const patches={
+        'logic/stats.js':without('logic/stats.js'),
+        'logic/account.js':without('logic/account.js'),
+        [a.ui]:prependUI(a.ui,'ui/views/trials.js'),
+        [b.ui]:prependUI(b.ui,'ui/wiring.js'),
+      };
+      try {
+        const m=await probe('both:'+a.ui+'+'+b.ui,patches);
+        combos.push({statsUI:a.ui,accountUI:b.ui,
+          displaced:m.displaced,swap:m.adjacentSwapCost,first:m.firstMismatch});
+      }catch(err){console.log('ORDER-COMBO-ERROR '+err.message.slice(0,180));}
+    }
+  combos.sort((a,b)=>a.displaced-b.displaced||a.swap-b.swap);
+  console.log('ORDER-COMBO '+JSON.stringify({tried:combos.length,top:combos.slice(0,10)}));
+}
