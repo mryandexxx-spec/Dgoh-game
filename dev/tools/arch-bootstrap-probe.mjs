@@ -60,6 +60,8 @@ async function probe(name, patches, variants={}) {
     name:'order-probe',
     setup(build) {
       if (variants.accountSplit) {
+        // Virtual sources must resolve even though no physical file is created.
+        build.onResolve({filter:/account-core\.js$/},args=>({path:accountCore}));
         build.onResolve({filter:/account\.js$/},args=>{
           if (!args.path.startsWith('.')) return;
           if (path.resolve(path.dirname(args.importer),args.path)!==path.join(src,'logic','account.js')) return;
@@ -71,6 +73,7 @@ async function probe(name, patches, variants={}) {
         }));
       }
       if (variants.statsSplit) {
+        build.onResolve({filter:/stat-counters\.js$/},args=>({path:statsCounter}));
         build.onResolve({filter:/stats\.js$/},args=>{
           if (!args.path.startsWith('.')) return;
           if (path.resolve(path.dirname(args.importer),args.path)!==path.join(src,'logic','stats.js')) return;
