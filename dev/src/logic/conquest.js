@@ -1,6 +1,6 @@
 // logic/conquest.js — строки 5394–5530 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { CQ_CHESTS, CQ_DIFF, CQ_DISKS, CQ_DMAX, CQ_EN, CQ_ERI, CQ_LAST, CQ_LAYERS, CQ_LMAX, CQ_LTYPE, CQ_MODS, CQ_SECT, CQ_STA, cqBump, cqRar, cqScore } from '../data/conquest-data.js';
-import { statInc } from './stats.js';
+import { statInc } from './stat-counters.js';
 import { S } from '../core/state.js';
 import { enemyProg } from './economy.js';
 import { ghash } from '../data/looks.js';
