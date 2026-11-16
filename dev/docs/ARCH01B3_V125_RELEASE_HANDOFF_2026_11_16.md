@@ -25,10 +25,18 @@
 
 Safari/PWA landscape MED/LOW: обновление v124→v125, холодная и тёплая загрузка, профиль и XP уровня аккаунта, награды, развитие героев и верхние ограничения, кинематографическая настройка боёв, испытания и симуляция, автобой, экспорт/импорт сохранений, офлайн-PWA/SW, 3D lifecycle. Автоматический Chromium CI не заменяет физическую проверку iPhone.
 
-## Фактические подтверждения (заполнить по мере завершения)
+## Фактическая публикация v125 — подтверждена 16.11.2026
 
-- Implementation [PR #129 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/129), SHA `393c661b27edb28f7f18482c2358dd8f39369189`; [full CI #43844594742 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43844594742).
-- Release PR: **pending**.
-- Release CI / main CI / one-shot dispatch: **pending**.
-- Official verified publish, SW hash, SHA-256 receipt, root sync: **pending**.
-- Independent GitHub Pages deployment: **pending**. До подтверждения — опубликована **v124**.
+**v125 ОПУБЛИКОВАНА**, владелец явно разрешил «Да, сливаем и выпускаем». GitHub Actions выполнил полноценные CI-проверки, защиту от неправильного выпуска, проверенную выкладку и отдельный Pages deployment.
+
+- [Implementation PR #129 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/129), merge `393c661b27edb28f7f18482c2358dd8f39369189`; [implementation full CI #43844594742 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43844594742).
+- [Release PR #130 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/130), squash `6426753eb6fabfb8ffec3dfeaff654aeb39aed89`, точная тема `release(arch): publish v125`; [release full CI #43860599963 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43860599963), 19 success/1 skipped.
+- [Main post-merge CI #43861703696 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43861703696); [one-shot guard #43861703782 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43861703782): ровно один разрешённый `workflow_dispatch publish=true`.
+- [Official validated publish #43861743411 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43861743411): **20 success**, включая full gate, SHA-256 receipt, публикацию артефакта и `Publish verified PWA to GitHub Pages`.
+- [Validation receipt](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43861743411/artifacts/14224885793), [verified build](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43861743411/artifacts/14224026114), [Pages artifact](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43861743411/artifacts/14224556565).
+- Опубликованный root SHA: `c40d4de2c37a185391abaf559c96a53fd7b74dc7`; `dev/version.json={"v":125}`, root `sw.js: const VER = '98ada878d4'` (ранее v124: `a8637003e4`).
+- [Независимый GitHub Pages deployment #43862770350 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43862770350) **точно на root SHA `c40d4de2`**. Production: https://mryandexxx-spec.github.io/Dgoh-game/.
+- `logic → ui` запрещённых импортов **0**; остаётся **17 legacy `data → logic/core/ui/assets`** (ARCH-01C) и два старых циклических компонента, не устранённых этим выпуском.
+- Никаких изменений лагеря, кампании, экономики, баланса, наград, формата сохранений и игрового UI в этой релизной ветке. Физический Safari/iPhone v125 **не проверен**, ручная приёмка остаётся открытой.
+
+После публикации одноразовый `.github/workflows/release-v125-once.yml` удаляется отдельным [docs-only cleanup PR #131](https://github.com/mryandexxx-spec/Dgoh-game/pull/131); не запускать `publish=true` повторно.
