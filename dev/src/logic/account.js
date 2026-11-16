@@ -1,4 +1,5 @@
 // logic/account.js — строки 4966–5014 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import '../ui/wiring.js'; // порядок исполнения
 import { S } from '../core/state.js';
 import { MAX_LVL } from './economy.js';
 
