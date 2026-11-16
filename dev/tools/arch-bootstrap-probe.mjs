@@ -32,26 +32,67 @@ for (const file of allFiles(src)) {
 }
 
 function orderMeasure(order) {
-  const moved = wanted.filter((name,i)=>order.indexOf(name)!==i);
-  const deltas = wanted.map(name=>({name,old:wanted.indexOf(name),now:order.indexOf(name)}))
+  const extra = order.filter(name=>!wanted.includes(name));
+  const observed = order.filter(name=>wanted.includes(name));
+  const deltas = wanted.map(name=>({name,old:wanted.indexOf(name),now:observed.indexOf(name)}))
     .filter(x=>x.old!==x.now);
-  const first = wanted.findIndex((name,i)=>order[i]!==name);
-  return {length:order.length,firstMismatch:first,
-    expected:wanted[first],actual:order[first],
+  const first = wanted.findIndex((name,i)=>observed[i]!==name);
+  return {length:order.length,extras:extra,firstMismatch:first,
+    expected:wanted[first],actual:observed[first],
     displaced:deltas.length,adjacentSwapCost:deltas.reduce((n,x)=>n+Math.abs(x.old-x.now),0)/2,
-    targeted:targets.map(name=>({name,was:wanted.indexOf(name),now:order.indexOf(name)})),
+    targeted:targets.map(name=>({name,was:wanted.indexOf(name),now:observed.indexOf(name)})),
     largest:deltas.sort((a,b)=>Math.abs(b.now-b.old)-Math.abs(a.now-a.old)).slice(0,8)};
 }
 
-async function probe(name, patches) {
+async function probe(name, patches, variants={}) {
+  const accountCore=path.join(src,'logic','account-core.js');
+  const statsCounter=path.join(src,'logic','stat-counters.js');
+  const pureAccount=fs.readFileSync(path.join(src,'logic','account.js'),'utf8')
+    .replace(removal['logic/account.js'],'');
+  const statIncDeclaration='function statInc(k, n = 1) { S.stats[k] = (S.stats[k] || 0) + n; }';
+  const pureCounter="import { S } from '../core/state.js';\n" + statIncDeclaration +
+    "\nexport { statInc };\n";
+  const statIncCallers=new Set([
+    'ui/overlays/sim.js','ui/battle/battle-ui.js','ui/views/trials.js',
+    'ui/views/conq.js','logic/conquest.js',
+  ]);
   const plugin = {
     name:'order-probe',
     setup(build) {
+      if (variants.accountSplit) {
+        build.onResolve({filter:/account\.js$/},args=>{
+          if (!args.path.startsWith('.')) return;
+          if (path.resolve(path.dirname(args.importer),args.path)!==path.join(src,'logic','account.js')) return;
+          if (path.relative(src,args.importer).split(path.sep).join('/')==='ui/fx-text.js') return;
+          return {path:accountCore};
+        });
+        build.onLoad({filter:/account-core\.js$/},()=>({
+          contents:pureAccount,loader:'js',resolveDir:path.dirname(accountCore),
+        }));
+      }
+      if (variants.statsSplit) {
+        build.onResolve({filter:/stats\.js$/},args=>{
+          if (!args.path.startsWith('.')) return;
+          if (path.resolve(path.dirname(args.importer),args.path)!==path.join(src,'logic','stats.js')) return;
+          if (!statIncCallers.has(path.relative(src,args.importer).split(path.sep).join('/'))) return;
+          return {path:statsCounter};
+        });
+        build.onLoad({filter:/stat-counters\.js$/},()=>({
+          contents:pureCounter,loader:'js',resolveDir:path.dirname(statsCounter),
+        }));
+      }
       build.onLoad({ filter:/[\\/]src[\\/].*\.js$/ }, args => {
         const rel=path.relative(src,args.path).split(path.sep).join('/');
         let text=fs.readFileSync(args.path,'utf8');
         const patch=patches?.[rel];
         if (patch) text=patch(text);
+        if (variants.accountSplit && rel==='logic/account.js')
+          text="export * from './account-core.js';\n";
+        if (variants.statsSplit && rel==='logic/stats.js') {
+          if (!text.includes(statIncDeclaration)) throw Error('Missing original statInc declaration');
+          text=text.replace(removal[rel],'')
+            .replace(statIncDeclaration,"import { statInc } from './stat-counters.js';");
+        }
         return {contents:text,loader:'js',resolveDir:path.dirname(args.path)};
       });
     },
@@ -80,6 +121,9 @@ const cases = [
     'logic/stats.js':without('logic/stats.js'),
     'logic/account.js':without('logic/account.js'),
   }},
+  {name:'split stats counter',patches:{},variants:{statsSplit:true}},
+  {name:'split full account',patches:{},variants:{accountSplit:true}},
+  {name:'split both with pure cores',patches:{},variants:{accountSplit:true,statsSplit:true}},
 ];
 console.log('ARCH01B2: '+JSON.stringify({
   modules:graph.modules,staticImports:graph.staticImports,
@@ -88,6 +132,6 @@ console.log('ARCH01B2: '+JSON.stringify({
     [key,edges.sort((a,b)=>a.relativeOrder-b.relativeOrder)])),
 }));
 for (const c of cases) {
-  try { console.log('ORDER-PROBE '+JSON.stringify(await probe(c.name,c.patches))); }
+  try { console.log('ORDER-PROBE '+JSON.stringify(await probe(c.name,c.patches,c.variants))); }
   catch(err){ console.error('ORDER-PROBE FAIL '+c.name+': '+err.message);process.exitCode=1; }
 }
