@@ -1,5 +1,6 @@
 // core/boot.js — строки 4622–4647 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import '../ui/events.js'; // порядок исполнения
+import '../logic/journey-gates.js'; // ARCH-01C1b: register journey logic before start() renders the camp
 import { CQ_DISKS } from '../data/conquest-data.js';
 import { noteSnap } from '../ui/notifications.js';
 import { metaFill } from '../ui/wiring.js';
