@@ -47,6 +47,13 @@ const inputs=[
   ['ui/router.js','../assets/models.js'],
   ['ui/overlays/squad-select.js','../../assets/models.js'],
   ['core/boot.js','../assets/models.js'],
+  // The application composition roots may precede the first data STORY access:
+  ['main.js','./assets/models.js'],
+  ['boot.js','./assets/models.js'],
+  ['ui/views/conq.js','../../assets/models.js'],
+  ['ui/battle/battle-ui.js','../../assets/models.js'],
+  ['ui/events.js','../assets/models.js'],
+  ['ui/views/lobby.js','../../assets/models.js'],
 ];
 const scenarios=[{label:'remove-only',patches:removedOnly}];
 for(const [p,spec] of inputs){
