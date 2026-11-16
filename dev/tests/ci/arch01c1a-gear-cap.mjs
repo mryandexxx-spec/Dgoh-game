@@ -24,20 +24,22 @@ assert.ok(/^export \{[^\n]*\bMAX_GEAR\b[^\n]*\};$/m.test(read('logic/economy.js'
   'the old economy MAX_GEAR export is part of the public API');
 assert.ok(!/\bMAX_GEAR\s*=\s*13\b/.test(read('logic/economy.js')),
   'MAX_GEAR must have a single source of truth');
-assert.ok(read('data/journeys.js').includes('p.stars >= 7 && p.gear >= MAX_GEAR'),
+// C1b relocates the gate owner to logic, but these C1a economic prerequisites stay strict.
+const gateOwner = read('logic/journey-gates.js');
+assert.ok(gateOwner.includes('p.stars >= 7 && p.gear >= MAX_GEAR'),
   'Muad-Dib 7-star and gear XIII gate must not change');
-assert.ok(read('data/journeys.js').includes('!!prog(k).stars ||'),
+assert.ok(gateOwner.includes('!!prog(k).stars ||'),
   'already unlocked legends must stay grandfathered');
-assert.equal(legacy.length, 16, 'ARCH-01C1a must reduce baseline by one');
+assert.equal(legacy.length, 14, 'ARCH-01C1b extends C1a reduction, exact new baseline is 14');
 assert.ok(!legacy.includes('data/journeys.js -> logic/economy.js'),
   'removed reverse edge cannot stay in baseline');
 const slot = SPLIT.filter(([,name]) => name === 'data/gear-cap.js');
 assert.equal(slot.length, 1, 'new data module must be registered exactly once');
 assert.equal(SPLIT[0][1], 'data/gear-cap.js',
   'actual esbuild placement of the new pure module must stay at index zero');
-assert.equal(SPLIT.length, 162, '161 unchanged old modules + 1 new module');
+assert.equal(SPLIT.length, 163, '161 original modules + gear cap and journey logic modules');
 const graph = analyzeTree(process.cwd());
-assert.equal(graph.modules, 168, 'only one new production JS module was added');
+assert.equal(graph.modules, 169, 'only gear cap and journey logic modules were added');
 assert.equal(graph.unresolved.length, 0, 'no broken relative imports');
 assert.ok(!graph.cycles.some(component => component.includes('data/gear-cap.js')),
   'the pure cap must not introduce an ESM cycle');

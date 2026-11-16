@@ -52,3 +52,5 @@ console.log('ARCH-01B topology diagnostics: PASS; ' + first.modules + ' modules,
 
 // ARCH-01C1a: only the independent pure gear-cap boundary is being revised.
 await import('./arch01c1a-gear-cap.mjs');
+// ARCH-01C1b: verify real data/logic boundary and explicit bootstrap service wiring.
+await import('./arch01c1b-journey-runtime.mjs');

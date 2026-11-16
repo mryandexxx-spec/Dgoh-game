@@ -150,6 +150,8 @@ export const SPLIT = [
   [4130, 'logic/baron-bh9-battle.js'],
   [4130, 'ui/battle/battle-ui.js'],
   [4473, 'ui/events.js'],
+  // ARCH-01C1b: pure logic runtime adapter registered at the existing boot root.
+  [4622, 'logic/journey-gates.js'],
   [4622, 'core/boot.js'],
   [4648, 'ui/hero-window.js'],
   [4681, 'ui/views/trials.js'],
