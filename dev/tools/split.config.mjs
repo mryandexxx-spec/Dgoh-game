@@ -116,6 +116,9 @@ export const SPLIT = [
   [3761, 'ui/rewards.js'],
   [3779, 'ui/views/daily.js'],
   [3826, 'ui/overlays/calendar.js'],
+  // ARCH-01B: rules-only trials now initialise earlier without the logic → UI cycle;
+  // keep its original monolith line hint (4681) for historical traceability.
+  [4681, 'logic/trials.js'],
   [3859, 'ui/overlays/squad-select.js'],
   [3951, 'ui/views/raid.js'],
   [3992, 'ui/views/legend.js'],
@@ -141,7 +144,6 @@ export const SPLIT = [
   [4473, 'ui/events.js'],
   [4622, 'core/boot.js'],
   [4648, 'ui/hero-window.js'],
-  [4681, 'logic/trials.js'],
   [4681, 'ui/views/trials.js'],
   [4810, 'logic/stats.js'],
   [4826, 'data/cosmetics.js'],
