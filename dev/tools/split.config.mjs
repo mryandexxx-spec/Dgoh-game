@@ -62,6 +62,8 @@ export const SPLIT = [
   [2671, 'data/story.js'],
   // ARCH-01C2a: new data module evaluates after story, before generated NODES.
   [2729, 'data/campaign-energy.js'],
+  // ARCH-01C2c: pure seeded RNG before deterministic top-level mission generation.
+  [2729, 'data/seeded-rng.js'],
   [2729, 'data/campaigns.js'],
   [2893, 'data/glyphs.js'],
   [3023, 'data/journeys.js'],
