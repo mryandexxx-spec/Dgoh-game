@@ -150,6 +150,12 @@ const cases = [
     'ui/views/feats.js':t=>"import './trials.js'; // virtual UI init\n"+t,
   }},
   {name:'partition account CINE_OFF',patches:{},variants:{accountPartition:true}},
+  {name:'split stats counter + feat UI bootstrap',patches:{
+    'ui/views/feats.js':t=>"import './trials.js'; // virtual UI init\n"+t,
+  },variants:{statsSplit:true}},
+  {name:'split stats counter + feat UI + account partition',patches:{
+    'ui/views/feats.js':t=>"import './trials.js'; // virtual UI init\n"+t,
+  },variants:{statsSplit:true,accountPartition:true}},
   {name:'partition account + drop stats with feats bootstrap',patches:{
     'logic/stats.js':without('logic/stats.js'),
     'ui/views/feats.js':t=>"import './trials.js'; // virtual UI init\n"+t,
