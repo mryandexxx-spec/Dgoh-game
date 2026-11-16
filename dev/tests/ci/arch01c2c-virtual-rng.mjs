@@ -28,11 +28,19 @@ assert.ok(campaign.includes("sRng(ghash(ck + c + ':' + m))"), 'seed/call timing 
 const pureData = '// ARCH-01C2c pure deterministic generator, bit-identical to core/rng.js\n' +
   pureFunction + '\n\nexport { sRng };\n';
 
-async function bundle(virtual) {
+async function bundle(virtual, variant = 'plain') {
+  // Existing logic/progress.js already keeps core/rng.js as an order-only predecessor.
+  // In the plain re-export variant esbuild drops the empty core module marker;
+  // an explicit local alias keeps the old bootstrap slot without a new side effect.
+  const coreAdapter = rng.replace(domPredecessor,
+    domPredecessor + '\n' + (variant === 'alias'
+      ? "import { sRng as pureSRng } from '../data/seeded-rng.js';"
+      : pureRngImport))
+    .replace(pureFunction + '\n',
+      variant === 'alias' ? 'const sRng = pureSRng;\n' : '');
   const patched = virtual ? new Map([
     ['data/campaigns.js', campaign.replace(legacyRngImport, dataRngImport)],
-    ['core/rng.js', rng.replace(domPredecessor,
-      domPredecessor + '\n' + pureRngImport).replace(pureFunction + '\n', '')],
+    ['core/rng.js', coreAdapter],
   ]) : new Map();
   const plugins = virtual ? [{
     name: 'arch01c2c-memory-only',
@@ -69,16 +77,18 @@ assert.ok(baseline.includes('data/campaigns.js -> core/rng.js'),
 const actual = await bundle(false);
 assert.deepEqual(actual.old, oldOrder,
   'production-option esbuild output must match the current 165-marker SPLIT contract');
-const simulated = await bundle(true);
-const missing = oldOrder.filter(f => !simulated.old.includes(f));
-const extra = simulated.old.filter(f => !oldOrder.includes(f));
-const moved = oldOrder.filter((f, i) => simulated.old.indexOf(f) !== i);
-const first = oldOrder.findIndex((f,i)=>simulated.old[i]!==f);
-console.log('ARCH-01C2c virtual pure-RNG extraction: existing=' + oldOrder.length +
-  ', moved=' + moved.length + ', missing=' + JSON.stringify(missing) +
-  ', extra=' + JSON.stringify(extra) +
-  ', first=' + (first < 0 ? 'none' :
-    first + ':' + oldOrder[first] + ' -> ' + simulated.old[first]) +
-  ', movedPreview=' + JSON.stringify(moved.slice(0,20)));
+for (const variant of ['plain', 'alias']) {
+  const simulated = await bundle(true, variant);
+  const missing = oldOrder.filter(f => !simulated.old.includes(f));
+  const extra = simulated.old.filter(f => !oldOrder.includes(f));
+  const moved = oldOrder.filter((f, i) => simulated.old.indexOf(f) !== i);
+  const first = oldOrder.findIndex((f,i)=>simulated.old[i]!==f);
+  console.log('ARCH-01C2c virtual ' + variant + ' pure-RNG extraction: existing=' + oldOrder.length +
+    ', moved=' + moved.length + ', missing=' + JSON.stringify(missing) +
+    ', extra=' + JSON.stringify(extra) +
+    ', first=' + (first < 0 ? 'none' :
+      first + ':' + oldOrder[first] + ' -> ' + simulated.old[first]) +
+    ', movedPreview=' + JSON.stringify(moved.slice(0,20)));
+}
 console.log('ARCH-01C2c rng function exact source bytes=' + pureFunction.length +
   ', core/dom predecessor kept, production files unchanged');
