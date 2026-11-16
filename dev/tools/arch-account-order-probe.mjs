@@ -37,10 +37,16 @@ function measurement(order) {
       'render3d/scenes/arena.js','core/boot.js','data/fx.js','ui/views/trials.js','logic/stats.js'].map(name=>({name,old:baseline.indexOf(name),now:observed.indexOf(name)})),
     largest:moved.sort((a,b)=>Math.abs(b.now-b.was)-Math.abs(a.now-a.was)).slice(0,6)};
 }
-async function run(name,patches={},cine=false) {
+async function run(name,patches={},cine=false,rulesMode='') {
   const plugin={
     name:'boot-order-probe',
     setup(build){
+      if(rulesMode){
+        build.onResolve({filter:/account-rules\.js$/},()=>({path:path.join(dir,'logic/account-rules.js')}));
+        build.onLoad({filter:/[\\/]src[\\/]logic[\\/]account-rules\.js$/},()=>({
+          contents:read('logic/account.js').replace(reverse,''),loader:'js',resolveDir:path.join(dir,'logic')
+        }));
+      }
       if(cine){
         build.onResolve({filter:/^.*cinematic-preference\.js$/},args=>({path:path.join(dir,'logic/cinematic-preference.js')}));
         build.onLoad({filter:/[\\/]src[\\/]logic[\\/]cinematic-preference\.js$/},()=>({
@@ -52,6 +58,17 @@ async function run(name,patches={},cine=false) {
         let text=fs.readFileSync(args.path,'utf8');
         if(cine)text=patchCine(text,relative);
         else if(relative==='logic/account.js'&&name!=='baseline')text=removeAccount(text);
+        if(rulesMode){
+          if(relative==='logic/account.js'&&rulesMode==='all'){
+            text="export * from './account-rules.js';\nconst __accountLegacyAdapter = true;\n";
+          }else if(relative!=='ui/fx-text.js'&&relative!=='logic/account.js'){
+            const shouldRedirect=rulesMode==='all' ||
+              (rulesMode==='rewards'&&relative==='logic/rewards.js') ||
+              (rulesMode==='rewards-events'&&(relative==='logic/rewards.js'||relative==='ui/events.js'));
+            if(shouldRedirect)text=text.replace(/(from\s+['"][^'"]*?)account\.js(['"])/g,
+              (_all,prefix,suffix)=>prefix+'account-rules.js'+suffix);
+          }
+        }
         if(patches[relative])text=patches[relative](text);
         return {contents:text,resolveDir:path.dirname(args.path),loader:'js'};
       });
@@ -90,8 +107,12 @@ const cases=[
   ['cine extracted +UI fx orders wiring',{'ui/fx-text.js':uiFXReplace},true],
   ['cine extracted +UI profile orders wiring',{'ui/overlays/profile.js':profilePrepend},true],
   ['cine extracted +core first wiring',{'core/boot.js':coreFirst},true],
+  ['rules rewards only + cine + fx wire',{'ui/fx-text.js':uiFXReplace},true,'rewards'],
+  ['rules rewards/events + cine + fx wire',{'ui/fx-text.js':uiFXReplace},true,'rewards-events'],
+  ['rules all + cine + fx wire',{'ui/fx-text.js':uiFXReplace},true,'all'],
+  ['rules all + cine, fx untouched',{},true,'all'],
 ];
-for(const [name,patches,cine] of cases){
- try{console.log('ARCH-B3-PROBE '+JSON.stringify(await run(name,patches,!!cine)));}
+for(const [name,patches,cine,rulesMode] of cases){
+ try{console.log('ARCH-B3-PROBE '+JSON.stringify(await run(name,patches,!!cine,rulesMode)));}
  catch(e){console.log('ARCH-B3-ERROR '+name+': '+e.message);process.exitCode=1;}
 }
