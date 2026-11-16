@@ -35,7 +35,7 @@ Safari iPhone PWA landscape MED/LOW: update/offline, холодный/тёплы
 - [Независимый Pages deployment #43836819965 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43836819965) на **точном root SHA `3a311fce`**. Production: https://mryandexxx-spec.github.io/Dgoh-game/.
 - Выпуск не затрагивает лагерь, 3D, Campaign 2.0, экономику, сохранения и баланс. Разрыв `logic/stats → ui` принят, но `logic/account → ui` остаётся открытым в Issue #125.
 
-После подтверждённой публикации одноразовый `.github/workflows/release-v124-once.yml` удалён отдельным docs-only cleanup PR (заполнить ссылку по факту). Второй `publish=true` не запускать.
+После подтверждённой публикации одноразовый `.github/workflows/release-v124-once.yml` удалён [docs-only cleanup PR #128](https://github.com/mryandexxx-spec/Dgoh-game/pull/128). Второй `publish=true` не запускать.
 
 ## Приёмка на физическом iPhone ещё требуется
 
