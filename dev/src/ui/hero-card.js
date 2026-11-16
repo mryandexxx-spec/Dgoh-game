@@ -6,7 +6,7 @@ import { hasCost, skCost } from '../logic/skill-up.js';
 import { nextShards, rosterList } from './views/squad.js';
 import { craftAllPlan } from './craft.js';
 import { ROSTER_DEF, rosterView } from '../logic/roster.js';
-import { GEAR_CAP_AT, gearCap, heroCap } from '../logic/account.js';
+import { GEAR_CAP_AT, gearCap, heroCap } from '../logic/account-rules.js';
 import { getRes, prog } from '../logic/progress.js';
 import { S } from '../core/state.js';
 import { GEAR_UP_SOL, TIER_COL } from '../logic/gear.js';
