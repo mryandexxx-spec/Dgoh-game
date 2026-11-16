@@ -6,7 +6,6 @@
     "data/boss.js -> logic/battle/skills.js",
     "data/campaigns.js -> core/rng.js",
     "data/campaigns.js -> core/state.js",
-    "data/campaigns.js -> logic/economy.js",
     "data/conquest-data.js -> core/state.js",
     "data/conquest-data.js -> logic/conquest.js",
     "data/conquest-data.js -> logic/economy.js",
