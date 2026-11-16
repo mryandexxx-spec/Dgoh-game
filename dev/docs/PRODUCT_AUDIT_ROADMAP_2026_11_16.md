@@ -170,8 +170,13 @@
 | 2026-11-16 | Лагерь и его навигацию пока не менять | **Зафиксировано и исключено из backlog** |
 | 2026-11-16 | Остальные направления аудита в целом подходят | **Принято к проработке, реализация не разрешена автоматически** |
 | 2026-11-16 | Сохранить roadmap в GitHub для следующих чатов | Документационная фиксация |
-| — | Выбор первого пакета и его подробное согласование | **Не начато** |
-| — | Feature PR / CI / merge / release любого пакета | **Не начато** |
+| 2026-11-16 | Выбор первого пакета: `ARCH-01` — архитектурные зависимости и CI | **В работе**; [Issue #121](https://github.com/mryandexxx-spec/Dgoh-game/issues/121) |
+| 2026-11-16 | ARCH-01A: Acorn import gate, baseline 20 старых рёбер | [Draft PR #122](https://github.com/mryandexxx-spec/Dgoh-game/pull/122), [полный CI SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43810249915); **не слит** |
+| 2026-11-16 | ARCH-01B1: убрать `logic/trials → ui/hero-window` | [Draft PR #123](https://github.com/mryandexxx-spec/Dgoh-game/pull/123), [полный CI SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43811543605); baseline 19, **не слит** |
+| 2026-11-16 | ARCH-01B: диагностика ESM-циклов | [Draft PR #124](https://github.com/mryandexxx-spec/Dgoh-game/pull/124), [CI](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43813437451); 164 модуля, 2 SCC (102 и 9); исходники без изменений |
+| — | ARCH-01B2: развязать `stats/account → ui` без массовой перестановки | [Issue #125](https://github.com/mryandexxx-spec/Dgoh-game/issues/125), **проектирование / не реализовано**; простое удаление проверено CI и отклонено |
+| — | ARCH-01C/01D, ARCH-02, ECON-01 и прочие пакеты | **Не начато** |
+| — | Merge / публикация новых пакетов | **Не разрешены**; игровая версия v123 остаётся опубликованной |
 
 ## 8. Промпт для нового чата
 
