@@ -7,7 +7,7 @@ import { GEAR_SVG, LOG_SVG } from '../overlays/battle-settings.js';
 import { MOUSE_SVG } from '../mouse.js';
 import { renderNotes } from '../notifications.js';
 import { fxText } from '../fx-text.js';
-import { statInc } from '../../logic/stats.js';
+import { statInc } from '../../logic/stat-counters.js';
 import { trialFinish } from '../views/trials.js';
 import { WORM_BADGE } from '../hero-window.js';
 import { sleepStages } from '../../render3d/scenes/camp.js';
