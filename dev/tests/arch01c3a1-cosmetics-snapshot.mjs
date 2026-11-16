@@ -7,8 +7,9 @@ import { loadGame } from './lib/load.mjs';
 const file=process.argv[2] || 'dist/pwa/index.html';
 const g=loadGame(file), run=s=>g.run(s);
 const hash=s=>createHash('sha256').update(s,'utf8').digest('hex');
-const expected=process.env.ARCH01C3A1_SNAPSHOT_SHA256;
-const visualExpected=process.env.ARCH01C3A1_EMBLEMS_SHA256;
+// SHA-256 captured on untouched post-C2c main, BOTH PWA and artifact: CI #43966361442.
+const expected='d451f070fde45c721f379161fe3bc8fbd1d29b9649964957ec31591c8e912a55';
+const visualExpected='64a85568c392122adf50284fde0d2f83e1cf82ec667571808b93710d69b48dd8';
 
 // The old FREE path short-circuits before S initialization.
 assert.equal(run("unlocked('title','novice')"),true,'starter title is free without S');
