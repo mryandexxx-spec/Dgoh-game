@@ -60,3 +60,6 @@ await import('./arch01c2a-campaign-energy.mjs');
 
 // ARCH-01C2b: virtual order was proven on v127; now validate the real logic boundary.
 await import('./arch01c2b-campaign-open.mjs');
+
+// ARCH-01C2c: virtual order proved with local core alias; enforce real pure RNG, public API and 4096 samples.
+await import('./arch01c2c-pure-rng.mjs');
