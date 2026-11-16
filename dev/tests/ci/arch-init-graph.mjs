@@ -60,3 +60,6 @@ await import('./arch01c2a-campaign-energy.mjs');
 
 // ARCH-01C2b: virtual order was proven on v127; now validate the real logic boundary.
 await import('./arch01c2b-campaign-open.mjs');
+
+// ARCH-01C2c: simulate a pure RNG extraction before changing actual source or SPLIT.
+await import('./arch01c2c-virtual-rng.mjs');
