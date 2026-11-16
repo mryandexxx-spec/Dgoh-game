@@ -49,3 +49,6 @@ assert.deepEqual(first.cycles, second.cycles);
 assert.ok(first.modules >= 100, 'unexpectedly short production module graph');
 assert.ok(first.staticImports >= 100, 'static imports unexpectedly missing');
 console.log('ARCH-01B topology diagnostics: PASS; ' + first.modules + ' modules, ' + first.cycles.length + ' SCCs');
+
+// ARCH-01C0: run read-only esbuild virtual order probes in the existing CI architecture gate.
+await import('./arch01c-order-probe.mjs');
