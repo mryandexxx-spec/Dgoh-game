@@ -15,6 +15,12 @@ Date: 2026-11-16. Base source: main 383ba5b5146dba7796aee86469ae1eea4a37c742, pu
 
 The in-memory production-option virtual esbuild probe on C0 [run #43872889541](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43872889541) preserved all 161 original module markers after the same planned MAX_GEAR extraction (zero moved). Five other order-only deletion proposals caused reorders of 3, 58, 60, 2, and 157 old modules respectively, and are therefore **not** part of this implementation. The C0 proof is preliminary: only new PR CI establishes whether the physical implementation passes.
 
+## Actual first build / exact order evidence
+
+[Initial PR #135 CI run #43875008219](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43875008219) proved that the source-level boundary passed AST (16 existing, 0 new/stale), graph (168 modules, 993 static imports, 2 SCC), economy/legend API and all architecture bootstrap tests, and actual esbuild built without error.
+
+The strict check-bundle caught one **placement-only error in SPLIT**: the new, import-free data/gear-cap.js compiled as the FIRST marker, whereas the initial configuration guessed it would be near data/journeys.js. The **entire previous sequence of 161 modules remained unchanged**. Corrected by moving ONLY the new marker to SPLIT index 0, restoring the original logic/cinematic-preference.js to index 1; original 159-module hash and tests remain enforced. No legacy module order was changed or accepted by weakening check-bundle. A new full CI run on the corrected head is required and must be SUCCESS before acceptance.
+
 ## Required acceptance for the actual C1a Draft PR
 
 1. check-deps, Acorn AST import gate (16 existing, 0 new, 0 stale), ESM graph, strict check-bundle (162 total, original 161 unshifted), named export integrity, explicit no ReferenceError / TDZ.
