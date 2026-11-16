@@ -28,17 +28,17 @@ assert.ok(read('data/campaigns.js').includes("sRng(ghash(ck + c + ':' + m))"),
   'original seeded enemy generation untouched');
 assert.ok(read('data/campaigns.js').includes("if (n && !n.enemy.includes('rabban'))"),
   'special Rabban correction intact');
-assert.equal(baseline.length, 13, 'only campaigns → economy was removed from baseline 14');
+assert.equal(baseline.length, 12, 'C2b further removes campaigns → state, with 12 legacy edges');
 assert.ok(!baseline.includes('data/campaigns.js -> logic/economy.js'));
 assert.ok(baseline.includes('data/campaigns.js -> core/rng.js') &&
-  baseline.includes('data/campaigns.js -> core/state.js') &&
+  !baseline.includes('data/campaigns.js -> core/state.js') &&
   baseline.includes('data/story.js -> assets/models.js'),
   'remaining three C2 edges deliberately untouched');
 assert.equal(SPLIT.filter(([,n])=>n==='data/campaign-energy.js').length,1,
   'exactly one new pure campaign data module slot');
-assert.equal(SPLIT.length,164,'163 old modules + one new pure energy module');
+assert.equal(SPLIT.length,165,'original 163 plus energy data and campaign gate modules');
 const graph=analyzeTree(process.cwd());
-assert.equal(graph.modules,170,'C2a adds exactly one source JS module');
+assert.equal(graph.modules,171,'campaign gate logic adds exactly one source module after C2a');
 assert.equal(graph.unresolved.length,0,'all module imports resolved');
 assert.ok(graph.cycles.length<=2,'no third ESM SCC introduced');
 console.log('ARCH-01C2a campaign-energy: PASS; constants 6/8, economy API, baseline 13, original seeded 210 missions intact');
