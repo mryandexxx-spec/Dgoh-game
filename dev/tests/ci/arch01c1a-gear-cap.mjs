@@ -24,9 +24,11 @@ assert.ok(/^export \{[^\n]*\bMAX_GEAR\b[^\n]*\};$/m.test(read('logic/economy.js'
   'the old economy MAX_GEAR export is part of the public API');
 assert.ok(!/\bMAX_GEAR\s*=\s*13\b/.test(read('logic/economy.js')),
   'MAX_GEAR must have a single source of truth');
-assert.ok(read('data/journeys.js').includes('p.stars >= 7 && p.gear >= MAX_GEAR'),
+// C1b relocates the gate owner to logic, but these C1a economic prerequisites stay strict.
+const gateOwner = read('logic/journey-gates.js');
+assert.ok(gateOwner.includes('p.stars >= 7 && p.gear >= MAX_GEAR'),
   'Muad-Dib 7-star and gear XIII gate must not change');
-assert.ok(read('data/journeys.js').includes('!!prog(k).stars ||'),
+assert.ok(gateOwner.includes('!!prog(k).stars ||'),
   'already unlocked legends must stay grandfathered');
 assert.equal(legacy.length, 16, 'ARCH-01C1a must reduce baseline by one');
 assert.ok(!legacy.includes('data/journeys.js -> logic/economy.js'),
