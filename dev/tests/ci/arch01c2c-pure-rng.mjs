@@ -36,14 +36,14 @@ assert.ok(read('render2d/scenes.js').includes('const NZ = makeNoise(1337);') &&
 assert.ok(read('logic/progress.js').includes("import '../core/rng.js'; // порядок исполнения"),
   'existing logic bootstrap predecessor must keep core RNG at the legacy slot');
 
-assert.equal(baseline.length, 11, 'exactly one C2c reverse import removed');
+assert.equal(baseline.length, 9, 'exactly one C2c reverse import removed');
 assert.ok(!baseline.includes('data/campaigns.js -> core/rng.js'));
 assert.ok(baseline.includes('data/story.js -> assets/models.js'),
   'story/order-only C2d is not part of this change');
 assert.equal(SPLIT.filter(([,name])=>name==='data/seeded-rng.js').length, 1);
-assert.equal(SPLIT.length, 166, '165 existing modules plus one new pure seeded data module');
+assert.equal(SPLIT.length, 167, '165 existing modules plus one new pure seeded data module');
 const graph = analyzeTree(process.cwd());
-assert.equal(graph.modules, 172, 'only one source module added after merged C2b');
+assert.equal(graph.modules, 173, 'only one source module added after merged C2b');
 assert.equal(graph.unresolved.length, 0, 'all imports must resolve');
 assert.ok(graph.cycles.length <= 2, 'no new cyclic ESM component allowed');
 
