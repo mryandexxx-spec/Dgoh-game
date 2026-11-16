@@ -21,7 +21,8 @@ for (let i=0;i<nodes.length;i++) {
 }
 assert.deepEqual(categories,{L:70,D:70,C:70});
 const hash = createHash('sha256').update(nodesJson,'utf8').digest('hex');
-const expected = process.env.ARCH01C2C_NODES_SHA256;
+// Immutable checksum captured on unchanged v127 + merged C2b in CI #43955019544.
+const expected = 'b33150786a9b8c17abc60a9c1df1b40019ab9f6b6335a0c6d3287837d9beaa48';
 if(expected) assert.equal(hash,expected,'210 full mission objects differ from pre-extraction v127+C2b baseline');
 console.log('ARCH-01C2c complete 210 NODES SHA-256 '+hash+'; source='+html+
   '; '+(expected?'fixed-baseline PASS':'read-only baseline measurement'));
