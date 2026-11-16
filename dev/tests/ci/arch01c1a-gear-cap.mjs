@@ -30,16 +30,16 @@ assert.ok(gateOwner.includes('p.stars >= 7 && p.gear >= MAX_GEAR'),
   'Muad-Dib 7-star and gear XIII gate must not change');
 assert.ok(gateOwner.includes('!!prog(k).stars ||'),
   'already unlocked legends must stay grandfathered');
-assert.equal(legacy.length, 13, 'ARCH-01C2a extends C1b reduction, exact new baseline is 13');
+assert.equal(legacy.length, 12, 'ARCH-01C2b extends cleanup, exact new baseline is 12');
 assert.ok(!legacy.includes('data/journeys.js -> logic/economy.js'),
   'removed reverse edge cannot stay in baseline');
 const slot = SPLIT.filter(([,name]) => name === 'data/gear-cap.js');
 assert.equal(slot.length, 1, 'new data module must be registered exactly once');
 assert.equal(SPLIT[0][1], 'data/gear-cap.js',
   'actual esbuild placement of the new pure module must stay at index zero');
-assert.equal(SPLIT.length, 164, '161 original modules plus gear cap, journey rules and campaign energy');
+assert.equal(SPLIT.length, 165, 'existing 164 modules plus campaign rule adapter');
 const graph = analyzeTree(process.cwd());
-assert.equal(graph.modules, 170, 'gear cap, journey gates and campaign energy are the three additive modules');
+assert.equal(graph.modules, 171, 'campaign open logic is the fourth additive JS module');
 assert.equal(graph.unresolved.length, 0, 'no broken relative imports');
 assert.ok(!graph.cycles.some(component => component.includes('data/gear-cap.js')),
   'the pure cap must not introduce an ESM cycle');
