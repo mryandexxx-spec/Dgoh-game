@@ -44,16 +44,29 @@ const newCosmetics=cosmetics
   .replace(oldUnlock,replacement)
   .replace('export { EMBLEMS, FRAMES, TITLES, FREE, unlocked };',
     'export { EMBLEMS, FRAMES, TITLES, FREE, unlocked, bindCosmeticUnlockRule };');
-const patched=new Map([
-  ['data/cosmetics.js',newCosmetics],
-  ['core/boot.js',boot.replace(bootAnchor,
-    bootAnchor+"\nimport '../logic/cosmetics-unlocks.js'; // ARCH-01C3a1: register account cosmetic rule before start()")],
-]);
+const sites=[
+  {name:'core/boot.js:after-campaign-gates',file:'core/boot.js',after:bootAnchor,spec:'../logic/cosmetics-unlocks.js'},
+  {name:'ui/overlays/profile.js:after-data',file:'ui/overlays/profile.js',after:"import { EMBLEMS, FRAMES, TITLES, unlocked } from '../../data/cosmetics.js';",spec:'../../logic/cosmetics-unlocks.js'},
+  {name:'ui/wiring.js:after-data',file:'ui/wiring.js',after:"import { unlocked } from '../data/cosmetics.js';",spec:'../logic/cosmetics-unlocks.js'},
+  {name:'ui/views/feats.js:after-data',file:'ui/views/feats.js',after:"import { EMBLEMS, FRAMES, TITLES } from '../../data/cosmetics.js';",spec:'../../logic/cosmetics-unlocks.js'},
+  {name:'ui/overlays/profile.js:after-last-import',file:'ui/overlays/profile.js',after:"import { $ } from '../../core/dom.js';",spec:'../../logic/cosmetics-unlocks.js'},
+  {name:'ui/wiring.js:after-last-import',file:'ui/wiring.js',after:"import { $ } from '../core/dom.js';",spec:'../logic/cosmetics-unlocks.js'},
+];
+function patchedAt(site){
+  const file=read(site.file);
+  assert.ok(file.includes(site.after),'registration anchor missing: '+site.name);
+  const importLine="import '"+site.spec+"'; // ARCH-01C3a1 virtual registration";
+  return new Map([
+    ['data/cosmetics.js',newCosmetics],
+    [site.file,file.replace(site.after,site.after+'\n'+importLine)],
+  ]);
+}
 function markers(src){
   return [...src.matchAll(/^\/\/ src\/(.+\.js)$/gm)].map(m=>m[1]).filter(x=>x!=='main.js');
 }
-async function build(virtual){
-  const plugins=virtual?[{
+async function build(site=null){
+  const patched=site?patchedAt(site):new Map();
+  const plugins=site?[{
     name:'arch01c3a1-virtual-only',
     setup(b){
       b.onResolve({filter:/cosmetics-unlocks\.js$/},
@@ -81,17 +94,19 @@ const baseline=JSON.parse(fs.readFileSync(path.join(DEV,'tools/arch-import-basel
 assert.equal(baseline.length,11,'must start with exactly 11 legacy data reverse imports');
 for(const e of ['data/cosmetics.js -> logic/progress.js','data/cosmetics.js -> core/state.js'])
   assert.ok(baseline.includes(e),'candidate missing '+e);
-const actual=await build(false);
+const actual=await build();
 assert.deepEqual(actual,original,'current production order must equal all 166 SPLIT markers');
-const next=await build(true);
-const missing=original.filter(x=>!next.includes(x));
-const extra=next.filter(x=>!original.includes(x));
-const changed=original.filter((x,i)=>next.indexOf(x)!==i);
-const first=original.findIndex((x,i)=>next[i]!==x);
-console.log('ARCH-01C3a1 virtual unlock extraction '+JSON.stringify({
-  original:original.length,observed:next.length,
-  moved:changed.length,missing,extra,
-  first:first<0?'none':first+':'+original[first]+' -> '+next[first],
-  preview:changed.slice(0,14),
-}));
-console.log('ARCH-01C3a1 read-only: profile/wiring/camp/3D untouched; model and stats predecessor preserved');
+for(const site of sites){
+  const next=await build(site);
+  const missing=original.filter(x=>!next.includes(x));
+  const extra=next.filter(x=>!original.includes(x));
+  const changed=original.filter((x,i)=>next.indexOf(x)!==i);
+  const first=original.findIndex((x,i)=>next[i]!==x);
+  console.log('ARCH-01C3a1 virtual unlock extraction '+JSON.stringify({
+    site:site.name,original:original.length,observed:next.length,
+    moved:changed.length,missing,extra,
+    first:first<0?'none':first+':'+original[first]+' -> '+next[first],
+    preview:changed.slice(0,14),
+  }));
+}
+console.log('ARCH-01C3a1 read-only matrix: no src/SPLIT/baseline/golden touched; stats/model predecessors unchanged');
