@@ -86,7 +86,7 @@ jobs:
           node tools/check-arch-imports.mjs
           node tests/ci/arch-init-graph.mjs
           node tools/arch-init-graph.mjs
-          node tools/arch-bootstrap-probe.mjs --search
+          node tools/arch-bootstrap-probe.mjs
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: npm run build
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
