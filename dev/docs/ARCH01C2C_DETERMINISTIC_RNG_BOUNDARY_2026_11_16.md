@@ -40,3 +40,16 @@ C2d `data/story → assets/models` order-only — **не удалять меха
 
 **Следующая контрольная точка:** запустить второй virtual esbuild с двумя вариантами (plain NO-GO, explicit alias) и проверить, даёт ли alias `moved=0, missing=[], extra=[]`. При неуспехе — переработать кандидат, не менять production. **Ни merge, ни release без владельца.**
 
+
+## Реализация C2c — фактические данные после виртуальной проверки
+
+В повторном виртуальном [CI #43955866548](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43955866548) были сопоставлены оба варианта: **plain re-export** `moved=95, missing=["core/rng.js"]` (**NO-GO**) и явный **alias** `moved=0, missing=[], extra=[], first=none` (**GO только по порядку маркеров**). SHA-256 210 полных `NODES` на неизменённых PWA и artifact: `b33150786a9b8c17abc60a9c1df1b40019ab9f6b6335a0c6d3287837d9beaa48`. Этот хеш зафиксирован в коде test ДО игровой реализации.
+
+**Первый реальный candidate alias на Draft PR #143 не принят.** Архитектурная сборка [#43956780416](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43956780416) показала AST **11/0 new/0 stale**, `check-bundle OK (166)`, 897 имён/0 потерь, **4096 PRNG векторов PASS**; но обязательный `tests/arch01c2a-energy.mjs` при запуске реального PWA-бандла упал **во время его VM инициализации**. Обычного сохранения ESM-маркеров оказалось недостаточно. В `render2d/scenes.js` есть верхнеуровневая инициализация `const NZ = makeNoise(1337)`, вызывающая импортируемый из `core/rng.js` `sRng`; после переезда старого `function sRng` к `const sRng = pureSRng` исчезло hoisting-поведение старой функции. Это типовой риск TDZ/order; **CI правильно заблокировал пакет, тесты не ослаблялись**.
+
+**Исправление:** `core/rng.js` сохраняет `import './dom.js'; // порядок исполнения`, импортирует `pureSRng` и объявляет **hoisted wrapper** `function sRng(seed) { return pureSRng(seed); }` плюс прежний `export { sRng }`. В чистом `data/seeded-rng.js` лежит функция с бит-в-бит прежними 213 символами тела `sRng`; `data/campaigns.js` импортирует только его. На вызов `sRng(seed)` добавляется одна тривиальная обёртка только для прежнего core API (в каждом потоке RNG алгоритм и последовательность неизменны). Early render2d/makeNoise снова может получить hoisted функцию. Тесты дополнены проверкой этого конкретного инварианта.
+
+**Реальные изменения:** `dev/src/data/seeded-rng.js` (+1 чистый модуль), `dev/src/data/campaigns.js` (ровно один новый импорт), `dev/src/core/rng.js` (совместимый API/предшественник), `dev/tools/arch-import-baseline.json` **12→11** и одна новая запись в `SPLIT` без перестановки прежних **165**. Все предыдущие C1/C2 тесты сохранены и обновлены только их точные счётчики, а новый `tests/ci/arch01c2c-pure-rng.mjs` проверяет 4096 значений RNG/слои/hoisting. `tests/arch01c2c-nodes-digest.mjs` в штатном build CI требует pinned SHA-256 для всех 210 полных объектов на **PWA и artifact**.
+
+**Приёмка:** новый реальный CI после исправления обёртки должен дать `check-bundle OK(166)`, SHA-256 exact совпадение обеих сборок, 0 новых/stale зависимостей, полный mandatory golden/DOM/offline/WebGL, 3D lifecycle. До полного SUCCESS — **Draft не готов к приёмке; merge, bump, release запрещены**. Физический Safari/iPhone v127 всё ещё не проверен.
+
