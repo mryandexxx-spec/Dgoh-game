@@ -35,7 +35,7 @@ assert.ok(!legacy.includes('data/journeys.js -> logic/economy.js'),
   'removed reverse edge cannot stay in baseline');
 const slot = SPLIT.filter(([,name]) => name === 'data/gear-cap.js');
 assert.equal(slot.length, 1, 'new data module must be registered exactly once');
-assert.equal(SPLIT[1][1], 'data/gear-cap.js',
+assert.equal(SPLIT[0][1], 'data/gear-cap.js',
   'actual esbuild placement of the new pure module must stay at index zero');
 assert.equal(SPLIT.length, 164, '161 original modules plus gear cap, journey rules and campaign energy');
 const graph = analyzeTree(process.cwd());
