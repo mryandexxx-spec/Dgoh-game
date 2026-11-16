@@ -1,7 +1,7 @@
 // ui/overlays/sim.js — строки 3668–3760 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { infoKey, openInfo } from './info.js';
 import { MOUSE_SVG } from '../mouse.js';
-import { statInc } from '../../logic/stats.js';
+import { statInc } from '../../logic/stat-counters.js';
 import { accXP, fragLines, rewardWin } from '../rewards.js';
 import { itemCtx, openItem, slotState } from './detail.js';
 import { detailCid, openDetail } from '../hero-card.js';
