@@ -63,3 +63,6 @@ await import('./arch01c2b-campaign-open.mjs');
 
 // ARCH-01C2c: virtual order proved with local core alias; enforce real pure RNG, public API and 4096 samples.
 await import('./arch01c2c-pure-rng.mjs');
+
+// ARCH-01C3a1: read-only esbuild test for moving account cosmetic entitlements into logic.
+await import('./arch01c3a1-virtual-unlocks.mjs');
