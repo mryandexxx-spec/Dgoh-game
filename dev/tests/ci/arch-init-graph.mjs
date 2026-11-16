@@ -57,3 +57,6 @@ await import('./arch01c1b-journey-runtime.mjs');
 
 // ARCH-01C2a: new pure energy module and exact baseline reduction.
 await import('./arch01c2a-campaign-energy.mjs');
+
+// ARCH-01C2b: compare virtual logic-owned state rule against actual esbuild order.
+await import('./arch01c2b-virtual-order.mjs');
