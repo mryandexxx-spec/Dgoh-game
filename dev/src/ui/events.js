@@ -4,7 +4,7 @@ import { cqClick } from './views/conq.js';
 import { celebClick, celebQueue, showCeleb } from './overlays/celebrate.js';
 import { meta2Click } from './overlays/battle-settings.js';
 import { renderNotes } from './notifications.js';
-import { gearCap, heroCap } from '../logic/account.js';
+import { gearCap, heroCap } from '../logic/account-rules.js';
 import { metaClick } from './wiring.js';
 import { WORM_BADGE, detailNav, heroSnap } from './hero-window.js';
 import { buysToday, findShopItem, shopLeft } from './views/shop.js';
