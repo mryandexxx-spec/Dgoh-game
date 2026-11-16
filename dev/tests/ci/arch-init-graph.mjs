@@ -57,3 +57,6 @@ await import('./arch01c1b-journey-runtime.mjs');
 
 // ARCH-01C2a: new pure energy module and exact baseline reduction.
 await import('./arch01c2a-campaign-energy.mjs');
+
+// ARCH-01C2b: virtual order was proven on v127; now validate the real logic boundary.
+await import('./arch01c2b-campaign-open.mjs');

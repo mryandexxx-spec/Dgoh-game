@@ -98,6 +98,11 @@ jobs:
           node tests/arch01c2a-energy.mjs dist/pwa/index.html
           node tests/arch01c2a-energy.mjs dist/artifact.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-01C2b all 210 campaign unlocks (PWA + artifact)
+        run: |
+          node tests/arch01c2b-node-open.mjs dist/pwa/index.html
+          node tests/arch01c2b-node-open.mjs dist/artifact.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-01C1b journey runtime compatibility (PWA + artifact)
         run: |
           node tests/arch01c1b-journey-runtime.mjs dist/pwa/index.html

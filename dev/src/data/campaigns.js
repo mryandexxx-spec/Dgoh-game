@@ -1,6 +1,5 @@
 // data/campaigns.js — строки 2729–2892 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { STORY } from './story.js';
-import { S } from '../core/state.js';
 import { BATTLE_WATER, CANDLE_COST } from './campaign-energy.js';
 import { ghash } from './looks.js';
 import { CH } from './chars.js';
@@ -165,10 +164,20 @@ for (const ck of CAMP_KEYS) CAMP_DEF[ck].chapters.forEach((ch, c) => ch.m.forEac
 const NODE_SCENES = NODES.map(n => n.scene);
 const campNodes = ck => NODES.map((n, i) => i).filter(i => NODES[i].camp === ck);
 const chapNodes = (ck, c) => NODES.map((n, i) => i).filter(i => NODES[i].camp === ck && NODES[i].c === c);
-function nodeOpen(i) { const n = NODES[i], prev = i - 1; return (prev < 0 || NODES[prev].camp !== n.camp) ? true : !!S.cleared[prev]; }
+// ARCH-01C2b: preserve the public nodeOpen API for all existing UI/camp consumers.
+// The rule lives in logic/campaign-gates.js; registration is completed before start().
+let nodeOpenRuntime = null;
+function bindNodeOpenRuntime(rule) {
+  if (nodeOpenRuntime) throw new Error('Campaign nodeOpen runtime already initialized');
+  nodeOpenRuntime = rule;
+}
+function nodeOpen(i) {
+  if (!nodeOpenRuntime) throw new Error('Campaign nodeOpen runtime not initialized');
+  return nodeOpenRuntime(i);
+}
 const nodeTitle = i => { const n = NODES[i]; return `${CAMP_DEF[n.camp].short} ${ROM7[n.c]}-${n.m + 1}. ${n.n}`; };
 const nodeEn = i => CAMP_DEF[NODES[i].camp].en === 'candle' ? 'candle' : 'water';
 const nodeCost = i => nodeEn(i) === 'candle' ? CANDLE_COST : BATTLE_WATER;
 
 
-export { S0, CAMP_DEF, CAMP_KEYS, ROM7, DESERT_SCENES, GENERIC, NODES, NODE_SCENES, campNodes, chapNodes, nodeOpen, nodeTitle, nodeEn, nodeCost };
+export { bindNodeOpenRuntime, S0, CAMP_DEF, CAMP_KEYS, ROM7, DESERT_SCENES, GENERIC, NODES, NODE_SCENES, campNodes, chapNodes, nodeOpen, nodeTitle, nodeEn, nodeCost };
