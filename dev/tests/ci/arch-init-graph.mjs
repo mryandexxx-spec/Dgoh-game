@@ -63,3 +63,6 @@ await import('./arch01c2b-campaign-open.mjs');
 
 // ARCH-01C2c: virtual order proved with local core alias; enforce real pure RNG, public API and 4096 samples.
 await import('./arch01c2c-pure-rng.mjs');
+
+// ARCH-01C2d: read-only virtual import-order matrix for the story/model side effect.
+await import('./arch01c2d-virtual-story-models.mjs');
