@@ -1,5 +1,6 @@
 // logic/economy.js — строки 3057–3077 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import '../data/journeys.js'; // порядок исполнения
+import { MAX_GEAR } from '../data/gear-cap.js';
 import { S } from '../core/state.js';
 import { CHARS } from '../data/chars.js';
 import { NODES } from '../data/campaigns.js';
@@ -23,7 +24,7 @@ const SHARDS_NEXT = [10, 15, 25, 30, 65, 85, 100];   // index = current stars
 const STAR_COST = s => s * s * 500;
 const LVL_COST = l => l * 40 + (l >= 30 ? (l - 29) ** 2 * 15 : 0);
 const GEAR_COST = g => ({ sol: g * 1000, pl: g * 3 });
-const MAX_LVL = 85, MAX_GEAR = 13, WATER_BASE = 150, WATER_SEC = 20, BATTLE_WATER = 6, CANDLE_BASE = 120, CANDLE_SEC = 30, CANDLE_COST = 8, CANDLE_REFILL = 100;
+const MAX_LVL = 85, WATER_BASE = 150, WATER_SEC = 20, BATTLE_WATER = 6, CANDLE_BASE = 120, CANDLE_SEC = 30, CANDLE_COST = 8, CANDLE_REFILL = 100;
 const enCapStep = () => Math.floor((S && S.acc ? S.acc.lvl : 1) / 10), WMAX = () => WATER_BASE + 15 * enCapStep(), CMAX = () => CANDLE_BASE + 10 * enCapStep();
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII'];
 const RW_NAME = { wring: 'водяных колец', jt: 'трофеев Джихада', core: 'устаревших голосов предков', ...Object.fromEntries(Object.entries(MEM_MATS).map(([k, m]) => [k, m.label.toLowerCase()])), rid: 'ридулианских кристаллов', candle: 'Свечей хроник', sol: 'соляриев', cry: 'кристаллов', folio: 'фолиантов', seal: 'Печать Ландсраада', wol: 'Вода жизни', pl: 'пластали', teeth: 'зубов червя', water: 'Воды' };
