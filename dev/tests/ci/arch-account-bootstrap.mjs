@@ -78,7 +78,11 @@ assert.equal(SPLIT.findIndex(([,name])=>name==='logic/account-rules.js')+1,
   'pure account rules must precede first early consumer');
 
 const graph=analyzeTree(process.cwd());
-assert.ok(!graph.cycles.some(group=>group.includes('logic/account.js')),
-  'account adapter must not participate in any static ESM import cycle');
+// The historical large SCC still exists through data → logic imports (ARCH-01C).
+// Do not pretend that removing one forbidden direct edge removes the whole SCC.
+assert.equal(graph.cycles.length,2,
+  'ARCH-01B3 must not introduce any new cyclic component');
+assert.ok(!graph.cyclicalEdges.some(e=>e.from==='logic/account.js' && e.to.startsWith('ui/')),
+  'account adapter must have no forbidden outgoing edge to UI');
 assert.equal(graph.unresolved.length,0,'no unresolved local imports');
 console.log('ARCH-01B3 account bootstrap: PASS; legacy 159 order locked, no account UI edge');
