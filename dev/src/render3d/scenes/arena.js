@@ -1,5 +1,5 @@
 // render3d/scenes/arena.js — строки 1800–2195 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { CINE_OFF } from '../../logic/account.js';
+import { CINE_OFF } from '../../logic/cinematic-preference.js';
 import { DLG } from '../../ui/battle/battle-ui.js';
 import { errLog } from '../../core/errlog.js';
 import { BT } from '../../core/state.js';

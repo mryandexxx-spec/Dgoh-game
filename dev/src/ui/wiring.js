@@ -1,6 +1,6 @@
 // ui/wiring.js — строки 4934–4965 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { openProfile } from './overlays/profile.js';
-import { accFill } from '../logic/account.js';
+import { accFill } from '../logic/account-rules.js';
 import { featClaim } from './views/feats.js';
 import { unlocked } from '../data/cosmetics.js';
 import { trialGo, trialMulti, trialSimClick } from './views/trials.js';

@@ -4,7 +4,7 @@ import { S } from '../core/state.js';
 import { prog } from './progress.js';
 import { RELIC_AT, unlockNeed } from './relics.js';
 import { CH } from '../data/chars.js';
-import { ACC_MAX, ACC_UPS, GEAR_CAP_AT, accNeed, accReward } from './account.js';
+import { ACC_MAX, ACC_UPS, GEAR_CAP_AT, accNeed, accReward } from './account-rules.js';
 import { CANDLE_BASE, CMAX, MAX_LVL, ROMAN, WATER_BASE, WMAX } from './economy.js';
 // UI подписывается при загрузке (ui/overlays/squad-select): тот же момент вызова, что был в монолите
 const rewardHooks = { unlock: id => {}, shardConv: n => {} };

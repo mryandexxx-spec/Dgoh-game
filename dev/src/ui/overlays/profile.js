@@ -6,7 +6,7 @@ import { S } from '../../core/state.js';
 import { CMAX, ROMAN, ROSTER_IDS, WMAX } from '../../logic/economy.js';
 import { CH } from '../../data/chars.js';
 import { figureSVG } from '../../render2d/figures.js';
-import { ACC_MAX, GEAR_CAP_AT, accNeed, accReward, gearCap, heroCap } from '../../logic/account.js';
+import { ACC_MAX, GEAR_CAP_AT, accNeed, accReward, gearCap, heroCap } from '../../logic/account-rules.js';
 import { MEM, RELIC_AT, RELIC_MAX, relicCap } from '../../logic/relics.js';
 import { rewardsHtml } from '../rewards.js';
 import { fmt, ic } from '../../core/format.js';

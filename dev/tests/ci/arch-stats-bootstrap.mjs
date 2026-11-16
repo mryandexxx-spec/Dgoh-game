@@ -46,6 +46,8 @@ assert.ok(position('ui/views/trials.js') < position('logic/stats.js'),
   'historical trials/statistics evaluation order must remain stable');
 assert.ok(position('logic/stats.js') < position('data/cosmetics.js'),
   'historical cosmetics/statistics order must remain stable');
-assert.ok(edges('logic/account.js').some(e => e.to === 'ui/wiring.js'),
-  'ARCH-01B3 account dependency remains explicit technical debt, not silently changed');
+assert.ok(!edges('logic/account.js').some(e => e.to.startsWith('ui/')),
+  'ARCH-01B3 account no longer imports UI after decoupling');
+assert.ok(edges('logic/account.js').some(e => e.to === 'logic/account-rules.js'),
+  'ARCH-01B3 compatibility adapter must delegate to pure rules');
 console.log('ARCH-01B2 stats initialization contract: PASS');

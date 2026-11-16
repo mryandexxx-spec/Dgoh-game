@@ -87,6 +87,7 @@ jobs:
           node tests/ci/arch-init-graph.mjs
           node tests/ci/arch-stats-bootstrap.mjs
           node tools/arch-init-graph.mjs
+          node tests/ci/arch-account-bootstrap.mjs
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: npm run build
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
