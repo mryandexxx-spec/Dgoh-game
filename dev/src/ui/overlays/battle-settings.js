@@ -3,7 +3,7 @@ import { craftAll } from '../craft.js';
 import { showCeleb } from './celebrate.js';
 import { noteDrop, renderNotes } from '../notifications.js';
 import { showLevelUp } from './levelup.js';
-import { CINE_OFF } from '../../logic/account.js';
+import { CINE_OFF } from '../../logic/cinematic-preference.js';
 import { bPop, bPopClose, doAct, finish, launch, leaveBattle, renderBattle } from '../battle/battle-ui.js';
 import { closeInfo } from './info.js';
 import { render } from '../router.js';
