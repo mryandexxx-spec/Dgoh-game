@@ -30,6 +30,13 @@
 
 C2d `data/story → assets/models` order-only — **не удалять механически**: прежняя C0 virtual esbuild показала сдвиг 60 модулей. Нужен отдельный владелец порядка ESM, дифференциальные тесты и отдельный Draft PR. Пакеты других 10 legacy edges не затрагиваются.
 
-## Фактические результаты
+## Фактическая диагностика до изменения игры
 
-*До первого CI: ожидается SHA-256 210 NODES и отчёт virtual esbuild о порядке 165 прежних маркеров.*
+**CI #43955019544 — неизменённая продукционная сборка:**
+- [Первоначальная виртуальная проба](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43955019544), архитектурный build step SUCCESS: `existing=165, moved=95, missing=["core/rng.js"], extra=[], first=70:core/rng.js -> logic/progress.js`. **NO-GO для наивного re-export:** esbuild удаляет пустой `core/rng.js` после выноса тела функции. Сдвигаются 95 старых маркеров, без права подгонки `SPLIT`.
+- Текущее `logic/progress.js` **уже** содержит `import '../core/rng.js'; // порядок исполнения`, поэтому новый импорт-предшественник не требуется; проблема в отсутствии runtime объявления в почти пустом core/rng адаптере. Вторая виртуальная проба проверяет **явный локальный алиас** `import { sRng as pureSRng } from '../data/seeded-rng.js'; const sRng = pureSRng; export { sRng };`, сохраняя `import './dom.js'` первым и не добавляя побочных эффектов.
+- **Базовый SHA-256 всех 210 полных `NODES` на неизменённом исходном коде** PWA **и** artifact: `b33150786a9b8c17abc60a9c1df1b40019ab9f6b6335a0c6d3287837d9beaa48`. Показания идентичны для обеих сборок; закреплены константой в `tests/arch01c2c-nodes-digest.mjs` до внесения изменений.
+- `check-bundle OK (165)`, 896 public names, AST baseline **12 existing, 0 new/stale**. Golden и другие проверки диагностической ветки не заменяют будущий implementation CI.
+
+**Следующая контрольная точка:** запустить второй virtual esbuild с двумя вариантами (plain NO-GO, explicit alias) и проверить, даёт ли alias `moved=0, missing=[], extra=[]`. При неуспехе — переработать кандидат, не менять production. **Ни merge, ни release без владельца.**
+
