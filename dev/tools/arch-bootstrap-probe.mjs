@@ -46,9 +46,14 @@ function orderMeasure(order) {
 
 async function probe(name, patches, variants={}) {
   const accountCore=path.join(src,'logic','account-core.js');
+  const accountCine=path.join(src,'logic','account-cine.js');
   const statsCounter=path.join(src,'logic','stat-counters.js');
   const pureAccount=fs.readFileSync(path.join(src,'logic','account.js'),'utf8')
     .replace(removal['logic/account.js'],'');
+  const cineMatch=pureAccount.match(/^const CINE_OFF = .*;$/m);
+  if (!cineMatch) throw Error('Expected account CINE_OFF definition missing');
+  const pureCine=cineMatch[0]+"\nexport { CINE_OFF };\n";
+  const partitionedAccount=pureAccount.replace(cineMatch[0]+"\n",'').replace(', CINE_OFF','');
   const statIncDeclaration='function statInc(k, n = 1) { S.stats[k] = (S.stats[k] || 0) + n; }';
   const pureCounter="import { S } from '../core/state.js';\n" + statIncDeclaration +
     "\nexport { statInc };\n";
@@ -59,18 +64,29 @@ async function probe(name, patches, variants={}) {
   const plugin = {
     name:'order-probe',
     setup(build) {
-      if (variants.accountSplit) {
+      if (variants.accountSplit || variants.accountPartition) {
         // Virtual sources must resolve even though no physical file is created.
         build.onResolve({filter:/account-core\.js$/},args=>({path:accountCore}));
+        if (variants.accountPartition)
+          build.onResolve({filter:/account-cine\.js$/},args=>({path:accountCine}));
         build.onResolve({filter:/account\.js$/},args=>{
           if (!args.path.startsWith('.')) return;
           if (path.resolve(path.dirname(args.importer),args.path)!==path.join(src,'logic','account.js')) return;
-          if (path.relative(src,args.importer).split(path.sep).join('/')==='ui/fx-text.js') return;
+          const from=path.relative(src,args.importer).split(path.sep).join('/');
+          if (from==='ui/fx-text.js') return;
+          if (variants.accountPartition && (
+              from==='render3d/scenes/arena.js' || from==='ui/overlays/battle-settings.js'))
+            return {path:accountCine};
           return {path:accountCore};
         });
         build.onLoad({filter:/account-core\.js$/},()=>({
-          contents:pureAccount,loader:'js',resolveDir:path.dirname(accountCore),
+          contents:variants.accountPartition?partitionedAccount:pureAccount,
+          loader:'js',resolveDir:path.dirname(accountCore),
         }));
+        if (variants.accountPartition)
+          build.onLoad({filter:/account-cine\.js$/},()=>({
+            contents:pureCine,loader:'js',resolveDir:path.dirname(accountCine),
+          }));
       }
       if (variants.statsSplit) {
         build.onResolve({filter:/stat-counters\.js$/},args=>({path:statsCounter}));
@@ -91,6 +107,8 @@ async function probe(name, patches, variants={}) {
         if (patch) text=patch(text);
         if (variants.accountSplit && rel==='logic/account.js')
           text="export * from './account-core.js';\n";
+        if (variants.accountPartition && rel==='logic/account.js')
+          text="export * from './account-core.js';\nexport * from './account-cine.js';\nconst __archAccountAdapter = true;\n";
         if (variants.statsSplit && rel==='logic/stats.js') {
           if (!text.includes(statIncDeclaration)) throw Error('Missing original statInc declaration');
           text=text.replace(removal[rel],'')
@@ -127,6 +145,15 @@ const cases = [
   {name:'split stats counter',patches:{},variants:{statsSplit:true}},
   {name:'split full account',patches:{},variants:{accountSplit:true}},
   {name:'split both with pure cores',patches:{},variants:{accountSplit:true,statsSplit:true}},
+  {name:'drop stats with feat bootstrap import',patches:{
+    'logic/stats.js':without('logic/stats.js'),
+    'ui/views/feats.js':t=>"import './trials.js'; // virtual UI init\n"+t,
+  }},
+  {name:'partition account CINE_OFF',patches:{},variants:{accountPartition:true}},
+  {name:'partition account + drop stats with feats bootstrap',patches:{
+    'logic/stats.js':without('logic/stats.js'),
+    'ui/views/feats.js':t=>"import './trials.js'; // virtual UI init\n"+t,
+  },variants:{accountPartition:true}},
 ];
 console.log('ARCH01B2: '+JSON.stringify({
   modules:graph.modules,staticImports:graph.staticImports,
