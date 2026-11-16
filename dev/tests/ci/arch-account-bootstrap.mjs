@@ -64,8 +64,8 @@ assert.deepEqual(incoming('logic/cinematic-preference.js'),[
   'render3d/scenes/arena.js','ui/overlays/battle-settings.js',
 ].sort(), 'early cinematic setting must be isolated from account');
 
-const newModules=new Set(['logic/account-rules.js','logic/cinematic-preference.js']);
-assert.equal(SPLIT.length,161,'expected 159 original modules + 2 new pure modules');
+const newModules=new Set(['logic/account-rules.js','logic/cinematic-preference.js','data/gear-cap.js']);
+assert.equal(SPLIT.length,162,'expected 159 original modules + 3 new pure modules');
 assert.equal(SPLIT[0][1],'logic/cinematic-preference.js');
 const names=SPLIT.filter(([,name])=>!newModules.has(name)).map(([,name])=>name);
 assert.equal(names.length,159,'no old module can disappear');
