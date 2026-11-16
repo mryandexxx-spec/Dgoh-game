@@ -3,6 +3,7 @@ import { openProfile } from './overlays/profile.js';
 import { accFill } from '../logic/account-rules.js';
 import { featClaim } from './views/feats.js';
 import { unlocked } from '../data/cosmetics.js';
+import '../logic/cosmetics-unlocks.js'; // ARCH-01C3a1: bind cosmetic rule before profile interactions
 import { trialGo, trialMulti, trialSimClick } from './views/trials.js';
 import { leaveBattle } from './battle/battle-ui.js';
 import { SPOT_ICONS } from './views/lobby.js';
