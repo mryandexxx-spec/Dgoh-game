@@ -25,7 +25,15 @@
 
 Обновление v126→127, холодная/тёплая загрузка, выбор обычной миссии и Хроник (цены 6/8), 210 миссий и условия доступа, 3D MED/LOW, offline/SW, корректная загрузка/сохранение/перезапуск. Chromium/SwiftShader CI не заменяет физическое тестирование. **Лагерь не изменён.**
 
-## Фактический статус
+## Фактическая публикация и доказательства
 
-- C2a implementation PR #139 MERGED, CI SUCCESS.
-- Release PR/CI и official publish/Pages: **ожидают проверки**. Пока опубликована **v126**.
+**v127 ОПУБЛИКОВАНА 16.11.2026.** Владелец разрешил merge и release. Ни одна игровая таблица или сцена не изменилась после implementation PR.
+
+- [Implementation PR #139 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/139), `aa178ddea77d5f56b546a5f78f129b526ed9879c`; [implementation CI #43924649113 SUCCESS (20/20)](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43924649113).
+- [Release PR #140 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/140), exact subject `release(arch): publish v127`, `13560a406294ddd46ddb418b1d6cf5f685699116`. [Full release candidate CI #43938677491 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43938677491); [merged-main CI #43939965114 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43939965114).
+- [One-shot guard #43939965471 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43939965471), проверил v127, SW v126 `a621fd8b3a`, baseline 13 и импорт констант, вызвал официальный `publish=true` **ровно один раз**.
+- [Официальная проверка/публикация #43940045974 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43940045974): обязательный gate SUCCESS, SHA-256 manifest/receipt, exact artifact verification, `ci-current-main`, `Publish verified PWA to GitHub Pages` SUCCESS, точная синхронизация root. SHA нового корня **`587a6841948da4ebde50acde5220e20c685a17dc`**, опубликован `dev/version.json={"v":127}`, новый SW VER **`2e36ce669d`**.
+- [Независимый Pages #43941666436 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43941666436) именно на production root `587a684`. Публичная страница: https://mryandexxx-spec.github.io/Dgoh-game/.
+- Сохранение контекста: [ARCH-01C Issue #132](https://github.com/mryandexxx-spec/Dgoh-game/issues/132), эта запись и `dev/CHANGES_STATUS.md`. One-shot `release-v127-once.yml` и прежний `release-v126-once.yml` удаляются после подтверждённого выпуска в docs-only PR; **новый publish не требуется**.
+
+**Открыто:** физический Safari/iPhone v127 не подтверждён; требуется проверить лагерь без изменений, запуск/обновление SW, 210 миссий, 6/8 валют, MED/LOW, offline, сейвы и перезапуск. Остаток архитектурного baseline — **13**; продолжение ARCH-01C2b/c/d только отдельными этапами.
