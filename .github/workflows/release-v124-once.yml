@@ -1,0 +1,44 @@
+name: One-time owner-approved ARCH-01B2 v124 publication
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - dev/docs/ARCH01B2_V124_RELEASE_HANDOFF_2026_11_16.md
+      - .github/workflows/release-v124-once.yml
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  publish-v124-once:
+    name: Dispatch owner-approved v124 verified Pages publication
+    if: "${{ github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release(arch): publish v124') }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Guard exact release, prior production and ARCH-01B2 stats decoupling
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git show --format=%s -s HEAD)" = "release(arch): publish v124"
+          test "$(tr -d '\n' < dev/version.json)" = '{"v":124}'
+          grep -Fq "const VER = '4d27cefa0a'" sw.js
+          test -f dev/src/logic/stat-counters.js
+          grep -Fq 'function statInc(k, n = 1)' dev/src/logic/stat-counters.js
+          grep -Fq "from './stat-counters.js'" dev/src/logic/stats.js
+          ! grep -Fq "from '../ui/views/trials.js'" dev/src/logic/stats.js
+          ! grep -Fq "import '../ui/views/trials.js'" dev/src/logic/stats.js
+          node -e 'const x=require("./dev/tools/arch-import-baseline.json");if(x.legacy.length!==18||x.legacy.some(s=>s==="logic/stats.js -> ui/views/trials.js"))process.exit(1)'
+          test -f dev/docs/ARCH01B2_V124_RELEASE_HANDOFF_2026_11_16.md
+          test -f dev/tests/ci/arch-stats-bootstrap.mjs
+          test -f dev/src/logic/account.js
+          printf '%s\n' 'Dispatching approved validated v124 PWA publication: ' "${GITHUB_SHA}"
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/validate-pwa.yml/dispatches" \
+            -f ref=main -f 'inputs[publish]=true'
+          echo "One-time owner-approved v124 validated publication dispatched for ${GITHUB_SHA}"
