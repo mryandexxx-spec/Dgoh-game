@@ -112,6 +112,8 @@ export const SPLIT = [
   [3365, 'ui/skill-window.js'],
   [3365, 'ui/memory-screen.js'],
   [3550, 'ui/overlays/info.js'],
+  // ARCH-01B2: statInc как чистая логика инициализируется до первого UI-потребителя.
+  [4810, 'logic/stat-counters.js'],
   [3668, 'ui/overlays/sim.js'],
   [3761, 'ui/rewards.js'],
   [3779, 'ui/views/daily.js'],
