@@ -33,6 +33,26 @@
 
 **Top-level effects / temporal coupling.** boss eagerly mutates a singleton CH, not a local value. campaigns constructs all NODES eagerly, seeded with ghash/sRng, including special Rabban correction; changing the code is not a data-only refactor. journeys eagerly normalizes tier levels, enemy power and relic requirements at line 22. cosmetics eagerly patches worm SVG and background from a resolved asset URL. conquest-data eagerly constructs constants and closures, but cq(), NOTES and economy/state reads are deferred to invoked functions. story and looks have simple declarative bodies but their import predecessors are NOT necessarily inert. core/state.js declares a live let S initialized only by set_S later; never replace lazy accesses with eager S/prog/cq/refill evaluation. logic/economy.js explicitly imports data/journeys.js for predecessor ordering; logic/conquest.js imports data/conquest-data.js by name. Each is a cycle/TDZ hotspot.
 
+## 2a. ACTUAL virtual esbuild findings (CI #43872889541)
+
+The diagnostic was executed successfully in the existing architecture CI gate on the draft PR, not merely proposed. AST: 167 modules, 992 static, zero dynamic, 2 SCC (104 and 9), zero unresolved. **16/17 forbidden edges are within an SCC**, the only non-cyclic edge is data/looks.js → logic/battle/ai.js; however even that predecessor changes bundle ordering when removed.
+
+The tool uses a production-equivalent virtual esbuild bundle and compares the **original 161 module marker sequence** without altering checked-in code or SPLIT:
+
+| Virtual single-edge variant | Previous modules at different positions | Earliest mismatch | Decision |
+|---|---:|---|---|
+| boss → skills removed | 3 | index 6: expected data/skill-ups.js, got data/boss.js | Reject deletion as-is |
+| looks → ai removed | 58 | index 1: expected data/fx.js, got data/looks.js | Reject deletion as-is |
+| story → models removed | 60 | index 0: expected logic/cinematic-preference.js, got data/story.js | Reject deletion as-is |
+| cosmetics → stats removed | 2 | index 142: expected logic/stats.js, got data/cosmetics.js | Reject deletion as-is |
+| conquest-data → celebrate removed | 157 | index 0: expected logic/cinematic-preference.js, got logic/daily.js | Reject deletion as-is |
+| journeys → economy: replace MAX_GEAR binding with pure virtual data module and preserve economy re-export | **0** | **none** | **GO for a separately approved C1a implementation**, subject to tests |
+
+All five unsafe variants retained the same set of source markers (no missing or extra modules), but changed **their execution order**, which violates the real bootstrap contract. **Do not** fix these by changing SPLIT to match their accidental new order. The MAX_GEAR pure-data variant preserves the 161 baseline markers exactly, while the new virtual module is inserted outside that legacy marker set.
+
+Build architecture gate **SUCCESS**, actual production bundle afterwards still passed check-bundle **OK (161), 891 named exports, zero missing/renamed**. This is evidence for the selected first pilot, **not** evidence that a real C1a implementation has passed goldens/save/WebGL or is authorized to merge.
+
+
 ## 3. Four separately accepted implementation packets
 
 Checkpoints: 17 → 14 → 10 → 6 → 0, with intermediate **17 → 16** after the first pilot. These are planned targets, not completed removals. One authorized feature/Draft PR per package; break a risky package into another PR if it cannot be proven safe. Never rewrite SPLIT just to approve a reorder.
