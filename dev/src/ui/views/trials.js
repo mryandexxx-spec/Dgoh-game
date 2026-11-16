@@ -1,4 +1,5 @@
 // ui/views/trials.js — строки 4681–4809 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import '../hero-window.js'; // порядок исполнения — UI связывает UI, не logic → UI
 import '../../logic/trials.js'; // порядок исполнения
 import { rwTile } from '../reward-tiles.js';
 import { statInc } from '../../logic/stats.js';
