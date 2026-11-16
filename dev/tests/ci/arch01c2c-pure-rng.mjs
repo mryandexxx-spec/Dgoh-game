@@ -27,9 +27,12 @@ assert.ok(core.indexOf("import './dom.js'; // порядок исполнени�
   core.indexOf("import './dom.js'; // порядок исполнения") <
     core.indexOf("import { sRng as pureSRng } from '../data/seeded-rng.js';"),
   'original core/dom predecessor must be evaluated first');
-assert.ok(core.includes('const sRng = pureSRng;') &&
+assert.ok(core.includes('function sRng(seed) { return pureSRng(seed); }') &&
   core.includes('export { sRng };'),
-  'explicit local alias and legacy core RNG named export are mandatory');
+  'hoisted legacy core RNG function and named export are mandatory');
+assert.ok(read('render2d/scenes.js').includes('const NZ = makeNoise(1337);') &&
+  read('render2d/scenes.js').includes("import { sRng } from '../core/rng.js';"),
+  'early top-level 2D scene RNG dependency cannot tolerate a const alias');
 assert.ok(read('logic/progress.js').includes("import '../core/rng.js'; // порядок исполнения"),
   'existing logic bootstrap predecessor must keep core RNG at the legacy slot');
 
