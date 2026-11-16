@@ -21,8 +21,8 @@ C2d доказал опасность удаления order-only связи с 
 - Старое `unlocked(kind,id)` используется из `ui/overlays/profile.js` и `ui/wiring.js`. Без переподключения публичного UI, с обязательным сохранением named export: внутри `data/cosmetics.js` только строго однократно регистрируемый callable adapter; реализация живого правила в новом `logic/cosmetics-unlocks.js`:
   `FREE[kind].includes(id) || !!S.unlocks[kind][id] || (kind === 'ava' && id.startsWith('hero:') && CH[id.slice(5)] && prog(id.slice(5)).stars > 0)`.
 - Порядок вычисления `||` и отсутствие проверки незнакомых `kind`/id **сохранить как в текущей версии**: незнакомый kind бросает исключение; свободные title/frame дают true даже без `S`; герои получают аватар только при `stars>0`, не от имени/фракции; уже сохранённые `S.unlocks` остаются авторитетны.
-- `core/boot.js` связывает функцию через side-effect import *до start()*, **без чтения S или вызова prog при module evaluation**. Отсутствующий bind → явная ошибка, не default true. Дублирующий bind → явная ошибка.
-- Не трогать **ни один** из файлов лагеря (UI/3D, стили, кнопки, зоны и навигация), `ui/overlays/profile.js` и `ui/wiring.js` на этом подэтапе, а также `assets/models.js`, `logic/stats.js`, 21 карту и 210 миссий, награды, графику, баланс, сейвы и опубликованную PWA.
+- Существующая UI-композиция через `ui/wiring.js` связывает функцию side-effect import *до start()*, **без чтения S или вызова prog при module evaluation**. Отсутствующий bind → явная ошибка, не default true. Дублирующий bind → явная ошибка.
+- Не трогать **ни один** из файлов лагеря (UI/3D, стили, кнопки, зоны и навигация), `ui/overlays/profile.js`; в `ui/wiring.js` допустим только один side-effect import обработчика в проверенной точке без изменения UI-поведения, а также `assets/models.js`, `logic/stats.js`, 21 карту и 210 миссий, награды, графику, баланс, сейвы и опубликованную PWA.
 
 ## Стадия A — виртуальный ESM до правок игры
 
@@ -37,6 +37,21 @@ C2d доказал опасность удаления order-only связи с 
 - Golden 200 battles/meta/saves/41 screens обеих сборок, PWA SW/offline, E3 phone DOM, mobile/desktop WebGL MED/LOW + строгий lifecycle — обязательны без обновления golden.
 - **Нет разрешения на merge, version bump, release**. Физический Safari/iPhone v127 всё ещё непроверен.
 
-## Фактический результат
+## Результат виртуальных тестов на НЕИЗМЕНЁННЫХ исходниках
 
-*Диагностический CI запущен. До результатa exact-order virtual ни один production файл не изменён.*
+- [CI #43965553793](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43965553793), архитектурная сборка: прямой вариант регистрации через `core/boot.js` переставил **5 из 166** старых модулей, поэтому **NO-GO**.
+- [CI #43965966162](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43965966162), архитектурная сборка: варианты регистрации через `ui/overlays/profile.js`, `ui/views/feats.js` и `ui/wiring.js` после прежнего data import сохранили **166/166 прежних позиций (moved=0)**. Выбрано `ui/wiring.js`: уже отвечает за выбор `pava`, `pframe`, `ptitle` и импортирует `unlocked` из data. Единственная добавка в UI — **один** side-effect import из `logic/cosmetics-unlocks.js`, никакого изменения кнопок/рендера/навигации.
+- [CI #43966361442](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/43966361442): до изменений production `src` на **PWA и artifact** сняты **идентичные SHA-256**:
+  - Все права на косметику для fresh/partial/all-starred/replaced saves, `title/frame/emb/hero` — `d451f070fde45c721f379161fe3bc8fbd1d29b9649964957ec31591c8e912a55`.
+  - Полные `EMBLEMS`, `FRAMES`, `TITLES`, `FREE`, SVG/URL и background червя — `64a85568c392122adf50284fde0d2f83e1cf82ec667571808b93710d69b48dd8`.
+  - Оба хеша **зафиксированы в коде** `dev/tests/arch01c3a1-cosmetics-snapshot.mjs` **до реального рефакторинга** и вызываются для PWA+artifact в обязательном CI. Хеши нельзя заменять ради прохождения.
+
+## Реальная реализация C3a1 (в отдельной feature-ветке, без merge)
+
+- `data/cosmetics.js`: убраны импорты `core/state.js` и `logic/progress.js`, статические EMBLEMS/FRAMES/TITLES/FREE и прежний WORM_IMG/logic/stats predecessor **без изменений**. `unlocked(kind,id)` остаётся публичной функцией и строго делегирует в привязанный логический обработчик; bind duplicate/missing → throw.
+- Новый `logic/cosmetics-unlocks.js`: **побуквенно идентичная** исходной короткозамкнутая формула с живыми `S.unlocks`, `prog`, `CH` и `FREE`. При ESM evaluation регистрируется **только callback**, без чтения S/prog. `ui/wiring.js`: один импорт после старого `unlocked` import. `core/boot.js`, `ui/overlays/profile.js` и **лагерь** не изменяются.
+- `tools/arch-import-baseline.json`: ровно **11→9**, high-risk модели и stats остаются, 0 new/stale; `tools/split.config.mjs`: одна additive запись нового логического модуля после старого profile и перед wiring, прежние 166 в прежней относительной последовательности.
+- Все прежние C1/C2 regression asserts обновлены по точным количествам **167 SPLIT / 173 source JS / 9 legacy**, без ослабления; `dev/tests/ci/arch01c3a1-cosmetics-boundary.mjs` проверяет исходное правило, bootstrap UI, два удалённых ребра, отсутствие новых SCC и нетронутый WORM_IMG.
+- Публикация и версия **v127** не меняются. **Реальный полный CI после реализации ожидается**. Если появятся runtime/TDZ/визуальные расхождения, этот Draft нельзя принимать. C3a2/C3a3 только отдельными этапами: SVG asset coupling и stats predecessor ещё не устранены.
+
+
