@@ -16,7 +16,6 @@
     "data/cosmetics.js -> logic/progress.js",
     "data/cosmetics.js -> logic/stats.js",
     "data/journeys.js -> core/state.js",
-    "data/journeys.js -> logic/economy.js",
     "data/journeys.js -> logic/progress.js",
     "data/looks.js -> logic/battle/ai.js",
     "data/story.js -> assets/models.js"
