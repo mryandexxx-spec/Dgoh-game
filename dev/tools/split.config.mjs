@@ -59,6 +59,8 @@ export const SPLIT = [
   [2668, 'assets/models.js'],
   [2671, 'data/story.js'],
   [2729, 'data/campaigns.js'],
+  // ARCH-01C1a: pure gear cap is evaluated before the legacy journey chain.
+  [3023, 'data/gear-cap.js'],
   [2893, 'data/glyphs.js'],
   [3023, 'data/journeys.js'],
   [3057, 'data/memory-scrap.js'],
