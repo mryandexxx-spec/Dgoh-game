@@ -19,6 +19,7 @@
     "data/journeys.js -> logic/economy.js",
     "data/journeys.js -> logic/progress.js",
     "data/looks.js -> logic/battle/ai.js",
-    "data/story.js -> assets/models.js"
+    "data/story.js -> assets/models.js",
+    "logic/account.js -> ui/wiring.js"
   ]
 }
