@@ -1,0 +1,43 @@
+name: One-time owner-approved ARCH-01C1 v126 publication
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - dev/docs/ARCH01C1_V126_RELEASE_HANDOFF_2026_11_16.md
+      - .github/workflows/release-v126-once.yml
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  publish-v126-once:
+    name: Dispatch owner-approved v126 verified Pages publication
+    if: "${{ github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release(arch): publish v126') }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail-closed v126 version, current root and exact 14-edge boundary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git show --format=%s -s HEAD)" = "release(arch): publish v126"
+          test "$(tr -d '\n' < dev/version.json)" = '{"v":126}'
+          grep -Fq "const VER = '98ada878d4'" sw.js
+          test -f dev/src/data/gear-cap.js
+          test -f dev/src/logic/journey-gates.js
+          test -f dev/tests/arch01c1b-journey-runtime.mjs
+          test -f dev/docs/ARCH01C1_V126_RELEASE_HANDOFF_2026_11_16.md
+          grep -Fq "import './gear-cap.js'" dev/src/data/journeys.js || grep -Fq "from './gear-cap.js'" dev/src/data/journeys.js
+          grep -Fq 'bindJourneyRuntime({' dev/src/logic/journey-gates.js
+          grep -Fq "import '../logic/journey-gates.js'" dev/src/core/boot.js
+          node -e 'const x=require("./dev/tools/arch-import-baseline.json"); if(x.legacy.length!==14||x.legacy.some(e=>!e.startsWith("data/"))) process.exit(1)'
+          echo "Dispatch validated owner-approved v126 publication for ${GITHUB_SHA}"
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/validate-pwa.yml/dispatches" \
+            -f ref=main -f 'inputs[publish]=true'
+          echo "One-time v126 validated publication dispatched for ${GITHUB_SHA}"
