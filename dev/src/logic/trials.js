@@ -1,5 +1,4 @@
 // logic/trials.js — данные и правила испытаний, вынесены из ui/views/trials.js (фаза 2, правило зависимостей §2).
-import '../ui/hero-window.js'; // порядок исполнения
 import { CH } from '../data/chars.js';
 import { S } from '../core/state.js';
 import { todayKey } from './economy.js';
