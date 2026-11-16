@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "purpose": "ARCH-01 temporary legacy import edges in v123/main; remove entries in the same PR that removes their imports. Do not add new entries.",
+  "source": "2026-11-16 main c2dffcb57d6711a76850651fec30364c1972fe35",
+  "legacy": [
+    "data/boss.js -> logic/battle/skills.js",
+    "data/campaigns.js -> core/rng.js",
+    "data/campaigns.js -> core/state.js",
+    "data/campaigns.js -> logic/economy.js",
+    "data/conquest-data.js -> core/state.js",
+    "data/conquest-data.js -> logic/conquest.js",
+    "data/conquest-data.js -> logic/economy.js",
+    "data/conquest-data.js -> ui/overlays/celebrate.js",
+    "data/cosmetics.js -> assets/models.js",
+    "data/cosmetics.js -> core/state.js",
+    "data/cosmetics.js -> logic/progress.js",
+    "data/cosmetics.js -> logic/stats.js",
+    "data/journeys.js -> core/state.js",
+    "data/journeys.js -> logic/economy.js",
+    "data/journeys.js -> logic/progress.js",
+    "data/looks.js -> logic/battle/ai.js",
+    "data/story.js -> assets/models.js",
+    "logic/account.js -> ui/wiring.js",
+    "logic/stats.js -> ui/views/trials.js",
+    "logic/trials.js -> ui/hero-window.js"
+  ]
+}

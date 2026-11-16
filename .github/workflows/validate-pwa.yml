@@ -80,6 +80,11 @@ jobs:
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: node tools/check-deps.mjs
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-01 Acorn import-boundary regression gate
+        run: |
+          node tests/ci/arch-imports.mjs
+          node tools/check-arch-imports.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: npm run build
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: node tools/check-bundle.mjs dist/pwa/app.js
