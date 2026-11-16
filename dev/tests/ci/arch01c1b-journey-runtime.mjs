@@ -35,14 +35,14 @@ assert.ok(logic.includes('p.stars >= 7 && p.gear >= MAX_GEAR'),
 assert.ok(data.includes('const jFoes = ') && data.includes('const jRelic = '),
   'static journey enemy/relic declarations remain in data');
 
-assert.equal(baseline.length, 11, 'ARCH-01C2c leaves exactly 11 legacy reverse imports');
+assert.equal(baseline.length, 9, 'ARCH-01C2c leaves exactly 11 legacy reverse imports');
 assert.ok(!baseline.some(e => e.startsWith('data/journeys.js -> ')),
   'journeys must have no remaining reverse edges');
 const source = SPLIT.filter(([,name]) => name === 'logic/journey-gates.js');
 assert.equal(source.length, 1, 'the new logic module must have exactly one SPLIT marker');
-assert.equal(SPLIT.length, 166, 'C1a/b, C2a/b retained plus pure seeded RNG');
+assert.equal(SPLIT.length, 167, 'C1a/b, C2a/b retained plus pure seeded RNG');
 const graph = analyzeTree(process.cwd());
-assert.equal(graph.modules, 172, 'seeded RNG adds one module after C2b');
+assert.equal(graph.modules, 173, 'seeded RNG adds one module after C2b');
 assert.equal(graph.unresolved.length, 0, 'no unresolved ESM imports');
 assert.ok(graph.cycles.length <= 2, 'new journey runtime must not introduce a third ESM SCC');
 console.log('ARCH-01C1b journey runtime boundary: PASS; 14 baseline edges, explicit bootstrap, old UI bridge intact');
