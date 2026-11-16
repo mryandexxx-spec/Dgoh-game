@@ -2,7 +2,7 @@
 import '../hero-window.js'; // порядок исполнения — UI связывает UI, не logic → UI
 import '../../logic/trials.js'; // порядок исполнения
 import { rwTile } from '../reward-tiles.js';
-import { statInc } from '../../logic/stats.js';
+import { statInc } from '../../logic/stat-counters.js';
 import { openSquadSel } from '../overlays/squad-select.js';
 import { accXP, fragLines, giveRewards, rewardWin } from '../rewards.js';
 import { render } from '../router.js';

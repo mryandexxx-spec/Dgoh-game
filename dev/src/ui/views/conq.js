@@ -2,7 +2,7 @@
 import { cq, cqAddDisk, cqCanClaim, cqCanOn, cqChest, cqDiskOn, cqDiskPick, cqEn, cqEnSpend, cqEnTxt, cqFoes, cqGoods, cqLayout, cqLive, cqNode, cqNodeDisks, cqDifficultyAccess, cqRecordFinalBoss, cqRoute, cqRouteBlocked, cqCommitRoute, cqOpen, cqStCan, cqStReady, cqSta, cqStaCol, cqStaPen, cqStaSet, cqStatic, cqSyncTrack, cqTrack, cqTypeN } from '../../logic/conquest.js';
 import { CQ_CHESTS, CQ_DIFF, CQ_DISKS, CQ_DMAX, CQ_EN, CQ_ICON, CQ_LAST, CQ_LAYERS, CQ_LFAC, CQ_LMAX, CQ_MED, CQ_RF, CQ_SECT, CQ_STA, CQ_TROPHY, cqBump, cqFeats, cqK, cqMod, cqModD, cqRar, cqRfCost, cqRfN, cqScore } from '../../data/conquest-data.js';
 import { MOUSE_SVG } from '../mouse.js';
-import { statInc } from '../../logic/stats.js';
+import { statInc } from '../../logic/stat-counters.js';
 import { leaveBattle } from '../battle/battle-ui.js';
 import { SHOPS } from './shop.js';
 import { openSquadSel } from '../overlays/squad-select.js';

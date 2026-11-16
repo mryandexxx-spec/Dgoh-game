@@ -1,4 +1,5 @@
 // ui/views/feats.js — строки 4856–4905 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import './trials.js'; // порядок исполнения: UI объявляет зависимость от экрана испытаний
 import { EMBLEMS, FRAMES, TITLES } from '../../data/cosmetics.js';
 import { METRIC } from '../../logic/stats.js';
 import { giveRewards, rewardWin, rewardsHtml } from '../rewards.js';
