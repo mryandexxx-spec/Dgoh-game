@@ -34,6 +34,24 @@ For **every** candidate print exact ESM markers/movements, first mismatch, missi
 
 **Scope:** diagnostic-only test, mandatory architecture hook, this report. No game implementation, version increment, SPLIT, baseline, assets, golden, save, economy, Campaign 2.0/21 maps, protected camp, root PWA/SW. **No merge or publish** without the owner's separate approval.
 
-## Results from current-head CI
+## Actual observed v134 read-only diagnostic and CI receipt
 
-PENDING: populate only from observed diagnostic PR Actions execution and exact final diagnostic HEAD; do not infer GO from historical C2d/C3b0.
+- [Draft PR #175](https://github.com/mryandexxx-spec/Dgoh-game/pull/175), original diagnostic **code SHA `656e4646ddba778fd1ee33933ac6a101722c8a43`**, based on exact unchanged `main=b3d65303130dbd385caaac299f1f2dfc0473cd8c`.
+- [**Full real CI #44172694461 completed SUCCESS, attempt 2**](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44172694461), 19 mandatory tasks including final `All required checks passed` SUCCESS; `Publish verified PWA to GitHub Pages` deliberately SKIPPED. The actual initial attempt had **one** E3 `memory-ix-dom.mjs:44` 844x390 selection-modal timing assertion. Rerun of failed jobs **without code/test changes** passed E3, memory-ix, phone DOM, and final gate; all remaining jobs completed SUCCESS. Earlier intermittent UI smoke of the same type was observed in past PR #135; not grounds to weaken its assertions.
+- **Build once + architecture job `134355910343` SUCCESS** (full actual production esbuild + Acorn source graph), at exact code SHA: **173 modules / 1000 static imports / 0 dynamic imports / exact 167 ESM markers / 898 public global named exports / 2 original SCC [106,6] / 2 historical forbidden edges, 0 introduced/stale**.
+- 16 in-memory actual esbuild variants: **0/16 exact ESM; 0/16 original SCC membership**, every case `missing=[]`, `extra=[]` and no new forbidden data→* dependency. **NO-GO for these candidate designs.**
+  - Story remove-only `data/story.js → assets/models.js`: **62 ESM slots moved**, first mismatch at slot 20 (`data/looks.js` precedes unexpected `data/story.js`); SCC sizes **[106,6] → [62,11,6,3]**.
+  - Conquest remove-only `data/conquest-data.js → ui/overlays/celebrate.js`: **144 moved**, slot 20 first mismatch; SCC **[106,6] → [105,6]**.
+  - Best Conquest `ui/views/conq.js:first`: **47 moved**, SCC **[105,6]**; still NO-GO.
+  - Dual-root `models/celebrate` orders, and `celebrate-local models + root celebrate`: **146 moved** each, SCC **[60,11,6,3]**.
+  - Local `story/celebrate-before-story` or `story/root-after-conq`: **62 moved**; alternate root/cinematic positions **146–165 moved**.
+
+**Important:** these movement counts differ from historical C3b0 (remove-only 162) and C2d (remove-only 81) because old diagnostics used earlier module graphs/boot roots; both historical 0/35 and 0/39 NO-GO conclusions remain valid. Structural comparison reveals that simply removing either edge changes SCC membership, independent of observable UI effects. Fully preserving original SCC membership may require a separate architectural decision as with boss→skills in C4a; do not silently redefine existing acceptance requirements.
+
+### Stage A recommendation
+
+**ARCH-01C5a-A2 Conquest**, separately scoped *diagnostics only* (not B1): trace earliest actual DFS evaluation path and inspect UI-owned predecessor links near `ui/overlays/celebrate.js`, explore minimal multi-import rearrangements in memory while enforcing layers; specifically evaluate why `ui/views/conq.js:first` leaves 47 moved; model any conditionally acceptable 106→105 SCC reduction with explicit TDZ audit and no early top-level property read. Any such result must separately prove PWA and standalone HTML cold/warm bootstrap, CELEB queue, NOTES/feats, Conquest weekly reset/refill/rewards, fresh/imported/replaced saves, Campaign 210, golden, offline SW, 3D/2D fallback and protected camp. Do not treat Stage A green CI as a product implementation GO.
+
+**ARCH-01C5b Story** deferred until Conquest A2 exhausted; `models.js` early `b3Pre(loadAssets3)` registration plus baker/camp named imports and `loadB3` readiness snapshots make SCC fragmentation higher risk. Missing registered preloader may cause silently incomplete 3D assets instead of obvious crash. Need explicit timestamp/order of `b3Pre` before first `loadB3()`, model-fallback and offline tests if ever attempted.
+
+**Owner approval required before any source B1**. Neither link removed; ledger remains exactly 2, game v134 remains published as validated, main/root/SW/asset/camp/golden/SPLIT unchanged. Physical Safari/iPhone field test still OPEN.
