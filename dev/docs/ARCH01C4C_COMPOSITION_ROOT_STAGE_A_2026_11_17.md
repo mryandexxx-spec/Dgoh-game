@@ -70,3 +70,23 @@
 - **Никакого Stage B1 до успешного A2 receipt и согласования дизайна.** `main` остаётся опубликованной v133, 3 legacy edges и нулём новых.
 
 **Уточнённый scope Draft PR: ровно четыре файла** — два новых `dev/tests/ci/arch01c4c-*.mjs`, один обязательный importer `dev/tests/ci/arch-init-graph.mjs`, этот отчёт. Ни одного production file.
+
+## Подтверждённая Stage A2: реальный виртуальный Node-VM boot/golden
+
+После одной исправленной ошибки **только тестового стенда** (экранирование JSON asset map, без какой-либо правки игры) актуальный [CI #44146906865](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44146906865) на коде `9d98c3bbccdf353b79600075487677b6ed0d4a08`: обязательный `ARCH-01 Acorn import-boundary regression gate` **SUCCESS**, `Build once + architecture + SHA-256 manifest` **SUCCESS**. Последовательная проверка cold+warm seed 77/101, frozen PWA-like VM, 167/167 ESM-слотов и обоих рабочих вариантов **прошла**.
+
+**Машинный `ARCH-01C4c RUNTIME SUMMARY`:** baselineBoot=true, tested=2; для `root-gear-cine-ai` и `ui-gear-cine-existing-ai` `esmExact=true`, `boot=true`, `runtimeNoGo=false`. У каждого 5/5 иммутабельных наборов PASS:
+
+- `tests/golden/battles.mjs`: **200 боёв**, 89 B / 111 A, golden SHA `7d8169abdc688fb7`.
+- `tests/golden/meta.mjs`: **1560 случаев**, 0 исключений.
+- `tests/golden/saves.mjs`: **4 saves**, golden SHA `df7dfea2f6a4a1ee`.
+- `tests/arch01c4a-boss-bootstrap.mjs`: `CH.worm===WORM`, 3 рейдовых tiers, все 9 HP/phase boundaries, AI/skills/stats, TDZ нет.
+- `tests/arch01c3b3-conquest-selectors.mjs`: 5 сложностей, 10 boss descriptions ×5, 8 modifiers ×5, 7 сундуков, 35 track steps, NOTES, fresh/imported/replaced saves, week rollover, refill.
+
+Кроме golden: сравнены `LOOK/SKINS/OL/FEM/ghash/sigil`, AI и cinematic preference, `unitStats/unitPower`, сохранение `newSave` и worm registration; при seed 77 и 101 совпадение с неизменённым `v133` Node-VM baseline. **Весь код обеих виртуальных сборок был сгенерирован в памяти/временном каталоге и удалён в `finally`; исходники не изменились.**
+
+**Граница доказательства:** это 2 строго сопоставленных virtual runtime boot & Node golden кандидата, а НЕ готовая реальная feature-ветка: флаг `readyForB1=false` установлен намеренно. Полная E3/WebGL/DOM/PWA/offline матрица текущего *неизменённого* production важна, но не равнозначна тестам изменённых исходников. Перед реальным B1 — отдельная feature-ветка, реальные source edits + AST ledger 3→2, жёсткий 167/167 `check-bundle`, 898 names, SCC [106,6], полные PWA+HTML/golden/41 screens/210 Campaign/WebGL/CI 19/19 и приемка владельца.
+
+**Рекомендация по будущему B1 — выбирать `root-gear-cine-ai`, несмотря на три разрешённых imports против двух у UI-варианта.** Причина: стартовый `src/boot.js` — явный composition root, ранняя `ui/views/conq.js` — экран конкретного режима. Прятать обязанности глобального bootstrap в Conquest-экране ради экономии одного ребра значит сохранять хрупкую ответственность; явная последовательность `gear-cap → cinematic-preference → AI → UI bootstrap` соответствует архитектурной цели. Это **проектное предложение, а не разрешение на реализацию или merge/release**.
+
+**Финальная CI-приёмка этого Draft PR:** записать head SHA и **полный итог 19/19** только после фактического финального workflow на окончательной документационной правке. Никаких опубликованных PWA/root изменений.
