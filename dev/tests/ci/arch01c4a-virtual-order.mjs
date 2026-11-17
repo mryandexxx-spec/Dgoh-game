@@ -139,8 +139,9 @@ for(const test of scenarios){
   const removedDebt=oldEdges.filter(x=>[boss+' -> '+skills,looks+' -> '+ai].includes(x));
   const otherRemoved=oldEdges.filter(x=>!removedDebt.includes(x));
   const b2=test.patch.get(boss)??b,l2=test.patch.get(looks)??l;
-  const immutability=b2.replace(/^import .*\n/,'')===b.replace(/^import .*\n/,'')&&
-   l2.replace(/^import .*\n/,'')===l.replace(/^import .*\n/,'');
+  const withoutPredecessor=s=>s.replace(/^import '[^']+';[^\n]*\n/m,'');
+  const immutability=withoutPredecessor(b2)===withoutPredecessor(b)&&
+   withoutPredecessor(l2)===withoutPredecessor(l);
   const preservesEffects=b2.includes('CH.worm = WORM;')&&files.get(ai).includes("if (typeof module !== 'undefined') module.exports");
   const esmExact=missing.length===0&&extra.length===0&&moved.length===0&&current.length===167;
   const virtualGo=esmExact&&exactSCC&&namesExact&&addedEdges.length===0&&
