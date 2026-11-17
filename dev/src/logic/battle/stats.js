@@ -1,6 +1,6 @@
 // logic/battle/stats.js — строки 228–245 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { STAR_MULT } from '../../data/boss.js';
 import { SK_KEYS, autoSk } from './skills.js';
+import { STAR_MULT } from '../../data/boss.js';
 import { BASE } from '../../data/fx.js';
 import { gearBonus } from '../../data/gear-bonuses.js';
 // Поздний модуль gear.js регистрирует детерминированный план ячеек.
