@@ -45,3 +45,25 @@ C3b0 `conquest-data→celebrate` уже **NO-GO 0/35** при попытках �
 **Запреты:** текущая работа НЕ меняет игру, `CH`, `SPLIT`, `dev/tools/arch-import-baseline.json`, сейвы, деньги/баланс, UI, Camp, Campaign, ассеты, golden, `dev/version.json` и root PWA/SW. Никаких merge/publish на диагностическом этапе.
 
 **Состояние этого документа:** до получения логов финального CI кандидаты GO/NO-GO не утверждаются. По завершении записать точный PR-head/run ID, 16 реальных результатов, рекомендованную следующую безопасную границу и Issue #132.
+
+## Измеренный Stage A — actual production esbuild (CI первого финального варианта)
+
+Прямые двенадцать попыток `delete`, `data→data` и их небольшие комбинации: **0/12 ESM exact**, значит NO-GO для механического удаления. Наивный `boss→skills` removal сдвигает 3 из 167 ESM, ухудшает/перестраивает SCC 9→6 и нарушает порядок `skills < boss`. Наивный `looks→ai` removal сдвигает 60 ESM; SCC membership остаётся [106,9], но `ai < looks` нарушается. Правомерные импорты в `chars`/`skill-ups`/`boss` не восстанавливают прежний порядок: 2–55 перемещённых маркеров. Во всех случаях все 898 имён экспорта сохранены, но этого явно недостаточно.
+
+Четыре дополнительные пробы **`boss→skills` removal + import order в `logic/battle/*` без нового edge**:
+- `ai.js`: 3 ESM-marker moves, SCC [106,6] — NO-GO.
+- **`stats.js`**: `import { SK_KEYS, autoSk } from './skills.js'` перенесён **перед** существующим `import { STAR_MULT } from '../../data/boss.js'`; **0 сдвигов ESM**, 898 имён, 0 новых/лишних edges, сохранён правильный skills→boss порядок и байтово неизменённые тела; но SCC **[106,9]→[106,6]**, то есть **НЕ СТРОГИЙ VIRTUAL GO**, а **исследовательский кандидат** с необходимостью отдельного анализа влияния инициализации.
+- `engine.js`: 3 ESM moves, SCC [106,6] — NO-GO.
+- `raid.js`: 3 ESM moves, SCC [106,6] — NO-GO.
+
+**Итого 16 сценариев: ESM exact 1/16, strict virtual GO 0/16.** Все реальные результаты `ARCH-01C4a TRIAL` в [Actions #44113007773](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44113007773), build log. Размер SCC изменяется при удалении ребра, несмотря на сохранение порядка. Сокращение SCC само по себе может быть полезным, но не означает отсутствие ReferenceError/TDZ, изменений при boot или в боевой механике. **Ledger остаётся 4, не изменять.**
+
+## Исследование runtime без изменения игры
+
+`dev/tests/ci/arch01c4a-virtual-runtime.mjs` использует тот же в памяти overlay: удаляется **только** строка `boss→skills` и меняется **только** порядок двух уже существующих import declarations в `logic/battle/stats.js`. Сборка на тех же production esbuild flags, 167/167 marker order. Проверяет cold Node VM boot **исходной и виртуальной версий** в изолированных временных HTML+JS (вне проекта; файлы удаляются). Контроль `CH.worm === WORM`, boss/raid phase, `skLv`, `skMax`, Duncan guard, `aiPlan`, `computeIntents`, `createBattle`, другие сигнатуры. Если виртуальная версия не стартует — явный **NO-GO**, без изменения игры и без отключения CI.
+
+Если cold boot пройден — кандидат сверяется с **неизменёнными** золотыми результатами `tests/golden/battles.mjs` (200 боёв, включая 30 рейдов и 30 Джихад), `tests/golden/meta.mjs` (1539 метаслучаев), `tests/golden/saves.mjs` (real saves), и `tests/arch01c3b3-conquest-selectors.mjs` (5 сложностей, 10 боссов, все награды). Запрещено `--update`; ни одна сохранённая золотая строка не меняется. Вывод `ARCH-01C4a RUNTIME` — обязательный фактический источник GO/NO-GO для следующей фазы, даже если архитектурная диагностика возвращает PASS как read-only тест.
+
+Физический iPhone Safari, настоящий браузер/WebGL PWA+artifact и CI на **реальных изменениях исходников** не выполняются на данном диагностическом шаге; даже все зелёные виртуальные golden не дают разрешения на merge/release. Следующий пакет, если runtime подтвердит кандидата, — **отдельный Stage B1 Draft PR** ровно с двумя кодовыми изменениями плюс baseline 4→3 и строгие real-world-тесты/CI. Иначе **NO-GO**, перейти к проектированию composition-root/раннего ESM bootstrap без рефакторинга геймплея. C3b0 и C2d строго не трогать.
+
+Итоговый runtime receipt и актуальную ссылку на полный CI последнего head документировать в [Issue #132](https://github.com/mryandexxx-spec/Dgoh-game/issues/132). **NO MERGE, NO PUBLISH на Stage A.**
