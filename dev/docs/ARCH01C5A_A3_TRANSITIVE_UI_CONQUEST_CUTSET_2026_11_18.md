@@ -90,7 +90,7 @@ Treat one existing distinct source→target dependency pair as one graph arc, as
 | `ui/notifications.js → data/conquest-data.js` | 3 | named: `CQ_SECT` |
 | `ui/overlays/squad-select.js → logic/conquest.js` | 3 | named: ten `cq*` functions |
 | `ui/overlays/squad-select.js → data/conquest-data.js` | 4 | named: `CQ_EN, CQ_SECT, CQ_STA, cqMod` |
-| `ui/views/conq.js → logic/conquest.js` | 2 | named: 36 `cq*` functions |
+| `ui/views/conq.js → logic/conquest.js` | 2 | named: 38 `cq*` functions |
 | `ui/views/conq.js → data/conquest-data.js` | 3 | named: 18 `CQ*`/`cq*` values |
 | `ui/views/lobby.js → logic/conquest.js` | 3 | named: `cqHot` |
 
