@@ -1,5 +1,4 @@
 // data/boss.js — строки 214–227 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import '../logic/battle/skills.js'; // порядок исполнения
 import { CH } from './chars.js';
 
 const WORM = { id: 'worm', n: 'Шаи-Хулуд', sn: 'Шаи-Хулуд', g: 'ШХ', f: ['worm'], role: 'tank', boss: true, immune: ['poison', 'fear', 'voiced'],
