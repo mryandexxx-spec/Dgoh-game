@@ -33,7 +33,7 @@ assert.ok(logic.includes("import { enemyProg, refillPrice, todayKey } from './ec
  'reuse existing logic→economy import and original date/price functions');
 assert.ok(staticEdges('logic/conquest.js').includes('core/state.js'),
  'logic already owns save/state, no new reverse data edge needed');
-assert.ok(/export \{[^}]*\bcqRfN\b, cqRfCost\b, cqBump\b, cqHot \};/.test(logic),
+assert.ok(/export \{[^}]*\bcqRfN\b, cqRfCost\b, cqK\b, cqModD\b, cqScore\b, cqBump\b, cqHot \};/.test(logic),
  'logic exports original recharge API without renaming');
 const ui=source('ui/views/conq.js');
 assert.ok(ui.includes('cqTrack, cqTypeN, cqRfN, cqRfCost, cqBump, cqK, cqModD, cqScore } from \'../../logic/conquest.js\';') &&
