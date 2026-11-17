@@ -36,7 +36,7 @@ assert.ok(read('render2d/scenes.js').includes('const NZ = makeNoise(1337);') &&
 assert.ok(read('logic/progress.js').includes("import '../core/rng.js'; // порядок исполнения"),
   'existing logic bootstrap predecessor must keep core RNG at the legacy slot');
 
-assert.equal(baseline.length, 8, 'ARCH-01C3a2 leaves eight legacy imports; earlier architecture regressions unchanged');
+assert.equal(baseline.length, 7, 'ARCH-01C3a3 removes one additional order-only edge; earlier behavior regressions unchanged');
 assert.ok(!baseline.includes('data/campaigns.js -> core/rng.js'));
 assert.ok(baseline.includes('data/story.js -> assets/models.js'),
   'story/order-only C2d is not part of this change');
