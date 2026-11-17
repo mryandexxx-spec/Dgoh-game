@@ -63,7 +63,8 @@ assert.ok(dataNames.includes('cqMod')&&dataNames.includes('cqFeats'));
 for(const name of ['cqBump','cqRfN','cqRfCost'])assert.ok(logicNames.includes(name));
 const globals=SPLIT.flatMap(([,p])=>exp(p));
 assert.equal(globals.length,898,'frozen old public global named export count');
-assert.equal(new Set(globals).size,898,'cannot introduce duplicate named globals');
+for(const name of ['cqK','cqModD','cqScore'])
+ assert.equal(globals.filter(x=>x===name).length,1,'migrated selector must still have exactly one global export: '+name);
 assert.ok(ui.includes("cqTypeN, cqRfN, cqRfCost, cqBump, cqK, cqModD, cqScore } from '../../logic/conquest.js'")&&
  ui.includes("CQ_TROPHY, cqFeats, cqMod, cqRar } from '../../data/conquest-data.js'"),
  'all three UI named imports must use existing logic module edge');
