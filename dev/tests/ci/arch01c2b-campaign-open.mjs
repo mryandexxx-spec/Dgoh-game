@@ -11,7 +11,7 @@ const baseline = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json', '
 const campaigns = read('data/campaigns.js'), gates = read('logic/campaign-gates.js');
 const boot = read('core/boot.js');
 
-assert.equal(baseline.length, 5, 'ARCH-01C3b2 additionally removes only Conquest→core/state; earlier invariants unchanged');
+assert.equal(baseline.length, 4, 'ARCH-01C3b3 additionally removes Conquest→logic/conquest; earlier invariants unchanged');
 assert.ok(!baseline.includes('data/campaigns.js -> core/state.js'),
   'campaign data may never import live state again');
 assert.ok(!baseline.includes('data/campaigns.js -> core/rng.js') &&
