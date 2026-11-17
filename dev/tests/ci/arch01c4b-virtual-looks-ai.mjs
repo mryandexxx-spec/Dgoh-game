@@ -172,6 +172,44 @@ async function bundle(patch){
  assert.equal(built.outputFiles.length,1);
  return markerNames(built.outputFiles[0].text);
 }
+function firstDfsPath(patch,target){
+ const seen=new Set();
+ function visit(current,trail) {
+  if(current===target)return [...trail,current];
+  if(seen.has(current))return null;
+  seen.add(current);
+  for(const e of importEdges(patch.get(current)??source.get(current),current))
+   if(e.kind==='static'){
+    const next=visit(e.to,[...trail,current]);
+    if(next)return next;
+   }
+  return null;
+ }
+ return visit('main.js',[]);
+}
+function inbound(target){
+ return [...source].flatMap(([p,s])=>
+  importEdges(s,p).filter(e=>e.kind==='static'&&e.to===target)
+    .map(e=>({module:p,line:e.line}))).sort((a,b)=>a.module.localeCompare(b.module));
+}
+function importList(p){
+ return (source.get(p)||'').split('\n').filter(x=>x.startsWith('import '));
+}
+const looksPath=firstDfsPath(new Map(),looks);
+const aiBefore=firstDfsPath(new Map(),ai);
+const aiWithout=firstDfsPath(removePredecessor(),ai);
+assert.ok(looksPath&&aiBefore&&aiWithout,'all v133 modules reachable in ESM boot');
+console.log('ARCH-01C4b TRACE '+JSON.stringify({
+ looksFirstPath:looksPath,
+ aiPathWithLooksPredecessor:aiBefore,
+ aiPathWithoutLooksPredecessor:aiWithout,
+ looksDirectImporters:inbound(looks),
+ aiDirectImporters:inbound(ai),
+ earliestParent:looksPath.at(-2),
+ earliestParentImports:importList(looksPath.at(-2)),
+ contextAncestors:looksPath.slice(0,-1).map(p=>({path:p,importCount:importList(p).length})),
+ note:'DFS import-order path is diagnostic only; exact esbuild ESM marker gate is authoritative.'
+}));
 const baseGraph=graphOf(new Map());
 assert.equal(baseGraph.count,998);
 assert.deepEqual(baseGraph.cycles,base.cycles);
@@ -206,6 +244,7 @@ for(const t of cases) {
   const conditional=ESM&&namesExact&&removeExactly&&fixedBody&&!unconditional;
   const row={name:t.name,kind:t.kind,importCount:g.count,ESMExact:ESM,
    markersMoved:moved.length,firstMoved:moved.slice(0,6),
+   aiIndex:current.indexOf(ai),looksIndex:current.indexOf(looks),
    missing,extra,cycles:g.cycles.map(x=>x.length),
    cyclesExact:cyclicExact,removedEdges:oldEdges,addedEdges,
    namesExact,bodyExact:fixedBody,unconditionalVirtualGo:unconditional,
