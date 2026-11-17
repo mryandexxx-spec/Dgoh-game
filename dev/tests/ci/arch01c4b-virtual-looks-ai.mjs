@@ -1,0 +1,316 @@
+// ARCH-01C4b Stage A — "looks → ai" ESM order-only legacy import.
+// Production-esbuild read-only source overlays: NO source edits, no golden
+// rewriting, no SPLIT changes, no baseline change, no publish/merge.
+// The C4a naive looks deletion moved 60 ESM markers; re-evaluate from v133.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import * as esbuild from 'esbuild';
+import { SPLIT } from '../../tools/split.config.mjs';
+import { analyzeTree, importEdges, stronglyConnected } from '../../tools/arch-init-graph.mjs';
+
+const DEV=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
+const SRC=path.join(DEV,'src'),looks='data/looks.js',ai='logic/battle/ai.js';
+const oldLine="import '../logic/battle/ai.js'; // порядок исполнения";
+const source=new Map();
+function walk(p) {
+ for(const ent of fs.readdirSync(p,{withFileTypes:true})){
+  const full=path.join(p,ent.name);
+  if(ent.isDirectory())walk(full);
+  else if(ent.isFile()&&full.endsWith('.js'))
+   source.set(path.relative(SRC,full).split(path.sep).join('/'),fs.readFileSync(full,'utf8'));
+ }
+}
+walk(SRC);
+const base=analyzeTree(DEV),markers=SPLIT.map(([,p])=>p);
+const ledger=JSON.parse(fs.readFileSync(path.join(DEV,'tools/arch-import-baseline.json'),'utf8')).legacy;
+assert.equal(base.modules,173);
+assert.equal(base.staticImports,998);
+assert.deepEqual(base.cycles.map(x=>x.length),[106,6]);
+assert.equal(base.unresolved.length,0);
+assert.equal(source.size,173);
+assert.equal(markers.length,167);
+assert.deepEqual(ledger,[
+ 'data/conquest-data.js -> ui/overlays/celebrate.js',
+ 'data/looks.js -> logic/battle/ai.js',
+ 'data/story.js -> assets/models.js'
+]);
+assert.ok(source.get(looks).includes(oldLine+'\n'));
+assert.deepEqual(importEdges(source.get(looks),looks).filter(x=>x.kind==='static').map(x=>x.to),[ai]);
+assert.ok(source.get(ai).includes("if (typeof module !== 'undefined') module.exports"));
+assert.ok(markers.indexOf(ai)<markers.indexOf(looks));
+assert.ok(source.get('data/boss.js').includes('CH.worm = WORM;'));
+assert.ok(source.get('logic/battle/stats.js').includes("import { SK_KEYS, autoSk } from './skills.js';\nimport { STAR_MULT } from '../../data/boss.js';"));
+assert.ok(source.get('data/conquest-data.js').includes("import '../ui/overlays/celebrate.js'; // порядок исполнения"));
+assert.ok(source.get('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"));
+const names=()=>SPLIT.flatMap(([,p])=>{
+ const m=/^export \{ ([^\n]+) \};$/m.exec(source.get(p));
+ return m?m[1].split(', '):[];
+});
+const publicNames=names();
+assert.equal(publicNames.length,898);
+
+function removePredecessor(){
+ const s=source.get(looks);
+ assert.equal(s.split(oldLine+'\n').length,2);
+ return new Map([[looks,s.replace(oldLine+'\n','')]]);
+}
+function reorder(p,movable,before) {
+ const text=source.get(p),rows=text.split('\n');
+ assert.equal(rows.filter(x=>x===movable).length,1,'move source '+p+': '+movable);
+ assert.equal(rows.filter(x=>x===before).length,1,'before '+p+': '+before);
+ const origin=rows.indexOf(movable),beforeIdx=rows.indexOf(before);
+ assert.ok(origin>beforeIdx,'candidate must move existing later import earlier');
+ rows.splice(origin,1);rows.splice(rows.indexOf(before),0,movable);
+ assert.ok(rows.filter(x=>!x.startsWith('import ')).join('\n')===
+  text.split('\n').filter(x=>!x.startsWith('import ')).join('\n'),
+  'no game functions, comments, or top-level effects may be moved');
+ return new Map([[p,rows.join('\n')]]);
+}
+const cases=[];
+function add(name,kind,mods=[],note=''){
+ const patch=removePredecessor();
+ for(const [p,m,b] of mods)for(const [key,val] of reorder(p,m,b))patch.set(key,val);
+ cases.push({name,kind,patch,note});
+}
+const conq='ui/views/conq.js',battle='ui/battle/battle-ui.js',hero='ui/hero-card.js';
+const imports=p=>source.get(p).split('\n').filter(x=>x.startsWith('import '));
+const cAI="import { computeIntents } from '../../logic/battle/ai.js';";
+const cFig="import { portrait } from '../../render2d/figures.js';";
+const cLook="import { ghash } from '../../data/looks.js';";
+const cFirst=imports(conq)[0];
+const bAI="import { aiPlan, hasPrescience } from '../../logic/battle/ai.js';";
+const bTurn="import { act, endTurn, glMeter, startTurn } from '../../logic/battle/turns.js';";
+const bEngine="import { abilityReady, createBattle, advanceWave, foe, living, nextActor, previewOrder, validTargets } from '../../logic/battle/engine.js';";
+const bFig="import { figureSVG, portrait, wormSVG, bakedFullPortraitUrl } from '../../render2d/figures.js';";
+const bLook="import { ghash } from '../../data/looks.js';";
+const bScene="import { SceneBG, reduceMotion } from '../../render2d/scene-bg.js';";
+const bFx="import { FXLayer } from '../../render2d/fx-layer.js';";
+const bFirst=imports(battle)[0];
+const hStats="import { unitPower, unitStats } from '../logic/battle/stats.js';";
+const hSkills="import { SK_KEYS, skMax } from '../logic/battle/skills.js';";
+const hFig="import { figureSVG } from '../render2d/figures.js';";
+add('naive-delete','negative, known 60 marker drift');
+add('conq-ai-before-direct-looks','existing UI named import',[ [conq,cAI,cLook] ]);
+add('conq-ai-before-figures','existing UI named import',[ [conq,cAI,cFig] ]);
+add('conq-ai-first','existing UI named import',[ [conq,cAI,cFirst] ]);
+add('battle-ai-before-direct-looks','existing UI named import',[ [battle,bAI,bLook] ]);
+add('battle-ai-before-figures','existing UI named import',[ [battle,bAI,bFig] ]);
+add('battle-ai-before-scene-bg','existing UI named import',[ [battle,bAI,bScene] ]);
+add('battle-ai-before-fx-layer','existing UI named import',[ [battle,bAI,bFx] ]);
+add('battle-ai-first','existing UI named import',[ [battle,bAI,bFirst] ]);
+add('battle-turns-before-figures','existing UI named import',[ [battle,bTurn,bFig] ]);
+add('battle-engine-before-figures','existing UI named import',[ [battle,bEngine,bFig] ]);
+add('battle-turns-before-fx','existing UI named import',[ [battle,bTurn,bFx] ]);
+add('battle-engine-before-fx','existing UI named import',[ [battle,bEngine,bFx] ]);
+add('hero-stats-before-figures','existing UI named import',[ [hero,hStats,hFig] ]);
+add('hero-skills-before-figures','existing UI named import',[ [hero,hSkills,hFig] ]);
+add('conq-and-battle-ai-before-figures','two UI owner reorders',[
+ [conq,cAI,cFig],[battle,bAI,bFig]]);
+add('conq-early-and-battle-early','two UI owner reorders',[
+ [conq,cAI,cFirst],[battle,bAI,bFirst]]);
+add('conq-ai-and-battle-turns','two UI owner reorders',[
+ [conq,cAI,cFig],[battle,bTurn,bFig]]);
+add('conq-ai-and-hero-stats','UI owner reorders',[
+ [conq,cAI,cFig],[hero,hStats,hFig]]);
+add('battle-ai-and-hero-stats','UI owner reorders',[
+ [battle,bAI,bFig],[hero,hStats,hFig]]);
+add('conq-battle-hero-triple','three existing UI owner reorders',[
+ [conq,cAI,cFig],[battle,bAI,bFig],[hero,hStats,hFig]]);
+// Allowed direction but an ADDITIONAL import: experimental composition root
+// so the gate must explicitly report this new edge rather than treating it
+// as an unconditional GO.
+function explicitUiPredecessor(p,before,newLine){
+ const patch=removePredecessor(),text=source.get(p);
+ assert.ok(text.includes(before+'\n'));
+ patch.set(p,text.replace(before+'\n',newLine+'\n'+before+'\n'));
+ return patch;
+}
+cases.push({name:'conq-explicit-ui-ai-before-figures',
+ kind:'redundant existing UI→logic dependency; conditional only',
+ patch:explicitUiPredecessor(conq,cFig,"import '../../logic/battle/ai.js'; // VIRTUAL ui composition root")});
+cases.push({name:'battle-explicit-ui-ai-before-figures',
+ kind:'redundant existing UI→logic dependency; conditional only',
+ patch:explicitUiPredecessor(battle,bFig,"import '../../logic/battle/ai.js'; // VIRTUAL ui composition root")});
+cases.push({name:'portrait-ui-explicit-ai-before-figures',
+ kind:'new allowed UI→logic edge; composition root candidate',
+ patch:explicitUiPredecessor('ui/portrait.js',
+ "import { figureSVG } from '../render2d/figures.js';",
+ "import '../logic/battle/ai.js'; // VIRTUAL ui composition root")});
+cases.push({name:'hero-ui-explicit-ai-before-figures',
+ kind:'new allowed UI→logic edge; composition root candidate',
+ patch:explicitUiPredecessor(hero,hFig,
+ "import '../logic/battle/ai.js'; // VIRTUAL ui composition root")});
+
+function graphOf(patch){
+ const g=Object.fromEntries([...source.keys()].sort().map(x=>[x,[]]));
+ let count=0;
+ const all=[];
+ for(const [p,s] of source)for(const e of importEdges(patch.get(p)??s,p)){
+  if(e.kind!=='static')continue;
+  assert.ok(source.has(e.to),'new unresolved static import: '+p+' -> '+e.to);
+  g[p].push(e.to);all.push(e.from+' -> '+e.to);count++;
+ }
+ return {count,cycles:stronglyConnected(g),edgeSet:new Set(all)};
+}
+function markerNames(js){
+ return [...js.matchAll(/^\/\/ src\/(.+\.js)$/gm)].map(m=>m[1]).filter(p=>p!=='main.js');
+}
+async function bundle(patch){
+ const plugin={name:'arch01c4b-memory-virtual',setup(b){
+  b.onLoad({filter:/\.js$/},args=>{
+   const key=path.relative(SRC,args.path).split(path.sep).join('/');
+   if(patch.has(key))return {contents:patch.get(key),loader:'js',resolveDir:path.dirname(args.path)};
+  });
+ }};
+ const built=await esbuild.build({absWorkingDir:DEV,
+  entryPoints:['src/main.js'],bundle:true,write:false,format:'esm',
+  treeShaking:false,charset:'utf8',legalComments:'none',target:'esnext',
+  logLevel:'silent',logOverride:{'commonjs-variable-in-esm':'silent'},
+  plugins:patch.size?[plugin]:[]});
+ assert.equal(built.outputFiles.length,1);
+ return markerNames(built.outputFiles[0].text);
+}
+function firstDfsPath(patch,target){
+ const seen=new Set();
+ function visit(current,trail) {
+  if(current===target)return [...trail,current];
+  if(seen.has(current))return null;
+  seen.add(current);
+  for(const e of importEdges(patch.get(current)??source.get(current),current))
+   if(e.kind==='static'){
+    const next=visit(e.to,[...trail,current]);
+    if(next)return next;
+   }
+  return null;
+ }
+ return visit('main.js',[]);
+}
+function inbound(target){
+ return [...source].flatMap(([p,s])=>
+  importEdges(s,p).filter(e=>e.kind==='static'&&e.to===target)
+    .map(e=>({module:p,line:e.line}))).sort((a,b)=>a.module.localeCompare(b.module));
+}
+function importList(p){
+ return (source.get(p)||'').split('\n').filter(x=>x.startsWith('import '));
+}
+const looksPath=firstDfsPath(new Map(),looks);
+const aiBefore=firstDfsPath(new Map(),ai);
+const aiWithout=firstDfsPath(removePredecessor(),ai);
+assert.ok(looksPath&&aiBefore&&aiWithout,'all v133 modules reachable in ESM boot');
+console.log('ARCH-01C4b TRACE '+JSON.stringify({
+ looksFirstPath:looksPath,
+ aiPathWithLooksPredecessor:aiBefore,
+ aiPathWithoutLooksPredecessor:aiWithout,
+ looksDirectImporters:inbound(looks),
+ aiDirectImporters:inbound(ai),
+ earliestParent:looksPath.at(-2),
+ earliestParentImports:importList(looksPath.at(-2)),
+ contextAncestors:looksPath.slice(0,-1).map(p=>({path:p,importCount:importList(p).length})),
+ note:'DFS import-order path is diagnostic only; exact esbuild ESM marker gate is authoritative.'
+}));
+// Follow the *actual earliest v133 DFS path*, not a guessed late UI
+// consumer. Before each ancestor's import that reaches looks, try moving an
+// ALREADY PRESENT UI→ai edge there; where none exists, try a clearly labelled
+// allowed UI composition-root predecessor. render2d cases are research-only
+// boundary exceptions even if ESM happens to match.
+const traceCandidates=[];
+for(let i=0;i<looksPath.length-1;i++){
+ const owner=looksPath[i],next=looksPath[i+1];
+ if(!owner.startsWith('ui/')&&!owner.startsWith('render2d/'))continue;
+ const body=source.get(owner),rows=body.split('\n');
+ const nextEdge=importEdges(body,owner).find(e=>e.kind==='static'&&e.to===next);
+ assert.ok(nextEdge,'DFS ancestor must have static import to next: '+owner+' -> '+next);
+ const anchorLine=rows[nextEdge.line-1];
+ assert.ok(anchorLine.startsWith('import '),'target anchor is an import');
+ const aiEdge=importEdges(body,owner).find(e=>e.kind==='static'&&e.to===ai);
+ let patch,kind;
+ if(aiEdge){
+  const moving=rows[aiEdge.line-1];
+  if(aiEdge.line>=nextEdge.line){
+   patch=removePredecessor();
+   for(const [k,v] of reorder(owner,moving,anchorLine))patch.set(k,v);
+   kind='existing UI→ai import moved to first looks ancestry path';
+  } else continue;
+ }else{
+  const rel=path.posix.relative(path.posix.dirname(owner),ai);
+  const src=rel.startsWith('.')?rel:'./'+rel;
+  patch=explicitUiPredecessor(owner,anchorLine,
+    "import '"+src+"'; // C4b VIRTUAL upstream AI boot predecessor");
+  kind=owner.startsWith('ui/')?'ADDED allowed UI→ai edge; conditional only':
+    'ADDED render2d→logic edge; boundary exception research-only';
+ }
+ const name='trace-first-'+owner.replace(/[^a-z0-9]+/gi,'-').replace(/-js$/,'');
+ cases.push({name,kind,patch,owner,earliestNext:next});
+ traceCandidates.push({name,kind,owner,next});
+}
+console.log('ARCH-01C4b UPSTREAM '+JSON.stringify({
+ candidates:traceCandidates.length,paths:traceCandidates
+}));
+const baseGraph=graphOf(new Map());
+assert.equal(baseGraph.count,998);
+assert.deepEqual(baseGraph.cycles,base.cycles);
+assert.deepEqual(await bundle(new Map()),markers,'production v133 bundle markers equal frozen SPLIT');
+console.log('ARCH-01C4b BASE '+JSON.stringify({
+ head:'v133',modules:173,imports:998,markers:167,names:898,cycles:[106,6],
+ oldLegacy:ledger,
+ aiIndex:markers.indexOf(ai),looksIndex:markers.indexOf(looks),
+ exactImporters:{conq:imports(conq).length,battle:imports(battle).length,
+  hero:imports(hero).length},effect:'looks tables+functions; AI CommonJS compatibility top-level'
+}));
+const results=[];
+for(const t of cases) {
+ try{
+  const current=await bundle(t.patch),g=graphOf(t.patch);
+  const moved=markers.filter((x,i)=>current.indexOf(x)!==i);
+  const missing=markers.filter(x=>!current.includes(x));
+  const extra=current.filter(x=>!markers.includes(x));
+  const oldEdges=[...baseGraph.edgeSet].filter(x=>!g.edgeSet.has(x)).sort();
+  const addedEdges=[...g.edgeSet].filter(x=>!baseGraph.edgeSet.has(x)).sort();
+  const removeExactly=oldEdges.length===1&&oldEdges[0]===looks+' -> '+ai;
+  const namesExact=JSON.stringify(names())===JSON.stringify(publicNames);
+  const cyclicExact=JSON.stringify(g.cycles)===JSON.stringify(base.cycles);
+  const ESM=current.length===markers.length&&moved.length===0&&
+   missing.length===0&&extra.length===0;
+  const fixedBody=[...t.patch].every(([p,s])=>
+   p===looks?s===source.get(looks).replace(oldLine+'\n',''):
+   s.split('\n').filter(x=>!x.startsWith('import ')).join('\n')===
+   source.get(p).split('\n').filter(x=>!x.startsWith('import ')).join('\n'));
+  // ARCHITECTURE.md §1: render2d/ may import only data/ or core/.
+  // An ESM-perfect render2d→logic replacement is an ILLEGAL LAYER EDGE,
+  // not even conditional Stage B clearance; never treat it as a GO.
+  const forbiddenLayer=addedEdges.filter(e=>/^render2d\/.+ -> logic\//.test(e)||
+   /^render3d\/.+ -> logic\//.test(e)||
+   /^data\/.+ -> (logic|core|ui|render2d|render3d|assets)\//.test(e));
+  const layerValid=forbiddenLayer.length===0;
+  const noNew=addedEdges.length===0&&g.count===997,unconditional=ESM&&cyclicExact&&
+   namesExact&&removeExactly&&fixedBody&&noNew&&layerValid;
+  const conditional=ESM&&namesExact&&removeExactly&&fixedBody&&!unconditional&&layerValid;
+  const orderExactButForbidden=ESM&&namesExact&&removeExactly&&fixedBody&&!layerValid;
+  const row={name:t.name,kind:t.kind,importCount:g.count,ESMExact:ESM,
+   markersMoved:moved.length,firstMoved:moved.slice(0,6),
+   aiIndex:current.indexOf(ai),looksIndex:current.indexOf(looks),
+   missing,extra,cycles:g.cycles.map(x=>x.length),
+   cyclesExact:cyclicExact,removedEdges:oldEdges,addedEdges,
+   namesExact,bodyExact:fixedBody,layerValid,forbiddenLayer,
+   orderExactButForbidden,unconditionalVirtualGo:unconditional,
+   conditionalCandidate:conditional,runtimeValidated:false};
+  results.push(row);console.log('ARCH-01C4b TRIAL '+JSON.stringify(row));
+ }catch(e){
+  const row={name:t.name,error:String(e.stack||e).slice(0,1000),
+   unconditionalVirtualGo:false,conditionalCandidate:false};
+  results.push(row);console.log('ARCH-01C4b TRIAL '+JSON.stringify(row));
+ }
+}
+console.log('ARCH-01C4b SUMMARY '+JSON.stringify({
+ tested:results.length,ESMExact:results.filter(x=>x.ESMExact).length,
+ strictGo:results.filter(x=>x.unconditionalVirtualGo).map(x=>x.name),
+ conditional:results.filter(x=>x.conditionalCandidate).map(x=>x.name),
+ orderExactButForbiddenLayer:results.filter(x=>x.orderExactButForbidden).map(x=>({name:x.name,forbidden:x.forbiddenLayer})),
+ noGo:results.filter(x=>!x.ESMExact).map(x=>({name:x.name,
+  moved:x.markersMoved??null,error:x.error??null})),
+ protected:'v133 game sources, existing AST ledger, SPLIT, golden, saves, camp, 210 Campaign, assets, published root PWA and SW unchanged',
+ note:'ESM marker equality is necessary, not sufficient: real VM cold/warm + immutable golden + full PWA/artifact/browser CI required before any B1. Only Stage A diagnosis.'
+}));
+console.log('ARCH-01C4b Stage A read-only virtual matrix completed');

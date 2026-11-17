@@ -1,0 +1,90 @@
+# ARCH-01C4b Stage A — безопасная развязка `data/looks.js → logic/battle/ai.js`
+
+**Дата: 17.11.2026. Статус: ТОЛЬКО АУДИТ / виртуальный GO–NO-GO; реализация, merge и релиз не разрешены.**
+
+## Подтверждённая исходная точка
+
+**v133 ОПУБЛИКОВАНА и независимый Pages SUCCESS.** Последний `main` после docs-only cleanup `4d36590cf9a9014c25d56a6272c0ca7130890f13`; предшествующий реально опубликованный root `41d95d529e1922990842016066b198068eb1d119`, SW/cache `e1a6859133`, версия `{"v":133}`. [Релизный source #167](https://github.com/mryandexxx-spec/Dgoh-game/pull/167) `9aa23ab719f4430c881f7845df049a3f2512e229`; [официальный validated publish #44129152399 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44129152399) — 19/19 mandatory, 188 SHA-256 файлов, артефакт ZIP digest `sha256:a0d20a9f56bd2bfbbe5b06f58afde79d50206d4213d121d60f7bf619b3bfa6fb`; [независимый root Pages #44131280637 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44131280637). [Docs cleanup #168 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/168) после [full CI #44132294963 SUCCESS 19/19](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44132294963). [Issue #132 — итоговый receipt v133](https://github.com/mryandexxx-spec/Dgoh-game/issues/132#issuecomment-6954918675). Физическая Safari/iPhone-приёмка остаётся ОТКРЫТОЙ.
+
+После ARCH-01C4a B1 остаётся **ровно 3 исторических forbidden data→* ребра**, 0 new, 0 stale:
+```text
+data/conquest-data.js -> ui/overlays/celebrate.js
+data/looks.js -> logic/battle/ai.js
+data/story.js -> assets/models.js
+```
+Текущий AST-слепок: **173 JS, 998 статических импортов, 167 оригинальных ESM-маркеров в прежнем порядке, 898 прежних публичных named global exports, две SCC [106,6]**. `SPLIT`/golden/baseline нельзя изменять ради теста.
+
+## Почему выбран этот predecessor
+
+- `dev/src/data/looks.js` содержит на старте **`import '../logic/battle/ai.js'; // порядок исполнения`** и затем неизменяемые цветовые и графические справочники и функции: `LOOK`, `ghash`, `sigil`, `SKINS`, `OL`, `FEM`. Именованные значения из AI он НЕ использует. Но этот reverse-import — ESM-bootstrap predecessor.
+- `dev/src/logic/battle/ai.js` содержит `aiPlan`, `computeIntents`, `hasPrescience`, 8 уже существующих named imports (raid, turns, engine, stats, boss, skills, chars, fx) и условный top-level **`if (typeof module !== 'undefined') module.exports = { ... }`** для совместимости с Node/CI. Нельзя менять семантику CJS adapter или инициализацию боевых зависимостей.
+- Первичный независимый Stage A C4a (ветка `audit/arch01c4a-boss-looks-order-virtual-20261117`, [PR #165](https://github.com/mryandexxx-spec/Dgoh-game/pull/165)) показал, что **наивное удаление `looks→ai` переставляет 60/167 ESM-маркеров**, даже если SCC остаётся того же размера. Попытки заменить predecessor на `data/boss`, `data/chars`, `data/skill-ups` тоже переставляли маркеры. Это уже **NO-GO для прямого удаления**, но не доказательство невозможности UI-owned composition root.
+- В `ui/views/conq.js` УЖЕ есть `import { portrait } from '../../render2d/figures.js'`, `import { ghash } from '../../data/looks.js'`, `import { computeIntents } from '../../logic/battle/ai.js'` — в этом порядке. В `ui/battle/battle-ui.js` также УЖЕ есть `render2d/figures`, `data/looks`, `logic/battle/ai` и `logic/battle/turns/engine`; `ui/hero-card.js` имеет `render2d/figures` раньше `battle/stats` и `skills`. Это **существующие разрешённые UI→logic/render2d/data импорты**, и их порядок можно исследовать, не изменяя формулы/функции и не создавая новых графовых рёбер.
+
+## Виртуальная матрица и жёсткое условие безопасности
+
+Новый `dev/tests/ci/arch01c4b-virtual-looks-ai.mjs` запускается из обязательного `dev/tests/ci/arch-init-graph.mjs`. В памяти, через production-config esbuild `src/main.js`, подменяется только первая `import`-строка `data/looks.js`; в кандидате может быть переставлена **только уже существующая** статическая import-строка разрешённого UI-owner. Диагностика включает:
+
+1. Отрицательный контроль: прямое удаление старого `looks→ai` без альтернативы (ранее 60 перестановок).
+2. Перемещение существующего `computeIntents` в `ui/views/conq.js` перед `ghash`, `portrait`, или перед первым импортом всего модуля.
+3. Перемещение существующих `aiPlan`, `turns`, `engine` в `ui/battle/battle-ui.js` перед прямым `looks`, `figures`, `scene-bg`, `fx-layer` или перед всем UI bootstrap.
+4. Перемещение существующих `battle/stats` или `skills` перед `figures` в `ui/hero-card.js`.
+5. Комбинации независимых UI-owner перестановок на двух/трёх точках.
+6. Контрольные **conditional** UI composition-root варианты с явным allowed `ui→logic/battle/ai` импортом (в том числе `ui/portrait.js` и `ui/hero-card.js`), которые **не должны** ошибочно считаться безусловным GO, если возник новый import edge.
+
+Для каждого кандидата CI выводит JSON-строку `ARCH-01C4b TRIAL` с реальными: сдвинутыми/утерянными/новыми ESM-маркерами, точной членностью SCC, числом импортов и новыми/удалёнными рёбрами, всеми 898 именами, отсутствием изменений тел функций, `strictGo` и `conditionalCandidate`. Эталон 167/167 извлекается не только из `SPLIT`, но и **из настоящей собранной production v133** в начале теста.
+
+**STRICT VIRTUAL GO** только если целевой reverse import фактически удалён; 167/167 ESM-маркеров на исходных позициях; полная точная членность SCC; 898 глобальных имён; ровно **997** статических импортов (один удалён, ни одного добавлено), 2 других NO-GO прежних edges сохранены; в UI только переставлены import declarations, вне них текст байтово неизменён. Если SCC меняется, но 167 ESM и runtime сохранны — отдельный **условный GO**, как было в C4a B1, а НЕ автоматическое разрешение на merge. Новый `ui→logic` edge требует отдельного review, даже если он разрешён.
+
+**Второй этап Stage A**, только если будет хотя бы один order-exact кандидат: временный in-memory production-build + cold/warm Node VM и сравнение с исходником. Проверить `LOOK`, `SKINS`, `OL`, `FEM`, `ghash`, `sigil`, CJS `module.exports`, `aiPlan/computeIntents`, все 200 golden battles, meta, saves, 41 screens, Campaign 2.0, PWA/artifact load. Даже после этого нужен **отдельный Stage B1 Draft PR с настоящими исходниками и полным 19/19 CI**, явная приёмка, merge и отдельный релиз. Без доказанного order-equivalent варианта — NO-GO и проектирование иного UI-owned/bootstrap approach; `SPLIT` и golden не изменять.
+
+**SCOPE LOCK:** в текущем Draft PR не изменять `dev/src`, `dev/tools/split.config.mjs`, `dev/tools/arch-import-baseline.json`, игровые формулы, сохранения, `dev/version.json`, 21 карту/210 миссий Campaign 2.0, UI/рендер/ассеты, весь лагерь, золотые эталоны, корневые `app.js/sw.js`. Не менять C3b0 `conquest→celebrate` (0/35 NO-GO) и C2d `story→models` (0/39 NO-GO). **No merge, no publish** на Stage A.
+
+## Итоговый receipt
+
+Результаты матрицы, точный head SHA, полный CI run и решение по B1 должны быть зафиксированы после фактического CI в [Issue #132](https://github.com/mryandexxx-spec/Dgoh-game/issues/132) и в описании Draft PR. Не объявлять GO без настоящих логов.
+
+## Реальные результаты первой матрицы и уточнённый upstream-аудит
+
+[CI #44136052709](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44136052709), обязательный `ARCH-01 Acorn import-boundary regression gate`: **25 виртуальных сценариев: ESM exact 0/25, strict GO 0, conditional GO 0**. Перебраны прямое удаление, перестановки имеющихся UI-потребителей в `ui/views/conq.js`, `ui/battle/battle-ui.js`, `ui/hero-card.js`, комбинированные варианты и контролируемые explicit UI→logic predecessors. Результаты по фактической production esbuild: 60 сдвинутых markers в обычных случаях, в двух «AI самым первым» вариантах 20 moved. Во всех 25: 173 JS, 898 exports, SCC [106,6] и отсутствие изменения тел функций, но **ни одного полного 167/167 marker match**. Это **NO-GO** для удаления/перестановки только в позднем UI.
+
+Для определения правильного predecessor добавлена трассировка реальной цепочки ESM-зависимостей на исходниках v133 (для пути используется AST и реальный порядок imports, окончательный арбитр — production esbuild):
+```
+main.js → boot.js → ui/views/conq.js → logic/conquest.js
+→ data/conquest-data.js → ui/overlays/celebrate.js
+→ ... → ui/battle/battle-ui.js → ui/views/rules.js
+→ ... → ui/hero-card.js → ui/portrait.js
+→ ... → data/story.js → assets/models.js
+→ ... → render2d/fx-layer.js → render2d/scene-bg.js
+→ render2d/scenes.js → render2d/figures.js
+→ data/looks.js → logic/battle/ai.js
+```
+В старой версии AI впервые входит в DFS **через `data/looks.js`**, а после удаления впервые достигается по другой цепочке — через `logic/relics.js`/battle/stats/skills/engine. Получается, что перестановки импортов *после* слишком раннего достижения `looks` уже опоздали.
+
+Новая автоматическая матрица `trace-first-*` использует **каждого владельца разрешённого UI в самой ранней фактической цепочке**: если у него уже есть AI import, только поднимает его перед тем импортом, который приводит к `looks`; иначе **в памяти** добавляет явный allowed `ui→logic/battle/ai` импорт перед конкретной ранней зависимостью. Для `render2d` ancestors делает **только исследовательские** варианты и помечает их отдельно как потенциальный архитектурный boundary exception (не GO для реализации без дополнительного layer review). Все варианты обязаны сообщать exact moved ESM markers, SCC membership, старые и новые edges; никакого изменения исходников или опубликованной версии. Итоговый вывод по этой дополнительной матрице фиксировать только после логов **последнего head** и обязательного CI.
+
+**Никакого B1 сейчас**: до доказанного ESM order и реальной VM/cold+warm/golden приёмки любые потенциально удачные upstream-кандидаты — только исследовательский сигнал. C3b0 и C2d запрещённые предшественники не изменены.
+
+## Расширенная фактическая матрица: 66 вариантов (на текущем diagnostic head)
+
+[CI #44137746297](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44137746297), SHA `67cc694fb59f13352c4c365e2091649a4328b2c8`, job **Build once + architecture + SHA-256 manifest SUCCESS**: реальный production-esbuild in-memory probe завершил **66** сценариев, включая 41 проверку точных ранних DFS-предшественников, помимо первых 25 вариантов. Фактический JSON `ARCH-01C4b SUMMARY`: **4/66 ESMExact**, **0 strict/unconditional GO**, **4 conditional**, остальные 62 NO-GO. Полный 19/19 CI для этого head проверяется независимо; успешность обязательного build-job не следует путать с завершением full CI.
+
+Четыре order-exact conditional cases: `trace-first-render2d-fx-layer`, `trace-first-render2d-scene-bg`, `trace-first-render2d-scenes`, `trace-first-render2d-figures`. Они восстанавливают все **167/167** ESM-маркеров на исходных позициях, но добавляют `render2d/* → logic/battle/ai.js`. Это **недопустимо по §1 `dev/ARCHITECTURE.md`**: `render2d/` разрешены импорты только `data/`, `core/`; ни один из четырёх не является основанием для B1. Во всех ранних `ui/` вариантах переместились **20 маркеров**, поздние UI варианты — 20 или 60. `SPLIT`/baseline не менялись, три исходные forbidden edges остаются.
+
+**Решение: C4b Stage A = виртуальный NO-GO в рамках существующих разрешённых границ, B1 НЕ НАЧИНАТЬ.** Сам факт 4 order-exact boundary-breaking вариантов локализует требуемый bootstrap момент, но не разрешает создавать новый слой `render2d → logic`. Следующий отдельный Stage A может исследовать *развязывание ранней цепочки render2d/data и явный composition-root в UI*, строго с моделированием в памяти до каких-либо исходников; любое изменение исторической очереди требует отдельного доказательства runtime/TDZ/сейвов и утверждения. C3b0 `conquest→celebrate` и C2d `story→models` остаются известными NO-GO. Версия v133 и публикация неизменны.
+
+## Второй результат: 66 сценариев и точная граница запрещённого слоя
+
+Логи [CI #44137746297](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44137746297) (первый head с upstream matrix) подтвердили **66 независимых production-esbuild вариантов**, из них:
+- **62/66 не сохраняют 167 исходных маркеров ESM**, включая все перестановки только существующих UI imports и новые allowed UI→logic edges. `trace-first-ui-*` из фактической самой ранней DFS-цепочки сдвигают **20** маркеров; поздние локальные UI-перестановки — **60**. Это настоящая инициализация, а не проблема экспорта имён.
+- **4/66 сохраняют точный 167/167 ESM order, 898 экспортов и оба прежних SCC [106,6]**: убрать `data/looks.js→logic/battle/ai.js` и добавить новый predecessor `render2d/fx-layer.js→logic/battle/ai.js`, либо `render2d/scene-bg.js→logic/battle/ai.js`, либо `render2d/scenes.js→logic/battle/ai.js`, либо `render2d/figures.js→logic/battle/ai.js`. Точное ESM совпадение объясняется тем, что AI исходно был запущен при первом достижении `data/looks.js` непосредственно перед его инициализацией. **Но все четыре являются НЕДОПУСТИМЫМИ по правилам слоёв.**
+- **`dev/ARCHITECTURE.md` §1 — главный документ:** `render2d/` «Может импортировать: `data/`, `core/`» (НЕ `logic/`). Новое `render2d→logic/battle/ai` запрещено независимо от того, что `check-arch-imports` в основном отслеживает `data→*` и `logic→ui`. Нельзя принять эту замену как «улучшение», несмотря на 0 сдвинутых ESM и отсутствие изменения runtime-функций.
+- Новая версия диагностического теста явно проверяет `forbiddenLayer` и печатает **`orderExactButForbiddenLayer` отдельно** от `conditionalCandidate` / `strictGo`. Таким образом, **плановый итог: 0 из 66 архитектурно допустимых GO**, а не «4 условных GO». Полную итоговую доказательную запись брать только из CI на текущем head после этой коррекции.
+
+### Решение и дальнейший порядок
+
+**ARCH-01C4b прямой/малый перенос: NO-GO.** Оставить `data/looks.js→logic/battle/ai.js` в ledger (3 исторических зависимости, 0 новых/stale), не менять ни `data/looks.js`, ни `render2d/*`, ни `ui/hero-card.js`, ни весь лагерь или рендер.
+
+Требуется **отдельный проектный этап bootstrap/composition-root redesign**, в котором изначально размечаются top-level effects и допускается пересмотр точного ESM order **только после** явно утверждённого safety-case (cold/warm Node VM, сравнение byte-identical LOOK/ghash/sigil/SKINS/FEM и AI CJS adapter, полные 200 battles/meta/saves/41 screens, реальные PWA+standalone HTML, 210 Campaign, offline, WebGL MED/LOW/HIGH, лагерь). Ни механическое перемещение запрета в `render2d`, ни переписывание `SPLIT`, ни ослабление golden не допустимы.
+
+Альтернативный следующий AUDIT по оставшимся трём: самостоятельный `ARCH-01C5` по `data/conquest-data.js→ui/overlays/celebrate.js` или `ARCH-01C6` `data/story.js→assets/models.js`, оба уже имеют прошлые NO-GO и потребуют композиционной переработки, а не простой редирект. Без merge/publish текущего Stage A.

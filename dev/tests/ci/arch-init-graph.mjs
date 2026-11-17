@@ -85,3 +85,6 @@ await import('./arch01c3b3-boundary.mjs');
 
 // ARCH-01C4a Stage B1: real boss→skills edge removal and explicitly reviewed battle SCC 9→6.
 await import('./arch01c4a-b1-boundary.mjs');
+
+// ARCH-01C4b Stage A: virtual production esbuild check of UI-owned order alternatives; no source/ledger changes.
+await import('./arch01c4b-virtual-looks-ai.mjs');
