@@ -79,3 +79,6 @@ await import('./arch01c3b1-refill-boundary.mjs');
 // ARCH-01C3b2 Stage A virtual matrix is retained historically; its pre-move assertions
 // do not run after the independently verified Stage B1 implementation.
 await import('./arch01c3b2-boundary.mjs');
+
+// ARCH-01C3b3 Stage A: read-only 8 real esbuild trials for the last live Conquest data→logic edge.
+await import('./arch01c3b3-virtual-conquest.mjs');
