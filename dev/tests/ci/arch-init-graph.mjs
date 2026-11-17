@@ -88,3 +88,6 @@ await import('./arch01c4a-b1-boundary.mjs');
 
 // ARCH-01C4c Stage A: read-only UI/boot composition-root predecessor matrix; no production changes.
 await import('./arch01c4c-virtual-composition.mjs');
+
+// ARCH-01C4c Stage A2: real in-memory cold/warm VM and immutable golden for permitted exact-ESM candidates.
+await import('./arch01c4c-virtual-runtime.mjs');
