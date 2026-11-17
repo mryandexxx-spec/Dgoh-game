@@ -210,6 +210,44 @@ console.log('ARCH-01C4b TRACE '+JSON.stringify({
  contextAncestors:looksPath.slice(0,-1).map(p=>({path:p,importCount:importList(p).length})),
  note:'DFS import-order path is diagnostic only; exact esbuild ESM marker gate is authoritative.'
 }));
+// Follow the *actual earliest v133 DFS path*, not a guessed late UI
+// consumer. Before each ancestor's import that reaches looks, try moving an
+// ALREADY PRESENT UI→ai edge there; where none exists, try a clearly labelled
+// allowed UI composition-root predecessor. render2d cases are research-only
+// boundary exceptions even if ESM happens to match.
+const traceCandidates=[];
+for(let i=0;i<looksPath.length-1;i++){
+ const owner=looksPath[i],next=looksPath[i+1];
+ if(!owner.startsWith('ui/')&&!owner.startsWith('render2d/'))continue;
+ const body=source.get(owner),rows=body.split('\n');
+ const nextEdge=importEdges(body,owner).find(e=>e.kind==='static'&&e.to===next);
+ assert.ok(nextEdge,'DFS ancestor must have static import to next: '+owner+' -> '+next);
+ const anchorLine=rows[nextEdge.line-1];
+ assert.ok(anchorLine.startsWith('import '),'target anchor is an import');
+ const aiEdge=importEdges(body,owner).find(e=>e.kind==='static'&&e.to===ai);
+ let patch,kind;
+ if(aiEdge){
+  const moving=rows[aiEdge.line-1];
+  if(aiEdge.line>=nextEdge.line){
+   patch=removePredecessor();
+   for(const [k,v] of reorder(owner,moving,anchorLine))patch.set(k,v);
+   kind='existing UI→ai import moved to first looks ancestry path';
+  } else continue;
+ }else{
+  const rel=path.posix.relative(path.posix.dirname(owner),ai);
+  const src=rel.startsWith('.')?rel:'./'+rel;
+  patch=explicitUiPredecessor(owner,anchorLine,
+    "import '"+src+"'; // C4b VIRTUAL upstream AI boot predecessor");
+  kind=owner.startsWith('ui/')?'ADDED allowed UI→ai edge; conditional only':
+    'ADDED render2d→logic edge; boundary exception research-only';
+ }
+ const name='trace-first-'+owner.replace(/[^a-z0-9]+/gi,'-').replace(/-js$/,'');
+ cases.push({name,kind,patch,owner,earliestNext:next});
+ traceCandidates.push({name,kind,owner,next});
+}
+console.log('ARCH-01C4b UPSTREAM '+JSON.stringify({
+ candidates:traceCandidates.length,paths:traceCandidates
+}));
 const baseGraph=graphOf(new Map());
 assert.equal(baseGraph.count,998);
 assert.deepEqual(baseGraph.cycles,base.cycles);
