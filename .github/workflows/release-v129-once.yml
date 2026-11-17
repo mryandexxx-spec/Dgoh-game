@@ -1,0 +1,66 @@
+name: One-time owner-approved ARCH-01C3a3 v129 publication
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - dev/docs/ARCH01C3A3_V129_RELEASE_HANDOFF_2026_11_17.md
+      - .github/workflows/release-v129-once.yml
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  publish-v129-once:
+    name: Dispatch owner-approved v129 validated Pages publication
+    if: "${{ github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release(arch): publish v129') }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail-closed v129 source, original root and 7-edge data boundary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git show --format=%s -s HEAD)" = 'release(arch): publish v129'
+          test "$(tr -d '\n' < dev/version.json)" = '{"v":129}'
+          grep -Fq "const VER = '0437419c76'" sw.js
+          test -f dev/docs/ARCH01C3A3_V129_RELEASE_HANDOFF_2026_11_17.md
+          test -f dev/tests/ci/arch01c3a3-stats-boundary.mjs
+          test -f dev/tests/arch01c3a1-cosmetics-snapshot.mjs
+          test -f dev/tests/arch01c3a2-worm-avatar-html.mjs
+          grep -Fq "import '../assets/models.js'" dev/src/data/story.js
+          grep -Fq "import { WORM_IMG } from '../../assets/models.js'" dev/src/ui/overlays/profile.js
+          grep -Fq "import '../logic/cosmetics-unlocks.js'" dev/src/ui/wiring.js
+          ! grep -Fq "import '../logic/stats.js'" dev/src/data/cosmetics.js
+          node - <<'NODE'
+          const fs = require('fs');
+          const b = require('./dev/tools/arch-import-baseline.json');
+          const expected = [
+            'data/boss.js -> logic/battle/skills.js',
+            'data/conquest-data.js -> core/state.js',
+            'data/conquest-data.js -> logic/conquest.js',
+            'data/conquest-data.js -> logic/economy.js',
+            'data/conquest-data.js -> ui/overlays/celebrate.js',
+            'data/looks.js -> logic/battle/ai.js',
+            'data/story.js -> assets/models.js',
+          ];
+          if (JSON.stringify(b.legacy)!==JSON.stringify(expected)) throw Error('Unexpected legacy data edge ledger');
+          const d=fs.readFileSync('dev/src/data/cosmetics.js','utf8');
+          if (d.includes("import '../logic/stats.js'")) throw Error('Old data→stats import restored');
+          const f=fs.readFileSync('dev/src/ui/views/feats.js','utf8');
+          const trials=f.indexOf("import './trials.js';");
+          const stats=f.indexOf("import { METRIC } from '../../logic/stats.js';");
+          const cos=f.indexOf("import { EMBLEMS, FRAMES, TITLES } from '../../data/cosmetics.js';");
+          if (!(trials>=0 && stats>trials && cos>stats)) throw Error('Stats/cosmetics order drift');
+          const s=fs.readFileSync('dev/tools/split.config.mjs','utf8');
+          if (!s.includes("'logic/cosmetics-unlocks.js'")||!s.includes("'data/cosmetics.js'")) throw Error('SPLIT drift');
+          NODE
+          echo "Dispatch exact owner-approved v129 from ${GITHUB_SHA}"
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/validate-pwa.yml/dispatches" \
+            -f ref=main -f 'inputs[publish]=true'
+          echo "v129 official validated publication dispatched from ${GITHUB_SHA}"
