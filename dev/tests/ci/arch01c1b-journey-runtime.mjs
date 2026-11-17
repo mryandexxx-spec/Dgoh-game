@@ -35,7 +35,7 @@ assert.ok(logic.includes('p.stars >= 7 && p.gear >= MAX_GEAR'),
 assert.ok(data.includes('const jFoes = ') && data.includes('const jRelic = '),
   'static journey enemy/relic declarations remain in data');
 
-assert.equal(baseline.length, 8, 'ARCH-01C3a2 leaves eight legacy imports; earlier architecture regressions unchanged');
+assert.equal(baseline.length, 7, 'ARCH-01C3a3 removes one additional order-only edge; earlier behavior regressions unchanged');
 assert.ok(!baseline.some(e => e.startsWith('data/journeys.js -> ')),
   'journeys must have no remaining reverse edges');
 const source = SPLIT.filter(([,name]) => name === 'logic/journey-gates.js');
