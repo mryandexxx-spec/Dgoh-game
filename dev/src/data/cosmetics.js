@@ -1,6 +1,5 @@
 // data/cosmetics.js — строки 4826–4855 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import '../logic/stats.js'; // порядок исполнения
-import { WORM_IMG } from '../assets/models.js';
 import { CH } from './chars.js';
 
 // ===================== cosmetics =====================
@@ -14,7 +13,6 @@ const EMBLEMS = {
   knife: { n: 'Крис-нож', bg: ['#6a5a48', '#1a140e'], svg: '<path d="M27 6c-2 8-6 14-12 20l-3-3c6-6 11-11 15-17z" fill="#f4ecd8"/><path d="M10 25l5 5-3 3-5-5z" fill="#8a6a3a"/>' },
   sietch: { n: 'Сиетч', bg: ['#8a5a2e', '#2a180a'], svg: '<path d="M4 30l9-14 6 7 5-9 12 16z" fill="#f0c890"/><path d="M17 30a3 4 0 016 0z" fill="#1a0f06"/>' },
 };
-if (typeof WORM_IMG !== 'undefined') { EMBLEMS.worm.svg = `<image href="${WORM_IMG.ava}" x="1" y="1" width="38" height="38"/>`; EMBLEMS.worm.bg = ['#a8784a', '#2a1608']; }
 const FRAMES = {
   basic: { n: 'Песчаная' }, bronze: { n: 'Бронзовая' }, light: { n: 'Лазурная Атрейдесов' }, dark: { n: 'Багровая Харконненов' },
   chron: { n: 'Бирюзовая хроник' }, worm: { n: 'Зубы червя' }, gold: { n: 'Золото Падишаха' }, prophet: { n: 'Пророческое сияние' }, house: { n: 'Великий Дом' },

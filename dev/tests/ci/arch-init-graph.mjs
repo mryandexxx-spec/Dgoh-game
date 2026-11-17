@@ -66,3 +66,6 @@ await import('./arch01c2c-pure-rng.mjs');
 
 // ARCH-01C3a1: virtual 166/166 ESM proof passed; now validate the real late UI-owned logic boundary.
 await import('./arch01c3a1-cosmetics-boundary.mjs');
+
+// ARCH-01C3a2: virtual order proof recorded; require the actual UI-owned SVG and preserved model bootstrap.
+await import('./arch01c3a2-worm-boundary.mjs');

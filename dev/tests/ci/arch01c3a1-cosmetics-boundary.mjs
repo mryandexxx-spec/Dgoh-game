@@ -10,16 +10,16 @@ const legacy=JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8'
 const cosmetics=read('data/cosmetics.js'),logic=read('logic/cosmetics-unlocks.js');
 const wiring=read('ui/wiring.js'),profile=read('ui/overlays/profile.js');
 
-assert.equal(legacy.length,9,'two and only two live cosmetic reverse imports removed');
+assert.equal(legacy.length,8,'C3a1 removed two live cosmetic edges and C3a2 removed the asset edge');
 for(const e of ['data/cosmetics.js -> core/state.js','data/cosmetics.js -> logic/progress.js']){
   assert.ok(!legacy.includes(e),'removed edge must not remain in legacy baseline');
 }
-for(const e of ['data/cosmetics.js -> assets/models.js','data/cosmetics.js -> logic/stats.js',
+for(const e of ['data/cosmetics.js -> logic/stats.js',
   'data/story.js -> assets/models.js']){
   assert.ok(legacy.includes(e),'high-risk models/stats/C2d predecessors must remain untouched');
 }
 assert.deepEqual(imports('data/cosmetics.js'),[
-  'logic/stats.js','assets/models.js','data/chars.js'
+  'logic/stats.js','data/chars.js'
 ],'cosmetics must not import live state or progress; retain exact legacy predecessor and image owner');
 assert.ok(imports('logic/cosmetics-unlocks.js').includes('core/state.js') &&
   imports('logic/cosmetics-unlocks.js').includes('logic/progress.js') &&
@@ -37,10 +37,10 @@ assert.ok(cosmetics.includes("if (!cosmeticUnlockRule) throw new Error('Cosmetic
   'unbound calls must fail, not grant anything');
 assert.ok(cosmetics.includes('export { EMBLEMS, FRAMES, TITLES, FREE, unlocked, bindCosmeticUnlockRule };'),
   'all old named public cosmetic exports retained');
-assert.ok(cosmetics.includes("if (typeof WORM_IMG !== 'undefined')") &&
-  cosmetics.includes('EMBLEMS.worm.svg = ') && cosmetics.includes('WORM_IMG.ava') &&
-  cosmetics.includes("EMBLEMS.worm.bg = ['#a8784a', '#2a1608']"),
-  'existing worm SVG URL/background must remain unchanged');
+assert.ok(profile.includes("if (typeof WORM_IMG !== 'undefined')") &&
+  profile.includes('EMBLEMS.worm.svg = ') && profile.includes('WORM_IMG.ava') &&
+  profile.includes("EMBLEMS.worm.bg = ['#a8784a', '#2a1608']"),
+  'same exact worm SVG URL/background now belongs to UI, not data');
 const dataImport="import { unlocked } from '../data/cosmetics.js';";
 const ruleImport="import '../logic/cosmetics-unlocks.js';";
 assert.ok(wiring.includes(dataImport) && wiring.includes(ruleImport) &&
@@ -56,4 +56,4 @@ const graph=analyzeTree(process.cwd());
 assert.equal(graph.modules,173,'only one new source module added');
 assert.equal(graph.unresolved.length,0);
 assert.ok(graph.cycles.length<=2,'cannot introduce a third ESM SCC');
-console.log('ARCH-01C3a1 cosmetic boundary: PASS; 9 legacy, old API and worm SVG retained');
+console.log('ARCH-01C3a1 cosmetic boundary: PASS; 8 legacy, old API, SVG retained by UI');
