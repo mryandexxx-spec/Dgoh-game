@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2 # HEAD^ required by the immutable release-source guard
+          fetch-depth: 3 # HEAD^^ binds both approved B1 and v134 release source
       - name: Fail-closed owner approval, exact one-shot inputs and frozen ARCH-01C4c B1
         env:
           GH_TOKEN: ${{ github.token }}
