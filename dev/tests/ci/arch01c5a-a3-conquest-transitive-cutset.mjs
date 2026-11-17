@@ -60,13 +60,20 @@ for(const f of files){
  for(let i=0;i<astEdges.length;i++)assert.equal(declEdges[i].to,astEdges[i].to,f+' edge order mismatch');
  for(const e of declEdges){
   const key=e.from+' -> '+e.to;
-  assert.ok(!details.has(key),'same-target duplicate import in '+f+' → '+e.to);
-  details.set(key,e);
+  // One module can have multiple declarations importing the same target.
+  // Preserve all 1000 AST declarations, but collapse parallel graph arcs:
+  // ESM evaluates a dependency once and min-cut must not double-count its link.
+  const prior=details.get(key);
+  if(prior){
+   prior.lines.push(e.line);
+   prior.symbols=[...new Set([...prior.symbols,...e.symbols])];
+   if(e.mode!=='order-only')prior.mode='binding-or-reexport';
+  }else details.set(key,{...e,lines:[e.line]});
   edges.push(e);
  }
 }
 assert.equal(edges.length,1000);
-const graph=Object.fromEntries(files.map(f=>[f,edges.filter(e=>e.from===f).map(e=>e.to)]));
+const graph=Object.fromEntries(files.map(f=>[f,[...new Set(edges.filter(e=>e.from===f).map(e=>e.to))]]));
 const key=(a,b)=>a+' -> '+b;
 const forbidden=edges.filter(e=>e.from.startsWith('data/')&&!e.to.startsWith('data/')).map(e=>key(e.from,e.to));
 assert.deepEqual(forbidden,legacy);
@@ -147,7 +154,7 @@ function minCut(rule){
   const backward={to:u,cap:0,original:0,from:v,rev:adjacency[u].length};
   adjacency[u].push(forward);adjacency[v].push(backward);
  }
- const flat=edges.filter(e=>!(e.from===data&&e.to===celebrate));
+ const flat=[...details.values()].filter(e=>!(e.from===data&&e.to===celebrate));
  for(const e of flat)add(e.from,e.to,rule(e)?1:INF);
  let maxFlow=0,iterations=0;
  for(;;){
@@ -186,7 +193,7 @@ function minCut(rule){
  }
  return {
   possible:finite,cost:finite?maxFlow:null,flow:maxFlow,pathsAugmented:iterations,
-  cut:finite?eligible.map(e=>({from:e.from,to:e.to,line:e.line,mode:e.mode,
+  cut:finite?eligible.map(e=>({from:e.from,to:e.to,lines:e.lines,mode:e.mode,
      symbols:e.symbols})):[],
   blocker:finite?null:'At least one Conquest path cannot be broken using only allowed edges',
   graphOnly:true,runtimeExecutable:false,
