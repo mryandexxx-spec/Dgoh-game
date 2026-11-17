@@ -75,3 +75,6 @@ await import('./arch01c3a3-stats-boundary.mjs');
 
 // ARCH-01C3b1: preserve live Conquest refill selectors and SCC after moving to logic.
 await import('./arch01c3b1-refill-boundary.mjs');
+
+// ARCH-01C3b2 Stage A: in-memory only; Conquest live state/logic dependencies and ESM contract.
+await import('./arch01c3b2-virtual-live.mjs');
