@@ -1,7 +1,7 @@
 // ui/views/feats.js — строки 4856–4905 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import './trials.js'; // порядок исполнения: UI объявляет зависимость от экрана испытаний
+import { METRIC } from '../../logic/stats.js'; // ARCH-01C3a3: evaluate stats before cosmetics without a data→logic import
 import { EMBLEMS, FRAMES, TITLES } from '../../data/cosmetics.js';
-import { METRIC } from '../../logic/stats.js';
 import { giveRewards, rewardWin, rewardsHtml } from '../rewards.js';
 import { render } from '../router.js';
 import { S } from '../../core/state.js';

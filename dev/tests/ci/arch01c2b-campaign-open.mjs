@@ -11,7 +11,7 @@ const baseline = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json', '
 const campaigns = read('data/campaigns.js'), gates = read('logic/campaign-gates.js');
 const boot = read('core/boot.js');
 
-assert.equal(baseline.length, 8, 'ARCH-01C3a2 leaves eight legacy imports; earlier architecture regressions unchanged');
+assert.equal(baseline.length, 7, 'ARCH-01C3a3 removes one additional order-only edge; earlier behavior regressions unchanged');
 assert.ok(!baseline.includes('data/campaigns.js -> core/state.js'),
   'campaign data may never import live state again');
 assert.ok(!baseline.includes('data/campaigns.js -> core/rng.js') &&

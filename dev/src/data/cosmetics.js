@@ -1,5 +1,4 @@
 // data/cosmetics.js — строки 4826–4855 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import '../logic/stats.js'; // порядок исполнения
 import { CH } from './chars.js';
 
 // ===================== cosmetics =====================

@@ -16,15 +16,15 @@ const expectedPatch="if (typeof WORM_IMG !== 'undefined') { EMBLEMS.worm.svg = "
   tick+'<image href="'+'$'+'{WORM_IMG.ava}" x="1" y="1" width="38" height="38"/>'+tick+
   "; EMBLEMS.worm.bg = ['#a8784a', '#2a1608']; }";
 
-assert.equal(baseline.length,8,'only cosmetics→models removed from C3a1 baseline 9');
+assert.equal(baseline.length,7,'C3a3 removes final stats predecessor after C3a2 models extraction');
 assert.ok(!baseline.includes('data/cosmetics.js -> assets/models.js'));
-assert.ok(baseline.includes('data/cosmetics.js -> logic/stats.js') &&
+assert.ok(!baseline.includes('data/cosmetics.js -> logic/stats.js') &&
   baseline.includes('data/story.js -> assets/models.js'),
-  'protect independent stats predecessor and blocked C2d model chain');
-assert.deepEqual(imports('data/cosmetics.js'),['logic/stats.js','data/chars.js'],
+  'C3a3 removed stats edge while blocked C2d model chain remains');
+assert.deepEqual(imports('data/cosmetics.js'),['data/chars.js'],
   'cosmetic data may not directly import assets or other runtime layers');
-assert.ok(data.includes("import '../logic/stats.js'; // порядок исполнения"),
-  'stats order-only predecessor is protected until separate C3a3');
+assert.ok(!data.includes("import '../logic/stats.js'"),
+  'stats order-only predecessor is now explicitly owned by feats UI');
 assert.ok(!data.includes('WORM_IMG') && !data.includes('EMBLEMS.worm.svg = '),
   'data/catalog must be pure declarations, WORM image patch owned by UI');
 assert.ok(data.includes("worm: { n: 'Пасть Шаи-Хулуда'"),
@@ -54,4 +54,4 @@ const g=analyzeTree(process.cwd());
 assert.equal(g.modules,173,'no new production JS modules should be added');
 assert.equal(g.unresolved.length,0);
 assert.equal(g.cycles.length,2,'do not change SCC structure');
-console.log('ARCH-01C3a2 worm UI boundary: PASS; 8 known imports, 167 markers, same SVG and model preloader');
+console.log('ARCH-01C3a2 worm UI boundary: PASS; 7 known imports, 167 markers, same SVG and model preloader');
