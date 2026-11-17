@@ -82,3 +82,7 @@ await import('./arch01c3b2-boundary.mjs');
 
 // ARCH-01C3b3 B1: exactly three unchanged live Conquest selectors, new logic owner, no reverse data edge.
 await import('./arch01c3b3-boundary.mjs');
+
+// ARCH-01C4a Stage A: 12 in-memory esbuild variants of boss/looks order-only data→logic predecessors.
+// No production code/baseline/SPLIT changes; virtual NO-GO is evidence, not CI failure.
+await import('./arch01c4a-virtual-order.mjs');
