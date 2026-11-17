@@ -1,6 +1,6 @@
 # Dune GoH — ARCH-01C3b3 / v132, release handoff
 
-**17 ноября 2026. Статус:** релизный кандидат после приёмки владельцем «принимаю, сливай, выпускай». Не считать опубликованным до официального validated publish **и** независимого GitHub Pages SUCCESS с корневым commit/SW receipt.
+**17 ноября 2026. Статус: v132 ОПУБЛИКОВАНА И НЕЗАВИСИМО ПРОВЕРЕНА.** Владелец принял реализацию и разрешил «принимаю, сливай, выпускай»; официальный validated publish и независимый Pages SUCCESS подтверждены.
 
 ## Основания и проверенная реализация
 
@@ -27,3 +27,13 @@
 5. Итоговый receipt в Issue #132, после чего отдельный docs-only PR обновляет статус в handoff/CHANGES_STATUS и удаляет уже сработавший одноразовый guard **без повторного publish**.
 
 **Открыто:** приёмка на физическом Safari/iPhone v132 — обновление v131→v132, cold/warm start, offline, Джихад на easy/normal/hard, boss-модификаторы/описания, очки и сундуки, сохранения/недельный сброс, Campaign 2.0, WebGL MED/LOW, защищённый лагерь. CI не заменяет физический телефон.
+
+## Фактический релизный receipt — VERIFIED
+
+- [PR #162 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/162), implementation SHA `42a88fd355d6816c58494fa1342a3a8d78a4cbfa`, [реализационный CI #44098480717 SUCCESS 19/19](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44098480717).
+- [Релизный PR #163 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/163), release source SHA `e7cf8724c0098c7ce1e065767ebe760e98dafe84`, [full release PR CI #44104631147 SUCCESS first attempt 19/19](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44104631147). [Одноразовый guard #44105934200 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44105934200) вызвал официальный release `validate-pwa.yml` с `publish=true`.
+- [Официальный validated publish #44105972965 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44105972965) (первая попытка): 19 обязательных CI и финальный gate SUCCESS; **Publish verified PWA to GitHub Pages SUCCESS**, `dev/version.json={"v":132}`, **188 файлов SHA-256**, SW/cache `2c8aab985b`. Downloaded release artifact ZIP digest `sha256:d03de3946bd17ea71e773e4b7d927729503be07c76028f2a536b7b0cd72011` подтверждён как ожидалось и реально измерено. Root app.js и sw.js синхронизированы **байт-в-байт** из проверенного CI artifact.
+- **Опубликованный root SHA `9ee953a4180151f9e6008adddfce730ccc7b06ed`**, parent `e7cf8724c0098c7ce1e065767ebe760e98dafe84`, commit `Publish verified PWA from CI artifact`, изменены только `app.js` и `sw.js`. **[Независимый root Pages #44107612434 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44107612434)** точно на `9ee953a`. Это отдельное подтверждение от официального publish.
+- Архитектура **4 исторических data→* ребра, 0 новых/stale**, 173 JS, 999 static imports, 167/167 ESM, 898 exported global names, SCC [106,9]; золотые тесты, PWA и artifact, 21 карта/210 миссий, лагерь и WebGL HIGH/MED/LOW не изменены. Физическая Safari/iPhone приёмка **ОТКРЫТА**; утверждать, что проверка на устройстве выполнена, нельзя.
+- Использованный одноразовый `.github/workflows/release-v132-once.yml` удаляется отдельным послерелизным PR, вместе с записью фактического root/SW receipt в `CHANGES_STATUS`. **Никакой новой публикации**, реальных файлов игры, версии, сейвов, эталонов или рендеринга не меняется.
+- [Issue #132 — полный final receipt](https://github.com/mryandexxx-spec/Dgoh-game/issues/132#issuecomment-6951586450).
