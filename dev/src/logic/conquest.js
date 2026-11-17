@@ -1,5 +1,5 @@
 // logic/conquest.js — строки 5394–5530 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { CQ_CHESTS, CQ_DIFF, CQ_DISKS, CQ_DMAX, CQ_EN, CQ_ERI, CQ_LAST, CQ_LAYERS, CQ_LMAX, CQ_LTYPE, CQ_MODS, CQ_SECT, CQ_STA, cqFeats, cqRar, cqScore } from '../data/conquest-data.js';
+import { CQ_CHESTS, CQ_DIFF, CQ_DISKS, CQ_DMAX, CQ_EN, CQ_ERI, CQ_LAST, CQ_LAYERS, CQ_LMAX, CQ_LTYPE, CQ_MODS, CQ_SECT, CQ_STA, cqFeats, cqMod, cqRar } from '../data/conquest-data.js';
 import { statInc } from './stat-counters.js';
 import { NOTES, S } from '../core/state.js';
 import { enemyProg, refillPrice, todayKey } from './economy.js';
@@ -20,6 +20,10 @@ function cqBump(ev, s, n = 1, abs = false) {      // засчитывает со
   for (const x of out) NOTES.push({ id: Math.random().toString(36).slice(2), kind: 'cqf', F: x.F, v: x.v });
   return out;
 }
+const cqK = () => ({ easy: 1, normal: 1.25, hard: 1.5 })[cq().diff] || 1;
+const cqModD = m => { const x = cqMod(m); return typeof x.d === 'function' ? x.d(cqK()) : x.d; };
+const cqScore = () => { const C = cq(); return C.stars + (C.pts || 0); };
+
 const cqWeek = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toDateString(); };
 function cq() {
   const wk = cqWeek();
@@ -190,4 +194,4 @@ const cqHot = () => { if (!S) return false; const C = cq(); return S.acc.lvl >= 
 const cqRfN = () => (S.cqRf && S.cqRf.d === todayKey()) ? S.cqRf.n : 0;
 const cqRfCost = () => refillPrice(cqRfN());
 
-export { cqWeek, cq, cqEn, cqEnSpend, cqEnNext, cqEnTxt, cqSta, cqStaSet, cqStaPen, cqStaCol, cqDiskOn, CQ_DROP, cqDropW, cqDiskPick, cqLegOn, cqCanOn, cqAddDisk, cqNodeDisks, CQ_GOODS, cqGoods, CQ_MEMO, CQ_MEMO_CLR, cqLayout, cqNode, cqFoes, cqLive, cqDifficultyAccess, cqRecordFinalBoss, cqRoute, cqRouteBlocked, cqCommitRoute, cqOpen, cqTypeN, cqTrack, cqStatic, cqChest, cqCanClaim, cqSyncTrack, cqStCan, cqStReady, cqRfN, cqRfCost, cqBump, cqHot };
+export { cqWeek, cq, cqEn, cqEnSpend, cqEnNext, cqEnTxt, cqSta, cqStaSet, cqStaPen, cqStaCol, cqDiskOn, CQ_DROP, cqDropW, cqDiskPick, cqLegOn, cqCanOn, cqAddDisk, cqNodeDisks, CQ_GOODS, cqGoods, CQ_MEMO, CQ_MEMO_CLR, cqLayout, cqNode, cqFoes, cqLive, cqDifficultyAccess, cqRecordFinalBoss, cqRoute, cqRouteBlocked, cqCommitRoute, cqOpen, cqTypeN, cqTrack, cqStatic, cqChest, cqCanClaim, cqSyncTrack, cqStCan, cqStReady, cqRfN, cqRfCost, cqK, cqModD, cqScore, cqBump, cqHot };
