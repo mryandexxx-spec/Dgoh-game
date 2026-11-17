@@ -1,6 +1,7 @@
 // ui/overlays/profile.js — строки 4906–4933 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { FEATS, featMax, featRank } from '../views/feats.js';
 import { EMBLEMS, FRAMES, TITLES, unlocked } from '../../data/cosmetics.js';
+import { WORM_IMG } from '../../assets/models.js'; // ARCH-01C3a2: UI-owned worm SVG asset
 import { squadPower, unlockedIds } from '../../logic/progress.js';
 import { S } from '../../core/state.js';
 import { CMAX, ROMAN, ROSTER_IDS, WMAX } from '../../logic/economy.js';
@@ -11,6 +12,9 @@ import { MEM, RELIC_AT, RELIC_MAX, relicCap } from '../../logic/relics.js';
 import { rewardsHtml } from '../rewards.js';
 import { fmt, ic } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
+
+// ARCH-01C3a2: apply the exact historical worm SVG before any profile/avatar renders.
+if (typeof WORM_IMG !== 'undefined') { EMBLEMS.worm.svg = `<image href="${WORM_IMG.ava}" x="1" y="1" width="38" height="38"/>`; EMBLEMS.worm.bg = ['#a8784a', '#2a1608']; }
 
 // ===================== profile =====================
 function openProfile() {

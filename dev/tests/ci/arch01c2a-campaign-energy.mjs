@@ -28,7 +28,7 @@ assert.ok(read('data/campaigns.js').includes("sRng(ghash(ck + c + ':' + m))"),
   'original seeded enemy generation untouched');
 assert.ok(read('data/campaigns.js').includes("if (n && !n.enemy.includes('rabban'))"),
   'special Rabban correction intact');
-assert.equal(baseline.length, 9, 'C2c removes campaigns → RNG, with 11 legacy edges');
+assert.equal(baseline.length, 8, 'ARCH-01C3a2 leaves eight legacy imports; earlier architecture regressions unchanged');
 assert.ok(!baseline.includes('data/campaigns.js -> logic/economy.js'));
 assert.ok(!baseline.includes('data/campaigns.js -> core/rng.js') &&
   !baseline.includes('data/campaigns.js -> core/state.js') &&
