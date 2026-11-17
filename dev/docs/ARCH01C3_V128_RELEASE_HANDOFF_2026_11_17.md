@@ -24,7 +24,9 @@
 
 ## Фактический релиз v128
 
-**На момент создания release PR:** implementation PR #145/#146 MERGED и PR CI SUCCESS, опубликованная версия **v127** (SW `2e36ce669d`). Релизная CI, dispatch, Pages и новый root SHA ещё не подтверждены. Заполнять фактическими значениями только после успешных workflow.
+**ПОДТВЕРЖДЕНО 17.11.2026 — v128 ОПУБЛИКОВАНА.** [Release PR #147 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/147) at `184ef4ac68845abe550cf601984b885b98c94e1d`; one-shot [guard #44023965100 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44023965100) dispatched exact validated release. [Official validate+publish #44024295063 SUCCESS, attempt 2](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44024295063): 18 обязательных рабочих тестов + итоговый gate SUCCESS, проверены **188 файлов SHA-256**, сборка `v128 / 0437419c76`. Один Arena LOW HUD drift (~3px) на первом прогоне устранён **retry только failed jobs** на тех же исходниках/артефакте; никаких изменений порогов, golden или gameplay. Официальный `actions/deploy-pages` SUCCESS. Реальный production root commit `73b60eef17b01ee371d58a549f4ab6beb9447682`, SW `const VER = '0437419c76'` вместо `2e36ce669d`. [Independent Pages build #44025945489 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44025945489) на этом exact root. Адрес https://mryandexxx-spec.github.io/Dgoh-game/. [Issue #132](https://github.com/mryandexxx-spec/Dgoh-game/issues/132) содержит release receipt.
+
+**Послерелизная очистка:** одноразовый `.github/workflows/release-v128-once.yml` удаляется только теперь, после независимого подтверждения публикации. Данный docs-only PR не меняет production исходники, root PWA, SPLIT, baseline, version, golden, balance или saves и сам ничего не публикует. Физическая Safari/iPhone приёмка v128 остаётся открыта.
 
 ## Продолжение
 
