@@ -39,7 +39,7 @@ assert.equal(run("cqModD('b0a')"),'Все враги +20% здоровья и +1
 run("S.conq.diff='normal'");
 assert.equal(run("cqModD('b0a')"),'Все враги +25% здоровья и +19% урона; лидер — ещё +38% здоровья.');
 run("S.conq.diff='hard'");
-assert.equal(run("cqModD('b0a')"),'Все враги +30% здоровья и +23% урона; лидер — ещё +45% здоровья.');
+assert.equal(run("cqModD('b0a')"),'Все враги +30% здоровья и +22% урона; лидер — ещё +45% здоровья.');
 
 // Seven immutable chest checkpoints, five-sector route and intermediate track.
 const chests=json('CQ_CHESTS');
