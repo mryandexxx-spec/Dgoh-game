@@ -1,6 +1,6 @@
 # ARCH-01C3b2 — v131: живые уведомления Джихада принадлежат logic
 
-**17 ноября 2026** · Issue #132 · версия v131 · релизный статус: **кандидат, не считать опубликованным до validated Pages + independent Pages SUCCESS**.
+**17 ноября 2026** · Issue #132 · версия v131 · **ОПУБЛИКОВАНА И НЕЗАВИСИМО ПРОВЕРЕНА** (official validated publish / independent root Pages SUCCESS).
 
 ## Решение владельца и база
 
@@ -33,3 +33,12 @@ data/story.js -> assets/models.js
 5. Отдельный root Pages workflow на новом root commit должен быть SUCCESS. Только затем записать в Issue #132 реальные run IDs, SHA root, версию SW и count/hash receipt. После публикации удалить использованный одноразовый guard отдельным docs-only PR без нового publish.
 
 **Физическая приёмка v131 Safari/iPhone остаётся открытой**: обновление v130→v131, холодный/тёплый запуск и offline, weekly Conquest feat/NOTES, ежедневные пополнения, импорт сейва, Campaign 2.0, лагерь и WebGL MED/LOW. CI-эмуляция не заменяет телефон.
+
+## Финальный receipt фактической публикации (проверено в GitHub Actions)
+
+- [Stage A #157 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/157), [Stage B1 implementation #158 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/158) `15d715800f023be8569141f085c320f51c55527b`, [CI #44071407325 SUCCESS, 19/19](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44071407325).
+- [Release PR #159 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/159), релизный source SHA `9d60bca8abae8531b6ef548168554cb23444c03a`, [release PR full CI #44072768625 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44072768625), [one-time publish guard #44073930468 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44073930468).
+- [Official validated publish #44073950763 SUCCESS с первой попытки](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44073950763): **20/20 jobs SUCCESS** (19 validation checks + publish), exactly **188 SHA-256 verified files**, production artifact ZIP sha256 `aa1793a72e9e042736fd7ab58897a1b04e817f60daa81e0773bd25616f0bc344`; источник v131, SW/cache `25cfd6ff90`.
+- Опубликованный **root SHA `522f0035126b1d757091e671e18849132b3199ea`**, parent `9d60bca8`, commit `Publish verified PWA from CI artifact`, фактически обновил только `app.js` и `sw.js`. Версия `dev/version.json={"v":131}`. [Independent root Pages #44075082409 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44075082409) ровно на `522f003`.
+- **Baseline 5** (новых 0 / stale 0), исходные 167 ESM/898 экспортов/2 SCC; Safari/iPhone физически ещё **не подтверждён**. C3b0 `data/conquest-data→ui/celebrate` и C2d `story→assets/models` остаются NO-GO.
+- Одноразовый `.github/workflows/release-v131-once.yml` использован успешно и удаляется отдельным cleanup PR; это документационная очистка без повторного publish, без любых изменений игры, SW/root или `dev/src`.
