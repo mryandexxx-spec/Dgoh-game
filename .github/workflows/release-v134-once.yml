@@ -14,28 +14,29 @@ permissions:
 jobs:
   publish-v134-once:
     name: Dispatch owner-approved v134 validated Pages publication
-    if: "${{ github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release(arch): publish v134') }}"
+    if: "${{ github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'fix(release): retry v134 guarded publication') }}"
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # HEAD^ required by the immutable release-source guard
       - name: Fail-closed owner approval, exact one-shot inputs and frozen ARCH-01C4c B1
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git show --format=%s -s HEAD)" = 'release(arch): publish v134'
-          test "$(git rev-parse HEAD^)" = '69d28c29f288f4edf7d33e9862b305b1c0ed7cff'
+          test "$(git show --format=%s -s HEAD)" = 'fix(release): retry v134 guarded publication'
+          test "$(git rev-parse HEAD^)" = '57b7a7e4a4d8c1feaeed48c173ab14bd3af5e390'
+          test "$(git rev-parse HEAD^^)" = '69d28c29f288f4edf7d33e9862b305b1c0ed7cff'
           test "$(tr -d '\n' < dev/version.json)" = '{"v":134}'
           grep -Fq "const VER = 'e1a6859133';" sw.js
           test "$(git hash-object sw.js)" = '4fb017e5ff4ffe53dc007530ec243c6863daf379'
           test -f dev/docs/ARCH01C4C_V134_RELEASE_HANDOFF_2026_11_17.md
           test "$(git diff --name-only HEAD^ HEAD | LC_ALL=C sort)" = "$(printf '%s\n' \
             .github/workflows/release-v134-once.yml \
-            dev/CHANGES_STATUS.md \
-            dev/docs/ARCH01C4C_V134_RELEASE_HANDOFF_2026_11_17.md \
-            dev/version.json | LC_ALL=C sort)"
+            dev/docs/ARCH01C4C_V134_RELEASE_HANDOFF_2026_11_17.md | LC_ALL=C sort)"
           test "$(git hash-object dev/src/boot.js)" = 'f6820015f4f2f7ef83fb3a6e8c95fa1f9290d78b'
           test "$(git hash-object dev/src/data/looks.js)" = '97028873dd87865ef261faad94fd4ff3c9a88bb8'
           test "$(git hash-object dev/src/logic/battle/ai.js)" = '2012c2fe52d41bc4a14c222175187f1ca1a4a291'
@@ -67,6 +68,6 @@ jobs:
           if(!logic.includes("NOTES.push({ id: Math.random().toString(36).slice(2), kind: 'cqf', F: x.F, v: x.v })"))throw Error('Conquest notifications drift');
           if(!fs.readFileSync('dev/tests/run.mjs','utf8').includes("'arch01c4c-b1-boot.mjs'"))throw Error('Real bundled cold/warm test not in golden suite');
           NODE
-          echo "Owner-approved one-time validated v134 dispatch on exact source $GITHUB_SHA"
+          echo "Owner-approved v134 retry dispatch after fail-closed source and checkout-depth correction on $GITHUB_SHA"
           gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/validate-pwa.yml/dispatches" -f ref=main -f 'inputs[publish]=true'
           echo "Official validate-pwa.yml publish=true requested for v134; validate both official and independent Pages."
