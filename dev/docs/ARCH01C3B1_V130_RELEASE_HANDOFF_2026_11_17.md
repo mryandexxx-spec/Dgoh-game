@@ -1,6 +1,6 @@
 # ARCH-01C3b1 — выпуск v130: безопасная очистка Conquest→economy
 
-**17 ноября 2026**. [Трекер #132](https://github.com/mryandexxx-spec/Dgoh-game/issues/132). Владелец: «принимаю, сливай, публикуй» для PR #153 и #154. **Это одобрение релиза, но не доказательство его завершения:** до official CI/deploy и независимого Pages SUCCESS публичная игра остаётся v129.
+**17 ноября 2026**. [Трекер #132](https://github.com/mryandexxx-spec/Dgoh-game/issues/132). Владелец: «принимаю, сливай, публикуй» для PR #153 и #154. **Фактическая публикация v130 полностью подтверждена official validated CI и отдельным independent Pages SUCCESS**; хронология release-кандидата ниже сохранена для аудита.
 
 ## База и завершённая разработка
 
@@ -35,4 +35,12 @@
 
 ## Подтверждение релиза
 
-**Ожидается официальный verified publish и independent Pages SUCCESS.** Внести реальный receipt после публикации отдельным docs-only PR/комментарием, не переписывать факты заранее.
+**v130 ОПУБЛИКОВАНА и независимо проверена 17.11.2026.**
+
+- [Release PR #155 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/155), точный squash `release(arch): publish v130`, main commit `d60b6c0cfe7ae83b9effee802e3cb18c521a8d3c`; [full release PR CI #44049267112 SUCCESS (попытка 1)](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44049267112), 19 обязательных jobs включая итоговый gate.
+- [One-shot guard #44050416577 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44050416577) проверил версию 130, старый root SW, ровно 6 запретных рёбер и перенесённые без изменения тела функций, затем запустил штатный `validate-pwa.yml` с `publish=true`.
+- [Официальный validated publish #44050433689 SUCCESS с первой попытки](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44050433689): 18 mandatory checks + final `All required checks passed` SUCCESS, 188 файлов с SHA-256, verified build **v130 / SW `f97ab7c7da`**, тестированный PWA-артефакт опубликован побайтно, job `Publish verified PWA to GitHub Pages` SUCCESS.
+- Production root [`4297132fe9fc9deee00445f2580a6d265959c9ba`](https://github.com/mryandexxx-spec/Dgoh-game/commit/4297132fe9fc9deee00445f2580a6d265959c9ba), `dev/version.json={"v":130}`, `sw.js const VER='f97ab7c7da'`, https://mryandexxx-spec.github.io/Dgoh-game/.
+- [Независимый GitHub Pages #44051694332 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44051694332) на **точном** опубликованном root SHA: `build`, `deploy`, `report-build-status` все SUCCESS. Полный receipt зафиксирован в [Issue #132](https://github.com/mryandexxx-spec/Dgoh-game/issues/132#issuecomment-6943532911).
+- По завершении release guard `.github/workflows/release-v130-once.yml` удаляется отдельной docs-only очисткой вместе с этой записью (без нового `publish=true`, без `v131`). Основной `validate-pwa.yml` и обязательные проверки остаются на месте.
+- **Контекст следующего этапа:** [ARCH-01C3b2 handoff](ARCH01C3B2_RESUMPTION_2026_11_17.md): оставшиеся 6 рёбер, два живых Conquest `data→core/state` и `data→logic/conquest`, диагностический virtual ESM/TDZ этап A. Физическая Safari/iPhone приёмка v130 остаётся открытой.
