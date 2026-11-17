@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - dev/docs/ARCH01C3B2_V131_RELEASE_HANDOFF_2026_11_17.md
+      - dev/docs/ARCH01C3B3_V132_RELEASE_HANDOFF_2026_11_17.md
       - .github/workflows/release-v132-once.yml
 
 permissions:
@@ -28,7 +28,7 @@ jobs:
           test "$(git show --format=%s -s HEAD)" = 'release(arch): publish v132'
           test "$(tr -d '\n' < dev/version.json)" = '{"v":132}'
           grep -Fq "const VER = '25cfd6ff90'" sw.js
-          test -f dev/docs/ARCH01C3B2_V131_RELEASE_HANDOFF_2026_11_17.md
+          test -f dev/docs/ARCH01C3B3_V132_RELEASE_HANDOFF_2026_11_17.md
           test -f dev/tests/ci/arch01c3b3-boundary.mjs
           test -f dev/tests/arch01c3b3-conquest-selectors.mjs
           test -f dev/tests/ci/arch01c3b1-refill-boundary.mjs
