@@ -55,11 +55,26 @@ function exactlyOnce(src,from,to){
  assert.equal(src.split(from).length,2,'must have exactly one original predecessor '+from);
  return src.replace(from,to);
 }
-function edit(mod,prev,next){return new Map([[mod,exactlyOnce(files.get(mod),prev,next)]]);}
+function edit(mod,prev,next){
+ // Delete/replace the WHOLE predecessor line so the unmodified data body is
+ // byte-identical even for the negative-control removal cases.
+ return new Map([[mod,exactlyOnce(files.get(mod),prev+'\n',next?next+'\n':'')]]);
+}
+function moveImportEarlier(p,first,before){
+ const lines=files.get(p).split('\n');
+ assert.equal(lines.filter(x=>x===first).length,1,'one original import to move: '+p);
+ assert.equal(lines.filter(x=>x===before).length,1,'one destination import: '+p);
+ const from=lines.indexOf(first);lines.splice(from,1);
+ const to=lines.indexOf(before);lines.splice(to,0,first);
+ return new Map([[p,lines.join('\n')]]);
+}
 function combine(a,z){return new Map([...a,...z]);}
-function noNewLogicOwner(overrides){
- return ['logic/battle/skills.js','logic/battle/ai.js','logic/battle/raid.js',
- 'logic/battle/engine.js'].every(p=>!overrides.has(p));
+function noRuntimeLogicChanges(overrides){
+ // Import reordering is allowed IN MEMORY, but no logic function/top-level code
+ // can be modified. All old static edges must be exactly retained.
+ const withoutImports=src=>src.split('\n').filter(line=>!line.startsWith('import ')).join('\n');
+ return [...overrides].every(([p,src])=>!p.startsWith('logic/')||
+  withoutImports(src)===withoutImports(files.get(p)));
 }
 const scenarios=[
  {name:'delete-boss-predecessor',kind:'negative/naive removal',patch:edit(boss,bossPre,'')},
@@ -74,6 +89,22 @@ const scenarios=[
  {name:'boss-skill-ups-and-looks-boss',kind:'both pure data predecessor candidates',patch:combine(edit(boss,bossPre,"import './skill-ups.js'; // порядок исполнения (виртуально)"),edit(looks,looksPre,"import './boss.js'; // порядок исполнения (виртуально)"))},
  {name:'boss-chars-looks-delete',kind:'allowed boss alternative plus naive looks removal',patch:combine(edit(boss,bossPre,"import './chars.js'; // порядок исполнения (виртуально)"),edit(looks,looksPre,''))},
  {name:'boss-delete-looks-boss',kind:'naive boss removal plus allowed looks alternative',patch:combine(edit(boss,bossPre,''),edit(looks,looksPre,"import './boss.js'; // порядок исполнения (виртуально)"))},
+ {name:'boss-delete-ai-skills-first',kind:'reorder pre-existing AI imports; remove boss predecessor',patch:combine(
+   edit(boss,bossPre,''),moveImportEarlier(ai,
+   "import { SK_KEYS, autoSk, leadBonus, pasMult, skMax, skMult } from './skills.js';",
+   "import { MOVES, PHASES, RAID_TIERS, WORM } from '../../data/boss.js';"))},
+ {name:'boss-delete-stats-skills-first',kind:'reorder pre-existing battle stats imports; remove boss predecessor',patch:combine(
+   edit(boss,bossPre,''),moveImportEarlier('logic/battle/stats.js',
+   "import { SK_KEYS, autoSk } from './skills.js';",
+   "import { STAR_MULT } from '../../data/boss.js';"))},
+ {name:'boss-delete-engine-skills-first',kind:'reorder pre-existing battle engine imports; remove boss predecessor',patch:combine(
+   edit(boss,bossPre,''),moveImportEarlier('logic/battle/engine.js',
+   "import { autoSk, dunGuard, dunShielded, leadBonus, pasMult, skLv } from './skills.js';",
+   "import { RAID_TIERS, WORM, phaseOf } from '../../data/boss.js';"))},
+ {name:'boss-delete-raid-skills-first',kind:'reorder pre-existing raid imports; remove boss predecessor',patch:combine(
+   edit(boss,bossPre,''),moveImportEarlier('logic/battle/raid.js',
+   "import { dunShielded } from './skills.js';",
+   "import { MOVES, PHASES, phaseOf } from '../../data/boss.js';"))},
 ];
 function uniqueImports(overrides){
  const g=Object.fromEntries([...files.keys()].sort().map(p=>[p,[]]));
@@ -143,15 +174,16 @@ for(const test of scenarios){
   const immutability=withoutPredecessor(b2)===withoutPredecessor(b)&&
    withoutPredecessor(l2)===withoutPredecessor(l);
   const preservesEffects=b2.includes('CH.worm = WORM;')&&files.get(ai).includes("if (typeof module !== 'undefined') module.exports");
+  const logicOnly=noRuntimeLogicChanges(test.patch);
   const esmExact=missing.length===0&&extra.length===0&&moved.length===0&&current.length===167;
   const virtualGo=esmExact&&exactSCC&&namesExact&&addedEdges.length===0&&
    otherRemoved.length===0&&removedDebt.length>0&&immutability&&preservesEffects&&
-   noNewLogicOwner(test.patch);
+   noRuntimeLogicChanges(test.patch);
   const row={scenario:test.name,kind:test.kind,esmExact,markersMoved:moved.length,
    firstMoved:moved[0]??null,missing,extra,staticImports:next.count,
    exactSCC,SCC:next.cycles.map(x=>x.length),publicNames:symbols.length,
    namesExact,removedEdges:oldEdges,addedEdges,immutability,preservesEffects,
-   originalOrder:{skillsBeforeBoss:current.indexOf(skills)<current.indexOf(boss),
+   logicOnly,originalOrder:{skillsBeforeBoss:current.indexOf(skills)<current.indexOf(boss),
     aiBeforeLooks:current.indexOf(ai)<current.indexOf(looks)},
    virtualGo,runtimeValidated:false};
   results.push(row);
