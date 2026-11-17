@@ -123,6 +123,11 @@ jobs:
           node tests/arch01c3b1-conquest-refill.mjs dist/pwa/index.html
           node tests/arch01c3b1-conquest-refill.mjs dist/artifact.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-01C3b2 Conquest feat state, NOTES, weekly reset, persistence (PWA + artifact)
+        run: |
+          node tests/arch01c3b2-conquest-state.mjs dist/pwa/index.html
+          node tests/arch01c3b2-conquest-state.mjs dist/artifact.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-01C1b journey runtime compatibility (PWA + artifact)
         run: |
           node tests/arch01c1b-journey-runtime.mjs dist/pwa/index.html
