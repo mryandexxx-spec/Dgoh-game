@@ -46,6 +46,24 @@ const owners=[
  ['ui/router.js','../logic/stats.js'],
 ];
 const variants=[{name:'remove-only',files:new Map([['data/cosmetics.js',clean]])}];
+// Non-additive UI-only candidate: feats already uses METRIC. Merely swap the
+// two existing named imports to evaluate stats before the cosmetics catalog.
+const feats=read('ui/views/feats.js');
+const catalogImport="import { EMBLEMS, FRAMES, TITLES } from '../../data/cosmetics.js';";
+const metricImport="import { METRIC } from '../../logic/stats.js';";
+assert.ok(feats.includes(catalogImport+'\n'+metricImport),
+  'original feats import order must match before testing a swap');
+variants.push({name:'feats:swap-existing-metric-before-cosmetics',files:new Map([
+ ['data/cosmetics.js',clean],
+ ['ui/views/feats.js',feats.replace(catalogImport+'\n'+metricImport,
+   metricImport+'\n'+catalogImport)],
+])});
+// Alternate UI-owned order import before the unchanged catalog import.
+variants.push({name:'feats:side-effect-before-cosmetics',files:new Map([
+ ['data/cosmetics.js',clean],
+ ['ui/views/feats.js',feats.replace(catalogImport,
+   "import '../../logic/stats.js'; // ARCH-01C3a3 virtual UI-owned predecessor\n"+catalogImport)],
+])});
 for(const [file,spec] of owners){
  const src=read(file),lines=src.split('\n');
  const first=lines.findIndex(x=>/^import /.test(x));
