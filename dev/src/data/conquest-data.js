@@ -1,5 +1,4 @@
 // data/conquest-data.js — строки 5255–5393 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { cq } from '../logic/conquest.js';
 import '../ui/overlays/celebrate.js'; // порядок исполнения
 import { MENTAT } from './chars.js';
 import { FACTIONS } from './fx.js';
@@ -22,7 +21,6 @@ const CQ_LAYERS = [1, 2, 3, 2, 1, 2, 1, 3, 2, 2, 1, 1], CQ_LAST = CQ_LAYERS.leng
 const CQ_LTYPE = { 4: 'disk', 6: 'cache', 10: 'disk', [CQ_LAST]: 'boss' };
 const CQ_CHESTS = [25, 60, 100, 150, 210, 280, 320];      // 7 сундуков; между соседними — 4 промежуточные награды
 const CQ_ERI = [1, 3, 4, 5, 6];                          // сундуки с осколками Эразма (по CQ_DIFF.er)
-const cqK = () => ({ easy: 1, normal: 1.25, hard: 1.5 })[cq().diff] || 1;
 const pcs = x => Math.round(x * 100) + '%';
 const cqHpUp = (u, x) => { u.maxHp = Math.round(u.maxHp * (1 + x)); u.hp = u.maxHp; };
 // модификаторы боссов: синергия сектора + бонусные механики, сила растёт со сложностью (k = 1 / 1.25 / 1.5)
@@ -39,7 +37,6 @@ const CQ_BMOD = {
   b4b: { n: 'Самовосстановление', d: k => `Враги +${pcs(.3 * k)} здоровья и восстанавливают ${pcs(.05 * k)} здоровья в начале хода.`, f: (us, k) => us.forEach(u => { cqHpUp(u, .3 * k); u.regen = Math.max(u.regen || 0, .05 * k); }) },
 };
 const cqMod = m => CQ_MODS[m] || CQ_BMOD[m];
-const cqModD = m => { const x = cqMod(m); return typeof x.d === 'function' ? x.d(cqK()) : x.d; };
 // ---- подвиги ----
 const CQ_GF = [
   { id: 'win', n: 'Священная война', d: 'Одержите 30 побед в Джихаде.', need: 30, ev: 'win' },
@@ -65,7 +62,6 @@ function cqFeats(s) {      // s = null → глобальные; иначе ло
     { id: 'b2', n: 'Ни шагу назад', d: 'Победите босса сектора, не потеряв ни одного героя.', need: 1, ev: 'bossflaw', pts: bp, boss: 1 },
   ].map(F => ({ ...F, key: s + ':' + F.id, sc: F.boss ? 'b' : 'l', s }));
 }
-const cqScore = () => { const C = cq(); return C.stars + (C.pts || 0); };
 const CQ_EN = { max: 100, sec: 180, fight: 10, unequip: 25 };          // Решимость: запас, +1 за N секунд, цена боя, снятие диска
 const CQ_STA = { loss: 10, min: 1, regenMin: 6, dmg: .4, spd: .25 };   // выносливость: −10% за бой, нужно ≥10%, +1% за 6 мин; штраф при 0%: −40% урона, −25% скорости
 const CQ_DMAX = 5;
@@ -126,4 +122,4 @@ const CQ_ICON = {
 };
 
 
-export { CQ_DIFF, CQ_SECT, CQ_LAYERS, CQ_LAST, CQ_LTYPE, CQ_CHESTS, CQ_ERI, cqK, pcs, cqHpUp, CQ_BMOD, cqMod, cqModD, CQ_GF, CQ_LFAC, cqFeats, cqScore, CQ_EN, CQ_STA, CQ_DMAX, CQ_RF, CQ_MED, CQ_TROPHY, CQ_MODS, CQ_RAR, CQ_LMAX, CQ_DISKS, cqRar, CQ_ICON };
+export { CQ_DIFF, CQ_SECT, CQ_LAYERS, CQ_LAST, CQ_LTYPE, CQ_CHESTS, CQ_ERI, pcs, cqHpUp, CQ_BMOD, cqMod, CQ_GF, CQ_LFAC, cqFeats, CQ_EN, CQ_STA, CQ_DMAX, CQ_RF, CQ_MED, CQ_TROPHY, CQ_MODS, CQ_RAR, CQ_LMAX, CQ_DISKS, cqRar, CQ_ICON };

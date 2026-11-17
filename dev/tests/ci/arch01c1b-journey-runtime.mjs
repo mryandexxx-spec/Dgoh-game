@@ -35,7 +35,7 @@ assert.ok(logic.includes('p.stars >= 7 && p.gear >= MAX_GEAR'),
 assert.ok(data.includes('const jFoes = ') && data.includes('const jRelic = '),
   'static journey enemy/relic declarations remain in data');
 
-assert.equal(baseline.length, 5, 'ARCH-01C3b2 additionally removes only Conquest→core/state; earlier invariants unchanged');
+assert.equal(baseline.length, 4, 'ARCH-01C3b3 additionally removes Conquest→logic/conquest; earlier invariants unchanged');
 assert.ok(!baseline.some(e => e.startsWith('data/journeys.js -> ')),
   'journeys must have no remaining reverse edges');
 const source = SPLIT.filter(([,name]) => name === 'logic/journey-gates.js');
