@@ -43,3 +43,24 @@ data/story.js -> assets/models.js
 ## Итоговый receipt
 
 Результаты матрицы, точный head SHA, полный CI run и решение по B1 должны быть зафиксированы после фактического CI в [Issue #132](https://github.com/mryandexxx-spec/Dgoh-game/issues/132) и в описании Draft PR. Не объявлять GO без настоящих логов.
+
+## Реальные результаты первой матрицы и уточнённый upstream-аудит
+
+[CI #44136052709](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44136052709), обязательный `ARCH-01 Acorn import-boundary regression gate`: **25 виртуальных сценариев: ESM exact 0/25, strict GO 0, conditional GO 0**. Перебраны прямое удаление, перестановки имеющихся UI-потребителей в `ui/views/conq.js`, `ui/battle/battle-ui.js`, `ui/hero-card.js`, комбинированные варианты и контролируемые explicit UI→logic predecessors. Результаты по фактической production esbuild: 60 сдвинутых markers в обычных случаях, в двух «AI самым первым» вариантах 20 moved. Во всех 25: 173 JS, 898 exports, SCC [106,6] и отсутствие изменения тел функций, но **ни одного полного 167/167 marker match**. Это **NO-GO** для удаления/перестановки только в позднем UI.
+
+Для определения правильного predecessor добавлена трассировка реальной цепочки ESM-зависимостей на исходниках v133 (для пути используется AST и реальный порядок imports, окончательный арбитр — production esbuild):
+```
+main.js → boot.js → ui/views/conq.js → logic/conquest.js
+→ data/conquest-data.js → ui/overlays/celebrate.js
+→ ... → ui/battle/battle-ui.js → ui/views/rules.js
+→ ... → ui/hero-card.js → ui/portrait.js
+→ ... → data/story.js → assets/models.js
+→ ... → render2d/fx-layer.js → render2d/scene-bg.js
+→ render2d/scenes.js → render2d/figures.js
+→ data/looks.js → logic/battle/ai.js
+```
+В старой версии AI впервые входит в DFS **через `data/looks.js`**, а после удаления впервые достигается по другой цепочке — через `logic/relics.js`/battle/stats/skills/engine. Получается, что перестановки импортов *после* слишком раннего достижения `looks` уже опоздали.
+
+Новая автоматическая матрица `trace-first-*` использует **каждого владельца разрешённого UI в самой ранней фактической цепочке**: если у него уже есть AI import, только поднимает его перед тем импортом, который приводит к `looks`; иначе **в памяти** добавляет явный allowed `ui→logic/battle/ai` импорт перед конкретной ранней зависимостью. Для `render2d` ancestors делает **только исследовательские** варианты и помечает их отдельно как потенциальный архитектурный boundary exception (не GO для реализации без дополнительного layer review). Все варианты обязаны сообщать exact moved ESM markers, SCC membership, старые и новые edges; никакого изменения исходников или опубликованной версии. Итоговый вывод по этой дополнительной матрице фиксировать только после логов **последнего head** и обязательного CI.
+
+**Никакого B1 сейчас**: до доказанного ESM order и реальной VM/cold+warm/golden приёмки любые потенциально удачные upstream-кандидаты — только исследовательский сигнал. C3b0 и C2d запрещённые предшественники не изменены.
