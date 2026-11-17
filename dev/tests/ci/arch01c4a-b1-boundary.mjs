@@ -17,7 +17,6 @@ const ai = read('logic/battle/ai.js');
 const frozen = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
 assert.deepEqual(frozen,[
  'data/conquest-data.js -> ui/overlays/celebrate.js',
- 'data/looks.js -> logic/battle/ai.js',
  'data/story.js -> assets/models.js'
 ], 'remove only the proven boss→skills reverse dependency, preserve three known order-critical debts');
 const edges = p => importEdges(read(p),p).filter(e=>e.kind==='static').map(e=>e.to);
@@ -38,7 +37,7 @@ assert.ok(boss.includes("export { WORM, PHASES, MOVES, RAID_TIERS, phaseOf, STAR
 assert.ok(stats.includes('function unitStats(def, p) {'));
 assert.ok(stats.includes('function unitPower(def, p) {'));
 assert.ok(stats.includes('export { unitStats, unitPower, setGearStatProvider };'));
-assert.ok(looks.includes("import '../logic/battle/ai.js'; // порядок исполнения"),'C4a looks→ai remains NO-GO; do not touch');
+assert.ok(!looks.includes("import '../logic/battle/ai.js'; // порядок исполнения"),'C4c B1 removes the looks→AI predecessor only after explicit root boot proof');
 assert.ok(ai.includes("if (typeof module !== 'undefined') module.exports"),'AI CJS adapter retained');
 assert.ok(read('data/conquest-data.js').includes("import '../ui/overlays/celebrate.js'; // порядок исполнения"),'C3b0 blocked predecessor kept');
 assert.ok(read('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"),'C2d blocked predecessor kept');
@@ -46,7 +45,7 @@ assert.ok(!read('data/conquest-data.js').includes("from '../logic/conquest.js'")
 
 const graph=analyzeTree(process.cwd());
 assert.equal(graph.modules,173);
-assert.equal(graph.staticImports,998,'exactly one predecessor edge removed from 999');
+assert.equal(graph.staticImports,1000,'C4c adds three permitted boot imports and removes looks→AI after C4a');
 assert.equal(graph.unresolved.length,0,'no unresolved import');
 assert.deepEqual(graph.cycles.map(c=>c.length),[106,6],
  'C4a intentionally reduced only the legacy 9-member battle SCC to six');
@@ -96,4 +95,4 @@ const symbols=SPLIT.flatMap(([,p])=>{
 assert.equal(symbols.length,898,'all globally available named exports are frozen');
 for(const p of ['WORM','CH','STAR_MULT','unitStats','unitPower','SK_KEYS','autoSk'])
  assert.ok(symbols.includes(p),'old named global remains exported: '+p);
-console.log('ARCH-01C4a B1 structural PASS: legacy 4→3 / 0 new, 173 modules, 998 imports, 167 ESM markers, 898 named exports, 106 SCC exactly unchanged, battle SCC 9→6, separated modules '+JSON.stringify(exactlySeparated));
+console.log('ARCH-01C4a B1 structural PASS: historical C4a 4→3, C4c B1 3→2 / 0 new, 173 modules, 1000 imports, 167 ESM markers, 898 named exports, 106 SCC exactly unchanged, battle SCC 9→6, separated modules '+JSON.stringify(exactlySeparated));

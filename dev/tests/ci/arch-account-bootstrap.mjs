@@ -61,8 +61,8 @@ assert.deepEqual(incoming('logic/account-rules.js'),[
   'ui/overlays/levelup.js','ui/overlays/profile.js','ui/wiring.js',
 ].sort(), 'all named account consumers must use pure rules');
 assert.deepEqual(incoming('logic/cinematic-preference.js'),[
-  'render3d/scenes/arena.js','ui/overlays/battle-settings.js',
-].sort(), 'early cinematic setting must be isolated from account');
+  'boot.js','render3d/scenes/arena.js','ui/overlays/battle-settings.js',
+].sort(), 'cinematic setting is early-owned by the composition root, with no account dependency');
 
 const newModules=new Set(['logic/account-rules.js','logic/cinematic-preference.js','data/gear-cap.js','logic/journey-gates.js','data/campaign-energy.js','logic/campaign-gates.js','data/seeded-rng.js','logic/cosmetics-unlocks.js']);
 assert.equal(SPLIT.length,167,'expected 159 original modules + 7 additive modules');

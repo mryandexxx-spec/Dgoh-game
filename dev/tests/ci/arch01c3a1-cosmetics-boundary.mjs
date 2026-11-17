@@ -10,7 +10,7 @@ const legacy=JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8'
 const cosmetics=read('data/cosmetics.js'),logic=read('logic/cosmetics-unlocks.js');
 const wiring=read('ui/wiring.js'),profile=read('ui/overlays/profile.js');
 
-assert.equal(legacy.length,3,'C4a removes boss→skills while preserving cosmetics invariants');
+assert.equal(legacy.length,2,'C4a removes boss→skills while preserving cosmetics invariants');
 for(const e of ['data/cosmetics.js -> core/state.js','data/cosmetics.js -> logic/progress.js',
   'data/cosmetics.js -> logic/stats.js']){
   assert.ok(!legacy.includes(e),'removed edge must not remain in legacy baseline');

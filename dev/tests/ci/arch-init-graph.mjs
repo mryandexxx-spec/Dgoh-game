@@ -85,3 +85,6 @@ await import('./arch01c3b3-boundary.mjs');
 
 // ARCH-01C4a Stage B1: real boss→skills edge removal and explicitly reviewed battle SCC 9→6.
 await import('./arch01c4a-b1-boundary.mjs');
+
+// ARCH-01C4c B1: real root composition, frozen source bodies, AST graph/SCC invariants.
+await import('./arch01c4c-b1-boundary.mjs');

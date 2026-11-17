@@ -8,7 +8,7 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const source=p=>fs.readFileSync('src/'+p,'utf8');
 const staticEdges=p=>importEdges(source(p),p).filter(e=>e.kind==='static').map(e=>e.to);
 const legacy=JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
-assert.equal(legacy.length,3,'C4a removes boss→skills while keeping original C3b1/C3b3 refill invariants');
+assert.equal(legacy.length,2,'C4a removes boss→skills while keeping original C3b1/C3b3 refill invariants');
 assert.ok(!legacy.includes('data/conquest-data.js -> logic/economy.js'));
 assert.ok(!legacy.includes('data/conquest-data.js -> logic/conquest.js'),'C3b3 must remove reverse Conquest logic edge');
 for(const edge of [
@@ -56,4 +56,4 @@ assert.equal(graph.cycles.length,2,'do not create/destroy SCC without separate r
 assert.ok(graph.cycles.some(c=>c.length===106 && c.includes('data/conquest-data.js') &&
  c.includes('logic/conquest.js')),
  'C3b1 cannot deepen or silently change the existing 106-module Conquest cycle');
-console.log('ARCH-01C3b1 refill compatibility: PASS; 3 remaining old edges after C4a, 167 ESM markers, identical refill API');
+console.log('ARCH-01C3b1 refill compatibility: PASS; 2 remaining old edges after C4c B1, 167 ESM markers, identical refill API');

@@ -35,7 +35,7 @@ assert.ok(logic.includes('p.stars >= 7 && p.gear >= MAX_GEAR'),
 assert.ok(data.includes('const jFoes = ') && data.includes('const jRelic = '),
   'static journey enemy/relic declarations remain in data');
 
-assert.equal(baseline.length, 3, 'C4a removes boss→skills; all previous campaign, journey and RNG invariants retained');
+assert.equal(baseline.length, 2, 'C4a and C4c B1 remove verified order-only predecessors; campaign, journey and RNG invariants retained');
 assert.ok(!baseline.some(e => e.startsWith('data/journeys.js -> ')),
   'journeys must have no remaining reverse edges');
 const source = SPLIT.filter(([,name]) => name === 'logic/journey-gates.js');
