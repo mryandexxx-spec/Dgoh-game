@@ -69,3 +69,6 @@ await import('./arch01c3a1-cosmetics-boundary.mjs');
 
 // ARCH-01C3a2: virtual order proof recorded; require the actual UI-owned SVG and preserved model bootstrap.
 await import('./arch01c3a2-worm-boundary.mjs');
+
+// ARCH-01C3a3: read-only virtual ESM order matrix for remaining cosmetics→stats predecessor.
+await import('./arch01c3a3-virtual-stats.mjs');
