@@ -140,6 +140,29 @@ function stateBridge(anchor){
  l=once(l,anchor,bump+'\n'+anchor);
  return new Map([[dname,d],[lname,l]]);
 }
+// A2: C3b1-style one-edge ownership move. Relocate only byte-identical
+// cqBump to existing logic/conquest, rewire its only two named consumers
+// (logic's own former data import and UI's existing paired named imports).
+// No compatibility re-export: named GLOBAL API and 898 total remain unchanged.
+function stateMove(anchor){
+ let d=once(data,stateImport,'');
+ d=once(d,bump,'');
+ const rex=/^export \{ ([^\n]+) \};$/m,match=rex.exec(d);
+ assert.ok(match && match[1].split(', ').includes('cqBump'));
+ d=d.replace(rex,'export { '+match[1].split(', ').filter(n=>n!=='cqBump').join(', ')+' };');
+ let l=once(logic,'cqBump, cqRar, cqScore','cqFeats, cqRar, cqScore');
+ l=once(l,logicStateImport,"import { NOTES, S } from '../core/state.js';");
+ l=once(l,'cqRfN, cqRfCost, cqHot };','cqRfN, cqRfCost, cqBump, cqHot };');
+ l=once(l,anchor,bump+'\n'+anchor);
+ const dImp=/^import \{ ([^\n]+) \} from '\.\.\/\.\.\/data\/conquest-data\.js';$/m;
+ const lImp=/^import \{ ([^\n]+) \} from '\.\.\/\.\.\/logic\/conquest\.js';$/m;
+ const md=dImp.exec(ui),ml=lImp.exec(ui);assert.ok(md && ml);
+ const dataNames=md[1].split(', '),logicNames=ml[1].split(', ');
+ assert.ok(dataNames.includes('cqBump'));
+ let u=ui.replace(dImp,"import { "+dataNames.filter(n=>n!=='cqBump').join(', ')+" } from '../../data/conquest-data.js';");
+ u=u.replace(lImp,"import { "+[...logicNames,'cqBump'].join(', ')+" } from '../../logic/conquest.js';");
+ return new Map([[dname,d],[lname,l],[uname,u]]);
+}
 // B: exact 898 exports, but a new top-level mutation of the cq function as
 // hidden notification port; DO NOT call this production-safe purely from order.
 function statePort(anchor){
@@ -179,6 +202,8 @@ const scenarios=[
  {name:'remove-state-only',kind:'unbound NOTES must be rejected',files:new Map([[dname,once(data,stateImport,'')]])},
  ...['const cqWeek = () =>','const cqRfN = () =>','export { cqWeek,'].map((a,i)=>({
   name:'state-bridge-'+i,kind:'additive logic named API',files:stateBridge(a)})),
+ ...['const cqWeek = () =>','const cqRfN = () =>','export { cqWeek,'].map((a,i)=>({
+  name:'state-move-'+i,kind:'single cqBump ownership move and existing named UI import migration',files:stateMove(a)})),
  ...['// ---- Решимость','const cqRfN = () =>'].map((a,i)=>({
   name:'state-port-'+i,kind:'top-level mutable cq.notifyFeats side-channel',files:statePort(a)})),
  ...['const cqWeek = () =>','const cqRfN = () =>','export { cqWeek,'].map((a,i)=>({
@@ -197,16 +222,19 @@ for(const scenario of scenarios){
   const removedExports=baseApi.filter(x=>!nowApi.includes(x));
   const exact=!moved.length&&!missing.length&&!extra.length;
   const cycleSame=JSON.stringify(graph.cycles)===JSON.stringify(before.cycles);
+  const publicNames=arr=>arr.map(e=>e.slice(e.indexOf(':')+1)).sort();
+  const globalNamesStable=JSON.stringify(publicNames(nowSplit))===JSON.stringify(publicNames(baseSplitApi));
   const splitAdd=nowSplit.filter(x=>!baseSplitApi.includes(x));
   const splitRemoved=baseSplitApi.filter(x=>!nowSplit.includes(x));
   const apiStable=!addedExports.length&&!removedExports.length&&!splitAdd.length&&!splitRemoved.length;
   const report={name:scenario.name,kind:scenario.kind,markerExact:exact,
    moved:moved.length,missing,extra,first:first<0?'none':first+':'+expected[first]+' -> '+output[first],
    sccSizes:graph.cycles.map(c=>c.length),cycleSame,introducedEdges,removedEdges,
-   exports:nowSplit.length,allAstExports:nowApi.length,addedExports,removedExports,splitAdd,splitRemoved,apiStable,
+   exports:nowSplit.length,allAstExports:nowApi.length,addedExports,removedExports,splitAdd,splitRemoved,apiStable,globalNamesStable,
    stateEdgeRemoved:!graph.edges.has(dname+' -> core/state.js'),
    logicEdgeRemoved:!graph.edges.has(dname+' -> logic/conquest.js'),
    strictStructuralGate:exact&&cycleSame&&!introducedEdges.length&&apiStable,
+   strictGlobalContractGate:exact&&cycleSame&&!introducedEdges.length&&globalNamesStable,
    runtimeTDZProven:false};
   reports.push(report);
   console.log('ARCH-01C3b2 TRIAL '+JSON.stringify(report));
@@ -219,6 +247,7 @@ for(const scenario of scenarios){
 console.log('ARCH-01C3b2 RESULT '+JSON.stringify({
  trials:reports.length,exact:reports.filter(r=>r.markerExact).length,
  strictStructuralCandidates:reports.filter(r=>r.strictStructuralGate).map(r=>r.name),
+ strictGlobalContractCandidates:reports.filter(r=>r.strictGlobalContractGate).map(r=>r.name),
  best:reports.filter(r=>Number.isInteger(r.moved)).sort((a,b)=>a.moved-b.moved)
   .slice(0,8).map(r=>({name:r.name,moved:r.moved,apiStable:r.apiStable,cycleSame:r.cycleSame})),
  note:'In-memory virtual-only. No real save, week, notification, TDZ or gameplay proof; no source change permitted.'
