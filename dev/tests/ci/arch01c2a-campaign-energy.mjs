@@ -28,7 +28,7 @@ assert.ok(read('data/campaigns.js').includes("sRng(ghash(ck + c + ':' + m))"),
   'original seeded enemy generation untouched');
 assert.ok(read('data/campaigns.js').includes("if (n && !n.enemy.includes('rabban'))"),
   'special Rabban correction intact');
-assert.equal(baseline.length, 4, 'ARCH-01C3b3 additionally removes Conquest→logic/conquest; earlier invariants unchanged');
+assert.equal(baseline.length, 3, 'C4a removes boss→skills; all previous campaign, journey and RNG invariants retained');
 assert.ok(!baseline.includes('data/campaigns.js -> logic/economy.js'));
 assert.ok(!baseline.includes('data/campaigns.js -> core/rng.js') &&
   !baseline.includes('data/campaigns.js -> core/state.js') &&
