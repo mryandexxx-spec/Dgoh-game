@@ -82,9 +82,16 @@ function exportsOf(overrides){
  }
  return result.sort();
 }
-const before=cycleGraph(new Map()),baseApi=exportsOf(new Map());
+function splitApi(overrides){
+ return SPLIT.flatMap(([,p])=>{
+  const m=/^export \\{ (.+) \\};$/m.exec(overrides.get(p)??files.get(p));
+  return m?m[1].split(', ').map(n=>p+':'+n):[];
+ }).sort();
+}
+const before=cycleGraph(new Map()),baseApi=exportsOf(new Map()),baseSplitApi=splitApi(new Map());
 assert.deepEqual(before.cycles,ast.cycles);
-assert.equal(baseApi.length,898,'frozen public named export baseline');
+assert.equal(baseSplitApi.length,898,'frozen check-bundle public named export baseline');
+assert.ok(baseApi.length>=baseSplitApi.length,'AST corpus export count must cover canonical SPLIT exports');
 const markerList=code=>[...code.matchAll(/^\/\/ src\/(.+\.js)$/gm)].map(m=>m[1]).filter(n=>n!=='main.js');
 async function bundle(overrides){
  const plugins=overrides.size?[{name:'arch01c3b2-read-only',setup(b){
@@ -119,7 +126,7 @@ for(const [p,source] of files){
 console.log('ARCH-01C3b2 BASE '+JSON.stringify({
  modules:ast.modules,staticImports:ast.staticImports,legacy:ledger.length,
  sccSizes:ast.cycles.map(c=>c.length),conquestScc:ast.cycles.find(c=>c.includes(dname)),
- dataStateReferences:stateRefs,consumers,exportCount:baseApi.length
+ dataStateReferences:stateRefs,consumers,splitExports:baseSplitApi.length,allAstExports:baseApi.length
 }));
 
 // A: move cqBump to existing logic owner; data re-exports original name via
@@ -181,7 +188,7 @@ const reports=[];
 for(const scenario of scenarios){
  try{
   const output=await bundle(scenario.files);
-  const graph=cycleGraph(scenario.files),nowApi=exportsOf(scenario.files);
+  const graph=cycleGraph(scenario.files),nowApi=exportsOf(scenario.files),nowSplit=splitApi(scenario.files);
   const missing=expected.filter(n=>!output.includes(n)),extra=output.filter(n=>!expected.includes(n));
   const moved=expected.filter((n,i)=>output.indexOf(n)!==i),first=expected.findIndex((n,i)=>output[i]!==n);
   const introducedEdges=[...graph.edges].filter(x=>!before.edges.has(x));
@@ -190,11 +197,13 @@ for(const scenario of scenarios){
   const removedExports=baseApi.filter(x=>!nowApi.includes(x));
   const exact=!moved.length&&!missing.length&&!extra.length;
   const cycleSame=JSON.stringify(graph.cycles)===JSON.stringify(before.cycles);
-  const apiStable=!addedExports.length&&!removedExports.length;
+  const splitAdd=nowSplit.filter(x=>!baseSplitApi.includes(x));
+  const splitRemoved=baseSplitApi.filter(x=>!nowSplit.includes(x));
+  const apiStable=!addedExports.length&&!removedExports.length&&!splitAdd.length&&!splitRemoved.length;
   const report={name:scenario.name,kind:scenario.kind,markerExact:exact,
    moved:moved.length,missing,extra,first:first<0?'none':first+':'+expected[first]+' -> '+output[first],
    sccSizes:graph.cycles.map(c=>c.length),cycleSame,introducedEdges,removedEdges,
-   exports:nowApi.length,addedExports,removedExports,apiStable,
+   exports:nowSplit.length,allAstExports:nowApi.length,addedExports,removedExports,splitAdd,splitRemoved,apiStable,
    stateEdgeRemoved:!graph.edges.has(dname+' -> core/state.js'),
    logicEdgeRemoved:!graph.edges.has(dname+' -> logic/conquest.js'),
    strictStructuralGate:exact&&cycleSame&&!introducedEdges.length&&apiStable,
