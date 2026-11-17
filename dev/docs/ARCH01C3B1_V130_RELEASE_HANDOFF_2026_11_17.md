@@ -1,0 +1,38 @@
+# ARCH-01C3b1 — выпуск v130: безопасная очистка Conquest→economy
+
+**17 ноября 2026**. [Трекер #132](https://github.com/mryandexxx-spec/Dgoh-game/issues/132). Владелец: «принимаю, сливай, публикуй» для PR #153 и #154. **Это одобрение релиза, но не доказательство его завершения:** до official CI/deploy и независимого Pages SUCCESS публичная игра остаётся v129.
+
+## База и завершённая разработка
+
+- Опубликована v129: исходный production root [`e940aade2caa4d87d3b5ba83fb4cbb4c8593760e`](https://github.com/mryandexxx-spec/Dgoh-game/commit/e940aade2caa4d87d3b5ba83fb4cbb4c8593760e), `dev/version.json={"v":129}`, `sw.js const VER = 'c79e8f534f'`, [validated publish #44032478163 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44032478163), [independent Pages #44033770546 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44033770546).
+- [#154 docs v129 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/154) `68b8d138e7f609fb410f8bc9b76bc884a666fb34`, [full CI #44037390162 SUCCESS attempt 1](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44037390162): verified v129 receipt, old one-use guard removed, no game edits.
+- [#153 implementation MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/153) `defb01e5189323f43b59195cee3eb8683532040e`, [full CI #44036957180 SUCCESS attempt 1](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44036957180): `data/conquest-data.js → logic/economy.js` removed; original `cqRfN` and `cqRfCost` function bodies relocated **unchanged** to `logic/conquest.js`; existing `ui/views/conq.js` named import points to logic owner. `logic/conquest.js` already imported economy and state — **no new import module**, no save/price/reset/feat changes. AST **7→6**, no new/stale; old exact `SPLIT` 167 ESM markers, 898 unchanged public exports, 173 JS, 2 original SCC, Conquest SCC 106.
+- [Diagnostic #152](https://github.com/mryandexxx-spec/Dgoh-game/pull/152), [full CI #44036071756 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44036071756): Conquest UI celebration edge is **NO-GO in 35/35 order variants** (0 exact; best moved 47 and raw deletion moved 162 modules). For the chosen refills transfer, **4/4 exact zero-shift** ESM virtual variants. Diagnostics remain Draft (not for merge).
+- Runtime on PWA and artifact: 21 exact daily refill prices n0..20, previous/next day reset, fresh and replaced save with live S, `cqBump` progress points and NOTES, no new cycles/TDZ; 3 pinned cosmetics SHA entitlement `d451f070fde45c721f379161fe3bc8fbd1d29b9649964957ec31591c8e912a55`, SVG `64a85568c392122adf50284fde0d2f83e1cf82ec667571808b93710d69b48dd8`, worm/profile HTML `737995ab60dc152a2b39a4fa6002114aef1b45c9cc123396edb0bd491f52cde2`, 210 NODES digest `b33150786a9b8c17abc60a9c1df1b40019ab9f6b6335a0c6d3287837d9beaa48`, 4096 PRNG values. Golden 200 battles/meta/saves/41 screens; mobile WebGL MED/LOW, desktop HIGH, offline/SW, iPhone DOM, 3D lifecycle, camp budget all passed.
+
+## Только релизный PR
+
+1. `dev/version.json` — **129→130**.
+2. `dev/CHANGES_STATUS.md` — entry v130 и текущие незакрытые вопросы.
+3. Этот handoff.
+4. Новый одноразовый workflow `.github/workflows/release-v130-once.yml`, *строго* на squash commit subject `release(arch): publish v130`, фиксирует предыдущий root SW `c79e8f534f`, новую версию, **шесть точных legacy ребер**, перенесённые именно в logic два расчёта, прежний blocked C2d и C3b0. Он запускает штатный `validate-pwa.yml` из `main` с `publish=true` **только один раз**.
+
+**Никакого `dev/src`, baseline, `SPLIT`, golden, PWA root, SW, ассета, UI, лагеря и save изменения в release PR.** Новая production PWA появится только при verified publication. Старый root SW — `c79e8f534f`; новая сборка получит hash автоматически, не угадывать.
+
+## Публикация fail-closed
+
+1. Full required release PR CI на отдельной ветке + финальный `All required checks passed SUCCESS`. До этого **NO MERGE**.
+2. Squash release PR *только* exact title `release(arch): publish v130`, из main с preflight guard. One-time guard запускает official `validate-pwa.yml` `publish=true` на релизном main SHA.
+3. Official CI: full 18 tasks, tests on both PWA/artifact, exact old 167 order and 898 exports, 6/0/0 AST, immutable SHA, golden, DOM, offline and 3D, final gate SUCCESS. `ci-artifact.mjs stage` публикует **byte-for-byte tested build**; `actions/deploy-pages` SUCCESS.
+4. Независимый GitHub workflow `pages build and deployment` должен быть **SUCCESS на новом root commit**. Подтвердить `dev/version.json v130`, новый `sw.js VER`, 188 SHA-256 files (либо проверенный фактический count), Pages URL. Только после этого публично считать v130 выпущенной.
+5. Записать full receipt с run IDs, root/SW и всеми gate в Issue #132. Послерелизный guard удалить в отдельном docs-only PR после публикации, без нового publish.
+
+## Открыто после выпуска
+
+- Физическая iPhone Safari проверка (v129→v130, холодный/тёплый PWA, offline cache, Джихад: ежедневная цена/пополнение/лимиты/недельный сброс/подвиги/NOTES и импорт старого сейва; camp / Campaign / heroes / 3D MED/LOW) **не проводилась и остаётся открытой**.
+- Из шести оставшихся запрещённых data→runtime рёбер три принадлежат Conquest: `data/conquest-data→core/state`, `→logic/conquest`, `→ui/overlays/celebrate`. Последнее **C3b0 NO-GO**. `data/story→assets/models` **C2d NO-GO**, не пытаться удалить с ценой изменения загрузки 3D. Другие: boss→skills и looks→battle/ai.
+- Следующая реализация только после нового independent virtual esbuild proof (7→6 уже включено в v130, дальше 6→5).
+
+## Подтверждение релиза
+
+**Ожидается официальный verified publish и independent Pages SUCCESS.** Внести реальный receipt после публикации отдельным docs-only PR/комментарием, не переписывать факты заранее.
