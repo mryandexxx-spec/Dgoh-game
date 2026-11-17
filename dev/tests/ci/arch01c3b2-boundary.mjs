@@ -10,13 +10,12 @@ const data=src('data/conquest-data.js'), logic=src('logic/conquest.js'),ui=src('
 const legacy=JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
 assert.deepEqual(legacy,[
  'data/boss.js -> logic/battle/skills.js',
- 'data/conquest-data.js -> logic/conquest.js',
  'data/conquest-data.js -> ui/overlays/celebrate.js',
  'data/looks.js -> logic/battle/ai.js',
  'data/story.js -> assets/models.js'
-],'shrink only one proven edge from six to five');
+],'C3b2 and C3b3 remove precisely two proven edges from six to four');
 const graph=analyzeTree(process.cwd());
-assert.equal(graph.modules,173);assert.equal(graph.staticImports,1000);
+assert.equal(graph.modules,173);assert.equal(graph.staticImports,999);
 assert.equal(graph.unresolved.length,0);
 assert.equal(graph.cycles.length,2);
 assert.deepEqual(graph.cycles.map(c=>c.length),[106,9]);
@@ -24,19 +23,19 @@ for(const x of ['data/conquest-data.js','logic/conquest.js','core/state.js','ui/
  assert.ok(graph.cycles[0].includes(x));
 const edges=p=>importEdges(src(p),p).filter(e=>e.kind==='static').map(e=>e.to);
 assert.deepEqual(edges('data/conquest-data.js'),[
- 'logic/conquest.js','ui/overlays/celebrate.js','data/chars.js','data/fx.js'
+ 'ui/overlays/celebrate.js','data/chars.js','data/fx.js'
 ]);
 assert.ok(!data.includes('NOTES')&&!data.includes("from '../core/state.js'"),'data has no live core/state or notification effect');
 assert.ok(!data.includes('function cqBump'),'runtime feat mutation must belong to logic');
-assert.ok(data.includes('const cqK = ')&&data.includes('const cqScore = ')&&
+assert.ok(!data.includes('const cqK = ')&&!data.includes('const cqScore = ')&&
  data.includes('function cqFeats(s)')&&data.includes("import '../ui/overlays/celebrate.js'; // порядок исполнения"),
  'data tables and other selectors and blocked UI predecessor must be left untouched');
 assert.ok(!/export \{[^}]*\bcqBump\b/.test(data),'data must not export relocated runtime action');
 assert.ok(/export \{[^}]*\bcqBump\b/.test(logic),'logic must export old named cqBump action');
 assert.ok(logic.includes("import { NOTES, S } from '../core/state.js';")&&
- logic.includes('CQ_SECT, CQ_STA, cqFeats, cqRar, cqScore'),'reuse existing edges, notify from logic');
-assert.ok(ui.includes("cqTypeN, cqRfN, cqRfCost, cqBump } from '../../logic/conquest.js'")&&
- ui.includes('CQ_TROPHY, cqFeats, cqK, cqMod, cqModD, cqRar, cqScore } from')&&
+ logic.includes('CQ_SECT, CQ_STA, cqFeats, cqMod, cqRar'),'reuse existing edges, notify from logic');
+assert.ok(ui.includes("cqTypeN, cqRfN, cqRfCost, cqBump, cqK, cqModD, cqScore } from '../../logic/conquest.js'")&&
+ ui.includes('CQ_TROPHY, cqFeats, cqMod, cqRar } from')&&
  !ui.includes('CQ_TROPHY, cqBump,'),'UI consumes same named API from logic');
 
 const oldBody=String.raw`function cqBump(ev, s, n = 1, abs = false) {      // засчитывает событие подвигам: глобальным и локальным сектора s
@@ -62,4 +61,4 @@ assert.equal(SPLIT.reduce((n,[,p])=>n+exp(p).length,0),898,
  'old public named globals count unchanged');
 assert.ok(exp('logic/conquest.js').includes('cqBump')&&!exp('data/conquest-data.js').includes('cqBump'));
 assert.ok(src('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"),'C2d blocked');
-console.log('ARCH-01C3b2 implementation boundary: PASS; 5 legacy/0 new, exact unchanged cqBump, 173 JS, 1000 imports, 2 original SCC (106/9), 898 public names, 167 SPLIT markers');
+console.log('ARCH-01C3b2 implementation boundary: PASS; 4 legacy/0 new, exact unchanged cqBump, 173 JS, 999 imports, 2 original SCC (106/9), 898 public names, 167 SPLIT markers');
