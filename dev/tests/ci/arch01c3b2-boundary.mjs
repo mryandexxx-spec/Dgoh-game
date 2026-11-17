@@ -9,16 +9,15 @@ const src=p=>fs.readFileSync('src/'+p,'utf8');
 const data=src('data/conquest-data.js'), logic=src('logic/conquest.js'),ui=src('ui/views/conq.js');
 const legacy=JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
 assert.deepEqual(legacy,[
- 'data/boss.js -> logic/battle/skills.js',
  'data/conquest-data.js -> ui/overlays/celebrate.js',
  'data/looks.js -> logic/battle/ai.js',
  'data/story.js -> assets/models.js'
-],'C3b2 and C3b3 remove precisely two proven edges from six to four');
+],'C3b2/C3b3/C4a retire their verified debts; remaining exactly three edges');
 const graph=analyzeTree(process.cwd());
-assert.equal(graph.modules,173);assert.equal(graph.staticImports,999);
+assert.equal(graph.modules,173);assert.equal(graph.staticImports,998);
 assert.equal(graph.unresolved.length,0);
 assert.equal(graph.cycles.length,2);
-assert.deepEqual(graph.cycles.map(c=>c.length),[106,9]);
+assert.deepEqual(graph.cycles.map(c=>c.length),[106,6]);
 for(const x of ['data/conquest-data.js','logic/conquest.js','core/state.js','ui/views/conq.js','ui/overlays/celebrate.js'])
  assert.ok(graph.cycles[0].includes(x));
 const edges=p=>importEdges(src(p),p).filter(e=>e.kind==='static').map(e=>e.to);
@@ -61,4 +60,4 @@ assert.equal(SPLIT.reduce((n,[,p])=>n+exp(p).length,0),898,
  'old public named globals count unchanged');
 assert.ok(exp('logic/conquest.js').includes('cqBump')&&!exp('data/conquest-data.js').includes('cqBump'));
 assert.ok(src('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"),'C2d blocked');
-console.log('ARCH-01C3b2 implementation boundary: PASS; 4 legacy/0 new, exact unchanged cqBump, 173 JS, 999 imports, 2 original SCC (106/9), 898 public names, 167 SPLIT markers');
+console.log('ARCH-01C3b2 implementation boundary: PASS; 3 legacy/0 new, exact unchanged cqBump, 173 JS, 998 imports, 2 reviewed SCC (106/6), 898 public names, 167 SPLIT markers');
