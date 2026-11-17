@@ -14,7 +14,7 @@
 
 ## Содержимое только этого release PR
 
-Только `dev/version.json` (**128→129**), `dev/CHANGES_STATUS.md` (запись v129, актуальный реестр открытых вопросов), этот протокол и одноразовый `.github/workflows/release-v129-once.yml`. **Никаких production source, baseline, SPLIT, golden или PWA root изменений**. Пока не опубликован новый сайт, в Pages живёт v128.
+Только `dev/version.json` (**128→129**), `dev/CHANGES_STATUS.md` (запись v129, актуальный реестр открытых вопросов), этот протокол и одноразовый `.github/workflows/release-v129-once.yml`. **Никаких production source, baseline, SPLIT, golden или PWA root изменений**. **Это описание релизного кандидата до выкладки.** Фактическое успешное подтверждение v129 приведено ниже.
 
 ## Fail-closed процесс
 
@@ -26,7 +26,13 @@
 
 ## Фактическая публикация
 
-**До выполнения одноразового guard и official validated publish — не подтверждена.** После выполнения обновить этот блок отдельным docs-only коммитом с точными ссылками. Никаких неавторизованных изменений UI/лагеря/игровых механик.
+**ПОДТВЕРЖДЕНО 17.11.2026 — v129 опубликована.**
+- [Release PR #151 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/151), exact squash `release(arch): publish v129`, `09a41bfa3bd5c99794ff2c5da27af2bd800aa4dc`; [полный PR CI #44030429188 SUCCESS с первой попытки](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44030429188).
+- [One-shot v129 guard #44032417706 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44032417706) проверил source/main/version/root и вызвал только официальный `validate-pwa.yml` с `publish=true`.
+- [Official validated publish #44032478163 SUCCESS с первой попытки](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44032478163): все 18 обязательных задач и итоговый gate SUCCESS, сборка **v129 / c79e8f534f** и **188 SHA-256 файлов**, публикация исходных проверенных PWA bits byte-for-byte, `actions/deploy-pages` SUCCESS.
+- Фактический production root [`e940aade2caa4d87d3b5ba83fb4cbb4c8593760e`](https://github.com/mryandexxx-spec/Dgoh-game/commit/e940aade2caa4d87d3b5ba83fb4cbb4c8593760e); `dev/version.json={"v":129}`, `sw.js: const VER = 'c79e8f534f'`. [Independent Pages #44033770546 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44033770546) на exact root. Публичная PWA https://mryandexxx-spec.github.io/Dgoh-game/.
+- [Issue #132](https://github.com/mryandexxx-spec/Dgoh-game/issues/132) содержит полный receipt. **Послерелизная docs-only очистка** удаляет использованный `.github/workflows/release-v129-once.yml` после подтверждения Pages; не изменяет игровой исходник, версию, root PWA или сохранения и не публикует заново.
+- Физическая Safari/iPhone приёмка v129 открыта: cold/warm, offline, рамки/червь, импорт сохранений, подвиги, лагерь, MED/LOW WebGL. C2d story/models — NO-GO.
 
 ## Продолжение
 
