@@ -40,3 +40,33 @@
 Только `dev/tests/ci/arch01c4c-virtual-composition.mjs` (новый), одна импортирующая строка в `dev/tests/ci/arch-init-graph.mjs` и этот `dev/docs/ARCH01C4C_COMPOSITION_ROOT_STAGE_A_2026_11_17.md`. Никаких production `dev/src/**`, `dev/version.json`, `dev/CHANGES_STATUS.md`, `SPLIT`, `arch-import-baseline.json`, immutable golden, 210 миссий / 21 карты, лагеря, экономических чисел, сейвов, WebGL или корневых `app.js` и `sw.js`.
 
 **CI receipt:** записать actual final head SHA, конкретный JSON `ARCH-01C4c SUMMARY`, статусы workflow и 19/19, решение следующего stage в Issue #132 **после** реальных логов; не объявлять статусы заранее.
+
+## Подтверждённая виртуальная матрица Stage A (архитектурная часть CI)
+
+На [GitHub Actions #44145867721](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44145867721), head `647d954d9777a6f9cf9fd2d64f7bab923dab798b`, обязательный `ARCH-01 Acorn import-boundary regression gate` **SUCCESS**, production `npm run build` и строгий `check-bundle` **SUCCESS**, `Build once + architecture + SHA-256 manifest` **SUCCESS**.
+
+Фактическая строка `ARCH-01C4c SUMMARY`: **28 tested, 5 exact, strict 0, 5 conditionalReview**. Не найдено ни одного автоматически готового к слиянию варианта. Пять кандидатов с **0 moved ESM-маркеров**, исходной точной членностью SCC [106,6], всеми 898 именами и без новых запрещённых edges:
+
+| Кандидат | Новые разрешённые edges | Итого static imports | Решение |
+|---|---:|---:|---|
+| `root-gear-cine-ai` | 3 (`boot.js→gear-cap`, `boot.js→cinematic-preference`, `boot.js→AI`) | 1000 | условный Stage A2 |
+| `root-gear-cine-fx-ai` | 4 | 1001 | избыточный, не первый выбор |
+| `root-gear-cine-chars-ai` | 4 | 1001 | избыточный, не первый выбор |
+| `ui-gear-cine-existing-ai` | **2** (`ui/views/conq.js→gear-cap` и `→cinematic-preference`, existing AI named import только перемещён) | **999** | **приоритетный A2** |
+| `ui-gear-cine-fx-chars-existing-ai` | 3 | 1001 | избыточный, не первый выбор |
+
+Вне списка — 23 сценария NO-GO (от 2 до 60 сдвинутых ESM-маркеров). Во всех 28 тест не меняет реальные `dev/src`, `SPLIT`/baseline, golden или `main`.
+
+**Интерпретация:** два ранних независимых предшественника `data/gear-cap.js` и `logic/cinematic-preference.js` необходимы именно **в таком порядке** перед AI. Противоположный порядок даёт 2 сдвига; один отсутствующий predecessor — 19–20. Это не «бесплатная» замена: три новых разрешённых root edges или два новых UI edges требуют runtime/TDZ тестов и отдельного review.
+
+## Stage A2 — фактические проверки холодного/повторного запуска
+
+Добавлен четвертый файл `dev/tests/ci/arch01c4c-virtual-runtime.mjs`; обязательный CI gate вызывает его **после** virtual matrix. В памяти на real v133 `src/main.js` сопоставляются **оба минимальных кандидата** `root-gear-cine-ai` и `ui-gear-cine-existing-ai`, каждый с эталонной сборкой.
+
+- `loadGame` в том же Node VM, что и golden, seed 77 и 101; исходный v133 cold boot должен работать, все 167 esbuild-маркеров должны совпадать.
+- Сверка `LOOK/SKINS/OL/FEM/ghash/sigil`, `CH.worm === WORM`, AI/raid/skills/stats/cinematic и структуры нового сохранения; проверить совпадение virtual baseline и кандидат.
+- Неизменные golden: `battles`, `meta`, `saves`, реальный boss boot и селекторы Conquest. Каждое несовпадение выводить как virtual `NO-GO`, а не менять эталон или продакшн.
+- Полный браузер/WebGL/41-screen/offline CI текущего неизменного production проверяется отдельно. Его PASS **не является** автоматическим доказательством виртуальной сборки: реальный B1 с новыми исходниками потребует ещё один собственный 19/19 CI и отдельного разрешения.
+- **Никакого Stage B1 до успешного A2 receipt и согласования дизайна.** `main` остаётся опубликованной v133, 3 legacy edges и нулём новых.
+
+**Уточнённый scope Draft PR: ровно четыре файла** — два новых `dev/tests/ci/arch01c4c-*.mjs`, один обязательный importer `dev/tests/ci/arch-init-graph.mjs`, этот отчёт. Ни одного production file.
