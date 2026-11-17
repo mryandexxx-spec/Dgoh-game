@@ -21,7 +21,7 @@ C3b0 `conquest-data→celebrate` уже **NO-GO 0/35** при попытках �
 - `dev/src/data/looks.js` начинается с `import '../logic/battle/ai.js'; // порядок исполнения`; других импортов нет. Затем создаёт `LOOK`, `ghash`, `sigil`, `SKINS`, `OL`, `FEM`. `logic/battle/ai.js` импортирует `data/boss.js` и `logic/battle/skills.js`, на верхнем уровне содержит CommonJS guard `if (typeof module !== 'undefined') module.exports = {...}`, который должен сохранить доступность зависимых имён для Node/CI. Это **не обычные неиспользуемые импорты**, они задают прежний DFS ESM.
 - `dev/tools/split.config.mjs`: исходные marker slots `logic/battle/skills` перед `data/boss`, `logic/battle/ai` перед `data/looks`. Фактическая исходная сборка v132 имеет **173 JS, 999 статических импортов, 167 последовательных ESM-маркеров, 898 исторических публичных именованных экспортов, две SCC из 106 и 9 модулей**. Нельзя сдвигать или переписывать `SPLIT`, чтобы «позеленить» новую комбинацию.
 
-## 12 виртуальных production esbuild сценариев
+## 16 виртуальных production esbuild сценариев
 
 Новый обязательный `dev/tests/ci/arch01c4a-virtual-order.mjs` читает реальные исходники из `dev/src` и запускает точный production esbuild `src/main.js` (bundle ESM, без tree-shaking, UTF-8, без legal comments, target esnext) с `onLoad` **только в памяти**; никаких `dev/src` или `dev/dist` не меняет.
 
@@ -34,6 +34,7 @@ C3b0 `conquest-data→celebrate` уже **NO-GO 0/35** при попытках �
 7. Заменить looks predecessor на `data/chars.js`.
 8. Заменить looks predecessor на `data/skill-ups.js`.
 9–12. Небольшие независимые комбинации двух потенциальных `data→data` замен и/или удаления.
+13–16. Удалить boss→skills, но одновременно поднять **уже существующий named import** `skills` раньше `boss` внутри одного из разрешённых слоёв логики — по отдельности `logic/battle/ai.js`, `logic/battle/stats.js`, `logic/battle/engine.js`, `logic/battle/raid.js`. Никаких новых статических import edges и никаких изменений в телах функций, только виртуальная перестановка import-строк.
 
 Для каждого сохраняется строгая фактическая запись: совпадение всего ESM marker order (0 moved/missing/extra), точное SCC module-membership, все 898 глобальных имён, четыре текущие baseline зависимости, старые/новые импортные рёбра, statically valid imports, отсутствие смены тела `boss.js` и `looks.js` кроме первой side-effect строки, сохранение **`CH.worm = WORM`** и top-level `module.exports` блока в AI.
 
@@ -43,4 +44,4 @@ C3b0 `conquest-data→celebrate` уже **NO-GO 0/35** при попытках �
 
 **Запреты:** текущая работа НЕ меняет игру, `CH`, `SPLIT`, `dev/tools/arch-import-baseline.json`, сейвы, деньги/баланс, UI, Camp, Campaign, ассеты, golden, `dev/version.json` и root PWA/SW. Никаких merge/publish на диагностическом этапе.
 
-**Состояние этого документа:** до получения логов финального CI кандидаты GO/NO-GO не утверждаются. По завершении записать точный PR-head/run ID, 12 реальных результатов, рекомендованную следующую безопасную границу и Issue #132.
+**Состояние этого документа:** до получения логов финального CI кандидаты GO/NO-GO не утверждаются. По завершении записать точный PR-head/run ID, 16 реальных результатов, рекомендованную следующую безопасную границу и Issue #132.
