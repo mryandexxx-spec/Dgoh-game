@@ -11,7 +11,7 @@ const baseline = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json', '
 const campaigns = read('data/campaigns.js'), gates = read('logic/campaign-gates.js');
 const boot = read('core/boot.js');
 
-assert.equal(baseline.length, 11, 'C2c continues after C2b with exactly eleven legacy edges');
+assert.equal(baseline.length, 9, 'C2c continues after C2b with exactly eleven legacy edges');
 assert.ok(!baseline.includes('data/campaigns.js -> core/state.js'),
   'campaign data may never import live state again');
 assert.ok(!baseline.includes('data/campaigns.js -> core/rng.js') &&
@@ -56,9 +56,9 @@ assert.ok(read('ui/views/camp.js').includes('nodeCost, nodeEn, nodeOpen } from')
 
 assert.equal(SPLIT.filter(([, name]) => name === 'logic/campaign-gates.js').length, 1,
   'one new logic module, no duplicate ESM registration');
-assert.equal(SPLIT.length, 166, '165 original C2b markers plus exactly one pure RNG module');
+assert.equal(SPLIT.length, 167, '165 original C2b markers plus exactly one pure RNG module');
 const graph = analyzeTree(process.cwd());
-assert.equal(graph.modules, 172, 'one RNG data module added on top of merged C2b 171');
+assert.equal(graph.modules, 173, 'one RNG data module added on top of merged C2b 171');
 assert.equal(graph.unresolved.length, 0);
 assert.ok(graph.cycles.length <= 2, 'new runtime owner must not create another ESM SCC');
 console.log('ARCH-01C2b campaign state boundary: PASS; 12 legacy imports, unchanged open formula and UI APIs');

@@ -108,6 +108,11 @@ jobs:
           node tests/arch01c2c-nodes-digest.mjs dist/pwa/index.html
           node tests/arch01c2c-nodes-digest.mjs dist/artifact.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-01C3a1 exact cosmetics entitlement and worm SVG snapshot (PWA + artifact)
+        run: |
+          node tests/arch01c3a1-cosmetics-snapshot.mjs dist/pwa/index.html
+          node tests/arch01c3a1-cosmetics-snapshot.mjs dist/artifact.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-01C1b journey runtime compatibility (PWA + artifact)
         run: |
           node tests/arch01c1b-journey-runtime.mjs dist/pwa/index.html

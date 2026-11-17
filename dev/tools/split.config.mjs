@@ -165,6 +165,8 @@ export const SPLIT = [
   [4826, 'data/cosmetics.js'],
   [4856, 'ui/views/feats.js'],
   [4906, 'ui/overlays/profile.js'],
+  // ARCH-01C3a1: late UI-owned cosmetic selector, after data and profile bootstrap.
+  [4934, 'logic/cosmetics-unlocks.js'],
   [4934, 'ui/wiring.js'],
   [4966, 'logic/account.js'],
   [5015, 'ui/fx-text.js'],
