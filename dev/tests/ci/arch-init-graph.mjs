@@ -75,3 +75,5 @@ await import('./arch01c3a3-stats-boundary.mjs');
 
 // ARCH-01C3b0: read-only virtual Conquest/celebrate predecessor matrix; no gameplay edits.
 await import('./arch01c3b0-virtual-conquest.mjs');
+// ARCH-01C3b1: virtual economic/live function extraction; no production source edits.
+await import('./arch01c3b1-virtual-refill.mjs');
