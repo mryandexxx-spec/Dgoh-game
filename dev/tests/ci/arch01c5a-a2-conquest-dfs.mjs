@@ -222,10 +222,19 @@ for(const v of variants){
  if(identical||r.moved<=12)console.log('ARCH-01C5a-A2 CANDIDATE '+JSON.stringify(r));
 }
 const removedGraph=buildGraphs(new Map([[data,noEdge]]));
-const removedScc=removedGraph.cycles.find(c=>c.includes(data));
-const expelled=oldLarge.filter(f=>!removedScc?.includes(f));
+// Conquest data itself LEAVES the large SCC when the old UI predecessor is cut.
+// Select the surviving SCC by maximal overlap with the frozen 106-member component;
+// do not look for a post-change component containing Conquest data.
+const overlap=removedGraph.cycles.map(c=>({
+ members:c,retained:c.filter(x=>oldLarge.includes(x))
+})).sort((a,b)=>b.retained.length-a.retained.length)[0];
+assert.ok(overlap,'missing surviving large SCC');
+const expelled=oldLarge.filter(f=>!overlap.retained.includes(f));
+assert.deepEqual(expelled,[data],'Conquest removal must eject only data/conquest-data.js');
+assert.equal(overlap.retained.length,105,'frozen big SCC must shrink precisely 106 to 105');
 console.log('ARCH-01C5a-A2 SCC '+JSON.stringify({
- before:oldLarge.length,after:removedScc?.length,expelled,
+ before:oldLarge.length,after:overlap.retained.length,expelled,
+ dataInRemainingScc:overlap.members.includes(data),
  removedEdges:[data+' -> '+ui],
  incomingToExpelled:expelled.map(x=>({file:x,importers:importers(x)})),
 }));
