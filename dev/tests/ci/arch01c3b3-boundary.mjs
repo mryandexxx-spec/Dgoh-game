@@ -11,7 +11,6 @@ const src=p=>fs.readFileSync('src/'+p,'utf8');
 const data=src('data/conquest-data.js'),logic=src('logic/conquest.js'),ui=src('ui/views/conq.js');
 const ledger=JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
 const expected=[
- 'data/boss.js -> logic/battle/skills.js',
  'data/conquest-data.js -> ui/overlays/celebrate.js',
  'data/looks.js -> logic/battle/ai.js',
  'data/story.js -> assets/models.js'
@@ -19,9 +18,9 @@ const expected=[
 assert.deepEqual(ledger,expected,'remove ONLY proven Conquest data→logic reverse edge');
 const graph=analyzeTree(process.cwd());
 assert.equal(graph.modules,173,'no new production modules');
-assert.equal(graph.staticImports,999,'remove exactly one existing static import');
+assert.equal(graph.staticImports,998,'C4a removes exactly the additional boss→skills predecessor');
 assert.equal(graph.unresolved.length,0);
-assert.deepEqual(graph.cycles.map(c=>c.length),[106,9],'same ESM SCC sizes');
+assert.deepEqual(graph.cycles.map(c=>c.length),[106,6],'C4a B1 explicitly reviews the 9→6 SCC reduction');
 for(const p of ['data/conquest-data.js','logic/conquest.js','core/state.js','ui/views/conq.js','ui/overlays/celebrate.js'])
  assert.ok(graph.cycles[0].includes(p),'do not break existing Conquest init SCC: '+p);
 assert.equal(SPLIT.length,167,'unchanged 167 historical module markers');
@@ -96,4 +95,4 @@ assert.deepEqual(consumers.sort(),[
  'ui/views/conq.js:logic/conquest.js:cqScore'
 ].sort(),'all original path-specific importers migrated, no stale data imports');
 assert.ok(!data.includes('cq().diff')&&!data.includes('cq().stars'),'data must not read runtime Conquest state');
-console.log('ARCH-01C3b3 B1 structural PASS: 5→4 forbidden / 0 new, 173 modules, 999 imports, 167 original ESM markers, 898 unique globals, SCC 106/9, exact 3 old selectors, all named importers migrated');
+console.log('ARCH-01C3b3 B1 structural PASS: 3 remaining forbidden / 0 new, 173 modules, 998 imports, 167 original ESM markers, 898 unique globals, reviewed SCC 106/6, exact 3 old selectors, all named importers migrated');

@@ -36,7 +36,7 @@ assert.ok(read('render2d/scenes.js').includes('const NZ = makeNoise(1337);') &&
 assert.ok(read('logic/progress.js').includes("import '../core/rng.js'; // порядок исполнения"),
   'existing logic bootstrap predecessor must keep core RNG at the legacy slot');
 
-assert.equal(baseline.length, 4, 'ARCH-01C3b3 additionally removes Conquest→logic/conquest; earlier invariants unchanged');
+assert.equal(baseline.length, 3, 'C4a removes boss→skills; all previous campaign, journey and RNG invariants retained');
 assert.ok(!baseline.includes('data/campaigns.js -> core/rng.js'));
 assert.ok(baseline.includes('data/story.js -> assets/models.js'),
   'story/order-only C2d is not part of this change');

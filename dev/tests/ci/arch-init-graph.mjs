@@ -82,3 +82,6 @@ await import('./arch01c3b2-boundary.mjs');
 
 // ARCH-01C3b3 B1: exactly three unchanged live Conquest selectors, new logic owner, no reverse data edge.
 await import('./arch01c3b3-boundary.mjs');
+
+// ARCH-01C4a Stage B1: real boss→skills edge removal and explicitly reviewed battle SCC 9→6.
+await import('./arch01c4a-b1-boundary.mjs');
