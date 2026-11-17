@@ -10,7 +10,7 @@ const legacy=JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8'
 const cosmetics=read('data/cosmetics.js'),logic=read('logic/cosmetics-unlocks.js');
 const wiring=read('ui/wiring.js'),profile=read('ui/overlays/profile.js');
 
-assert.equal(legacy.length,7,'C3a3 additionally removes the cosmetics→stats order-only edge');
+assert.equal(legacy.length,6,'C3a3 additionally removes the cosmetics→stats order-only edge');
 for(const e of ['data/cosmetics.js -> core/state.js','data/cosmetics.js -> logic/progress.js',
   'data/cosmetics.js -> logic/stats.js']){
   assert.ok(!legacy.includes(e),'removed edge must not remain in legacy baseline');
@@ -54,4 +54,4 @@ const graph=analyzeTree(process.cwd());
 assert.equal(graph.modules,173,'only one new source module added');
 assert.equal(graph.unresolved.length,0);
 assert.ok(graph.cycles.length<=2,'cannot introduce a third ESM SCC');
-console.log('ARCH-01C3a1 cosmetic boundary: PASS; 7 legacy, old API, SVG retained by UI');
+console.log('ARCH-01C3a1 cosmetic boundary: PASS; 6 legacy, old API, SVG retained by UI');

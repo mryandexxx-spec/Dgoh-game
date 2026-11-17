@@ -2,7 +2,6 @@
 import { cq } from '../logic/conquest.js';
 import '../ui/overlays/celebrate.js'; // порядок исполнения
 import { NOTES, S } from '../core/state.js';
-import { refillPrice, todayKey } from '../logic/economy.js';
 import { MENTAT } from './chars.js';
 import { FACTIONS } from './fx.js';
 
@@ -85,8 +84,6 @@ const CQ_STA = { loss: 10, min: 1, regenMin: 6, dmg: .4, spd: .25 };   // вын
 const CQ_DMAX = 5;
 const CQ_RF = { amt: 50 };       // пополнение Решимости: +50 за кристаллы, цена и лимит — как у Воды (refillPrice, REFILL_MAX)
 const CQ_MED = 50;               // аптечка: +50% выносливости одному герою
-const cqRfN = () => (S.cqRf && S.cqRf.d === todayKey()) ? S.cqRf.n : 0;
-const cqRfCost = () => refillPrice(cqRfN());
 const CQ_TROPHY = { fight: 10, elite: 20, boss: 40 };   // трофеи за первую победу на точке (× множитель сложности)
 const CQ_MODS = {
   rage:   { n: 'Ярость', d: 'Враги наносят +30% урона.', f: us => us.forEach(u => u.dmgBonus += .3) },
@@ -142,4 +139,4 @@ const CQ_ICON = {
 };
 
 
-export { CQ_DIFF, CQ_SECT, CQ_LAYERS, CQ_LAST, CQ_LTYPE, CQ_CHESTS, CQ_ERI, cqK, pcs, cqHpUp, CQ_BMOD, cqMod, cqModD, CQ_GF, CQ_LFAC, cqFeats, cqScore, cqBump, CQ_EN, CQ_STA, CQ_DMAX, CQ_RF, CQ_MED, cqRfN, cqRfCost, CQ_TROPHY, CQ_MODS, CQ_RAR, CQ_LMAX, CQ_DISKS, cqRar, CQ_ICON };
+export { CQ_DIFF, CQ_SECT, CQ_LAYERS, CQ_LAST, CQ_LTYPE, CQ_CHESTS, CQ_ERI, cqK, pcs, cqHpUp, CQ_BMOD, cqMod, cqModD, CQ_GF, CQ_LFAC, cqFeats, cqScore, cqBump, CQ_EN, CQ_STA, CQ_DMAX, CQ_RF, CQ_MED, CQ_TROPHY, CQ_MODS, CQ_RAR, CQ_LMAX, CQ_DISKS, cqRar, CQ_ICON };

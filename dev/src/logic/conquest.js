@@ -2,7 +2,7 @@
 import { CQ_CHESTS, CQ_DIFF, CQ_DISKS, CQ_DMAX, CQ_EN, CQ_ERI, CQ_LAST, CQ_LAYERS, CQ_LMAX, CQ_LTYPE, CQ_MODS, CQ_SECT, CQ_STA, cqBump, cqRar, cqScore } from '../data/conquest-data.js';
 import { statInc } from './stat-counters.js';
 import { S } from '../core/state.js';
-import { enemyProg } from './economy.js';
+import { enemyProg, refillPrice, todayKey } from './economy.js';
 import { ghash } from '../data/looks.js';
 import { CH } from '../data/chars.js';
 import { unlockedIds } from './progress.js';
@@ -175,4 +175,7 @@ const cqStReady = () => cqTrack().filter(x => x.kind === 'st' && cqStCan(x.i)).l
 const cqHot = () => { if (!S) return false; const C = cq(); return S.acc.lvl >= CQ_DIFF.easy.acc && (!C.diff || !!C.pick || CQ_CHESTS.some((t, i) => cqCanClaim(i)) || cqStReady() > 0); };
 
 
-export { cqWeek, cq, cqEn, cqEnSpend, cqEnNext, cqEnTxt, cqSta, cqStaSet, cqStaPen, cqStaCol, cqDiskOn, CQ_DROP, cqDropW, cqDiskPick, cqLegOn, cqCanOn, cqAddDisk, cqNodeDisks, CQ_GOODS, cqGoods, CQ_MEMO, CQ_MEMO_CLR, cqLayout, cqNode, cqFoes, cqLive, cqDifficultyAccess, cqRecordFinalBoss, cqRoute, cqRouteBlocked, cqCommitRoute, cqOpen, cqTypeN, cqTrack, cqStatic, cqChest, cqCanClaim, cqSyncTrack, cqStCan, cqStReady, cqHot };
+const cqRfN = () => (S.cqRf && S.cqRf.d === todayKey()) ? S.cqRf.n : 0;
+const cqRfCost = () => refillPrice(cqRfN());
+
+export { cqWeek, cq, cqEn, cqEnSpend, cqEnNext, cqEnTxt, cqSta, cqStaSet, cqStaPen, cqStaCol, cqDiskOn, CQ_DROP, cqDropW, cqDiskPick, cqLegOn, cqCanOn, cqAddDisk, cqNodeDisks, CQ_GOODS, cqGoods, CQ_MEMO, CQ_MEMO_CLR, cqLayout, cqNode, cqFoes, cqLive, cqDifficultyAccess, cqRecordFinalBoss, cqRoute, cqRouteBlocked, cqCommitRoute, cqOpen, cqTypeN, cqTrack, cqStatic, cqChest, cqCanClaim, cqSyncTrack, cqStCan, cqStReady, cqRfN, cqRfCost, cqHot };

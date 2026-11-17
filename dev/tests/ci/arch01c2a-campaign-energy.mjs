@@ -28,7 +28,7 @@ assert.ok(read('data/campaigns.js').includes("sRng(ghash(ck + c + ':' + m))"),
   'original seeded enemy generation untouched');
 assert.ok(read('data/campaigns.js').includes("if (n && !n.enemy.includes('rabban'))"),
   'special Rabban correction intact');
-assert.equal(baseline.length, 7, 'ARCH-01C3a3 removes one additional order-only edge; earlier behavior regressions unchanged');
+assert.equal(baseline.length, 6, 'ARCH-01C3b1 removes the live Conquest→economy refill edge; earlier behavior regressions unchanged');
 assert.ok(!baseline.includes('data/campaigns.js -> logic/economy.js'));
 assert.ok(!baseline.includes('data/campaigns.js -> core/rng.js') &&
   !baseline.includes('data/campaigns.js -> core/state.js') &&

@@ -16,7 +16,7 @@ const expectedPatch="if (typeof WORM_IMG !== 'undefined') { EMBLEMS.worm.svg = "
   tick+'<image href="'+'$'+'{WORM_IMG.ava}" x="1" y="1" width="38" height="38"/>'+tick+
   "; EMBLEMS.worm.bg = ['#a8784a', '#2a1608']; }";
 
-assert.equal(baseline.length,7,'C3a3 removes final stats predecessor after C3a2 models extraction');
+assert.equal(baseline.length,6,'C3a3 removes final stats predecessor after C3a2 models extraction');
 assert.ok(!baseline.includes('data/cosmetics.js -> assets/models.js'));
 assert.ok(!baseline.includes('data/cosmetics.js -> logic/stats.js') &&
   baseline.includes('data/story.js -> assets/models.js'),
@@ -54,4 +54,4 @@ const g=analyzeTree(process.cwd());
 assert.equal(g.modules,173,'no new production JS modules should be added');
 assert.equal(g.unresolved.length,0);
 assert.equal(g.cycles.length,2,'do not change SCC structure');
-console.log('ARCH-01C3a2 worm UI boundary: PASS; 7 known imports, 167 markers, same SVG and model preloader');
+console.log('ARCH-01C3a2 worm UI boundary: PASS; 6 known imports, 167 markers, same SVG and model preloader');

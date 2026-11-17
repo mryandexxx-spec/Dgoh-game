@@ -6,7 +6,6 @@
     "data/boss.js -> logic/battle/skills.js",
     "data/conquest-data.js -> core/state.js",
     "data/conquest-data.js -> logic/conquest.js",
-    "data/conquest-data.js -> logic/economy.js",
     "data/conquest-data.js -> ui/overlays/celebrate.js",
     "data/looks.js -> logic/battle/ai.js",
     "data/story.js -> assets/models.js"
