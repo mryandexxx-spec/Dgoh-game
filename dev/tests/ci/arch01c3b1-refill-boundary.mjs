@@ -35,7 +35,7 @@ assert.ok(staticEdges('logic/conquest.js').includes('core/state.js'),
 assert.ok(/export \{[^}]*\bcqRfN\b, cqRfCost\b, cqHot \};/.test(logic),
  'logic exports original recharge API without renaming');
 const ui=source('ui/views/conq.js');
-assert.ok(ui.includes('cqTrack, cqTypeN, cqRfN, cqRfCost } from \'../../logic/conquest.js\';') &&
+assert.ok(ui.includes('cqTrack, cqTypeN, cqRfN, cqRfCost, cqBump } from \'../../logic/conquest.js\';') &&
  ui.includes('cqModD, cqRar, cqScore } from \'../../data/conquest-data.js\';'),
  'existing UI consumers import both functions from the logic owner');
 assert.ok(ui.includes("import { REFILL_MAX, ROMAN, RW_NAME, todayKey } from '../../logic/economy.js';"),
