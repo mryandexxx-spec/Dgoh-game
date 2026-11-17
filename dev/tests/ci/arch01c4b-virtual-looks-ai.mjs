@@ -128,11 +128,20 @@ function explicitUiPredecessor(p,before,newLine){
  return patch;
 }
 cases.push({name:'conq-explicit-ui-ai-before-figures',
- kind:'allowed new UI→logic import; conditional only',
+ kind:'redundant existing UI→logic dependency; conditional only',
  patch:explicitUiPredecessor(conq,cFig,"import '../../logic/battle/ai.js'; // VIRTUAL ui composition root")});
 cases.push({name:'battle-explicit-ui-ai-before-figures',
- kind:'allowed new UI→logic import; conditional only',
+ kind:'redundant existing UI→logic dependency; conditional only',
  patch:explicitUiPredecessor(battle,bFig,"import '../../logic/battle/ai.js'; // VIRTUAL ui composition root")});
+cases.push({name:'portrait-ui-explicit-ai-before-figures',
+ kind:'new allowed UI→logic edge; composition root candidate',
+ patch:explicitUiPredecessor('ui/portrait.js',
+ "import { figureSVG } from '../render2d/figures.js';",
+ "import '../logic/battle/ai.js'; // VIRTUAL ui composition root")});
+cases.push({name:'hero-ui-explicit-ai-before-figures',
+ kind:'new allowed UI→logic edge; composition root candidate',
+ patch:explicitUiPredecessor(hero,hFig,
+ "import '../logic/battle/ai.js'; // VIRTUAL ui composition root")});
 
 function graphOf(patch){
  const g=Object.fromEntries([...source.keys()].sort().map(x=>[x,[]]));
@@ -192,7 +201,7 @@ for(const t of cases) {
    p===looks?s===source.get(looks).replace(oldLine+'\n',''):
    s.split('\n').filter(x=>!x.startsWith('import ')).join('\n')===
    source.get(p).split('\n').filter(x=>!x.startsWith('import ')).join('\n'));
-  const noNew=addedEdges.length===0,unconditional=ESM&&cyclicExact&&
+  const noNew=addedEdges.length===0&&g.count===997,unconditional=ESM&&cyclicExact&&
    namesExact&&removeExactly&&fixedBody&&noNew;
   const conditional=ESM&&namesExact&&removeExactly&&fixedBody&&!unconditional;
   const row={name:t.name,kind:t.kind,importCount:g.count,ESMExact:ESM,
