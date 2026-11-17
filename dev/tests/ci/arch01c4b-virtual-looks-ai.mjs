@@ -277,15 +277,24 @@ for(const t of cases) {
    p===looks?s===source.get(looks).replace(oldLine+'\n',''):
    s.split('\n').filter(x=>!x.startsWith('import ')).join('\n')===
    source.get(p).split('\n').filter(x=>!x.startsWith('import ')).join('\n'));
+  // ARCHITECTURE.md §1: render2d/ may import only data/ or core/.
+  // An ESM-perfect render2d→logic replacement is an ILLEGAL LAYER EDGE,
+  // not even conditional Stage B clearance; never treat it as a GO.
+  const forbiddenLayer=addedEdges.filter(e=>/^render2d\/.+ -> logic\//.test(e)||
+   /^render3d\/.+ -> logic\//.test(e)||
+   /^data\/.+ -> (logic|core|ui|render2d|render3d|assets)\//.test(e));
+  const layerValid=forbiddenLayer.length===0;
   const noNew=addedEdges.length===0&&g.count===997,unconditional=ESM&&cyclicExact&&
-   namesExact&&removeExactly&&fixedBody&&noNew;
-  const conditional=ESM&&namesExact&&removeExactly&&fixedBody&&!unconditional;
+   namesExact&&removeExactly&&fixedBody&&noNew&&layerValid;
+  const conditional=ESM&&namesExact&&removeExactly&&fixedBody&&!unconditional&&layerValid;
+  const orderExactButForbidden=ESM&&namesExact&&removeExactly&&fixedBody&&!layerValid;
   const row={name:t.name,kind:t.kind,importCount:g.count,ESMExact:ESM,
    markersMoved:moved.length,firstMoved:moved.slice(0,6),
    aiIndex:current.indexOf(ai),looksIndex:current.indexOf(looks),
    missing,extra,cycles:g.cycles.map(x=>x.length),
    cyclesExact:cyclicExact,removedEdges:oldEdges,addedEdges,
-   namesExact,bodyExact:fixedBody,unconditionalVirtualGo:unconditional,
+   namesExact,bodyExact:fixedBody,layerValid,forbiddenLayer,
+   orderExactButForbidden,unconditionalVirtualGo:unconditional,
    conditionalCandidate:conditional,runtimeValidated:false};
   results.push(row);console.log('ARCH-01C4b TRIAL '+JSON.stringify(row));
  }catch(e){
@@ -298,6 +307,7 @@ console.log('ARCH-01C4b SUMMARY '+JSON.stringify({
  tested:results.length,ESMExact:results.filter(x=>x.ESMExact).length,
  strictGo:results.filter(x=>x.unconditionalVirtualGo).map(x=>x.name),
  conditional:results.filter(x=>x.conditionalCandidate).map(x=>x.name),
+ orderExactButForbiddenLayer:results.filter(x=>x.orderExactButForbidden).map(x=>({name:x.name,forbidden:x.forbiddenLayer})),
  noGo:results.filter(x=>!x.ESMExact).map(x=>({name:x.name,
   moved:x.markersMoved??null,error:x.error??null})),
  protected:'v133 game sources, existing AST ledger, SPLIT, golden, saves, camp, 210 Campaign, assets, published root PWA and SW unchanged',
