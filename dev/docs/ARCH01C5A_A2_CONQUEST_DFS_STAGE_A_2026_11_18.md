@@ -29,6 +29,35 @@ No production `src` file is written; no changes to `SPLIT`, test golden, baselin
 
 **Future runtime B1 gate, only after separate owner approval:** cold/warm boot, actual Conquest sector/route/difficulty/weekly reset, all feats, CELEB and NOTES queue order, star-up/hero unlock celebrations, double popup protection, new/imported/replaced saves, refill n0–20 and local day rollover, 210 Campaign SHA, golden 200 battles/1560 meta/4 saves/41+ screens, PWA+standalone HTML/offline, iPhone DOM, WebGL MED/LOW/HIGH and 3D lifecycle with protected camp. No gameplay/formulas/save/visual changes authorized.
 
-## Actual CI receipt
+## Actual v134 diagnostics — final current code SHA and CI receipt
 
-PENDING: after actual GitHub CI, record precise diagnostic job log, total cases, best candidates, SCC expelled member, gate outcome and exact SHA. No GO claims from an unobserved script.
+**Frozen base `main=b3d65303130dbd385caaac299f1f2dfc0473cd8c`; source/ledger/public PWA unchanged.** Diagnostic source head **`6af5ad5772c2d114207b9fd424ceddb32d59263d`**. The original [CI #44178892580](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44178892580) architecture/build job passed, but the workflow was subsequently **CANCELLED** automatically after correcting a diagnostic-only SCC reporter defect; it must NOT be claimed full green.
+
+[**Final code HEAD CI #44179761265 completed SUCCESS, attempt 1, all 19 mandatory jobs + final gate SUCCESS**](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44179761265), `Publish verified PWA to GitHub Pages` intentionally SKIPPED. Actual production-equivalent **esbuild+Acorn** diagnostics ran in mandatory architecture/build job `134381364194`, SUCCESS. The mandatory v134 structural test also confirmed **173 JS / 1000 static imports / exact 167 original ESM markers / 898 exported names / SCC [106,6] / exactly 2 known forbidden data edges, 0 new/stale**. Full unchanged v134 build passes Golden, WebGL HIGH/MED/LOW, PWA+HTML checks, Campaign 210, Conquest, offline/SW, phone E3 DOM, protected Camp performance, lifecycle/resource budgets. No game code or immutable golden was altered.
+
+**Observed first topological DFS entry path** (Acorn static-import order, first visit, not guessed from runtime stack):
+
+`main.js → boot.js → ui/views/conq.js → logic/conquest.js → data/conquest-data.js → ui/overlays/celebrate.js`.
+
+First visits: Conquest data `#24` and celebration `#25`. The **only UI ancestor** visited on that path *before* data is `ui/views/conq.js`; importing celebration from later UI nodes is too late to preserve the original traversal.
+
+**Actual in-memory production esbuild matrix: 100 candidates, 0 strict GO, 0 conditional GO, 0 exact ESM**. The 100 tests include direct remove-only, sweep of legal UI-owned predecessor slots on existing UI files and allowed composition roots, plus two-import combinations targeting Conquest named import order, notifications, router and celebration reward predecessor. All preserve module presence (`missing=0, extra=0`) and create no new forbidden data→runtime edges, but **none preserves the original 167 ESM positions**:
+
+| Candidate on v134 | Moved original ESM slots | First mismatch | SCC after removal |
+| --- | ---: | --- | --- |
+| Raw Conquest→celebrate deletion | **144** | #20 `data/looks.js → data/conquest-data.js` | [105,6] |
+| Best `ui/views/conq.js:first` / `before-conquest` | **47** | #118 `logic/trials.js → data/conquest-data.js` | [105,6] |
+| `ui:first` + swap data/logic named imports | **47** | #118 | [105,6] |
+| `ui:first` + promote notifications→celebrate | **47** | #118 | [105,6] |
+| `ui:first` + swap router imports | **47** | #118 | [105,6] |
+| `ui:first` + defer celebrate→reward-tiles | **56** | #109 | [105,6] |
+
+**SCC correction and actual graph identity:** removal of `data/conquest-data.js → ui/overlays/celebrate.js` leaves an old **105-member** SCC and ejects exactly **`data/conquest-data.js`** from the original 106-member component. The original diagnostic erroneously tried to find the post-removal SCC *containing Conquest data*, which no longer exists; this yielded a false 106-item expelled print. Corrected fail-closed test uses the **maximum component overlap** and asserts `expelled = ['data/conquest-data.js']` and `retained = 105`; [final CI #44179761265](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44179761265) confirms both. This was exclusively a diagnostic reporting fix, no product source or game graph mutation.
+
+### Decision: Stage A2 NO-GO for all tested legal UI import relocation strategies
+
+**Do not authorize Stage B1.** The data→UI edge is still present in `dev/src/data/conquest-data.js`; two historical violations still remain in baseline. The result narrows the problem: a legal UI owner exists on the first import path (`ui/views/conq.js`), but moving its early UI import causes **premature evaluation of Conquest data through transitive UI→data paths**, shifting 47 historical modules. SCC 106→105 is not itself a reason to reject a refactor forever (see independently accepted C4a 9→6), but here the **ESM order condition fails**, so no runtime equivalence has been claimed or tested for the 100 virtual candidates.
+
+**If pursuing a separate ARCH-01C5a-A3 read-only study**, do not repeat UI import permutations. Inspect and instrument the transitive early import cut-set `celebrate → reward-tiles/notifications/squad-select/router → conquest-data`; look for an architecture-legal way to separate pure Conquest tables from runtime-sensitive UI initialization without changing protected camp, gameplay, rewards, difficulty, save schema, or the old 167-marker order. Consider runtime equivalence of *explicitly reviewed* SCC shrink only with extra full PWA+HTML cold/warm VM, TDZ, CELEB/NOTES, imported/replaced saves, weekly reset and complete offline/WebGL/golden proof; no B1 before independent owner approval.
+
+**No merge, release, version increment or publish in Stage A2.** Physical Safari/iPhone field acceptance OPEN.
