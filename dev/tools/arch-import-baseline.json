@@ -8,7 +8,6 @@
     "data/conquest-data.js -> logic/conquest.js",
     "data/conquest-data.js -> logic/economy.js",
     "data/conquest-data.js -> ui/overlays/celebrate.js",
-    "data/cosmetics.js -> logic/stats.js",
     "data/looks.js -> logic/battle/ai.js",
     "data/story.js -> assets/models.js"
   ]
