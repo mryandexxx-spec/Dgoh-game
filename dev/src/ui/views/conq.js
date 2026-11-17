@@ -1,6 +1,6 @@
 // ui/views/conq.js — строки 5531–5728 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { cq, cqAddDisk, cqCanClaim, cqCanOn, cqChest, cqDiskOn, cqDiskPick, cqEn, cqEnSpend, cqEnTxt, cqFoes, cqGoods, cqLayout, cqLive, cqNode, cqNodeDisks, cqDifficultyAccess, cqRecordFinalBoss, cqRoute, cqRouteBlocked, cqCommitRoute, cqOpen, cqStCan, cqStReady, cqSta, cqStaCol, cqStaPen, cqStaSet, cqStatic, cqSyncTrack, cqTrack, cqTypeN, cqRfN, cqRfCost } from '../../logic/conquest.js';
-import { CQ_CHESTS, CQ_DIFF, CQ_DISKS, CQ_DMAX, CQ_EN, CQ_ICON, CQ_LAST, CQ_LAYERS, CQ_LFAC, CQ_LMAX, CQ_MED, CQ_RF, CQ_SECT, CQ_STA, CQ_TROPHY, cqBump, cqFeats, cqK, cqMod, cqModD, cqRar, cqScore } from '../../data/conquest-data.js';
+import { cq, cqAddDisk, cqCanClaim, cqCanOn, cqChest, cqDiskOn, cqDiskPick, cqEn, cqEnSpend, cqEnTxt, cqFoes, cqGoods, cqLayout, cqLive, cqNode, cqNodeDisks, cqDifficultyAccess, cqRecordFinalBoss, cqRoute, cqRouteBlocked, cqCommitRoute, cqOpen, cqStCan, cqStReady, cqSta, cqStaCol, cqStaPen, cqStaSet, cqStatic, cqSyncTrack, cqTrack, cqTypeN, cqRfN, cqRfCost, cqBump } from '../../logic/conquest.js';
+import { CQ_CHESTS, CQ_DIFF, CQ_DISKS, CQ_DMAX, CQ_EN, CQ_ICON, CQ_LAST, CQ_LAYERS, CQ_LFAC, CQ_LMAX, CQ_MED, CQ_RF, CQ_SECT, CQ_STA, CQ_TROPHY, cqFeats, cqK, cqMod, cqModD, cqRar, cqScore } from '../../data/conquest-data.js';
 import { MOUSE_SVG } from '../mouse.js';
 import { statInc } from '../../logic/stat-counters.js';
 import { leaveBattle } from '../battle/battle-ui.js';

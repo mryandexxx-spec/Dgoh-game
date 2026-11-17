@@ -1,7 +1,6 @@
 // data/conquest-data.js — строки 5255–5393 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { cq } from '../logic/conquest.js';
 import '../ui/overlays/celebrate.js'; // порядок исполнения
-import { NOTES, S } from '../core/state.js';
 import { MENTAT } from './chars.js';
 import { FACTIONS } from './fx.js';
 
@@ -67,18 +66,6 @@ function cqFeats(s) {      // s = null → глобальные; иначе ло
   ].map(F => ({ ...F, key: s + ':' + F.id, sc: F.boss ? 'b' : 'l', s }));
 }
 const cqScore = () => { const C = cq(); return C.stars + (C.pts || 0); };
-function cqBump(ev, s, n = 1, abs = false) {      // засчитывает событие подвигам: глобальным и локальным сектора s
-  const C = cq(), out = [];
-  for (const F of [...cqFeats(null), ...(s === null || s === undefined ? [] : cqFeats(s))]) {
-    if (F.ev !== ev || C.fd[F.key]) continue;
-    const was = C.fp[F.key] || 0, v = Math.min(F.need, abs ? Math.max(was, n) : was + n); if (v === was) continue;
-    C.fp[F.key] = v;
-    if (v >= F.need) { C.fd[F.key] = 1; C.pts = (C.pts || 0) + F.pts; }
-    out.push({ F, v });
-  }
-  for (const x of out) NOTES.push({ id: Math.random().toString(36).slice(2), kind: 'cqf', F: x.F, v: x.v });
-  return out;
-}
 const CQ_EN = { max: 100, sec: 180, fight: 10, unequip: 25 };          // Решимость: запас, +1 за N секунд, цена боя, снятие диска
 const CQ_STA = { loss: 10, min: 1, regenMin: 6, dmg: .4, spd: .25 };   // выносливость: −10% за бой, нужно ≥10%, +1% за 6 мин; штраф при 0%: −40% урона, −25% скорости
 const CQ_DMAX = 5;
@@ -139,4 +126,4 @@ const CQ_ICON = {
 };
 
 
-export { CQ_DIFF, CQ_SECT, CQ_LAYERS, CQ_LAST, CQ_LTYPE, CQ_CHESTS, CQ_ERI, cqK, pcs, cqHpUp, CQ_BMOD, cqMod, cqModD, CQ_GF, CQ_LFAC, cqFeats, cqScore, cqBump, CQ_EN, CQ_STA, CQ_DMAX, CQ_RF, CQ_MED, CQ_TROPHY, CQ_MODS, CQ_RAR, CQ_LMAX, CQ_DISKS, cqRar, CQ_ICON };
+export { CQ_DIFF, CQ_SECT, CQ_LAYERS, CQ_LAST, CQ_LTYPE, CQ_CHESTS, CQ_ERI, cqK, pcs, cqHpUp, CQ_BMOD, cqMod, cqModD, CQ_GF, CQ_LFAC, cqFeats, cqScore, CQ_EN, CQ_STA, CQ_DMAX, CQ_RF, CQ_MED, CQ_TROPHY, CQ_MODS, CQ_RAR, CQ_LMAX, CQ_DISKS, cqRar, CQ_ICON };
