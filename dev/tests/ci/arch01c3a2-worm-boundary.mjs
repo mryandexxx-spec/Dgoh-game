@@ -16,7 +16,7 @@ const expectedPatch="if (typeof WORM_IMG !== 'undefined') { EMBLEMS.worm.svg = "
   tick+'<image href="'+'$'+'{WORM_IMG.ava}" x="1" y="1" width="38" height="38"/>'+tick+
   "; EMBLEMS.worm.bg = ['#a8784a', '#2a1608']; }";
 
-assert.equal(baseline.length,5,'C3b2 shrinks one further state edge; stats predecessor remains removed');
+assert.equal(baseline.length,4,'C3b3 shrinks the remaining live Conquest→logic edge; stats predecessor still removed');
 assert.ok(!baseline.includes('data/cosmetics.js -> assets/models.js'));
 assert.ok(!baseline.includes('data/cosmetics.js -> logic/stats.js') &&
   baseline.includes('data/story.js -> assets/models.js'),
