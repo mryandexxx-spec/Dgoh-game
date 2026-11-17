@@ -88,3 +88,6 @@ await import('./arch01c4a-b1-boundary.mjs');
 
 // ARCH-01C4c B1: real root composition, frozen source bodies, AST graph/SCC invariants.
 await import('./arch01c4c-b1-boundary.mjs');
+
+// ARCH-01C5a-A3: read-only transitive UI→Conquest min-cut and pure-data SCC theorem.
+await import('./arch01c5a-a3-conquest-transitive-cutset.mjs');
