@@ -84,7 +84,7 @@ function exportsOf(overrides){
 }
 function splitApi(overrides){
  return SPLIT.flatMap(([,p])=>{
-  const m=/^export \\{ (.+) \\};$/m.exec(overrides.get(p)??files.get(p));
+  const m=/^export \{ (.+) \};$/m.exec(overrides.get(p)??files.get(p));
   return m?m[1].split(', ').map(n=>p+':'+n):[];
  }).sort();
 }
