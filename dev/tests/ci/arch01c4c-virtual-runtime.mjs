@@ -74,7 +74,7 @@ function substitute(js){
  const map=JSON.stringify(assets);
  if(/['\\]/.test(map))throw Error('unsafe asset path in JSON map');
  return js.replace('__APP_VER__','v133 · ARCH-01C4c virtual')
-   .replace('__ASSET_MAP__',map.slice(1,-1));
+   .replace('__ASSET_MAP__',JSON.stringify(map).slice(1,-1));
 }
 async function production(patch){
  const plugin={name:'arch01c4c-runtime-overlay',setup(b){
