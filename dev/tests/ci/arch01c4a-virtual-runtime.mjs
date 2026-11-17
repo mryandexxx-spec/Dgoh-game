@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +16,33 @@ import { SPLIT } from '../../tools/split.config.mjs';
 
 const DEV=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const SRC=path.join(DEV,'src');
+const ASSETS=path.join(DEV,'assets');
+function assetPaths(dir){
+ const result=[];
+ if(!fs.existsSync(dir))return result;
+ for(const entry of fs.readdirSync(dir,{withFileTypes:true}).sort((a,b)=>a.name<b.name?-1:1)){
+  const full=path.join(dir,entry.name);
+  if(entry.isDirectory())result.push(...assetPaths(full));
+  else if(entry.isFile())result.push(full);
+ }
+ return result;
+}
+// Mirror build.mjs's real asset path hashing in memory. The test does not
+// need Babylon decoder/transcoder entries because only Node-VM logic is run.
+const assets=Object.fromEntries(assetPaths(ASSETS).filter(p=>
+ path.relative(ASSETS,p).split(path.sep).join('/')!=='ktx2/manifest.json').map(p=>{
+ const name=path.relative(ASSETS,p).split(path.sep).join('/');
+ const hash=crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex').slice(0,8);
+ return [name,'assets/'+name.replace(/(\.[^./]+)$/,'.'+hash+'$1')];
+}));
+function productionSubstitution(js){
+ assert.equal(js.split('__APP_VER__').length,2,'original build APP_VER placeholder');
+ assert.equal(js.split('__ASSET_MAP__').length,2,'original build asset map placeholder');
+ const map=JSON.stringify(assets);
+ if(/['\\]/.test(map))throw Error('asset paths require safe JSON escaping');
+ return js.replace('__APP_VER__','v132 · ARCH-01C4a virtual')
+  .replace('__ASSET_MAP__',JSON.stringify(map).slice(1,-1));
+}
 const bossPath=path.join(SRC,'data/boss.js');
 const statsPath=path.join(SRC,'logic/battle/stats.js');
 const boss=fs.readFileSync(bossPath,'utf8');
@@ -55,7 +83,7 @@ async function build(patch){
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'dune-arch01c4a-'));
 const makeGame=(key,code)=>{
  const dir=path.join(temp,key);fs.mkdirSync(dir,{recursive:true});
- fs.writeFileSync(path.join(dir,'virtual.js'),code,'utf8');
+ fs.writeFileSync(path.join(dir,'virtual.js'),productionSubstitution(code),'utf8');
  const html=path.join(dir,'index.html');
  fs.writeFileSync(html,'<!DOCTYPE html><html><head></head><body><script src="virtual.js"></script></body></html>','utf8');
  return html;
