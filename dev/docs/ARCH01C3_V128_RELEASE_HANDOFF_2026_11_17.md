@@ -24,7 +24,16 @@
 
 ## Фактический релиз v128
 
-**На момент создания release PR:** implementation PR #145/#146 MERGED и PR CI SUCCESS, опубликованная версия **v127** (SW `2e36ce669d`). Релизная CI, dispatch, Pages и новый root SHA ещё не подтверждены. Заполнять фактическими значениями только после успешных workflow.
+**v128 ПОДТВЕРЖДЁННО ОПУБЛИКОВАНА 17.11.2026.** Проверенный источник `dev/version.json={"v":128}`, root SW `const VER = '0437419c76'`; физическая Safari/iPhone проверка ещё открыта.
+
+- **[Release PR #147 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/147)**, exact subject `release(arch): publish v128`, SHA `184ef4ac68845abe550cf601984b885b98c94e1d`; [полный release candidate CI #44023037203 SUCCESS (19 mandatory jobs)](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44023037203), postmerge main [CI #44023964999 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44023964999).
+- **[One-shot guard #44023965100 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44023965100):** exact message/version, previous SW `2e36ce669d`, 8 old dependencies and new cosmetic contracts verified; dispatched official `validate-pwa.yml` `publish=true` exactly once.
+- **[Official validated publish #44024295063 SUCCESS, attempt 2](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44024295063):** first attempt passed all but one arena HUD drift check at 667×375 (3 px on low resolution); mandatory gate correctly blocked publication. Re-run on same exact source/artifact/thresholds passed; **20/20 jobs including gate + `Publish verified PWA to GitHub Pages` SUCCESS**. SHA-256 receipt confirmed **188 files**, `Verified build v128 / 0437419c76`, exact-current-main, no rebuilt source after validation, exact PWA bytes pushed to root.
+- **Published root `73b60eef17b01ee371d58a549f4ab6beb9447682`**, commit `Publish verified PWA from CI artifact`. Root contains `dev/version.json={"v":128}` and new SW `0437419c76`. **[Independent GitHub Pages #44025945489 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44025945489)** on exact root SHA. URL: https://mryandexxx-spec.github.io/Dgoh-game/.
+- **Источники и графика неизменны:** archived baseline **8/0 new/0 stale**, `check-bundle OK (167)`, source 173 modules/2 SCC; 210 NODES, 4096 RNG, три косметических SHA-256, golden 200 battles/meta/saves/41 screens обеих сборок, PWA SW/offline, WebGL MED/LOW phone/desktop, cinematic и 3D lifecycle PASS. Лагерь, 3D-сцены, зоны, стиль, кнопки, сохранения и баланс не менялись.
+- **Docs-only post-release cleanup:** удалить `.github/workflows/release-v128-once.yml`, записать фактические receipts сюда и в `CHANGES_STATUS.md` без изменения `dev/src`, root PWA, version, golden и без повторного `publish=true`. One-shot guard больше не требуется.
+
+**Открыто:** физическая iPhone/Safari v128 (переход v127→v128, cold/warm, offline/SW, аватар червя, права/рамки/титулы после импорта сейва, лагерь и Campaign 2.0 MED/LOW); отдельная диагностика C3a3 и блокирующий C2d.
 
 ## Продолжение
 
