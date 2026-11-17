@@ -4,7 +4,6 @@
   "source": "2026-11-16 main c2dffcb57d6711a76850651fec30364c1972fe35",
   "legacy": [
     "data/conquest-data.js -> ui/overlays/celebrate.js",
-    "data/looks.js -> logic/battle/ai.js",
     "data/story.js -> assets/models.js"
   ]
 }

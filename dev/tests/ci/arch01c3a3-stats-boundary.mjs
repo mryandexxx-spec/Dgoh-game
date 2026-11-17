@@ -7,7 +7,7 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const source = p => fs.readFileSync('src/' + p, 'utf8');
 const imports = p => importEdges(source(p),p).filter(x => x.kind==='static').map(x => x.to);
 const legacy = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
-assert.equal(legacy.length,3,'C4a additionally removes boss→skills without changing cosmetics state boundary');
+assert.equal(legacy.length,2,'C4a additionally removes boss→skills without changing cosmetics state boundary');
 assert.ok(!legacy.includes('data/cosmetics.js -> logic/stats.js'),'do not re-add stats to legacy');
 assert.ok(legacy.includes('data/story.js -> assets/models.js'),'blocked C2d remains untouched');
 assert.deepEqual(imports('data/cosmetics.js'),['data/chars.js'],
@@ -50,4 +50,4 @@ const graph=analyzeTree(process.cwd());
 assert.equal(graph.modules,173,'production source module count unchanged');
 assert.equal(graph.unresolved.length,0,'all module paths must resolve');
 assert.ok(graph.cycles.length<=2,'C3a3 cannot introduce new ESM cycles');
-console.log('ARCH-01C3a3 stats boundary: PASS; 3 legacy / no new, UI owns ordering, 167 markers');
+console.log('ARCH-01C3a3 stats boundary: PASS; 2 legacy / no new, UI owns ordering, 167 markers');

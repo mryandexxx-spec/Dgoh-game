@@ -1,5 +1,4 @@
 // data/looks.js — строки 654–675 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import '../logic/battle/ai.js'; // порядок исполнения
 
 // ===== Graphics: archetype figures, worm, procedural scenes, attack FX =====
 const LOOK = {

@@ -1,4 +1,7 @@
 // boot.js — строки 5729–5772 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
+import './data/gear-cap.js';
+import './logic/cinematic-preference.js';
+import './logic/battle/ai.js';
 import './ui/views/conq.js'; // порядок исполнения
 import { start } from './core/boot.js';
 import { abilPop, openUnitPop } from './ui/battle/battle-ui.js';
