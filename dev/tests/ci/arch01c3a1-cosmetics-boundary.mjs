@@ -10,7 +10,7 @@ const legacy=JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8'
 const cosmetics=read('data/cosmetics.js'),logic=read('logic/cosmetics-unlocks.js');
 const wiring=read('ui/wiring.js'),profile=read('ui/overlays/profile.js');
 
-assert.equal(legacy.length,6,'C3a3 additionally removes the cosmetics→stats order-only edge');
+assert.equal(legacy.length,5,'C3b2 leaves cosmetics invariants intact and lowers the shared baseline to five');
 for(const e of ['data/cosmetics.js -> core/state.js','data/cosmetics.js -> logic/progress.js',
   'data/cosmetics.js -> logic/stats.js']){
   assert.ok(!legacy.includes(e),'removed edge must not remain in legacy baseline');
