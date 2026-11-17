@@ -22,8 +22,9 @@ Virtual candidates:
 
 1. **Delete only the state import:** negative control with unbound NOTES; cannot be implemented.
 2. **Move original cqBump to logic and keep data export through the existing logic import:** three placements. Retains the old data symbol, no new graph dependency, but adds a named export in logic (expected public API count 898→899). This must fail an exact API gate even if all markers match.
-3. **Add notification via a mutable cq.notifyFeats function-property side channel:** two placements, aiming at exact export count. Treat as a design/TDZ NO-GO even if markers match, due to a new mutable top-level initialization interface.
-4. **Move cqK/cqModD/cqScore/cqBump to logic and retarget existing Conquest UI imports:** three placements; removes old data symbols/API and potentially reshapes the 106-module SCC. Requires independent review, not automatic approval even at 167 marker equality.
+3. **Preferred: move only byte-identical cqBump into existing logic/conquest.js, retarget its two existing named consumers in logic and ui/views/conq.js:** three placements; the data file drops NOTES/S. Retain the same globally named cqBump symbol and precisely 898 public names, but transfer its module export owner data→logic (all internal named importers are rewired). A path-specific external importer of data/cqBump would need migration; this is not an invisible per-module API-preserving change. Candidate for separately authorized Stage B1 only.
+4. **Add notification via a mutable cq.notifyFeats function-property side channel:** two placements, aiming at exact export count. Treat as a design/TDZ NO-GO even if markers match, due to a new mutable top-level initialization interface.
+5. **Move cqK/cqModD/cqScore/cqBump to logic and retarget existing Conquest UI imports:** three placements; removes old data symbols/API and potentially reshapes the 106-module SCC. Requires independent review, not automatic approval even at 167 marker equality.
 
 For each, strict eligibility requires moved=0, missing=[], extra=[], same two SCC members, no new graph edge or modules, and exact per-module 898 export list. A virtual pass is *necessary, not sufficient*: it does not verify in-browser TDZ, notifications, save migration, week rollover or purchases.
 
@@ -35,4 +36,23 @@ Only proceed in a separate Stage B Draft if this read-only proof identifies an o
 
 ## Outcome
 
-**Pending exact diagnostic CI run/results at initial commit.** Final Stage A GO/NO-GO will be appended after evidence, also to Issue #132. If there is no safe candidate, keep legacy count at 6 and investigate boss→skills or looks→battle/ai separately.
+### Confirmed virtual build evidence (read from GitHub Actions job output)
+
+**Latest executed matrix:** [mandatory Actions run #44058961880](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44058961880), feature source head ee333271fce416551a6b7d82665859570246861d, build job 133955949697 **SUCCESS**. The real production esbuild virtual matrix executed **12/12 scenarios** without touching game sources.
+
+**Exact invariants:** 173 source JS modules, 1001 static imports, six existing data→runtime violations, 167/167 original ESM SPLIT markers with moved=0/missing=[]/extra=[] **for all 12 scenarios**. Both SCCs have identical member lists and sizes **106 / 9**; zero new imports/modules/cycles in every simulation. Frozen public SPLIT export count **898**, full AST export corpus 947. The production build and check-bundle were independently SUCCESS; existing PWA and artifact Conquest refill/feat/NOTES checks also SUCCESS. These are structural and existing-game confirmations, **not virtual-candidate runtime TDZ tests**.
+
+| Virtual family | Count / 167/167 ESM | Existing SCC | API effect | Verdict |
+| --- | --- | --- | --- | --- |
+| Remove state import, leave NOTES unresolved | 1/1 exact | Unchanged | 898 names, **but ReferenceError on feat** | **NO-GO** |
+| Move cqBump to logic, re-export through old data symbol | 3/3 exact | Unchanged | **899** named exports (adds logic:cqBump) | **NO-GO** under strict 898 |
+| Move only cqBump and retarget existing consumers (state-move-0/1/2) | **3/3 exact** | Unchanged | **898** global named exports; old data export migrated to existing logic module, no added names | **VIRTUAL GO**, implementation pending |
+| Mutate cq.notifyFeats as hidden notification port | 2/2 exact | Unchanged | 898 count, same module names; new top-level mutable side-channel | **DESIGN NO-GO** (TDZ/ownership) |
+| Rehome four live selectors into logic | 3/3 exact | Unchanged | 898 total, four existing data module symbols change owner | **DEFER**: broad API/save/multiplier surface |
+
+**Chosen candidate: state-move-0 (or equivalent insertion slot).** Remove precisely ONE reverse edge data/conquest-data.js → core/state.js; leave existing data→logic/conquest.js and blocked data→ui/overlays/celebrate.js. This is **virtual implementation GO** only: future baseline 6→5 **after** real code, runtime proof and separate review. Preserve exact original body of cqBump; data keeps cqFeats, cqK, cqModD, cqScore, CQ_*; logic imports NOTES along its existing S import and cqFeats along its existing data import, exports cqBump in the old global name slot; UI changes the named importer owner without adding dependencies. Ensure old external module-path API is explicitly reviewed: **per-module export origin changes even though global name count is frozen**.
+
+**Stage B1 obligatory acceptance:** on separate implementation Draft, real built PWA AND artifact must check fresh/new/imported save, S replacement, cqWeek local Monday transition and new-week state, global/local/boss feat counts and only-once pts, cqScore, original NOTES queue id/payload/order, NOTIFICATION polling and persist, refill n=0..20 and rollover, route/trophy/chest unlocks, exact 167 module order / 898 names, six→five ledger no new/stale, same two SCC, full golden/offline/WebGL MED/LOW/HIGH/3D lifecycle/camp protect checks. No source implementation in current PR. Physical Safari/iPhone acceptance of v130 still open.
+
+**Stage A decision: GO (virtual-only, narrow cqBump ownership move), NO-GO for naive state import deletion / 899-export bridge / mutable cq notifier.** Broader four-selector move is architecturally plausible but must be separately staged. C3b0 celebrate and C2d story/models remain blocked. Do not merge or publish Stage A.
+
