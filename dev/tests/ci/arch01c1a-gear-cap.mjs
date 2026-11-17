@@ -30,7 +30,7 @@ assert.ok(gateOwner.includes('p.stars >= 7 && p.gear >= MAX_GEAR'),
   'Muad-Dib 7-star and gear XIII gate must not change');
 assert.ok(gateOwner.includes('!!prog(k).stars ||'),
   'already unlocked legends must stay grandfathered');
-assert.equal(legacy.length, 8, 'ARCH-01C3a2 leaves eight legacy imports; earlier architecture regressions unchanged');
+assert.equal(legacy.length, 7, 'ARCH-01C3a3 removes one additional order-only edge; earlier behavior regressions unchanged');
 assert.ok(!legacy.includes('data/journeys.js -> logic/economy.js'),
   'removed reverse edge cannot stay in baseline');
 const slot = SPLIT.filter(([,name]) => name === 'data/gear-cap.js');
