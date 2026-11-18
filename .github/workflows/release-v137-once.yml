@@ -1,4 +1,4 @@
-name: One-time owner-approved ARCH-01D v137 publication
+name: One-time owner-approved ARCH-01D v137 publication (verified guard fix)
 
 on:
   push:
@@ -12,13 +12,13 @@ permissions:
   actions: write
 
 concurrency:
-  group: arch01c5b-v137-one-shot
+  group: arch01d-v137-guard-repaired-one-shot
   cancel-in-progress: false
 
 jobs:
   publish-v137-once:
     name: Dispatch owner-approved validated v137 exactly once
-    if: "${{ github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release(arch): publish v137') }}"
+    if: "${{ github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'fix(release): activate v137 guarded publish') }}"
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -32,16 +32,15 @@ jobs:
           set -euo pipefail
           test "$GITHUB_RUN_ATTEMPT" = '1'
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git show --format=%s -s HEAD)" = 'release(arch): publish v137'
-          test "$(git rev-parse HEAD^)" = '1202349501cd17cffdd5f62dfee72ca461399f80'
-          test "$(tr -d '\n' < dev/version.json)" = '{"v":136}'
+          test "$(git show --format=%s -s HEAD)" = 'fix(release): activate v137 guarded publish'
+          test "$(git rev-parse HEAD^)" = 'd0e2458dc4b8c5933b13af1e18588b8c5121b208'
+          test "$(tr -d '\n' < dev/version.json)" = '{"v":137}'
+          test "$(git show HEAD^:dev/version.json | tr -d '\n')" = '{"v":137}'
           grep -Fq "const VER = 'ff7924dd9d';" sw.js
           test "$(git hash-object sw.js)" = 'a9595f44abff971a8a6bc69604c3106806e0aa01'
           test "$(git diff --name-only HEAD^ HEAD | LC_ALL=C sort)" = "$(printf '%s\n' \
             .github/workflows/release-v137-once.yml \
-            dev/CHANGES_STATUS.md \
-            dev/docs/ARCH01D_V137_RELEASE_HANDOFF_2026_11_18.md \
-            dev/version.json | LC_ALL=C sort)"
+            dev/docs/ARCH01D_V137_RELEASE_HANDOFF_2026_11_18.md | LC_ALL=C sort)"
           test "$(git hash-object dev/src/data/story.js)" = 'bc44559fe165aca321b8800e09ed1d0fb3242a2c'
           test "$(git hash-object dev/src/assets/models.js)" = 'cc5be92e23938376308d9118973e5badf9941392'
           test "$(git hash-object dev/src/boot.js)" = '36844ea06b11eefdba7cfb526ce9525415d1fd4a'
