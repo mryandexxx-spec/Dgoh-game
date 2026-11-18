@@ -136,8 +136,10 @@ const v134Sources=new Map([...preB1,...historical]);
 const oldLarge=priorCycles.find(c=>c.includes(DATA));
 const newLarge=actualGraph.cycles.find(c=>c.includes(CELEBRATE));
 assert.ok(oldLarge);assert.ok(newLarge);
-console.log('ARCH-01C5a under Story B1 prior-only members '+JSON.stringify(oldLarge.filter(p=>!newLarge.includes(p))));
-assert.deepEqual(oldLarge.filter(p=>!newLarge.includes(p)),[DATA]);
+// Under the separately approved Story B1 SCC split, restoring the older Conquest→UI
+// predecessor pulls both pure data and its runtime logic neighbor back into the UI SCC.
+// This explicit two-member change is checked, never silently treated as old C5a topology.
+assert.deepEqual(oldLarge.filter(p=>!newLarge.includes(p)),[DATA,'logic/conquest.js']);
 assert.deepEqual(newLarge.filter(p=>!oldLarge.includes(p)),[]);
 assert.deepEqual(actualGraph.cycles.find(c=>c.length===6),priorCycles.find(c=>c.length===6));
 const forbidden=Object.entries(edges).flatMap(([from,x])=>from.startsWith('data/')?
