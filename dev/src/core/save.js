@@ -158,4 +158,192 @@ const onPersist = (f, onError) => {
 };
 
 
-export { SAVE_KEY, newSave, fillSave, loadSave, persist0, notePend, persist, onPersist };
+// ARCH-02C-B1 opt-in verified checkpoint. NOT used by legacy persist(), boot
+// or gameplay: until C-B3 owns the writer, a localStorage read/write pair is
+// NOT cross-tab CAS and must never be advertised as an atomic transaction.
+// The primary stays byte-compatible v1, so old exports and rollbacks can read
+// it, but old writers still will NOT maintain this sidecar checkpoint.
+const CHECKPOINT_KEY = SAVE_KEY + '.backup';
+const CHECKPOINT_FORMAT = 1;
+
+// Non-cryptographic accidental-corruption checksum over UTF-16 code units.
+// Exact-byte readback is the commit acknowledgment; this is not an HMAC,
+// fsync, defense against malicious edits or protection from origin eviction.
+function checkpointChecksum(raw) {
+  let h = 2166136261;
+  for (let i = 0; i < raw.length; i++) h = Math.imul(h ^ raw.charCodeAt(i), 16777619);
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+function checkpointStorageRead(key) {
+  try { return { ok: true, raw: localStorage.getItem(key) }; }
+  catch (e) { return { ok: false, status: 'unavailable', error: (e && e.name) || 'Error' }; }
+}
+function checkpointStorageWrite(key, raw) {
+  try { localStorage.setItem(key, raw); return { ok: true }; }
+  catch (e) {
+    const kind = e && e.name;
+    return { ok: false, status: kind === 'QuotaExceededError' ? 'quota' :
+      kind === 'SecurityError' ? 'security' : 'write-failed', error: kind || 'Error' };
+  }
+}
+function checkpointRawStatus(raw) {
+  if (raw === null) return { status: 'missing' };
+  if (typeof raw !== 'string') return { status: 'invalid' };
+  let save;
+  try { save = JSON.parse(raw); }
+  catch (e) { return { status: 'corrupt', raw }; }
+  if (!saveRecord(save) || !Object.prototype.hasOwnProperty.call(save, 'v'))
+    return { status: 'invalid', raw };
+  if (save.v !== 1) return { status: 'unsupported', raw };
+  if (!validSaveV1(save)) return { status: 'invalid', raw };
+  return { status: 'ok', raw, save };
+}
+function inspectCheckpointPrimary() {
+  const result = checkpointStorageRead(SAVE_KEY);
+  return result.ok ? checkpointRawStatus(result.raw) : result;
+}
+function inspectCheckpointBackup() {
+  const r = checkpointStorageRead(CHECKPOINT_KEY);
+  if (!r.ok) return r;
+  if (r.raw === null) return { status: 'missing' };
+  let env;
+  try { env = JSON.parse(r.raw); }
+  catch (e) { return { status: 'corrupt', envelopeRaw: r.raw }; }
+  if (!saveRecord(env) || env.format !== CHECKPOINT_FORMAT ||
+      env.key !== SAVE_KEY || typeof env.raw !== 'string' ||
+      typeof env.checksum !== 'string')
+    return { status: 'invalid', envelopeRaw: r.raw };
+  if (checkpointChecksum(env.raw) !== env.checksum)
+    return { status: 'checksum-mismatch', envelopeRaw: r.raw };
+  const checked = checkpointRawStatus(env.raw);
+  if (checked.status !== 'ok')
+    return { status: 'invalid', envelopeRaw: r.raw, reason: checked.status };
+  return { status: 'ok', envelopeRaw: r.raw, raw: env.raw, save: checked.save,
+    checksum: env.checksum };
+}
+// Pure inspection. A bad or missing primary with an intact backup is
+// explicitly recoverable, never silently restored or treated as a new save.
+// Unsupported versions deliberately require external/user review.
+function inspectCheckpoint() {
+  const primary = inspectCheckpointPrimary(), backup = inspectCheckpointBackup();
+  const status = primary.status === 'ok' ? 'ok' :
+    primary.status === 'unsupported' ? 'unsupported' :
+    primary.status === 'unavailable' ? 'unavailable' :
+    backup.status === 'ok' && ['missing', 'corrupt', 'invalid'].includes(primary.status)
+      ? 'recoverable' : 'blocked';
+  return { status, primary, backup };
+}
+function checkpointFailure(status, stage, error) {
+  return { ok: false, status, stage, ...(error ? { error } : {}) };
+}
+function checkpointMatchesExpected(current, expectedRaw) {
+  return expectedRaw === null ? current.status === 'missing' :
+    current.status === 'ok' && current.raw === expectedRaw;
+}
+function checkpointCandidate(candidate) {
+  let raw, save;
+  try {
+    if (!saveRecord(candidate)) return { status: 'invalid' };
+    raw = JSON.stringify(candidate);
+    if (typeof raw !== 'string') return { status: 'serialization' };
+    save = JSON.parse(raw);
+  } catch (e) { return { status: 'serialization', error: (e && e.name) || 'Error' }; }
+  return validSaveV1(save) ? { status: 'ok', raw, save } : { status: 'invalid' };
+}
+
+// A single opt-in prepared snapshot commit, with no mutations to live S.
+// expectedRaw is the EXACT raw primary observed by the caller (null for a
+// confirmed empty store); omission is rejected rather than guessed.
+// Staging and last-write-wins safety are deferred to C-B3/C-B4.
+function commitCheckpoint({ expectedRaw, candidate } = {}) {
+  if (!(expectedRaw === null || typeof expectedRaw === 'string'))
+    return checkpointFailure('invalid-expected', 'preflight');
+  const prepared = checkpointCandidate(candidate);
+  if (prepared.status !== 'ok')
+    return checkpointFailure(prepared.status, 'candidate', prepared.error);
+  const primary = inspectCheckpointPrimary();
+  if (primary.status === 'unavailable')
+    return checkpointFailure('unavailable', 'primary-read', primary.error);
+  if (!checkpointMatchesExpected(primary, expectedRaw))
+    return checkpointFailure(primary.status === 'ok' || primary.status === 'missing' ?
+      'conflict' : primary.status, 'primary-preflight');
+  const backup = inspectCheckpointBackup();
+  if (backup.status === 'unavailable')
+    return checkpointFailure('unavailable', 'backup-read', backup.error);
+  if (backup.status !== 'ok' && backup.status !== 'missing')
+    return checkpointFailure('backup-' + backup.status, 'backup-preflight');
+  if (expectedRaw === null && backup.status === 'ok')
+    return checkpointFailure('recovery-required', 'primary-missing');
+
+  if (prepared.raw === expectedRaw) return { ok: true, status: 'unchanged',
+    raw: expectedRaw, save: prepared.save };
+
+  if (expectedRaw !== null) {
+    // The previous verified good primary is preserved BEFORE primary changes.
+    const envelope = JSON.stringify({ format: CHECKPOINT_FORMAT, key: SAVE_KEY,
+      raw: expectedRaw, checksum: checkpointChecksum(expectedRaw) });
+    const staged = checkpointStorageWrite(CHECKPOINT_KEY, envelope);
+    if (!staged.ok) return checkpointFailure(staged.status, 'backup-write', staged.error);
+    const confirmed = inspectCheckpointBackup();
+    if (confirmed.status !== 'ok' || confirmed.envelopeRaw !== envelope)
+      return checkpointFailure(confirmed.status === 'unavailable' ? 'unavailable' :
+        'backup-verification', 'backup-readback', confirmed.error);
+  }
+
+  // Detect sequential stale writers; this is NOT atomic CAS vs a true race.
+  const latest = inspectCheckpointPrimary();
+  if (!checkpointMatchesExpected(latest, expectedRaw))
+    return checkpointFailure(latest.status === 'unavailable' ? 'unavailable' :
+      'conflict', 'primary-recheck', latest.error);
+  const written = checkpointStorageWrite(SAVE_KEY, prepared.raw);
+  if (!written.ok) {
+    // A hostile or unusual storage provider can write and then throw. Never
+    // blindly retry if the primary may actually contain the new candidate.
+    const probe = checkpointStorageRead(SAVE_KEY);
+    if (!probe.ok || probe.raw !== expectedRaw)
+      return checkpointFailure('uncertain', 'primary-write', written.error);
+    return checkpointFailure(written.status, 'primary-write', written.error);
+  }
+  const verified = checkpointStorageRead(SAVE_KEY);
+  if (!verified.ok || verified.raw !== prepared.raw)
+    return checkpointFailure('uncertain', 'primary-readback', verified.error);
+  return { ok: true, status: 'committed', raw: prepared.raw, save: prepared.save };
+}
+
+// Explicit, opt-in operator/user-authorized restore only. Requires the exact
+// primary AND backup-envelope bytes from a prior inspectCheckpoint() result;
+// refuse valid primary or future-version data, and never clear the bad raw.
+// This method cannot prevent truly concurrent noncooperating old writers.
+function recoverCheckpoint({ expectedPrimaryRaw, expectedBackupEnvelope } = {}) {
+  if (!(expectedPrimaryRaw === null || typeof expectedPrimaryRaw === 'string') ||
+      typeof expectedBackupEnvelope !== 'string')
+    return checkpointFailure('invalid-expected', 'recovery-preflight');
+  const state = inspectCheckpoint();
+  const p = state.primary, b = state.backup;
+  if (p.status === 'unavailable' || b.status === 'unavailable')
+    return checkpointFailure('unavailable', 'recovery-read');
+  if (p.status === 'ok' || p.status === 'unsupported')
+    return checkpointFailure(p.status === 'ok' ? 'already-valid' : 'unsupported',
+      'recovery-preflight');
+  if (!['missing', 'corrupt', 'invalid'].includes(p.status) || b.status !== 'ok')
+    return checkpointFailure('no-verified-backup', 'recovery-preflight');
+  if ((p.raw ?? null) !== expectedPrimaryRaw || b.envelopeRaw !== expectedBackupEnvelope)
+    return checkpointFailure('conflict', 'recovery-preflight');
+  const latest = inspectCheckpointPrimary();
+  if (latest.status !== p.status || (latest.raw ?? null) !== expectedPrimaryRaw)
+    return checkpointFailure('conflict', 'recovery-recheck');
+  const written = checkpointStorageWrite(SAVE_KEY, b.raw);
+  if (!written.ok) {
+    const probe = checkpointStorageRead(SAVE_KEY);
+    if (!probe.ok || probe.raw !== expectedPrimaryRaw)
+      return checkpointFailure('uncertain', 'recovery-write', written.error);
+    return checkpointFailure(written.status, 'recovery-write', written.error);
+  }
+  const verified = checkpointStorageRead(SAVE_KEY);
+  if (!verified.ok || verified.raw !== b.raw)
+    return checkpointFailure('uncertain', 'recovery-readback', verified.error);
+  return { ok: true, status: 'restored', raw: b.raw, save: b.save };
+}
+
+export { SAVE_KEY, newSave, fillSave, loadSave, persist0, notePend, persist, onPersist,
+  CHECKPOINT_KEY, inspectCheckpoint, commitCheckpoint, recoverCheckpoint };
