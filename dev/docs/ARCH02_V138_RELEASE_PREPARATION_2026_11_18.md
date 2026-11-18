@@ -1,7 +1,7 @@
 # Dune GoH — ARCH-02 B0+B1 / v138 — release preparation (NOT published)
 
-**18 November 2026. Status: RELEASE APPROVED BY OWNER («Сливай, выпускай»), guarded merge and official publish pending CI.**
-The owner has now expressly authorized **both** merging PR #197 and publishing v138, after the new one-shot guard and final-head CI pass. No dispatch or GitHub Pages deployment has happened as of this source commit. Public users still run **v137** until official publish and independent Pages validation succeed.
+**18 November 2026. FINAL STATUS: v138 PUBLISHED, OFFICIAL + INDEPENDENT GITHUB PAGES VERIFIED SUCCESS.**
+Owner explicitly authorized «Сливай, выпускай». The guarded release protocol below was followed without bypass, and the one-shot guard was used exactly once. Earlier planning language in this document is retained as *historical prepublication protocol*. **Current published version is v138**, SW `112de6f994`, root commit `b1bc0d55d907b49169fa09e158f402cd2145c89e`. Physical iPhone Safari remains OPEN.
 
 ## Fixed source and dependency order
 
@@ -39,3 +39,23 @@ The owner has now expressly authorized **both** merging PR #197 and publishing v
 6. Proceed to separately approved ARCH-02C transaction safety/manual import/backup, then ARCH-02D GameClock and RNG, without assuming B1 solves them.
 
 **STOP CONDITIONS:** Any CI failure, changed upstream base, wrong six-file tree, failed one-shot guard, unknown build/source SHA, silent primary overwrite, missing/failed independent arch-strict, unsupported old saves, changed game/balance/graphics/golden, unreviewed root changes, or unexpected `publish=true`/duplicate dispatch. Do not silently rebaseline.
+
+
+## ACTUAL v138 RELEASE — VERIFIED SUCCESS (18 November 2026)
+
+| Provenance stage | Verified immutable evidence |
+|---|---|
+| Approved candidate PR | [Release PR #197 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/197), six-file owner-approved release, final head `99f788ea16c39ce5fc51baa92e6d113f61d9dd18`, [full release PR CI #44373130659 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44373130659) — **20 mandatory jobs + final gate success** |
+| Release source | Sole-parent squash **`5926f35c52d4e77e68c99ecb59cfc9b6b9007ccf`**, title exactly `release(arch): publish v138`, parent B1 merged `fd05a419d84fc920b20545500d1ecd6230b15b1d`, exactly `.github/workflows/release-v138-once.yml`, `dev/version.json`, `dev/CHANGES_STATUS.md`, and three reviewed ARCH-02 release/handoff docs; **no `dev/src`, golden or root PWA files changed in the squash** |
+| Release source main-push CI | [#44374848808 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44374848808), independent `arch-strict` and certified reuse/final gate; published bit provenance remains checked |
+| Owner-authorized one-shot guard | [#44374848773 SUCCESS attempt 1](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44374848773), checked exact parent, version v138 (parent v137), six path diff, old `app.js/sw.js` blob IDs, zero `legacy:[]`, exact PR #197 head Git tree + successful CI, current main SHA; **one** official REST dispatch `publish=true`, no duplicate |
+| Official publish | [Workflow dispatch #44374893690 SUCCESS attempt 1](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44374893690), **20 mandatory checks SUCCESS + `Publish verified PWA to GitHub Pages` SUCCESS**; fresh actual PWA/artifact build, 23×2 fail-closed storage VM checks, golden, real 3D WebGL, Campaign 210, PWA offline, independent strict and final gate |
+| Immutable validated build | `dune-validated-build` artifact **14461492353**, sha256 **`940dd9f958f9232a7c67ea4b5552d39b4956c59933ea14bae6c3b443b5b993ed`**. Validation receipt artifact **14461478368**, sha256 **`00f5b4735a99c35f3849497b5f886960fa49f1b218e73652a7de19e2fa071319`**. **188 SHA-256 verified files**. No independent unvalidated rebuild for deploy |
+| Published root | **`b1bc0d55d907b49169fa09e158f402cd2145c89e`**, parent release source `5926f35c52d4e77e68c99ecb59cfc9b6b9007ccf`, `compare` changed **only `app.js`, `sw.js`**. Public `dev/version.json={"v":138}`; SW `const VER = '112de6f994';` (previously `0d811bb402`). Root `app.js` blob `339711432a4b179174e82aeb96cb4b907f67c6ed`, `sw.js` blob `aeb208d4ae8a93ad8bbdf6e24ab2b4c260e9292c` |
+| Independent Pages proof | [GitHub Pages run #44376653192 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44376653192), explicitly bound to **published root `b1bc0d55d907b49169fa09e158f402cd2145c89e`**, `build` + `report-build-status` + `deploy` all SUCCESS |
+
+### Post-release cleanup and limits
+
+This separate documentation-only cleanup updates the journal and this handoff and **deletes already-used** `.github/workflows/release-v138-once.yml`. It MUST NOT dispatch `publish=true` again, change `dev/version.json`, `dev/src`, `index.html/app.js/sw.js/assets`, rewrite golden or mutate published root. After cleanup CI, merge via a separate PR, then verify no second official dispatch and no PWA root changes.
+
+**Known unsolved durability risks:** manual import validation and rollback; spending/claiming transaction durable acknowledgment, idempotency, backup and stale-tab conflict handling; GameClock and RNG remain separate ARCH-02C/02D packets. Do not claim they were solved in v138. Real physical Safari/WebKit on iPhone, PWA standalone/offline, quota/denied storage, 667×375 and 844×390, Conquest reload and recovery copy UX still require device testing. Never experiment against a live save without an independently exported copy.
