@@ -36,4 +36,12 @@
 - В логе строгого job: `ARCH-01D strict boundary: PASS`; `нарушений нет`; `ARCH-01 imports: 0 forbidden, 0 existing baseline, 0 new, 0 stale`. Оба действительных CLI протестированы как на чистом исходном дереве, так и на изолированных запрещённых модулях.
 - Следующий документационный commit меняет **только этот отчёт**. Полный набор тестов на предыдущем HEAD уже пройден, поэтому последующий CI должен попытаться применить разрешённое proof-bound reuse; при этом независимый `arch-strict` **обязан выполнить реальную проверку заново** и оставаться обязательной зависимостью финального gate. При отсутствии корректного доказательства reuse CI обязан заново проверить полный объём, но не пропускать strict job.
 
-**Решение по реализации:** технический проект строгого CI соответствует критериям по первому полному прогону; окончательная готовность к отдельной приёмке — после проверки последнего HEAD. Никакого merge/release или изменения v136 до разрешения владельца.
+## Второй прогон — настоящий proof-bound reuse, строгий gate не пропущен
+
+- [Docs-only HEAD CI #44298231029](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44298231029): **COMPLETED SUCCESS attempt 1**, SHA `9558c068368bcf4fd30e71f8394e19ce0e3de9a6`. `ci-plan` выбрал **`mode: reuse`, `scope: full`**, с `proof` из исходного полного прогона `44295529577`: `Identical inputs: reuse verified build and coverage`.
+- Реальная `Build once + architecture + SHA-256 manifest` успешно выполнила `Download proven build without rebuilding` и `Verify reused build against current inputs and SHA-256`. Её собственные шаги `check-deps --strict`, `check-arch-imports --strict` и тяжёлые игровые задания в этом **reuse** закономерно отмечены SKIPPED.
+- **Именно в таком режиме отдельная `ARCH-01D permanent strict architecture boundary` выполнилась на актуальных исходниках и завершилась SUCCESS заново**, не наследуя результат первого прогона. `All required checks passed` тоже SUCCESS. В сумме 4 SUCCESS (plan, independent arch-strict, proven build, gate), 16 ожидаемых SKIPPED (15 наследуемых задач и запрет автоматической публикации). Без merge/release.
+- Таким образом, доказаны оба обязательных режима: обычный **полный** CI 20/20 SUCCESS и **reuse** с новым реальным строгим CI, который не был пропущен. Docs-only режим без build защищён тем же независимым job и проверен также через `tests/ci/selection.mjs` на уровне `checkGate`.
+
+**Решение по реализации: технический GO для отдельной приёмки владельцем. NO MERGE/NO RELEASE** до прямой команды; физический iPhone Safari/WebKit остаётся OPEN.
+
