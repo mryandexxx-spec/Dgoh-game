@@ -26,6 +26,37 @@
 
 Для будущего B1 потребуется отдельное согласование владельца, включая **явный допустимый пересмотр SCC [106,6]→[105,6] и 47 ESM positions**, сохранение всех семи групп существующих именованных UI→logic/data APIs, реальную cold/warm/TDZ/CELEB+NOTES, Conquest weekly/difficulty/refill/saves, 3D/memory/protected Camp, offline/standalone и физический Safari. `Story→models` не входит в A5.
 
-## Реальные CI-протоколы
+## Фактические CI и Chrome протоколы, замороженный A5 code SHA
 
-**PENDING:** привязать точный code SHA, build/E3 Chrome outputs (включая actual positive CELEB, cqf, persistent rollover, Babylon/DGM), полный CI и отдельный docs-only HEAD receipt. Никакого заявления о B1 GO или публикации.
+**Проверенный кодовый HEAD `2a6897dfe70d4015e78fe0d542073e83616082f9`**, [**GitHub Actions #44243768929 — COMPLETED SUCCESS, run attempt 1, 19/19 mandatory jobs and final `All required checks passed` gate SUCCESS**](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44243768929). Публикация GitHub Pages **SKIPPED**, `main` и публичная v134 не затронуты. Реальный `Build once + architecture` job `134598004573` SUCCESS; реальный E3 iPhone UI + DOM idle Chromium job `134598431228` SUCCESS, включая новый A5 browser probe и существующие DOM/Gear/Ix. Продуктовый артефакт `dune-validated-build`, ID **14400559149**, digest **`sha256:efc750757dded826d14bd30b8dfae9d0bcc0d4f97698255cb053eeb2ab1bf5dd`**, 188 validated SHA-256 файлы, оригинальная v134 SW `a93dcde641`. Исходный v134 CI покрывает golden 200 battles + meta/saves/41 screens, Conquest, все 210 Campaign, offline/SW/PWA, MED/LOW/HIGH WebGL lifecycle, protected Camp.
+
+**История fail-closed:** первый диагностический SHA `ee100f76993929540e6c4ed10bdd078845a4d21f`, Actions [#44243162687](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44243162687), имел **FAIL только нового A5 E3 probe**, потому что тест после первого `celebClick` делал фиксированную паузу 125 ms и преждевременно снимал второе окно UNLOCK. Важнейшее наблюдение: и baseline v134, и virtual имели тот же порядок событий, реальные `cqf` NOTES, настоящую звёздную награду, сохранение/перезагрузку и 5 успешно декодированных моделей; но UNLOCK к раннему снимку ещё не появился. Test-only correction заменил паузу на реальное `page.waitForFunction` для `#celeb.unlock` и завершения очереди (с ограниченным таймаутом), не изменяя `dev/src`/runtime/сейвы/ассеты. Этот старый workflow позже **CANCELLED** новым HEAD; его красный диагностический gate не скрывается. Исправленный code SHA прошёл full CI уже с первой попытки.
+
+### Фактический Chrome: cold и warm
+
+Эксперимент запускает baseline и virtual как два **реальных** скрипта с одной production-asset map, один и тот же HTML и ресурсы; для каждого отдельная browser tab. Positive-flow baseline asserts пройдены и обе ветки сравниваются по детерминированным результатам. **`candidateParity=true` в обоих ограниченных сценариях**, но это не доказательство отсутствия проблем за их рамками.
+
+| Событие | Cold new save 844×390 | Warm historical save 667×375 |
+| --- | --- | --- |
+| `cqBump('win',0,1)` реальные Conquest NOTES | **2**: `g:win` 1/30, `0:win` 1/6 | **2**: те же |
+| CELEB STAR Paul → UNLOCK Paul | **оба настоящих DOM окна**, STAR и UNLOCK с текстом и close callbacks | то же |
+| Очередь CELEB после двух закрытий | **0**, `#celeb` отсутствует | **0**, `#celeb` отсутствует |
+| Рендер NOTES | очередь хранит 2 `cqf`; контейнер существует, но **hidden=true** в текущем UI context | то же |
+| Недельный `cq()` | `wk=Mon Nov 16 2026`, сброшены `stars=0/pts=0/done=0/route=0` | то же |
+| Постоянная разблокировка после `persist0`/реального reload | `S.cqUnlock.easy='a5-permanent-unlock'` и в живом S, и после `loadSave` | то же |
+| Реальная загрузка Babylon/DGM | `loadB3()=true`, `HAS3D=true`, `globalThis.__B3=true` | то же |
+| Декодированные `MODEL_DATA` | **5**: `baron, baron_legend, duncan, muaddib, worm` | те же 5 |
+| HTTP requests за два page loads в каждой ветке | `app.js=2`, `babylon3d.js=2`, `DGM=10`, live engines 1 | те же |
+| Browser `pageerror` | **0 / 0** | **0 / 0** |
+| Exact selected normalized snapshots baseline ↔ virtual | **совпали** | **совпали** |
+
+Эта проверка уже **не** ограничивается регистрацией `b3Pre(loadAssets3)`: физические DGM-ресурсы запрошены и `MODEL_DATA.duncan` успешно заполнен, Babylon готов и один живой engine существует. Это всё ещё **не** virtual 3D EngineHost mount→wake→sleep→dispose / GPU budgets. UI notification `NOTES` содержал реальные новые записи, однако `#notes` был **hidden** и текст Conquest-уведомления в закрытом контейнере не виден; поэтому не заявлять доказанное отображение в игровых контекстах после снятия overlay. Очередь STAR→UNLOCK и drain проверена через реальные DOM-события, а не просто наличие вызванных функций.
+
+**Virtual graph/order не изменился относительно A4:** тот же 47-marker shift, `[105,6]` с исключением только `data/conquest-data.js`, тогда как настоящий `main` всё ещё содержит две старые data→runtime зависимости. В CI полного исходного приложения нет изменения продукта, source schema/ledger/golden, root PWA, SW, версии, UI/Camp/WebGL или моделей.
+
+### Ограничения B1 и решение
+
+**ARCH-01C5a-A5 Stage A DIAGNOSTIC COMPLETE, исследовательский browser parity 2/2 PASS; source B1 — NO-GO до самостоятельного owner-approved design/implementation package.** Нужны явная демонстрация неизменного поведения остальных 47 ESM-позиций/TDZ, полноценный **виртуальный** Conquest difficulty/refills/weekly/feats/saves regression, offline/SW и single-file artifact, реальный 3D EngineHost 3 циклов и budget, physical Safari/iPhone и explicit owner acceptance SCC shrink `106→105`. Сохранить все семь именованных UI→data/logic интерфейсов A3, не менять Story→models/3D baker/camp в этом пакете. Возможен следующий Stage A6 **только архитектурный дизайн explicit UI-owned composition/registration contract**, без запуска B1 по умолчанию, если владелец пожелает продолжить.
+
+**Final report-only SHA CI receipt:** в отдельном документационном commit после real code CI; pending final exact SHA. 
+
