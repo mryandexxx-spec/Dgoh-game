@@ -1,6 +1,6 @@
 # Dune GoH — ARCH-01C5b-B1 / v136 official release handoff
 
-**18 ноября 2026 · ВЫПУСК УТВЕРЖДЁН, ПУБЛИКАЦИЯ ОЖИДАЕТ ПОДТВЕРЖДЕНИЯ**. Владелец: «сливай и выпускай». Документ сначала является планом fail-closed релиза; нельзя считать опубликованным до успешного официального CI и независимого Pages.
+**18 ноября 2026 · v136 ОПУБЛИКОВАНА И НЕЗАВИСИМО ПОДТВЕРЖДЕНА.** Владелец: «сливай и выпускай». Исходный fail-closed план сохранён ниже для аудита.
 
 ## Implementation — уже слито
 - [PR #186 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/186), точный source main `48565de6ee59499f7f54c40e2248f47cef5cd557` (с 173 JS, 1001 статическим импортом, 167 ESM, 898 exports и SCC [60,11,6,3]).
@@ -19,5 +19,9 @@
 ## Ограничения и дальнейшая работа
 Ни графический профиль, ни UI/3D/навигация лагеря, ни Campaign 21/210, ни save schema, ни golden изменяться в release PR не должны. ARCH-01D permanent strict gate — отдельный следующий этап после публикации, не включать сейчас. Физическая проверка **iPhone Safari/WebKit** по двум разрешениям и сценариям cold/warm/standalone/offline/3D/CELEB/NOTES/нагрев остаётся не проведённой — Chromium её не заменяет.
 
-## Фактические подтверждения публикации
-*PENDING* — дополнить только после проверки CI, официального deploy и независимого Pages; не объявлять опубликованной заранее.
+## Фактическое подтверждение публикации v136 — VERIFIED
+- [Implementation PR #186 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/186), implementation source `48565de6ee59499f7f54c40e2248f47cef5cd557`; [release PR #187 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/187), release source `cda9e3b919dc19134cd0451291d877df4433d7db` (sole parent implementation). Release PR изменил ровно четыре release файла: version/journal/handoff/one-shot guard; `dev/src`, protected Camp, SPLIT, golden и публичный root не менялись.
+- [Release PR full CI #44287818024 COMPLETED SUCCESS 19/19 + gate](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44287818024). [Post-merge push CI #44288970825 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44288970825). [One-shot guard #44288970763 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44288970763): exact subject/parent/version, 4 paths, old SW `efc55b7635`, immutable B1 git blob hashes, baseline zero and 167 markers/62 shifts; only then dispatched official `publish=true`.
+- **[Official validated publish #44289040860 COMPLETED SUCCESS attempt 1](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44289040860)**: 19/19 required tests, final gate and *Publish verified PWA to GitHub Pages* SUCCESS, no skipped critical checks. `Verified build v136 / ff7924dd9d · 188 SHA-256 files`; `dune-validated-build` artifact ID `14420736296`, digest `sha256:b1517d833c877b304d4bb607284aa4fb7211b12798136bd9b6491f19c749d874`; validation receipt artifact ID `14421905516`, digest `sha256:c571b3b6d903ede9e2846c65074cd8e3bfe4c19415b9af31dff22a0d9638196e`. Same build staged without independent untested recompilation.
+- **Published root `2bfb0c20cb6a78895af3dbf7cbf74fbee8a927dc`** with sole parent `cda9e3b9…`; exact GitHub compare of root commit changes **ONLY `app.js` and `sw.js`**, `dev/version.json={"v":136}`, `sw.js const VER='ff7924dd9d'` (previous `efc55b7635`). [Independent GitHub Pages #44290596831 SUCCESS on exact root SHA](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44290596831). **v136 реально опубликована.**
+- После подтверждения — отдельный docs-only cleanup PR (этот), удаляется `.github/workflows/release-v136-once.yml` во избежание повторного dispatch. **Повторная публикация не нужна.** Физический iPhone Safari/WebKit cold/warm/standalone/offline, CELEB/NOTES и реальный 3D/нагрев остаются **OPEN**. ARCH-01D strict gate отдельно, не включён.
