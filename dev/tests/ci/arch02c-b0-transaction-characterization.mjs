@@ -1,4 +1,5 @@
-// ARCH-02C-B0: v138 forensic UNSAFE characterization, NOT a safety-pass oracle.
+// ARCH-02C-B0: v138 forensic characterization. C01-C04 are B2 repair assertions;
+// C05-C15 remain explicitly UNSAFE historical behaviors until B4-B6.
 // Executes the actual compiled PWA or HTML artifact in an isolated Node VM.
 // No browser user profiles, real localStorage, shipped source or golden updates.
 import assert from 'node:assert/strict';
@@ -11,7 +12,7 @@ const html=process.argv[2]||'dist/pwa/index.html', KEY='dune-goh-v1';
 const fixtureDir=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../fixtures/saves');
 const old=JSON.stringify(JSON.parse(fs.readFileSync(path.join(fixtureDir,'01-legacy-v1.json'),'utf8')));
 const observed=[];
-function mark(id,description){observed.push(id);console.log('  '+id+' [UNSAFE v138 BASELINE] '+description);}
+function mark(id,description){observed.push(id);console.log('  '+id+(['C01','C02','C03','C04'].includes(id)?' [B2 SAFE] ':' [UNSAFE v138 BASELINE] ')+description);}
 function init(raw=null){
   const listeners=[],fields=new Map([['#savecode',{value:''}],['#overlay2',{innerHTML:''}]]);
   const g=loadGame(html,{seed:31,
@@ -46,44 +47,54 @@ function click(h,data){
 }
 const encode=s=>Buffer.from(JSON.stringify(s),'utf8').toString('base64');
 
-// C01: valid manual import remains a positive v1 compatibility control.
+// C01: legacy base64/v1 compatibility now requires explicit confirmation.
 {
  const {g,fields}=init(old),original=S(g),candidate={...original,solari:original.solari+111};
+ const prior=g.store.get(KEY);
  fields.get('#savecode').value=encode(candidate);
  assert.equal(g.run('metaClick({saveload:"1"})'),true);
+ same(g,prior);assert.equal(S(g).solari,original.solari);
+ assert.match(fields.get('#overlay2').innerHTML,/data-saveconfirm/);
+ assert.equal(g.run('metaClick({saveconfirm:"1"})'),true);
  assert.equal(S(g).solari,candidate.solari);
  assert.equal(saved(g).solari,candidate.solari);
  assert.equal(g.run('loadSave(true).status'),'ok');
- mark('C01','valid UTF-8/base64 v1 import committed');
+ assert.equal(JSON.parse(g.store.get(KEY+'.backup')).raw,prior);
+ mark('C01','legacy UTF-8/base64 v1 import requires verified checkpoint confirmation');
 }
-// C02: manual import only tests truthy roster, writes unsupported version 2.
+// C02: unsupported future schema MUST NOT overwrite valid v1.
 {
- const {g,fields}=init(old),before=g.store.get(KEY),candidate={...S(g),v:2};
+ const {g,fields}=init(old),before=g.store.get(KEY),original=S(g),candidate={...original,v:2};
  fields.get('#savecode').value=encode(candidate);
  assert.equal(g.run('metaClick({saveload:"1"})'),true);
- assert.notEqual(g.store.get(KEY),before);
- assert.equal(saved(g).v,2);
- assert.equal(g.run('loadSave(true).status'),'unsupported');
- mark('C02','v2 import overwrites good v1; next boot rejects primary');
+ same(g,before);assert.equal(g.store.has(KEY+'.backup'),false);
+ assert.equal(S(g).v,1);
+ assert.equal(g.run('metaClick({saveconfirm:"1"})'),true);
+ same(g,before);
+ mark('C02','future v2 import rejected without changing existing primary or S');
 }
-// C03: import with failed write still replaces live state.
+// C03: quota during import cannot replace live S or acknowledge success.
 {
- const {g,fields}=init(old),before=g.store.get(KEY),candidate={...S(g),solari:S(g).solari+777};
+ const {g,fields}=init(old),before=g.store.get(KEY),original=S(g),candidate={...original,solari:original.solari+777};
  fields.get('#savecode').value=encode(candidate);
  const writes=deny(g);
  assert.equal(g.run('metaClick({saveload:"1"})'),true);
+ same(g,before);assert.equal(S(g).solari,original.solari);
+ assert.equal(g.run('metaClick({saveconfirm:"1"})'),true);
  wrote(writes);same(g,before);
- assert.equal(S(g).solari,candidate.solari);
- assert.notEqual(S(g).solari,saved(g).solari);
- mark('C03','quota on import leaves changed RAM and old committed bytes');
+ assert.equal(S(g).solari,original.solari);
+ assert.equal(g.run('loadSave(true).status'),'ok');
+ mark('C03','quota on verified import leaves live S and old primary unchanged');
 }
-// C04: distinguish existing syntactic import guard (a positive check).
+// C04: malformed encoding remains rejected before any storage write.
 {
  const {g,fields}=init(old),before=g.store.get(KEY);
  fields.get('#savecode').value='%%%not-base64%%%';
  assert.equal(g.run('metaClick({saveload:"1"})'),true);
  same(g,before);assert.equal(S(g).v,1);
- mark('C04','malformed import is already rejected');
+ assert.equal(g.run('metaClick({saveconfirm:"1"})'),true);
+ same(g,before);
+ mark('C04','malformed import rejected before write or confirmation');
 }
 // C05: a real daily claim reaches reward processing even with denied write.
 {
@@ -223,4 +234,4 @@ const encode=s=>Buffer.from(JSON.stringify(s),'utf8').toString('base64');
 assert.equal(new Set(observed).size,observed.length);
 assert.equal(observed.length,15);
 console.log('ARCH-02C-B0: '+observed.length+' CHARACTERIZED baseline observations on '+html+
-  ' (VM-only, historical unsafe behavior expected, NOT A SAFETY PASS).');
+  ' (VM-only; C01-C04 repaired by B2, C05-C15 remain unsafe until later stages).');
