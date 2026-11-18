@@ -36,6 +36,29 @@ const fault = (g, {read = null, write = null} = {}) => {
   };
   return ops;
 };
+// This probes a save written by actual gameplay, not just static fixtures.
+const roundtrip = (g, label) => {
+  const result = details(g);
+  if (result.status !== 'ok') {
+    const s = JSON.parse(g.store.get(KEY));
+    const record = x => !!x && typeof x === 'object' && !Array.isArray(x);
+    const numeric = k => typeof s[k] === 'number' && Number.isFinite(s[k]) && s[k] >= 0;
+    const bad = {
+      status: result.status,
+      numbers: ['water','solari','plast','candle','cry','folio','seal','rid','wol','core','teeth'].filter(k => k in s && !numeric(k)),
+      records: ['cleared','daily','login','conq','journey','journeys','migrations','inv','gearParts','gearOwned','cryClaim','sealClaim','refills','buys'].filter(k => k in s && s[k] !== null && !record(s[k])),
+      squads: ['squad','squadD','squadC','squadTr','raidPick','jPick'].filter(k => k in s && !Array.isArray(s[k])),
+      heroes: Object.entries(s.roster || {}).filter(([id,h]) => !record(h) ||
+        ['shards','stars','lvl','gear'].some(k => k in h && !(typeof h[k]==='number' && Number.isFinite(h[k]) && h[k]>=0)) ||
+        ('eq' in h && (!Array.isArray(h.eq)||h.eq.length!==6)) ||
+        ('sk' in h && !record(h.sk))).map(([id])=>id),
+      missingCore: ['v','water','solari','plast','roster'].filter(k=>!(k in s))
+    };
+    assert.fail(label + ': saved game state rejected by loader: ' + JSON.stringify(bad));
+  }
+  assert.equal(result.save.v, 1);
+};
+
 const blocked = (g, raw, kind) => {
   const ops = fault(g);
   g.store.set(KEY, raw);
@@ -58,6 +81,7 @@ const blocked = (g, raw, kind) => {
   assert.equal(JSON.parse(g.store.get(KEY)).v,1);
   assert.equal(JSON.parse(g.store.get(KEY)).solari,state(g).solari);
   assert.ok(ops.includes('set:'+KEY));
+  roundtrip(g, 'S01 after fresh boot');
   seen('S01','only confirmed missing primary creates a starter account');
 }
 for(const [id,name] of [['S02','01-legacy-v1.json'],['S03','02-mid.json'],['S04','03-late.json']]){
@@ -125,6 +149,14 @@ for(const [id,raw,kind] of cases){
  seen('S12','legacy migration is idempotent');
 }
 
+// S12-RT: Conquest's real weekly state is a normal, reloadable v1 snapshot.
+{
+ const g=init();g.run('start({})');
+ g.run("S.cqUnlock={...S.cqUnlock,easy:'b1-persisted'}; const c=cq(); S.conq={...c,wk:'Mon Jan 05 2026',stars:4321,pts:876,done:{'0-0-0':1},route:{0:{chosen:1}},diff:'hard'}; cq(); persist0();");
+ roundtrip(g,'Conquest weekly roundtrip');
+ seen('S12-RT','Conquest committed state can be parsed and reloaded');
+}
+
 // S13: no serialization error may report an acknowledged write.
 {
  const g=init();g.store.set(KEY,old);g.run('start({})');
@@ -179,6 +211,6 @@ for(const kind of ['QuotaExceededError','SecurityError']){
 }
 
 assert.equal(new Set(check).size,check.length);
-assert.equal(check.length,22,'complete B1 read/write fault acceptance matrix');
+assert.equal(check.length,23,'complete B1 read/write fault acceptance matrix');
 console.log('ARCH-02B1: SAFE PASS '+check.length+' fault and compatibility observations on '+html+
  '; VM storage only, no browser profile; transaction atomicity and multi-tab conflicts remain ARCH-02C.');
