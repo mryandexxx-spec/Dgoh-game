@@ -20,7 +20,7 @@
 - Один модуль — одна ответственность; модуль больше ~600 строк делить.
 - `src/` правится вручную. `modularize.mjs`, `extract-pass1.mjs`, `split-css.mjs` не запускать. Перенос объявлений — `node tools/move-decl.mjs`.
 - Порядок исполнения — цепочка: импорт предшественника стоит первым; если из него уходит последний именованный импорт — `import './пред.js'; // порядок исполнения`. Новый модуль встраивается в цепочку и в `tools/split.config.mjs`.
-- Проверка: `node tools/check-deps.mjs` (новых нарушений 0), `node tools/check-bundle.mjs dist/pwa/app.js`.
+- Проверка ARCH-01D (после v136, запрещённые импорты = 0): `node tools/check-deps.mjs --strict` и `node tools/check-arch-imports.mjs --strict`, `node tools/check-bundle.mjs dist/pwa/app.js`. Обязательная независимая задача CI `arch-strict` запускается на **каждом** PR/push/workflow_dispatch, включая docs-only и проверенное переиспользование артефактов; итоговый gate принимает только SUCCESS, никогда SKIPPED/FAILURE. `tools/arch-import-baseline.json` остаётся пустым и не может пополняться для сокрытия нарушения. Существующие SCC и approved ESM-порядок этим этапом не изменяются.
 
 ## 2. 3D (render3d)
 - Один Engine — `EngineHost` (`engine-host.js`): стек владельцев `mount/release/forget`, один render loop. Свой Engine, свой rAF/`setInterval` для 3D — запрещены.

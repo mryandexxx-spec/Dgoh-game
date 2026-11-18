@@ -17,7 +17,7 @@ assert.equal(classify(['README.md'],{forceFull:true}).mode,'full');
 assert.equal(classify(['dev/tools/split.config.mjs']).mode,'full');
 assert.equal(classify(['dev/tools/split.config.mjs','dev/src/render3d/scenes/campaign-new.js'],{campaignRegistry:true}).mode,'campaign');
 
-function needs(plan){return {plan:{result:'success',outputs:{decision:JSON.stringify(plan)}},...Object.fromEntries(JOBS.map(k=>[k,{result:plan.groups.includes(k)?'success':'skipped'}]))};}
+function needs(plan){return {plan:{result:'success',outputs:{decision:JSON.stringify(plan)}},'arch-strict':{result:'success'},...Object.fromEntries(JOBS.map(k=>[k,{result:plan.groups.includes(k)?'success':'skipped'}]))};}
 for(const p of [['README.md'],['dev/version.json'],['dev/src/pwa/sw.js'],['dev/src/styles/campaign20.css'],['dev/tests/smoke/dom.mjs'],['unknown']]){
  const plan=classify(p);assert.equal(checkGate(needs(plan)).mode,plan.mode);
  for(const key of JOBS){
@@ -25,6 +25,16 @@ for(const p of [['README.md'],['dev/version.json'],['dev/src/pwa/sw.js'],['dev/s
   for(const result of ['failure','cancelled',plan.groups.includes(key)?'skipped':'success']){n=needs(plan);n[key].result=result;assert.throws(()=>checkGate(n));}
  }
  const n=needs(plan);n.plan.result='failure';assert.throws(()=>checkGate(n));
+}
+// ARCH-01D must never be inherited or skipped: docs, reused artifacts and real source builds
+// all require a fresh strict source-boundary result before passing the final gate.
+for (const plan of [classify(['dev/docs/README.md']), classify(['dev/version.json']), classify(['dev/src/data/story.js'])]) {
+  const missing=needs(plan);delete missing['arch-strict'];
+  assert.throws(()=>checkGate(missing),/ARCH-01D/);
+  for(const result of ['failure','cancelled','skipped']){
+    const broken=needs(plan);broken['arch-strict'].result=result;
+    assert.throws(()=>checkGate(broken),/ARCH-01D/);
+  }
 }
 assert.throws(()=>validatePlan({...classify(['unknown']),groups:['build']}));
 assert.throws(()=>validatePlan({...classify(['dev/version.json']),coverage:JOBS}),'fresh release cannot certify tests it did not run');
@@ -70,6 +80,14 @@ console.log('PASS CI scope/gate/input keys: docs-after-code, version-only behavi
 // A reuse run has intentionally skipped ancestors; publication must depend on
 // the explicit plan/gate results, while still refusing canceled workflows.
 const workflow=fs.readFileSync(new URL('../../../.github/workflows/validate-pwa.yml',import.meta.url),'utf8');
+const strict=workflow.match(/^  arch-strict:\n([\s\S]*?)^  build:/m)?.[1];
+assert.ok(strict,'dedicated strict job must exist outside scope/reuse selection');
+assert.match(strict,/node tools\/check-deps\.mjs --strict/);
+assert.match(strict,/node tools\/check-arch-imports\.mjs --strict/);
+assert.match(strict,/node tests\/ci\/arch01d-strict-gate\.mjs/);
+const finalNeeds=workflow.match(/^  gate:\n[\s\S]*?^    needs: \[([^\]]+)\]/m)?.[1];
+assert.ok(finalNeeds?.split(', ').includes('arch-strict'),'final gate must depend on ARCH-01D independently');
+assert.match(workflow,/^          node tools\/check-arch-imports\.mjs --strict$/m);
 const deploy=workflow.match(/^  deploy-pages:\n[\s\S]*?^    if: \$\{\{ (.*?) \}\}$/m)?.[1];
 assert.ok(deploy,'publication condition exists');
 assert.match(deploy,/!\s*cancelled\(\)/,'override implicit success() for skipped ancestors');

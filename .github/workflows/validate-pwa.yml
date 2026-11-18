@@ -59,6 +59,29 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node dev/tools/ci-plan.mjs
 
+  arch-strict:
+    name: ARCH-01D permanent strict architecture boundary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - name: Install isolated AST validator dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify zero baseline, strict regressions and negative fixtures
+        run: node tests/ci/arch01d-strict-gate.mjs
+      - name: Enforce zero forbidden import, DOM, Babylon or HTML violations
+        run: |
+          node tools/check-deps.mjs --strict
+          node tools/check-arch-imports.mjs --strict
+
   build:
     name: Build once + architecture + SHA-256 manifest
     needs: plan
@@ -78,12 +101,12 @@ jobs:
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: npm ci
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
-        run: node tools/check-deps.mjs
+        run: node tools/check-deps.mjs --strict
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-01 Acorn import-boundary regression gate
         run: |
           node tests/ci/arch-imports.mjs
-          node tools/check-arch-imports.mjs
+          node tools/check-arch-imports.mjs --strict
           node tests/ci/arch-init-graph.mjs
           node tests/ci/arch-stats-bootstrap.mjs
           node tools/arch-init-graph.mjs
@@ -926,7 +949,7 @@ jobs:
   gate:
     name: All required checks passed
     if: always()
-    needs: [plan, build, golden, pwa, ui, ui-campaign, campaign-lifecycle, ui-heroes, ui-arena, three-d, three-d-desktop, perf, bh8-preview, bh98-procedural, md-ult1, arena-animation, arena-ab]
+    needs: [plan, arch-strict, build, golden, pwa, ui, ui-campaign, campaign-lifecycle, ui-heroes, ui-arena, three-d, three-d-desktop, perf, bh8-preview, bh98-procedural, md-ult1, arena-animation, arena-ab]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
