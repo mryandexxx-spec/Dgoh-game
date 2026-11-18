@@ -90,6 +90,45 @@ A3 concept min-cut identifies **8** distinct UI edges; 1 order-only истори
 
 **Decision for A6:** Design + executable source-contract guard may be accepted as Stage A6 with CI; **not permission for Stage B1**, merge or publishing. If owner does **not** accept 47 ESM shifts / SCC membership shrink, stop and design a different composition solution rather than hiding drift or amending tests. Future project issue/PR must preserve this explicit handoff, with A6 report + CI immutable SHA.
 
-## Actual GitHub verification
+## Реальный CI A6: верификация и решение Stage A
 
-**PENDING**: append real run URL, exact code SHA, CI output, final docs-only SHA and actual gating evidence. Do not fabricate success.
+**Точный code+test HEAD `b68152a2e383b3b2fd9a455a8edea06c5e742bb0`** — [**GitHub Actions #44247930713 COMPLETED SUCCESS, attempt 1, все 19 обязательных jobs включая final gate `All required checks passed` SUCCESS**](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44247930713). Публикация PWA **SKIPPED**. Реальный `Build once + architecture + SHA-256 manifest` job **134611419915 SUCCESS**, в котором выполнялся новый A6 guard до real production build; полноценно прошли golden, Campaign 2.0 (210 missions), Conquest, PWA/offline/SW, WebGL MED/LOW/HIGH, camp/performance, E3 DOM, battle/arena. Это полный CI для ***неизменённой v134 игры плюс read-only диагностика***, а **НЕ** для внесённого в product кандидата B1. Original validated `dune-validated-build` artifact **ID 14402920760**, SHA-256 **`8cd01c6ab902b1511b1d17443e08388293826ca8cc5e77e228dbed93bef1b765`**, 188-файловый пакет PWA. Ни `dev/src`, `SPLIT`, version, golden, save, published Pages/SW не изменялись.
+
+**Реальный вывод нового A6 architecture gate в Actions log:**
+
+```json
+{
+  "main": "b3d65303130dbd385caaac299f1f2dfc0473cd8c",
+  "contractOwner": "ui/views/conq.js",
+  "originalSourceModules": 173,
+  "originalImports": 1000,
+  "frozenESM": 167,
+  "virtualESM": 167,
+  "shifted": 47,
+  "firstMismatch": 118,
+  "firstOld": "logic/trials.js",
+  "firstVirtual": "data/conquest-data.js",
+  "namedAPIEdges": 7,
+  "namedSymbols": 74,
+  "topLevelRegistrations": 3,
+  "sccOriginal": [106, 6],
+  "sccVirtual": [105, 6],
+  "expelled": ["data/conquest-data.js"],
+  "originalDebts": [
+    "data/conquest-data.js -> ui/overlays/celebrate.js",
+    "data/story.js -> assets/models.js"
+  ],
+  "virtualDebts": ["data/story.js -> assets/models.js"],
+  "baselineAndCandidateRegistrationsBeforeStart": true,
+  "sourceEdits": 0,
+  "stage": "A6 design only",
+  "realB1Go": false
+}
+```
+
+В guard были **три отдельные отрицательные in-memory мутации**: удаление именованного `CQ_SECT`-импорта, удаление `b3Pre(loadAssets3)`, удаление `rewardHooks.unlock=...`. Каждая проверка успешно обнаружила утрату соответствующего контракта. Имя консольного флага `twoNegativeContractMutationsDetected` — историческое короткое название поля, **тест фактически проверяет все три** через три `assert.throws`. В продакшн-файлы эти мутации не попадали.
+
+**Техническая готовность Stage A6: PASS только на уровне дизайна/исполняемого baseline+virtual контракта.** Границы допустимости реализации сформулированы и пока **НЕ утверждены владельцем**. B1 implementation remains **NO-GO**, пока не подтверждены explicit SCC-change, 47 ESM drifts, product/runtime tests на **реальном source candidate**, standalone+offline, visible NOTES, full Conquest gameplay, 3D EngineHost+protected Camp и physical iPhone/Safari. Оригинальный `main` продолжает содержать **2** source debts.
+
+**Final docs-only HEAD:** будет отдельно указан в PR/Issue после независимого `reuse/full` CI. Нельзя приписывать этому документационному коммиту новый полный WebGL прогон, если planner законно использует verified coverage real run #44247930713.
+
