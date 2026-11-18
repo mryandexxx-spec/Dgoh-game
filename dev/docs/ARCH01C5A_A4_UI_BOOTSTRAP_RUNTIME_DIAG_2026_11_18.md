@@ -50,7 +50,7 @@
 | Профиль `view` | `lobby` / `lobby` | `lobby` / `lobby` |
 | `CQ_SECT`, `CQ_DISKS` | 5 секторов / 23 диска в обеих | 5 / 23 в обеих |
 | `S` state keys | 69 / 69 | 71 / 71 |
-| `S.conq` save keys | идентичный список из 24 keys | идентичный список из 24 keys |
+| `S.conq` save keys | идентичный список из 25 keys | идентичный список из 25 keys |
 | `CELEB` / `NOTES` | 0 / 1 в обеих | 0 / 1 в обеих |
 | `notePoll(true), renderNotes(), showCeleb(), cqStatic()` | `ok, ok, ok, true` в обеих | то же |
 | `MutationObserver` | ровно один `body,childList,subtree` в обеих | то же |
