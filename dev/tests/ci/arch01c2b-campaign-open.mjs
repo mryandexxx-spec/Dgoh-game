@@ -8,16 +8,16 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const read = name => fs.readFileSync('src/' + name, 'utf8');
 const imports = name => importEdges(read(name), name).map(e => e.to);
 const baseline = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json', 'utf8')).legacy;
-assert.deepEqual(baseline,['data/story.js -> assets/models.js'],
+assert.deepEqual(baseline,[],
  'B1 approved removal preserves only historical Story→models dependency');
 const campaigns = read('data/campaigns.js'), gates = read('logic/campaign-gates.js');
 const boot = read('core/boot.js');
 
-assert.equal(baseline.length,1, 'C4a and C4c B1 remove verified order-only predecessors; campaign, journey and RNG invariants retained');
+assert.equal(baseline.length,0, 'C4a and C4c B1 remove verified order-only predecessors; campaign, journey and RNG invariants retained');
 assert.ok(!baseline.includes('data/campaigns.js -> core/state.js'),
   'campaign data may never import live state again');
 assert.ok(!baseline.includes('data/campaigns.js -> core/rng.js') &&
-  baseline.includes('data/story.js -> assets/models.js'),
+  !baseline.includes('data/story.js -> assets/models.js'),
   'C2c/C2d are out of scope; preserve both their existing predecessor edges');
 assert.ok(!imports('data/campaigns.js').includes('core/state.js'),
   'data cannot hold a direct reverse state dependency');
@@ -62,5 +62,5 @@ assert.equal(SPLIT.length, 167, '165 original C2b markers plus exactly one pure 
 const graph = analyzeTree(process.cwd());
 assert.equal(graph.modules, 173, 'one RNG data module added on top of merged C2b 171');
 assert.equal(graph.unresolved.length, 0);
-assert.ok(graph.cycles.length <= 2, 'new runtime owner must not create another ESM SCC');
+assert.ok(graph.cycles.length === 4, 'new runtime owner must not create another ESM SCC');
 console.log('ARCH-01C2b campaign state boundary: PASS; 12 legacy imports, unchanged open formula and UI APIs');

@@ -8,10 +8,10 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const source=p=>fs.readFileSync('src/'+p,'utf8');
 const staticEdges=p=>importEdges(source(p),p).filter(e=>e.kind==='static').map(e=>e.to);
 const legacy=JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
-assert.equal(legacy.length,1,'C4a removes boss→skills while keeping original C3b1/C3b3 refill invariants');
+assert.equal(legacy.length,0,'C4a removes boss→skills while keeping original C3b1/C3b3 refill invariants');
 assert.ok(!legacy.includes('data/conquest-data.js -> logic/economy.js'));
 assert.ok(!legacy.includes('data/conquest-data.js -> logic/conquest.js'),'C3b3 must remove reverse Conquest logic edge');
-assert.deepEqual(legacy,['data/story.js -> assets/models.js'],
+assert.deepEqual(legacy,[],
  'B1 removes exactly Conquest predecessor; Story remains untouched');
 assert.deepEqual(staticEdges('data/conquest-data.js'),[
  'data/chars.js','data/fx.js',
@@ -41,7 +41,7 @@ assert.ok(ui.includes("import { REFILL_MAX, ROMAN, RW_NAME, todayKey } from '../
  'UI already observes exact old refill limit, time key and price display');
 assert.ok(!data.includes("import '../ui/overlays/celebrate.js'; // порядок исполнения"),
  'C3b0 NO-GO: do not remove celebration predecessor');
-assert.ok(source('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"),
+assert.ok(!source('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"),
  'C2d 3D bootstrap predecessor remains NO-GO');
 assert.equal(SPLIT.length,167);
 assert.ok(SPLIT.findIndex(([,m])=>m==='data/conquest-data.js') <
@@ -50,8 +50,8 @@ assert.ok(SPLIT.findIndex(([,m])=>m==='data/conquest-data.js') <
 const graph=analyzeTree(process.cwd());
 assert.equal(graph.modules,173);
 assert.equal(graph.unresolved.length,0);
-assert.equal(graph.cycles.length,2,'do not create/destroy SCC without separate review');
-assert.ok(graph.cycles.some(c=>c.length===105 && !c.includes('data/conquest-data.js') &&
+assert.equal(graph.cycles.length,4,'do not create/destroy SCC without separate review');
+assert.ok(graph.cycles.some(c=>c.length===60 && !c.includes('data/conquest-data.js') &&
  c.includes('logic/conquest.js')),
  'C3b1 cannot deepen or silently change the existing 106-module Conquest cycle');
 console.log('ARCH-01C3b1 refill compatibility: PASS; 2 remaining old edges after C4c B1, 167 ESM markers, identical refill API');

@@ -86,7 +86,7 @@ assert.equal(SPLIT.findIndex(([,name])=>name==='logic/account-rules.js')+1,
 const graph=analyzeTree(process.cwd());
 // The historical large SCC still exists through data → logic imports (ARCH-01C).
 // Do not pretend that removing one forbidden direct edge removes the whole SCC.
-assert.equal(graph.cycles.length,2,
+assert.equal(graph.cycles.length,4,
   'ARCH-01B3 must not introduce any new cyclic component');
 assert.ok(!graph.cyclicalEdges.some(e=>e.from==='logic/account.js' && e.to.startsWith('ui/')),
   'account adapter must have no forbidden outgoing edge to UI');

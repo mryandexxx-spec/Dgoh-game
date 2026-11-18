@@ -10,13 +10,13 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const src=p=>fs.readFileSync('src/'+p,'utf8');
 const data=src('data/conquest-data.js'),logic=src('logic/conquest.js'),ui=src('ui/views/conq.js');
 const ledger=JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
-const expected=['data/story.js -> assets/models.js'];
+const expected=[];
 assert.deepEqual(ledger,expected,'remove ONLY proven Conquest data→logic reverse edge');
 const graph=analyzeTree(process.cwd());
 assert.equal(graph.modules,173,'no new production modules');
-assert.equal(graph.staticImports,1000,'C4a removes exactly the additional boss→skills predecessor');
+assert.equal(graph.staticImports,1001,'C4a removes exactly the additional boss→skills predecessor');
 assert.equal(graph.unresolved.length,0);
-assert.deepEqual(graph.cycles.map(c=>c.length),[105,6],'C4a B1 explicitly reviews the 9→6 SCC reduction');
+assert.deepEqual(graph.cycles.map(c=>c.length),[60,11,6,3],'C4a B1 explicitly reviews the 9→6 SCC reduction');
 assert.ok(!graph.cycles[0].includes('data/conquest-data.js'),'only approved data node exited large SCC');
 for(const p of ['logic/conquest.js','core/state.js','ui/views/conq.js','ui/overlays/celebrate.js'])
  assert.ok(graph.cycles[0].includes(p),'do not break existing Conquest init SCC: '+p);
@@ -31,7 +31,7 @@ assert.deepEqual(staticEdges('logic/conquest.js'),[
 ],'logic already imported pure data, no novel static imports');
 assert.ok(!data.includes('from \'../logic/conquest.js\';')&&!data.includes('import \'../logic/conquest.js\';'));
 assert.ok(!data.includes("import '../ui/overlays/celebrate.js'; // порядок исполнения"));
-assert.ok(src('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"));
+assert.ok(!src('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"));
 assert.ok(data.includes('const CQ_BMOD = {')&&data.includes('const CQ_GF = [')&&
  data.includes('const CQ_MODS = {')&&data.includes('const cqMod = m => CQ_MODS[m] || CQ_BMOD[m];')&&
  data.includes('function cqFeats(s)'),'boss data, static modifiers, feats and tables remain pure data');

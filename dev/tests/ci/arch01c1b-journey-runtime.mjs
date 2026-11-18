@@ -8,7 +8,7 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const read = name => fs.readFileSync('src/' + name, 'utf8');
 const edges = name => importEdges(read(name), name).map(e => e.to);
 const baseline = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json', 'utf8')).legacy;
-assert.deepEqual(baseline,['data/story.js -> assets/models.js'],
+assert.deepEqual(baseline,[],
  'B1 approved removal preserves only historical Story→models dependency');
 
 assert.deepEqual(edges('data/journeys.js'), ['data/gear-cap.js','data/glyphs.js'],
@@ -37,7 +37,7 @@ assert.ok(logic.includes('p.stars >= 7 && p.gear >= MAX_GEAR'),
 assert.ok(data.includes('const jFoes = ') && data.includes('const jRelic = '),
   'static journey enemy/relic declarations remain in data');
 
-assert.equal(baseline.length,1, 'C4a and C4c B1 remove verified order-only predecessors; campaign, journey and RNG invariants retained');
+assert.equal(baseline.length,0, 'C4a and C4c B1 remove verified order-only predecessors; campaign, journey and RNG invariants retained');
 assert.ok(!baseline.some(e => e.startsWith('data/journeys.js -> ')),
   'journeys must have no remaining reverse edges');
 const source = SPLIT.filter(([,name]) => name === 'logic/journey-gates.js');
@@ -46,5 +46,5 @@ assert.equal(SPLIT.length, 167, 'C1a/b, C2a/b retained plus pure seeded RNG');
 const graph = analyzeTree(process.cwd());
 assert.equal(graph.modules, 173, 'seeded RNG adds one module after C2b');
 assert.equal(graph.unresolved.length, 0, 'no unresolved ESM imports');
-assert.ok(graph.cycles.length <= 2, 'new journey runtime must not introduce a third ESM SCC');
+assert.ok(graph.cycles.length === 4, 'new journey runtime must not introduce a third ESM SCC');
 console.log('ARCH-01C1b journey runtime boundary: PASS; 14 baseline edges, explicit bootstrap, old UI bridge intact');

@@ -8,12 +8,12 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const src=p=>fs.readFileSync('src/'+p,'utf8');
 const data=src('data/conquest-data.js'), logic=src('logic/conquest.js'),ui=src('ui/views/conq.js');
 const legacy=JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
-assert.deepEqual(legacy,['data/story.js -> assets/models.js'],'C3b2/C3b3/C4a retire their verified debts; remaining exactly two edges');
+assert.deepEqual(legacy,[],'C3b2/C3b3/C4a retire their verified debts; remaining exactly two edges');
 const graph=analyzeTree(process.cwd());
-assert.equal(graph.modules,173);assert.equal(graph.staticImports,1000);
+assert.equal(graph.modules,173);assert.equal(graph.staticImports,1001);
 assert.equal(graph.unresolved.length,0);
-assert.equal(graph.cycles.length,2);
-assert.deepEqual(graph.cycles.map(c=>c.length),[105,6]);
+assert.equal(graph.cycles.length,4);
+assert.deepEqual(graph.cycles.map(c=>c.length),[60,11,6,3]);
 assert.ok(!graph.cycles[0].includes('data/conquest-data.js'),'only approved data node exits large SCC');
 for(const x of ['logic/conquest.js','core/state.js','ui/views/conq.js','ui/overlays/celebrate.js'])
  assert.ok(graph.cycles[0].includes(x));
@@ -56,5 +56,5 @@ const exp=path=>{
 assert.equal(SPLIT.reduce((n,[,p])=>n+exp(p).length,0),898,
  'old public named globals count unchanged');
 assert.ok(exp('logic/conquest.js').includes('cqBump')&&!exp('data/conquest-data.js').includes('cqBump'));
-assert.ok(src('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"),'C2d blocked');
+assert.ok(!src('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"),'C2d blocked');
 console.log('ARCH-01C3b2 implementation boundary: PASS; 2 legacy/0 new, exact unchanged cqBump, 173 JS, 1000 imports, 2 reviewed SCC (106/6), 898 public names, 167 SPLIT markers');

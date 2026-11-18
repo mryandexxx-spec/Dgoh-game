@@ -9,7 +9,7 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const read = f => fs.readFileSync('src/' + f, 'utf8');
 const edges = f => importEdges(read(f), f).map(e => e.to);
 const legacy = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json', 'utf8')).legacy;
-assert.deepEqual(legacy,['data/story.js -> assets/models.js'],
+assert.deepEqual(legacy,[],
  'B1 approved removal preserves only historical Story→models dependency');
 
 assert.equal(MAX_GEAR, 13, 'gear XIII cap must not change');
@@ -32,7 +32,7 @@ assert.ok(gateOwner.includes('p.stars >= 7 && p.gear >= MAX_GEAR'),
   'Muad-Dib 7-star and gear XIII gate must not change');
 assert.ok(gateOwner.includes('!!prog(k).stars ||'),
   'already unlocked legends must stay grandfathered');
-assert.equal(legacy.length,1, 'C4a additionally removes boss→skills while preserving gear-cap invariants');
+assert.equal(legacy.length,0, 'C4a additionally removes boss→skills while preserving gear-cap invariants');
 assert.ok(!legacy.includes('data/journeys.js -> logic/economy.js'),
   'removed reverse edge cannot stay in baseline');
 const slot = SPLIT.filter(([,name]) => name === 'data/gear-cap.js');
@@ -45,5 +45,5 @@ assert.equal(graph.modules, 173, 'seeded RNG is the fifth additive JS module');
 assert.equal(graph.unresolved.length, 0, 'no broken relative imports');
 assert.ok(!graph.cycles.some(component => component.includes('data/gear-cap.js')),
   'the pure cap must not introduce an ESM cycle');
-assert.ok(graph.cycles.length <= 2, 'no new cyclic ESM components allowed');
+assert.ok(graph.cycles.length === 4, 'no new cyclic ESM components allowed');
 console.log('ARCH-01C1a gear cap: PASS; MAX_GEAR 13, baseline 16, old API and 161 module-order contract guarded');

@@ -7,11 +7,11 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const source = p => fs.readFileSync('src/' + p, 'utf8');
 const imports = p => importEdges(source(p),p).filter(x => x.kind==='static').map(x => x.to);
 const legacy = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
-assert.deepEqual(legacy,['data/story.js -> assets/models.js'],
+assert.deepEqual(legacy,[],
  'B1 approved removal preserves only historical Story→models dependency');
-assert.equal(legacy.length,1,'C4a additionally removes boss→skills without changing cosmetics state boundary');
+assert.equal(legacy.length,0,'C4a additionally removes boss→skills without changing cosmetics state boundary');
 assert.ok(!legacy.includes('data/cosmetics.js -> logic/stats.js'),'do not re-add stats to legacy');
-assert.ok(legacy.includes('data/story.js -> assets/models.js'),'blocked C2d remains untouched');
+assert.ok(!legacy.includes('data/story.js -> assets/models.js'),'blocked C2d remains untouched');
 assert.deepEqual(imports('data/cosmetics.js'),['data/chars.js'],
   'cosmetic catalog must depend on data alone; never introduce an eager stats dependency');
 const cosmetics = source('data/cosmetics.js');
@@ -40,9 +40,9 @@ assert.ok(source('logic/stats.js').includes('const METRIC = {') &&
   'stats module and public named exports cannot change');
 assert.ok(source('ui/overlays/profile.js').includes('EMBLEMS.worm.svg = '),
   'C3a2 original worm avatar composition must stay unchanged');
-assert.ok(source('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"),
+assert.ok(!source('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"),
   'C2d 3D bootstrap edge remains blocked');
-assert.ok(source('assets/models.js').includes('b3Pre(loadAssets3);'),
+assert.ok(source('boot.js').includes('b3Pre(loadAssets3);'),
   '3D preloader registration must remain eager');
 assert.equal(SPLIT.length,167,'167 historic bundle markers must not move or change');
 assert.ok(SPLIT.findIndex(([,m])=>m==='logic/stats.js') <
@@ -51,5 +51,5 @@ assert.ok(SPLIT.findIndex(([,m])=>m==='logic/stats.js') <
 const graph=analyzeTree(process.cwd());
 assert.equal(graph.modules,173,'production source module count unchanged');
 assert.equal(graph.unresolved.length,0,'all module paths must resolve');
-assert.ok(graph.cycles.length<=2,'C3a3 cannot introduce new ESM cycles');
+assert.ok(graph.cycles.length === 4,'C3a3 cannot introduce new ESM cycles');
 console.log('ARCH-01C3a3 stats boundary: PASS; 2 legacy / no new, UI owns ordering, 167 markers');

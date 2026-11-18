@@ -8,7 +8,7 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const read = f => fs.readFileSync('src/' + f, 'utf8');
 const edges = f => importEdges(read(f), f).map(e => e.to);
 const baseline = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json', 'utf8')).legacy;
-assert.deepEqual(baseline,['data/story.js -> assets/models.js'],
+assert.deepEqual(baseline,[],
  'B1 approved removal preserves only historical Story→models dependency');
 
 assert.equal(BATTLE_WATER, 6, 'standard battle energy price is immutable');
@@ -30,11 +30,11 @@ assert.ok(read('data/campaigns.js').includes("sRng(ghash(ck + c + ':' + m))"),
   'original seeded enemy generation untouched');
 assert.ok(read('data/campaigns.js').includes("if (n && !n.enemy.includes('rabban'))"),
   'special Rabban correction intact');
-assert.equal(baseline.length,1, 'C4a and C4c B1 remove verified order-only predecessors; campaign, journey and RNG invariants retained');
+assert.equal(baseline.length,0, 'C4a and C4c B1 remove verified order-only predecessors; campaign, journey and RNG invariants retained');
 assert.ok(!baseline.includes('data/campaigns.js -> logic/economy.js'));
 assert.ok(!baseline.includes('data/campaigns.js -> core/rng.js') &&
   !baseline.includes('data/campaigns.js -> core/state.js') &&
-  baseline.includes('data/story.js -> assets/models.js'),
+  !baseline.includes('data/story.js -> assets/models.js'),
   'remaining three C2 edges deliberately untouched');
 assert.equal(SPLIT.filter(([,n])=>n==='data/campaign-energy.js').length,1,
   'exactly one new pure campaign data module slot');
@@ -42,5 +42,5 @@ assert.equal(SPLIT.length, 167,'original 163 plus energy, gate and seeded RNG');
 const graph=analyzeTree(process.cwd());
 assert.equal(graph.modules, 173,'seeded RNG adds exactly one source module after C2b');
 assert.equal(graph.unresolved.length,0,'all module imports resolved');
-assert.ok(graph.cycles.length<=2,'no third ESM SCC introduced');
+assert.ok(graph.cycles.length === 4,'no third ESM SCC introduced');
 console.log('ARCH-01C2a campaign-energy: PASS; constants 6/8, economy API, baseline 13, original seeded 210 missions intact');

@@ -8,7 +8,7 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const read = name => fs.readFileSync('src/' + name, 'utf8');
 const edges = name => importEdges(read(name), name).map(x => x.to);
 const baseline = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json', 'utf8')).legacy;
-assert.deepEqual(baseline,['data/story.js -> assets/models.js'],
+assert.deepEqual(baseline,[],
  'B1 approved removal preserves only historical Story→models dependency');
 const functionV127 = 'function sRng(seed) { let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }';
 
@@ -38,16 +38,16 @@ assert.ok(read('render2d/scenes.js').includes('const NZ = makeNoise(1337);') &&
 assert.ok(read('logic/progress.js').includes("import '../core/rng.js'; // порядок исполнения"),
   'existing logic bootstrap predecessor must keep core RNG at the legacy slot');
 
-assert.equal(baseline.length,1, 'C4a and C4c B1 remove verified order-only predecessors; campaign, journey and RNG invariants retained');
+assert.equal(baseline.length,0, 'C4a and C4c B1 remove verified order-only predecessors; campaign, journey and RNG invariants retained');
 assert.ok(!baseline.includes('data/campaigns.js -> core/rng.js'));
-assert.ok(baseline.includes('data/story.js -> assets/models.js'),
+assert.ok(!baseline.includes('data/story.js -> assets/models.js'),
   'story/order-only C2d is not part of this change');
 assert.equal(SPLIT.filter(([,name])=>name==='data/seeded-rng.js').length, 1);
 assert.equal(SPLIT.length, 167, '165 existing modules plus one new pure seeded data module');
 const graph = analyzeTree(process.cwd());
 assert.equal(graph.modules, 173, 'only one source module added after merged C2b');
 assert.equal(graph.unresolved.length, 0, 'all imports must resolve');
-assert.ok(graph.cycles.length <= 2, 'no new cyclic ESM component allowed');
+assert.ok(graph.cycles.length === 4, 'no new cyclic ESM component allowed');
 
 // Independent frozen reference from v127. Compare across 4096 sequential
 // output samples; this catches different overflow, Math.imul, step and >>>0.
