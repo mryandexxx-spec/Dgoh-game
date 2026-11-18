@@ -142,6 +142,8 @@ async function bundle(patches=new Map(),synthetic=null) {
     if(synthetic) {
       b.onResolve({filter:/^\.\/ui\/bootstrap\/asset-bootstrap\.js$/},args=>({
         path:path.join(SRC,'ui/bootstrap/asset-bootstrap.js'),namespace:'arch-a2'}));
+      b.onResolve({filter:/^\.\./,namespace:'arch-a2'},args=>({
+        path:path.resolve(path.dirname(args.importer),args.path),namespace:'file'}));
       b.onLoad({filter:/.*/,namespace:'arch-a2'},()=>({
         contents:synthetic,loader:'js',resolveDir:path.join(SRC,'ui/bootstrap')}));
     }
