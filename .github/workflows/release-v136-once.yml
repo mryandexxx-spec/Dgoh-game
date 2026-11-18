@@ -1,0 +1,73 @@
+name: One-time owner-approved ARCH-01C5b-B1 v136 publication
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - dev/docs/ARCH01C5B_B1_V136_RELEASE_HANDOFF_2026_11_18.md
+      - .github/workflows/release-v136-once.yml
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: arch01c5b-v136-one-shot
+  cancel-in-progress: false
+
+jobs:
+  publish-v136-once:
+    name: Dispatch owner-approved validated v136 exactly once
+    if: "${{ github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release(arch): publish v136') }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+      - name: Fail closed on exact release commit, immutable B1 and old Pages root
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_RUN_ATTEMPT" = '1'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git show --format=%s -s HEAD)" = 'release(arch): publish v136'
+          test "$(git rev-parse HEAD^)" = '48565de6ee59499f7f54c40e2248f47cef5cd557'
+          test "$(tr -d '\n' < dev/version.json)" = '{"v":136}'
+          grep -Fq "const VER = 'efc55b7635';" sw.js
+          test "$(git hash-object sw.js)" = 'f14405c1ff47fb7ad323d7cf7a6746538674d24f'
+          test "$(git diff --name-only HEAD^ HEAD | LC_ALL=C sort)" = "$(printf '%s\n' \
+            .github/workflows/release-v136-once.yml \
+            dev/CHANGES_STATUS.md \
+            dev/docs/ARCH01C5B_B1_V136_RELEASE_HANDOFF_2026_11_18.md \
+            dev/version.json | LC_ALL=C sort)"
+          test "$(git hash-object dev/src/data/story.js)" = 'bc44559fe165aca321b8800e09ed1d0fb3242a2c'
+          test "$(git hash-object dev/src/assets/models.js)" = 'cc5be92e23938376308d9118973e5badf9941392'
+          test "$(git hash-object dev/src/boot.js)" = '36844ea06b11eefdba7cfb526ce9525415d1fd4a'
+          test "$(git hash-object dev/src/render3d/scenes/camp.js)" = '83d05b1a76509c511286bbc2d3f4f020f61d84bb'
+          test "$(git hash-object dev/tools/split.config.mjs)" = 'd180c3c2c4948ec33c9ce0d7f7d9bbddcf694e25'
+          test "$(git hash-object dev/tools/arch-import-baseline.json)" = 'fbf40920c7092eea83238d1320bb188fd8dedc6e'
+          test "$(git hash-object dev/tests/ci/arch01c5b-b1-proposed-order.json)" = 'f817f3df91dc75247e049a0e4d512676d2de3fdf'
+          test "$(git hash-object dev/tests/ci/arch01c5b-b1-v135-order.json)" = '2926eda1c8de7258460c35be8b7541d46261b659'
+          test "$(git hash-object dev/tests/ci/arch01c5b-b1-real-bootstrap-contract.mjs)" = 'd4d8aa04329679a69da16589e9609e68df80bf9b'
+          test "$(git hash-object dev/tests/ci/arch01c5a-b1-real-lifecycle.mjs)" = '119c4ab0c4595b0039e55d0c9ae7deabd680e93c'
+          test "$(git hash-object .github/workflows/validate-pwa.yml)" = 'd6478fac5f9d1ff57c4ddac9174664d0ff2c0392'
+          ! grep -Fq "import '../assets/models.js'" dev/src/data/story.js
+          ! grep -Fq 'b3Pre(loadAssets3);' dev/src/assets/models.js
+          grep -Fq 'b3Pre(loadAssets3);' dev/src/boot.js
+          node - <<'NODE'
+          const fs=require('fs'),crypto=require('crypto');
+          const dev='dev/';
+          const baseline=JSON.parse(fs.readFileSync(dev+'tools/arch-import-baseline.json','utf8'));
+          if(JSON.stringify(baseline.legacy)!=='[]')throw Error('Reverse data dependency was restored');
+          const old=JSON.parse(fs.readFileSync(dev+'tests/ci/arch01c5b-b1-v135-order.json','utf8'));
+          const current=JSON.parse(fs.readFileSync(dev+'tests/ci/arch01c5b-b1-proposed-order.json','utf8'));
+          const hash=x=>crypto.createHash('sha256').update(JSON.stringify(x)).digest('hex');
+          if(old.length!==167||current.length!==167||old.filter((p,i)=>current[i]!==p).length!==62)throw Error('ESM marker migration drift');
+          if(hash(old)!=='385d726d8a51d0b4b270dea36d1949e74ddeef360895d3ca536a285cdc621df3'||hash(current)!=='8dfc01f4eec407a2b09bfc116fe299ad6a346c834156fcf805a71ca3d1652695')throw Error('ESM fingerprint changed');
+          NODE
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          echo "v136 one-shot guard passed. Dispatching official validated publish for main $GITHUB_SHA"
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/validate-pwa.yml/dispatches" -f ref=main -f 'inputs[publish]=true'
+          echo 'Official workflow_dispatch publish=true requested. Require full CI and independent Pages verification.'
