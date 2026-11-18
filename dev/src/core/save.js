@@ -74,15 +74,88 @@ function fillSave(s) {
   }
   return s;
 }
-function loadSave() {
-  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && s.v === 1) { for (const c of CHARS) s.roster[c.id] ||= { shards: 0, stars: 0, lvl: 1, gear: 1 }; return fillSave(s); } } catch (e) {}
-  return null;
+// ARCH-02B1: the only condition that permits newSave() is a confirmed null
+// from Storage.getItem. Do not conflate missing, denied, invalid or newer data.
+// Use permissive v1 optional-field handling; old snapshots remain byte-compatible.
+const saveRecord = x => !!x && typeof x === 'object' && !Array.isArray(x);
+const saveQuantity = x => typeof x === 'number' && Number.isFinite(x) && x >= 0;
+function validSaveV1(s) {
+  if (!saveRecord(s) || s.v !== 1 || !saveRecord(s.roster)) return false;
+  for (const k of ['water', 'solari', 'plast']) if (!saveQuantity(s[k])) return false;
+  for (const k of ['candle', 'cry', 'folio', 'seal', 'rid', 'wol', 'core', 'teeth'])
+    if (k in s && !saveQuantity(s[k])) return false;
+  for (const k of ['cleared', 'daily', 'login', 'conq', 'journey', 'journeys', 'migrations', 'inv', 'gearParts', 'gearOwned', 'cryClaim', 'sealClaim', 'refills', 'buys'])
+    if (k in s && s[k] !== null && !saveRecord(s[k])) return false;
+  for (const k of ['squad', 'squadD', 'squadC', 'raidPick', 'jPick'])
+    if (k in s && !Array.isArray(s[k])) return false;
+  // Live metaFill initializes squadTr as a map of trial squads, not an array.
+  // Old migration code also tolerates an array; never reject game-written v1.
+  if ('squadTr' in s && !saveRecord(s.squadTr) && !Array.isArray(s.squadTr)) return false;
+  for (const hero of Object.values(s.roster)) {
+    if (!saveRecord(hero)) return false;
+    for (const k of ['shards', 'stars', 'lvl', 'gear']) if (k in hero && !saveQuantity(hero[k])) return false;
+    if ('eq' in hero && (!Array.isArray(hero.eq) || hero.eq.length !== 6)) return false;
+    if ('sk' in hero && !saveRecord(hero.sk)) return false;
+  }
+  return true;
 }
-function persist0() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+function readSave() {
+  let raw;
+  try { raw = localStorage.getItem(SAVE_KEY); }
+  catch (e) { return { status: 'unavailable', error: (e && e.name) || 'Error' }; }
+  if (raw === null) return { status: 'missing' };
+  let s;
+  try { s = JSON.parse(raw); } catch (e) { return { status: 'corrupt', raw }; }
+  if (!saveRecord(s) || !Object.prototype.hasOwnProperty.call(s, 'v'))
+    return { status: 'invalid', raw };
+  if (s.v !== 1) return { status: 'unsupported', raw };
+  if (!validSaveV1(s)) return { status: 'invalid', raw };
+  try {
+    for (const c of CHARS) s.roster[c.id] ||= { shards: 0, stars: 0, lvl: 1, gear: 1 };
+    const filled = fillSave(s); // parsed copy; never mutate raw storage bytes
+    if (!validSaveV1(filled)) return { status: 'invalid', raw };
+    return { status: 'ok', save: filled };
+  } catch (e) { return { status: 'invalid', raw }; }
+}
+// Compatibility API for legacy golden, other callers and live runtime.
+// boot explicitly requests typed result to avoid the old null -> newSave hazard.
+function loadSave(details = false) {
+  const outcome = readSave();
+  return details ? outcome : outcome.status === 'ok' ? outcome.save : null;
+}
+let persistHook = null; // UI notifications; no core -> ui import
+let persistErrorHook = null; // boot registers a separate blocking recovery UI
+function saveWriteFailure(status, e) {
+  const result = { ok: false, status, error: (e && e.name) || 'Error' };
+  if (persistErrorHook) persistErrorHook(result);
+  return result;
+}
+function persist0() {
+  let json;
+  try {
+    json = JSON.stringify(S);
+    if (typeof json !== 'string') return saveWriteFailure('serialization');
+  } catch (e) { return saveWriteFailure('serialization', e); }
+  try { localStorage.setItem(SAVE_KEY, json); }
+  catch (e) {
+    const kind = e && e.name;
+    return saveWriteFailure(kind === 'QuotaExceededError' ? 'quota' :
+      kind === 'SecurityError' ? 'security' : 'write-failed', e);
+  }
+  return { ok: true, status: 'ok' };
+}
 let notePend = 0;
-function persist() { persist0(); if (!notePend) notePend = setTimeout(() => { notePend = 0; if (persistHook) persistHook(); }, 60); }
-let persistHook = null; // ui/notifications подписывает notePoll (core не импортирует ui)
-const onPersist = f => { persistHook = f; };
+function persist() {
+  const result = persist0(); // synchronous write; only UI hook is scheduled
+  if (result.ok && !notePend) notePend = setTimeout(() => {
+    notePend = 0; if (persistHook) persistHook();
+  }, 60);
+  return result;
+}
+const onPersist = (f, onError) => {
+  if (f) persistHook = f;
+  if (onError) persistErrorHook = onError;
+};
 
 
 export { SAVE_KEY, newSave, fillSave, loadSave, persist0, notePend, persist, onPersist };
