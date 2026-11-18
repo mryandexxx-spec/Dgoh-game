@@ -1,0 +1,98 @@
+name: One-time owner-approved ARCH-02 v138 publication
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release-v138-once.yml
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: write
+
+concurrency:
+  group: arch02-v138-guard-single-dispatch
+  cancel-in-progress: false
+
+jobs:
+  publish-v138-once:
+    name: Verify owner-approved v138 merge and dispatch validated publish once
+    if: "${{ github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release(arch): publish v138') }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+      - name: Fail closed on exact v138 release source, old root, provenance and CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # One push-run only. Never dispatch again on a manual rerun or amended main.
+          test "$GITHUB_RUN_ATTEMPT" = '1'
+          test "$GITHUB_REF" = 'refs/heads/main'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git show -s --format=%s HEAD)" = 'release(arch): publish v138'
+          test "$(git rev-parse HEAD^)" = 'fd05a419d84fc920b20545500d1ecd6230b15b1d'
+          test "$(git rev-list --parents -n 1 HEAD | wc -w)" = '2'
+          test "$(tr -d '\n' < dev/version.json)" = '{"v":138}'
+          test "$(git show HEAD^:dev/version.json | tr -d '\n')" = '{"v":137}'
+
+          # Only the five reviewed release metadata paths plus this one-shot guard.
+          test "$(git diff --name-only HEAD^ HEAD | LC_ALL=C sort)" = "$(printf '%s\n' \
+            .github/workflows/release-v138-once.yml \
+            dev/CHANGES_STATUS.md \
+            dev/docs/ARCH02B0_STORAGE_FAULT_CHARACTERIZATION_HANDOFF_2026_11_18.md \
+            dev/docs/ARCH02B1_FAIL_CLOSED_SAVE_BOOT_HANDOFF_2026_11_18.md \
+            dev/docs/ARCH02_V138_RELEASE_PREPARATION_2026_11_18.md \
+            dev/version.json | LC_ALL=C sort)"
+
+          # v137 public PWA MUST remain present before the first official v138 publish.
+          grep -Fq "const VER = '0d811bb402';" sw.js
+          test "$(git rev-parse HEAD:sw.js)" = 'f79b5abf486fdeab5c6c77b1b24ac8bc79405d3f'
+          test "$(git rev-parse HEAD:app.js)" = '519bb57790b03f823df93a47574cf0de74ac2eba'
+          test "$(git rev-parse HEAD:dev/tools/arch-import-baseline.json)" = 'fbf40920c7092eea83238d1320bb188fd8dedc6e'
+          test "$(git rev-parse HEAD:dev/tests/ci/arch01c5b-b1-proposed-order.json)" = 'f817f3df91dc75247e049a0e4d512676d2de3fdf'
+
+          # Do not reintroduce data-layer edges or weaken strict CI.
+          node - <<'NODE'
+          const fs=require('fs');
+          const x=JSON.parse(fs.readFileSync('dev/tools/arch-import-baseline.json','utf8'));
+          if(!Array.isArray(x.legacy)||x.legacy.length)throw Error('Nonzero ARCH-01 legacy exceptions');
+          const o=JSON.parse(fs.readFileSync('dev/tests/ci/arch01c5b-b1-proposed-order.json','utf8'));
+          if(o.length!==167)throw Error('Unapproved ESM initialization marker count');
+          NODE
+          grep -Fq "node tools/check-deps.mjs --strict" .github/workflows/validate-pwa.yml
+          grep -Fq "node tools/check-arch-imports.mjs --strict" .github/workflows/validate-pwa.yml
+          grep -Fq "if(needs['arch-strict']?.result!=='success')" dev/tools/ci-gate.mjs
+
+          # Exact PR ancestry; GitHub's squash tree must equal the CI-tested head tree.
+          PR_JSON="$(gh api "repos/$GITHUB_REPOSITORY/pulls/197")"
+          echo "$PR_JSON" | jq -e --arg sha "$GITHUB_SHA" --arg repo "$GITHUB_REPOSITORY" '
+            .merged == true and .merge_commit_sha == $sha and
+            .base.ref == "main" and .head.repo.full_name == $repo and
+            .draft == false
+          ' >/dev/null
+          PR_HEAD="$(echo "$PR_JSON" | jq -r '.head.sha')"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$PR_HEAD" --jq '.tree.sha')" = "$(git rev-parse 'HEAD^{tree}')"
+          # Enforce a genuinely green final-head PR validation, not merely a stale run.
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?event=pull_request&per_page=100" |
+            jq -e --arg head "$PR_HEAD" '
+              .workflow_runs | any(.[]; .head_sha == $head and
+                .name == "Validate Dune GoH PWA" and
+                .status == "completed" and .conclusion == "success")
+            ' >/dev/null
+          # Hard-coded, already successful release candidate CI from before the guard.
+          # The check above separately covers the new final guard-inclusive head.
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/44365443338" |
+            jq -e '.conclusion == "success" and
+              .head_sha == "106d24c19e2d7fd2961dc6433b9d1c79deae32c9"' >/dev/null
+          # Reject racing changes, including an unrelated post-merge source update.
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          echo "v138 guard PASS: exact owner-approved release squash, CI tree, v137 root and 0 debt."
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/validate-pwa.yml/dispatches" \
+            -f ref=main -f 'inputs[publish]=true'
+          echo 'Official validated publish=true dispatched ONCE. Full gate and Pages deployment are separate mandatory verification.'

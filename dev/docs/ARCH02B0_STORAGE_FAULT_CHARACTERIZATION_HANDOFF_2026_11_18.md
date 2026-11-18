@@ -53,3 +53,8 @@ Suggested **smallest safe next packet** after owner approval is **fail-closed lo
 1. Check HEAD main and this Draft PR #195 actual files, commits and latest CI attempts/steps; do not assume queue/rerun succeeded.
 2. Read `dev/docs/ARCH02A_SOURCE_AUDIT_2026_11_18.md`, `ARCH02A_SAFETY_CONTRACT_2026_11_18.md`, `ARCH02A_REGRESSION_MATRIX_2026_11_18.md` from Draft PR #194, current `dev/ARCHITECTURE.md` and `dev/docs/ci/STAGE3_MINIMAL_SCENARIOS_AND_PROMOTION.md`.
 3. Owner approval is required before implementing B1. B0 itself contains **zero** game-runtime changes and needs separate explicit owner direction before merge/release/publish. CI failure remains a blocker, never reinterpret it as pass because the failure is probably unrelated.
+
+
+## 2026-11-18 post-audit merge update
+
+Owner explicitly authorized sequential integration. This B0 snapshot was merged as [PR #195](https://github.com/mryandexxx-spec/Dgoh-game/pull/195) with non-squash merge `f0be801cb3a9598e6e3a82bb4708def2487da1e9`; the exact-head full [B0 CI #44336566386](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44336566386) completed **SUCCESS** including `arch-strict` and final gate. The earlier queued/rerun/flaky Arena notes remain historical, not current final-head status. No game code changed by B0. B1 [PR #196](https://github.com/mryandexxx-spec/Dgoh-game/pull/196) was then merged on top of B0 as `fd05a419d84fc920b20545500d1ecd6230b15b1d`, with 23×2 **safe** acceptance replacing the B0 unsafe oracle in CI. This B0 document keeps forensic v137 evidence intact. [v138 release preparation](ARCH02_V138_RELEASE_PREPARATION_2026_11_18.md) is not a publish authorization.

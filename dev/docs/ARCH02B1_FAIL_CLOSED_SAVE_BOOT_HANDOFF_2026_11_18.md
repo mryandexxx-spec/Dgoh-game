@@ -51,3 +51,8 @@ All of these remain explicit ARCH-02C / ARCH-02D tasks with separate owner appro
 5. Next owner-approved task: **ARCH-02C** transactional checkpoint+backup and import safety (under separate design and approval) before claiming full save durability. Maintain golden and RNG/time parity.
 
 [Issue #193](https://github.com/mryandexxx-spec/Dgoh-game/issues/193), [B0 Draft PR #195](https://github.com/mryandexxx-spec/Dgoh-game/pull/195), [B1 Draft PR #196](https://github.com/mryandexxx-spec/Dgoh-game/pull/196).
+
+
+## 2026-11-18 post-audit merge update
+
+Owner ordered sequential merge and release **preparation**, not official Pages publishing. [PR #196](https://github.com/mryandexxx-spec/Dgoh-game/pull/196) was retargeted to `main` after B0 [PR #195 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/195), then merged with explicit final head `b8ade18d80d4ad6b6f2ea6661f57b76161552791`. Resulting B1 implementation merge SHA **`fd05a419d84fc920b20545500d1ecd6230b15b1d`**. [Full exact-head B1 CI #44356084531 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44356084531): 20 required jobs including final gate and `arch-strict`, **23 safe VM cases × PWA/artifact = 46**, all golden/WebGL/PWA/real Chrome Conquest reload. [Post-merge `main` CI #44364295828 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44364295828): independent strict and final gate with attested reuse of the exact full PR evidence. Public root is still v137; the v138 Draft release preparation [handoff](ARCH02_V138_RELEASE_PREPARATION_2026_11_18.md) is separate, neither released nor deployed. ARCH-02C transaction/import/backup and physical Safari checks remain OPEN.
