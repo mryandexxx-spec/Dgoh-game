@@ -173,6 +173,6 @@ for (const kind of ['QuotaExceededError', 'SecurityError']) {
 }
 
 assert.equal(new Set(findings).size, findings.length, 'unique scenario identifiers');
-assert.equal(findings.length, 16, 'all characterized cases must have executed');
+assert.equal(findings.length, 17, 'all characterized cases must have executed');
 console.log('ARCH-02B0: PASS ' + findings.length + ' isolated v137 observations on ' + html +
   '; EXPECTED UNSAFE BEHAVIOR IS NOT A SAFETY PASS; no real browser storage was accessed.');
