@@ -23,6 +23,12 @@
 
 Физический iPhone Safari/WebKit (844×390, 667×375), PWA standalone/offline, cold/warm, 3D, CELEB/NOTES и нагрев — **OPEN**, не выдавать Chromium CI за физическую проверку. Граф SCC не чистился и не признан безусловно безопасным; ARCH-01D — только постоянный gate против новых запрещённых импортов. Нет разрешения менять Camp.
 
+## Протокол отказа первого guard и безопасного исправления
+
+- [One-shot guard #44302475858](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44302475858) **FAIL CLOSED** на release source `d0e2458dc4b8c5933b13af1e18588b8c5121b208`: ошибочно проверял `dev/version.json = {"v":136}` при настоящей версии `{"v":137}`. Завершение до POST `actions/workflows/validate-pwa.yml/dispatches`; **официального publish=true не было**. Игровой код и root PWA не менялись.
+- Исправление — отдельный PR только из 2 файлов: этот handoff и `.github/workflows/release-v137-once.yml`. Новый guard разрешён **исключительно** для squash subject `fix(release): activate v137 guarded publish`, единственного родителя `d0e2458dc4b8c5933b13af1e18588b8c5121b208`, exact двух путей, и обеих реальных версий `v137` в `HEAD` и `HEAD^`. Остальные git-blob/ESM/SW/нулевой ledger/strict CI защиты сохраняются. Перед merge требуется новый полный зелёный CI **20 checks + final gate**. Дальнейший официальный deploy и независимые Pages — как в первоначальном протоколе, без обхода проверок.
+- Это исправление не изменяет `dev/version.json` повторно, `dev/src`, protected Camp, `SPLIT`, baseline, golden или root PWA.
+
 ## Реальные результаты публикации
 
 **PENDING** — не заполнять SUCCESS до официального publish, root SHA и независимого Pages deployment.
