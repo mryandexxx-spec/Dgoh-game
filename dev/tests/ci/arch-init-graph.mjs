@@ -88,3 +88,6 @@ await import('./arch01c4a-b1-boundary.mjs');
 
 // ARCH-01C4c B1: real root composition, frozen source bodies, AST graph/SCC invariants.
 await import('./arch01c4c-b1-boundary.mjs');
+
+// ARCH-01C5a-A4: frozen v134 in-memory UI bootstrap; never edit production source or SPLIT.
+await (await import('./arch01c5a-a4-virtual-bootstrap.mjs')).validateA4();
