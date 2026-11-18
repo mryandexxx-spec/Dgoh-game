@@ -92,3 +92,6 @@ await import('./arch01c4c-b1-boundary.mjs');
 // ARCH-01C5a-A6 is retained as historical, virtual-only design evidence.
 // ARCH-01C5a-B1: real-source executable contract replaces A6's frozen v134 assumptions.
 await import('./arch01c5a-b1-real-bootstrap-contract.mjs');
+
+// ARCH-01C5b-B1: independent production-esbuild proposed-order preflight on frozen v135.
+await import('./arch01c5b-b1-order-preflight.mjs');
