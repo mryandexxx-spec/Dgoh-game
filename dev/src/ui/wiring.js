@@ -49,4 +49,87 @@ SPOT_ICONS.feat = '<path d="M7 3h10v4a5 5 0 01-10 0z" fill="currentColor"/><path
 SPOT_ICONS.conq = '<path d="M5 21V4M5 4h11l-2 3.5 2 3.5H5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M9 21l3-6 3 6M12 15V12" stroke="currentColor" stroke-width="1.7" fill="none"/>';
 
 
-export { metaFill, metaClick };
+// ARCH-02B1 — UI-owned fail-closed recovery surface. NEVER offers "reset"
+// or clears the existing primary key. Uses textContent/value, not innerHTML,
+// for untrusted save bytes; keep protected Camp and normal screens unchanged.
+function showSaveRecovery(issue) {
+  const prior = document.getElementById('save-recovery');
+  if (prior) prior.remove();
+  const blocked = document.createElement('div');
+  blocked.id = 'save-recovery';
+  blocked.setAttribute('role', 'alertdialog');
+  blocked.setAttribute('aria-modal', 'true');
+  blocked.setAttribute('aria-labelledby', 'save-recovery-title');
+  blocked.style.cssText = 'position:fixed;inset:0;z-index:999999;background:#070d16f7;color:#f4e8d6;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;overflow:auto;font-family:system-ui,sans-serif;';
+  const panel = document.createElement('section');
+  panel.style.cssText = 'width:min(100%,590px);max-height:94vh;overflow:auto;background:#18232f;border:1px solid #9f8151;border-radius:14px;padding:20px;box-sizing:border-box;box-shadow:0 20px 65px #000b;';
+  const heading = document.createElement('h2');
+  heading.id = 'save-recovery-title';
+  heading.textContent = 'Сохранение требует восстановления';
+  heading.style.cssText = 'margin:0 0 12px;font-size:20px;color:#f4c987;';
+  const explanation = document.createElement('p');
+  const reason = {
+    unavailable: 'Браузер не разрешил прочитать сохранение.',
+    corrupt: 'Сохранение содержит повреждённый JSON.',
+    invalid: 'Данные сохранения не прошли проверку формата.',
+    unsupported: 'Сохранение создано несовместимой версией игры.',
+    quota: 'Не хватает места для записи прогресса.',
+    security: 'Браузер запретил записать прогресс.',
+    serialization: 'Не удалось подготовить прогресс для сохранения.',
+    'write-failed': 'Сохранение прогресса не удалось.'
+  };
+  explanation.textContent = (reason[issue.status] || 'Безопасный доступ к прогрессу недоступен.') +
+    ' Игра остановлена, чтобы не затереть данные. Не очищайте данные сайта и не переустанавливайте PWA.';
+  explanation.style.cssText = 'margin:0 0 14px;line-height:1.5;font-size:14px;';
+  panel.appendChild(heading);
+  panel.appendChild(explanation);
+
+  // A readable corrupt/unsupported original is exported EXACTLY as received.
+  // On failed write, the in-memory state can instead be exported in the
+  // existing UTF-8 base64 format. This is a rescue copy, not a durable commit.
+  let rescue = null, caption = '';
+  if (typeof issue.raw === 'string') {
+    rescue = issue.raw;
+    caption = 'Исходный JSON (не исправлен)';
+  } else if (!issue.ok && S) {
+    try {
+      rescue = btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+      caption = 'Аварийный код экспорта (текущая память)';
+    } catch (e) {}
+  }
+  if (rescue !== null) {
+    const title = document.createElement('p');
+    title.textContent = 'Сохраните эту копию вне браузера, прежде чем повторять попытку.';
+    title.style.cssText = 'font-size:13px;line-height:1.4;';
+    panel.appendChild(title);
+    const show = document.createElement('button');
+    show.type = 'button';
+    show.textContent = 'Показать данные для копирования';
+    show.style.cssText = 'background:#b08a56;color:#10141b;border:0;border-radius:7px;padding:9px 12px;font-weight:700;';
+    const field = document.createElement('textarea');
+    field.readOnly = true;
+    field.value = rescue;
+    field.setAttribute('aria-label', caption);
+    field.hidden = true;
+    field.style.cssText = 'width:100%;min-height:70px;max-height:120px;margin-top:10px;box-sizing:border-box;background:#09111b;color:#eee;border:1px solid #8d7b65;border-radius:6px;resize:vertical;';
+    show.addEventListener('click', () => {
+      field.hidden = false; field.focus(); field.select();
+    });
+    panel.appendChild(show); panel.appendChild(field);
+  }
+
+  const footer = document.createElement('p');
+  footer.textContent = 'Проверьте доступ к хранилищу или освободите место, затем повторите загрузку. При несовместимой версии сначала сохраните исходные данные.';
+  footer.style.cssText = 'margin:14px 0;font-size:13px;opacity:.85;line-height:1.4;';
+  panel.appendChild(footer);
+  const retry = document.createElement('button');
+  retry.type = 'button';
+  retry.textContent = 'Повторить загрузку';
+  retry.style.cssText = 'background:transparent;color:#f4d4a1;border:1px solid #a18b69;border-radius:7px;padding:9px 14px;';
+  retry.addEventListener('click', () => window.location.reload());
+  panel.appendChild(retry);
+  blocked.appendChild(panel);
+  document.body.appendChild(blocked);
+}
+
+export { metaFill, metaClick, showSaveRecovery };
