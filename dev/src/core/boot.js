@@ -4,7 +4,7 @@ import '../logic/journey-gates.js'; // ARCH-01C1b: register journey logic before
 import '../logic/campaign-gates.js'; // ARCH-01C2b: register campaign unlock rules before start()
 import { CQ_DISKS } from '../data/conquest-data.js';
 import { noteSnap } from '../ui/notifications.js';
-import { metaFill, showSaveRecovery } from '../ui/wiring.js';
+import { metaFill } from '../ui/wiring.js';
 import { loginCan, openCalendar } from '../ui/overlays/calendar.js';
 import { render } from '../ui/router.js';
 import { renderRes, toast } from '../ui/common.js';
@@ -27,13 +27,13 @@ function splashOff() {
 function start(data) {
   // B1: only confirmed absence creates a new account; bad or inaccessible bytes
   // stay untouched. Register the blocking UX before any startup write.
-  onPersist(null, showSaveRecovery);
+  onPersist(null, metaFill.showSaveRecovery);
   if (data && data.save) set_S(data.save); // hot reload compatibility
   else {
     const loaded = loadSave(true);
     if (loaded.status === 'ok') set_S(loaded.save);
     else if (loaded.status === 'missing') set_S(newSave());
-    else { showSaveRecovery(loaded); return; }
+    else { metaFill.showSaveRecovery(loaded); return; }
   }
   metaFill(S); if (!S.notes) noteSnap(true);
   if (!S.migB) { S.migB = 1; S.stats = S.stats || {}; let n = 0;
