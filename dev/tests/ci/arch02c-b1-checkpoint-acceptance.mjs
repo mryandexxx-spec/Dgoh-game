@@ -16,24 +16,24 @@ function seen(id,description){results.push(id);console.log('  '+id+' [CHECKPOINT
 function init(raw=old) {
  const g=loadGame(html,{seed:7});
  assert.equal(g.get('SAVE_KEY'),KEY);
- assert.equal(g.get('CHECKPOINT_KEY'),BACKUP);
+ assert.equal(g.run('loadSave.checkpoint.key'),BACKUP);
  if(raw!==null)g.store.set(KEY,raw);
  return g;
 }
 function next(raw=old,delta=47){const value=JSON.parse(raw);value.solari+=delta;return value;}
 function commit(g,args={expectedRaw:old,candidate:next()}) {
  g.ctx.__checkpointTestArg=args;
- const out=g.run('commitCheckpoint(__checkpointTestArg)');
+ const out=g.run('loadSave.checkpoint.commit(__checkpointTestArg)');
  delete g.ctx.__checkpointTestArg;
  return out;
 }
 function recover(g,args){
  g.ctx.__checkpointTestArg=args;
- const out=g.run('recoverCheckpoint(__checkpointTestArg)');
+ const out=g.run('loadSave.checkpoint.recover(__checkpointTestArg)');
  delete g.ctx.__checkpointTestArg;
  return out;
 }
-function inspect(g){return JSON.parse(g.run('JSON.stringify(inspectCheckpoint())'));}
+function inspect(g){return JSON.parse(g.run('JSON.stringify(loadSave.checkpoint.inspect())'));}
 function status(g){return g.run('loadSave(true).status');}
 function writeFault(g,key,kind='QuotaExceededError',afterWrite=false){
  const set=g.ctx.localStorage.setItem;
