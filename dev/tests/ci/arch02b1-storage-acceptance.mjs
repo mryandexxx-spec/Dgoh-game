@@ -179,6 +179,6 @@ for(const kind of ['QuotaExceededError','SecurityError']){
 }
 
 assert.equal(new Set(check).size,check.length);
-assert.equal(check.length,21,'complete B1 read/write fault acceptance matrix');
+assert.equal(check.length,22,'complete B1 read/write fault acceptance matrix');
 console.log('ARCH-02B1: SAFE PASS '+check.length+' fault and compatibility observations on '+html+
  '; VM storage only, no browser profile; transaction atomicity and multi-tab conflicts remain ARCH-02C.');
