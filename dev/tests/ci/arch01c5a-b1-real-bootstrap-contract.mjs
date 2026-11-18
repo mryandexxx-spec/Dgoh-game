@@ -166,6 +166,8 @@ const exports=SPLIT.flatMap(([,p])=>{
  return m?m[1].split(', '):[];
 });
 assert.equal(exports.length,898,'all public names preserved');
-console.log('ARCH01C5A_B1_APPROVED_NEW_ORDER='+JSON.stringify(newOrder));
-assert.deepEqual(SPLIT.map(([,p])=>p),newOrder,'approved real-source marker sequence must match canonical SPLIT');
+const approved=JSON.parse(fs.readFileSync(path.join(DEV,'tests/ci/arch01c5a-b1-approved-order.json'),'utf8'));
+assert.deepEqual(approved.length,167);
+assert.deepEqual(newOrder,approved,'real candidate ESM positions must equal independent first-run CI attestation');
+assert.deepEqual(SPLIT.map(([,p])=>p),approved,'SPLIT must exactly match independently attested approved order');
 console.log('ARCH-01C5a-B1 REAL contract PASS: 173 JS / 1000 imports / 167 names / 898 exports / 7 edges 74 names / 3 registrations / SCC [106,6]→[105,6] / 47 known ESM shifts / 1 Story debt');
