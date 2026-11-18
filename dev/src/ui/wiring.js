@@ -111,7 +111,8 @@ function metaClick(d) {
     pendingSaveImport = null;
     const state = loadSave.checkpoint.inspect();
     if (state.primary.status !== 'ok') {
-      toast('Проверенное сохранение недоступно: экспорт памяти нельзя считать сохранённым прогрессом.');
+      // Never silently substitute RAM for a trusted storage export.
+      $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>Проверенный экспорт недоступен</h3><p class="sub">Основное сохранение не удалось проверить. Не очищайте данные сайта. Можно отдельно выгрузить текущую память, но она НЕ подтверждена записью.</p><div class="acts"><button class="btn" data-saveunsaved="1">Аварийный экспорт памяти</button><button class="btn" data-iclose="1">Закрыть</button></div></div></div>';
       return true;
     }
     try {
