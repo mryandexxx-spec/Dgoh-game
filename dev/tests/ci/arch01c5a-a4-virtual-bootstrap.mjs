@@ -31,6 +31,20 @@ export const PROBE_MODULES=[
  'data/story.js','ui/router.js','ui/events.js','boot.js','ui/hero-window.js',
 ];
 const traceMarker=f=>';globalThis.__A4_MARK?.('+JSON.stringify(f)+');\n';
+function instrumentSource(f,source){
+ const wrap=(needle,label)=>{
+  assert.equal(source.split(needle).length,2,'must instrument exactly one '+label);
+  source=source.replace(needle,
+    "globalThis.__A4_MARK?.("+JSON.stringify(label+':before')+");\\n"+
+    needle+
+    "\\nglobalThis.__A4_MARK?.("+JSON.stringify(label+':after')+");");
+ };
+ if(f==='assets/models.js')wrap('b3Pre(loadAssets3);','models:b3Pre');
+ if(f==='ui/notifications.js')wrap('onPersist(notePoll);','notifications:onPersist');
+ if(f==='core/boot.js')wrap('function start(data) {','core/boot:start');
+ return source+traceMarker(f);
+}
+
 const STATIC=SPLIT.map(([,f])=>f);
 assert.equal(STATIC.length,167);
 assert.equal(new Set(STATIC).size,167);
@@ -87,7 +101,8 @@ export async function makeBundles({instrument=true}={}){
     const instrumented=instrument&&PROBE_MODULES.includes(f);
     if(patch!==undefined||instrumented){
      const source=patch??read(f);
-     return{contents:source+(instrumented?traceMarker(f):''),loader:'js',resolveDir:path.dirname(args.path)};
+     return{contents:instrumented?instrumentSource(f,source):source,
+       loader:'js',resolveDir:path.dirname(args.path)};
     }
    });
   }};
