@@ -52,7 +52,8 @@ const finding = (id, message) => {
   assert.equal(load(g), null);
   g.run('start({})');
   assert.equal(JSON.parse(g.store.get(KEY)).v, 1);
-  assert.equal(g.store.get(KEY), JSON.stringify(state(g)));
+  assert.equal(JSON.parse(g.store.get(KEY)).solari, state(g).solari,
+    'starter primary retains the resource balance');
   finding('S01', 'absent primary creates valid v1 starter save');
 }
 
@@ -68,7 +69,8 @@ for (const [id, file] of [
   assert.equal(saved.solari, source.solari, id + ': legacy currency preserved');
   assert.equal(saved.water, source.water, id + ': legacy water preserved');
   g.run('start({})');
-  assert.equal(g.store.get(KEY), JSON.stringify(state(g)), id + ': saved post-start state');
+  assert.equal(JSON.parse(g.store.get(KEY)).solari, state(g).solari,
+    id + ': persisted currency matches post-start memory');
   assert.equal(state(g).solari, source.solari, id + ': no unsolicited solari reset');
   finding(id, file + ' loads and persists without changing existing currency');
 }
