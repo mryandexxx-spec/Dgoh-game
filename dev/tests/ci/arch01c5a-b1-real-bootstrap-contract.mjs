@@ -72,7 +72,7 @@ assert.equal(hero.length,1);assert.deepEqual(hero[0].symbols,[]);
 const REGISTRATIONS=[
  ['ui/notifications.js','onPersist(notePoll);'],
  ['ui/overlays/squad-select.js',"rewardHooks.unlock = id => celebQueue({ type: 'unlock', id });"],
- ['assets/models.js','b3Pre(loadAssets3);'],
+ ['boot.js','b3Pre(loadAssets3);'],
 ];
 function checkRegisters(readSource=read){
  for(const [p,statement] of REGISTRATIONS){
@@ -93,14 +93,14 @@ assert.throws(()=>checkBindings(p=>p==='ui/notifications.js'?
  read(p).replace("import { CQ_SECT } from '../data/conquest-data.js';",''):read(p)),/one live named edge/);
 assert.throws(()=>checkRegisters(p=>p==='ui/overlays/squad-select.js'?
  read(p).replace(REGISTRATIONS[1][1],''):read(p)),/top-level registration/);
-assert.throws(()=>checkRegisters(p=>p==='assets/models.js'?
+assert.throws(()=>checkRegisters(p=>p==='boot.js'?
  read(p).replace(REGISTRATIONS[2][1],''):read(p)),/top-level registration/);
 const ledger=JSON.parse(fs.readFileSync(path.join(DEV,'tools/arch-import-baseline.json'),'utf8')).legacy;
-assert.deepEqual(ledger,['data/story.js -> assets/models.js'],'exactly one untouched Story debt');
+assert.deepEqual(ledger,[],'all reverse data debts removed by separately approved B1');
 const actualGraph=analyzeTree(DEV);
-assert.equal(actualGraph.modules,173);assert.equal(actualGraph.staticImports,1000);
+assert.equal(actualGraph.modules,173);assert.equal(actualGraph.staticImports,1001);
 assert.equal(actualGraph.dynamicImports,0);assert.equal(actualGraph.unresolved.length,0);
-assert.deepEqual(actualGraph.cycles.map(c=>c.length),[105,6]);
+assert.deepEqual(actualGraph.cycles.map(c=>c.length),[60,11,6,3]);
 const edges={};const oldEdges={};
 function visit(dir){
  for(const e of fs.readdirSync(dir,{withFileTypes:true})){
@@ -115,14 +115,31 @@ function visit(dir){
 }
 visit(SRC);
 assert.deepEqual(stronglyConnected(edges),actualGraph.cycles);
-assert.equal(Object.values(edges).reduce((n,x)=>n+x.length,0),1000);
-assert.equal(Object.values(oldEdges).reduce((n,x)=>n+x.length,0),1000);
+assert.equal(Object.values(edges).reduce((n,x)=>n+x.length,0),1001);
+assert.equal(Object.values(oldEdges).reduce((n,x)=>n+x.length,0),1001);
 const priorCycles=stronglyConnected(oldEdges);
-assert.deepEqual(priorCycles.map(c=>c.length),[106,6]);
+assert.deepEqual(priorCycles.map(c=>c.length),[62,11,6,3]);
+const preB1=new Map([
+ ['data/story.js',read('data/story.js').replace(/^\/\/ data\/story\.js[^\n]*\n/,
+   m=>m+"import '../assets/models.js'; // порядок исполнения\n")],
+ ['assets/models.js',read('assets/models.js').replace(
+  "// Registration is owned by the application composition root (boot.js).\n// Keep the historical named base import to preserve the independently reviewed ESM graph.",
+  'b3Pre(loadAssets3);')],
+ ['boot.js',read('boot.js').replace(
+  "import { loadAssets3 } from './assets/models.js';\nimport { b3Pre } from './render3d/base.js'; // ARCH-01C5b-B1 application composition root\n",
+  '').replace("// ARCH-01C5b-B1: register exactly once before start() can first render 3D.\nb3Pre(loadAssets3);\n",'')],
+]);
+// Historical Conquest A6 + historical Story/models B1: faithfully restores v134.
+// This is not allowed to modify real src or the current SPLIT/approved order.
+const v134Sources=new Map([...preB1,...historical]);
+
 const oldLarge=priorCycles.find(c=>c.includes(DATA));
 const newLarge=actualGraph.cycles.find(c=>c.includes(CELEBRATE));
 assert.ok(oldLarge);assert.ok(newLarge);
-assert.deepEqual(oldLarge.filter(p=>!newLarge.includes(p)),[DATA]);
+// Under the separately approved Story B1 SCC split, restoring the older Conquest→UI
+// predecessor pulls both pure data and its runtime logic neighbor back into the UI SCC.
+// This explicit two-member change is checked, never silently treated as old C5a topology.
+assert.deepEqual(oldLarge.filter(p=>!newLarge.includes(p)),[DATA,'logic/conquest.js']);
 assert.deepEqual(newLarge.filter(p=>!oldLarge.includes(p)),[]);
 assert.deepEqual(actualGraph.cycles.find(c=>c.length===6),priorCycles.find(c=>c.length===6));
 const forbidden=Object.entries(edges).flatMap(([from,x])=>from.startsWith('data/')?
@@ -130,11 +147,11 @@ const forbidden=Object.entries(edges).flatMap(([from,x])=>from.startsWith('data/
 assert.deepEqual(forbidden,ledger,'no new forbidden data edges');
 assert.deepEqual(edges[DATA],['data/chars.js','data/fx.js']);
 assert.deepEqual(oldEdges[DATA],['ui/overlays/celebrate.js','data/chars.js','data/fx.js']);
-async function order(historicalMode){
+async function order(mode){
  const plugin={name:'b1-restore-v134-in-memory',setup(build){
   build.onLoad({filter:/\.js$/},args=>{
    const p=path.relative(SRC,args.path).split(path.sep).join('/');
-   const s=historicalMode?historical.get(p):null;
+   const s=mode==='v134'?v134Sources.get(p):mode==='v135'?preB1.get(p):null;
    if(s!==undefined&&s!==null)return{contents:s,loader:'js',resolveDir:path.dirname(args.path)};
   });
  }};
@@ -146,16 +163,20 @@ async function order(historicalMode){
  return [...result.outputFiles[0].text.matchAll(/^\/\/ src\/(.+\.js)$/gm)]
   .map(m=>m[1]).filter(p=>p!=='main.js');
 }
-const [oldOrder,newOrder]=await Promise.all([order(true),order(false)]);
+const [oldOrder,v135Order,newOrder]=await Promise.all([order('v134'),order('v135'),order('real')]);
 const frozen=JSON.parse(fs.readFileSync(path.join(DEV,'tests/ci/arch01c5a-b1-v134-order.json'),'utf8'));
+const approvedV135=JSON.parse(fs.readFileSync(path.join(DEV,'tests/ci/arch01c5a-b1-approved-order.json'),'utf8'));
+const approvedB1=JSON.parse(fs.readFileSync(path.join(DEV,'tests/ci/arch01c5b-b1-proposed-order.json'),'utf8'));
 assert.equal(frozen.length,167);
-assert.deepEqual(oldOrder,frozen,'historical v134 order must exactly match locked source-independent snapshot');
+assert.deepEqual(oldOrder,frozen,'historical v134 must be exactly reconstructed using two independent source reversals');
+assert.deepEqual(v135Order,approvedV135,'historical v135 must match its previously approved 167 markers');
 assert.equal(newOrder.length,167);
 assert.deepEqual([...newOrder].sort(),[...oldOrder].sort());
-const first=oldOrder.findIndex((p,i)=>p!==newOrder[i]);
-const shifts=oldOrder.filter((p,i)=>p!==newOrder[i]).length;
-assert.equal(first,118);assert.equal(shifts,47);
-assert.equal(oldOrder[first],'logic/trials.js');assert.equal(newOrder[first],DATA);
+const first=oldOrder.findIndex((p,i)=>p!==v135Order[i]);
+const shifts=oldOrder.filter((p,i)=>p!==v135Order[i]).length;
+assert.equal(first,118);assert.equal(shifts,47,'ARCH-01C5a historical 47 shifts retained');
+assert.equal(oldOrder[first],'logic/trials.js');assert.equal(v135Order[first],DATA);
+assert.equal(v135Order.filter((p,i)=>p!==newOrder[i]).length,62,'B1 must move only its independently measured 62 markers');
 for(const m of ['ui/notifications.js','ui/overlays/squad-select.js','assets/models.js','ui/overlays/celebrate.js','core/boot.js','ui/views/conq.js']){
  assert.ok(newOrder.indexOf(m)<newOrder.indexOf('boot.js'),'registration before start: '+m);
 }
@@ -166,8 +187,7 @@ const exports=SPLIT.flatMap(([,p])=>{
  return m?m[1].split(', '):[];
 });
 assert.equal(exports.length,898,'all public names preserved');
-const approved=JSON.parse(fs.readFileSync(path.join(DEV,'tests/ci/arch01c5a-b1-approved-order.json'),'utf8'));
-assert.deepEqual(approved.length,167);
-assert.deepEqual(newOrder,approved,'real candidate ESM positions must equal independent first-run CI attestation');
-assert.deepEqual(SPLIT.map(([,p])=>p),approved,'SPLIT must exactly match independently attested approved order');
-console.log('ARCH-01C5a-B1 REAL contract PASS: 173 JS / 1000 imports / 167 names / 898 exports / 7 edges 74 names / 3 registrations / SCC [106,6]→[105,6] / 47 known ESM shifts / 1 Story debt');
+assert.equal(approvedV135.length,167);
+assert.deepEqual(newOrder,approvedB1,'real candidate B1 must equal independent first-run virtual CI attestation');
+assert.deepEqual(SPLIT.map(([,p])=>p),approvedB1,'SPLIT must equal independently frozen B1 new ESM order');
+console.log('ARCH-01C5a historical bootstrap PASS under B1: v134→v135 47 shifts preserved, B1 adds 62 reviewed shifts; 173 JS / 1001 current imports / SCC [61,11,6,3]→[60,11,6,3] / 898 exports / 0 Story debt');

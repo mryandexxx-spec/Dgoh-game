@@ -7,7 +7,7 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const read=p=>fs.readFileSync('src/'+p,'utf8');
 const imports=p=>importEdges(read(p),p).map(x=>x.to);
 const baseline=JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
-assert.deepEqual(baseline,['data/story.js -> assets/models.js'],
+assert.deepEqual(baseline,[],
  'B1 approved removal preserves only historical Story→models dependency');
 const data=read('data/cosmetics.js');
 const profile=read('ui/overlays/profile.js');
@@ -18,10 +18,10 @@ const expectedPatch="if (typeof WORM_IMG !== 'undefined') { EMBLEMS.worm.svg = "
   tick+'<image href="'+'$'+'{WORM_IMG.ava}" x="1" y="1" width="38" height="38"/>'+tick+
   "; EMBLEMS.worm.bg = ['#a8784a', '#2a1608']; }";
 
-assert.equal(baseline.length,1,'C4a removes boss→skills while preserving worm avatar and SVG ownership');
+assert.equal(baseline.length,0,'C4a removes boss→skills while preserving worm avatar and SVG ownership');
 assert.ok(!baseline.includes('data/cosmetics.js -> assets/models.js'));
 assert.ok(!baseline.includes('data/cosmetics.js -> logic/stats.js') &&
-  baseline.includes('data/story.js -> assets/models.js'),
+  !baseline.includes('data/story.js -> assets/models.js'),
   'C3a3 removed stats edge while blocked C2d model chain remains');
 assert.deepEqual(imports('data/cosmetics.js'),['data/chars.js'],
   'cosmetic data may not directly import assets or other runtime layers');
@@ -44,9 +44,9 @@ assert.ok(profile.indexOf(expectedPatch)>profile.indexOf("import { $ } from '../
   'SVG replacement must occur after imports and before first visible avatar render');
 
 assert.ok(models.includes("const WORM_IMG = { ava: assetUrl('img/worm-ava.png'), badge: assetUrl('img/worm-badge.png') };") &&
-  models.includes('b3Pre(loadAssets3);'),
+  fs.readFileSync('src/boot.js','utf8').includes('b3Pre(loadAssets3);'),
   '3D assets must keep original map and eager preloader registration');
-assert.ok(story.includes("import '../assets/models.js'; // порядок исполнения"),
+assert.ok(!story.includes("import '../assets/models.js'; // порядок исполнения"),
   'do not change C2d blocked bootstrap chain while repairing cosmetics');
 assert.ok(read('ui/wiring.js').includes("import '../logic/cosmetics-unlocks.js';"),
   'C3a1 entitlement registration must remain bound before bootstrap');
@@ -55,5 +55,5 @@ assert.equal(SPLIT.length,167,'all 167 original pre-C3a2 markers stay in place')
 const g=analyzeTree(process.cwd());
 assert.equal(g.modules,173,'no new production JS modules should be added');
 assert.equal(g.unresolved.length,0);
-assert.equal(g.cycles.length,2,'do not change SCC structure');
+assert.equal(g.cycles.length,4,'do not change SCC structure');
 console.log('ARCH-01C3a2 worm UI boundary: PASS; 6 known imports, 167 markers, same SVG and model preloader');

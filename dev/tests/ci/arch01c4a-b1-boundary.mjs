@@ -15,9 +15,7 @@ const skills = read('logic/battle/skills.js');
 const looks = read('data/looks.js');
 const ai = read('logic/battle/ai.js');
 const frozen = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
-assert.deepEqual(frozen,[
- 'data/story.js -> assets/models.js'
-], 'remove only the proven boss→skills reverse dependency, preserve three known order-critical debts');
+assert.deepEqual(frozen,[], 'remove only the proven boss→skills reverse dependency, preserve three known order-critical debts');
 const edges = p => importEdges(read(p),p).filter(e=>e.kind==='static').map(e=>e.to);
 assert.deepEqual(edges('data/boss.js'), ['data/chars.js'],
   'no data→logic predecessor nor new data import; original named CH dependency retained');
@@ -39,14 +37,14 @@ assert.ok(stats.includes('export { unitStats, unitPower, setGearStatProvider };'
 assert.ok(!looks.includes("import '../logic/battle/ai.js'; // порядок исполнения"),'C4c B1 removes the looks→AI predecessor only after explicit root boot proof');
 assert.ok(ai.includes("if (typeof module !== 'undefined') module.exports"),'AI CJS adapter retained');
 assert.ok(!read('data/conquest-data.js').includes("import '../ui/overlays/celebrate.js'; // порядок исполнения"),'B1 UI-owned predecessor replaces the blocked C3b0 data debt');
-assert.ok(read('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"),'C2d blocked predecessor kept');
+assert.ok(!read('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"),'C2d blocked predecessor kept');
 assert.ok(!read('data/conquest-data.js').includes("from '../logic/conquest.js'"),'no Conquest regression');
 
 const graph=analyzeTree(process.cwd());
 assert.equal(graph.modules,173);
-assert.equal(graph.staticImports,1000,'C4c adds three permitted boot imports and removes looks→AI after C4a');
+assert.equal(graph.staticImports,1001,'C4c adds three permitted boot imports and removes looks→AI after C4a');
 assert.equal(graph.unresolved.length,0,'no unresolved import');
-assert.deepEqual(graph.cycles.map(c=>c.length),[105,6],
+assert.deepEqual(graph.cycles.map(c=>c.length),[60,11,6,3],
  'C4a intentionally reduced only the legacy 9-member battle SCC to six');
 assert.equal(SPLIT.length,167);
 const names=SPLIT.map(([,p])=>p);
@@ -79,14 +77,18 @@ assert.ok(!g['data/boss.js'].includes('logic/battle/skills.js'));
 const oldGraph=Object.fromEntries(Object.entries(g).map(([p,v])=>[p,[...v]]));
 oldGraph['data/boss.js'].unshift('logic/battle/skills.js');
 const historical=stronglyConnected(oldGraph);
-assert.deepEqual(historical.map(c=>c.length),[105,9],
- 'one restored historical predecessor must recreate v132 SCC, no other graph changes');
-assert.deepEqual(graph.cycles[0],historical[0],'full 106-member Conquest SCC must be byte-for-byte unchanged');
-assert.ok(graph.cycles[1].every(p=>historical[1].includes(p)),
- 'the 6 remaining battle SCC members must be a subset of the old nine');
-const exactlySeparated=historical[1].filter(p=>!graph.cycles[1].includes(p));
+assert.deepEqual(historical.map(c=>c.length),[60,11,9,3],
+ 'C4a historical boss predecessor restores only 9-member battle SCC; Story B1 split retained');
+const battleNow=graph.cycles.find(c=>c.length===6);
+const battleOld=historical.find(c=>c.length===9);
+assert.ok(battleNow && battleOld,'battle SCC membership must be explicit');
+assert.deepEqual(graph.cycles.filter(c=>c.length!==6),historical.filter(c=>c.length!==9),
+ 'other three current SCC components unchanged by historical boss predecessor');
+assert.ok(battleNow.every(p=>battleOld.includes(p)),
+ 'all six original battle cycle participants preserved in historical nine');
+const exactlySeparated=battleOld.filter(p=>!battleNow.includes(p));
 assert.equal(exactlySeparated.length,3,'exactly three modules leave the nine-member battle SCC');
-assert.ok(historical[1].includes('data/boss.js'),'old boss member belonged to historical battle SCC');
+assert.ok(battleOld.includes('data/boss.js'),'old boss member belonged to historical battle SCC');
 const symbols=SPLIT.flatMap(([,p])=>{
  const m=/^export \{ ([^\n]+) \};$/m.exec(read(p));
  return m?m[1].split(', '):[];

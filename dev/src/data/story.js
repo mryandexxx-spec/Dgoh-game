@@ -1,5 +1,4 @@
 // data/story.js — строки 2671–2728 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import '../assets/models.js'; // порядок исполнения
 
 // ===== Campaign story, dialogues, biographies (original retelling, no quotations) =====
 // dlg: [speakerId, line, side] — side 'e' = enemy (right)
