@@ -88,3 +88,6 @@ await import('./arch01c4a-b1-boundary.mjs');
 
 // ARCH-01C4c B1: real root composition, frozen source bodies, AST graph/SCC invariants.
 await import('./arch01c4c-b1-boundary.mjs');
+
+// ARCH-01C5a-A5: virtual Conquest 47-marker graph invariant (read-only production source).
+await (await import('./arch01c5a-a5-virtual-bootstrap.mjs')).validateA5();
