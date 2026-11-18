@@ -131,6 +131,11 @@ jobs:
           node tests/ci/arch02c-b1-checkpoint-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b1-checkpoint-acceptance.mjs dist/artifact.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-02C-B2 safe import/export and fault acceptance (PWA + artifact)
+        run: |
+          node tests/ci/arch02c-b2-transfer-acceptance.mjs dist/pwa/index.html
+          node tests/ci/arch02c-b2-transfer-acceptance.mjs dist/artifact.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-01C2a all 210 mission costs (PWA + artifact)
         run: |
           node tests/arch01c2a-energy.mjs dist/pwa/index.html
