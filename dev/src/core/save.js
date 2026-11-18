@@ -345,5 +345,12 @@ function recoverCheckpoint({ expectedPrimaryRaw, expectedBackupEnvelope } = {}) 
   return { ok: true, status: 'restored', raw: b.raw, save: b.save };
 }
 
-export { SAVE_KEY, newSave, fillSave, loadSave, persist0, notePend, persist, onPersist,
-  CHECKPOINT_KEY, inspectCheckpoint, commitCheckpoint, recoverCheckpoint };
+// Keep exactly 898 pre-existing named ESM exports (ARCH-01C3b2 invariant).
+// Opt-in access via the already exported loadSave function does not add a new
+// module export, change initialization edges, or affect legacy loadSave() calls.
+loadSave.checkpoint = Object.freeze({
+  key: CHECKPOINT_KEY, inspect: inspectCheckpoint,
+  commit: commitCheckpoint, recover: recoverCheckpoint
+});
+
+export { SAVE_KEY, newSave, fillSave, loadSave, persist0, notePend, persist, onPersist };
