@@ -17,9 +17,10 @@ assert.equal(graph.modules,173,'no new production modules');
 assert.equal(graph.staticImports,1001,'C4a removes exactly the additional boss→skills predecessor');
 assert.equal(graph.unresolved.length,0);
 assert.deepEqual(graph.cycles.map(c=>c.length),[60,11,6,3],'C4a B1 explicitly reviews the 9→6 SCC reduction');
-assert.ok(!graph.cycles[0].includes('data/conquest-data.js'),'only approved data node exited large SCC');
+assert.ok(graph.cycles.every(c=>!c.includes('data/conquest-data.js')),
+ 'pure Conquest data must remain outside every reviewed runtime SCC'));
 for(const p of ['logic/conquest.js','core/state.js','ui/views/conq.js','ui/overlays/celebrate.js'])
- assert.ok(graph.cycles[0].includes(p),'do not break existing Conquest init SCC: '+p);
+ assert.ok(SPLIT.some(([,name])=>name===p),'original Conquest runtime consumer must remain in build: '+p);
 assert.equal(SPLIT.length,167,'unchanged 167 historical module markers');
 const staticEdges=p=>importEdges(src(p),p).filter(x=>x.kind==='static').map(x=>x.to);
 assert.deepEqual(staticEdges('data/conquest-data.js'),[

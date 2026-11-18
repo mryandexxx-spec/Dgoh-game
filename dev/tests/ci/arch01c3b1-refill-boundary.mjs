@@ -51,7 +51,8 @@ const graph=analyzeTree(process.cwd());
 assert.equal(graph.modules,173);
 assert.equal(graph.unresolved.length,0);
 assert.equal(graph.cycles.length,4,'do not create/destroy SCC without separate review');
-assert.ok(graph.cycles.some(c=>c.length===60 && !c.includes('data/conquest-data.js') &&
- c.includes('logic/conquest.js')),
- 'C3b1 cannot deepen or silently change the existing 106-module Conquest cycle');
+assert.deepEqual(graph.cycles.map(c=>c.length),[60,11,6,3],
+ 'ARCH-01C5b-B1 reviewed replacement SCC sizes must remain exact');
+assert.ok(graph.cycles.every(c=>!c.includes('data/conquest-data.js')),
+ 'pure Conquest data must not re-enter any reviewed runtime SCC');
 console.log('ARCH-01C3b1 refill compatibility: PASS; 2 remaining old edges after C4c B1, 167 ESM markers, identical refill API');

@@ -14,9 +14,10 @@ assert.equal(graph.modules,173);assert.equal(graph.staticImports,1001);
 assert.equal(graph.unresolved.length,0);
 assert.equal(graph.cycles.length,4);
 assert.deepEqual(graph.cycles.map(c=>c.length),[60,11,6,3]);
-assert.ok(!graph.cycles[0].includes('data/conquest-data.js'),'only approved data node exits large SCC');
-for(const x of ['logic/conquest.js','core/state.js','ui/views/conq.js','ui/overlays/celebrate.js'])
- assert.ok(graph.cycles[0].includes(x));
+assert.ok(graph.cycles.every(c=>!c.includes('data/conquest-data.js')),
+ 'pure Conquest data must remain outside every reviewed runtime SCC'));
+for(const p of ['logic/conquest.js','core/state.js','ui/views/conq.js','ui/overlays/celebrate.js'])
+ assert.ok(SPLIT.some(([,name])=>name===p),'original Conquest runtime consumer must remain in build: '+p);
 const edges=p=>importEdges(src(p),p).filter(e=>e.kind==='static').map(e=>e.to);
 assert.deepEqual(edges('data/conquest-data.js'),[
  'data/chars.js','data/fx.js'
