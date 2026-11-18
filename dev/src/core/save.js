@@ -86,8 +86,11 @@ function validSaveV1(s) {
     if (k in s && !saveQuantity(s[k])) return false;
   for (const k of ['cleared', 'daily', 'login', 'conq', 'journey', 'journeys', 'migrations', 'inv', 'gearParts', 'gearOwned', 'cryClaim', 'sealClaim', 'refills', 'buys'])
     if (k in s && s[k] !== null && !saveRecord(s[k])) return false;
-  for (const k of ['squad', 'squadD', 'squadC', 'squadTr', 'raidPick', 'jPick'])
+  for (const k of ['squad', 'squadD', 'squadC', 'raidPick', 'jPick'])
     if (k in s && !Array.isArray(s[k])) return false;
+  // Live metaFill initializes squadTr as a map of trial squads, not an array.
+  // Old migration code also tolerates an array; never reject game-written v1.
+  if ('squadTr' in s && !saveRecord(s.squadTr) && !Array.isArray(s.squadTr)) return false;
   for (const hero of Object.values(s.roster)) {
     if (!saveRecord(hero)) return false;
     for (const k of ['shards', 'stars', 'lvl', 'gear']) if (k in hero && !saveQuantity(hero[k])) return false;
