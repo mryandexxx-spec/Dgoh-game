@@ -64,9 +64,9 @@ for(const [id,name] of [['S02','01-legacy-v1.json'],['S03','02-mid.json'],['S04'
   const g=init(),raw=readFixture(name),was=JSON.parse(raw);
   g.store.set(KEY,raw);
   assert.equal(details(g).status,'ok');
+  assert.equal(details(g).save.water,was.water, 'loaded resource remains exact before tickWater');
   g.run('start({})');
   assert.equal(state(g).solari,was.solari);
-  assert.equal(state(g).water,was.water);
   assert.equal(JSON.parse(g.store.get(KEY)).solari,was.solari);
   seen(id,name+' remains compatible with current save migrations');
 }
