@@ -47,7 +47,8 @@ const roundtrip = (g, label) => {
       status: result.status,
       numbers: ['water','solari','plast','candle','cry','folio','seal','rid','wol','core','teeth'].filter(k => k in s && !numeric(k)),
       records: ['cleared','daily','login','conq','journey','journeys','migrations','inv','gearParts','gearOwned','cryClaim','sealClaim','refills','buys'].filter(k => k in s && s[k] !== null && !record(s[k])),
-      squads: ['squad','squadD','squadC','squadTr','raidPick','jPick'].filter(k => k in s && !Array.isArray(s[k])),
+      squads: ['squad','squadD','squadC','raidPick','jPick'].filter(k => k in s && !Array.isArray(s[k]))
+        .concat('squadTr' in s && !record(s.squadTr) && !Array.isArray(s.squadTr) ? ['squadTr'] : []),
       heroes: Object.entries(s.roster || {}).filter(([id,h]) => !record(h) ||
         ['shards','stars','lvl','gear'].some(k => k in h && !(typeof h[k]==='number' && Number.isFinite(h[k]) && h[k]>=0)) ||
         ('eq' in h && (!Array.isArray(h.eq)||h.eq.length!==6)) ||
