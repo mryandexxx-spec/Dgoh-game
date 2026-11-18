@@ -5,183 +5,343 @@
 // nearest preceding line hint. Check-bundle still compares the entire order.
 // ARCH-01C5a-B1: owner-approved real-source UI bootstrap moves exactly 47 of 167
 // esbuild positions. Original v134 order is separately pinned in tests/ci/arch01c5a-b1-v134-order.json.
+// ARCH-01C5b-B1: owner-approved controlled 3D root bootstrap. This exact 167-entry order
+// was independently captured by virtual production esbuild BEFORE modifying src; see
+// tests/ci/arch01c5b-b1-proposed-order.json and order preattestation. Never tune for CI.
 export const SPLIT = [
   // ARCH-01C1a: only the new pure data cap is hoisted; all 161 old modules retain order.
   [3023, 'data/gear-cap.js'],
   // ARCH-01B3: pure cinematic setting reached before baseline modules.
   [4966, 'logic/cinematic-preference.js'],
+
   [1, 'data/fx.js'],
+
   [33, 'data/baron-future-kits.js'],
+
   [33, 'data/baron-legend-abilities.js'],
+
   [33, 'data/baron-legend-kit.js'],
+
   [33, 'data/chars.js'],
+
   [184, 'data/skill-ups.js'],
+
   [184, 'logic/battle/skills.js'],
+
   [214, 'data/boss.js'],
+
   [228, 'data/gear-recipes.js'],
+
   [228, 'data/gear-bonuses.js'],
+
   [228, 'logic/battle/stats.js'],
+
   [246, 'logic/battle/horror.js'],
+
   [246, 'logic/battle/support-kits.js'],
+
   [246, 'logic/battle/baron-mechanics.js'],
+
   [246, 'logic/battle/engine.js'],
+
   [434, 'logic/battle/turns.js'],
+
   [584, 'logic/battle/raid.js'],
+
   [623, 'logic/battle/ai.js'],
-  [654, 'data/looks.js'],
-  [676, 'render2d/figures.js'],
-  [805, 'render2d/scenes.js'],
-  [1082, 'render2d/scene-bg.js'],
-  [1138, 'render2d/fx-layer.js'],
-  [1183, 'render3d/base.js'],
-  [1205, 'render3d/quality.js'],
-  [1205, 'render3d/ctx.js'],
-  [1205, 'render3d/game-scene.js'],
-  [1205, 'render3d/materials.js'],
-  [1248, 'render3d/geometry.js'],
-  [1295, 'render3d/env/build-env.js'],
-  [1352, 'render3d/env/props.js'],
-  [1391, 'render3d/env/particles.js'],
-  [1418, 'render3d/characters/rig.js'],
-  [1454, 'render3d/characters/authored.js'],
-  [1512, 'render3d/characters/procedural.js'],
-  [1666, 'render3d/characters/pose-generic.js'],
-  [1739, 'render3d/worm.js'],
-  [1800, 'render3d/world-hud.js'],
-  [1800, 'render3d/scenes/arena.js'],
-  [2196, 'render3d/characters/pose-duncan.js'],
-  [2333, 'render3d/characters/pose-baron.js'],
-  [2333, 'render3d/characters/pose-legend-baron.js'],
-  [2333, 'assets/mocap-data.js'],
-  [2337, 'render3d/characters/mocap.js'],
-  [2381, 'assets/env-hdr.js'],
-  [2384, 'render3d/engine-host.js'],
-  [2384, 'render3d/scenes/base-scene.js'],
-  [2427, 'render3d/scenes/hero.js'],
-  [2504, 'render3d/scenes/camp.js'],
-  [2586, 'render3d/scenes/baker.js'],
-  [2668, 'assets/models.js'],
+
   [2671, 'data/story.js'],
   // ARCH-01C2a: new data module evaluates after story, before generated NODES.
   [2729, 'data/campaign-energy.js'],
+
+  [654, 'data/looks.js'],
   // ARCH-01C2c: pure seeded RNG before deterministic top-level mission generation.
   [2729, 'data/seeded-rng.js'],
+
   [2729, 'data/campaigns.js'],
+
   [2893, 'data/glyphs.js'],
+
   [3023, 'data/journeys.js'],
+
   [3057, 'data/memory-scrap.js'],
+
   [3057, 'logic/economy.js'],
+
   [3078, 'data/memories.js'],
+
   [3078, 'logic/relics.js'],
+
   [3087, 'logic/gear.js'],
+
   [3151, 'logic/gear-crafting.js'],
+
   [3151, 'logic/gear-sources.js'],
+
   [3151, 'core/format.js'],
+
   [3151, 'core/save.js'],
+
   [3202, 'core/state.js'],
+
   [3210, 'logic/daily.js'],
+
   [3210, 'core/dom.js'],
+
   [3210, 'core/rng.js'],
+
   [3210, 'logic/progress.js'],
+
   [3210, 'logic/roster.js'],
+
   [3210, 'logic/skill-up.js'],
   // ARCH-01B3: pure account rules precede the first named consumer of account rules.
   [4966, 'logic/account-rules.js'],
+
   [3210, 'logic/rewards.js'],
+
   [3234, 'core/errlog.js'],
+
+  [676, 'render2d/figures.js'],
+
   [3252, 'ui/common.js'],
+
+  [805, 'render2d/scenes.js'],
+
   [3272, 'ui/router.js'],
+
   [3272, 'data/campaign-map-presets.js'],
+
   [3272, 'logic/campaign-map.js'],
+
+  [1082, 'render2d/scene-bg.js'],
+
+  [1138, 'render2d/fx-layer.js'],
+
+  [1183, 'render3d/base.js'],
+
+  [1205, 'render3d/quality.js'],
+
+  [1205, 'render3d/ctx.js'],
+
+  [1205, 'render3d/game-scene.js'],
+
+  [1205, 'render3d/materials.js'],
+
+  [2384, 'render3d/scenes/base-scene.js'],
+
+  [1248, 'render3d/geometry.js'],
+
+  [1295, 'render3d/env/build-env.js'],
+
+  [1352, 'render3d/env/props.js'],
+
+  [1391, 'render3d/env/particles.js'],
+
+  [1418, 'render3d/characters/rig.js'],
+
+  [1454, 'render3d/characters/authored.js'],
+
+  [1512, 'render3d/characters/procedural.js'],
+
+  [1666, 'render3d/characters/pose-generic.js'],
+
+  [2427, 'render3d/scenes/hero.js'],
+
+  [2504, 'render3d/scenes/camp.js'],
+
+  [2586, 'render3d/scenes/baker.js'],
+
+  [2668, 'assets/models.js'],
+
+  [1739, 'render3d/worm.js'],
+
+  [1800, 'render3d/world-hud.js'],
+
+  [1800, 'render3d/scenes/arena.js'],
+
+  [2196, 'render3d/characters/pose-duncan.js'],
+
+  [2333, 'render3d/characters/pose-baron.js'],
+
+  [2333, 'render3d/characters/pose-legend-baron.js'],
+
+  [2333, 'assets/mocap-data.js'],
+
+  [2337, 'render3d/characters/mocap.js'],
+
+  [2381, 'assets/env-hdr.js'],
+
+  [2384, 'render3d/engine-host.js'],
+
   [3272, 'render3d/campaign-gestures.js'],
+
   [3272, 'render3d/scenes/campaign-giedi.js'],
+
   [3272, 'render3d/scenes/campaign-arrakeen.js'],
+
   [3272, 'render3d/scenes/campaign-conspiracy.js'],
+
   [3272, 'render3d/scenes/campaign-atreides-chronicles.js'],
+
   [3272, 'render3d/scenes/campaign-harkonnen-chronicles.js'],
+
   [3272, 'render3d/scenes/campaign-corrino-chronicles.js'],
+
   [3272, 'render3d/scenes/campaign-butlerian-jihad.js'],
+
   [3272, 'render3d/scenes/campaign-machine-crusade.js'],
+
   [3272, 'render3d/scenes/campaign-corrin-battle.js'],
+
   [3272, 'render3d/scenes/campaign-sandworms.js'],
+
   [3272, 'render3d/scenes/campaign-escape.js'],
+
   [3272, 'render3d/scenes/campaign-sietch.js'],
+
   [3272, 'render3d/scenes/campaign-empty-harvest.js'],
+
   [3272, 'render3d/scenes/campaign-imperial-salt.js'],
+
   [3272, 'render3d/scenes/campaign-shield-wall-scar.js'],
+
   [3272, 'render3d/scenes/campaign-fading-crown.js'],
+
   [3272, 'render3d/scenes/campaign-iron-quota.js'],
+
   [3272, 'render3d/scenes/campaign-heir-crown.js'],
+
   [3272, 'render3d/scenes/campaign-salusa-legions.js'],
+
   [3272, 'render3d/scenes/campaign-broken-seal.js'],
+
   [3272, 'render3d/scenes/campaign-map.js'],
+
   [3272, 'ui/views/campaign20.js'],
+
   [3282, 'ui/views/camp.js'],
+
   [3330, 'ui/portrait.js'],
+
   [3330, 'ui/views/squad.js'],
+
   [3365, 'ui/overlays/detail.js'],
+
   [3365, 'ui/hero-card.js'],
+
   [3365, 'ui/skill-window.js'],
+
   [3365, 'ui/memory-screen.js'],
+
   [3550, 'ui/overlays/info.js'],
   // ARCH-01B2: statInc как чистая логика инициализируется до первого UI-потребителя.
   [4810, 'logic/stat-counters.js'],
+
   [3668, 'ui/overlays/sim.js'],
+
   [3761, 'ui/rewards.js'],
+
   [3779, 'ui/views/daily.js'],
+
   [3826, 'ui/overlays/calendar.js'],
+
   [5255, 'data/conquest-data.js'],
+
   [5394, 'logic/conquest.js'],
   // ARCH-01B: rules-only trials now initialise earlier without the logic → UI cycle;
   // keep its original monolith line hint (4681) for historical traceability.
   [4681, 'logic/trials.js'],
+
   [3859, 'ui/overlays/squad-select.js'],
+
   [3951, 'ui/views/raid.js'],
+
   [3992, 'ui/views/legend.js'],
+
   [4020, 'logic/recycler.js'],
+
   [4020, 'ui/recycler-screen.js'],
+
   [4020, 'ui/views/shop.js'],
+
   [4072, 'ui/views/lobby.js'],
+
   [4109, 'ui/views/rules.js'],
+
   [4130, 'data/bh94-unlock-events.js'],
+
   [4130, 'logic/bh94-story-events.js'],
+
   [4130, 'ui/views/story-events.js'],
+
   [4130, 'data/baron-legend-approved.js'],
+
   [4130, 'data/baron-legend-encounters.js'],
+
   [4130, 'data/baron-bh9-balance.js'],
+
   [4130, 'logic/baron-legend-contract.js'],
+
   [4130, 'logic/baron-legend-progress.js'],
+
   [4130, 'logic/baron-bh9-event.js'],
+
   [4130, 'ui/views/baron-journey.js'],
+
   [4130, 'logic/bh94-story-battle.js'],
+
   [4130, 'logic/baron-bh9-rewards.js'],
+
   [4130, 'logic/baron-bh9-battle.js'],
+
   [4130, 'ui/battle/battle-ui.js'],
+
   [4473, 'ui/events.js'],
   // ARCH-01C1b: pure logic runtime adapter registered at the existing boot root.
   [4622, 'logic/journey-gates.js'],
   // ARCH-01C2b: add logic-owned campaign rules after the registered journey port.
   [4622, 'logic/campaign-gates.js'],
+
   [4622, 'core/boot.js'],
+
   [4648, 'ui/hero-window.js'],
+
   [4681, 'ui/views/trials.js'],
+
   [4810, 'logic/stats.js'],
+
   [4826, 'data/cosmetics.js'],
+
   [4856, 'ui/views/feats.js'],
+
   [4906, 'ui/overlays/profile.js'],
   // ARCH-01C3a1: late UI-owned cosmetic selector, after data and profile bootstrap.
   [4934, 'logic/cosmetics-unlocks.js'],
+
   [4934, 'ui/wiring.js'],
+
   [4966, 'logic/account.js'],
+
   [5015, 'ui/fx-text.js'],
+
   [5020, 'ui/overlays/levelup.js'],
+
   [5037, 'ui/notifications.js'],
+
   [5084, 'ui/mouse.js'],
+
   [5105, 'ui/craft.js'],
+
   [5118, 'ui/overlays/battle-settings.js'],
+
   [5164, 'ui/perf-overlay.js'],
+
   [5164, 'ui/reward-tiles.js'],
+
   [5200, 'ui/overlays/celebrate.js'],
+
   [5531, 'ui/views/conq.js'],
+
   [5729, 'boot.js'],
 ];
