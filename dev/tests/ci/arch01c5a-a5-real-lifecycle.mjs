@@ -121,9 +121,15 @@ async function run(mode,kind){
    {timeout:45000,polling:100});
   const ev=async t=>page.evaluate(s=>(0,eval)(s),t);
   const queue=await ev(phaseQueue);
-  await pause(125);
+  // The original CELEB queue waits for a 50ms UI timer and can be delayed
+  // by 3D/camp startup in real headless mobile Chromium. Don't race the timer.
+  await page.waitForFunction(()=>!!document.querySelector('#celeb.unlock'),
+   {timeout:6000,polling:50}).catch(()=>{});
   const close=await ev(phaseClose);
-  await pause(125);
+  await page.waitForFunction(()=>
+    !document.querySelector('#celeb') &&
+    (0,eval)('typeof CELEB!=="undefined" && CELEB.length===0'),
+   {timeout:3500,polling:50}).catch(()=>{});
   const notes=await ev(phaseNotes);
   const weekly=await ev(phaseWeekly);
   await page.reload({waitUntil:'load',timeout:75000});
