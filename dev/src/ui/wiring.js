@@ -132,4 +132,9 @@ function showSaveRecovery(issue) {
   document.body.appendChild(blocked);
 }
 
-export { metaFill, metaClick, showSaveRecovery };
+// Keep the historical 898 public names and ESM export order unchanged.
+// Boot already imports metaFill; this UI-owned diagnostic callback is attached
+// without introducing an additional cross-module named export.
+metaFill.showSaveRecovery = showSaveRecovery;
+
+export { metaFill, metaClick };
