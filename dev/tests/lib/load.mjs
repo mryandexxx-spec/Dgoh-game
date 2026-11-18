@@ -48,7 +48,7 @@ export function extractScripts(html, dir = '.') {
   return out;
 }
 
-export function loadGame(htmlPath, { seed = 1, now = FIXED_NOW } = {}) {
+export function loadGame(htmlPath, { seed = 1, now = FIXED_NOW, onDocumentListener = null, onQuerySelector = null } = {}) {
   const html = fs.readFileSync(htmlPath, 'utf8');
   const scripts = extractScripts(html, path.dirname(path.resolve(htmlPath)));
   if (!scripts.length) throw new Error('в HTML не найдено скриптов игры');
@@ -67,9 +67,13 @@ export function loadGame(htmlPath, { seed = 1, now = FIXED_NOW } = {}) {
     getItem: k => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)),
     removeItem: k => store.delete(k), clear: () => store.clear(), key: i => [...store.keys()][i] ?? null, get length() { return store.size; },
   };
+  // Opt-in UI event/selector hooks are test-only; default stub semantics unchanged.
   // document: заглушка, но canvas.getContext → null (HAS3D = false, как без WebGL)
   const ds = stub('document');
-  const d = new Proxy(ds, { get: (t, k) => k === 'createElement' ? () => new Proxy(stub(), { get: (t2, k2) => (k2 === 'getContext' ? t3 => (/webgl/.test(t3) ? null : ds) : ds) }) : ds[k] });
+  const d = new Proxy(ds, { get: (t, k) =>
+    k === 'createElement' ? () => new Proxy(stub(), { get: (t2, k2) => (k2 === 'getContext' ? t3 => (/webgl/.test(t3) ? null : ds) : ds) }) :
+    k === 'addEventListener' && onDocumentListener ? (type, listener) => onDocumentListener(type, listener) :
+    k === 'querySelector' && onQuerySelector ? selector => onQuerySelector(selector) ?? ds : ds[k] });
   const ctx = {
     console: { log() {}, warn() {}, error() {}, info() {} },
     Math: M, Date: FDate, JSON, Intl, Promise, Map, Set, WeakMap, WeakSet, Symbol, Proxy, Reflect, Array, Object, String, Number, Boolean, Error, TypeError, RegExp,
