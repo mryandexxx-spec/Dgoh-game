@@ -35,9 +35,9 @@ function instrumentSource(f,source){
  const wrap=(needle,label)=>{
   assert.equal(source.split(needle).length,2,'must instrument exactly one '+label);
   source=source.replace(needle,
-    "globalThis.__A4_MARK?.("+JSON.stringify(label+':before')+");\\n"+
+    "globalThis.__A4_MARK?.("+JSON.stringify(label+':before')+");\n"+
     needle+
-    "\\nglobalThis.__A4_MARK?.("+JSON.stringify(label+':after')+");");
+    "\nglobalThis.__A4_MARK?.("+JSON.stringify(label+':after')+");");
  };
  if(f==='assets/models.js')wrap('b3Pre(loadAssets3);','models:b3Pre');
  if(f==='ui/notifications.js')wrap('onPersist(notePoll);','notifications:onPersist');
@@ -130,12 +130,11 @@ export async function makeBundles({instrument=true}={}){
 // Resolve exactly the *build-generated* model asset URL mapping from the verified
 // production build. No fake or empty model map can be used in a browser probe.
 export function fillAssetMap(code,verifiedUnmin){
- // esbuild can convert a module-scoped "const ASSET" into "var ASSET".
- // Extract the quoted JSON.parse argument by a quote-aware scanner and copy it
- // from the *actually validated PWA build*, not a guessed asset map.
+ // esbuild may change a local "const ASSET" into "var ASSET".
+ // Use the EXACT validated original build asset JSON.parse literal.
  function assetExpression(text){
-  const match=/\\b(?:var|const|let)\\s+ASSET\\s*=\\s*JSON\\.parse\\(/.exec(text);
-  assert.ok(match,'verified or virtual bundle must contain the model ASSET declaration');
+  const match=/\b(?:var|const|let)\s+ASSET\s*=\s*JSON\.parse\(/.exec(text);
+  assert.ok(match,'verified or virtual bundle must have a model ASSET declaration');
   const at=text.indexOf('JSON.parse(',match.index);
   let i=at+'JSON.parse('.length;
   const quote=text[i];
@@ -144,19 +143,19 @@ export function fillAssetMap(code,verifiedUnmin){
   for(i++;i<text.length;i++){
    const c=text[i];
    if(escaped){escaped=false;continue;}
-   if(c==='\\\\'){escaped=true;continue;}
+   if(c==='\\'){escaped=true;continue;}
    if(c===quote)break;
   }
-  assert.ok(i<text.length && text[i+1]===')','model map must have one valid JSON.parse literal');
+  assert.ok(i<text.length&&text[i+1]===')','model map must end in valid JSON.parse literal');
   return text.slice(at,i+2);
  }
  const source=assetExpression(verifiedUnmin);
  const target=assetExpression(code);
- assert.ok(source.length>target.length*2,'validated asset map must not be placeholder');
- assert.ok(target.includes('__ASSET_MAP__'),'virtual ASSET expression must carry original placeholder');
- assert.equal(code.split(target).length,2,'virtual ASSET expression must be unique');
+ assert.ok(source.length>target.length*2,'validated model assets must not be a placeholder');
+ assert.ok(target.includes('__ASSET_MAP__'),'virtual model expression must include the placeholder');
+ assert.equal(code.split(target).length,2,'virtual model expression must be unique');
  const result=code.replace(target,source);
- assert.ok(!result.includes('__ASSET_MAP__'),'all model placeholders must be replaced');
+ assert.ok(!result.includes('__ASSET_MAP__'),'model asset placeholders must all be resolved');
  return result;
 }
 
