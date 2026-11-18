@@ -135,7 +135,8 @@ const scenarios=[
     [ROOT,"import './ui/bootstrap/asset-bootstrap.js'; // A2 virtual only\n"+read(ROOT)],
   ]),synthetic:bootstrapSource,register:'ui/bootstrap/asset-bootstrap.js'},
 ];
-const marks=s=>[...s.matchAll(/^\/\/ src\/(.+\.js)$/gm)].map(m=>m[1]).filter(x=>x!=='main.js');
+const marks=s=>[...s.matchAll(/^\/\/ (?:src\/(.+\.js)|arch-a2:.*?\/src\/(.+\.js))$/gm)]
+  .map(m=>m[1]||m[2]).filter(x=>x!=='main.js');
 async function bundle(patches=new Map(),synthetic=null) {
   const plugin={name:'arch01c5b-a2-virtual-only',setup(b) {
     if(synthetic) {
