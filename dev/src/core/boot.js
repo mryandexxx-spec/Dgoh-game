@@ -24,17 +24,23 @@ function splashOff() {
   sp.addEventListener('pointerdown', go, { once: true });
   sp._t = setTimeout(go, Math.max(900, 2400 - performance.now()));
 }
+// Keep the historical first action of start() as set_S(...) for the
+// ARCH-01C5a initialization contract. Importantly, a failed read supplies
+// undefined, NOT a newly created account or a writable fallback.
+let startupReadFailure = null;
+function initialSave(data) {
+  startupReadFailure = null;
+  if (data && data.save) return data.save; // hot reload compatibility
+  const loaded = loadSave(true);
+  if (loaded.status === 'ok') return loaded.save;
+  if (loaded.status === 'missing') return newSave();
+  startupReadFailure = loaded;
+  return undefined;
+}
 function start(data) {
-  // B1: only confirmed absence creates a new account; bad or inaccessible bytes
-  // stay untouched. Register the blocking UX before any startup write.
+  set_S(initialSave(data));
   onPersist(null, metaFill.showSaveRecovery);
-  if (data && data.save) set_S(data.save); // hot reload compatibility
-  else {
-    const loaded = loadSave(true);
-    if (loaded.status === 'ok') set_S(loaded.save);
-    else if (loaded.status === 'missing') set_S(newSave());
-    else { metaFill.showSaveRecovery(loaded); return; }
-  }
+  if (startupReadFailure) { metaFill.showSaveRecovery(startupReadFailure); return; }
   metaFill(S); if (!S.notes) noteSnap(true);
   if (!S.migB) { S.migB = 1; S.stats = S.stats || {}; let n = 0;
     for (const id of ROSTER_IDS) { const p = prog(id); if (p.stars >= 7 && p.shards > 0) { n += p.shards * RING_RATE; p.shards = 0; } }
