@@ -115,13 +115,34 @@ export async function makeBundles({instrument=true}={}){
 // Resolve exactly the *build-generated* model asset URL mapping from the verified
 // production build. No fake or empty model map can be used in a browser probe.
 export function fillAssetMap(code,verifiedUnmin){
- const match=/const ASSET = JSON\.parse\("(?:\\.|[^"\\])*"\);/.exec(verifiedUnmin);
- assert.ok(match,'must read actual preverified production model asset mapping');
- const pattern=/const ASSET = JSON\.parse\((["'])__ASSET_MAP__\1\);/g;
- assert.equal([...code.matchAll(pattern)].length,1,'virtual bundle must contain exactly one model asset placeholder');
- const out=code.replace(pattern,()=>match[0]);
- assert.ok(!out.includes('__ASSET_MAP__'),'model asset placeholders cannot survive');
- return out;
+ // esbuild can convert a module-scoped "const ASSET" into "var ASSET".
+ // Extract the quoted JSON.parse argument by a quote-aware scanner and copy it
+ // from the *actually validated PWA build*, not a guessed asset map.
+ function assetExpression(text){
+  const match=/\\b(?:var|const|let)\\s+ASSET\\s*=\\s*JSON\\.parse\\(/.exec(text);
+  assert.ok(match,'verified or virtual bundle must contain the model ASSET declaration');
+  const at=text.indexOf('JSON.parse(',match.index);
+  let i=at+'JSON.parse('.length;
+  const quote=text[i];
+  assert.ok(quote==='"'||quote==="'","model map must be a string literal");
+  let escaped=false;
+  for(i++;i<text.length;i++){
+   const c=text[i];
+   if(escaped){escaped=false;continue;}
+   if(c==='\\\\'){escaped=true;continue;}
+   if(c===quote)break;
+  }
+  assert.ok(i<text.length && text[i+1]===')','model map must have one valid JSON.parse literal');
+  return text.slice(at,i+2);
+ }
+ const source=assetExpression(verifiedUnmin);
+ const target=assetExpression(code);
+ assert.ok(source.length>target.length*2,'validated asset map must not be placeholder');
+ assert.ok(target.includes('__ASSET_MAP__'),'virtual ASSET expression must carry original placeholder');
+ assert.equal(code.split(target).length,2,'virtual ASSET expression must be unique');
+ const result=code.replace(target,source);
+ assert.ok(!result.includes('__ASSET_MAP__'),'all model placeholders must be replaced');
+ return result;
 }
 
 export async function validateA4(){
