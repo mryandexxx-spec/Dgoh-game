@@ -7,10 +7,12 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const read=p=>fs.readFileSync('src/'+p,'utf8');
 const imports=p=>importEdges(read(p),p).map(x=>x.to);
 const legacy=JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
+assert.deepEqual(legacy,['data/story.js -> assets/models.js'],
+ 'B1 approved removal preserves only historical Story→models dependency');
 const cosmetics=read('data/cosmetics.js'),logic=read('logic/cosmetics-unlocks.js');
 const wiring=read('ui/wiring.js'),profile=read('ui/overlays/profile.js');
 
-assert.equal(legacy.length,2,'C4a removes boss→skills while preserving cosmetics invariants');
+assert.equal(legacy.length,1,'C4a removes boss→skills while preserving cosmetics invariants');
 for(const e of ['data/cosmetics.js -> core/state.js','data/cosmetics.js -> logic/progress.js',
   'data/cosmetics.js -> logic/stats.js']){
   assert.ok(!legacy.includes(e),'removed edge must not remain in legacy baseline');

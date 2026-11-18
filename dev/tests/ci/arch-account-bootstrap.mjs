@@ -69,7 +69,11 @@ assert.equal(SPLIT.length,167,'expected 159 original modules + 7 additive module
 assert.equal(SPLIT[0][1],'data/gear-cap.js');
 assert.equal(SPLIT[1][1],'logic/cinematic-preference.js',
   'the previously first module must retain its relative position');
-const names=SPLIT.filter(([,name])=>!newModules.has(name)).map(([,name])=>name);
+const historicalV134=JSON.parse(fs.readFileSync('tests/ci/arch01c5a-b1-v134-order.json','utf8'));
+assert.equal(historicalV134.length,167,'B1 retains frozen original v134 order independently of current SPLIT');
+assert.deepEqual([...SPLIT.map(([,p])=>p)].sort(),[...historicalV134].sort(),
+ 'B1 permits order-only migration, never lost original modules');
+const names=historicalV134.filter(name=>!newModules.has(name));
 assert.equal(names.length,159,'no old module can disappear');
 let hash=2166136261;
 for(const c of names.join('\n'))hash=Math.imul(hash^c.charCodeAt(0),16777619)>>>0;

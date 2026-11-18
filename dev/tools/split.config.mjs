@@ -3,6 +3,8 @@
 // BH9.9: module order captured from the exact built bundle. Original module
 // line hints are retained; new public legend modules share their dependency's
 // nearest preceding line hint. Check-bundle still compares the entire order.
+// ARCH-01C5a-B1: owner-approved real-source UI bootstrap moves exactly 47 of 167
+// esbuild positions. Original v134 order is separately pinned in tests/ci/arch01c5a-b1-v134-order.json.
 export const SPLIT = [
   // ARCH-01C1a: only the new pure data cap is hoisted; all 161 old modules retain order.
   [3023, 'data/gear-cap.js'],
@@ -128,6 +130,8 @@ export const SPLIT = [
   [3761, 'ui/rewards.js'],
   [3779, 'ui/views/daily.js'],
   [3826, 'ui/overlays/calendar.js'],
+  [5255, 'data/conquest-data.js'],
+  [5394, 'logic/conquest.js'],
   // ARCH-01B: rules-only trials now initialise earlier without the logic → UI cycle;
   // keep its original monolith line hint (4681) for historical traceability.
   [4681, 'logic/trials.js'],
@@ -178,8 +182,6 @@ export const SPLIT = [
   [5164, 'ui/perf-overlay.js'],
   [5164, 'ui/reward-tiles.js'],
   [5200, 'ui/overlays/celebrate.js'],
-  [5255, 'data/conquest-data.js'],
-  [5394, 'logic/conquest.js'],
   [5531, 'ui/views/conq.js'],
   [5729, 'boot.js'],
 ];

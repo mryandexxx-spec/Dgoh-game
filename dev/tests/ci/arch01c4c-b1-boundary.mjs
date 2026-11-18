@@ -36,17 +36,16 @@ assert.equal(src('data/gear-cap.js').includes('const MAX_GEAR = 13;'), true);
 assert.ok(src('logic/cinematic-preference.js').includes('const CINE_OFF = () =>'));
 const ledger = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
 assert.deepEqual(ledger, [
-  'data/conquest-data.js -> ui/overlays/celebrate.js',
   'data/story.js -> assets/models.js'
 ], 'only remaining two historical reverse data imports may remain');
-assert.ok(src('data/conquest-data.js').includes("import '../ui/overlays/celebrate.js'; // порядок исполнения"));
+assert.ok(!src('data/conquest-data.js').includes("import '../ui/overlays/celebrate.js'; // порядок исполнения"));
 assert.ok(src('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"));
 
 const graph = analyzeTree(process.cwd());
 assert.equal(graph.modules,173,'no new or missing source JS');
 assert.equal(graph.staticImports,1000,'old 998 - one data→AI + three permitted boot imports');
 assert.equal(graph.unresolved.length,0);
-assert.deepEqual(graph.cycles.map(x=>x.length),[106,6], 'two known SCCs preserved');
+assert.deepEqual(graph.cycles.map(x=>x.length),[105,6], 'two known SCCs preserved');
 const paths = [];
 function walk(dir) {
   for (const item of fs.readdirSync(dir,{withFileTypes:true})) {

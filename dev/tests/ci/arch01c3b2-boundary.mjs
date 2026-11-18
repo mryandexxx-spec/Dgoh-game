@@ -8,25 +8,23 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const src=p=>fs.readFileSync('src/'+p,'utf8');
 const data=src('data/conquest-data.js'), logic=src('logic/conquest.js'),ui=src('ui/views/conq.js');
 const legacy=JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
-assert.deepEqual(legacy,[
- 'data/conquest-data.js -> ui/overlays/celebrate.js',
- 'data/story.js -> assets/models.js'
-],'C3b2/C3b3/C4a retire their verified debts; remaining exactly two edges');
+assert.deepEqual(legacy,['data/story.js -> assets/models.js'],'C3b2/C3b3/C4a retire their verified debts; remaining exactly two edges');
 const graph=analyzeTree(process.cwd());
 assert.equal(graph.modules,173);assert.equal(graph.staticImports,1000);
 assert.equal(graph.unresolved.length,0);
 assert.equal(graph.cycles.length,2);
-assert.deepEqual(graph.cycles.map(c=>c.length),[106,6]);
-for(const x of ['data/conquest-data.js','logic/conquest.js','core/state.js','ui/views/conq.js','ui/overlays/celebrate.js'])
+assert.deepEqual(graph.cycles.map(c=>c.length),[105,6]);
+assert.ok(!graph.cycles[0].includes('data/conquest-data.js'),'only approved data node exits large SCC');
+for(const x of ['logic/conquest.js','core/state.js','ui/views/conq.js','ui/overlays/celebrate.js'])
  assert.ok(graph.cycles[0].includes(x));
 const edges=p=>importEdges(src(p),p).filter(e=>e.kind==='static').map(e=>e.to);
 assert.deepEqual(edges('data/conquest-data.js'),[
- 'ui/overlays/celebrate.js','data/chars.js','data/fx.js'
+ 'data/chars.js','data/fx.js'
 ]);
 assert.ok(!data.includes('NOTES')&&!data.includes("from '../core/state.js'"),'data has no live core/state or notification effect');
 assert.ok(!data.includes('function cqBump'),'runtime feat mutation must belong to logic');
 assert.ok(!data.includes('const cqK = ')&&!data.includes('const cqScore = ')&&
- data.includes('function cqFeats(s)')&&data.includes("import '../ui/overlays/celebrate.js'; // порядок исполнения"),
+ data.includes('function cqFeats(s)')&&!data.includes("import '../ui/overlays/celebrate.js'; // порядок исполнения"),
  'data tables and other selectors and blocked UI predecessor must be left untouched');
 assert.ok(!/export \{[^}]*\bcqBump\b/.test(data),'data must not export relocated runtime action');
 assert.ok(/export \{[^}]*\bcqBump\b/.test(logic),'logic must export old named cqBump action');

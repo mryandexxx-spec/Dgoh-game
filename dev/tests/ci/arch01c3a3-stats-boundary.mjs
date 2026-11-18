@@ -7,7 +7,9 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const source = p => fs.readFileSync('src/' + p, 'utf8');
 const imports = p => importEdges(source(p),p).filter(x => x.kind==='static').map(x => x.to);
 const legacy = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
-assert.equal(legacy.length,2,'C4a additionally removes boss→skills without changing cosmetics state boundary');
+assert.deepEqual(legacy,['data/story.js -> assets/models.js'],
+ 'B1 approved removal preserves only historical Story→models dependency');
+assert.equal(legacy.length,1,'C4a additionally removes boss→skills without changing cosmetics state boundary');
 assert.ok(!legacy.includes('data/cosmetics.js -> logic/stats.js'),'do not re-add stats to legacy');
 assert.ok(legacy.includes('data/story.js -> assets/models.js'),'blocked C2d remains untouched');
 assert.deepEqual(imports('data/cosmetics.js'),['data/chars.js'],

@@ -7,6 +7,8 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const read=p=>fs.readFileSync('src/'+p,'utf8');
 const imports=p=>importEdges(read(p),p).map(x=>x.to);
 const baseline=JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
+assert.deepEqual(baseline,['data/story.js -> assets/models.js'],
+ 'B1 approved removal preserves only historical Story→models dependency');
 const data=read('data/cosmetics.js');
 const profile=read('ui/overlays/profile.js');
 const models=read('assets/models.js');
@@ -16,7 +18,7 @@ const expectedPatch="if (typeof WORM_IMG !== 'undefined') { EMBLEMS.worm.svg = "
   tick+'<image href="'+'$'+'{WORM_IMG.ava}" x="1" y="1" width="38" height="38"/>'+tick+
   "; EMBLEMS.worm.bg = ['#a8784a', '#2a1608']; }";
 
-assert.equal(baseline.length,2,'C4a removes boss→skills while preserving worm avatar and SVG ownership');
+assert.equal(baseline.length,1,'C4a removes boss→skills while preserving worm avatar and SVG ownership');
 assert.ok(!baseline.includes('data/cosmetics.js -> assets/models.js'));
 assert.ok(!baseline.includes('data/cosmetics.js -> logic/stats.js') &&
   baseline.includes('data/story.js -> assets/models.js'),

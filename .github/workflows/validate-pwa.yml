@@ -326,6 +326,8 @@ jobs:
       - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
       - run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
       - run: node tests/smoke/memory-ix-dom.mjs dist/pwa/index.html
+      - name: ARCH-01C5a-B1 real Conquest CELEB visible NOTES + save + DGM (cold/warm)
+        run: node tests/ci/arch01c5a-b1-real-lifecycle.mjs
       - run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
       - name: Upload E3 screenshots
         if: always()
