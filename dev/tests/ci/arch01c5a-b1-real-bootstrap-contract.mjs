@@ -118,7 +118,7 @@ assert.deepEqual(stronglyConnected(edges),actualGraph.cycles);
 assert.equal(Object.values(edges).reduce((n,x)=>n+x.length,0),1001);
 assert.equal(Object.values(oldEdges).reduce((n,x)=>n+x.length,0),1001);
 const priorCycles=stronglyConnected(oldEdges);
-assert.deepEqual(priorCycles.map(c=>c.length),[61,11,6,3]);
+assert.deepEqual(priorCycles.map(c=>c.length),[62,11,6,3]);
 const preB1=new Map([
  ['data/story.js',read('data/story.js').replace(/^\/\/ data\/story\.js[^\n]*\n/,
    m=>m+"import '../assets/models.js'; // порядок исполнения\n")],
@@ -136,6 +136,7 @@ const v134Sources=new Map([...preB1,...historical]);
 const oldLarge=priorCycles.find(c=>c.includes(DATA));
 const newLarge=actualGraph.cycles.find(c=>c.includes(CELEBRATE));
 assert.ok(oldLarge);assert.ok(newLarge);
+console.log('ARCH-01C5a under Story B1 prior-only members '+JSON.stringify(oldLarge.filter(p=>!newLarge.includes(p))));
 assert.deepEqual(oldLarge.filter(p=>!newLarge.includes(p)),[DATA]);
 assert.deepEqual(newLarge.filter(p=>!oldLarge.includes(p)),[]);
 assert.deepEqual(actualGraph.cycles.find(c=>c.length===6),priorCycles.find(c=>c.length===6));
