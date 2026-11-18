@@ -20,7 +20,13 @@ assert.ok(boot.startsWith(boot.split('\n')[0] + '\n' + prelude +
   "import './ui/views/conq.js'; // порядок исполнения\n"),
   'exactly ordered gear-cap → cinematic-preference → AI → original conq boot');
 assert.equal(boot.split(prelude).length, 2, 'one and only one composition-root prelude');
-assert.equal(gitBlob(boot.replace(prelude, '')), 'ee0c72dd86cca18db6005bcf165824a77caae457',
+const B1_NAMED="import { loadAssets3 } from './assets/models.js';\n" +
+ "import { b3Pre } from './render3d/base.js'; // ARCH-01C5b-B1 application composition root\n";
+const B1_REGISTER="// ARCH-01C5b-B1: register exactly once before start() can first render 3D.\nb3Pre(loadAssets3);\n";
+assert.equal(boot.split(B1_NAMED).length,2,'one and only one B1 3D named import pair');
+assert.equal(boot.split(B1_REGISTER).length,2,'one and only one 3D preloader registration');
+const v135Boot=boot.replace(B1_NAMED,'').replace(B1_REGISTER,'');
+assert.equal(gitBlob(v135Boot.replace(prelude, '')), 'ee0c72dd86cca18db6005bcf165824a77caae457',
   'original boot.js content apart from three allowed imports must be exact v133 Git blob');
 const oldLookImport = "import '../logic/battle/ai.js'; // порядок исполнения\n";
 assert.ok(!looks.includes(oldLookImport), 'data looks must not depend on runtime AI');
@@ -35,17 +41,15 @@ assert.ok(ai.includes("if (typeof module !== 'undefined') module.exports"), 'AI 
 assert.equal(src('data/gear-cap.js').includes('const MAX_GEAR = 13;'), true);
 assert.ok(src('logic/cinematic-preference.js').includes('const CINE_OFF = () =>'));
 const ledger = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
-assert.deepEqual(ledger, [
-  'data/story.js -> assets/models.js'
-], 'only remaining two historical reverse data imports may remain');
+assert.deepEqual(ledger, [], 'only remaining two historical reverse data imports may remain');
 assert.ok(!src('data/conquest-data.js').includes("import '../ui/overlays/celebrate.js'; // порядок исполнения"));
-assert.ok(src('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"));
+assert.ok(!src('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"));
 
 const graph = analyzeTree(process.cwd());
 assert.equal(graph.modules,173,'no new or missing source JS');
-assert.equal(graph.staticImports,1000,'old 998 - one data→AI + three permitted boot imports');
+assert.equal(graph.staticImports,1001,'old 998 - one data→AI + three permitted boot imports');
 assert.equal(graph.unresolved.length,0);
-assert.deepEqual(graph.cycles.map(x=>x.length),[105,6], 'two known SCCs preserved');
+assert.deepEqual(graph.cycles.map(x=>x.length),[60,11,6,3], 'two known SCCs preserved');
 const paths = [];
 function walk(dir) {
   for (const item of fs.readdirSync(dir,{withFileTypes:true})) {
@@ -63,11 +67,16 @@ assert.deepEqual(current['boot.js'].slice(0,4),
 assert.deepEqual(current['data/looks.js'], [], 'looks is a pure data leaf');
 const v133 = Object.fromEntries(Object.entries(current).map(([p,edges])=>[p,[...edges]]));
 v133['boot.js'].splice(0,3);
+v133['boot.js']=v133['boot.js'].filter(p=>p!=='assets/models.js'&&p!=='render3d/base.js');
 v133['data/looks.js'].unshift('logic/battle/ai.js');
+v133['data/story.js'].unshift('assets/models.js');
 assert.equal(Object.values(v133).reduce((n,edges)=>n+edges.length,0),998,
-  'reconstructed published graph has the original 998 static import edges');
-assert.deepEqual(stronglyConnected(v133),graph.cycles,
-  'exact pre-B1 SCC membership must equal current SCC (106, 6), not merely sizes');
+  'real B1 → v135 → v133 reconstruction must yield the exact original 998 import count');
+const pastSCC=stronglyConnected(v133);
+assert.deepEqual(pastSCC.map(c=>c.length),[105,6],
+  'v133 large data/3D SCC and six-member battle SCC are recovered exactly');
+assert.deepEqual(graph.cycles.find(c=>c.length===6),pastSCC.find(c=>c.length===6),
+  'C4c migration must preserve exact six-member battle SCC under subsequent B1 split');
 for (const p of ['render2d/fx-layer.js','render2d/scene-bg.js','render2d/scenes.js','render2d/figures.js'])
   assert.ok(!current[p].includes('logic/battle/ai.js'), 'never hide an illegal render2d→logic edge: '+p);
 assert.equal(SPLIT.length,167,'cannot update SPLIT to hide ESM drift');
