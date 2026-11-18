@@ -10,9 +10,13 @@ import { DETAIL_BACK, SQ_LP, set_DETAIL_BACK, set_SQ_LP } from './ui/overlays/de
 import { BT, S } from './core/state.js';
 import { $ } from './core/dom.js';
 import { openDetail } from './ui/hero-card.js';
+import { loadAssets3 } from './assets/models.js';
+import { b3Pre } from './render3d/base.js'; // ARCH-01C5b-B1 application composition root
 
 const spiceUser = d => !!d && !d.boss && !!d.legendary;
 function hourglass(v) { const p = Math.max(0, Math.min(100, v)), top = 1 - p / 100; return `<button class="hglass ${p >= 100 ? 'full' : ''}" data-gz="spice" aria-label="Меланж ${p}%" title="Меланж"><svg viewBox="0 0 24 32" aria-hidden="true"><defs><clipPath id="hgt"><path d="M5 4h14c0 6-5 8-6 12H11C10 12 5 10 5 4z"/></clipPath><clipPath id="hgb"><path d="M11 16h2c1 4 6 6 6 12H5c0-6 5-8 6-12z"/></clipPath></defs><rect x="3" y="1.5" width="18" height="2.5" rx="1" fill="#c08a50"/><rect x="3" y="28" width="18" height="2.5" rx="1" fill="#c08a50"/><path d="M5 4h14c0 6-5 8-6 12 1 4 6 6 6 12H5c0-6 5-8 6-12C10 12 5 10 5 4z" fill="rgb(255 255 255 / .1)" stroke="#e8d0a0" stroke-width="1"/><rect clip-path="url(#hgt)" x="0" y="${4 + 12 * (1 - top)}" width="24" height="12" fill="#e8913f"/><rect clip-path="url(#hgb)" x="0" y="${28 - 12 * p / 100}" width="24" height="12" fill="#ffb05a"/>${p > 0 && p < 100 ? '<path class="hgs" d="M12 16v12" stroke="#ffb05a" stroke-width=".8" stroke-dasharray="1 1.5"/>' : ''}</svg><b>${p}%</b></button>`; }
+// ARCH-01C5b-B1: register exactly once before start() can first render 3D.
+b3Pre(loadAssets3);
 window.claude?.hot?.snapshot?.(() => ({ save: S }));
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 
