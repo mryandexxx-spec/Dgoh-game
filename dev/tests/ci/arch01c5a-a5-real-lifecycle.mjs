@@ -88,8 +88,15 @@ async function run(mode,kind){
  page.on('pageerror',e=>errors.push(e.message.slice(0,300)));
  page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text().slice(0,150));});
  await page.evaluateOnNewDocument(save=>{
-  try{localStorage.clear();if(save)localStorage.setItem('dune-goh-v1',save);
-    localStorage.setItem('dune-cine-off','true');}catch(e){}
+  try{
+   // Initialize once per new tab, never wipe the persist0 result on reload.
+   if(sessionStorage.getItem('__a5_initialized')!=='1'){
+    localStorage.clear();
+    if(save)localStorage.setItem('dune-goh-v1',save);
+    localStorage.setItem('dune-cine-off','true');
+    sessionStorage.setItem('__a5_initialized','1');
+   }
+  }catch(e){}
   try{Object.defineProperty(navigator,'serviceWorker',{value:undefined,configurable:true});}catch(e){}
   window.__A5={marks:[]};
   window.__A5_MARK=n=>window.__A5.marks.push(n);
