@@ -121,6 +121,11 @@ jobs:
           node tests/ci/arch02b1-storage-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02b1-storage-acceptance.mjs dist/artifact.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-02C-B0 transaction fault characterization (PWA + artifact; unsafe baseline)
+        run: |
+          node tests/ci/arch02c-b0-transaction-characterization.mjs dist/pwa/index.html
+          node tests/ci/arch02c-b0-transaction-characterization.mjs dist/artifact.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-01C2a all 210 mission costs (PWA + artifact)
         run: |
           node tests/arch01c2a-energy.mjs dist/pwa/index.html
