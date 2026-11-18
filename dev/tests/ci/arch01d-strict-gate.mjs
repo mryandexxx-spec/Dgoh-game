@@ -49,12 +49,12 @@ try{
 
  // AST validator closes the regex checker blind spots (side-effect/multiline/re-export/dynamic).
  const cases=[
-  ["import '../assets/models.js';",/data\/pure\.js -> assets\/models\.js/],
-  ["import {\n screen,\n} from '../ui/panel.js';",/data\/pure\.js -> ui\/panel\.js/],
-  ["export * from '../logic/battle/ai.js';",/data\/pure\.js -> logic\/battle\/ai\.js/],
-  ["await import('../core/state.js');",/data\/pure\.js -> core\/state\.js/],
-  ["await import(runtimePath);",/data\/pure\.js -> <dynamic>/],
-  ["import * as BAB from '@babylonjs/core';",/data\/pure\.js -> @babylonjs\/core/],
+  ["import '../assets/models.js';",/NEW data\/pure\.js:\d+ -> assets\/models\.js/],
+  ["import {\n screen,\n} from '../ui/panel.js';",/NEW data\/pure\.js:\d+ -> ui\/panel\.js/],
+  ["export * from '../logic/battle/ai.js';",/NEW data\/pure\.js:\d+ -> logic\/battle\/ai\.js/],
+  ["await import('../core/state.js');",/NEW data\/pure\.js:\d+ -> core\/state\.js/],
+  ["await import(runtimePath);",/NEW data\/pure\.js:\d+ -> <dynamic>/],
+  ["import * as BAB from '@babylonjs/core';",/NEW data\/pure\.js:\d+ -> @babylonjs\/core/],
  ];
  for(const [source,expected] of cases){
   setSource(source);
