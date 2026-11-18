@@ -1,5 +1,4 @@
 // data/conquest-data.js — строки 5255–5393 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import '../ui/overlays/celebrate.js'; // порядок исполнения
 import { MENTAT } from './chars.js';
 import { FACTIONS } from './fx.js';
 
