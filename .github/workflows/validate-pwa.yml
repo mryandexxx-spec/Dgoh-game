@@ -326,6 +326,8 @@ jobs:
       - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
       - run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
       - run: node tests/smoke/memory-ix-dom.mjs dist/pwa/index.html
+      - name: ARCH-01C5a-A4 real Chrome cold/warm virtual ESM bootstrap differential (no game changes)
+        run: node tests/ci/arch01c5a-a4-browser-differential.mjs
       - run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
       - name: Upload E3 screenshots
         if: always()
