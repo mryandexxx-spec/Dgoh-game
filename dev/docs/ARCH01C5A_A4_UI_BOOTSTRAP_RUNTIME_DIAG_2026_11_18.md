@@ -30,6 +30,43 @@
 - **B1 NO-GO по умолчанию независимо от результата** — нельзя внедрять реальный код без отдельного user approval и полного поведения: 200 battle golden, 1560 meta, 4 saves, 41+ screens, Conquest weekly/reset/route/refill/feats/difficulty/notes/celebration, full cold/warm PWA+standalone HTML, offline/SW, 3D/model preloader, WebGL LOW/MED/HIGH, Campaign 2.0 210, лагерь и реальный iPhone Safari. Запрещено исправлять ESM/golden тесты «для зелёного» без утверждённого новой contract/order/TDZ proof.
 - Если Chromium-кандидат падает или меняет события, **признать конкретный NO-GO**; не считать его безопасным только потому, что CI на *оригинальной* v134 зелёный.
 
-## Actual CI / результат
+## Фактическая проверка A4: реальные esbuild / Chrome / CI
 
-**PENDING** — зафиксировать точный SHA, вывод виртуального builder gate, actual browser cold/warm diagnostic cases, размер first divergence и конечные CI receipts; не подменять тест реальным выпуском.
+**Исходный диагностический HEAD** `8c79c6ad3a85b521a04608cc5c881be12549fb31` (код тестов и PR-only workflow; `dev/src` НЕ изменён). [**GitHub Actions #44239990336 — COMPLETED SUCCESS, attempt 3**](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44239990336), итоговый `All required checks passed` **SUCCESS**, `Publish verified PWA to GitHub Pages` **SKIPPED**. Первый полный запуск: 17 обязательных рабочих заданий успешны, но единственный оригинальный `Arena animation continuity + HUD + lighting` FAILED (`flash-expired HUD projection drift u0`, 844×390 MED); следовательно final gate FAILED. Первая перепроверка `rerun failed jobs` **на том же SHA, без правок теста/игры** снова дала original Arena FAIL (`flash-expired HUD projection drift u9`, 667×375 LOW; MED subcase PASS). Вторая перепроверка **только упавшего job** на неизменённом SHA (attempt 3) закончилась **SUCCESS**; final gate подтвердил полное проверенное покрытие. **Оба первых падения сохраняются как наблюдение нестабильного исходного HUD-smoke**, не скрываются и не приписываются виртуальному bootstrap. Они не основание менять рендер или эталоны в A4.
+
+Реальный `Build once + architecture + SHA-256 manifest` job **`134585367476` SUCCESS**. Реальный E3 Chrome job **`134585790116` SUCCESS в исходной попытке**: существующие gear/memory IX/DOM и новый A4-browser differential PASS. Верифицированный package **`dune-validated-build`, artifact ID `14398639550`**, SHA-256 digest `92741ce741d4acaa3704cff3dd4fe385d0505646dfaa5a8e816443915df6a07c`, 188 проверенных PWA файлов, v134, SW `a93dcde641`. **Данный CI относится к кодовому HEAD, не к документационной последующей записи.**
+
+### Проверенный виртуальный bootstrap graph
+
+Тест `arch01c5a-a4-virtual-bootstrap.mjs` проверил настоящим esbuild: 173 JS, 1000 imports, original **167/167** ESM markers, virtual содержит те же 167 модулей, **47 ESM-позиций сдвинуты**, first mismatch **index 118: original `logic/trials.js` vs virtual `data/conquest-data.js`**; SCC **[106,6]→[105,6]**, из большого SCC выходит строго `data/conquest-data.js`, новых data→runtime рёбер **0**, в контрфактическом графе остаётся только Story→models. Оригинальная программа/ledger **по-прежнему имеют две запрещённые зависимости**. Source edits на диске и `SPLIT` edits **0**. Builder instrument source uses exactly the same event probes in both versions; actual validated production model asset URL map is copied into both virtual browser bundles, never replaced with a fake empty map.
+
+### Реальный браузерный дифференциальный тест (одинаковое HTML, ассеты и контекст)
+
+Обязательный E3 Chromium создаёт две изолированные вкладки с **исходным** и **виртуальным** JavaScript, оба собираются в памяти и подменяют только HTTP `/app.js` в локальной PWA. Test runtime covers a new save at **844×390 phone** and existing late-save fixture **667×375 phone**, not a simulated Node VM. Each response is downloaded exactly once, page errors / TDZ none in either variant.
+
+| Проверка | cold 844×390 | warm late-save 667×375 |
+| --- | --- | --- |
+| `pageerror` / TDZ / `ReferenceError` | 0 / 0, обе сборки | 0 / 0, обе сборки |
+| Профиль `view` | `lobby` / `lobby` | `lobby` / `lobby` |
+| `CQ_SECT`, `CQ_DISKS` | 5 секторов / 23 диска в обеих | 5 / 23 в обеих |
+| `S` state keys | 69 / 69 | 71 / 71 |
+| `S.conq` save keys | идентичный список из 24 keys | идентичный список из 24 keys |
+| `CELEB` / `NOTES` | 0 / 1 в обеих | 0 / 1 в обеих |
+| `notePoll(true), renderNotes(), showCeleb(), cqStatic()` | `ok, ok, ok, true` в обеих | то же |
+| `MutationObserver` | ровно один `body,childList,subtree` в обеих | то же |
+| DOM `addEventListener` по типам / intervals | равное число, нет расхождений | равное число, нет расхождений |
+| `models:b3Pre(loadAssets3)` и `notifications:onPersist(notePoll)` | before/after в обоих | before/after в обоих |
+| `core/boot.start` | reached в обоих | reached в обоих |
+| Splash на момент раннего snapshot | отсутствует в обоих | baseline уже исчез, virtual ещё присутствует — **необъяснённое временное расхождение** |
+| Top-level module-ready порядок | **РАСХОДИТСЯ** | **РАСХОДИТСЯ** |
+
+**Первое наблюдаемое расхождение instrumented module-ready** — индекс 8: исходный `ui/overlays/squad-select.js`, виртуальный `data/conquest-data.js`. Далее candidate `logic/conquest.js` выполняется **раньше** `squad-select`, тогда как baseline сначала завершает `squad-select` и связанные event/boot paths. Эти две последовательности нельзя считать эквивалентными только потому, что текущие вызовы `notePoll/renderNotes/showCeleb` работают. Положительная регистрация `b3Pre` — это **регистрация колбэка**, а не проверка реальной загрузки всех 3D моделей / Engine wake. Аналогично `showCeleb` был вызван на **пустой очереди**: реальная непустая star-up / unlock CELEB очередь и event interleaving ещё не доказаны.
+
+**A4 реальные результаты:** `baselineSafe=true`, `candidateParity=false`, `noTDZ=true` для обеих страниц, `publicCalls=true`, `observerRegistrations=true`, `listeners=true`, `intervals=true`; `bootState=true` cold, `bootState=false` warm из-за splash. Эталонный `S.conq` в warm не мигрировал и не потерял ключи в проверенном состоянии. Не проверено: отдельный single-file `dist/artifact.html` с реальной виртуальной заменой, offline/SW update на кандидате, физический iPhone Safari, непустой CELEB/NOTES queue scheduling, повторное импортирование/замещение save, реальная загрузка 3D-ассетов и первый wake, все режимы Conquest в виртуальном кандидате. **Исходная v134** прошла full product CI; **виртуальный кандидат** — только перечисленные узкие сравнительные тесты.
+
+### Решение
+
+**ARCH-01C5a-A4 Stage A — диагностика выполнена. Контрфактический вариант даёт определённую ограниченную совместимость без TDZ, но полная поведенческая эквивалентность НЕ доказана. B1 NO-GO.** Не разрешать merge или выпуск и не редактировать SCC/ESM/golden oracle без отдельного owner review. Пятёрка пути диагностики остаётся Draft/UNMERGED; source debt = 2.
+
+**Предлагаемый следующий шаг (только отдельно утверждённый ARCH-01C5a-A5 / Stage A):** тест на реальной **непустой CELEB/NOTES очереди** (star-up, unlock, уведомления Conquest, последовательность/дедупликация/скрытие при модальном окне), импорт/замену сейва и недельный Conquest rollover, фактическое исполнение `loadAssets3` через `loadB3` и проверка 3D assets/Engine/camp wake, cold/warm/standalone HTML + offline and actual iPhone Safari. Проектировать UI-owned composition/late-init port можно лишь с сохранением всех действующих именованных контрактов `UI→data/logic` и доказанным жизненным циклом. Не переносить Story→models и 3D baker/camp без самостоятельной оценки. **Никаких изменений производственного кода, версии, сохранений или публикации в A4.**
+
