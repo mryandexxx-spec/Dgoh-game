@@ -50,8 +50,9 @@ const phaseWeek="(()=>{S.cqUnlock={...S.cqUnlock,easy:'b1-permanent-unlock'};"+
  "unlock:S.cqUnlock.easy,savedUnlock:disk.cqUnlock.easy,savedWeek:disk.conq.wk};})()";
 const phaseRestored="(()=>{const c=cq();return {week:c.wk,stars:c.stars,"+
  "unlock:S.cqUnlock?.easy,saved:loadSave()?.cqUnlock?.easy};})()";
-const phase3d="(async()=>{const loaded=await loadB3();const names=Object.keys(MODEL_DATA).sort();"+
- "return{loaded,has3d:HAS3D,globalB3:!!globalThis.__B3,"+
+const phase3d="(async()=>{const registered=B3_PRE.filter(fn=>fn===loadAssets3).length;"+
+ "const loaded=await loadB3();const names=Object.keys(MODEL_DATA).sort();"+
+ "return{registered,loaded,has3d:HAS3D,globalB3:!!globalThis.__B3,"+
  "duncan:!!MODEL_DATA.duncan,worm:!!MODEL_DATA.worm,names,"+
  "liveEngines:(globalThis.__B3?.EngineStore?.Instances||[]).filter(x=>!x.isDisposed).length};})()";
 async function scenario(kind){
@@ -115,6 +116,7 @@ async function scenario(kind){
   assert.equal(restored.saved,'b1-permanent-unlock');
   assert.equal(restored.unlock,'b1-permanent-unlock');
   const three=await ev(phase3d);
+  assert.equal(three.registered,1,'cold/warm B1 must register exactly one loadAssets3 callback in B3_PRE');
   assert.ok(three.loaded&&three.has3d&&three.globalB3&&three.duncan&&three.worm,
    'actual Babylon + DGM decoded, no callback-only success');
   for(const name of ['baron','baron_legend','duncan','muaddib','worm'])
