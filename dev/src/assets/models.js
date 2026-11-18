@@ -70,7 +70,8 @@ function loadAssets3() {   // Promise: каждый ассет независи�
     loadKtx2(),
   ]).then(rs => { const bad = rs.filter(r => r.status === 'rejected'); for (const r of bad) console.warn('ассет 3D', r.reason); if (bad.length) ASSETS_P = null; }));
 }
-b3Pre(loadAssets3);
+// Registration is owned by the application composition root (boot.js).
+// Keep the historical named base import to preserve the independently reviewed ESM graph.
 
 
 export { MODEL_DATA, WORM_IMG, assetUrl, ktx2For, loadAssets3 };
