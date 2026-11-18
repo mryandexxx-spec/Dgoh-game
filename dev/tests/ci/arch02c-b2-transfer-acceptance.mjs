@@ -203,7 +203,8 @@ for(const [id,kind] of [['T12','QuotaExceededError'],['T13','SecurityError']]){
  h.g.run('metaClick({saveexp:1})');
  assert.equal(current(h),old);
  assert.equal(h.fields.get('#savecode').value,'');
- pass('T19','unreadable primary never presented as verified export');
+ assert.match(h.fields.get('#overlay2').innerHTML,/data-saveunsaved/);
+ pass('T19','unreadable primary offers only explicitly unverified RAM rescue');
 }
 // T20: verified B1 raw primary same candidate must not rotate backup.
 {
