@@ -1,5 +1,5 @@
 # Dune GoH — ARCH-01C5a-B1 / v135 release handoff
-**18 ноября 2026.** Owner approved «Сливай и публикуй»; implementation merged. This record begins as a **RELEASE CANDIDATE**, not publication proof.
+**18 ноября 2026 · PUBLISHED AND INDEPENDENTLY VERIFIED.** Owner approved «Сливай и публикуй»; implementation and release merged. Original fail-closed publication plan is retained for audit; actual verified receipts are recorded in the final section.
 ## Exact implementation
 - [Issue #132](https://github.com/mryandexxx-spec/Dgoh-game/issues/132), [implementation PR #181 MERGED](https://github.com/mryandexxx-spec/Dgoh-game/pull/181) source main `0486a33bf9eaf71336665c5188e9d9b324fa27f5`.
 - [Real implementation CI #44259518352](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44259518352): completed SUCCESS, 19/19 mandatory checks; 188-file validated-build artifact ID `14408125169`, sha256 `2b1ce1496a7e8fe1075ba6faeeb092aa632133eb66aec9b2b3a027d27f420987`.
