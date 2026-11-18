@@ -8,10 +8,12 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const read = name => fs.readFileSync('src/' + name, 'utf8');
 const imports = name => importEdges(read(name), name).map(e => e.to);
 const baseline = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json', 'utf8')).legacy;
+assert.deepEqual(baseline,['data/story.js -> assets/models.js'],
+ 'B1 approved removal preserves only historical Story→models dependency');
 const campaigns = read('data/campaigns.js'), gates = read('logic/campaign-gates.js');
 const boot = read('core/boot.js');
 
-assert.equal(baseline.length, 2, 'C4a and C4c B1 remove verified order-only predecessors; campaign, journey and RNG invariants retained');
+assert.equal(baseline.length,1, 'C4a and C4c B1 remove verified order-only predecessors; campaign, journey and RNG invariants retained');
 assert.ok(!baseline.includes('data/campaigns.js -> core/state.js'),
   'campaign data may never import live state again');
 assert.ok(!baseline.includes('data/campaigns.js -> core/rng.js') &&

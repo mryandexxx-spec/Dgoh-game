@@ -9,6 +9,8 @@ import { SPLIT } from '../../tools/split.config.mjs';
 const read = f => fs.readFileSync('src/' + f, 'utf8');
 const edges = f => importEdges(read(f), f).map(e => e.to);
 const legacy = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json', 'utf8')).legacy;
+assert.deepEqual(legacy,['data/story.js -> assets/models.js'],
+ 'B1 approved removal preserves only historical Story→models dependency');
 
 assert.equal(MAX_GEAR, 13, 'gear XIII cap must not change');
 assert.deepEqual(edges('data/gear-cap.js'), [], 'cap belongs to pure data only');
@@ -30,7 +32,7 @@ assert.ok(gateOwner.includes('p.stars >= 7 && p.gear >= MAX_GEAR'),
   'Muad-Dib 7-star and gear XIII gate must not change');
 assert.ok(gateOwner.includes('!!prog(k).stars ||'),
   'already unlocked legends must stay grandfathered');
-assert.equal(legacy.length,2, 'C4a additionally removes boss→skills while preserving gear-cap invariants');
+assert.equal(legacy.length,1, 'C4a additionally removes boss→skills while preserving gear-cap invariants');
 assert.ok(!legacy.includes('data/journeys.js -> logic/economy.js'),
   'removed reverse edge cannot stay in baseline');
 const slot = SPLIT.filter(([,name]) => name === 'data/gear-cap.js');
