@@ -16,7 +16,6 @@ const looks = read('data/looks.js');
 const ai = read('logic/battle/ai.js');
 const frozen = JSON.parse(fs.readFileSync('tools/arch-import-baseline.json','utf8')).legacy;
 assert.deepEqual(frozen,[
- 'data/conquest-data.js -> ui/overlays/celebrate.js',
  'data/story.js -> assets/models.js'
 ], 'remove only the proven boss→skills reverse dependency, preserve three known order-critical debts');
 const edges = p => importEdges(read(p),p).filter(e=>e.kind==='static').map(e=>e.to);
@@ -39,7 +38,7 @@ assert.ok(stats.includes('function unitPower(def, p) {'));
 assert.ok(stats.includes('export { unitStats, unitPower, setGearStatProvider };'));
 assert.ok(!looks.includes("import '../logic/battle/ai.js'; // порядок исполнения"),'C4c B1 removes the looks→AI predecessor only after explicit root boot proof');
 assert.ok(ai.includes("if (typeof module !== 'undefined') module.exports"),'AI CJS adapter retained');
-assert.ok(read('data/conquest-data.js').includes("import '../ui/overlays/celebrate.js'; // порядок исполнения"),'C3b0 blocked predecessor kept');
+assert.ok(!read('data/conquest-data.js').includes("import '../ui/overlays/celebrate.js'; // порядок исполнения"),'B1 UI-owned predecessor replaces the blocked C3b0 data debt');
 assert.ok(read('data/story.js').includes("import '../assets/models.js'; // порядок исполнения"),'C2d blocked predecessor kept');
 assert.ok(!read('data/conquest-data.js').includes("from '../logic/conquest.js'"),'no Conquest regression');
 
@@ -47,7 +46,7 @@ const graph=analyzeTree(process.cwd());
 assert.equal(graph.modules,173);
 assert.equal(graph.staticImports,1000,'C4c adds three permitted boot imports and removes looks→AI after C4a');
 assert.equal(graph.unresolved.length,0,'no unresolved import');
-assert.deepEqual(graph.cycles.map(c=>c.length),[106,6],
+assert.deepEqual(graph.cycles.map(c=>c.length),[105,6],
  'C4a intentionally reduced only the legacy 9-member battle SCC to six');
 assert.equal(SPLIT.length,167);
 const names=SPLIT.map(([,p])=>p);
@@ -80,7 +79,7 @@ assert.ok(!g['data/boss.js'].includes('logic/battle/skills.js'));
 const oldGraph=Object.fromEntries(Object.entries(g).map(([p,v])=>[p,[...v]]));
 oldGraph['data/boss.js'].unshift('logic/battle/skills.js');
 const historical=stronglyConnected(oldGraph);
-assert.deepEqual(historical.map(c=>c.length),[106,9],
+assert.deepEqual(historical.map(c=>c.length),[105,9],
  'one restored historical predecessor must recreate v132 SCC, no other graph changes');
 assert.deepEqual(graph.cycles[0],historical[0],'full 106-member Conquest SCC must be byte-for-byte unchanged');
 assert.ok(graph.cycles[1].every(p=>historical[1].includes(p)),
