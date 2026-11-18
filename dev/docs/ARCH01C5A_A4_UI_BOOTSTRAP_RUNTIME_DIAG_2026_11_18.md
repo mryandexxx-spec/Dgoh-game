@@ -1,0 +1,35 @@
+# ARCH-01C5a-A4 — UI bootstrap: виртуальная проверка TDZ, CELEB/NOTES и 3D preloader
+
+**Scope:** исследование / Stage A4, без изменения игрового кода, баланса, сохранений, `SPLIT`, golden, графики, 21 карты / 210 миссий Campaign 2.0 и защищённого лагеря; без merge и публикации. **Base `main=b3d65303130dbd385caaac299f1f2dfc0473cd8c`, выпуск v134**, public root `a057ea05ebc115cf5deca0222a4bb5aa5164ab48`, SW `a93dcde641`. Репозиторий [Dgoh-game](https://github.com/mryandexxx-spec/Dgoh-game), [Issue #132](https://github.com/mryandexxx-spec/Dgoh-game/issues/132), [A3 Draft PR #177](https://github.com/mryandexxx-spec/Dgoh-game/pull/177); [A3 final head CI #44189365949 SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44189365949).
+
+## Причина исследования и границы доказательства
+
+- Остаются ровно две исторические запрещённые связи: `data/conquest-data.js→ui/overlays/celebrate.js` и `data/story.js→assets/models.js`. В последних релизах v134 ранее проверены 173 JS, 1000 static imports, 167 ESM-позиций, 898 имён и SCC [106,6]; publication checks реальны.
+- [ARCH-01C5a-A2](https://github.com/mryandexxx-spec/Dgoh-game/pull/176) проверил 100 законных позиций переносов и нашёл **0 exact ESM**. Лучший (`ui/views/conq.js:first`) сдвинул **47 из 167** ESM-позиций, `data/conquest-data.js` один вышел из SCC 106→105.
+- [ARCH-01C5a-A3](https://github.com/mryandexxx-spec/Dgoh-game/pull/177) нашёл 12 из 16 исходящих `celebrate`-веток, ведущих обратно к Conquest, и минимальный **UI-author-owned** графовый разрез **8 рёбер, из них 7 именованных**. Поэтому простое удаление «порядковых» связей не работает. Часть путей заходит в `data/story→assets/models→render3d/scenes/baker`.
+- Доказано: если слой `data` импортирует только `data`, невозможно буквально сохранить смешанный data+UI SCC [106,6] после очистки двух долгов. Пересмотр допустимого конкретного состава SCC возможен **лишь после отдельного разрешения владельца и фактического bootstrap/TDZ/runtime доказательства**, не посредством обхода тестового контракта.
+
+## A4 — два новых независимых уровня диагностики
+
+1. `dev/tests/ci/arch01c5a-a4-virtual-bootstrap.mjs` — компиляция неизменённого v134 через настоящий production-equivalent esbuild и компиляция **виртуального контрфактического** кандидата в памяти. Меняет только две временные строки в esbuild `onLoad`: удаляет `data/conquest-data.js→celebrate.js` и добавляет `import '../overlays/celebrate.js'` **перед** существующим первым импортом `ui/views/conq.js`. Требует `167/167` имён модулей без missing/extra, **ровно 47 moved**, first mismatch #118, SCC [105,6] с точно одним вышедшим `data/conquest-data.js`, ровно 1 оставшийся исторический reverse-edge и 0 новых долгов. Оригинальный v134 ESM порядок обязателен **167/167**. Любое расхождение с замороженной исходной структурой — красный diagnostic gate.
+2. `dev/tests/ci/arch01c5a-a4-browser-differential.mjs` запускается в **обязательном E3 Chromium job** в отдельной PR-ветке после проверенного `dune-validated-build`. Он строит два браузерных JS-бандла **в памяти**: baseline original+identical read-only instrumentation и тот же instrumented кандидат 47 moved. Путь model `ASSET` формируется **строго из validated `dist/app.unmin.js`**, без заглушек или поддельных 3D URL. Подменяется только HTTP-ответ `/app.js` локального тестового PWA-сервера в Puppeteer; `dist`, `dev/src`, `app.js`, `sw.js` и project files не переписываются. Сравнение в изолированных вкладках **cold new save / 844×390** и **warm late save / 667×375**: фактические pageerrors/TDZ, первые 17 меток ESM module-ready, регистрация `b3Pre(loadAssets3)`, `onPersist(notePoll)`, вход в `core/boot.start()`, установленные `MutationObserver`, подписки DOM, интервалы, `CELEB`/`NOTES`, Conquest table length/save schema и вызовы `notePoll/renderNotes/showCeleb/cqStatic`.
+   - Это **реальный Chrome PWA**, а не только AST / фиктивная VM; входные saver fixtures и контент страницы берутся из той же подтверждённой сборки.
+   - Результат помечает **candidate parity vs baseline**. Любое нарушение TDZ, инициализации модели, установки observer/notes, UI или отклонение маркеров — предметный NO-GO; baseline TDZ = невалидное испытание; случайный SUCCESS виртуального кандидата **всё равно не может быть B1 GO** из-за 47 переставленных старых ESM marker positions, непроверенного standalone HTML/физического Safari/iPhone и необходимости независимого owner-review.
+
+**A4 изменяет только:** два новых diagnostics JS `dev/tests/ci`, один обязательный architecture test hook `dev/tests/ci/arch-init-graph.mjs`, один дополнительный шаг Chrome в PR-ветке `.github/workflows/validate-pwa.yml`, текущий документ. `dev/src`, `SPLIT`, архитектурные baseline/golden, `dev/version.json`, root `index.html` / `app.js` / `sw.js`, renderer/camp/saves/assets untouched.
+
+## Возможный законный дизайн будущего контракта
+
+Если архитектурное решение станет возможно, **`data/conquest-data.js` остаётся pure data**, существующие именованные импорты в `logic/conquest.js`, `ui/views/conq.js`, `ui/overlays/squad-select.js`, `ui/notifications.js` и прочих UI-обработчиках остаются действительными. **Владелец порядка** — `ui/views/conq.js` или специальный `ui/` composition/bootstrap-модуль, подключаемый из `boot.js` до cold/warm hydration. Это не должно менять `core/boot.start`, `renderNotes`, UI events или `b3Pre(loadAssets3)` без доказательства регистрации и TDZ. Строго запрещено вводить DOM в `data/logic`, импорт UI в `data` или превращать живые именованные контракты в фиктивные side effects.
+
+Альтернатива, если даже лучший кандидат ломает холодный старт: **сначала уточнить семантику ранней инициализации, а не пытаться воспроизвести прежний ESM порядок просто перестановкой импортов**. Проектировать маленькие порты/фабрики поздних UI-хуков допустимо только после доказательства необходимости, сохранения публичных API и performance бюджетов, отдельным будущим Stage A5.
+
+## GO / NO-GO
+
+- **GO только для завершения Stage A4 как исследования**, если virtual/actual Chrome диагностика работает на оригинальной v134, воспроизводит 47 перестановок, осмысленно отражает реальные различия, fail-closed тесты зелёные.
+- **B1 NO-GO по умолчанию независимо от результата** — нельзя внедрять реальный код без отдельного user approval и полного поведения: 200 battle golden, 1560 meta, 4 saves, 41+ screens, Conquest weekly/reset/route/refill/feats/difficulty/notes/celebration, full cold/warm PWA+standalone HTML, offline/SW, 3D/model preloader, WebGL LOW/MED/HIGH, Campaign 2.0 210, лагерь и реальный iPhone Safari. Запрещено исправлять ESM/golden тесты «для зелёного» без утверждённого новой contract/order/TDZ proof.
+- Если Chromium-кандидат падает или меняет события, **признать конкретный NO-GO**; не считать его безопасным только потому, что CI на *оригинальной* v134 зелёный.
+
+## Actual CI / результат
+
+**PENDING** — зафиксировать точный SHA, вывод виртуального builder gate, actual browser cold/warm diagnostic cases, размер first divergence и конечные CI receipts; не подменять тест реальным выпуском.
