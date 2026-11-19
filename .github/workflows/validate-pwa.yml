@@ -146,6 +146,11 @@ jobs:
           node tests/ci/arch02c-b3-b1-writer-lease-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b3-b1-writer-lease-acceptance.mjs dist/artifact.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-02C-B3-B1b opted-in boot and persist writer gate (PWA + artifact; NOT LIVE)
+        run: |
+          node tests/ci/arch02c-b3-b1b-gated-boot-acceptance.mjs dist/pwa/index.html
+          node tests/ci/arch02c-b3-b1b-gated-boot-acceptance.mjs dist/artifact.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-01C2a all 210 mission costs (PWA + artifact)
         run: |
           node tests/arch01c2a-energy.mjs dist/pwa/index.html

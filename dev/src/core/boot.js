@@ -28,6 +28,7 @@ function splashOff() {
 // ARCH-01C5a initialization contract. Importantly, a failed read supplies
 // undefined, NOT a newly created account or a writable fallback.
 let startupReadFailure = null;
+let startupEntered = false, startupSucceeded = false;
 function initialSave(data) {
   startupReadFailure = null;
   if (data && data.save) return data.save; // hot reload compatibility
@@ -39,6 +40,8 @@ function initialSave(data) {
 }
 function start(data) {
   set_S(initialSave(data));
+  startupEntered = true;
+  startupSucceeded = false;
   onPersist(null, metaFill.showSaveRecovery);
   if (startupReadFailure) { metaFill.showSaveRecovery(startupReadFailure); return; }
   metaFill(S); if (!S.notes) noteSnap(true);
@@ -57,6 +60,33 @@ function start(data) {
   splashOff();
   if (loginCan()) setTimeout(() => { if (!BT && !$('#overlay2').innerHTML) openCalendar(); }, Math.max(400, 2600 - performance.now()));
   setInterval(() => { if (!BT) renderRes(); else { tickWater(); } }, 1000);
+  startupSucceeded = true;
 }
+
+// ARCH-02C-B3-B1b: explicitly opted-in preboot writer path. NOT wired to
+// the production boot.js entrypoint yet (old cached PWA still ignores it).
+// Refuse late enabling after legacy start, and never mutate S or render a
+// secondary game until exclusive Web Locks ownership is confirmed.
+async function startWithWriter(data = {}) {
+  if (startupEntered) return { ok: false, status: 'already-started' };
+  if (data && data.save) return { ok: false, status: 'hot-reload-unsupported' };
+  // Sticky deny-by-default: a failed/unsupported/competing lock cannot
+  // accidentally route a later persist() through unchecked localStorage.
+  loadSave.writer.enableGate();
+  const acquired = await loadSave.writer.acquire();
+  if (!acquired.ok) return acquired;
+  try {
+    start(data);
+  } catch (e) {
+    // Remain gated, retain owner lease for explicit diagnostic/export. No
+    // automatic retry or newSave fallback on an incomplete startup.
+    return { ok: false, status: 'boot-exception',
+      error: (e && e.name) || 'Error' };
+  }
+  if (!startupSucceeded) return { ok: false, status: 'boot-incomplete' };
+  return { ok: true, status: 'started' };
+}
+// Preserve the existing named-export/ESM initialization ABI.
+start.writer = startWithWriter;
 
 export { splashOff, start };

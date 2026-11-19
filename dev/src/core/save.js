@@ -131,6 +131,10 @@ function saveWriteFailure(status, e) {
   return result;
 }
 function persist0() {
+  // ARCH-02C-B3-B1b: ONLY when an opt-in preboot writer gate is enabled.
+  // A gate without a current exclusive lease must NEVER fall back to the
+  // historical unchecked setItem (e.g. after pagehide or failed acquire).
+  if (writerGateEnabled) return writerPersist();
   let json;
   try {
     json = JSON.stringify(S);
@@ -361,6 +365,33 @@ loadSave.checkpoint = Object.freeze({
 // A lock only coordinates cooperating, same-origin/partitioned JS contexts.
 // In particular a cached older PWA ignores it. Never claim otherwise.
 const WRITER_LOCK_NAME = SAVE_KEY + '.writer';
+// Off in v140 legacy boot, for explicit B3-B1b integration proof only.
+// One-way within this JS realm: release, denial, exception, or BFCache must
+// not silently re-enable the old unsafe write path after opting in.
+let writerGateEnabled = false;
+// Once a gated gameplay session releases/loses its lease it cannot be
+// reattached to newly acquired storage bytes while S remains stale in RAM.
+let writerGateInvalidated = false;
+function writerEnableGate() {
+  if (!writerGateEnabled && S !== undefined) {
+    // The caller already has RAM that was created without writer authority.
+    // Switching that session to "owned" now could overwrite newer progress.
+    writerGateEnabled = true;
+    writerGateInvalidated = true;
+    return { ok: false, status: 'late-gate' };
+  }
+  writerGateEnabled = true;
+  return writerGateInvalidated ? { ok: false, status: 'session-stale' } :
+    { ok: true, status: 'gated' };
+}
+function writerPersist() {
+  if (writerGateInvalidated) return saveWriteFailure('session-stale',
+    { name: 'StaleSession' });
+  const result = writerCommit({ expectedRaw: writerLease ? writerLease.raw : undefined,
+    candidate: S });
+  if (result.ok) return { ok: true, status: 'ok', verified: result.status };
+  return saveWriteFailure(result.status, { name: result.error || result.status });
+}
 let writerLease = null;
 let writerAcquiring = false;
 let writerCancelAcquire = null;
@@ -368,10 +399,14 @@ let writerTicket = 0;
 let writerLastStatus = 'idle';
 function writerState() {
   if (writerLease) return { ok: !writerLease.stale,
-    status: writerLease.stale ? 'stale' : 'owned', raw: writerLease.raw };
-  return { ok: false, status: writerAcquiring ? 'acquiring' : writerLastStatus };
+    status: writerLease.stale ? 'stale' : 'owned', raw: writerLease.raw,
+    gated: writerGateEnabled };
+  return { ok: false, status: writerGateInvalidated ? 'session-stale' :
+    (writerAcquiring ? 'acquiring' : writerLastStatus), gated: writerGateEnabled };
 }
 function writerRelease() {
+  if (writerGateEnabled && (writerAcquiring || writerLease))
+    writerGateInvalidated = true;
   if (writerAcquiring && writerCancelAcquire) {
     writerTicket++;
     writerCancelAcquire();
@@ -414,6 +449,8 @@ function writerCommit({ expectedRaw, candidate } = {}) {
   return result;
 }
 async function writerAcquire() {
+  if (writerGateEnabled && writerGateInvalidated)
+    return { ok: false, status: 'session-stale' };
   if (writerLease) return { ok: false, status: 'already-owner' };
   if (writerAcquiring) return { ok: false, status: 'acquiring' };
   // Do not use a localStorage mutex: test-and-set is not atomic between tabs.
@@ -493,7 +530,8 @@ async function writerAcquire() {
     () => {
       if (!settled) finish({ ok: false, status: 'unavailable' });
       if (writerLease && writerLease.ticket === ticket) {
-        writerLease = null; // unexpected lock loss; deny all future commits
+        writerLease = null; // unexpected lock loss; never attach stale S
+        if (writerGateEnabled) writerGateInvalidated = true;
         writerLastStatus = 'lost';
       }
     },
@@ -501,6 +539,7 @@ async function writerAcquire() {
       if (!settled) finish({ ok: false, status: 'unavailable' });
       if (writerLease && writerLease.ticket === ticket) {
         writerLease = null;
+        if (writerGateEnabled) writerGateInvalidated = true;
         writerLastStatus = 'lost';
       }
     });
@@ -509,7 +548,8 @@ async function writerAcquire() {
 // Opt-in surface on an existing named export preserves the 898-name ESM ABI.
 loadSave.writer = Object.freeze({
   name: WRITER_LOCK_NAME, acquire: writerAcquire, state: writerState,
-  check: writerCheck, commit: writerCommit, release: writerRelease
+  check: writerCheck, commit: writerCommit, release: writerRelease,
+  enableGate: writerEnableGate
 });
 
 export { SAVE_KEY, newSave, fillSave, loadSave, persist0, notePend, persist, onPersist };
