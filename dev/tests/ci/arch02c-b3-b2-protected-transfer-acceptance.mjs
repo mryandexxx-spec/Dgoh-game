@@ -140,7 +140,8 @@ async function backupOrigin(){
   o.store.set(KEY,outside);
   t.confirm();
   assert.equal(o.store.get(KEY),outside);
-  assert.equal(t.state().status,'stale');
+  assert.equal(t.state().status,'session-stale');
+  assert.equal(t.g.ctx.__blockedAfterImport,'import-stale');
   t.release();await flush();
   pass('X04','stale expected primary does not overwrite outsider bytes');
 }
@@ -179,11 +180,10 @@ async function backupOrigin(){
   const old=t.save(),write=t.local.setItem;
   t.local.setItem=(k,v)=>{write(k,v);if(k===KEY)
     throw Object.assign(new Error('post-write'),{name:'SecurityError'});};
-  t.g.run('metaFill.showSaveRecovery = issue => {window.__recoverWarn=issue.status;}');
   t.confirm();
-  assert.equal(t.state().status,'stale');
+  assert.equal(t.state().status,'session-stale');
   assert.equal(t.save(),old);
-  assert.equal(t.g.ctx.__recoverWarn,'uncertain');
+  assert.equal(t.g.ctx.__blockedAfterImport,'import-uncertain');
   t.release();await flush();
   pass('X07','ambiguous primary write blocks reapplication');
 }
@@ -293,7 +293,23 @@ async function backupOrigin(){
   await flush();
   pass('X14','ambiguous backup restore requires fresh inspection');
 }
-assert.deepEqual(ids,Array.from({length:14},(_,i)=>
+// X15 denied tab's save-transfer UI API is also unable to read any progress,
+// even if invoked directly rather than through the DOM's capture-phase guard.
+{
+  const o=origin(),a=o.tab(),b=o.tab();
+  assert.equal((await a.start()).status,'started');
+  assert.equal((await b.start()).status,'busy');
+  const before=o.store.get(KEY),read=b.local.getItem;let count=0;
+  b.local.getItem=k=>{count++;return read(k);};
+  assert.equal(b.g.run('metaClick({saveexp:1})'),true);
+  assert.equal(b.g.run('metaClick({saveload:1})'),true);
+  assert.equal(b.g.run('metaClick({saveconfirm:1})'),true);
+  assert.equal(count,0,'denied tab must never even inspect saved progress');
+  assert.equal(o.store.get(KEY),before);
+  a.release();await flush();
+  pass('X15','denied transfer entry points perform zero progress reads');
+}
+assert.deepEqual(ids,Array.from({length:15},(_,i)=>
   'X'+String(i+1).padStart(2,'0')));
-console.log('[ARCH-02C-B3-B2-A1] 14/14 protected transfer/recovery proofs on '+html+
+console.log('[ARCH-02C-B3-B2-A1] 15/15 protected transfer/recovery proofs on '+html+
   '; opt-in only, old cached PWA UNFENCED, recovery UI not yet promoted.');
