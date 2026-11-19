@@ -98,7 +98,15 @@ function writerLifecycleBlock(reason) {
   if (!writerLifecycleArmed) return;
   // During the asynchronous acquire we are blocked already, but pagehide
   // must STILL cancel its pending callback and forbid a later boot.
-  if (writerLifecycleReason === 'acquiring' || !writerLifecycleBlocked) {
+  // B3-B2-A2: a recovery-only native lease can be owned while the normal
+  // gameplay lifecycle is ALREADY blocked (corrupt/missing primary). A page
+  // suspension must therefore revoke that lease too; otherwise a frozen tab
+  // could retain authority and later confirm an obsolete backup preview.
+  const suspended = reason === 'pagehide' ||
+    reason === 'background-suspended' || reason === 'frozen' ||
+    reason === 'bfcache-resume';
+  if (writerLifecycleReason === 'acquiring' || !writerLifecycleBlocked ||
+      suspended) {
     writerLifecycleBlocked = true;
     writerLifecycleReason = reason || 'session-stale';
     // Also cancels a pending acquisition; Web Lock never remains held while

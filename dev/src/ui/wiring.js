@@ -369,13 +369,20 @@ function showWriterBlocked(outcome = {}) {
   title.textContent = outcome.status === 'busy' ?
     'Игра открыта в другой вкладке' :
     outcome.status === 'import-verified-reload' ?
-      'Импорт проверен — перезагрузите игру' : 'Игровой сеанс остановлен';
+      'Импорт проверен — перезагрузите игру' :
+    outcome.status === 'recovery-verified-reload' ?
+      'Резервная копия восстановлена — перезагрузите игру' :
+      'Игровой сеанс остановлен';
   title.style.cssText = 'font-size:20px;line-height:1.25;margin:0 0 12px;color:#f4c987;';
   const body = document.createElement('p');
   body.textContent = outcome.status === 'import-verified-reload' ?
     'Импорт записан и проверен. Старое состояние игры отключено от записи. ' +
     'Перезагрузите страницу для чтения импортированного прогресса. ' +
     'Не очищайте данные сайта или PWA.' :
+    outcome.status === 'recovery-verified-reload' ?
+    'Проверенная резервная копия восстановлена и повторно прочитана из хранилища. ' +
+    'Старый игровой сеанс по-прежнему заблокирован. Перезагрузите страницу для ' +
+    'проверки восстановления. Не очищайте данные PWA.' :
     'Запись прогресса в этом окне заблокирована (' +
     String(outcome.status || 'unknown') +
     '). Не продолжайте игру в старом окне: оно может хранить устаревшее состояние. ' +
@@ -408,6 +415,121 @@ function showWriterBlocked(outcome = {}) {
       });
       panel.appendChild(button); panel.appendChild(field);
     } catch (e) { /* export unavailable, never substitute unverified RAM */ }
+  }
+  // ARCH-02C-B3-B2-A2: EXPLICIT recovery only on the failed, preboot,
+  // empty-RAM writer gate. Never inspect storage just to offer this button:
+  // the initial screen may belong to a second tab without lock authority.
+  // The first click acquires the native exclusive recovery-only lease, then
+  // and only then performs B1 checkpoint inspection and shows a preview.
+  if (loadSave.writer.state().gated &&
+      ['corrupt', 'invalid', 'recovery-required'].includes(outcome.status)) {
+    const info = document.createElement('p');
+    info.textContent = 'Можно вручную проверить резервную копию. Восстановление ' +
+      'заменит повреждённое или отсутствующее основное сохранение более ранней ' +
+      'проверенной копией. Ничего не будет заменено без отдельного подтверждения.';
+    info.style.cssText = 'font-size:13px;line-height:1.5;margin:10px 0;';
+    panel.appendChild(info);
+    const probe = document.createElement('button');
+    probe.id = 'save-recover-prepare';
+    probe.type = 'button';
+    probe.textContent = 'Проверить резервную копию';
+    probe.style.cssText = 'background:#b08a56;color:#10141b;border:0;border-radius:7px;padding:10px 12px;font-weight:700;margin:4px 0;';
+    const message = document.createElement('p');
+    message.id = 'save-recover-status';
+    message.setAttribute('role', 'status');
+    message.style.cssText = 'font-size:13px;line-height:1.5;margin:8px 0;';
+    const preview = document.createElement('p');
+    preview.id = 'save-recover-preview';
+    preview.style.cssText = 'font-size:13px;line-height:1.5;margin:8px 0;';
+    const confirm = document.createElement('button');
+    confirm.id = 'save-recover-confirm';
+    confirm.type = 'button';
+    confirm.textContent = 'Подтверждаю восстановление из резервной копии';
+    confirm.style.cssText = 'background:#b08a56;color:#10141b;border:0;border-radius:7px;padding:10px;font-weight:700;margin:4px 8px 4px 0;';
+    confirm.hidden = true;
+    const cancel = document.createElement('button');
+    cancel.id = 'save-recover-cancel';
+    cancel.type = 'button';
+    cancel.textContent = 'Отмена — сохранить всё без изменений';
+    cancel.style.cssText = 'background:transparent;color:#f4d4a1;border:1px solid #a18b69;border-radius:7px;padding:10px;margin:4px 0;';
+    cancel.hidden = true;
+    let pendingRecovery = null;
+    probe.addEventListener('click', async () => {
+      if (probe.disabled || pendingRecovery) return;
+      probe.disabled = true;
+      message.textContent = 'Запрашивается эксклюзивная блокировка для проверки копии…';
+      if (document.visibilityState === 'hidden') {
+        message.textContent = 'Окно в фоне. Перезагрузите игру перед повторной проверкой.';
+        return;
+      }
+      const acquired = await loadSave.writer.acquire({ purpose: 'recovery' });
+      if (!acquired.ok) {
+        message.textContent = 'Восстановление недоступно (' + acquired.status +
+          '). Основное сохранение не изменено. Перезагрузите страницу для новой проверки.';
+        return;
+      }
+      // If the tab was suspended, boot's lifecycle handler cancels the lease;
+      // an async acknowledgement must never revive authority after pagehide.
+      if (root.isConnected === false || document.visibilityState === 'hidden' ||
+          loadSave.writer.state().status !== 'owned' ||
+          !loadSave.writer.check().ok) {
+        loadSave.writer.release();
+        message.textContent = 'Проверка прервана. Перезагрузите страницу.';
+        return;
+      }
+      const inspected = loadSave.checkpoint.inspect();
+      if (inspected.status !== 'recoverable' ||
+          inspected.backup.status !== 'ok' ||
+          !['missing', 'corrupt', 'invalid'].includes(inspected.primary.status)) {
+        loadSave.writer.release();
+        message.textContent = 'Проверенная резервная копия для этого основного ' +
+          'сохранения недоступна. Ничего не изменено. Перезагрузите страницу.';
+        return;
+      }
+      pendingRecovery = {
+        expectedPrimaryRaw: inspected.primary.raw ?? null,
+        expectedBackupEnvelope: inspected.backup.envelopeRaw
+      };
+      const backupSave = inspected.backup.save;
+      preview.textContent = 'Будет восстановлена ПРЕДЫДУЩАЯ копия v1: героев ' +
+        Object.keys(backupSave.roster).length + ', солярии ' + backupSave.solari +
+        ', пласталь ' + backupSave.plast + '. Контрольный код: ' +
+        transferFingerprint(inspected.backup.raw) + '. Новые достижения ' +
+        'после создания этой копии могут отсутствовать.';
+      message.textContent = 'Копия проверена под Web Lock. Основное сохранение ' +
+        'ещё НЕ заменено. Сохраните собственный внешний экспорт, если он имеется.';
+      confirm.hidden = false;
+      cancel.hidden = false;
+    });
+    cancel.addEventListener('click', () => {
+      if (!pendingRecovery) return;
+      pendingRecovery = null;
+      loadSave.writer.release();
+      confirm.hidden = true;
+      cancel.hidden = true;
+      message.textContent = 'Восстановление отменено без записи. Для новой проверки ' +
+        'перезагрузите страницу. Не очищайте данные PWA.';
+    });
+    confirm.addEventListener('click', () => {
+      if (!pendingRecovery || confirm.disabled) return;
+      confirm.disabled = true;
+      const expected = pendingRecovery;
+      pendingRecovery = null; // double-click cannot replay a restore
+      // writer.recover() rechecks exact bytes and releases native lock after
+      // this ONE attempt, including conflict, security, or write-then-throw.
+      const result = loadSave.writer.recover(expected);
+      if (result.ok && result.status === 'restored') {
+        showWriterBlocked({ status: 'recovery-verified-reload' });
+      } else {
+        showWriterBlocked({ status: 'recovery-' + result.status });
+      }
+      // NEVER set_S(), start() or auto-reload the current JS heap.
+    });
+    panel.appendChild(probe);
+    panel.appendChild(message);
+    panel.appendChild(preview);
+    panel.appendChild(confirm);
+    panel.appendChild(cancel);
   }
   const note = document.createElement('p');
   note.textContent = 'Если сохранение не удалось проверить, не выполняйте сброс или повторный импорт вслепую.';
