@@ -446,6 +446,9 @@ function writerCheck() {
   return { ok: true, status: 'current', raw: expected.raw };
 }
 function writerCommit({ expectedRaw, candidate } = {}) {
+  // A recovery-only lease can never commit gameplay RAM or import a save.
+  if (writerLease && writerLease.purpose === 'recovery')
+    return checkpointFailure('recovery-only', 'writer-commit');
   const checked = writerCheck();
   if (!checked.ok) return checked;
   if (expectedRaw !== writerLease.raw)
@@ -460,7 +463,13 @@ function writerCommit({ expectedRaw, candidate } = {}) {
   }
   return result;
 }
-async function writerAcquire() {
+// B3-B2: optional user-confirmed recovery lease has NO gameplay authority.
+ // It can only be requested in a gated, empty-RAM realm and for a verified
+ // backup plus corrupt/invalid/missing primary. Ordinary acquire is unchanged.
+async function writerAcquire(options = {}) {
+  const recovery = options && options.purpose === 'recovery';
+  if (recovery && (!writerGateEnabled || S !== undefined))
+    return { ok: false, status: 'recovery-requires-empty-ram' };
   if (writerGateEnabled && writerGateInvalidated)
     return { ok: false, status: 'session-stale' };
   if (writerLease) return { ok: false, status: 'already-owner' };
@@ -499,22 +508,40 @@ async function writerAcquire() {
         }
         const primary = inspectCheckpointPrimary();
         const backup = inspectCheckpointBackup();
-        if (primary.status !== 'ok' && primary.status !== 'missing') {
-          finish({ ok: false, status: primary.status });
-          return;
-        }
-        if (backup.status !== 'ok' && backup.status !== 'missing') {
-          finish({ ok: false, status: 'backup-' + backup.status });
-          return;
-        }
-        if (primary.status === 'missing' && backup.status === 'ok') {
-          finish({ ok: false, status: 'recovery-required' });
-          return;
+        if (recovery) {
+          if (primary.status === 'unsupported' || primary.status === 'ok') {
+            finish({ ok: false, status: primary.status === 'ok' ?
+              'already-valid' : 'unsupported' });
+            return;
+          }
+          if (!['missing', 'corrupt', 'invalid'].includes(primary.status)) {
+            finish({ ok: false, status: primary.status });
+            return;
+          }
+          if (backup.status !== 'ok') {
+            finish({ ok: false, status: backup.status === 'missing' ?
+              'no-verified-backup' : 'backup-' + backup.status });
+            return;
+          }
+        } else {
+          if (primary.status !== 'ok' && primary.status !== 'missing') {
+            finish({ ok: false, status: primary.status });
+            return;
+          }
+          if (backup.status !== 'ok' && backup.status !== 'missing') {
+            finish({ ok: false, status: 'backup-' + backup.status });
+            return;
+          }
+          if (primary.status === 'missing' && backup.status === 'ok') {
+            finish({ ok: false, status: 'recovery-required' });
+            return;
+          }
         }
         // The returned pending Promise keeps the native Web Lock held.
         const holding = new Promise(resolve => {
           writerLease = { raw: primary.raw ?? null, primaryStatus: primary.status,
-            stale: false, ticket, release: resolve };
+            stale: false, ticket, purpose: recovery ? 'recovery' : 'game',
+            release: resolve };
         });
         writerLastStatus = 'owned';
         // Do not acknowledge a provider that calls back but fails to return
@@ -557,12 +584,30 @@ async function writerAcquire() {
     });
   return started;
 }
+// Manual one-shot restore: NEVER acquires a lock implicitly, replaces RAM,
+// boots gameplay, or retries after an uncertain write. The caller supplies
+// both EXACT bytes inspected while holding the same recovery-only Web Lock.
+function writerRecover({ expectedPrimaryRaw, expectedBackupEnvelope } = {}) {
+  if (!writerGateEnabled || !writerLease ||
+      writerLease.purpose !== 'recovery' || S !== undefined)
+    return checkpointFailure('not-recovery-owner', 'writer-recover');
+  const checked = writerCheck();
+  if (!checked.ok) {
+    writerRelease(); // an interrupted or stale recovery session is retired
+    return checked;
+  }
+  const result = recoverCheckpoint({ expectedPrimaryRaw, expectedBackupEnvelope });
+  // Even a successful restore MUST reload a new JS realm. The original
+  // primary, if corrupt, must never be adopted into this heap's gameplay RAM.
+  writerRelease();
+  return result;
+}
 // Opt-in surface on an existing named export preserves the 898-name ESM ABI.
 loadSave.writer = Object.freeze({
   name: WRITER_LOCK_NAME, primaryKey: SAVE_KEY,
   acquire: writerAcquire, state: writerState,
-  check: writerCheck, commit: writerCommit, release: writerRelease,
-  enableGate: writerEnableGate
+  check: writerCheck, commit: writerCommit, recover: writerRecover,
+  release: writerRelease, enableGate: writerEnableGate
 });
 
 export { SAVE_KEY, newSave, fillSave, loadSave, persist0, notePend, persist, onPersist };
