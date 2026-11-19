@@ -25,7 +25,7 @@ function init(raw=null){
   if(raw!==null)g.store.set(KEY,raw);
   // Explicit old-client harness: the new production composition root is
   // mandatory-gated and must NEVER use this direct legacy seeding path.
-  g.run('set_S(loadSave()); metaFill(S); persist0()');
+  g.run('set_S(loadSave() || newSave()); metaFill(S); persist0()');
   assert.equal(g.run('loadSave(true).status'),'ok');
   return {g,fields,listeners};
 }
