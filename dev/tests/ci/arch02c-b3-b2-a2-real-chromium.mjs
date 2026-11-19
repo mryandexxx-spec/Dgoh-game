@@ -171,13 +171,30 @@ try{
     document.getElementById('save-recover-prepare').click());
   // A failed preview is NOT a pass: report its actionable reason instead
   // of hiding a Web Locks/storage/lifecycle bug behind a generic timeout.
-  await interrupted.waitForFunction(()=>{
-    const confirm=document.getElementById('save-recover-confirm');
-    const message=document.getElementById('save-recover-status');
-    return (confirm && !confirm.hidden) ||
-      (message && /недоступно|прервана|Перезагрузите страницу/.test(
-        message.textContent));
-  },{timeout:10000,polling:50});
+  try {
+    await interrupted.waitForFunction(()=>{
+      const confirm=document.getElementById('save-recover-confirm');
+      const message=document.getElementById('save-recover-status');
+      return (confirm && !confirm.hidden) ||
+        (message && /недоступно|прервана|Перезагрузите страницу|Окно в фоне/.test(
+          message.textContent));
+    },{timeout:10000,polling:50});
+  } catch(e) {
+    const debug=await interrupted.evaluate(async ()=>{
+      let nativeLocks;
+      try { nativeLocks=await navigator.locks.query(); }
+      catch(err) { nativeLocks=String(err); }
+      return {
+        visible:document.visibilityState,
+        probeDisabled:document.getElementById('save-recover-prepare')?.disabled,
+        confirmHidden:document.getElementById('save-recover-confirm')?.hidden,
+        message:document.getElementById('save-recover-status')?.textContent,
+        phase:window.__b3Entry.writerLifecycle(),
+        nativeLocks
+      };
+    });
+    throw new Error('interrupted recovery preview never settled: '+JSON.stringify(debug),{cause:e});
+  }
   const interruptedStatus=await interrupted.evaluate(()=>({
     visible:!document.getElementById('save-recover-confirm')?.hidden,
     message:document.getElementById('save-recover-status')?.textContent,
