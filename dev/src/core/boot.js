@@ -43,6 +43,10 @@ function initialSave(data) {
 // only with an explicit pre-boot opt-in. Never silently enable this for v140.
 let writerPreviewReentry = false;
 function start(data) {
+  // Once the preview arms the one-way writer gate, even removing its flag
+  // must NEVER resurrect the old unchecked production bootstrap in this heap.
+  if (!writerPreviewReentry && writerLifecycleArmed)
+    return { ok: false, status: 'session-blocked' };
   if (!writerPreviewReentry &&
       window.__DGOH_B3_B1C_BOOT_MODE__ === 'writer-preview')
     return startWithWriter(data);
