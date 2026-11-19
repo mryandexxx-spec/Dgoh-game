@@ -93,6 +93,7 @@ function start(data) {
 // Reuse of suspended/stale in-memory S is strictly forbidden.
 let writerLifecycleArmed = false, writerLifecycleBlocked = false;
 let writerLifecycleReason = 'idle';
+let writerLifecycleHasOwned = false;
 function writerLifecycleBlock(reason) {
   if (!writerLifecycleArmed) return;
   // During the asynchronous acquire we are blocked already, but pagehide
@@ -105,7 +106,9 @@ function writerLifecycleBlock(reason) {
     // release, even if the browser later resumes this exact JS heap.
     loadSave.writer.release();
   }
-  try { metaFill.showWriterBlocked({ status: writerLifecycleReason }); }
+  try { metaFill.showWriterBlocked({
+    status: writerLifecycleReason, allowVerifiedExport: writerLifecycleHasOwned
+  }); }
   catch (e) { /* lost DOM must never revive a writable session */ }
 }
 function writerLifecycleArm() {
@@ -161,15 +164,28 @@ function writerLifecycleState() {
 async function startWithWriter(data = {}) {
   if (startupEntered) return { ok: false, status: 'already-started' };
   if (writerLifecycleArmed) return { ok: false, status: 'session-blocked' };
-  if (data && data.save) return { ok: false, status: 'hot-reload-unsupported' };
+  // Arm the one-way gate BEFORE rejecting an injected hot snapshot or a
+  // failed late-gate attempt. Otherwise removing the preview flag could
+  // restart the same heap through the unsafe legacy entrypoint.
   const gate = loadSave.writer.enableGate();
-  if (!gate.ok) return gate;
   writerLifecycleArm();
+  if (!gate.ok) {
+    writerLifecycleBlock(gate.status);
+    return gate;
+  }
+  if (data && data.save) {
+    writerLifecycleBlock('hot-reload-unsupported');
+    return { ok: false, status: 'hot-reload-unsupported' };
+  }
   const acquired = await loadSave.writer.acquire();
   if (!acquired.ok) {
     writerLifecycleBlock(acquired.status);
     return acquired;
   }
+  // Mark verified ownership only AFTER native Web Locks acknowledges it.
+  // A denied competing tab must never even inspect the private save for an
+  // export through its blocked-screen rendering.
+  writerLifecycleHasOwned = true;
   // A pagehide/freeze can race the asynchronous acquisition acknowledgement.
   if (writerLifecycleReason !== 'acquiring' ||
       loadSave.writer.state().status !== 'owned') {
