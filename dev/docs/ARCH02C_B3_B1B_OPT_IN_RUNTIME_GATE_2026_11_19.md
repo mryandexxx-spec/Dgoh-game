@@ -23,13 +23,14 @@ Existing named exports 898, ESM split markers 167, strict architecture baseline 
 
 ## Deterministic acceptance
 
-New dev/tests/ci/arch02c-b3-b1b-gated-boot-acceptance.mjs: 18 cases times two actual compiled builds (PWA and artifact), with two independent game VM heaps on shared storage and deterministic native Web Locks stub.
+New dev/tests/ci/arch02c-b3-b1b-gated-boot-acceptance.mjs: 19 cases times two actual compiled builds (PWA and artifact), with two independent game VM heaps on shared storage and deterministic native Web Locks stub.
 
 - G01 documents UNSAFE legacy default. G02 gate without owner refuses writes. G03 unsupported Web Locks never reaches boot. G04 competing second tab cannot boot or save.
 - G05 new owner reloads latest primary after prior release. G06 guarded legacy persist stages/verifies checkpoint. G07 release never falls back to unchecked persist. G08 old uncooperative client still bypasses lock (explicit UNSAFE) and opted-in client detects stale storage.
 - G09 backup quota failure leaves primary unchanged. G10 write-then-throw yields uncertain and bars retry. G11 corrupt primary cannot become a fresh account. G12 a legacy-started session cannot claim late-safe bootstrap. G13 untrusted hot reload data cannot bypass reloading verified primary.
 - G14 missing primary without a backup creates a genuinely new account under authority. G15 missing primary with valid backup requires manual recovery. G16 rejected native manager blocks boot. G17 failed first checkpoint during boot cannot claim startup success.
 - G18 after a gated session releases, it cannot reacquire a new lease using old RAM; a later confirmed owner's write is preserved. Gate invalidation is sticky for the original JS realm.
+- G19 if a caller tries to enable the writer gate after loading/mutating S under the legacy path, it is rejected as late-gate and becomes permanently fail-closed. It cannot obtain a lease to authorize stale RAM.
 
 Required CI stage on both PWA/HTML plus existing B3-A0 intentionally UNSAFE forensic characterizations, B3-B1a primitive tests, B0/B1/B2 saves, strict ARCH-01D, campaign/golden/3D/PWA/offline/full gate. VM tests are not a two-real-page browser proof.
 
