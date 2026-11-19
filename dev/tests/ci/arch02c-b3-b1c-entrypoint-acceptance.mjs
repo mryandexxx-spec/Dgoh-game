@@ -110,6 +110,9 @@ const spin=async()=>{for(let i=0;i<10;i++)await Promise.resolve();};
   t.mode('writer-preview');
   assert.equal((await t.start()).status,'unsupported');
   t.mode(undefined);
+  assert.equal((await t.start()).status,'session-blocked',
+    'removing preview flag must NOT enable legacy start() after denial');
+  assert.equal(t.ram(),undefined);
   assert.equal(t.g.run('persist0()').status,'not-owner');
   assert.equal(o.store.get(KEY),original);
   done('C06','removing preview flag cannot reopen legacy persist');
