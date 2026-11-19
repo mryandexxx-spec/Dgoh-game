@@ -1,6 +1,6 @@
 // ARCH-02C-B3-B2-A2 — REAL Chromium user-confirmed import & recovery proof.
 // Two genuine same-origin pages, browser-native Web Locks and localStorage,
-// actual compiled PWA and DOM; never a simulated lock manager. Opt-in only.
+// actual compiled PWA and DOM; never a simulated lock manager. Default-gated.
 // Old cached v140 clients remain uncooperative/UNSAFE; Safari still pending.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -39,10 +39,7 @@ async function open({seed=true}={}){
     {timeout:25000,polling:50});
   return page;
 }
-const start=page=>page.evaluate(()=>{
-  window.__DGOH_B3_B1C_BOOT_MODE__='writer-preview';
-  return window.__b3Entry({});
-});
+const start=page=>page.evaluate(()=>window.__b3Entry({}));
 const phase=page=>page.evaluate(()=>window.__b3Entry.writerLifecycle());
 const get=(page,key=KEY)=>page.evaluate(k=>localStorage.getItem(k),key);
 const evaluate=(page,code)=>page.evaluate(source=>(0,eval)(source),code);
