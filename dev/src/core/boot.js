@@ -123,7 +123,7 @@ function writerLifecycleArm() {
     if (writerLifecycleBlocked ||
         (e.key !== loadSave.writer.primaryKey &&
          e.key !== loadSave.checkpoint.key && e.key !== null)) return;
-    if (e.key === loadSave.checkpoint.key ||
+    if (e.key === null || e.key === loadSave.checkpoint.key ||
         !loadSave.writer.check().ok) writerLifecycleBlock('external-save-change');
   });
 }
