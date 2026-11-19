@@ -1,5 +1,6 @@
 // ARCH-02C-B3-A0: deterministic SHARED-ORIGIN multi-tab fault characterization.
-// UNSAFE EXPECTATIONS are a red-line baseline, NOT safety acceptance.
+// UNSAFE EXPECTATIONS model pre-B3 uncooperative writers ONLY.
+// Ordinary production bootstrap now requires native Web Locks.
 // Exercises each actual compiled PWA and HTML game through independent VMs.
 // No live browser profiles, production keys, or golden snapshots are changed.
 import assert from 'node:assert/strict';
@@ -99,7 +100,9 @@ function confirm(t) { assert.equal(t.g.run('metaClick({saveconfirm:1})'), true);
 // This still does not protect against concurrent or subsequent legacy writes.
 {
   const o = origin(), a = o.tab(), b = o.tab();
-  a.g.run('start({})'); b.g.run('start({})');
+  // Historical uncooperative old-client RAM: never call the new
+  // mandatory production start() to simulate a legacy writer.
+  a.g.run('set_S(loadSave())'); b.g.run('set_S(loadSave())');
   const expected = o.store.get(KEY), oldS = a.g.run('JSON.stringify(S)');
   preview(a, changed(expected, 100));
   assert.equal(b.g.run('S.solari += 7; persist0().ok'), true);
@@ -114,7 +117,9 @@ function confirm(t) { assert.equal(t.g.run('metaClick({saveconfirm:1})'), true);
 // The next PWA/HTML reopen sees the overwritten value, not the imported one.
 {
   const o = origin(), a = o.tab(), b = o.tab();
-  a.g.run('start({})'); b.g.run('start({})');
+  // Historical uncooperative old-client RAM: never call the new
+  // mandatory production start() to simulate a legacy writer.
+  a.g.run('set_S(loadSave())'); b.g.run('set_S(loadSave())');
   const base = o.store.get(KEY);
   const bSolari = b.g.run('S.solari');
   preview(a, changed(base, 100));
