@@ -140,6 +140,12 @@ try{
     new PageTransitionEvent('pagehide',{persisted:true})));
   await restored.evaluate(()=>localStorage.setItem('dune-goh-v1','{SECOND-DAMAGE'));
   const interrupted=await open({seed:false});
+  // A native recovery UI is intentionally disabled in a background tab.
+  // Puppeteer's newPage() does not guarantee foreground visibility after
+  // several same-origin tabs: explicitly focus the intended recovery owner.
+  await interrupted.bringToFront();
+  assert.equal(await interrupted.evaluate(()=>document.visibilityState),'visible',
+    'the recovery test must exercise a foreground user action');
   assert.equal((await start(interrupted)).status,'corrupt');
   await interrupted.evaluate(()=>
     document.getElementById('save-recover-prepare').click());
