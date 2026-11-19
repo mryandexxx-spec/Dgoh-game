@@ -139,7 +139,7 @@ const flush = async () => { for (let i=0;i<8;i++) await Promise.resolve(); };
   assert.equal((await a.start({})).ok,true);
   a.release();await flush();
   const prior=o.store.get(KEY);
-  assert.equal(a.change(999).status,'not-owner');
+  assert.equal(a.change(999).status,'session-stale');
   assert.equal(o.store.get(KEY),prior);
   assert.equal(a.state().gated,true);
   pass('G07','lock release permanently denies further writes in that realm');
@@ -272,6 +272,20 @@ const flush = async () => { for (let i=0;i<8;i++) await Promise.resolve(); };
   a.release();await flush();
   pass('G17','failed initial checkpoint never acknowledges successful boot');
 }
-assert.deepEqual(ids,Array.from({length:17},(_,i)=>'G'+String(i+1).padStart(2,'0')));
-console.log('[ARCH-02C-B3-B1b] 17/17 gated boot/legacy-persist checks complete; '+
+// G18: releasing an active gated session must not allow reacquire with stale S.
+{
+  const o=origin(),a=o.tab(),b=o.tab();
+  assert.equal((await a.start({})).ok,true);
+  a.release();await flush();
+  assert.equal((await b.start({})).ok,true);
+  assert.equal(b.change(777).ok,true);
+  const confirmed=o.store.get(KEY);
+  b.release();await flush();
+  assert.equal((await a.g.run('loadSave.writer.acquire()')).status,'session-stale');
+  assert.equal(a.change(11).status,'session-stale');
+  assert.equal(o.store.get(KEY),confirmed);
+  pass('G18','released stale-RAM session can never reacquire and clobber newer owner');
+}
+assert.deepEqual(ids,Array.from({length:18},(_,i)=>'G'+String(i+1).padStart(2,'0')));
+console.log('[ARCH-02C-B3-B1b] 18/18 gated boot/legacy-persist checks complete; '+
   'legacy default and old cached versions UNSAFE until separately approved cutover.');
