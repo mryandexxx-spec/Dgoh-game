@@ -90,21 +90,35 @@ try{
   const candidate={...JSON.parse(fixture),solari:base+1234};
   // Inspect/confirm through the real source-built UI and event function,
   // NOT an under-the-hood direct checkpoint call.
-  const preview=await a.evaluate(c=>{
+  // Keep preview, exact-byte no-write assertion and explicit confirm in
+  // ONE browser task: a background game timer must not mutate S between two
+  // awaited CDP round-trips. Production deliberately rejects stale previews,
+  // so treating a legitimate memory-changed denial as a save failure made
+  // this test flaky when CI ran many concurrent WebGL jobs.
+  const transfer=await a.evaluate(c=>{
+    const pre=localStorage.getItem('dune-goh-v1');
     metaClick({saveimp:1});
     const field=document.querySelector('#savecode');
     if(!field)throw new Error('missing import textarea');
     field.value=btoa(unescape(encodeURIComponent(JSON.stringify(c))));
     metaClick({saveload:1});
-    return {text:document.querySelector('#overlay2').textContent,
-      hasConfirm:!!document.querySelector('[data-saveconfirm]')};
+    const preview={text:document.querySelector('#overlay2').textContent,
+      hasConfirm:!!document.querySelector('[data-saveconfirm]'),
+      unchanged:localStorage.getItem('dune-goh-v1')===pre};
+    if(!preview.hasConfirm || !preview.unchanged)return {preview};
+    // Second explicit UI action, same synchronous browser task.
+    metaClick({saveconfirm:1});
+    return {preview,imported:localStorage.getItem('dune-goh-v1'),
+      backup:localStorage.getItem('dune-goh-v1.backup'),
+      phase:window.__b3Entry.writerLifecycle()};
   },candidate);
-  assert.equal(preview.hasConfirm,true,'B2 preview requires an explicit confirm');
-  assert.equal(await get(a),before,'import preview must not write any bytes');
-  await a.evaluate(()=>metaClick({saveconfirm:1}));
-  const imported=await get(a);
+  assert.equal(transfer.preview.hasConfirm,true,
+    'B2 preview requires an explicit confirm');
+  assert.equal(transfer.preview.unchanged,true,
+    'import preview must not write any bytes');
+  const imported=transfer.imported;
   assert.equal(JSON.parse(imported).solari,candidate.solari);
-  assert.equal(JSON.parse(await get(a,BACKUP)).raw,before);
+  assert.equal(JSON.parse(transfer.backup).raw,before);
   assert.equal((await phase(a)).blocked,true,
     'verified import must block all old-RAM gameplay input');
   assert.equal((await evaluate(a,'S.solari += 99; persist0()')).status,'session-stale');
