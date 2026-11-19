@@ -44,6 +44,34 @@ const phase=page=>page.evaluate(()=>window.__b3Entry.writerLifecycle());
 const get=(page,key=KEY)=>page.evaluate(k=>localStorage.getItem(k),key);
 const evaluate=(page,code)=>page.evaluate(source=>(0,eval)(source),code);
 const release=page=>evaluate(page,'loadSave.writer.release()');
+// Exercise the REAL clickable recovery control, not HTMLElement.click()
+// while old browser capture handlers may filter synthetic interactions.
+// Audit the one user gesture without retrying a potentially ambiguous restore.
+async function clickRecoveryPrepare(page,label){
+  await page.evaluate(()=>{
+    const probe=document.getElementById('save-recover-prepare');
+    window.__recoveryClickAudit={
+      connected:!!probe?.isConnected,
+      insideOverlay:!!probe?.closest('#save-writer-blocked'),
+      blockedRoot:!!document.getElementById('save-writer-blocked')?.isConnected,
+      disabled:probe?.disabled,
+      targetSeen:false,
+      windowSeen:false
+    };
+    window.addEventListener('click',()=>{window.__recoveryClickAudit.windowSeen=true;},
+      {capture:true,once:true});
+    probe?.addEventListener('click',()=>{window.__recoveryClickAudit.targetSeen=true;},
+      {once:true});
+  });
+  await page.click('#save-recover-prepare');
+  const audit=await page.evaluate(()=>({
+    ...window.__recoveryClickAudit,
+    disabledAfter:document.getElementById('save-recover-prepare')?.disabled,
+    message:document.getElementById('save-recover-status')?.textContent,
+    phase:window.__b3Entry.writerLifecycle()
+  }));
+  assert.equal(audit.targetSeen,true,label+' recovery click was intercepted: '+JSON.stringify(audit));
+}
 try{
   const a=await open(),denied=await open();
   assert.equal(await a.evaluate(()=>typeof navigator.locks?.request),'function');
@@ -111,7 +139,7 @@ try{
     document.getElementById('save-recover-confirm').hidden),true);
   // Only click 1 may acquire and inspect. The original raw must persist
   // unchanged until click 2.
-  await damaged.evaluate(()=>document.getElementById('save-recover-prepare').click());
+  await clickRecoveryPrepare(damaged,'first');
   await damaged.waitForFunction(()=>{
     const confirm=document.getElementById('save-recover-confirm');
     const message=document.getElementById('save-recover-status');
@@ -167,26 +195,7 @@ try{
   assert.equal(await interrupted.evaluate(()=>document.visibilityState),'visible',
     'the recovery test must exercise a foreground user action');
   assert.equal((await start(interrupted)).status,'corrupt');
-  const probeEvent=await interrupted.evaluate(()=>{
-    const target=document.getElementById('save-recover-prepare');
-    const root=document.getElementById('save-writer-blocked');
-    const result={
-      connected:target.isConnected,
-      insideBlockedOverlay:!!target.closest('#save-writer-blocked'),
-      rootConnected:!!root?.isConnected,
-      disabledBefore:target.disabled,
-      targetReceived:false,windowCaptured:false
-    };
-    // Instrument exactly ONE click. A lost event is not Web Locks denial.
-    window.addEventListener('click',()=>{result.windowCaptured=true;},{capture:true,once:true});
-    target.addEventListener('click',()=>{result.targetReceived=true;},{once:true});
-    target.click();
-    result.disabledAfter=target.disabled;
-    result.messageAfter=document.getElementById('save-recover-status')?.textContent;
-    return result;
-  });
-  assert.equal(probeEvent.targetReceived,true,
-    'recovery UI click must reach its target: '+JSON.stringify(probeEvent));
+  await clickRecoveryPrepare(interrupted,'interrupted');
   // A failed preview is NOT a pass: report its actionable reason instead
   // of hiding a Web Locks/storage/lifecycle bug behind a generic timeout.
   try {
