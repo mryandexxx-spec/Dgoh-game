@@ -1,4 +1,6 @@
-// ARCH-02C-B0: v138 forensic characterization. C01-C04 are B2 repair assertions;
+// ARCH-02C-B0: legacy v138 forensic characterization, NOT ordinary B3 startup.
+// Deliberately seed the historical uncooperative low-level RAM/write APIs
+// without invoking mandatory start() or presenting the old writer as live.
 // C05-C15 remain explicitly UNSAFE historical behaviors until B4-B6.
 // Executes the actual compiled PWA or HTML artifact in an isolated Node VM.
 // No browser user profiles, real localStorage, shipped source or golden updates.
@@ -21,7 +23,9 @@ function init(raw=null){
   });
   assert.equal(g.get('SAVE_KEY'),KEY);
   if(raw!==null)g.store.set(KEY,raw);
-  g.run('start({})');
+  // Explicit old-client harness: the new production composition root is
+  // mandatory-gated and must NEVER use this direct legacy seeding path.
+  g.run('set_S(loadSave()); metaFill(S); persist0()');
   assert.equal(g.run('loadSave(true).status'),'ok');
   return {g,fields,listeners};
 }
