@@ -70,7 +70,9 @@ let writerLifecycleArmed = false, writerLifecycleBlocked = false;
 let writerLifecycleReason = 'idle';
 function writerLifecycleBlock(reason) {
   if (!writerLifecycleArmed) return;
-  if (!writerLifecycleBlocked) {
+  // During the asynchronous acquire we are blocked already, but pagehide
+  // must STILL cancel its pending callback and forbid a later boot.
+  if (writerLifecycleReason === 'acquiring' || !writerLifecycleBlocked) {
     writerLifecycleBlocked = true;
     writerLifecycleReason = reason || 'session-stale';
     // Also cancels a pending acquisition; Web Lock never remains held while
