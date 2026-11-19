@@ -167,8 +167,26 @@ try{
   assert.equal(await interrupted.evaluate(()=>document.visibilityState),'visible',
     'the recovery test must exercise a foreground user action');
   assert.equal((await start(interrupted)).status,'corrupt');
-  await interrupted.evaluate(()=>
-    document.getElementById('save-recover-prepare').click());
+  const probeEvent=await interrupted.evaluate(()=>{
+    const target=document.getElementById('save-recover-prepare');
+    const root=document.getElementById('save-writer-blocked');
+    const result={
+      connected:target.isConnected,
+      insideBlockedOverlay:!!target.closest('#save-writer-blocked'),
+      rootConnected:!!root?.isConnected,
+      disabledBefore:target.disabled,
+      targetReceived:false,windowCaptured:false
+    };
+    // Instrument exactly ONE click. A lost event is not Web Locks denial.
+    window.addEventListener('click',()=>{result.windowCaptured=true;},{capture:true,once:true});
+    target.addEventListener('click',()=>{result.targetReceived=true;},{once:true});
+    target.click();
+    result.disabledAfter=target.disabled;
+    result.messageAfter=document.getElementById('save-recover-status')?.textContent;
+    return result;
+  });
+  assert.equal(probeEvent.targetReceived,true,
+    'recovery UI click must reach its target: '+JSON.stringify(probeEvent));
   // A failed preview is NOT a pass: report its actionable reason instead
   // of hiding a Web Locks/storage/lifecycle bug behind a generic timeout.
   try {
