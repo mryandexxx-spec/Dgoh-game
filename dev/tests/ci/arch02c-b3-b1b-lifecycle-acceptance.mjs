@@ -345,6 +345,40 @@ const blocked=t=>assert.equal(t.phase().blocked,true);
   await flush();
   done('E20','visibility hidden releases writer; visible cannot revive RAM');
 }
-assert.deepEqual(ids,Array.from({length:20},(_,i)=>'E'+String(i+1).padStart(2,'0')));
-console.log('[ARCH-02C-B3-B1b-LIFECYCLE] 20/20 opt-in lifecycle cases; '+
+// E21: overlay allows its own button handlers but never bubbles a click
+// into game-wide document handlers. Keyboard copy remains a native default.
+{
+  const o=origin(),a=o.tab(),g=a.g,nodes=[];
+  const make=tag=>{
+    const element={tag,id:'',style:{},children:[],hidden:false,readOnly:false,
+      setAttribute(){},remove(){},focus(){},select(){},
+      addEventListener(type,fn){this['on'+type]=fn;},
+      appendChild(child){this.children.push(child);return child;}};
+    nodes.push(element);return element;
+  };
+  const d=g.ctx.document,body=make('body');
+  g.ctx.document=new Proxy(d,{get(t,k){
+    if(k==='createElement')return make;
+    if(k==='getElementById')return id=>null;
+    if(k==='body')return body;
+    return t[k];
+  }});
+  g.ctx.unescape=unescape;
+  g.run('metaFill.showWriterBlocked({status:"busy"})');
+  const overlay=body.children[0];
+  assert.ok(overlay);
+  assert.equal(typeof overlay.onclick,'function');
+  assert.equal(typeof overlay.onkeydown,'function');
+  const evt={stopped:false,stopPropagation(){this.stopped=true;}};
+  overlay.onclick(evt);
+  assert.equal(evt.stopped,true);
+  const key={stopped:false,prevented:false,
+    stopPropagation(){this.stopped=true;},preventDefault(){this.prevented=true;}};
+  overlay.onkeydown(key);
+  assert.equal(key.stopped,true);
+  assert.equal(key.prevented,false,'allow native select/copy keyboard defaults');
+  done('E21','overlay actions do not bubble to gameplay handlers');
+}
+assert.deepEqual(ids,Array.from({length:21},(_,i)=>'E'+String(i+1).padStart(2,'0')));
+console.log('[ARCH-02C-B3-B1b-LIFECYCLE] 21/21 opt-in lifecycle cases; '+
   'legacy cached v140 remains UNFENCED; real two-page/Safari proof REQUIRED.');
