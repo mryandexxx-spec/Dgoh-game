@@ -29,7 +29,15 @@ try {
    localStorage.setItem('dune-cine-off','false');
    try{Object.defineProperty(navigator,'serviceWorker',{value:undefined})}catch{}
   },save,q);
+  // The real native writer starts asynchronously and only in foreground.
+  // Every viewport needs its own acknowledged lease after the last page closes.
+  await page.bringToFront();
   await page.goto(srv.url(path.basename(html)),{waitUntil:'load',timeout:120000});
+  await page.waitForFunction(()=>{
+    const phase=(0,eval)('start.writerLifecycle()');
+    return phase.armed && !phase.blocked &&
+      phase.reason==='active' && phase.writer.status==='owned';
+  },{timeout:30000,polling:50});
   const begin=await page.evaluate(async()=>{
    if(!await loadB3())throw Error('Babylon chunk unavailable');
    window.toast=()=>{};window.openCalendar=()=>{};
@@ -42,7 +50,21 @@ try {
      squad:ids,enemy:enemies.map(id=>enemyProg(id,65,false))});
    return {ids,enemies};
   });
-  await page.waitForFunction(()=>!!(window.BT?.arena?.scene?.getFrameId?.()>3 && window.BT?.waiting),{timeout:60000});
+  try {
+    await page.waitForFunction(()=>
+      !!(window.BT?.arena?.scene?.getFrameId?.()>3 && window.BT?.waiting),
+      {timeout:60000,polling:50});
+  } catch(e) {
+    const diag=await page.evaluate(()=>({
+      visibility:document.visibilityState,
+      phase:(0,eval)('start.writerLifecycle()'),
+      hasBattle:!!BT,
+      waiting:BT?.waiting,
+      hasArena:!!BT?.arena,
+      frame:BT?.arena?.scene?.getFrameId?.() ?? null
+    }));
+    throw new Error('BH8 WebGL render did not become ready: '+JSON.stringify(diag),{cause:e});
+  }
   const initial=await page.evaluate(()=>{
     const a=BT.arena;
     a.cine=null;a.shakeT=0;a.glT=0;
