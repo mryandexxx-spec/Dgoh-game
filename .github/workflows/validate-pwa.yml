@@ -161,6 +161,11 @@ jobs:
           node tests/ci/arch02c-b3-b1c-entrypoint-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b3-b1c-entrypoint-acceptance.mjs dist/artifact.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-02C-B3-B1c-B2 lease loss + duplicate entrypoint acceptance (PWA + artifact; PRE-CUTOVER)
+        run: |
+          node tests/ci/arch02c-b3-b1c-b2-lock-loss-acceptance.mjs dist/pwa/index.html
+          node tests/ci/arch02c-b3-b1c-b2-lock-loss-acceptance.mjs dist/artifact.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-02C-B3-B2-A1 protected import + recovery-only lease (PWA + artifact; NOT LIVE)
         run: |
           node tests/ci/arch02c-b3-b2-protected-transfer-acceptance.mjs dist/pwa/index.html
