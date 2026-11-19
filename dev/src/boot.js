@@ -18,22 +18,7 @@ function hourglass(v) { const p = Math.max(0, Math.min(100, v)), top = 1 - p / 1
 // ARCH-01C5b-B1: register exactly once before start() can first render 3D.
 b3Pre(loadAssets3);
 window.claude?.hot?.snapshot?.(() => ({ save: S }));
-// ARCH-02C-B3-B1c-A0: single application-owned preboot entrypoint. The
-// default remains legacy (published v140 and golden compatibility); the
-// explicit 'writer-preview' mode exercises the REAL composition-root path,
-// acquiring an exclusive writer BEFORE reading S. It is NOT production-on.
-// Never add a fallback from a denied Web Lock to unsafe legacy start().
-function startRuntime(data = {}) {
-  return window.__DGOH_B3_B1C_BOOT_MODE__ === 'writer-preview'
-    ? start.writer(data) : start(data);
-}
-// Preserve the existing hot-host callback access used in B3 acceptance;
-// its explicitly opted-in functions remain available for native probes.
-startRuntime.writer = start.writer;
-startRuntime.writerLifecycle = start.writerLifecycle;
-window.claude?.hot?.ready
-  ? window.claude.hot.ready(startRuntime)
-  : startRuntime(window.claude?.hot?.data ?? {});
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 
 // long press on a hero in squad select → hero card (Back returns to squad select)
 (() => {
