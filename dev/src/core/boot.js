@@ -31,6 +31,16 @@ let startupReadFailure = null;
 let startupEntered = false, startupSucceeded = false;
 function initialSave(data) {
   startupReadFailure = null;
+  if (!writerPreviewReentry && writerLifecycleArmed) return undefined;
+  if (!writerPreviewReentry &&
+      window.__DGOH_B3_B1C_BOOT_MODE__ === 'writer-preview') {
+    // The historic start() must execute set_S(...) FIRST (ARCH-01C5a).
+    // Do not read storage here: arm exclusive writer asynchronously, return
+    // undefined for the first set_S; a second start() under the held lock
+    // will perform the actual load. Never create a writable fallback account.
+    writerPreviewPromise = startWithWriter(data);
+    return undefined;
+  }
   if (data && data.save) return data.save; // hot reload compatibility
   const loaded = loadSave(true);
   if (loaded.status === 'ok') return loaded.save;
@@ -39,18 +49,22 @@ function initialSave(data) {
   return undefined;
 }
 // B3-B1c-A0: the historical src/boot.js composition root is byte-frozen.
-// The *existing* imported start callback dispatches to the Web Lock preview
-// only with an explicit pre-boot opt-in. Never silently enable this for v140.
-let writerPreviewReentry = false;
+// ARCH-01C5a requires set_S(...) to remain start()'s FIRST AST statement.
+// The initialSave callback launches the explicitly opted-in writer *without*
+// reading persistent bytes; this first call sets S undefined and returns its
+// Promise. The writer re-enters after acquiring Web Locks and reads safely.
+let writerPreviewReentry = false, writerPreviewPromise = null;
 function start(data) {
-  // Once the preview arms the one-way writer gate, even removing its flag
-  // must NEVER resurrect the old unchecked production bootstrap in this heap.
+  set_S(initialSave(data));
+  if (!writerPreviewReentry && writerPreviewPromise) {
+    const pending = writerPreviewPromise;
+    writerPreviewPromise = null;
+    return pending;
+  }
+  // Sticky guard denies replay into legacy start after a failed opt-in boot,
+  // even if the preview flag was removed in this same JS heap.
   if (!writerPreviewReentry && writerLifecycleArmed)
     return { ok: false, status: 'session-blocked' };
-  if (!writerPreviewReentry &&
-      window.__DGOH_B3_B1C_BOOT_MODE__ === 'writer-preview')
-    return startWithWriter(data);
-  set_S(initialSave(data));
   startupEntered = true;
   startupSucceeded = false;
   onPersist(null, metaFill.showSaveRecovery);
