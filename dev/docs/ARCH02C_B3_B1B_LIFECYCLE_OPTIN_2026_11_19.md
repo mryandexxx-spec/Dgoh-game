@@ -16,7 +16,7 @@ B1b #209 introduces opt-in start.writer, sticky gated synchronous persist/persis
 
 ## Mandatory deterministic acceptance
 
-The new dev/tests/ci/arch02c-b3-b1b-lifecycle-acceptance.mjs runs eighteen scenarios on EACH compiled PWA and HTML artifact:
+The new dev/tests/ci/arch02c-b3-b1b-lifecycle-acceptance.mjs runs twenty scenarios on EACH compiled PWA and HTML artifact:
 
 - E01 active owner saves and remains unblocked; E02 busy second tab never boots or writes, with block reason.
 - E03 pagehide releases and denies stale RAM; E04 BFCache pageshow persisted true blocks; E05 freeze/resume remains blocked.
@@ -25,6 +25,7 @@ The new dev/tests/ci/arch02c-b3-b1b-lifecycle-acceptance.mjs runs eighteen scena
 - E10 pagehide during pending lock acquisition cancels late grant and boot; E11 blocked game clicks prevented; E12 overlay copy/reload buttons still usable; E13 active gameplay input allowed.
 - E14 unsupported navigator.locks has a blocked diagnostic and no S; E15 quota on boot persist refuses boot, releases writer and blocks; E16 pageshow does not resurrect S.
 - E17 blocked screen displays exact verified storage bytes, not mutated RAM; E18 corrupt primary has no verified export.
+- E19 a cross-tab storage-clear event blocks conservatively even if bytes were rapidly recreated before delivery; E20 visibility hidden releases while visible return never resumes stale RAM.
 
 The new tests are mandatory post-build for both PWA+HTML alongside B3-A0 intentionally unsafe baseline, B3-B1a cooperative Web Locks test, B3-B1b gated boot test, B0/B1/B2 checkpoint/import, strict ARCH-01D, golden 200 battles/41 screens, campaign, offline PWA, full WebGL matrix, final all required gate and artifact identity. Fake DOM and fake Web Locks are not proof of actual two-Chromium-page or physical iPhone Safari behavior. Do not remove failing tests or golden mismatch through regeneration.
 
