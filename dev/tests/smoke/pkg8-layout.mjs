@@ -37,7 +37,10 @@ try {
     // shell. Closing the previous page can release its native lease later.
     await page.bringToFront();
     await page.goto(srv.url(path.basename(html)),{waitUntil:'load'});
-    await page.waitForFunction(()=>{
+    // The v75 baseline ../index.html is intentionally frozen historical
+    // JavaScript with NO writerLifecycle API. Its original rendering oracle
+    // must not be subjected to the new production PWA startup contract.
+    if(!baseline) await page.waitForFunction(()=>{
       const phase=(0,eval)('start.writerLifecycle()');
       return phase.armed && !phase.blocked &&
         phase.reason==='active' && phase.writer.status==='owned';
