@@ -205,6 +205,12 @@ async function startWithWriter(data = {}) {
     writerLifecycleBlock('hot-reload-unsupported');
     return { ok: false, status: 'hot-reload-unsupported' };
   }
+  // A background-loaded standalone PWA may never deliver a new
+  // visibilitychange after the gate arms. Never hold a writer in that state.
+  if (document.visibilityState === 'hidden') {
+    writerLifecycleBlock('background-suspended');
+    return { ok: false, status: 'background-suspended' };
+  }
   const acquired = await loadSave.writer.acquire();
   if (!acquired.ok) {
     writerLifecycleBlock(acquired.status);
@@ -215,7 +221,8 @@ async function startWithWriter(data = {}) {
   // export through its blocked-screen rendering.
   writerLifecycleHasOwned = true;
   // A pagehide/freeze can race the asynchronous acquisition acknowledgement.
-  if (writerLifecycleReason !== 'acquiring' ||
+  if (document.visibilityState === 'hidden' ||
+      writerLifecycleReason !== 'acquiring' ||
       loadSave.writer.state().status !== 'owned') {
     writerLifecycleBlock('session-stale');
     return { ok: false, status: 'session-blocked' };
