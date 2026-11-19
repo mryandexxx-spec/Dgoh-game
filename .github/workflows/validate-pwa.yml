@@ -156,6 +156,11 @@ jobs:
           node tests/ci/arch02c-b3-b1b-lifecycle-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b3-b1b-lifecycle-acceptance.mjs dist/artifact.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-02C-B3-B1c preview-selected composition-root startup (PWA + artifact; NOT LIVE)
+        run: |
+          node tests/ci/arch02c-b3-b1c-entrypoint-acceptance.mjs dist/pwa/index.html
+          node tests/ci/arch02c-b3-b1c-entrypoint-acceptance.mjs dist/artifact.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-01C2a all 210 mission costs (PWA + artifact)
         run: |
           node tests/arch01c2a-energy.mjs dist/pwa/index.html
