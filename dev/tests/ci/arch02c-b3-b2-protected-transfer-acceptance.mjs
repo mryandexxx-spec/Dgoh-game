@@ -31,9 +31,9 @@ class NativeLocks {
 function origin(raw=fixture) {
   const store=new Map(raw===null?[]:[[KEY,raw]]),locks=new NativeLocks();
   function tab(hasLocks=true){
-    const g=loadGame(html,{seed:25,onQuerySelector:selector=>fields.get(selector)});
     const fields=new Map([['#savecode',{value:''}],
       ['#overlay2',{innerHTML:''}],['#overlay2 .acts',{insertAdjacentHTML(){}}]]);
+    const g=loadGame(html,{seed:25,onQuerySelector:selector=>fields.get(selector)});
     const local=g.ctx.localStorage;
     local.getItem=k=>store.has(k)?store.get(k):null;
     local.setItem=(k,v)=>{store.set(k,String(v));};
