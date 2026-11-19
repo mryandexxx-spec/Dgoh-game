@@ -38,7 +38,14 @@ function initialSave(data) {
   startupReadFailure = loaded;
   return undefined;
 }
+// B3-B1c-A0: the historical src/boot.js composition root is byte-frozen.
+// The *existing* imported start callback dispatches to the Web Lock preview
+// only with an explicit pre-boot opt-in. Never silently enable this for v140.
+let writerPreviewReentry = false;
 function start(data) {
+  if (!writerPreviewReentry &&
+      window.__DGOH_B3_B1C_BOOT_MODE__ === 'writer-preview')
+    return startWithWriter(data);
   set_S(initialSave(data));
   startupEntered = true;
   startupSucceeded = false;
@@ -152,11 +159,16 @@ async function startWithWriter(data = {}) {
     return { ok: false, status: 'session-blocked' };
   }
   try {
+    // Call the exact old initialSave/start path AFTER acquiring writer lock,
+    // without entering the opt-in dispatcher recursively.
+    writerPreviewReentry = true;
     start(data);
   } catch (e) {
     writerLifecycleBlock('boot-exception');
     return { ok: false, status: 'boot-exception',
       error: (e && e.name) || 'Error' };
+  } finally {
+    writerPreviewReentry = false;
   }
   if (!startupSucceeded) {
     writerLifecycleBlock('boot-incomplete');
