@@ -282,7 +282,7 @@ const blocked=t=>assert.equal(t.phase().blocked,true);
     return target[key];
   }});
   g.ctx.unescape=unescape;
-  g.run('set_S(loadSave()); S.solari += 999; metaFill.showWriterBlocked({status:"busy"})');
+  g.run('set_S(loadSave()); S.solari += 999; metaFill.showWriterBlocked({status:"pagehide",allowVerifiedExport:true})');
   assert.equal(body.children.length,1);
   assert.equal(body.children[0].id,'save-writer-blocked');
   const text=nodes.filter(x=>x.tag==='p').map(x=>x.textContent).join(' ');

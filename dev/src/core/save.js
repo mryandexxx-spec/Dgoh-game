@@ -352,9 +352,21 @@ function recoverCheckpoint({ expectedPrimaryRaw, expectedBackupEnvelope } = {}) 
 // Keep exactly 898 pre-existing named ESM exports (ARCH-01C3b2 invariant).
 // Opt-in access via the already exported loadSave function does not add a new
 // module export, change initialization edges, or affect legacy loadSave() calls.
+// B3-B1c-B1 pre-cutover safeguard: once a writer gate is armed, the older B2
+// public checkpoint methods must NOT bypass that lease. The writer's internal
+// under-lease writerCommit() still uses the private implementation above.
+// B3-B2 will provide approved, lease-aware import/recovery integration.
+function publicCheckpointCommit(options) {
+  if (writerGateEnabled) return checkpointFailure('writer-required', 'writer-gate');
+  return commitCheckpoint(options);
+}
+function publicCheckpointRecover(options) {
+  if (writerGateEnabled) return checkpointFailure('writer-required', 'writer-gate');
+  return recoverCheckpoint(options);
+}
 loadSave.checkpoint = Object.freeze({
   key: CHECKPOINT_KEY, inspect: inspectCheckpoint,
-  commit: commitCheckpoint, recover: recoverCheckpoint
+  commit: publicCheckpointCommit, recover: publicCheckpointRecover
 });
 
 
