@@ -72,14 +72,17 @@ function fakeDocument(g) {
 }
 function origin(raw=initial){
   const store=new Map(raw===null?[]:[[KEY,raw]]),locks=new NativeLocks();
-  function tab(){
+  function tab(withRecoveryUi=true){
     const g=loadGame(html,{seed:33}),local=g.ctx.localStorage;
     local.getItem=k=>store.has(k)?store.get(k):null;
     local.setItem=(k,v)=>store.set(k,String(v));
     local.removeItem=k=>store.delete(k);
     local.clear=()=>store.clear();
     g.ctx.navigator={locks};
-    const ui=fakeDocument(g);
+    // Normal gameplay boot must retain the VM's battle/render stubs.
+    // The focused fake DOM only substitutes the *blocked recovery screen*,
+    // not the complete game renderer during the preceding healthy session.
+    const ui=withRecoveryUi?fakeDocument(g):null;
     return {g,local,ui,start:()=>g.run('start.writer({})'),
       phase:()=>g.run('start.writerLifecycle()'),
       writer:()=>g.run('loadSave.writer.state()'),
@@ -90,7 +93,7 @@ function origin(raw=initial){
   return {store,locks,tab};
 }
 async function damaged(primary='{BROKEN'){
-  const o=origin(),first=o.tab();
+  const o=origin(),first=o.tab(false);
   assert.equal((await first.start()).status,'started');
   assert.equal(first.change(18).ok,true);
   const backup=o.store.get(BACKUP);
@@ -128,7 +131,7 @@ async function damaged(primary='{BROKEN'){
   assert.equal(t.ram(),undefined);
   assert.equal(t.writer().status,'session-stale');
   assert.match(t.ui.find('save-writer-title').textContent,/Резервная копия восстановлена/);
-  const fresh=o.tab();
+  const fresh=o.tab(false);
   assert.equal((await fresh.start()).status,'started');
   assert.equal(JSON.parse(fresh.ram()).solari,JSON.parse(expected).solari);
   fresh.release();await flush();
