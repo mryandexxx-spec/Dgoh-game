@@ -205,15 +205,16 @@ const flush = async () => { for (let i=0;i<8;i++) await Promise.resolve(); };
   assert.equal(a.persist().status,'not-owner');
   pass('G11','invalid primary refuses boot before S/newSave');
 }
-// G12: same realm cannot enable opt-in mode after legacy start.
+// G12: ordinary default start already owns a gate; explicit reentry is denied.
 {
-  const o=origin(),a=o.tab(),prior=o.store.get(KEY);
-  a.g.run('start({})');
+  const o=origin(),a=o.tab();
+  assert.equal((await a.g.run('start({})')).status,'started');
   assert.equal((await a.start({})).status,'already-started');
-  assert.equal(o.store.get(KEY)!==null,true);
-  assert.equal(a.state().gated,false);
-  assert.equal(o.locks.calls,0);
-  pass('G12','late acquisition does not retroactively mark legacy boot safe',true);
+  assert.equal(a.state().gated,true);
+  assert.equal(o.locks.calls,1);
+  assert.equal(a.state().status,'owned');
+  a.release();await flush();
+  pass('G12','ordinary mandatory start cannot be followed by another writer boot');
 }
 // G13: external hot reload snapshot cannot bypass under-lock storage reload.
 {
