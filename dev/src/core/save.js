@@ -384,6 +384,17 @@ let writerGateEnabled = false;
 // Once a gated gameplay session releases/loses its lease it cannot be
 // reattached to newly acquired storage bytes while S remains stale in RAM.
 let writerGateInvalidated = false;
+// The boot lifecycle owns the UI/input fence. Reuse the existing loadSave
+// namespace to avoid new ESM exports or a forbidden core -> UI import.
+let writerRetiredHook = null;
+function writerOnRetired(callback) {
+  writerRetiredHook = typeof callback === 'function' ? callback : null;
+}
+function writerNotifyRetired(reason) {
+  if (!writerGateEnabled || !writerRetiredHook) return;
+  try { writerRetiredHook(reason); }
+  catch (e) { /* the irreversible gate remains invalid even without UI */ }
+}
 function writerEnableGate() {
   if (!writerGateEnabled && S !== undefined) {
     // The caller already has RAM that was created without writer authority.
@@ -417,17 +428,23 @@ function writerState() {
     (writerAcquiring ? 'acquiring' : writerLastStatus), gated: writerGateEnabled };
 }
 function writerRelease() {
-  if (writerGateEnabled && (writerAcquiring || writerLease))
-    writerGateInvalidated = true;
+  const retiring = !!(writerAcquiring || writerLease);
+  if (writerGateEnabled && retiring) writerGateInvalidated = true;
   if (writerAcquiring && writerCancelAcquire) {
     writerTicket++;
     writerCancelAcquire();
   }
-  if (!writerLease) return { ok: true, status: 'idle' };
+  if (!writerLease) {
+    if (retiring) writerNotifyRetired('writer-released');
+    return { ok: true, status: 'idle' };
+  }
   const lease = writerLease;
   writerLease = null;
   writerLastStatus = 'released';
   lease.release();
+  // Explicit API release must also fence the old UI, not only persist0().
+  // The boot's own lifecycle block sets blocked=true BEFORE calling release.
+  writerNotifyRetired('writer-released');
   return { ok: true, status: 'released' };
 }
 function writerCheck() {
@@ -565,23 +582,23 @@ async function writerAcquire(options = {}) {
     return started;
   }
   requestValidated = true;
-  Promise.resolve(request).then(
-    () => {
-      if (!settled) finish({ ok: false, status: 'unavailable' });
-      if (writerLease && writerLease.ticket === ticket) {
-        writerLease = null; // unexpected lock loss; never attach stale S
-        if (writerGateEnabled) writerGateInvalidated = true;
-        writerLastStatus = 'lost';
-      }
-    },
-    () => {
-      if (!settled) finish({ ok: false, status: 'unavailable' });
-      if (writerLease && writerLease.ticket === ticket) {
-        writerLease = null;
-        if (writerGateEnabled) writerGateInvalidated = true;
-        writerLastStatus = 'lost';
-      }
-    });
+  // A native request must remain pending for as long as its callback holds
+  // the lock. Early fulfillment OR rejection with a recorded lease is loss
+  // of authority. Invalidate synchronously, then fence UI before a new input.
+  const unexpectedSettlement = () => {
+    if (!settled) finish({ ok: false, status: 'unavailable' });
+    if (writerLease && writerLease.ticket === ticket) {
+      const lost = writerLease;
+      writerLease = null;
+      if (writerGateEnabled) writerGateInvalidated = true;
+      writerLastStatus = 'lost';
+      // The holding Promise may still be pending in a broken/revoking manager.
+      // Do not retain it and risk locking out a fresh safe page forever.
+      lost.release();
+      writerNotifyRetired('lock-lost');
+    }
+  };
+  Promise.resolve(request).then(unexpectedSettlement, unexpectedSettlement);
   return started;
 }
 // Manual one-shot restore: NEVER acquires a lock implicitly, replaces RAM,
@@ -607,7 +624,8 @@ loadSave.writer = Object.freeze({
   name: WRITER_LOCK_NAME, primaryKey: SAVE_KEY,
   acquire: writerAcquire, state: writerState,
   check: writerCheck, commit: writerCommit, recover: writerRecover,
-  release: writerRelease, enableGate: writerEnableGate
+  release: writerRelease, enableGate: writerEnableGate,
+  onRetired: writerOnRetired
 });
 
 export { SAVE_KEY, newSave, fillSave, loadSave, persist0, notePend, persist, onPersist };
