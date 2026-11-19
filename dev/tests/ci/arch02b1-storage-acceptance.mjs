@@ -203,7 +203,8 @@ for(const kind of ['QuotaExceededError','SecurityError']){
  let timers=0;
  g.ctx.setInterval=()=>{timers++;return 0};
  const ops=fault(g,{write:kind});
- assert.doesNotThrow(()=>g.run('start({})'));
+ assert.equal((await g.run('start({})')).status,'boot-incomplete',
+   'writer must reject a boot whose first checkpoint write failed');
  assert.equal(g.store.get(KEY),old);
  assert.equal(timers,0,'blocked boot did not schedule normal gameplay resource timer');
  assert.ok(ops.includes('set:'+KEY));
