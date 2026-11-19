@@ -369,11 +369,16 @@ const WRITER_LOCK_NAME = SAVE_KEY + '.writer';
 // One-way within this JS realm: release, denial, exception, or BFCache must
 // not silently re-enable the old unsafe write path after opting in.
 let writerGateEnabled = false;
+// Once a gated gameplay session releases/loses its lease it cannot be
+// reattached to newly acquired storage bytes while S remains stale in RAM.
+let writerGateInvalidated = false;
 function writerEnableGate() {
   writerGateEnabled = true;
   return { ok: true, status: 'gated' };
 }
 function writerPersist() {
+  if (writerGateInvalidated) return saveWriteFailure('session-stale',
+    { name: 'StaleSession' });
   const result = writerCommit({ expectedRaw: writerLease ? writerLease.raw : undefined,
     candidate: S });
   if (result.ok) return { ok: true, status: 'ok', verified: result.status };
@@ -388,10 +393,12 @@ function writerState() {
   if (writerLease) return { ok: !writerLease.stale,
     status: writerLease.stale ? 'stale' : 'owned', raw: writerLease.raw,
     gated: writerGateEnabled };
-  return { ok: false, status: writerAcquiring ? 'acquiring' : writerLastStatus,
-    gated: writerGateEnabled };
+  return { ok: false, status: writerGateInvalidated ? 'session-stale' :
+    (writerAcquiring ? 'acquiring' : writerLastStatus), gated: writerGateEnabled };
 }
 function writerRelease() {
+  if (writerGateEnabled && (writerAcquiring || writerLease))
+    writerGateInvalidated = true;
   if (writerAcquiring && writerCancelAcquire) {
     writerTicket++;
     writerCancelAcquire();
@@ -434,6 +441,8 @@ function writerCommit({ expectedRaw, candidate } = {}) {
   return result;
 }
 async function writerAcquire() {
+  if (writerGateEnabled && writerGateInvalidated)
+    return { ok: false, status: 'session-stale' };
   if (writerLease) return { ok: false, status: 'already-owner' };
   if (writerAcquiring) return { ok: false, status: 'acquiring' };
   // Do not use a localStorage mutex: test-and-set is not atomic between tabs.
@@ -513,7 +522,8 @@ async function writerAcquire() {
     () => {
       if (!settled) finish({ ok: false, status: 'unavailable' });
       if (writerLease && writerLease.ticket === ticket) {
-        writerLease = null; // unexpected lock loss; deny all future commits
+        writerLease = null; // unexpected lock loss; never attach stale S
+        if (writerGateEnabled) writerGateInvalidated = true;
         writerLastStatus = 'lost';
       }
     },
@@ -521,6 +531,7 @@ async function writerAcquire() {
       if (!settled) finish({ ok: false, status: 'unavailable' });
       if (writerLease && writerLease.ticket === ticket) {
         writerLease = null;
+        if (writerGateEnabled) writerGateInvalidated = true;
         writerLastStatus = 'lost';
       }
     });
