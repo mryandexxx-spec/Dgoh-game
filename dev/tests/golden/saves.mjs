@@ -23,8 +23,24 @@ for (const f of [null, ...files]) {
   const g = loadGame(html, { seed: 7 }), key = g.get('SAVE_KEY');
   if (f) g.store.set(key, readSave(f));
   const loaded = g.run('JSON.parse(JSON.stringify(loadSave()))');
-  let err = null;
-  try { g.run('start({})'); } catch (e) { err = String(e.message); }
+  // B3 mandatory boot: even golden snapshots must start under an exclusive
+  // native-shape lease. The VM does not auto-boot (hot.ready is a no-op).
+  // Never return to the old synchronous/unguarded start() test path.
+  g.ctx.navigator = {locks:{request(name, options, callback) {
+    assert.equal(name, key + '.writer');
+    assert.equal(options.mode, 'exclusive');
+    assert.equal(options.ifAvailable, true);
+    return Promise.resolve().then(() => callback({name, mode:'exclusive'}));
+  }}};
+  let err = null, started;
+  try {
+    started = await g.run('start({})');
+    assert.equal(started?.status, 'started', (f || 'newSave') + ': writer boot');
+    assert.equal(g.run('loadSave.writer.state().status'), 'owned');
+  } catch (e) {
+    err = String(e.message);
+    throw new Error((f || 'newSave') + ': protected golden boot failed: ' + err);
+  }
   const after = g.run('JSON.parse(JSON.stringify(S))'), stored = g.store.get(key);
   saves.push({ file: f || '(нет сохранения → newSave)', fillSave: loaded, start: after, startError: err, persisted: stored === JSON.stringify(after) });
 }
