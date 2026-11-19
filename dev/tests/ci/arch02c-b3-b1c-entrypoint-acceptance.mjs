@@ -1,6 +1,6 @@
-// B3-B1c-A0: actual application composition-root startRuntime() writer-preview.
-// 9 scenarios * both built PWA and HTML. Mode is deliberately OFF by default.
-// The runtime path must fail closed and must not transform the old v140 build.
+// B3-B1c-B3: actual composition-root start() is mandatory writer-gated.
+// 9 historical scenarios on both compiled PWA and HTML; no preview flag needed.
+// The installed old v140 PWA remains uncooperative and is not migrated here.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -48,14 +48,15 @@ function origin(initial=save) {
   return {tab,store,locks};
 }
 const spin=async()=>{for(let i=0;i<10;i++)await Promise.resolve();};
-// C01 legacy mode is default; strictly no writer lease in old automatic path.
+// C01 ordinary default start must fail closed when Web Locks are absent.
 {
-  const o=origin(),t=o.tab(false);
-  t.start();
-  assert.equal(t.state().gated,false);
-  assert.equal(typeof t.ram(),'number');
-  assert.equal(t.increase(2).ok,true);
-  done('C01','default legacy composition-root semantics unchanged (UNSAFE)');
+  const o=origin(),t=o.tab(false),before=o.store.get(KEY);
+  assert.equal((await t.start()).status,'unsupported');
+  assert.equal(t.state().gated,true);
+  assert.equal(t.ram(),undefined);
+  assert.equal(t.g.run('persist0()').ok,false);
+  assert.equal(o.store.get(KEY),before);
+  done('C01','default unflagged composition-root refuses unsupported Web Locks');
 }
 // C02 explicit preview with no Web Locks: never initializes game RAM.
 {
@@ -161,4 +162,4 @@ const spin=async()=>{for(let i=0;i<10;i++)await Promise.resolve();};
   done('C09','public checkpoint commit/recover cannot bypass an armed or stale writer');
 }
 assert.deepEqual(ids,Array.from({length:9},(_,i)=>'C'+String(i+1).padStart(2,'0')));
-console.log('[ARCH-02C-B3-B1c-B1] 9/9 pre-cutover composition-root cases; NOT LIVE');
+console.log('[ARCH-02C-B3-B1c-B3] 9/9 composition-root compatibility cases; mandatory gate');
