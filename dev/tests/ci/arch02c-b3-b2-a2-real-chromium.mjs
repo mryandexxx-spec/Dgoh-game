@@ -47,8 +47,16 @@ const release=page=>evaluate(page,'loadSave.writer.release()');
 try{
   const a=await open(),denied=await open();
   assert.equal(await a.evaluate(()=>typeof navigator.locks?.request),'function');
+  await a.bringToFront();
+  assert.equal(await a.evaluate(()=>document.visibilityState),'visible');
   assert.equal((await start(a)).status,'started');
-  assert.equal((await start(denied)).status,'busy');
+  assert.equal(await denied.evaluate(name=>
+    navigator.locks.request(name,{mode:'exclusive',ifAvailable:true},lock=>!!lock),
+    KEY+'.writer'),false,
+    'a genuine native game lease must exclude a separate browser tab');
+  const deniedVisibility=await denied.evaluate(()=>document.visibilityState);
+  assert.equal((await start(denied)).status,
+    deniedVisibility==='hidden'?'background-suspended':'busy');
   assert.equal((await phase(denied)).blocked,true);
   const before=await get(a),base=JSON.parse(before).solari;
   const candidate={...JSON.parse(fixture),solari:base+1234};
