@@ -324,8 +324,11 @@ function showWriterBlocked(outcome = {}) {
   panel.appendChild(title); panel.appendChild(body);
   // Only the valid confirmed primary may be presented as a verified export.
   // The B2 UTF-8 base64 format is intentionally retained for interoperability.
-  const inspected = loadSave.checkpoint.inspect();
-  if (inspected.primary.status === 'ok') {
+  // A busy/unsupported tab has not acquired authority and must NOT read
+  // progress just to render a diagnostic. Export only if the current heap
+  // previously obtained a verified writer lease (e.g. after pagehide).
+  const inspected = outcome.allowVerifiedExport ? loadSave.checkpoint.inspect() : null;
+  if (inspected && inspected.primary.status === 'ok') {
     try {
       const safeCode = btoa(unescape(encodeURIComponent(inspected.primary.raw)));
       const button = document.createElement('button');
