@@ -10,11 +10,13 @@
 /* ===== ТОКЕНЫ ===== */
 :root {
   /* ночь */
-  --night: #170f09; --dune: #231810; --ridge: #302216; --line: #4e3a26; --line-hi: #6a4c30;
+  --night: #26231f; --dune: #38312a; --ridge: #4b4034; --line: #75634e; --line-hi: #a18b6b;
   /* песок */
-  --bone: #f4e7cf; --sand: #e8c98e; --dust: #bca685; --sand-deep: #b98a4a;
+  --bone: #fff1d6; --sand: #f1cf92; --dust: #deceb1; --sand-deep: #dab57b;
+  /* песчаник на свету */
+  --limestone: #edcf9e; --ochre: #c49a66; --ink: #30291f;
   /* пряность */
-  --spice: #e8913f; --spice-hi: #f6a95e; --spice-dim: #8a5328;
+  --spice: #f2a46d; --spice-hi: #ffbf83; --spice-dim: #af7252;
   /* смысловые */
   --light: #5aa8f0; --dark: #e0483a; --hp: #7fbb6c; --shield: #6fb3ea; --foe: #d9604f;
   --buy: #5fb35a; --cancel: #c9473a; --mem: #ff6a3a;
@@ -28,7 +30,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: radial-gradient(120% 70% at 50% -10%, #3a2616 0%, var(--night) 60%) fixed, var(--night); color: var(--bone); font: 14px/1.45 var(--f-body); }
+body { margin: 0; background: radial-gradient(120% 70% at 50% -10%, var(--ridge) 0%, var(--night) 60%) fixed, var(--night); color: var(--bone); font: 14px/1.45 var(--f-body); }
 .page { max-width: 1180px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-right)) 60px max(16px, env(safe-area-inset-left)); }
 .sec { margin-top: 34px; }
 .sec > h2 { font: 400 26px/1 var(--f-display); letter-spacing: .06em; margin: 0 0 4px; }
@@ -53,7 +55,7 @@ body { margin: 0; background: radial-gradient(120% 70% at 50% -10%, #3a2616 0%, 
 .k-pt { --s: 96px; --rim: var(--t7); --side: var(--light); position: relative; width: var(--s); height: var(--s); flex: none; font-size: calc(var(--s) / 96 * 10px); }
 .k-pt .ring { position: absolute; inset: 0; border-radius: 50%; border: calc(var(--s) * .025) solid var(--side); box-shadow: 0 0 calc(var(--s) * .12) color-mix(in srgb, var(--side) 55%, transparent), 0 4px 10px rgb(0 0 0 / .6); }
 .k-pt .rim { position: absolute; inset: calc(var(--s) * .04); border-radius: 50%; border: calc(var(--s) * .05) solid var(--rim); box-shadow: inset 0 0 0 1px rgb(0 0 0 / .55), inset 0 calc(var(--s) * -.08) calc(var(--s) * .12) rgb(0 0 0 / .45); overflow: hidden;
-  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--fc, #d4ab4c) 38%, #2c2016), #150e09 75%); }
+  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--fc, #d4ab4c) 38%, var(--ridge)), #150e09 75%); }
 .k-pt .rim svg { width: 100%; height: 100%; display: block; }
 .k-pt .rim::after { content: ""; position: absolute; inset: 0 0 55%; border-radius: 50% 50% 0 0 / 100% 100% 0 0; background: linear-gradient(180deg, rgb(255 255 255 / .14), transparent); }
 /* звёзды — дуга сверху */
@@ -87,33 +89,33 @@ body { margin: 0; background: radial-gradient(120% 70% at 50% -10%, #3a2616 0%, 
 .k-ptcard .nm { font-size: 12px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
 .k-shards { width: 100%; display: grid; gap: 2px; }
 .k-shards .bar { position: relative; height: 12px; border-radius: 6px; background: #120c07; border: 1px solid var(--line); overflow: hidden; }
-.k-shards .bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(180deg, #ffd27a, var(--spice) 60%, #b8601f); }
+.k-shards .bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(180deg, #ffd27a, var(--spice) 60%, #e28754); }
 .k-shards .bar span { position: relative; display: block; text-align: center; font: 600 9px/12px var(--f-mono); color: #fff; text-shadow: 0 1px 1px #000; }
 .k-max { font: 600 10px/1 var(--f-mono); letter-spacing: .16em; color: #1a1008; background: linear-gradient(180deg, #ffe08a, #e0a83a); padding: 3px 8px; border-radius: 6px; }
 
 /* ===== КНОПКИ ===== */
-.k-btn { --b1: #3a2a1c; --b2: #20160e; --bc: var(--line); --tx: var(--bone);
+.k-btn { --b1: var(--ridge); --b2: var(--dune); --bc: var(--line); --tx: var(--bone);
   display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 44px; min-width: 120px; padding: 6px 18px;
   font: 600 13px/1.1 var(--f-body); letter-spacing: .1em; text-transform: uppercase; color: var(--tx); cursor: pointer;
   background: linear-gradient(180deg, var(--b1), var(--b2)); border: 1px solid var(--bc); border-radius: var(--r);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .18), inset 0 -2px 0 rgb(0 0 0 / .25), 0 3px 10px rgb(0 0 0 / .4); transition: filter .12s, transform .08s; }
 .k-btn:hover { filter: brightness(1.08); } .k-btn:active { transform: translateY(1px); }
 .k-btn small { font: 400 11px var(--f-mono); letter-spacing: 0; text-transform: none; opacity: .9; display: inline-flex; align-items: center; gap: 4px; }
-.k-btn.primary { --b1: var(--spice-hi); --b2: #b8601f; --bc: #f0a05a; --tx: #1d0f05; }
+.k-btn.primary { --b1: var(--spice-hi); --b2: #e28754; --bc: var(--spice-hi); --tx: #1d0f05; }
 .k-btn.buy { --b1: #8fd86a; --b2: #3f8a2e; --bc: #9ae07a; --tx: #0c1a06; }
 .k-btn.cancel { --b1: #f0705a; --b2: #9a2a1e; --bc: #ff8a70; --tx: #fff; }
-.k-btn.next { --b1: #3a4a5e; --b2: #1c2634; --bc: #6a8ab0; --tx: #e6f0ff; }
+.k-btn.next { --b1: var(--ridge); --b2: var(--dune); --bc: var(--line-hi); --tx: var(--sand); }
 .k-btn.next::after { content: "»"; font-size: 18px; line-height: .6; margin-top: 2px; }
 .k-btn.ghost { --b1: transparent; --b2: transparent; box-shadow: none; }
 .k-btn:disabled { filter: grayscale(1) brightness(.6); cursor: not-allowed; }
 .k-btn.lack small { color: #ffb4a8; }
-.k-icbtn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 50% 30%, #5e4832, #1a120a 75%); border: 2px solid var(--line-hi); color: var(--sand); box-shadow: 0 4px 12px rgb(0 0 0 / .5); }
+.k-icbtn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 50% 30%, var(--line), var(--night) 75%); border: 2px solid var(--line-hi); color: var(--sand); box-shadow: 0 4px 12px rgb(0 0 0 / .5); }
 .k-icbtn svg { width: 50%; height: 50%; }
 .k-plus { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(180deg, #8fd86a, #3f8a2e); color: #0c1a06; font: 700 16px/1 var(--f-body); border: 1.5px solid #e6ffd8; box-shadow: 0 0 8px rgb(127 220 100 / .6); }
 .ico { width: 14px; height: 14px; flex: none; }
 
 /* ===== ПАНЕЛИ ===== */
-.k-panel { position: relative; background: linear-gradient(180deg, #2c2016, var(--dune) 40%); border: 1px solid var(--line); border-radius: 2px; padding: 14px 16px; box-shadow: inset 0 1px 0 rgb(255 255 255 / .04), 0 4px 14px rgb(0 0 0 / .3); }
+.k-panel { position: relative; background: linear-gradient(180deg, var(--ridge), var(--dune) 40%); border: 1px solid var(--line); border-radius: 2px; padding: 14px 16px; box-shadow: inset 0 1px 0 rgb(255 255 255 / .04), 0 4px 14px rgb(0 0 0 / .3); }
 .k-panel::before { content: ""; position: absolute; inset: -1px; pointer-events: none; opacity: .7;
   background: linear-gradient(var(--spice), var(--spice)) top left / 12px 2px no-repeat, linear-gradient(var(--spice), var(--spice)) top left / 2px 12px no-repeat,
     linear-gradient(var(--spice), var(--spice)) top right / 12px 2px no-repeat, linear-gradient(var(--spice), var(--spice)) top right / 2px 12px no-repeat,
@@ -130,11 +132,11 @@ body { margin: 0; background: radial-gradient(120% 70% at 50% -10%, #3a2616 0%, 
 /* ===== ВКЛАДКИ ===== */
 .k-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); }
 .k-tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 16px; color: var(--dust); font: 500 12px var(--f-body); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-.k-tabs button[aria-selected="true"] { color: #fbe9c8; border-color: var(--spice); background: linear-gradient(0deg, rgb(232 145 63 / .12), transparent); }
+.k-tabs button[aria-selected="true"] { color: #fbe9c8; border-color: var(--spice); background: linear-gradient(0deg, rgb(242 164 109 / .12), transparent); }
 .k-tabs .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dark); box-shadow: 0 0 6px var(--dark); }
 .k-seg { display: inline-flex; padding: 3px; gap: 3px; background: #120c07; border: 1px solid var(--line); border-radius: 22px; }
 .k-seg button { border: 0; background: none; color: var(--dust); padding: 6px 14px; border-radius: 18px; font: 500 12px var(--f-body); cursor: pointer; }
-.k-seg button[aria-pressed="true"] { background: linear-gradient(180deg, #4a3422, #2a1d12); color: var(--bone); box-shadow: inset 0 0 0 1px var(--spice-dim); }
+.k-seg button[aria-pressed="true"] { background: linear-gradient(180deg, var(--ridge), var(--dune)); color: var(--bone); box-shadow: inset 0 0 0 1px var(--spice-dim); }
 .k-lvtabs { display: flex; gap: 4px; }
 .k-lvtabs button { width: 40px; height: 34px; border: 1px solid var(--line); background: var(--ridge); color: var(--dust); border-radius: 2px; font: 600 13px var(--f-mono); position: relative; cursor: pointer; }
 .k-lvtabs button.got { color: var(--hp); } .k-lvtabs button.got::after { content: "✓"; position: absolute; right: 2px; top: -1px; font-size: 9px; }
@@ -142,29 +144,30 @@ body { margin: 0; background: radial-gradient(120% 70% at 50% -10%, #3a2616 0%, 
 .k-lvtabs button.lk { opacity: .45; } .k-lvtabs button.lk::after { content: "🔒"; position: absolute; right: 1px; top: -2px; font-size: 8px; }
 
 /* ===== РЕСУРСЫ ===== */
-.k-res { display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: linear-gradient(180deg, rgb(18 12 7 / .92), rgb(18 12 7 / .55)); border-bottom: 1px solid rgb(232 145 63 / .2); }
+.k-res { display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: linear-gradient(180deg, rgb(18 12 7 / .92), rgb(18 12 7 / .55)); border-bottom: 1px solid rgb(242 164 109 / .2); }
 .k-res .brand { font: 400 20px/1 var(--f-display); letter-spacing: .14em; margin-right: auto; }
-.k-chip { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 4px 0 6px; background: linear-gradient(180deg, #2e2116, #1a120a); border: 1px solid #5a4028; border-radius: 15px; font: 600 13px var(--f-mono); font-variant-numeric: tabular-nums; }
+.k-chip { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 4px 0 6px; background: linear-gradient(180deg, var(--ridge), var(--night)); border: 1px solid var(--line); border-radius: 15px; font: 600 13px var(--f-mono); font-variant-numeric: tabular-nums; }
 .k-chip .ci { width: 20px; height: 20px; }
 .k-chip .add { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(180deg, #8fd86a, #3f8a2e); color: #0c1a06; font: 700 15px/1 var(--f-body); }
 .k-chip.energy .bar { width: 46px; height: 6px; border-radius: 3px; background: #120c07; overflow: hidden; } .k-chip.energy .bar i { display: block; height: 100%; width: 72%; background: linear-gradient(90deg, #ffd27a, var(--spice)); }
 
 /* ===== МОДАЛКА ===== */
-.k-stage { position: relative; height: 380px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: radial-gradient(80% 90% at 50% 100%, #4a2d17, #1c130f 60%, var(--night)); }
+.k-stage { position: relative; height: 380px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: radial-gradient(80% 90% at 50% 100%, var(--ochre), var(--ridge) 60%, var(--night)); }
 .k-stage .k-res { position: absolute; inset: 0 0 auto; }
 .k-scrim { position: absolute; inset: 0; background: rgb(10 6 3 / .62); display: grid; place-items: center; padding: 16px; }
-.k-modal { position: relative; width: min(520px, 100%); background: linear-gradient(180deg, #33251a, var(--dune) 40%); border: 1px solid #5e472f; border-radius: 3px; box-shadow: 0 20px 60px rgb(0 0 0 / .6), inset 0 1px 0 rgb(255 255 255 / .06); }
-.k-modal .hd { display: flex; align-items: center; gap: 10px; padding: 12px 14px 10px; border-bottom: 1px solid var(--line); background: linear-gradient(90deg, rgb(232 145 63 / .14), transparent 70%); }
+.k-modal { position: relative; width: min(520px, 100%); background: linear-gradient(180deg, var(--ridge), var(--dune) 40%); border: 1px solid var(--line-hi); border-radius: 3px; box-shadow: 0 20px 60px rgb(0 0 0 / .6), inset 0 1px 0 rgb(255 255 255 / .06); }
+.k-modal .hd { display: flex; align-items: center; gap: 10px; padding: 12px 14px 10px; border-bottom: 1px solid var(--line); background: linear-gradient(110deg, var(--limestone), var(--ochre)); }
 .k-modal .hd h3 { margin: 0; font: 400 22px/1 var(--f-display); letter-spacing: .05em; flex: 1; }
-.k-x { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line-hi); background: #1a120a; color: var(--dust); font-size: 16px; cursor: pointer; display: grid; place-items: center; }
+.k-modal .hd .k-title { color: var(--ink); background: none; }
+.k-x { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line-hi); background: var(--night); color: var(--dust); font-size: 16px; cursor: pointer; display: grid; place-items: center; }
 .k-modal .bd { padding: 14px; display: grid; gap: 10px; }
 .k-modal .ft { display: flex; justify-content: flex-end; gap: 10px; padding: 10px 14px 14px; }
 .k-mat { display: flex; gap: 8px; }
 .k-itm { --tc: var(--t4); position: relative; width: 52px; height: 52px; border-radius: 6px; display: grid; place-items: center; background: radial-gradient(circle at 50% 25%, color-mix(in srgb, var(--tc) 55%, #30231a), #150e09 80%); border: 2px solid var(--tc); box-shadow: inset 0 1px 0 rgb(255 255 255 / .18), 0 2px 6px rgb(0 0 0 / .4); }
-.k-itm svg { width: 60%; height: 60%; color: #f4e7cf; }
+.k-itm svg { width: 60%; height: 60%; color: #fff1d6; }
 .k-itm .q { position: absolute; left: 0; right: 0; bottom: -16px; text-align: center; font: 600 10px var(--f-mono); }
 .k-itm .q.ok { color: var(--hp); } .k-itm .q.no { color: var(--foe); }
-.k-toast { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: linear-gradient(180deg, #3a2a1c, #20160e); border: 1px solid var(--spice-dim); border-radius: 20px; font-size: 13px; box-shadow: 0 6px 20px rgb(0 0 0 / .5); white-space: nowrap; }
+.k-toast { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: linear-gradient(180deg, var(--ridge), var(--dune)); border: 1px solid var(--spice-dim); border-radius: 20px; font-size: 13px; box-shadow: 0 6px 20px rgb(0 0 0 / .5); white-space: nowrap; }
 
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
 .note { font-size: 12px; color: var(--dust); border-left: 2px solid var(--spice-dim); padding: 2px 0 2px 10px; margin-top: 12px; max-width: 80ch; }
@@ -176,14 +179,14 @@ header.kh p { margin: 0 0 4px; color: var(--dust); }
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <symbol id="i-spice" viewBox="0 0 24 24"><path d="M12 2c3.5 5 6.5 8.4 6.5 12a6.5 6.5 0 01-13 0C5.5 10.4 8.5 7 12 2z" fill="#e8913f"/><path d="M9.5 14a2.5 2.5 0 002.5 2.5" stroke="#ffe0b0" stroke-width="1.6" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-spice" viewBox="0 0 24 24"><path d="M12 2c3.5 5 6.5 8.4 6.5 12a6.5 6.5 0 01-13 0C5.5 10.4 8.5 7 12 2z" fill="#f2a46d"/><path d="M9.5 14a2.5 2.5 0 002.5 2.5" stroke="#ffe0b0" stroke-width="1.6" fill="none" stroke-linecap="round"/></symbol>
     <symbol id="i-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#d9b24a" stroke="#7a5a1a" stroke-width="1.5"/><circle cx="12" cy="12" r="5" fill="none" stroke="#fff0b0" stroke-width="1.4"/></symbol>
     <symbol id="i-water" viewBox="0 0 24 24"><path d="M12 3c3 4.5 6 7.5 6 11a6 6 0 01-12 0c0-3.5 3-6.5 6-11z" fill="#6fb3ea"/></symbol>
     <symbol id="i-gem" viewBox="0 0 24 24"><path d="M12 2l8 7-8 13L4 9z" fill="#b48cff"/><path d="M4 9h16M12 2v20" stroke="#e6dcff" stroke-width=".8" opacity=".6"/></symbol>
     <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10.5" rx="2" fill="currentColor"/><path d="M8 10.5V8a4 4 0 018 0v2.5" fill="none" stroke="currentColor" stroke-width="2.4"/></symbol>
     <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM10.5 2h3l.5 2.6 2 .9 2.2-1.5 2.1 2.1-1.5 2.2.9 2 2.6.5v3l-2.6.5-.9 2 1.5 2.2-2.1 2.1-2.2-1.5-2 .9-.5 2.6h-3l-.5-2.6-2-.9-2.2 1.5-2.1-2.1 1.5-2.2-.9-2L2 13.5v-3l2.6-.5.9-2L4 5.8l2.1-2.1 2.2 1.5 2-.9z" fill="currentColor" fill-rule="evenodd"/></symbol>
     <symbol id="i-blade" viewBox="0 0 24 24"><path d="M19.5 2.5l2 2L10 16l-3-3z" fill="currentColor"/><path d="M5 14.5l4.5 4.5-1.8 1.8-4.5-4.5z" fill="currentColor"/></symbol>
-    <symbol id="hero" viewBox="0 0 100 100"><ellipse cx="50" cy="104" rx="40" ry="34" fill="#2a2018"/><path d="M22 100c2-18 14-28 28-28s26 10 28 28z" fill="var(--cl, #4a6a50)"/><circle cx="50" cy="46" r="17" fill="#d6a882"/><path d="M33 44c0-14 8-21 17-21s17 7 17 21c-3-6-8-9-17-9s-14 3-17 9z" fill="var(--hr, #2a1a10)"/><path d="M42 78l8 8 8-8" fill="none" stroke="#e8c98e" stroke-width="2.5"/></symbol>
+    <symbol id="hero" viewBox="0 0 100 100"><ellipse cx="50" cy="104" rx="40" ry="34" fill="#2a2018"/><path d="M22 100c2-18 14-28 28-28s26 10 28 28z" fill="var(--cl, #4a6a50)"/><circle cx="50" cy="46" r="17" fill="#d6a882"/><path d="M33 44c0-14 8-21 17-21s17 7 17 21c-3-6-8-9-17-9s-14 3-17 9z" fill="var(--hr, #2a1a10)"/><path d="M42 78l8 8 8-8" fill="none" stroke="#f1cf92" stroke-width="2.5"/></symbol>
   </defs>
 </svg>
 
@@ -196,17 +199,18 @@ header.kh p { margin: 0 0 4px; color: var(--dust); }
   <!-- ===== 1. ПАЛИТРА ===== -->
   <section class="sec">
     <h2 class="k-title">1. Палитра</h2>
-    <p>Три опорных семейства: пряность (акцент, действия), песок (текст, заголовки), ночь (фоны и панели). Смысловые цвета — только по назначению.</p>
+    <p>Палитра Арракиса. Светлый песчаник выделяет заголовки окон, тёмная скала служит фоном для карточек, а медный цвет пряности отмечает основное действие.</p>
     <div class="row">
-      <div class="sw"><i style="background:var(--spice)"></i><b>Пряность</b><span>#e8913f</span></div>
-      <div class="sw"><i style="background:linear-gradient(180deg,var(--spice-hi),#b8601f)"></i><b>Пряность, кнопка</b><span>#f6a95e→#b8601f</span></div>
-      <div class="sw"><i style="background:var(--spice-dim)"></i><b>Пряность, тень</b><span>#8a5328</span></div>
-      <div class="sw"><i style="background:var(--sand)"></i><b>Песок</b><span>#e8c98e</span></div>
-      <div class="sw"><i style="background:var(--bone)"></i><b>Кость (текст)</b><span>#f4e7cf</span></div>
-      <div class="sw"><i style="background:var(--dust)"></i><b>Пыль (вторичный)</b><span>#bca685</span></div>
-      <div class="sw"><i style="background:var(--night)"></i><b>Ночь</b><span>#170f09</span></div>
-      <div class="sw"><i style="background:var(--dune)"></i><b>Дюна (панель)</b><span>#231810</span></div>
-      <div class="sw"><i style="background:var(--line)"></i><b>Линия</b><span>#4e3a26</span></div>
+      <div class="sw"><i style="background:var(--spice)"></i><b>Пряность</b><span>#f2a46d</span></div>
+      <div class="sw"><i style="background:linear-gradient(180deg,var(--spice-hi),#e28754)"></i><b>Пряность, кнопка</b><span>#ffbf83→#e28754</span></div>
+      <div class="sw"><i style="background:var(--spice-dim)"></i><b>Пряность, тень</b><span>#af7252</span></div>
+      <div class="sw"><i style="background:var(--sand)"></i><b>Песок</b><span>#f1cf92</span></div>
+      <div class="sw"><i style="background:var(--bone)"></i><b>Кость (текст)</b><span>#fff1d6</span></div>
+      <div class="sw"><i style="background:var(--dust)"></i><b>Пыль (вторичный)</b><span>#deceb1</span></div>
+      <div class="sw"><i style="background:var(--night)"></i><b>Тень скалы</b><span>#26231f</span></div>
+      <div class="sw"><i style="background:var(--dune)"></i><b>Скала (панель)</b><span>#38312a</span></div>
+      <div class="sw"><i style="background:var(--limestone)"></i><b>Песчаник на свету</b><span>#edcf9e</span></div>
+      <div class="sw"><i style="background:var(--line)"></i><b>Линия</b><span>#75634e</span></div>
     </div>
     <div class="row" style="margin-top:14px">
       <div class="sw"><i style="background:var(--light)"></i><b>Свет</b><span>кольцо стороны</span></div>
