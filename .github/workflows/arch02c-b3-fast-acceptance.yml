@@ -7,6 +7,9 @@ on:
       - 'dev/src/**'
       - 'dev/tests/ci/arch02c-**'
       - 'dev/tests/lib/**'
+      - 'dev/tests/golden/saves.mjs'
+      - 'dev/tests/smoke/gear-e3-dom.mjs'
+      - 'dev/tests/smoke/pkg8-layout.mjs'
       - 'dev/package.json'
       - 'dev/package-lock.json'
       - '.github/workflows/arch02c-b3-fast-acceptance.yml'
@@ -42,6 +45,10 @@ jobs:
         run: |
           node tests/ci/arch02c-b3-b1c-b3-mandatory-boot-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b3-b1c-b3-mandatory-boot-acceptance.mjs dist/artifact.html
+      - name: Exact golden save snapshots after mandatory asynchronous boot (PWA + HTML)
+        run: |
+          node tests/golden/saves.mjs dist/artifact.html
+          node tests/golden/saves.mjs dist/pwa/index.html
       - uses: browser-actions/setup-chrome@v1
         id: chrome
         with:
@@ -53,3 +60,7 @@ jobs:
         run: node tests/ci/arch02c-b3-b1b-real-multitab-chromium.mjs
       - name: Real Chromium protected import and explicit backup recovery
         run: node tests/ci/arch02c-b3-b2-a2-real-chromium.mjs
+      - name: Mobile E3 DOM waits for guarded bootstrap
+        run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
+      - name: Arena 5x5 WebGL real camera and low-end frames
+        run: node tests/smoke/pkg8-layout.mjs dist/pwa/index.html dist/pkg8-shots
