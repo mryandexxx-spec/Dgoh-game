@@ -37,10 +37,10 @@ function origin(initial=save) {
     return {
       g,
       mode:v=>{g.ctx.__DGOH_B3_B1C_BOOT_MODE__=v;},
-      start:data=>{g.ctx.__b3StartupArg=data??{};return g.run('startRuntime(__b3StartupArg)');},
+      start:data=>{g.ctx.__b3StartupArg=data??{};return g.run('start(__b3StartupArg)');},
       state:()=>g.run('loadSave.writer.state()'),
       release:()=>g.run('loadSave.writer.release()'),
-      phase:()=>g.run('startRuntime.writerLifecycle()'),
+      phase:()=>g.run('start.writerLifecycle()'),
       ram:()=>g.run('S === undefined ? undefined : S.solari'),
       increase:n=>{g.ctx.__plus=n;return g.run('S.solari += __plus;persist0()');},
     };
@@ -114,12 +114,12 @@ const spin=async()=>{for(let i=0;i<10;i++)await Promise.resolve();};
   assert.equal(o.store.get(KEY),original);
   done('C06','removing preview flag cannot reopen legacy persist');
 }
-// C07 callback keeps test-time ABI for B1b and lifecycle diagnostics.
+// C07 existing start callback keeps test-time ABI for B1b and lifecycle diagnostics.
 {
   const o=origin(),t=o.tab();
-  assert.equal(t.g.run('startRuntime.writer === start.writer'),true);
-  assert.equal(t.g.run('startRuntime.writerLifecycle === start.writerLifecycle'),true);
-  assert.equal(t.g.run('typeof startRuntime'), 'function');
+  assert.equal(t.g.run('typeof start.writer'), 'function');
+  assert.equal(t.g.run('typeof start.writerLifecycle'), 'function');
+  assert.equal(t.g.run('typeof start'), 'function');
   done('C07','B1b hot-host callback methods stay compatible');
 }
 assert.deepEqual(ids,Array.from({length:7},(_,i)=>'C'+String(i+1).padStart(2,'0')));
