@@ -1,7 +1,7 @@
 // ARCH-02C-B3-B1b: REAL shared-origin Chromium multi-tab Web Locks proof.
 // Native browser Web Locks, real HTTP PWA, shared storage and real DOM,
-// no fake VM/lock provider. This is OPT-IN; production startup remains legacy.
-// An old uncooperative client is deliberately demonstrated as UNSAFE.
+// no fake VM/lock provider. Ordinary startup is now mandatory writer-gated.
+// An older uncooperative writer is deliberately simulated as UNSAFE.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -47,12 +47,8 @@ async function open(){
   return page;
 }
 const evaluate=(page,code)=>page.evaluate(source=>(0,eval)(source),code);
-// B3-B1c-A0: exercise the ACTUAL composition-root callback in opt-in
-// writer-preview mode, not only the internal start.writer test hook.
-const start=page=>page.evaluate(()=>{
-  window.__DGOH_B3_B1C_BOOT_MODE__='writer-preview';
-  return window.__b3Entry({});
-});
+// Exercise the ACTUAL composition-root callback with no preview flag.
+const start=page=>page.evaluate(()=>window.__b3Entry({}));
 const phase=page=>page.evaluate(()=>window.__b3Entry.writerLifecycle());
 const storage=page=>page.evaluate(()=>localStorage.getItem('dune-goh-v1'));
 try{
@@ -112,7 +108,9 @@ try{
   assert.equal((await phase(c)).reason,'background-suspended',
     'real Chromium background visibility must invalidate stale owner');
   assert.equal((await evaluate(c,'S.solari += 22; persist0()')).status,'session-stale');
-  await old.evaluate(()=>window.__b3Entry({})); // deliberate legacy bypass
+  // The old v140 bundle is not available here; model ONLY its dangerous
+  // uncooperative raw localStorage write (it never requests Web Locks).
+  // Do not open a backdoor in the new production start() to simulate it.
   // Open a THIRD new opt-in owner; focus remains on this page. The old
   // uncooperative page is backgrounded but can still mutate localStorage.
   // This separate phase proves actual storage notifications to an ACTIVE,
@@ -124,7 +122,14 @@ try{
     'foreign write test must start with an ACTIVE nonblocked owner');
   assert.equal(await evaluate(active,'S.solari'),base+110,
     'new owner must reload most recent verified primary');
-  assert.equal((await evaluate(old,'S.solari += 3; persist0()')).ok,true);
+  const rawWrittenByLegacy=await old.evaluate(()=>{
+    const value=JSON.parse(localStorage.getItem('dune-goh-v1'));
+    value.solari+=3;
+    const raw=JSON.stringify(value);
+    localStorage.setItem('dune-goh-v1',raw);
+    return raw;
+  });
+  assert.equal(await storage(old),rawWrittenByLegacy);
   const oldPrimary=await storage(old);
   assert.equal(JSON.parse(oldPrimary).solari,base+113,
     'legacy writer must acknowledge its actual uncoordinated primary write');
