@@ -1,0 +1,30 @@
+# ARCH-02C-B3-B2-A1 — guarded transfer commit and explicit recovery-only Web Lock
+
+Date: 2026-11-19. Parent issue #199. Base `main=a78c174ba811e753e1fcc9d30bd0eaf3f7f8f14a`, merged PR #212. This is an opt-in transfer/recovery proof stage, **NOT** release or enabling default Web Locks boot. Published user PWA stays v140, no version bump or public root/SW changes.
+
+## Prerequisites
+
+- #209/#210: opt-in Web Locks single-writer and lifecycle pause.
+- #211: preview through the actual composition-root start() while preserving frozen `dev/src/boot.js` and first-AST `set_S(initialSave(data))` in `core/boot.js`.
+- #212: direct checkpoint.commit/recover denied under an armed writer gate; denied tabs cannot inspect primary to render a diagnostic. Its exact-head full CI #44524125594 was SUCCESS; merged to main `a78c174ba811e753e1fcc9d30bd0eaf3f7f8f14a`. No release.
+
+## Scoped A1 implementation
+
+**Protected manual import:** In `ui/wiring.js`, a B2 import preview performed under an armed writer gate additionally requires a current Web Locks owner with exact currently verified primary bytes and passing writer.check(). The pending intent is permanently tagged `writer` or `legacy` (default legacy maintained for historical v140-style tests). Confirmation rechecks unmutated live S, no battle, and the original expected primary. If tagged writer, it commits *synchronously* through `loadSave.writer.commit` and **never** falls back to `loadSave.checkpoint.commit`. The writer's checkpoint commit preserves the previous valid primary backup, rereads the current exact raw under the held lock and checks new primary write/readback. On success: release writer irrevocably, do not graft imported save into stale S or existing timers, and show the safe reload screen. The user must reload for a new writer lease. On conflict/quota/uncertain, no activation of candidate or acknowledged success. The original non-gated B2 behavior remains unchanged to keep historical tests and legacy mode stable; this does not make default legacy safe.
+
+**Empty localStorage import:** A completely empty origin may bootstrap `newSave()` only under the *normal* opted-in writer gate. That initial owned/verified checkpoint is the exact expected pre-import raw; importing external verified v1 preserves the new placeholder as backup, confirms imported primary, releases the lease and reloads it on a fresh page. An origin with missing primary but an existing verified backup remains `recovery-required` and does NOT auto-create a fresh save.
+
+**Recovery-only authority:** `loadSave.writer.acquire({purpose:'recovery'})` can be invoked only after `enableGate()`, when live `S === undefined`, with a native available exclusive Web Lock and a verified B1 backup plus a missing/corrupt/invalid primary. It NEVER grants gameplay writer authority, never boots the game, and denies unsupported future-version primary. While held, the caller explicitly inspects the backup and passes the exact observed primary raw and backup envelope into `loadSave.writer.recover({expectedPrimaryRaw,expectedBackupEnvelope})`. The latter rechecks primary under the lease, calls the existing strict B1 restore preflight, verifies exact bytes, and **releases the lease after the first attempt even on failure or uncertainty**. A fresh page/realm is mandatory for subsequent startup. Direct `checkpoint.recover` remains denied when gated; `writer.commit` refuses a recovery-only lease. No automatic recovery or user-writable reset.
+
+## Mandatory CI proof (new)
+
+`dev/tests/ci/arch02c-b3-b2-protected-transfer-acceptance.mjs`: X01–X14 in **both source-built PWA and HTML**, required by `.github/workflows/validate-pwa.yml`. Cover active import/backup/forced reload, clean empty-origin transfer, busy second tab, old outsider primary changes, lost writer after preview, backup quota, write-then-throw uncertainty, empty-RAM requirement, verified recovery with reload, future-version denial, missing backup, sidecar tamper, exact expected mismatch, uncertain restore. Existing B2 twenty transfer cases, B1 recovery cases, B3-B1a/B1b/B1c suites, frozen 898/167 strict boundaries, 200 battles, 41 screens, offline PWA and native real Chromium remain mandatory. CI must be checked at the exact Draft head before claiming success.
+
+## Remaining BLOCKERS, no default-boot cutover yet
+
+1. **User-facing recovery procedure:** The new recovery-only API is not yet attached to the blocked-screen UI; an explicit safe user confirmation sequence, lifecycle/visibility handling during recovery acquisition and restore, and actual browser checks must be completed in B3-B2 A2. Do not offer recovery or overwrite on startup automatically.
+2. **Native two-page import/recovery evidence** in actual Chromium shared-origin Web Locks (not merely VM mocks); offline and standalone/PWA transitions; physical iPhone Safari user-visible interaction for import/restore.
+3. **Final default-boot switch** must be a separate, approved implementation after B3-B2 is complete and green; the old cached v140 client cannot be fenced with Web Locks and remains unsafe. Manually retire all old clients as part of later approved handoff. Any B3-B4..B6 reward-transaction acknowledgement remains separately scoped.
+4. Fresh-import verified v1 with existing sidecar or corrupted state still must go through protected explicit recovery; never wipe old primary/backup or force-empty the store.
+
+**HARD USER HOLD:** approved single-device manual v140 verified export externally → after release approval future protected import, using localStorage v1 + verified checkpoint + Web Locks, no IndexedDB migration. **DO NOT uninstall/reinstall PWA, clear site data or publish v141 now.** The assistant must explicitly issue “МОЖНО ПЕРЕУСТАНАВЛИВАТЬ PWA” only in a separate validated handoff after B3-B2 UI/native/Safari, default boot, full CI, owner release and independently checked external export are complete. Deletion might lose the only progress copy.
