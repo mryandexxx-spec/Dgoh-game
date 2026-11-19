@@ -72,8 +72,10 @@ const flush = async () => { for (let i=0;i<8;i++) await Promise.resolve(); };
 // G02: opt-in gate WITHOUT a native lock must refuse persist/persist0.
 {
   const o=origin(),t=o.tab(false),old=o.store.get(KEY);
-  t.g.run('set_S(loadSave())');
   assert.equal(t.gate().ok,true);
+  // Once the gate is armed, a test may populate RAM for the negative case;
+  // a production boot must instead call start.writer before setting S.
+  t.g.run('set_S(loadSave())');
   assert.equal(t.state().gated,true);
   const out=t.change(2);
   assert.equal(out.ok,false);
@@ -286,6 +288,20 @@ const flush = async () => { for (let i=0;i<8;i++) await Promise.resolve(); };
   assert.equal(o.store.get(KEY),confirmed);
   pass('G18','released stale-RAM session can never reacquire and clobber newer owner');
 }
-assert.deepEqual(ids,Array.from({length:18},(_,i)=>'G'+String(i+1).padStart(2,'0')));
-console.log('[ARCH-02C-B3-B1b] 18/18 gated boot/legacy-persist checks complete; '+
+// G19: direct gate activation after ungated S exists is an explicit NO-GO,
+// and stays fail-closed rather than treating that old RAM as latest primary.
+{
+  const o=origin(),a=o.tab(),prior=o.store.get(KEY);
+  a.g.run('set_S(loadSave())');
+  const denied=a.gate();
+  assert.equal(denied.ok,false);
+  assert.equal(denied.status,'late-gate');
+  assert.equal(a.state().status,'session-stale');
+  assert.equal(a.change(88).status,'session-stale');
+  assert.equal((await a.g.run('loadSave.writer.acquire()')).status,'session-stale');
+  assert.equal(o.store.get(KEY),prior);
+  pass('G19','late gate cannot confer authority upon previously loaded RAM');
+}
+assert.deepEqual(ids,Array.from({length:19},(_,i)=>'G'+String(i+1).padStart(2,'0')));
+console.log('[ARCH-02C-B3-B1b] 19/19 gated boot/legacy-persist checks complete; '+
   'legacy default and old cached versions UNSAFE until separately approved cutover.');
