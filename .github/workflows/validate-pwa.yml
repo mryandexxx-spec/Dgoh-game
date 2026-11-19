@@ -151,6 +151,11 @@ jobs:
           node tests/ci/arch02c-b3-b1b-gated-boot-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b3-b1b-gated-boot-acceptance.mjs dist/artifact.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-02C-B3-B1b opt-in lifecycle and verified rescue (PWA + artifact; NOT LIVE)
+        run: |
+          node tests/ci/arch02c-b3-b1b-lifecycle-acceptance.mjs dist/pwa/index.html
+          node tests/ci/arch02c-b3-b1b-lifecycle-acceptance.mjs dist/artifact.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-01C2a all 210 mission costs (PWA + artifact)
         run: |
           node tests/arch01c2a-energy.mjs dist/pwa/index.html
@@ -386,6 +391,8 @@ jobs:
       - run: node tests/smoke/memory-ix-dom.mjs dist/pwa/index.html
       - name: ARCH-01C5a-B1 real Conquest CELEB visible NOTES + save + DGM (cold/warm)
         run: node tests/ci/arch01c5a-b1-real-lifecycle.mjs
+      - name: ARCH-02C-B3-B1b REAL Chromium shared-origin multi-tab Web Locks (OPT-IN)
+        run: node tests/ci/arch02c-b3-b1b-real-multitab-chromium.mjs
       - run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
       - name: Upload E3 screenshots
         if: always()

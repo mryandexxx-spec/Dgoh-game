@@ -63,30 +63,115 @@ function start(data) {
   startupSucceeded = true;
 }
 
-// ARCH-02C-B3-B1b: explicitly opted-in preboot writer path. NOT wired to
-// the production boot.js entrypoint yet (old cached PWA still ignores it).
-// Refuse late enabling after legacy start, and never mutate S or render a
-// secondary game until exclusive Web Locks ownership is confirmed.
+// ARCH-02C-B3-B1b lifecycle slice. Only the OPT-IN start.writer path
+// installs these guards; production src/boot.js still calls legacy start.
+// Reuse of suspended/stale in-memory S is strictly forbidden.
+let writerLifecycleArmed = false, writerLifecycleBlocked = false;
+let writerLifecycleReason = 'idle';
+function writerLifecycleBlock(reason) {
+  if (!writerLifecycleArmed) return;
+  // During the asynchronous acquire we are blocked already, but pagehide
+  // must STILL cancel its pending callback and forbid a later boot.
+  if (writerLifecycleReason === 'acquiring' || !writerLifecycleBlocked) {
+    writerLifecycleBlocked = true;
+    writerLifecycleReason = reason || 'session-stale';
+    // Also cancels a pending acquisition; Web Lock never remains held while
+    // hidden or in BFCache. Gated persist stays permanently denied after
+    // release, even if the browser later resumes this exact JS heap.
+    loadSave.writer.release();
+  }
+  try { metaFill.showWriterBlocked({ status: writerLifecycleReason }); }
+  catch (e) { /* lost DOM must never revive a writable session */ }
+}
+function writerLifecycleArm() {
+  if (writerLifecycleArmed) return;
+  writerLifecycleArmed = true;
+  writerLifecycleBlocked = true; // no gameplay interaction while acquiring
+  writerLifecycleReason = 'acquiring';
+  const deny = e => {
+    if (!writerLifecycleBlocked) return;
+    // Only actions inside our diagnostic overlay are permitted (reload,
+    // copy verified primary). Existing document-level game handlers are denied.
+    if (e.target && typeof e.target.closest === 'function' &&
+        e.target.closest('#save-writer-blocked')) return;
+    if (e.cancelable && e.preventDefault) e.preventDefault();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    else if (e.stopPropagation) e.stopPropagation();
+  };
+  for (const type of ['click', 'pointerdown', 'touchstart', 'keydown',
+      'input', 'change', 'submit', 'contextmenu'])
+    window.addEventListener(type, deny, true);
+  window.addEventListener('pagehide', () => writerLifecycleBlock('pagehide'));
+  window.addEventListener('pageshow', e => {
+    if (e.persisted) writerLifecycleBlock('bfcache-resume');
+    else if (writerLifecycleBlocked && writerLifecycleReason !== 'acquiring')
+      writerLifecycleBlock(writerLifecycleReason);
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden')
+      writerLifecycleBlock('background-suspended');
+    else if (writerLifecycleBlocked && writerLifecycleReason !== 'acquiring')
+      writerLifecycleBlock(writerLifecycleReason);
+  });
+  document.addEventListener('freeze', () => writerLifecycleBlock('frozen'));
+  document.addEventListener('resume', () => {
+    if (writerLifecycleBlocked) writerLifecycleBlock(writerLifecycleReason);
+  });
+  // Storage events only report OTHER same-origin tabs. They are not locks:
+  // a cached old PWA may already have written. Do not resurrect RAM.
+  window.addEventListener('storage', e => {
+    if (writerLifecycleBlocked ||
+        (e.key !== loadSave.writer.primaryKey &&
+         e.key !== loadSave.checkpoint.key && e.key !== null)) return;
+    if (e.key === null || e.key === loadSave.checkpoint.key ||
+        !loadSave.writer.check().ok) writerLifecycleBlock('external-save-change');
+  });
+}
+function writerLifecycleState() {
+  return { armed: writerLifecycleArmed, blocked: writerLifecycleBlocked,
+    reason: writerLifecycleReason, writer: loadSave.writer.state() };
+}
+// Explicit opt-in preboot coordination; production entry remains legacy
+// until old cached clients, import/recover and real Safari are gated.
 async function startWithWriter(data = {}) {
   if (startupEntered) return { ok: false, status: 'already-started' };
+  if (writerLifecycleArmed) return { ok: false, status: 'session-blocked' };
   if (data && data.save) return { ok: false, status: 'hot-reload-unsupported' };
-  // Sticky deny-by-default: a failed/unsupported/competing lock cannot
-  // accidentally route a later persist() through unchecked localStorage.
-  loadSave.writer.enableGate();
+  const gate = loadSave.writer.enableGate();
+  if (!gate.ok) return gate;
+  writerLifecycleArm();
   const acquired = await loadSave.writer.acquire();
-  if (!acquired.ok) return acquired;
+  if (!acquired.ok) {
+    writerLifecycleBlock(acquired.status);
+    return acquired;
+  }
+  // A pagehide/freeze can race the asynchronous acquisition acknowledgement.
+  if (writerLifecycleReason !== 'acquiring' ||
+      loadSave.writer.state().status !== 'owned') {
+    writerLifecycleBlock('session-stale');
+    return { ok: false, status: 'session-blocked' };
+  }
   try {
     start(data);
   } catch (e) {
-    // Remain gated, retain owner lease for explicit diagnostic/export. No
-    // automatic retry or newSave fallback on an incomplete startup.
+    writerLifecycleBlock('boot-exception');
     return { ok: false, status: 'boot-exception',
       error: (e && e.name) || 'Error' };
   }
-  if (!startupSucceeded) return { ok: false, status: 'boot-incomplete' };
+  if (!startupSucceeded) {
+    writerLifecycleBlock('boot-incomplete');
+    return { ok: false, status: 'boot-incomplete' };
+  }
+  if (writerLifecycleReason !== 'acquiring') {
+    writerLifecycleBlock('session-stale');
+    return { ok: false, status: 'session-blocked' };
+  }
+  writerLifecycleBlocked = false;
+  writerLifecycleReason = 'active';
   return { ok: true, status: 'started' };
 }
-// Preserve the existing named-export/ESM initialization ABI.
+// Preserve the historical named-export/ESM initialization ABI.
 start.writer = startWithWriter;
+start.writerLifecycle = writerLifecycleState;
 
 export { splashOff, start };

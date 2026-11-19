@@ -291,6 +291,76 @@ function showSaveRecovery(issue) {
   document.body.appendChild(blocked);
 }
 
+// ARCH-02C-B3-B1b lifecycle UX for explicitly opted-in single-writer mode.
+// The verified export comes from storage, NEVER mutable S; no reset/import.
+// The old production bootstrap does NOT call this mode yet.
+function showWriterBlocked(outcome = {}) {
+  const previous = document.getElementById('save-writer-blocked');
+  if (previous) previous.remove();
+  const root = document.createElement('div');
+  root.id = 'save-writer-blocked';
+  root.setAttribute('role', 'alertdialog');
+  root.setAttribute('aria-modal', 'true');
+  root.setAttribute('aria-labelledby', 'save-writer-title');
+  // Let the overlay's own buttons/textarea work, then stop bubbling before
+  // the existing document-wide game event handlers can process those inputs.
+  for (const type of ['click', 'pointerdown', 'touchstart', 'keydown',
+      'input', 'change', 'submit', 'contextmenu'])
+    root.addEventListener(type, e => e.stopPropagation());
+  root.style.cssText = 'position:fixed;inset:0;z-index:1000000;background:#070d16fa;color:#f4e8d6;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:14px;overflow:auto;font-family:system-ui,sans-serif;';
+  const panel = document.createElement('section');
+  panel.style.cssText = 'max-width:550px;width:100%;max-height:94vh;overflow:auto;box-sizing:border-box;background:#18232f;border:1px solid #b08a56;border-radius:12px;padding:18px;box-shadow:0 20px 60px #000b;';
+  const title = document.createElement('h2');
+  title.id = 'save-writer-title';
+  title.textContent = outcome.status === 'busy' ?
+    'Игра открыта в другой вкладке' : 'Игровой сеанс остановлен';
+  title.style.cssText = 'font-size:20px;line-height:1.25;margin:0 0 12px;color:#f4c987;';
+  const body = document.createElement('p');
+  body.textContent = 'Запись прогресса в этом окне заблокирована (' +
+    String(outcome.status || 'unknown') +
+    '). Не продолжайте игру в старом окне: оно может хранить устаревшее состояние. ' +
+    'Проверьте остальные вкладки, затем перезагрузите эту страницу. Не очищайте данные сайта и PWA.';
+  body.style.cssText = 'font-size:14px;line-height:1.5;margin:0 0 14px;';
+  panel.appendChild(title); panel.appendChild(body);
+  // Only the valid confirmed primary may be presented as a verified export.
+  // The B2 UTF-8 base64 format is intentionally retained for interoperability.
+  const inspected = loadSave.checkpoint.inspect();
+  if (inspected.primary.status === 'ok') {
+    try {
+      const safeCode = btoa(unescape(encodeURIComponent(inspected.primary.raw)));
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = 'Показать проверенный код сохранения';
+      button.style.cssText = 'border:1px solid #a18b69;background:#b08a56;color:#10141b;border-radius:7px;padding:10px;font-weight:700;';
+      const field = document.createElement('textarea');
+      field.readOnly = true;
+      field.hidden = true;
+      field.value = safeCode;
+      field.setAttribute('aria-label', 'Проверенное сохранение из хранилища');
+      field.style.cssText = 'width:100%;min-height:65px;max-height:120px;box-sizing:border-box;margin:12px 0;background:#09111b;color:#eee;border:1px solid #8d7b65;border-radius:6px;';
+      button.addEventListener('click', () => {
+        field.hidden = false;
+        field.focus();
+        field.select();
+      });
+      panel.appendChild(button); panel.appendChild(field);
+    } catch (e) { /* export unavailable, never substitute unverified RAM */ }
+  }
+  const note = document.createElement('p');
+  note.textContent = 'Если сохранение не удалось проверить, не выполняйте сброс или повторный импорт вслепую.';
+  note.style.cssText = 'font-size:13px;line-height:1.45;opacity:.85;';
+  panel.appendChild(note);
+  const reopen = document.createElement('button');
+  reopen.type = 'button';
+  reopen.textContent = 'Перезагрузить после закрытия других вкладок';
+  reopen.style.cssText = 'border:1px solid #a18b69;background:transparent;color:#f4d4a1;border-radius:7px;padding:10px;margin-top:8px;';
+  reopen.addEventListener('click', () => window.location.reload());
+  panel.appendChild(reopen);
+  root.appendChild(panel);
+  document.body.appendChild(root);
+}
+metaFill.showWriterBlocked = showWriterBlocked;
+
 // Keep the historical 898 public names and ESM export order unchanged.
 // Boot already imports metaFill; this UI-owned diagnostic callback is attached
 // without introducing an additional cross-module named export.
