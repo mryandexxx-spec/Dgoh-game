@@ -32,7 +32,16 @@ try {
       localStorage.setItem('dune-gfx',JSON.stringify({p:quality,auto:0}));
       try { Object.defineProperty(navigator,'serviceWorker',{value:undefined}); } catch (e) {}
     },SAVE,gfx);
+    // The frozen entrypoint invokes an asynchronous mandatory writer boot.
+    // Wait for actual ownership, not merely document load or a visible DOM
+    // shell. Closing the previous page can release its native lease later.
+    await page.bringToFront();
     await page.goto(srv.url(path.basename(html)),{waitUntil:'load'});
+    await page.waitForFunction(()=>{
+      const phase=(0,eval)('start.writerLifecycle()');
+      return phase.armed && !phase.blocked &&
+        phase.reason==='active' && phase.writer.status==='owned';
+    },{timeout:30000,polling:50});
     const result = await page.evaluate(async ()=>{
       if(!await loadB3()) throw Error('3D engine did not load');
       const ids = Object.keys(CH).filter(id=>CH[id]&&!CH[id].boss&&prog(id).stars).slice(0,5);
@@ -44,8 +53,10 @@ try {
       if(!BT.arena) throw Error('Arena3D not mounted');
       // Замеряем геометрию самой сцены, без CSS-имитации и без сортировки по DOM.
       const A=BT.arena;
-      for (let i=0; i<100 && A.scene.getFrameId()<2; i++) await new Promise(r=>setTimeout(r,30));
-      if (A.scene.getFrameId()<2) throw Error('Arena did not render');
+      // Rendering can be slower on CI low-end SwiftShader; geometry assertions
+      // stay exact, but the scene gets a bounded warm-up after writer boot.
+      for (let i=0; i<240 && A.scene.getFrameId()<2; i++) await new Promise(r=>setTimeout(r,40));
+      if (A.scene.getFrameId()<2) throw Error('Arena did not render: '+A.scene.getFrameId()+' frames');
       const arr=Object.values(A.units).map(o=>{
         const p=A.project(o.base.add(new __B3.Vector3(0,o.h*.65,0)));
         const foot=A.project(o.base),head=A.project(o.base.add(new __B3.Vector3(0,o.h,0)));
