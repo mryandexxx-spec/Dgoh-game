@@ -25,7 +25,15 @@ try {
       try { Object.defineProperty(navigator,'serviceWorker',{value:undefined}); } catch {}
     },fixture);
     await page.goto(server.url(path.basename(html)),{waitUntil:'load'});
-    await page.waitForFunction(()=>!!document.querySelector('#overlay'),{timeout:30000});
+    // A DOM overlay exists before the asynchronous mandatory writer gate finishes.
+    // Interact with the recycler only after the actual native lease is owned.
+    await page.bringToFront();
+    await page.waitForFunction(() => {
+      const phase = (0,eval)('start.writerLifecycle()');
+      return phase.armed && !phase.blocked &&
+        phase.reason === 'active' && phase.writer.status === 'owned' &&
+        !!document.querySelector('#overlay');
+    }, {timeout:30000,polling:50});
     // Boot may schedule the login calendar over the recycler; dismiss it after its scheduled entry.
     await new Promise(resolve => setTimeout(resolve, 3100));
     await page.evaluate(code=>(0,eval)(code), `
