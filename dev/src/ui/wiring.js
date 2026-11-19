@@ -96,7 +96,28 @@ function transferFingerprint(raw) {
   return (h >>> 0).toString(16).padStart(8, '0');
 }
 
+function stopAfterProtectedTransfer(status) {
+  // The boot-owned lifecycle blocker is installed only after Web Locks opt-in.
+  // It synchronously rejects further game input and releases the writer,
+  // avoiding any cyclic module import from UI to boot.
+  if (typeof metaFill.stopWriterSession === 'function')
+    return metaFill.stopWriterSession(status);
+  loadSave.writer.release();
+  metaFill.showWriterBlocked({status,
+    allowVerifiedExport:status === 'import-verified-reload'});
+}
 function metaClick(d) {
+  // Capture-phase DOM guard is not a substitute for an authority check at
+  // the save-transfer API boundary. A denied tab may not inspect the primary,
+  // decode a candidate, or confirm an old preview without a native owner.
+  if (d.saveexp || d.saveunsaved || d.saveimp || d.saveload || d.saveconfirm) {
+    const writer = loadSave.writer.state();
+    if (writer.gated && writer.status !== 'owned') {
+      pendingSaveImport = null;
+      stopAfterProtectedTransfer('writer-not-owner');
+      return true;
+    }
+  }
   if (d.trsel) { S.trialSel = d.trsel; persist(); render(); return true; }
   if (d.trgo) { closeInfo(true); if (BT && BT.done) leaveBattle(); trialGo(d.trgo); return true; }
   if (d.trsim) { trialSimClick(d.trsim); return true; }
@@ -157,12 +178,22 @@ function metaClick(d) {
       if (state.primary.status !== 'ok' ||
           (state.backup.status !== 'ok' && state.backup.status !== 'missing'))
         throw new Error('storage-not-ready');
-      pendingSaveImport = { candidate, expectedRaw: state.primary.raw, memoryRaw: JSON.stringify(S) };
+      const writer = loadSave.writer.state();
+      // Under an armed gate, never inspect/prepare a transfer without the
+      // native exclusive gameplay lease. Even a stale second tab is denied.
+      if (writer.gated && (writer.status !== 'owned' ||
+          writer.raw !== state.primary.raw || !loadSave.writer.check().ok))
+        throw new Error('writer-not-owner');
+      pendingSaveImport = { candidate, expectedRaw: state.primary.raw,
+        memoryRaw: JSON.stringify(S), mode: writer.gated ? 'writer' : 'legacy' };
       const heroes = Object.keys(candidate.roster).length;
       $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>Подтвердить замену прогресса?</h3><p class="sub">Импорт v1 проверен. Героев: ' +
         heroes + '. Солярии: ' + candidate.solari + '. Пласталь: ' + candidate.plast +
         '. Контрольный код: ' + transferFingerprint(candidateRaw) +
-        '. Текущий проверенный прогресс будет зарезервирован перед записью нового.</p><p class="sub">Другие вкладки могут менять сохранение: защита одновременных записей относится к этапу B3.</p><div class="acts"><button class="btn go" data-saveconfirm="1">Подтверждаю замену</button><button class="btn" data-iclose="1" style="margin-left:auto">Отмена</button></div></div></div>';
+        '. Текущий проверенный прогресс будет зарезервирован перед записью нового.</p><p class="sub">' + (writer.gated ?
+          'Защищённый Web Locks сеанс: после проверки записи потребуется перезагрузка игры.' :
+          'Другие вкладки могут менять сохранение: защита одновременных записей относится к этапу B3.') +
+        '</p><div class="acts"><button class="btn go" data-saveconfirm="1">Подтверждаю замену</button><button class="btn" data-iclose="1" style="margin-left:auto">Отмена</button></div></div></div>';
     } catch (e) { toast('Импорт отклонён: некорректный, неподдерживаемый код или недоступное хранилище'); }
     return true;
   }
@@ -176,10 +207,26 @@ function metaClick(d) {
       toast('Состояние игры изменилось после проверки. Начните импорт заново.');
       return true;
     }
-    const outcome = loadSave.checkpoint.commit({
-      expectedRaw: pending.expectedRaw, candidate: pending.candidate
-    });
+    // Persist under the *same* lease used to load and preview the primary.
+    // Never fall back to the ungated B2 checkpoint if ownership is lost.
+    const writer = loadSave.writer.state();
+    const outcome = pending.mode === 'writer' ?
+      (writer.gated && writer.status === 'owned' ?
+        loadSave.writer.commit({
+          expectedRaw: pending.expectedRaw, candidate: pending.candidate
+        }) : { ok: false, status: 'not-owner' }) :
+      (writer.gated ? { ok: false, status: 'writer-required' } :
+        loadSave.checkpoint.commit({
+          expectedRaw: pending.expectedRaw, candidate: pending.candidate
+        }));
     if (!outcome.ok) {
+      if (pending.mode === 'writer' && ['uncertain', 'stale',
+          'session-stale', 'not-owner', 'conflict', 'unavailable'].includes(outcome.status)) {
+        // An ambiguous or stolen writer cannot continue with RAM that may no
+        // longer correspond to the stored primary. Never re-use the preview.
+        stopAfterProtectedTransfer('import-' + outcome.status);
+        return true;
+      }
       if (outcome.status === 'uncertain') {
         // The candidate may have reached primary before an exception: block.
         const now = loadSave.checkpoint.inspect();
@@ -190,6 +237,13 @@ function metaClick(d) {
           ? 'Сохранение изменилось с момента проверки. Обновите страницу; импорт отменён.'
           : 'Запись не подтверждена (' + outcome.status + '). Текущий прогресс не заменён.');
       }
+      return true;
+    }
+    if (pending.mode === 'writer') {
+      // Do not graft imported S onto the old gameplay heap, timers or cached
+      // references. Retire the lease and force a fresh start from verified
+      // stored bytes; a failed/delayed reload cannot make old RAM writable.
+      stopAfterProtectedTransfer('import-verified-reload');
       return true;
     }
     set_S(outcome.save);
@@ -313,10 +367,16 @@ function showWriterBlocked(outcome = {}) {
   const title = document.createElement('h2');
   title.id = 'save-writer-title';
   title.textContent = outcome.status === 'busy' ?
-    'Игра открыта в другой вкладке' : 'Игровой сеанс остановлен';
+    'Игра открыта в другой вкладке' :
+    outcome.status === 'import-verified-reload' ?
+      'Импорт проверен — перезагрузите игру' : 'Игровой сеанс остановлен';
   title.style.cssText = 'font-size:20px;line-height:1.25;margin:0 0 12px;color:#f4c987;';
   const body = document.createElement('p');
-  body.textContent = 'Запись прогресса в этом окне заблокирована (' +
+  body.textContent = outcome.status === 'import-verified-reload' ?
+    'Импорт записан и проверен. Старое состояние игры отключено от записи. ' +
+    'Перезагрузите страницу для чтения импортированного прогресса. ' +
+    'Не очищайте данные сайта или PWA.' :
+    'Запись прогресса в этом окне заблокирована (' +
     String(outcome.status || 'unknown') +
     '). Не продолжайте игру в старом окне: оно может хранить устаревшее состояние. ' +
     'Проверьте остальные вкладки, затем перезагрузите эту страницу. Не очищайте данные сайта и PWA.';

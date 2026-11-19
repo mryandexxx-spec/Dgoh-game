@@ -114,6 +114,10 @@ function writerLifecycleBlock(reason) {
 function writerLifecycleArm() {
   if (writerLifecycleArmed) return;
   writerLifecycleArmed = true;
+  // UI-owned transfer may retire an imported/ambiguous session without a
+  // new import edge from wiring.js back into core/boot.js. This synchronously
+  // blocks all game input AND releases the native lock before UI can resume.
+  metaFill.stopWriterSession = writerLifecycleBlock;
   writerLifecycleBlocked = true; // no gameplay interaction while acquiring
   writerLifecycleReason = 'acquiring';
   const deny = e => {
