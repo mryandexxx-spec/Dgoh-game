@@ -64,7 +64,19 @@ try{
   const confirmed=await evaluate(a,'S.solari += 100; persist0()');
   assert.equal(confirmed.ok,true);
   assert.equal(confirmed.verified,'committed');
-  assert.equal(JSON.parse(await storage(b)).solari,base+100);
+  // Native Web Locks serialize cooperating writers, but storage cache/event
+  // propagation across actual Chromium renderer processes is asynchronous.
+  // Assert acknowledged bytes in owner immediately; require OBSERVABLE
+  // convergence in a second actual page before claiming shared-origin proof.
+  assert.equal(JSON.parse(await storage(a)).solari,base+100,
+    'writer acknowledged bytes must match its own verified primary');
+  await b.waitForFunction(expected=>{
+    const raw=localStorage.getItem('dune-goh-v1');
+    if (!raw) return false;
+    try { return JSON.parse(raw).solari===expected; } catch(e) { return false; }
+  },{timeout:10000,polling:50},base+100);
+  assert.equal(JSON.parse(await storage(b)).solari,base+100,
+    'separate page must observe the confirmed primary after propagation');
   const backup=await a.evaluate(()=>JSON.parse(localStorage.getItem('dune-goh-v1.backup')));
   assert.equal(backup.key,'dune-goh-v1');
   assert.ok(backup.raw,'verified backup must preserve previous primary');
