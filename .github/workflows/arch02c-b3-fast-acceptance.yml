@@ -10,6 +10,7 @@ on:
       - 'dev/tests/golden/saves.mjs'
       - 'dev/tests/smoke/gear-e3-dom.mjs'
       - 'dev/tests/smoke/pkg8-layout.mjs'
+      - 'dev/tests/smoke/baron-legend-gl.mjs'
       - 'dev/package.json'
       - 'dev/package-lock.json'
       - '.github/workflows/arch02c-b3-fast-acceptance.yml'
@@ -62,5 +63,9 @@ jobs:
         run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
       - name: Arena 5x5 WebGL real camera and low-end frames
         run: node tests/smoke/pkg8-layout.mjs dist/pwa/index.html dist/pkg8-shots
+      - name: Historical v75 standalone Arena baseline (NO new writer API)
+        run: node tests/smoke/pkg8-layout.mjs ../index.html dist/pkg8-shots --baseline
+      - name: BH8 staged Baron mobile WebGL 844/667 writer-ready frames
+        run: node tests/smoke/baron-legend-gl.mjs dist/pwa/index.html
       - name: Real Chromium protected import and explicit backup recovery
         run: node tests/ci/arch02c-b3-b2-a2-real-chromium.mjs
