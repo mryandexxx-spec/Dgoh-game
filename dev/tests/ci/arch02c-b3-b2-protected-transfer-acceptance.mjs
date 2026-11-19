@@ -88,6 +88,8 @@ async function backupOrigin(){
   assert.equal(JSON.parse(o.store.get(BACKUP)).raw,before);
   assert.equal(t.save(),ram,'old RAM is never grafted onto imported save');
   assert.equal(t.g.ctx.__blockedAfterImport,'import-verified-reload');
+  assert.equal(t.g.run('start.writerLifecycle().blocked'),true,
+    'import must activate capture-phase game input denial, not just release');
   assert.equal(t.state().status,'session-stale');
   const saved=o.store.get(KEY);
   assert.equal(t.change(999).status,'session-stale');
@@ -142,6 +144,7 @@ async function backupOrigin(){
   assert.equal(o.store.get(KEY),outside);
   assert.equal(t.state().status,'session-stale');
   assert.equal(t.g.ctx.__blockedAfterImport,'import-stale');
+  assert.equal(t.g.run('start.writerLifecycle().blocked'),true);
   t.release();await flush();
   pass('X04','stale expected primary does not overwrite outsider bytes');
 }
@@ -184,6 +187,7 @@ async function backupOrigin(){
   assert.equal(t.state().status,'session-stale');
   assert.equal(t.save(),old);
   assert.equal(t.g.ctx.__blockedAfterImport,'import-uncertain');
+  assert.equal(t.g.run('start.writerLifecycle().blocked'),true);
   t.release();await flush();
   pass('X07','ambiguous primary write blocks reapplication');
 }
