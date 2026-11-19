@@ -224,7 +224,9 @@ const flush = async () => { for (let i=0;i<8;i++) await Promise.resolve(); };
   assert.equal((await a.start({})).status,'started');
   assert.equal(o.store.has(KEY),true);
   assert.equal(JSON.parse(o.store.get(KEY)).v,1);
-  assert.equal(o.store.has(BACKUP),true);
+  // First write from a truly empty origin has no previous valid primary
+  // to copy to backup; do not invent an older checkpoint.
+  assert.equal(o.store.has(BACKUP),false);
   a.release();await flush();
   pass('G14','new account first save committed through owned gate');
 }
