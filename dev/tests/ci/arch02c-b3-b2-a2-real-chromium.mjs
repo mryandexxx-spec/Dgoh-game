@@ -97,6 +97,11 @@ try{
     new PageTransitionEvent('pagehide',{persisted:false})));
   await fresh.evaluate(()=>localStorage.setItem('dune-goh-v1','{CORRUPTED'));
   const damaged=await open({seed:false});
+  // Native recovery-only leases are intentionally denied in a background
+  // standalone page. A newly created Puppeteer tab may not be foreground.
+  await damaged.bringToFront();
+  assert.equal(await damaged.evaluate(()=>document.visibilityState),'visible',
+    'corrupt-primary manual recovery must be exercised in foreground');
   assert.equal((await start(damaged)).status,'corrupt');
   assert.equal(await get(damaged),'{CORRUPTED');
   assert.equal(await evaluate(damaged,'S === undefined'),true);
@@ -108,9 +113,19 @@ try{
   // unchanged until click 2.
   await damaged.evaluate(()=>document.getElementById('save-recover-prepare').click());
   await damaged.waitForFunction(()=>{
-    const el=document.getElementById('save-recover-confirm');
-    return el && !el.hidden;
+    const confirm=document.getElementById('save-recover-confirm');
+    const message=document.getElementById('save-recover-status');
+    return (confirm && !confirm.hidden) ||
+      (message && /недоступно|прервана|Перезагрузите страницу|Окно в фоне/.test(message.textContent));
   },{timeout:10000,polling:50});
+  const damagedRecovery=await damaged.evaluate(()=>({
+    approved:!document.getElementById('save-recover-confirm')?.hidden,
+    status:document.getElementById('save-recover-status')?.textContent,
+    visibility:document.visibilityState,
+    phase:window.__b3Entry.writerLifecycle()
+  }));
+  assert.equal(damagedRecovery.approved,true,
+    'manual recovery MUST obtain same-origin native lease: '+JSON.stringify(damagedRecovery));
   assert.equal(await get(damaged),'{CORRUPTED');
   const previewText=await damaged.evaluate(()=>
     document.getElementById('save-recover-preview').textContent);
