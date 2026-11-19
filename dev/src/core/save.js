@@ -547,7 +547,8 @@ async function writerAcquire() {
 }
 // Opt-in surface on an existing named export preserves the 898-name ESM ABI.
 loadSave.writer = Object.freeze({
-  name: WRITER_LOCK_NAME, acquire: writerAcquire, state: writerState,
+  name: WRITER_LOCK_NAME, primaryKey: SAVE_KEY,
+  acquire: writerAcquire, state: writerState,
   check: writerCheck, commit: writerCommit, release: writerRelease,
   enableGate: writerEnableGate
 });
