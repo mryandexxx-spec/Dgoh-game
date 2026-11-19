@@ -115,12 +115,16 @@ const flush = async () => { for (let i=0;i<8;i++) await Promise.resolve(); };
   const expected=o.store.get(KEY);
   assert.equal((await b.start({})).status,'busy');
   a.release();await flush();
-  assert.equal((await b.start({})).status,'started');
-  assert.equal(b.g.run('S.solari'),amount(expected));
-  assert.equal(b.change(10).ok,true);
+  // The lifecycle hardening forbids rearming a previously denied JS heap.
+  // A genuinely FRESH tab after owner release must re-read storage instead.
+  assert.equal((await b.start({})).status,'session-blocked');
+  const fresh=o.tab();
+  assert.equal((await fresh.start({})).status,'started');
+  assert.equal(fresh.g.run('S.solari'),amount(expected));
+  assert.equal(fresh.change(10).ok,true);
   assert.equal(amount(o.store.get(KEY)),amount(expected)+10);
-  b.release();await flush();
-  pass('G05','sequential owner restarts from latest verified primary, not stale RAM');
+  fresh.release();await flush();
+  pass('G05','fresh owner reloads latest save; denied stale heap cannot restart');
 }
 // G06: opt-in persist routes through checkpoint: original is in verified backup.
 {
