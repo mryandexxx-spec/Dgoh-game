@@ -31,7 +31,12 @@ let startupReadFailure = null;
 let startupEntered = false, startupSucceeded = false;
 function initialSave(data) {
   startupReadFailure = null;
-  if (!writerPreviewReentry && writerLifecycleArmed) return undefined;
+  if (!writerPreviewReentry && writerLifecycleArmed) {
+    // A repeated hot-host start callback must NOT clear an active writer's
+    // S (the first AST action in start is intentionally still set_S(...)).
+    // A denied/suspended/lost session never returns stale RAM, however.
+    return writerLifecycleBlocked ? undefined : S;
+  }
   if (!writerPreviewReentry &&
       window.__DGOH_B3_B1C_BOOT_MODE__ === 'writer-preview') {
     // The historic start() must execute set_S(...) FIRST (ARCH-01C5a).
@@ -122,6 +127,13 @@ function writerLifecycleBlock(reason) {
 function writerLifecycleArm() {
   if (writerLifecycleArmed) return;
   writerLifecycleArmed = true;
+  // Unexpected native lock Promise settlement and even a direct release()
+  // must revoke input immediately, not just fail a later persist0() call.
+  // A lifecycle-initiated release has already set blocked=true, avoiding
+  // duplicate overlays or overwriting its pagehide/freeze diagnostic.
+  loadSave.writer.onRetired(reason => {
+    if (!writerLifecycleBlocked) writerLifecycleBlock(reason);
+  });
   // UI-owned transfer may retire an imported/ambiguous session without a
   // new import edge from wiring.js back into core/boot.js. This synchronously
   // blocks all game input AND releases the native lock before UI can resume.

@@ -149,6 +149,25 @@ try{
   assert.equal((await phase(a)).blocked,true);
   assert.equal((await evaluate(a,'persist0()')).status,'session-stale');
   console.log('[B3-B1b real Chromium] BFCache-style wake still blocked: PASS');
+  // B3-B1c-B2: native Chromium, actual composition-root callback, not a
+  // fabricated Web Locks provider. An accidental second hot-ready call must
+  // preserve active S; a direct writer.release() must block UI immediately.
+  const manual=await open();
+  assert.equal((await start(manual)).status,'started');
+  const manualRaw=await storage(manual);
+  const liveAmount=await evaluate(manual,'S.solari');
+  assert.equal((await manual.evaluate(()=>window.__b3Entry({}))).status,
+    'session-blocked','duplicate native-page boot cannot execute gameplay twice');
+  assert.equal(await evaluate(manual,'S.solari'),liveAmount,
+    'duplicate boot must preserve active in-memory progress');
+  assert.equal((await phase(manual)).blocked,false);
+  assert.equal((await evaluate(manual,'loadSave.writer.release()')).status,'released');
+  assert.equal((await phase(manual)).blocked,true);
+  assert.equal((await phase(manual)).reason,'writer-released');
+  assert.equal((await evaluate(manual,'persist0()')).status,'session-stale');
+  assert.equal(await storage(manual),manualRaw);
+  console.log('[B3-B1c-B2 real Chromium] duplicate start + direct lock release fence: PASS');
+
   assert.deepEqual(errors,[],'no unhandled browser exceptions in real-tab probe');
   console.log('[ARCH-02C-B3-B1b] REAL multi-page Chromium PASS; old PWA UNFENCED, Safari still needed');
 } finally {
