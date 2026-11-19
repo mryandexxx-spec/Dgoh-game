@@ -90,8 +90,13 @@ try {
       'second page may start only after the first tab retired on backgrounding');
     assert.equal(await expression(b,'S.solari'),base+37);
   }
-  assert.equal(JSON.parse(await get(b)).solari,base+37,
-    'real second renderer must see latest committed primary');
+  // Shared-origin storage propagation between real renderer processes is
+  // asynchronous. Require eventual exact-byte convergence, never skip it.
+  await b.waitForFunction(expected=>{
+    return localStorage.getItem('dune-goh-v1')===expected;
+  },{timeout:10000,polling:50},confirmed);
+  assert.equal(await get(b),confirmed,
+    'real second renderer must converge to exact committed primary');
   if(aPhase.reason==='active')await stop(a);
   if(bPhase.reason==='active')await stop(b);
   const fresh=await open();
@@ -115,6 +120,9 @@ try {
     window.__primaryReads,window.__primaryWrites]),[0,0]);
   assert.equal(await noLocks.evaluate(()=>
     document.getElementById('save-writer-blocked')!==null),true);
+  await noLocks.waitForFunction(expected=>
+    localStorage.getItem('dune-goh-v1')===expected,
+    {timeout:10000,polling:50},finalRaw);
   assert.equal(await get(noLocks),finalRaw);
   console.log('[B3-B1c-B3 native] unavailable native locks fail-closed on automatic PWA start: PASS');
   assert.deepEqual(errors,[],'no uncaught browser errors in automatic PWA boot');
