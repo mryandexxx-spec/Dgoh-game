@@ -436,7 +436,7 @@ async function writerAcquire() {
     resolveStart(outcome);
   }
   writerCancelAcquire = () => finish({ ok: false, status: 'cancelled' });
-  let request;
+  let request, requestValidated = false;
   try {
     request = locks.request(WRITER_LOCK_NAME,
       { mode: 'exclusive', ifAvailable: true }, lock => {
@@ -468,7 +468,14 @@ async function writerAcquire() {
             stale: false, ticket, release: resolve };
         });
         writerLastStatus = 'owned';
-        finish({ ok: true, status: 'acquired', raw: writerLease.raw });
+        // Do not acknowledge a provider that calls back but fails to return
+        // the Promise required by the native Web Locks API.
+        const acknowledge = () => {
+          if (requestValidated && writerLease && writerLease.ticket === ticket)
+            finish({ ok: true, status: 'acquired', raw: writerLease.raw });
+        };
+        if (requestValidated) acknowledge();
+        else Promise.resolve().then(acknowledge);
         return holding;
       });
   } catch (e) {
@@ -481,6 +488,7 @@ async function writerAcquire() {
     finish({ ok: false, status: 'unavailable' });
     return started;
   }
+  requestValidated = true;
   Promise.resolve(request).then(
     () => {
       if (!settled) finish({ ok: false, status: 'unavailable' });
