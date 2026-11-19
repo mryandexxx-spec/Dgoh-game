@@ -98,28 +98,45 @@ try{
   console.log('[B3-B1b real Chromium] cooperative two-page exclusive writer: PASS');
   console.log('[B3-B1b real Chromium] pagehide -> release -> fresh boot +100/+10: PASS');
 
-  // Old cached/legacy JS remains uncooperative by design; this experiment
-  // must NOT be reported as protection against pre-B3 service workers.
+  // Opening a genuine browser tab backgrounds the previously active tab.
+  // Its visibilitychange guard must release ownership immediately, BEFORE
+  // any outsider save event. Do not mistake safe background invalidation for
+  // an external-save-change notification.
   const old=await open();
+  assert.equal((await phase(c)).blocked,true);
+  assert.equal((await phase(c)).reason,'background-suspended',
+    'real Chromium background visibility must invalidate stale owner');
+  assert.equal((await evaluate(c,'S.solari += 22; persist0()')).status,'session-stale');
   await old.evaluate(()=>window.__b3Entry({})); // deliberate legacy bypass
+  // Open a THIRD new opt-in owner; focus remains on this page. The old
+  // uncooperative page is backgrounded but can still mutate localStorage.
+  // This separate phase proves actual storage notifications to an ACTIVE,
+  // otherwise unblocked Web-Locks writer, not mere background suspension.
+  const active=await open();
+  assert.equal((await start(active)).status,'started',
+    'backgrounded c released its lock before fresh active boot');
+  assert.equal((await phase(active)).blocked,false,
+    'foreign write test must start with an ACTIVE nonblocked owner');
+  assert.equal(await evaluate(active,'S.solari'),base+110,
+    'new owner must reload most recent verified primary');
   assert.equal((await evaluate(old,'S.solari += 3; persist0()')).ok,true);
   const oldPrimary=await storage(old);
   assert.equal(JSON.parse(oldPrimary).solari,base+113,
     'legacy writer must acknowledge its actual uncoordinated primary write');
-  // Storage visibility and storage-event delivery are asynchronous between
-  // Chromium renderer processes. Keep BOTH requirements: the other renderer
-  // must converge to exact hostile bytes, AND the guarded writer must stop.
-  // A propagation failure or missed cross-tab event fails this real proof.
-  await c.waitForFunction(expected=>{
-    const raw=localStorage.getItem('dune-goh-v1');
-    return raw===expected && window.__b3Entry.writerLifecycle().blocked===true;
+  // Require both the exact foreign bytes and explicit external-change reason.
+  // Readback may lag across processes, but a missed event is NOT accepted.
+  await active.waitForFunction(expected=>{
+    const state=window.__b3Entry.writerLifecycle();
+    return localStorage.getItem('dune-goh-v1')===expected &&
+      state.blocked===true && state.reason==='external-save-change';
   },{timeout:10000,polling:50},oldPrimary);
-  assert.equal(await storage(c),oldPrimary,
-    'guarded tab must observe the exact foreign primary, not a stale snapshot');
-  assert.equal((await phase(c)).reason,'external-save-change');
-  assert.equal((await evaluate(c,'S.solari += 22; persist0()')).status,'session-stale');
-  assert.equal(await storage(c),oldPrimary);
-  console.log('[B3-B1b real Chromium] old legacy tab bypasses lock UNSAFE; new detects and stops');
+  assert.equal(await storage(active),oldPrimary);
+  assert.equal((await phase(active)).reason,'external-save-change');
+  assert.equal((await evaluate(active,'S.solari += 22; persist0()')).status,'session-stale');
+  assert.equal(await storage(active),oldPrimary);
+  assert.equal((await evaluate(c,'persist0()')).status,'session-stale');
+  console.log('[B3-B1b real Chromium] background tab safely releases writer: PASS');
+  console.log('[B3-B1b real Chromium] active writer detects legacy foreign save and stops: PASS (legacy still UNSAFE)');
 
   // In addition to explicit pagehide, check that BFCache-style return does
   // not revive the old game heap into a new writer after c released.
