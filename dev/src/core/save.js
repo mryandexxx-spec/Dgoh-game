@@ -373,8 +373,16 @@ let writerGateEnabled = false;
 // reattached to newly acquired storage bytes while S remains stale in RAM.
 let writerGateInvalidated = false;
 function writerEnableGate() {
+  if (!writerGateEnabled && S !== undefined) {
+    // The caller already has RAM that was created without writer authority.
+    // Switching that session to "owned" now could overwrite newer progress.
+    writerGateEnabled = true;
+    writerGateInvalidated = true;
+    return { ok: false, status: 'late-gate' };
+  }
   writerGateEnabled = true;
-  return { ok: true, status: 'gated' };
+  return writerGateInvalidated ? { ok: false, status: 'session-stale' } :
+    { ok: true, status: 'gated' };
 }
 function writerPersist() {
   if (writerGateInvalidated) return saveWriteFailure('session-stale',
