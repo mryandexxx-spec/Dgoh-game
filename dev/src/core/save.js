@@ -353,4 +353,155 @@ loadSave.checkpoint = Object.freeze({
   commit: commitCheckpoint, recover: recoverCheckpoint
 });
 
+
+// ARCH-02C-B3-B1a: OPT-IN Web Locks writer coordination prototype.
+// This deliberately does NOT change legacy persist(), boot or existing B1
+// checkpoint callers. Those still bypass this lease until a separate gated
+// integration; therefore this is NOT yet cross-tab safe production saving.
+// A lock only coordinates cooperating, same-origin/partitioned JS contexts.
+// In particular a cached older PWA ignores it. Never claim otherwise.
+const WRITER_LOCK_NAME = SAVE_KEY + '.writer';
+let writerLease = null;
+let writerAcquiring = false;
+let writerCancelAcquire = null;
+let writerTicket = 0;
+let writerLastStatus = 'idle';
+function writerState() {
+  if (writerLease) return { ok: !writerLease.stale,
+    status: writerLease.stale ? 'stale' : 'owned', raw: writerLease.raw };
+  return { ok: false, status: writerAcquiring ? 'acquiring' : writerLastStatus };
+}
+function writerRelease() {
+  if (writerAcquiring && writerCancelAcquire) {
+    writerTicket++;
+    writerCancelAcquire();
+  }
+  if (!writerLease) return { ok: true, status: 'idle' };
+  const lease = writerLease;
+  writerLease = null;
+  writerLastStatus = 'released';
+  lease.release();
+  return { ok: true, status: 'released' };
+}
+function writerCheck() {
+  if (!writerLease) return checkpointFailure('not-owner', 'writer-check');
+  if (writerLease.stale) return checkpointFailure('stale', 'writer-check');
+  // Reinspect even while locked: this also detects uncooperative old builds,
+  // but cannot prevent them from writing AGAIN after this synchronous check.
+  const latest = inspectCheckpointPrimary();
+  const expected = writerLease;
+  if (latest.status !== expected.primaryStatus ||
+      (latest.raw ?? null) !== expected.raw) {
+    expected.stale = true;
+    return checkpointFailure(latest.status === 'unavailable' ? 'unavailable' :
+      'stale', 'writer-recheck', latest.error);
+  }
+  return { ok: true, status: 'current', raw: expected.raw };
+}
+function writerCommit({ expectedRaw, candidate } = {}) {
+  const checked = writerCheck();
+  if (!checked.ok) return checked;
+  if (expectedRaw !== writerLease.raw)
+    return checkpointFailure('conflict', 'writer-expected');
+  // No await / yield between the under-lease read and the checked B1 commit.
+  const result = commitCheckpoint({ expectedRaw, candidate });
+  if (result.ok) {
+    writerLease.raw = result.raw;
+    writerLease.primaryStatus = 'ok';
+  } else if (result.status === 'uncertain' || result.status === 'conflict') {
+    writerLease.stale = true; // never blindly retry a possibly written draft
+  }
+  return result;
+}
+async function writerAcquire() {
+  if (writerLease) return { ok: false, status: 'already-owner' };
+  if (writerAcquiring) return { ok: false, status: 'acquiring' };
+  // Do not use a localStorage mutex: test-and-set is not atomic between tabs.
+  let locks;
+  try { locks = typeof navigator === 'undefined' ? null : navigator.locks; }
+  catch (e) { return { ok: false, status: 'unavailable' }; }
+  if (!locks || typeof locks.request !== 'function')
+    return { ok: false, status: 'unsupported' };
+  writerAcquiring = true;
+  writerLastStatus = 'acquiring';
+  const ticket = ++writerTicket;
+  let resolveStart, settled = false;
+  const started = new Promise(resolve => { resolveStart = resolve; });
+  function finish(outcome) {
+    if (settled) return;
+    settled = true;
+    writerAcquiring = false;
+    writerCancelAcquire = null;
+    if (!outcome.ok) writerLastStatus = outcome.status;
+    resolveStart(outcome);
+  }
+  writerCancelAcquire = () => finish({ ok: false, status: 'cancelled' });
+  let request;
+  try {
+    request = locks.request(WRITER_LOCK_NAME,
+      { mode: 'exclusive', ifAvailable: true }, lock => {
+        if (ticket !== writerTicket) {
+          finish({ ok: false, status: 'cancelled' });
+          return;
+        }
+        if (!lock) {
+          finish({ ok: false, status: 'busy' });
+          return;
+        }
+        const primary = inspectCheckpointPrimary();
+        const backup = inspectCheckpointBackup();
+        if (primary.status !== 'ok' && primary.status !== 'missing') {
+          finish({ ok: false, status: primary.status });
+          return;
+        }
+        if (backup.status !== 'ok' && backup.status !== 'missing') {
+          finish({ ok: false, status: 'backup-' + backup.status });
+          return;
+        }
+        if (primary.status === 'missing' && backup.status === 'ok') {
+          finish({ ok: false, status: 'recovery-required' });
+          return;
+        }
+        // The returned pending Promise keeps the native Web Lock held.
+        const holding = new Promise(resolve => {
+          writerLease = { raw: primary.raw ?? null, primaryStatus: primary.status,
+            stale: false, ticket, release: resolve };
+        });
+        writerLastStatus = 'owned';
+        finish({ ok: true, status: 'acquired', raw: writerLease.raw });
+        return holding;
+      });
+  } catch (e) {
+    finish({ ok: false, status: 'unavailable' });
+    return started;
+  }
+  if (!request || typeof request.then !== 'function') {
+    // A mock/nonconforming manager returning synchronously is not a lock.
+    writerRelease();
+    finish({ ok: false, status: 'unavailable' });
+    return started;
+  }
+  Promise.resolve(request).then(
+    () => {
+      if (!settled) finish({ ok: false, status: 'unavailable' });
+      if (writerLease && writerLease.ticket === ticket) {
+        writerLease = null; // unexpected lock loss; deny all future commits
+        writerLastStatus = 'lost';
+      }
+    },
+    () => {
+      if (!settled) finish({ ok: false, status: 'unavailable' });
+      if (writerLease && writerLease.ticket === ticket) {
+        writerLease = null;
+        writerLastStatus = 'lost';
+      }
+    });
+  return started;
+}
+// Opt-in surface on an existing named export preserves the 898-name ESM ABI.
+loadSave.writer = Object.freeze({
+  name: WRITER_LOCK_NAME, acquire: writerAcquire, state: writerState,
+  check: writerCheck, commit: writerCommit, release: writerRelease
+});
+
 export { SAVE_KEY, newSave, fillSave, loadSave, persist0, notePend, persist, onPersist };
