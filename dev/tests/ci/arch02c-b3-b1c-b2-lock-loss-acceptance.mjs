@@ -103,7 +103,10 @@ function origin(raw=initial){
   assert.equal(fresh.ram(),JSON.parse(prior).solari);
   assert.equal(fresh.change(2).ok,true);
   const newer=o.store.get(KEY);
-  assert.equal(owner.change(99).status,'session-stale');
+  // A blocked re-entry is allowed to clear old RAM, so call persist0
+  // directly instead of trying to mutate a now-undefined S.
+  assert.equal(owner.ram(),undefined);
+  assert.equal(owner.g.run('persist0()').status,'session-stale');
   assert.equal(o.store.get(KEY),newer);
   fresh.release();await flush();
   pass('R02','unexpected fulfilled lock request blocks stale owner and preserves successor');
@@ -152,7 +155,8 @@ function origin(raw=initial){
   assert.equal(t.phase().reason,'pagehide');
   assert.equal(t.state().status,'session-stale');
   assert.equal((await t.start()).status,'session-blocked');
-  assert.equal(t.change(7).status,'session-stale');
+  assert.equal(t.ram(),undefined,'stale RAM must not reattach on re-entry');
+  assert.equal(t.g.run('persist0()').status,'session-stale');
   assert.equal(o.store.get(KEY),before);
   await flush();
   pass('R05','pagehide keeps its reason and never reopens stale writer');
