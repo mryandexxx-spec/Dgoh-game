@@ -78,9 +78,13 @@ function origin(raw=fixture){
   assert.equal(a.phase().blocked,false);
   assert.equal(a.state().status,'owned');
   assert.equal(o.locks.requests,1);
+  // Initial boot may migrate/normalize the legacy v1 fixture under the lock.
+  // Backup from the NEXT transaction must preserve exact most recent bytes,
+  // not the old pre-migration fixture.
+  const beforeCommit=o.store.get(KEY);
   assert.equal(a.commit(9).verified,'committed');
   assert.equal(JSON.parse(o.store.get(KEY)).solari,JSON.parse(before).solari+9);
-  assert.equal(JSON.parse(o.store.get(BACKUP)).raw,before);
+  assert.equal(JSON.parse(o.store.get(BACKUP)).raw,beforeCommit);
   a.release();await flush();
   pass('B301','ordinary startup obtains native lease and verified commit');
 }
