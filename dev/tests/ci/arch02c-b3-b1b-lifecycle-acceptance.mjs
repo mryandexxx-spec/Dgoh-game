@@ -314,6 +314,37 @@ const blocked=t=>assert.equal(t.phase().blocked,true);
   assert.equal(body.children.length,1);
   done('E18','corrupt primary is never exported as verified');
 }
-assert.deepEqual(ids,Array.from({length:18},(_,i)=>'E'+String(i+1).padStart(2,'0')));
-console.log('[ARCH-02C-B3-B1b-LIFECYCLE] 18/18 opt-in lifecycle cases; '+
+// E19: cross-tab localStorage.clear event must block even if the primary
+// was rapidly recreated with identical bytes before this event was delivered.
+{
+  const o=origin(),a=o.tab();
+  assert.equal((await a.start()).ok,true);
+  a.win('storage',{key:null});
+  assert.equal(a.phase().reason,'external-save-change');
+  assert.equal(a.change(5).status,'session-stale');
+  done('E19','storage clear notification conservatively invalidates owner');
+}
+// E20: visibility hidden releases immediately; visible return never resumes.
+{
+  const o=origin(),a=o.tab();
+  let hidden=false;
+  const d=a.g.ctx.document;
+  a.g.ctx.document=new Proxy(d,{get(t,k){
+    if(k==='visibilityState')return hidden?'hidden':'visible';
+    return t[k];
+  }});
+  assert.equal((await a.start()).ok,true);
+  hidden=true;
+  a.doc('visibilitychange');
+  assert.equal(a.phase().reason,'background-suspended');
+  assert.equal(a.phase().blocked,true);
+  hidden=false;
+  a.doc('visibilitychange');
+  assert.equal(a.phase().reason,'background-suspended');
+  assert.equal(a.change(6).status,'session-stale');
+  await flush();
+  done('E20','visibility hidden releases writer; visible cannot revive RAM');
+}
+assert.deepEqual(ids,Array.from({length:20},(_,i)=>'E'+String(i+1).padStart(2,'0')));
+console.log('[ARCH-02C-B3-B1b-LIFECYCLE] 20/20 opt-in lifecycle cases; '+
   'legacy cached v140 remains UNFENCED; real two-page/Safari proof REQUIRED.');
