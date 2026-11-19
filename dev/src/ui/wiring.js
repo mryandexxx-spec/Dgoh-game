@@ -302,6 +302,11 @@ function showWriterBlocked(outcome = {}) {
   root.setAttribute('role', 'alertdialog');
   root.setAttribute('aria-modal', 'true');
   root.setAttribute('aria-labelledby', 'save-writer-title');
+  // Let the overlay's own buttons/textarea work, then stop bubbling before
+  // the existing document-wide game event handlers can process those inputs.
+  for (const type of ['click', 'pointerdown', 'touchstart', 'keydown',
+      'input', 'change', 'submit', 'contextmenu'])
+    root.addEventListener(type, e => e.stopPropagation());
   root.style.cssText = 'position:fixed;inset:0;z-index:1000000;background:#070d16fa;color:#f4e8d6;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:14px;overflow:auto;font-family:system-ui,sans-serif;';
   const panel = document.createElement('section');
   panel.style.cssText = 'max-width:550px;width:100%;max-height:94vh;overflow:auto;box-sizing:border-box;background:#18232f;border:1px solid #b08a56;border-radius:12px;padding:18px;box-shadow:0 20px 60px #000b;';
