@@ -20,7 +20,9 @@ function init(fixture=fixtures[0]) {
    ['#overlay2 .acts',{insertAdjacentHTML(){}}]]);
  const g=loadGame(html,{seed:42,onQuerySelector:selector=>fields.get(selector)});
  g.store.set(KEY,raw(fixture));
- g.run('start({})');
+ // Isolate historical B2 transfer API; mandatory default B3 transfer is
+ // tested separately under a native writer lease in B313 / X and Chromium.
+ g.run('set_S(loadSave())');
  assert.equal(g.run('loadSave(true).status'),'ok');
  return {g,fields};
 }
