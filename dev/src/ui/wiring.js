@@ -97,6 +97,18 @@ function transferFingerprint(raw) {
 }
 
 function metaClick(d) {
+  // Capture-phase DOM guard is not a substitute for an authority check at
+  // the save-transfer API boundary. A denied tab may not inspect the primary,
+  // decode a candidate, or confirm an old preview without a native owner.
+  if (d.saveexp || d.saveunsaved || d.saveimp || d.saveload || d.saveconfirm) {
+    const writer = loadSave.writer.state();
+    if (writer.gated && writer.status !== 'owned') {
+      pendingSaveImport = null;
+      loadSave.writer.release();
+      metaFill.showWriterBlocked({status:'writer-not-owner'});
+      return true;
+    }
+  }
   if (d.trsel) { S.trialSel = d.trsel; persist(); render(); return true; }
   if (d.trgo) { closeInfo(true); if (BT && BT.done) leaveBattle(); trialGo(d.trgo); return true; }
   if (d.trsim) { trialSimClick(d.trsim); return true; }
@@ -199,6 +211,14 @@ function metaClick(d) {
           expectedRaw: pending.expectedRaw, candidate: pending.candidate
         }));
     if (!outcome.ok) {
+      if (pending.mode === 'writer' && ['uncertain', 'stale',
+          'session-stale', 'not-owner', 'conflict', 'unavailable'].includes(outcome.status)) {
+        // An ambiguous or stolen writer cannot continue with RAM that may no
+        // longer correspond to the stored primary. Never re-use the preview.
+        loadSave.writer.release();
+        metaFill.showWriterBlocked({status:'import-' + outcome.status});
+        return true;
+      }
       if (outcome.status === 'uncertain') {
         // The candidate may have reached primary before an exception: block.
         const now = loadSave.checkpoint.inspect();
