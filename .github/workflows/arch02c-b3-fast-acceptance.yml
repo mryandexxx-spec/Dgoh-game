@@ -58,9 +58,9 @@ jobs:
         run: node tests/ci/arch02c-b3-b1c-b3-native-auto-chromium.mjs
       - name: Real Chromium two-tab lifecycle and lease-loss regression
         run: node tests/ci/arch02c-b3-b1b-real-multitab-chromium.mjs
-      - name: Real Chromium protected import and explicit backup recovery
-        run: node tests/ci/arch02c-b3-b2-a2-real-chromium.mjs
       - name: Mobile E3 DOM waits for guarded bootstrap
         run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
       - name: Arena 5x5 WebGL real camera and low-end frames
         run: node tests/smoke/pkg8-layout.mjs dist/pwa/index.html dist/pkg8-shots
+      - name: Real Chromium protected import and explicit backup recovery
+        run: node tests/ci/arch02c-b3-b2-a2-real-chromium.mjs
