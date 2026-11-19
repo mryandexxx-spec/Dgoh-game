@@ -103,10 +103,19 @@ try{
   const old=await open();
   await old.evaluate(()=>window.__b3Entry({})); // deliberate legacy bypass
   assert.equal((await evaluate(old,'S.solari += 3; persist0()')).ok,true);
-  const oldPrimary=await storage(c);
-  assert.equal(JSON.parse(oldPrimary).solari,base+113);
-  await c.waitForFunction(()=>window.__b3Entry.writerLifecycle().blocked===true,
-    {timeout:10000,polling:50});
+  const oldPrimary=await storage(old);
+  assert.equal(JSON.parse(oldPrimary).solari,base+113,
+    'legacy writer must acknowledge its actual uncoordinated primary write');
+  // Storage visibility and storage-event delivery are asynchronous between
+  // Chromium renderer processes. Keep BOTH requirements: the other renderer
+  // must converge to exact hostile bytes, AND the guarded writer must stop.
+  // A propagation failure or missed cross-tab event fails this real proof.
+  await c.waitForFunction(expected=>{
+    const raw=localStorage.getItem('dune-goh-v1');
+    return raw===expected && window.__b3Entry.writerLifecycle().blocked===true;
+  },{timeout:10000,polling:50},oldPrimary);
+  assert.equal(await storage(c),oldPrimary,
+    'guarded tab must observe the exact foreign primary, not a stale snapshot');
   assert.equal((await phase(c)).reason,'external-save-change');
   assert.equal((await evaluate(c,'S.solari += 22; persist0()')).status,'session-stale');
   assert.equal(await storage(c),oldPrimary);
