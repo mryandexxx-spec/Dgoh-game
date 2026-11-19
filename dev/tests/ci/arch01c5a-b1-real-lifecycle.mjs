@@ -85,19 +85,26 @@ async function scenario(kind){
  const ev=s=>page.evaluate(code=>(0,eval)(code),s);
  try{
   await page.goto(srv.url('index.html'),{waitUntil:'load',timeout:75000});
-  await page.waitForFunction(()=>(0,eval)('typeof cq==="function" && typeof S!=="undefined" && !!S'),
-   {timeout:45000,polling:100});
+  await page.bringToFront();
+  await page.waitForFunction(() => {
+    const phase=(0,eval)('start.writerLifecycle()');
+    return phase.armed && !phase.blocked &&
+      phase.reason==='active' && phase.writer.status==='owned' &&
+      (0,eval)('typeof cq==="function" && typeof S!=="undefined" && !!S');
+  }, {timeout:45000,polling:100});
   const queue=await ev(phaseQueue);
   assert.equal(queue.before.sectors,5);
   assert.equal(queue.before.disks,23);
   assert.ok(queue.changed.length>=1&&queue.count>=1,'actual cqBump must create Conquest NOTES');
   assert.ok(queue.star&&queue.queued===1&&queue.notesHidden,'STAR must hide eligible notes');
-  await page.click('#celeb.star [data-celebok="1"]');
+  await page.focus('#celeb.star [data-celebok="1"]');
+  await page.keyboard.press('Enter');
   await page.waitForFunction(()=>!!document.querySelector('#celeb.unlock'),
    {timeout:8000,polling:50});
   const unlock=await ev(phaseUnlock);
   assert.ok(unlock.shown&&unlock.hasName&&unlock.notesHidden,'UNLOCK follows STAR and suppresses notes');
-  await page.click('#celeb.unlock [data-celebok="1"]');
+  await page.focus('#celeb.unlock [data-celebok="1"]');
+  await page.keyboard.press('Enter');
   await page.waitForFunction(()=>
    !document.querySelector('#celeb') &&
    (0,eval)('typeof CELEB!=="undefined" && CELEB.length===0'),
@@ -110,8 +117,13 @@ async function scenario(kind){
    weekly.done===0&&weekly.route===0&&weekly.savedUnlock==='b1-permanent-unlock',
    'weekly reset must preserve permanent unlock and persist correctly');
   await page.reload({waitUntil:'load',timeout:75000});
-  await page.waitForFunction(()=>(0,eval)('typeof cq==="function" && typeof S!=="undefined" && !!S'),
-   {timeout:45000,polling:100});
+  await page.bringToFront();
+  await page.waitForFunction(() => {
+    const phase=(0,eval)('start.writerLifecycle()');
+    return phase.armed && !phase.blocked &&
+      phase.reason==='active' && phase.writer.status==='owned' &&
+      (0,eval)('typeof cq==="function" && typeof S!=="undefined" && !!S');
+  }, {timeout:45000,polling:100});
   const restored=await ev(phaseRestored);
   assert.equal(restored.saved,'b1-permanent-unlock');
   assert.equal(restored.unlock,'b1-permanent-unlock');
