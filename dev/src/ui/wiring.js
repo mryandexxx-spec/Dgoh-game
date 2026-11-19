@@ -11,7 +11,7 @@ import { closeInfo } from './overlays/info.js';
 import { render } from './router.js';
 import { toast } from './common.js';
 import { BT, S, set_S, set_view, view } from '../core/state.js';
-import { fillSave, persist } from '../core/save.js';
+import { fillSave, loadSave, persist } from '../core/save.js';
 import { todayKey } from '../logic/economy.js';
 import { $ } from '../core/dom.js';
 
@@ -25,6 +25,77 @@ function metaFill(s) {
   // special-mode titles
   if (s.raidKills && s.raidKills[2]) s.unlocks.title.raid3 = 1;
 }
+
+// ARCH-02C-B2: save transfer is opt-in and never calls legacy persist().
+// Expected raw checks are sequential only; true cross-tab exclusion is B3.
+const TRANSFER_LIMIT = 2000000;
+let pendingSaveImport = null;
+const transferRecord = x => !!x && typeof x === 'object' && !Array.isArray(x);
+const transferQuantity = x => typeof x === 'number' && Number.isFinite(x) &&
+  x >= 0 && x <= Number.MAX_SAFE_INTEGER;
+function validateTransferSave(s) {
+  if (!transferRecord(s) || s.v !== 1 || !transferRecord(s.roster) ||
+      Object.keys(s.roster).length === 0) throw new Error('unsupported-or-incomplete');
+  for (const k of ['water', 'solari', 'plast'])
+    if (!transferQuantity(s[k])) throw new Error('invalid-balance');
+  for (const k of ['candle', 'cry', 'folio', 'seal', 'rid', 'wol', 'core', 'teeth', 'wring', 'jt', 'ix_plate'])
+    if (k in s && !transferQuantity(s[k])) throw new Error('invalid-balance');
+  for (const k of ['cleared', 'daily', 'login', 'conq', 'journey', 'journeys', 'migrations', 'inv', 'gearParts', 'gearOwned', 'cryClaim', 'sealClaim', 'refills', 'buys', 'acc'])
+    if (k in s && s[k] !== null && !transferRecord(s[k])) throw new Error('invalid-structure');
+  for (const k of ['squad', 'squadD', 'squadC', 'raidPick', 'jPick'])
+    if (k in s && !Array.isArray(s[k])) throw new Error('invalid-structure');
+  if ('squadTr' in s && !transferRecord(s.squadTr) && !Array.isArray(s.squadTr))
+    throw new Error('invalid-structure');
+  for (const hero of Object.values(s.roster)) {
+    if (!transferRecord(hero)) throw new Error('invalid-roster');
+    for (const k of ['shards', 'stars', 'lvl', 'gear', 'relic'])
+      if (k in hero && !transferQuantity(hero[k])) throw new Error('invalid-roster');
+    if ('eq' in hero && (!Array.isArray(hero.eq) || hero.eq.length !== 6))
+      throw new Error('invalid-roster');
+    if ('sk' in hero && !transferRecord(hero.sk)) throw new Error('invalid-roster');
+  }
+  // Reject unsafe JSON property names before migration's recursive walkers.
+  const stack = [[s, 0]];
+  let nodes = 0;
+  while (stack.length) {
+    const [value, depth] = stack.pop();
+    if (++nodes > 120000 || depth > 48) throw new Error('excessive-depth');
+    if (typeof value === 'number' && !Number.isFinite(value))
+      throw new Error('non-finite');
+    if (value && typeof value === 'object') {
+      for (const k of Object.keys(value)) {
+        if (k === '__proto__' || k === 'constructor' || k === 'prototype')
+          throw new Error('unsafe-key');
+        stack.push([value[k], depth + 1]);
+      }
+    }
+  }
+}
+function decodeTransferCode(input) {
+  const code = input.trim();
+  if (!code || code.length > TRANSFER_LIMIT ||
+      code.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(code))
+    throw new Error('invalid-encoding');
+  const raw = decodeURIComponent(escape(atob(code))); // historical UTF-8 base64
+  if (raw.length > TRANSFER_LIMIT) throw new Error('oversize');
+  const parsed = JSON.parse(raw);
+  validateTransferSave(parsed);
+  return parsed;
+}
+function transferCode(raw) { return btoa(unescape(encodeURIComponent(raw))); }
+function showTransferCode(title, detail, raw) {
+  const code = transferCode(raw);
+  $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>' +
+    title + '</h3><p class="sub">' + detail +
+    '</p><textarea id="savecode" class="savebox" readonly></textarea><div class="acts"><button class="btn go" data-savecopy="1">Скопировать</button><button class="btn" data-iclose="1" style="margin-left:auto">Закрыть</button></div></div></div>';
+  $('#savecode').value = code; // never embed save-derived data in innerHTML
+}
+function transferFingerprint(raw) {
+  let h = 2166136261;
+  for (let i = 0; i < raw.length; i++) h = Math.imul(h ^ raw.charCodeAt(i), 16777619);
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+
 function metaClick(d) {
   if (d.trsel) { S.trialSel = d.trsel; persist(); render(); return true; }
   if (d.trgo) { closeInfo(true); if (BT && BT.done) leaveBattle(); trialGo(d.trgo); return true; }
@@ -36,11 +107,98 @@ function metaClick(d) {
   if (d.pframe) { if (unlocked('frame', d.pframe)) { S.profile.frame = d.pframe; persist(); render(); openProfile(); } return true; }
   if (d.ptitle) { if (unlocked('title', d.ptitle)) { S.profile.title = d.ptitle; persist(); render(); openProfile(); } return true; }
   if (d.pnick) { const v = ($('#pnick').value || '').trim().slice(0, 20); if (v) { S.profile.nick = v; persist(); render(); openProfile(); toast('Никнейм сохранён'); } return true; }
-  if (d.saveexp) { const code = btoa(unescape(encodeURIComponent(JSON.stringify(S))));
-    $('#overlay2').innerHTML = `<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>Экспорт сохранения</h3><p class="sub">Скопируйте код и сохраните его в Заметках или отправьте себе. Импорт на другом устройстве восстановит весь прогресс.</p><textarea id="savecode" class="savebox" readonly>${code}</textarea><div class="acts"><button class="btn go" data-savecopy="1">Скопировать</button><button class="btn" data-iclose="1" style="margin-left:auto">Закрыть</button></div></div></div>`; return true; }
+  if (d.saveexp) {
+    pendingSaveImport = null;
+    const state = loadSave.checkpoint.inspect();
+    if (state.primary.status !== 'ok') {
+      // Never silently substitute RAM for a trusted storage export.
+      $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>Проверенный экспорт недоступен</h3><p class="sub">Основное сохранение не удалось проверить. Не очищайте данные сайта. Можно отдельно выгрузить текущую память, но она НЕ подтверждена записью.</p><div class="acts"><button class="btn" data-saveunsaved="1">Аварийный экспорт памяти</button><button class="btn" data-iclose="1">Закрыть</button></div></div></div>';
+      return true;
+    }
+    try {
+      let unsaved = true;
+      try { unsaved = JSON.stringify(S) !== state.primary.raw; } catch (e) {}
+      showTransferCode('Экспорт сохранённого прогресса',
+        'Проверенный снимок из хранилища (v1); не защищён от очистки данных сайта.' +
+        (unsaved ? ' Текущая память отличается и НЕ включена в этот экспорт.' : '') +
+        ' Сохраните код вне браузера.', state.primary.raw);
+      if (unsaved) {
+        const actions = $('#overlay2 .acts');
+        if (actions && actions.insertAdjacentHTML)
+          actions.insertAdjacentHTML('afterbegin', '<button class="btn" data-saveunsaved="1">Аварийный экспорт памяти</button>');
+      }
+    } catch (e) { toast('Не удалось подготовить экспорт'); }
+    return true;
+  }
+  if (d.saveunsaved) {
+    try {
+      showTransferCode('НЕ ПОДТВЕРЖДЕНО СОХРАНЕНИЕМ',
+        'Аварийная копия текущей памяти. Изменения могут отсутствовать в хранилище. Не считайте этот код подтверждённым прогрессом.',
+        JSON.stringify(S));
+    } catch (e) { toast('Не удалось экспортировать память'); }
+    return true;
+  }
   if (d.savecopy) { const t = $('#savecode'); t.select(); (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(() => toast('Код скопирован'), () => { try { document.execCommand('copy'); toast('Код скопирован'); } catch (e) { toast('Выделите и скопируйте вручную'); } }); return true; }
-  if (d.saveimp) { $('#overlay2').innerHTML = `<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>Импорт сохранения</h3><p class="sub">Вставьте код экспорта. Текущий прогресс на этом устройстве будет заменён.</p><textarea id="savecode" class="savebox" placeholder="Вставьте код сюда"></textarea><div class="acts"><button class="btn go" data-saveload="1">Загрузить</button><button class="btn" data-iclose="1" style="margin-left:auto">Отмена</button></div></div></div>`; return true; }
-  if (d.saveload) { try { const s = JSON.parse(decodeURIComponent(escape(atob(($('#savecode').value || '').trim())))); if (!s || !s.roster) throw 0; set_S(fillSave(s)); metaFill(S); persist(); closeInfo(true); set_view('lobby'); render(); toast('Сохранение загружено'); } catch (e) { toast('Код не распознан'); } return true; }
+  if (d.saveimp) {
+    pendingSaveImport = null;
+    $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>Импорт сохранения</h3><p class="sub">Вставьте код. Сначала проверим данные, затем запросим отдельное подтверждение замены текущего прогресса.</p><textarea id="savecode" class="savebox" placeholder="Вставьте код сюда"></textarea><div class="acts"><button class="btn go" data-saveload="1">Проверить код</button><button class="btn" data-iclose="1" style="margin-left:auto">Отмена</button></div></div></div>';
+    return true;
+  }
+  if (d.saveload) {
+    pendingSaveImport = null;
+    try {
+      if (BT && !BT.done) throw new Error('battle-in-progress');
+      const candidate = fillSave(decodeTransferCode($('#savecode').value || ''));
+      metaFill(candidate); // isolated migration; never touch S before commit
+      validateTransferSave(candidate);
+      const candidateRaw = JSON.stringify(candidate);
+      if (candidateRaw.length > TRANSFER_LIMIT) throw new Error('oversize');
+      const state = loadSave.checkpoint.inspect();
+      if (state.primary.status !== 'ok' ||
+          (state.backup.status !== 'ok' && state.backup.status !== 'missing'))
+        throw new Error('storage-not-ready');
+      pendingSaveImport = { candidate, expectedRaw: state.primary.raw, memoryRaw: JSON.stringify(S) };
+      const heroes = Object.keys(candidate.roster).length;
+      $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>Подтвердить замену прогресса?</h3><p class="sub">Импорт v1 проверен. Героев: ' +
+        heroes + '. Солярии: ' + candidate.solari + '. Пласталь: ' + candidate.plast +
+        '. Контрольный код: ' + transferFingerprint(candidateRaw) +
+        '. Текущий проверенный прогресс будет зарезервирован перед записью нового.</p><p class="sub">Другие вкладки могут менять сохранение: защита одновременных записей относится к этапу B3.</p><div class="acts"><button class="btn go" data-saveconfirm="1">Подтверждаю замену</button><button class="btn" data-iclose="1" style="margin-left:auto">Отмена</button></div></div></div>';
+    } catch (e) { toast('Импорт отклонён: некорректный, неподдерживаемый код или недоступное хранилище'); }
+    return true;
+  }
+  if (d.saveconfirm) {
+    const pending = pendingSaveImport;
+    pendingSaveImport = null; // never reapply same candidate on a second click
+    if (!pending) { toast('Сначала проверьте код импорта'); return true; }
+    let matching = false;
+    try { matching = !(BT && !BT.done) && JSON.stringify(S) === pending.memoryRaw; } catch (e) {}
+    if (!matching) {
+      toast('Состояние игры изменилось после проверки. Начните импорт заново.');
+      return true;
+    }
+    const outcome = loadSave.checkpoint.commit({
+      expectedRaw: pending.expectedRaw, candidate: pending.candidate
+    });
+    if (!outcome.ok) {
+      if (outcome.status === 'uncertain') {
+        // The candidate may have reached primary before an exception: block.
+        const now = loadSave.checkpoint.inspect();
+        metaFill.showSaveRecovery({ status: 'uncertain',
+          raw: typeof now.primary.raw === 'string' ? now.primary.raw : undefined });
+      } else {
+        toast(outcome.status === 'conflict'
+          ? 'Сохранение изменилось с момента проверки. Обновите страницу; импорт отменён.'
+          : 'Запись не подтверждена (' + outcome.status + '). Текущий прогресс не заменён.');
+      }
+      return true;
+    }
+    set_S(outcome.save);
+    closeInfo(true);
+    set_view('lobby');
+    render();
+    toast(outcome.status === 'unchanged' ? 'Сохранение уже было записано' : 'Импорт подтверждён проверкой записи');
+    return true;
+  }
   if (d.iclose2 && d.v) { closeInfo(true); set_view(d.v); render(); return true; }
   return false;
 }
@@ -76,7 +234,8 @@ function showSaveRecovery(issue) {
     quota: 'Не хватает места для записи прогресса.',
     security: 'Браузер запретил записать прогресс.',
     serialization: 'Не удалось подготовить прогресс для сохранения.',
-    'write-failed': 'Сохранение прогресса не удалось.'
+    'write-failed': 'Сохранение прогресса не удалось.',
+    uncertain: 'Результат записи неизвестен: данные могли быть записаны до ошибки. Не повторяйте импорт вслепую.'
   };
   explanation.textContent = (reason[issue.status] || 'Безопасный доступ к прогрессу недоступен.') +
     ' Игра остановлена, чтобы не затереть данные. Не очищайте данные сайта и не переустанавливайте PWA.';
