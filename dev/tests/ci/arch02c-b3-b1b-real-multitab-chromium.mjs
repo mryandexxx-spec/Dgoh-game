@@ -55,9 +55,18 @@ try{
   const a=await open(),b=await open();
   assert.equal(await a.evaluate(()=>typeof navigator.locks?.request),'function',
     'native Web Locks API required in real Chromium');
+  await a.bringToFront();
+  assert.equal(await a.evaluate(()=>document.visibilityState),'visible');
   assert.equal((await start(a)).status,'started');
   assert.equal((await phase(a)).blocked,false);
-  assert.equal((await start(b)).status,'busy');
+  // Real native Web Locks must deny an outsider even when that outsider's
+  // background document cannot start gameplay at all.
+  assert.equal(await b.evaluate(name=>
+    navigator.locks.request(name,{mode:'exclusive',ifAvailable:true},lock=>!!lock),
+    'dune-goh-v1.writer'),false);
+  const bVisibility=await b.evaluate(()=>document.visibilityState);
+  assert.equal((await start(b)).status,
+    bVisibility==='hidden'?'background-suspended':'busy');
   assert.equal((await phase(b)).blocked,true);
   assert.equal(await b.evaluate(()=>document.getElementById('save-writer-blocked')!==null),true);
   assert.equal(await evaluate(b,'S === undefined'),true);
