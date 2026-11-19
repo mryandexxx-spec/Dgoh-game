@@ -47,7 +47,12 @@ async function open(){
   return page;
 }
 const evaluate=(page,code)=>page.evaluate(source=>(0,eval)(source),code);
-const start=page=>page.evaluate(()=>window.__b3Entry.writer({}));
+// B3-B1c-A0: exercise the ACTUAL composition-root callback in opt-in
+// writer-preview mode, not only the internal start.writer test hook.
+const start=page=>page.evaluate(()=>{
+  window.__DGOH_B3_B1C_BOOT_MODE__='writer-preview';
+  return window.__b3Entry({});
+});
 const phase=page=>page.evaluate(()=>window.__b3Entry.writerLifecycle());
 const storage=page=>page.evaluate(()=>localStorage.getItem('dune-goh-v1'));
 try{

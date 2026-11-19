@@ -31,6 +31,16 @@ let startupReadFailure = null;
 let startupEntered = false, startupSucceeded = false;
 function initialSave(data) {
   startupReadFailure = null;
+  if (!writerPreviewReentry && writerLifecycleArmed) return undefined;
+  if (!writerPreviewReentry &&
+      window.__DGOH_B3_B1C_BOOT_MODE__ === 'writer-preview') {
+    // The historic start() must execute set_S(...) FIRST (ARCH-01C5a).
+    // Do not read storage here: arm exclusive writer asynchronously, return
+    // undefined for the first set_S; a second start() under the held lock
+    // will perform the actual load. Never create a writable fallback account.
+    writerPreviewPromise = startWithWriter(data);
+    return undefined;
+  }
   if (data && data.save) return data.save; // hot reload compatibility
   const loaded = loadSave(true);
   if (loaded.status === 'ok') return loaded.save;
@@ -38,8 +48,23 @@ function initialSave(data) {
   startupReadFailure = loaded;
   return undefined;
 }
+// B3-B1c-A0: the historical src/boot.js composition root is byte-frozen.
+// ARCH-01C5a requires set_S(...) to remain start()'s FIRST AST statement.
+// The initialSave callback launches the explicitly opted-in writer *without*
+// reading persistent bytes; this first call sets S undefined and returns its
+// Promise. The writer re-enters after acquiring Web Locks and reads safely.
+let writerPreviewReentry = false, writerPreviewPromise = null;
 function start(data) {
   set_S(initialSave(data));
+  if (!writerPreviewReentry && writerPreviewPromise) {
+    const pending = writerPreviewPromise;
+    writerPreviewPromise = null;
+    return pending;
+  }
+  // Sticky guard denies replay into legacy start after a failed opt-in boot,
+  // even if the preview flag was removed in this same JS heap.
+  if (!writerPreviewReentry && writerLifecycleArmed)
+    return { ok: false, status: 'session-blocked' };
   startupEntered = true;
   startupSucceeded = false;
   onPersist(null, metaFill.showSaveRecovery);
@@ -152,11 +177,16 @@ async function startWithWriter(data = {}) {
     return { ok: false, status: 'session-blocked' };
   }
   try {
+    // Call the exact old initialSave/start path AFTER acquiring writer lock,
+    // without entering the opt-in dispatcher recursively.
+    writerPreviewReentry = true;
     start(data);
   } catch (e) {
     writerLifecycleBlock('boot-exception');
     return { ok: false, status: 'boot-exception',
       error: (e && e.name) || 'Error' };
+  } finally {
+    writerPreviewReentry = false;
   }
   if (!startupSucceeded) {
     writerLifecycleBlock('boot-incomplete');
