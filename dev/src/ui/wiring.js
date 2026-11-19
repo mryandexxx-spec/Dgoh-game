@@ -96,6 +96,16 @@ function transferFingerprint(raw) {
   return (h >>> 0).toString(16).padStart(8, '0');
 }
 
+function stopAfterProtectedTransfer(status) {
+  // The boot-owned lifecycle blocker is installed only after Web Locks opt-in.
+  // It synchronously rejects further game input and releases the writer,
+  // avoiding any cyclic module import from UI to boot.
+  if (typeof metaFill.stopWriterSession === 'function')
+    return metaFill.stopWriterSession(status);
+  loadSave.writer.release();
+  metaFill.showWriterBlocked({status,
+    allowVerifiedExport:status === 'import-verified-reload'});
+}
 function metaClick(d) {
   // Capture-phase DOM guard is not a substitute for an authority check at
   // the save-transfer API boundary. A denied tab may not inspect the primary,
@@ -104,8 +114,7 @@ function metaClick(d) {
     const writer = loadSave.writer.state();
     if (writer.gated && writer.status !== 'owned') {
       pendingSaveImport = null;
-      loadSave.writer.release();
-      metaFill.showWriterBlocked({status:'writer-not-owner'});
+      stopAfterProtectedTransfer('writer-not-owner');
       return true;
     }
   }
@@ -215,8 +224,7 @@ function metaClick(d) {
           'session-stale', 'not-owner', 'conflict', 'unavailable'].includes(outcome.status)) {
         // An ambiguous or stolen writer cannot continue with RAM that may no
         // longer correspond to the stored primary. Never re-use the preview.
-        loadSave.writer.release();
-        metaFill.showWriterBlocked({status:'import-' + outcome.status});
+        stopAfterProtectedTransfer('import-' + outcome.status);
         return true;
       }
       if (outcome.status === 'uncertain') {
@@ -235,9 +243,7 @@ function metaClick(d) {
       // Do not graft imported S onto the old gameplay heap, timers or cached
       // references. Retire the lease and force a fresh start from verified
       // stored bytes; a failed/delayed reload cannot make old RAM writable.
-      loadSave.writer.release();
-      metaFill.showWriterBlocked({status:'import-verified-reload',
-        allowVerifiedExport:true});
+      stopAfterProtectedTransfer('import-verified-reload');
       return true;
     }
     set_S(outcome.save);
