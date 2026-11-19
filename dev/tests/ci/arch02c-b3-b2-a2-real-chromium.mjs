@@ -143,9 +143,24 @@ try{
   assert.equal((await start(interrupted)).status,'corrupt');
   await interrupted.evaluate(()=>
     document.getElementById('save-recover-prepare').click());
-  await interrupted.waitForFunction(()=>
-    !document.getElementById('save-recover-confirm')?.hidden,
-    {timeout:10000,polling:50});
+  // A failed preview is NOT a pass: report its actionable reason instead
+  // of hiding a Web Locks/storage/lifecycle bug behind a generic timeout.
+  await interrupted.waitForFunction(()=>{
+    const confirm=document.getElementById('save-recover-confirm');
+    const message=document.getElementById('save-recover-status');
+    return (confirm && !confirm.hidden) ||
+      (message && /недоступно|прервана|Перезагрузите страницу/.test(
+        message.textContent));
+  },{timeout:10000,polling:50});
+  const interruptedStatus=await interrupted.evaluate(()=>({
+    visible:!document.getElementById('save-recover-confirm')?.hidden,
+    message:document.getElementById('save-recover-status')?.textContent,
+    phase:window.__b3Entry.writerLifecycle(),
+    storage:{primary:localStorage.getItem('dune-goh-v1'),
+      backupPresent:localStorage.getItem('dune-goh-v1.backup')!==null}
+  }));
+  assert.equal(interruptedStatus.visible,true,
+    'recovery preview must own native lease: '+JSON.stringify(interruptedStatus));
   await interrupted.evaluate(()=>window.dispatchEvent(
     new PageTransitionEvent('pagehide',{persisted:true})));
   assert.equal((await phase(interrupted)).reason,'pagehide');
