@@ -17,6 +17,18 @@ const seen = (id, message) => { check.push(id); console.log('  ' + id + ' [B1 SA
 const init = () => {
   const g = loadGame(html, {seed: 7});
   assert.equal(g.get('SAVE_KEY'), KEY);
+  // Mandatory B3: this VM now grants the same exclusive native lease shape
+  // as the browser; no old synchronous/unguarded start() path is exercised.
+  let occupied = false;
+  g.ctx.navigator = {locks:{request(name,opts,fn){
+    assert.equal(name,KEY+'.writer');
+    assert.equal(opts.mode,'exclusive');
+    assert.equal(opts.ifAvailable,true);
+    if(occupied)return Promise.resolve().then(()=>fn(null));
+    occupied=true;
+    return Promise.resolve().then(()=>fn({name,mode:'exclusive'}))
+      .finally(()=>{occupied=false;});
+  }}};
   return g;
 };
 const state = g => JSON.parse(g.run('JSON.stringify(S)'));
@@ -60,13 +72,13 @@ const roundtrip = (g, label) => {
   assert.equal(result.save.v, 1);
 };
 
-const blocked = (g, raw, kind) => {
+const blocked = async (g, raw, kind) => {
   const ops = fault(g);
   g.store.set(KEY, raw);
   const read = details(g);
   assert.equal(read.status,kind);
   assert.equal(g.run('loadSave()'),null,'legacy API returns null, but never authorizes newSave');
-  assert.doesNotThrow(() => g.run('start({})'));
+  assert.equal((await g.run('start({})')).status,kind);
   assert.equal(g.run('typeof S'),'undefined','boot must block before setting account state');
   assert.equal(g.store.get(KEY),raw,'primary original bytes must be preserved EXACTLY');
   assert.ok(!ops.includes('set:' + KEY),'blocked boot must never attempt writes');
@@ -78,7 +90,7 @@ const blocked = (g, raw, kind) => {
   const g=init(), ops=fault(g);
   assert.equal(details(g).status,'missing');
   assert.equal(g.run('loadSave()'),null);
-  g.run('start({})');
+  await g.run('start({})');
   assert.equal(JSON.parse(g.store.get(KEY)).v,1);
   assert.equal(JSON.parse(g.store.get(KEY)).solari,state(g).solari);
   assert.ok(ops.includes('set:'+KEY));
@@ -90,7 +102,7 @@ for(const [id,name] of [['S02','01-legacy-v1.json'],['S03','02-mid.json'],['S04'
   g.store.set(KEY,raw);
   assert.equal(details(g).status,'ok');
   assert.equal(details(g).save.water,was.water, 'loaded resource remains exact before tickWater');
-  g.run('start({})');
+  await g.run('start({})');
   assert.equal(state(g).solari,was.solari);
   assert.equal(JSON.parse(g.store.get(KEY)).solari,was.solari);
   seen(id,name+' remains compatible with current save migrations');
@@ -103,7 +115,7 @@ for(const [id,name] of [['S05','SecurityError'],['S06','InjectedReadError']]){
   const ops=fault(g,{read:name});
   assert.equal(details(g).status,'unavailable');
   assert.equal(g.run('loadSave()'),null);
-  g.run('start({})');
+  await g.run('start({})');
   assert.equal(g.run('typeof S'),'undefined');
   assert.equal(g.store.get(KEY),old);
   assert.ok(!ops.includes('set:'+KEY));
@@ -123,7 +135,7 @@ const cases=[
 ];
 for(const [id,raw,kind] of cases){
  const g=init();
- const result=blocked(g,raw,kind);
+ const result=await blocked(g,raw,kind);
  assert.equal(result.raw,raw,'rescue copy preserves raw content');
  seen(id,kind+' blocks, no write or reset');
 }
@@ -138,7 +150,7 @@ for(const [id,raw,kind] of cases){
  assert.equal(loaded.status,'ok');
  assert.equal(loaded.save.v,1);
  assert.equal(loaded.save.solari,raw.solari);
- g.run('start({})');
+ await g.run('start({})');
  assert.equal(state(g).solari,raw.solari);
  seen('S11','old mandatory fields plus missing optional fields are accepted');
 }
@@ -152,7 +164,7 @@ for(const [id,raw,kind] of cases){
 
 // S12-RT: Conquest's real weekly state is a normal, reloadable v1 snapshot.
 {
- const g=init();g.run('start({})');
+ const g=init();await g.run('start({})');
  g.run("S.cqUnlock={...S.cqUnlock,easy:'b1-persisted'}; const c=cq(); S.conq={...c,wk:'Mon Jan 05 2026',stars:4321,pts:876,done:{'0-0-0':1},route:{0:{chosen:1}},diff:'hard'}; cq(); persist0();");
  roundtrip(g,'Conquest weekly roundtrip');
  seen('S12-RT','Conquest committed state can be parsed and reloaded');
@@ -160,7 +172,7 @@ for(const [id,raw,kind] of cases){
 
 // S13: no serialization error may report an acknowledged write.
 {
- const g=init();g.store.set(KEY,old);g.run('start({})');
+ const g=init();g.store.set(KEY,old);await g.run('start({})');
  const committed=g.store.get(KEY);
  g.run('S.__b1Loop = S;');
  const res=g.run('persist0()');
@@ -173,7 +185,7 @@ for(const [id,raw,kind] of cases){
 
 // S14: write failure after startup returns typed status; no false ok.
 for(const [kind,status] of [['QuotaExceededError','quota'],['SecurityError','security']]){
- const g=init();g.store.set(KEY,old);g.run('start({})');
+ const g=init();g.store.set(KEY,old);await g.run('start({})');
  const before=g.store.get(KEY),initial=state(g).solari;
  const ops=fault(g,{write:kind});
  const res=g.run('S.solari += 17; persist()');
@@ -198,17 +210,20 @@ for(const kind of ['QuotaExceededError','SecurityError']){
  seen('S15-'+kind,'failed initial commit prevents normal game startup');
 }
 
-// Guard: an unavailable/malformed primary remains blocked even on repeated start.
-// A subsequent manual repair by an outside tool can be retried with no auto-reset.
+// Guard: a failed writer session is one-way blocked, even after external
+// repair; ONLY a fresh JS realm may reload repaired storage under a new lock.
 {
  const g=init();
  g.store.set(KEY,'{"broken"');
- g.run('start({})');
+ assert.equal((await g.run('start({})')).status,'corrupt');
  assert.equal(g.store.get(KEY),'{"broken"');
  g.store.set(KEY,old);
- g.run('start({})');
- assert.equal(state(g).solari,JSON.parse(old).solari);
- seen('RETRY','manual repair permits later valid load without a destructive reset');
+ assert.equal((await g.run('start({})')).status,'session-blocked');
+ assert.equal(g.run('typeof S'),'undefined');
+ const fresh=init();fresh.store.set(KEY,old);
+ assert.equal((await fresh.run('start({})')).status,'started');
+ assert.equal(state(fresh).solari,JSON.parse(old).solari);
+ seen('RETRY','manual repair requires a fresh writer realm; stale one remains blocked');
 }
 
 assert.equal(new Set(check).size,check.length);
