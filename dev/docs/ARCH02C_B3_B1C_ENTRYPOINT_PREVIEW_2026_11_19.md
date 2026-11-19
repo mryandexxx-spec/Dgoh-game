@@ -1,0 +1,30 @@
+# ARCH-02C-B3-B1c-A0 — real composition-root entrypoint, preview-only writer cutover
+
+Date: 2026-11-19. Parent #199. Completed prerequisite PRs #209 and #210 merged sequentially to **main**: #209 merge `94401c2ecb9d7902de42fd1e1a9449554ef0a991`, #210 merge `d0b6e2e8e99199416ad3953755a7ba290643fcbb`. Exact-head premerge CI #44490719049 and #44507663494 were both **SUCCESS** (21 required jobs each, publishing intentionally skipped). The base main commit was independently confirmed `d0b6e2e8e99199416ad3953755a7ba290643fcbb`. No release or Pages deployment.
+
+## This A0 slice is NOT the final B1c production switch
+
+The shipped v140 and default local source boot both still use legacy synchronous `start(data)` and legacy unguarded `persist0()`. Existing golden/ESM initial order depends on that historical path. Activating B3 gate as default today would affect 200 battle goldens, 41 screens, SW/offline, hot reload and B2 import/recovery, without an approved safe migration/cutover. Therefore **B1c-A0** adds a deliberately inert-by-default composition-root adapter in `dev/src/boot.js`:
+
+- `startRuntime(data)` is the real application startup callback, passed to `window.claude.hot.ready` or invoked on normal page load.
+- If and ONLY if the test/preboot environment has explicitly set `window.__DGOH_B3_B1C_BOOT_MODE__ === 'writer-preview'`, it calls existing `start.writer(data)` (B1b) which arms the input/lifecycle gate, acquires native Web Locks BEFORE loading `S`, and passes all persistence through verified B1 checkpoints. A denied lock never falls back to the legacy boot.
+- In all other modes `startRuntime(data)` calls historical `start(data)` exactly; default production v140-compatible behavior remains unchanged.
+- Preserves `startRuntime.writer` and `startRuntime.writerLifecycle` references to allow the existing real Chromium native lock/legacy unsafe characterization to use exactly the same callback as the application host. No new named ESM exports, data schema, storage key, service worker, version number, economy, battle or asset changes.
+- This preview flag is **not an owner-facing runtime feature or safe production toggle**; no user should enable it in DevTools on v140. It enables deterministic and native proof of the actual composition-root call path before the separate production cutover decision.
+
+## Mandatory acceptance for the B1c-A0 slice
+
+1. `dev/tests/ci/arch02c-b3-b1c-entrypoint-acceptance.mjs` added to mandatory build job, both compiled PWA and HTML artifact. Seven cases each: C01 ordinary legacy boot unchanged/unsafe, C02 unavailable Web Locks fail without S, C03 preview boots + verified saves, C04 competing second preview tab blocked with no stale rearm, C05 hot reload save injection rejected, C06 removing the preview flag cannot bypass a sticky gated session, C07 existing hot host writer/lifecycle callbacks remain compatible.
+2. Existing actual two-page Chromium probe `dev/tests/ci/arch02c-b3-b1b-real-multitab-chromium.mjs` now calls the application's `__b3Entry({})` callback after setting writer-preview explicitly for cooperating pages. Old legacy page continues without opt-in to demonstrate that cached v140 still bypasses lock. The same native origin storage, pagehide, background, external-write and BFCache requirements must pass. Existing CI strict, golden, real iPhone-sized UI and PWA offline checks remain unchanged.
+3. If any of these fail, diagnose and correct them; NEVER regenerate goldens or skip mandatory jobs to claim a green gate. Evidence must be at the **exact PR head** and repeated on merged main before considering the next B1c substage.
+
+## Next hard B1c-B1 and B3-B2 boundaries
+
+- **B1c-B1** requires the production default bootstrap to use gated writer mode (not this preview opt-in) in a separate, reviewable cutover; isolate hot reload and B2 import/recovery, retain no unsafe fallthrough, and prove behavior on two real pages, full app and offline SW. Make a **separate owner release decision**; do NOT silently activate on production.
+- **B3-B2** coordinates *all* import/checkpoint/recovery/manual backup writers with the same live writer lease, checks exact expected raw, and is fail-closed. Existing B2 import and recovery still have paths that do not use this lease. It must be ready before any production release.
+- Older cached v140 PWA JS ignores Web Locks and may write to the same localStorage key: accepted SINGLE-DEVICE manual export/import + close old tabs + reinstall can retire the old client, but this is NOT a universal cross-version lock guarantee. No IndexedDB migration in the current owner-approved rollout.
+- Physical Safari/iPhone standalone, BFCache and offline transitions still require specific validation; Chromium is not Safari.
+
+## OWNER COMMUNICATION — HOLD
+
+The owner has explicitly accepted verified export of current v140 progress **outside the PWA**, later approved release, close ALL old clients, reinstall and protected import to new v1 localStorage. **DO NOT REINSTALL NOW.** The assistant must give a separate and explicit owner-facing signal: **«МОЖНО ПЕРЕУСТАНАВЛИВАТЬ PWA»**, only once verified export and safe release checklist are complete. Deleting the old PWA or browser data beforehand can irreversibly delete the only copy of the save. No release/version bump/deployment from B1c-A0.
