@@ -1,0 +1,55 @@
+name: ARCH-02C-B3 mandatory writer fast acceptance
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dev/src/**'
+      - 'dev/tests/ci/arch02c-**'
+      - 'dev/tests/lib/**'
+      - 'dev/package.json'
+      - 'dev/package-lock.json'
+      - '.github/workflows/arch02c-b3-fast-acceptance.yml'
+      - '.github/workflows/validate-pwa.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arch02c-b3-fast-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mandatory-writer-native:
+    name: Mandatory PWA + HTML and native Web Locks (NO RELEASE)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: npm ci
+      - run: node tools/check-deps.mjs --strict
+      - run: npm run build
+      - run: node tools/check-bundle.mjs dist/pwa/app.js
+      - name: Mandatory ordinary startup on both compiled artifacts
+        run: |
+          node tests/ci/arch02c-b3-b1c-b3-mandatory-boot-acceptance.mjs dist/pwa/index.html
+          node tests/ci/arch02c-b3-b1c-b3-mandatory-boot-acceptance.mjs dist/artifact.html
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          chrome-version: stable
+      - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+      - name: Real Chromium unflagged automatic PWA bootstrap
+        run: node tests/ci/arch02c-b3-b1c-b3-native-auto-chromium.mjs
+      - name: Real Chromium two-tab lifecycle and lease-loss regression
+        run: node tests/ci/arch02c-b3-b1b-real-multitab-chromium.mjs
+      - name: Real Chromium protected import and explicit backup recovery
+        run: node tests/ci/arch02c-b3-b2-a2-real-chromium.mjs
