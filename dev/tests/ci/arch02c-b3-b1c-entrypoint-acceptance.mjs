@@ -1,5 +1,5 @@
 // B3-B1c-A0: actual application composition-root startRuntime() writer-preview.
-// 7 scenarios * both built PWA and HTML. Mode is deliberately OFF by default.
+// 9 scenarios * both built PWA and HTML. Mode is deliberately OFF by default.
 // The runtime path must fail closed and must not transform the old v140 build.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -101,8 +101,12 @@ const spin=async()=>{for(let i=0;i<10;i++)await Promise.resolve();};
   t.mode('writer-preview');
   assert.equal((await t.start({save:injected})).status,'hot-reload-unsupported');
   assert.equal(t.ram(),undefined);
-  assert.equal(t.state().gated,false);
-  done('C05','preview refuses hot-reload RAM injection before gate');
+  assert.equal(t.state().gated,true);
+  assert.equal(t.phase().blocked,true);
+  t.mode(undefined);
+  assert.equal((await t.start()).status,'session-blocked');
+  assert.equal(t.g.run('persist0()').status,'not-owner');
+  done('C05','rejected hot snapshot cannot reopen legacy boot or writes');
 }
 // C06 an opted-in start cannot fall back to legacy when missing locks.
 {
@@ -125,5 +129,36 @@ const spin=async()=>{for(let i=0;i<10;i++)await Promise.resolve();};
   assert.equal(t.g.run('typeof start'), 'function');
   done('C07','B1b hot-host callback methods stay compatible');
 }
-assert.deepEqual(ids,Array.from({length:7},(_,i)=>'C'+String(i+1).padStart(2,'0')));
-console.log('[ARCH-02C-B3-B1c-A0] 7/7 preview composition-root cases; NOT LIVE');
+// C08: even a denied tab must not read progress before native authority.
+{
+  const o=origin(),t=o.tab(false);
+  let reads=0;
+  const local=t.g.ctx.localStorage,read=local.getItem;
+  local.getItem=k=>{reads++;return read(k);};
+  t.mode('writer-preview');
+  assert.equal((await t.start()).status,'unsupported');
+  assert.equal(reads,0,'blocked overlay may not inspect progress before lock');
+  assert.equal(t.ram(),undefined);
+  done('C08','denied native lock performs zero progress storage reads');
+}
+// C09: legacy direct B2 checkpoint write/recovery MUST NOT bypass an armed
+// writer gate, even if lock was acquired and later released. Internal writer
+// persist still uses its under-lease checkpoint and was verified by C03.
+{
+  const o=origin(),t=o.tab();
+  t.mode('writer-preview');
+  assert.equal((await t.start()).status,'started');
+  const original=o.store.get(KEY);
+  assert.equal(t.g.run('loadSave.checkpoint.commit({expectedRaw:loadSave.writer.state().raw,candidate:S})').status,
+    'writer-required');
+  assert.equal(t.g.run('loadSave.checkpoint.recover({})').status,'writer-required');
+  assert.equal(o.store.get(KEY),original);
+  t.release();await spin();
+  assert.equal(t.g.run('loadSave.checkpoint.commit({expectedRaw:null,candidate:S})').status,
+    'writer-required');
+  assert.equal(t.g.run('loadSave.checkpoint.recover({})').status,'writer-required');
+  assert.equal(o.store.get(KEY),original);
+  done('C09','public checkpoint commit/recover cannot bypass an armed or stale writer');
+}
+assert.deepEqual(ids,Array.from({length:9},(_,i)=>'C'+String(i+1).padStart(2,'0')));
+console.log('[ARCH-02C-B3-B1c-B1] 9/9 pre-cutover composition-root cases; NOT LIVE');
