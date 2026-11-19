@@ -63,7 +63,13 @@ async function clickRecoveryPrepare(page,label){
     probe?.addEventListener('click',()=>{window.__recoveryClickAudit.targetSeen=true;},
       {once:true});
   });
-  await page.click('#save-recover-prepare');
+  // Real user keyboard activation targets the focused native button directly.
+  // At iPhone landscape height Puppeteer's coordinate-based click can land on
+  // the scrollable alert-dialog instead, without activating the button.
+  // Enter exercises the same trusted browser click and production handler,
+  // without bypassing the UI via HTMLElement.click() or calling game internals.
+  await page.focus('#save-recover-prepare');
+  await page.keyboard.press('Enter');
   const audit=await page.evaluate(()=>({
     ...window.__recoveryClickAudit,
     disabledAfter:document.getElementById('save-recover-prepare')?.disabled,
