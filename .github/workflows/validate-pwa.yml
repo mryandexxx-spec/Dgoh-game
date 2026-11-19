@@ -141,6 +141,11 @@ jobs:
           node tests/ci/arch02c-b3-multitab-characterization.mjs dist/pwa/index.html
           node tests/ci/arch02c-b3-multitab-characterization.mjs dist/artifact.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-02C-B3-B1a opt-in Web Locks lease proof (PWA + artifact; NOT LIVE GATE)
+        run: |
+          node tests/ci/arch02c-b3-b1-writer-lease-acceptance.mjs dist/pwa/index.html
+          node tests/ci/arch02c-b3-b1-writer-lease-acceptance.mjs dist/artifact.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-01C2a all 210 mission costs (PWA + artifact)
         run: |
           node tests/arch01c2a-energy.mjs dist/pwa/index.html
