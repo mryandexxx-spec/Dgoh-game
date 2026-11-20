@@ -47,7 +47,7 @@ function rewardWin(title, lines, o = {}) {
 }
 
 // Preserve the Conquest chest's original mouse artwork without a new ESM edge.
-rewardWin.mouseSVG = MOUSE_SVG;
+rewardWin.mouseSVG = () => MOUSE_SVG(false);
 function giveRewards(list) {
   return applyRewards(list).map(r => r.k === 'shard' ? `+${amt('shard', r.q, 'shard:' + r.id)} ${CH[r.id].sn}${r.unlocked ? ' — персонаж открыт!' : ''}` : `+${amt(r.k, r.q)} ${RW_NAME[r.k]}`);
 }
