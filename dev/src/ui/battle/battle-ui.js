@@ -22,8 +22,8 @@ import { renderBaronJourney } from '../views/baron-journey.js';
 import { glyph, skillSvg, starStr, toast } from '../common.js';
 import { battleMark, errLog } from '../../core/errlog.js';
 import { campSquad, enGet, enRefund, enSpend, prog, sideOk } from '../../logic/progress.js';
-import { BT, S, set_BT, tickWater } from '../../core/state.js';
-import { persist } from '../../core/save.js';
+import { BT, S, set_BT, set_S, tickWater } from '../../core/state.js';
+import { loadSave, persist } from '../../core/save.js';
 import { TIER_COL, grantFrags, raidFrags } from '../../logic/gear.js';
 import { RELIC_COL, isLegend } from '../../logic/relics.js';
 import { CRY_3STAR, CRY_JOURNEY, CRY_WIN, campReward, enemyProg } from '../../logic/economy.js';
@@ -47,7 +47,8 @@ import { accXP, fragLines } from '../rewards.js';
 import { amt, fmt } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
 import { quest } from '../../logic/daily.js';
-import { grantShards } from '../../logic/rewards.js';
+import { grantShards, rewardHooks } from '../../logic/rewards.js';
+import { ACC_UPS } from '../../logic/account-rules.js';
 import { finishStoryUnlockBattle } from '../../logic/bh94-story-battle.js';
 import { STORY_UNLOCK_EVENTS } from '../../data/bh94-unlock-events.js';
 import { prepareBaronBH9Battle, finishBaronBH9Battle } from '../../logic/baron-bh9-battle.js';
@@ -567,8 +568,54 @@ function playFX(B) {
     for (const uid of heals) { const b = ctr(uid); if (b) BT.fx.add({ type: 'heal', x1: b.x, y1: b.y, x2: b.x, y2: b.y, dur: 600 / sp }); }
   });
 }
+// B4-B1: stage the entire result in a detached v1 save, while the current
+// Web Locks owner remains held. Only a verified checkpoint may activate that
+// draft; no outcome UI or reward side effect is acknowledged before commit.
+// The ungated path is retained for the pinned v138 forensic VM fixtures.
 function finish() {
-  if (!BT || BT.done) return; BT.done = true; clearTimeout(BT.timer);
+  if (!BT || BT.done) return;
+  if (!loadSave.writer.state().gated) return finishLive();
+  if (!loadSave.writer.check().ok) {
+    loadSave.writer.release();
+    return false;
+  }
+  const previous = S;
+  let candidate;
+  try { candidate = JSON.parse(JSON.stringify(previous)); }
+  catch (e) {
+    errLog('finish-snapshot', e);
+    loadSave.writer.release();
+    return false;
+  }
+  // Reward hooks are presentation side effects, not part of the persisted v1
+  // record. Hold them until the checkpoint confirms the entire settlement.
+  const oldUnlock = rewardHooks.unlock, oldConversion = rewardHooks.shardConv;
+  const pending = [], upsBefore = ACC_UPS.length;
+  rewardHooks.unlock = (...args) => { pending.push(() => oldUnlock(...args)); };
+  rewardHooks.shardConv = (...args) => { pending.push(() => oldConversion(...args)); };
+  let committed = false;
+  set_S(candidate);
+  try { committed = finishLive() === true; }
+  catch (e) { errLog('finish-stage', e); }
+  finally {
+    rewardHooks.unlock = oldUnlock;
+    rewardHooks.shardConv = oldConversion;
+    if (!committed) {
+      // Failed/uncertain commit: restore the last acknowledged RAM snapshot and
+      // retire the whole session. NEVER retry with potentially changed bytes.
+      set_S(previous);
+      ACC_UPS.length = upsBefore;
+      loadSave.writer.release();
+    }
+  }
+  if (!committed) return false;
+  for (const effect of pending) {
+    try { effect(); } catch (e) { errLog('finish-reward-hook', e); }
+  }
+  return true;
+}
+function finishLive() {
+  if (!BT || BT.done) return false; BT.done = true; clearTimeout(BT.timer);
   const B = BT.B, won = B.over === 'A', cfg = BT.cfg;
   let html, btns = `<button class="btn go" data-leave="1">Дальше</button>`;
   if (won && cfg.mode !== 'trial') statInc('wins');
@@ -641,13 +688,16 @@ function finish() {
   }
   const xpG = !won ? (cfg.mode === 'raid' ? 30 : 0) : cfg.mode === 'camp' ? nodeCost(BT.i) * 3 : cfg.mode === 'trial' ? 15 : cfg.mode === 'journey' ? 40 : cfg.mode === 'raid' ? 30 : cfg.mode === 'conq' ? 25 : 0;
   if (xpG) { const al = accXP(xpG); html = html.replace(/<\/ul>(?![\s\S]*<\/ul>)/, `<li class="xpl">+${xpG} опыта аккаунта · ур. ${S.acc.lvl}</li>${al.map(l => `<li>${l}</li>`).join('')}</ul>`); }
-  persist();
+  // For a gated battle this is the ONE transaction covering all rewards,
+  // progress, account XP, quests and mode-specific changes.
+  if (!persist().ok) return false;
   const el = document.createElement('div'); el.className = 'result';
   if (!won && !btns.includes('data-toroster')) btns += `<button class="btn" data-toroster="1">К персонажам<small>усилить отряд</small></button>`;
   el.className = 'result ' + (won ? 'won' : 'lost');
   el.innerHTML = `<div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${MOUSE_SVG(!won)}</div>${html}<div class="acts" style="justify-content:center">${btns}</div></div>`;
   const bt = $('#battle'); bt.classList.add('fin');   // фаза 7, шаг 7: пауза бесконечных анимаций под результатом (#battle пересоздаётся в launch)
   bt.appendChild(el);
+  return true;
 }
 function leaveBattle() { battleMark(null); if (BT) clearTimeout(BT.timer); if (BT && BT.arena) BT.arena.dispose(); const pref = BT && { autoPref: BT.autoPref, speedPref: BT.speedPref }; set_BT(pref); closeOverlay(); render(); }
 
