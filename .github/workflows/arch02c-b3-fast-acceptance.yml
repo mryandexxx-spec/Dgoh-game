@@ -50,6 +50,10 @@ jobs:
         run: |
           node tests/golden/saves.mjs dist/artifact.html
           node tests/golden/saves.mjs dist/pwa/index.html
+      - name: ARCH-02C-B4-B4a verified Conquest track and chest claims (PWA + HTML)
+        run: |
+          node tests/ci/arch02c-b4-b4a-conquest-claims-acceptance.mjs dist/pwa/index.html
+          node tests/ci/arch02c-b4-b4a-conquest-claims-acceptance.mjs dist/artifact.html
       - uses: browser-actions/setup-chrome@v1
         id: chrome
         with:
