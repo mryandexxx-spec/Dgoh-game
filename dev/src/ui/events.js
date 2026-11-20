@@ -1,6 +1,10 @@
 // ui/events.js — строки 4473–4621 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { DLG, bPopClose, dlgEnd, dlgNext, doAct, finish, launch, launchBaronLegend, launchStoryUnlock, leaveBattle, openFxPop, playDialog, renderBattle, startBattle, useAbil } from './battle/battle-ui.js';
-import { cqClick } from './views/conq.js';
+import { cqClick, cqPop } from './views/conq.js';
+import { cq, cqCanClaim, cqChest, cqStCan, cqStatic } from '../logic/conquest.js';
+import { CQ_CHESTS } from '../data/conquest-data.js';
+import { MOUSE_SVG } from './mouse.js';
+import { statInc } from '../logic/stat-counters.js';
 import { celebClick, celebQueue, showCeleb } from './overlays/celebrate.js';
 import { meta2Click } from './overlays/battle-settings.js';
 import { renderNotes } from './notifications.js';
@@ -12,7 +16,7 @@ import { raidPct, raidReward } from './views/raid.js';
 import { SQ, openSquadSel, renderSquadSel, set_SQ, sqArr, sqGo } from './overlays/squad-select.js';
 import { claimLogin, openCalendar } from './overlays/calendar.js';
 import { claimChest, claimQuest } from './views/daily.js';
-import { fragLines, rewardWin } from './rewards.js';
+import { fragLines, giveRewards, rewardWin } from './rewards.js';
 import { doRefill, doXSim, openSim, refreshAll, runSim, simCore, updSim } from './overlays/sim.js';
 import { RES_INFO, closeInfo, infoBack, infoKey, openInfo, set_INFO_BACK } from './overlays/info.js';
 import { DETAIL_BACK, closeOverlay, itemCtx, lvlCost, openItem, set_DETAIL_BACK, slotState } from './overlays/detail.js';
@@ -29,7 +33,7 @@ import { render } from './router.js';
 import { selectStoryEvent, selectStoryStage } from './views/story-events.js';
 import { selectBaronStage } from './views/baron-journey.js';
 import { prepareStoryUnlockBattle } from '../logic/bh94-story-battle.js';
-import { toast } from './common.js';
+import { renderRes, toast } from './common.js';
 import { getRes, prog } from '../logic/progress.js';
 import { BT, S, set_view, tickWater, view } from '../core/state.js';
 import { loadSave, persist } from '../core/save.js';
@@ -49,6 +53,52 @@ import { $ } from '../core/dom.js';
 import { DAILY, qState, quest } from '../logic/daily.js';
 import { addRes, grantShards } from '../logic/rewards.js';
 
+// ARCH-02C-B4-B4a: Conquest track claims live at the existing UI event seam.
+// The SHA-frozen ui/views/conq.js remains byte-identical. Do not fall through
+// to its unchecked legacy handler after a denied/uncertain gated transaction.
+// No extra ESM module or changed bootstrap order is necessary.
+function cqVerifiedClaimClick(d) {
+  if (d.cqst === undefined && d.cqopen === undefined) return false;
+  if (!loadSave.writer.state().gated) return false; // historical B0 harness
+  if (d.cqst !== undefined) {
+    const j = Number(d.cqst);
+    if (!Number.isInteger(j) || j < 0) return true;
+    const tx = loadSave.writer.transact(() => {
+      if (!cqStCan(j)) return { commit: false, value: 'not-claimable' };
+      const rr = cqStatic(j);
+      cq().tk['s' + j] = 1;
+      giveRewards(rr); // queued shard presentation; no UI until verified
+      return rr;
+    }, giveRewards.presentationHooks);
+    if (!tx.ok) return true;
+    const rr = tx.value;
+    const el = document.querySelector(`[data-cqst="${j}"]`);
+    if (el) {
+      cqPop(el, rr.map(r => '+' + amt(r[0], r[1], r[2] ? 'shard:' + r[2] : undefined)).join(' '));
+      el.outerHTML = `<div class="cqst1 got">${el.innerHTML.replace(/<em>.*?<\\/em>/, '<i>✓</i>')}</div>`;
+    }
+    renderRes();
+    return true;
+  }
+  const i = Number(d.cqopen);
+  if (!Number.isInteger(i) || i < 0 || i >= CQ_CHESTS.length) return true;
+  const tx = loadSave.writer.transact(() => {
+    // Re-evaluate current-week score and the one-time token on the detached
+    // candidate. RNG, token, max-chest statistic and resources share one write.
+    if (!cqCanClaim(i)) return { commit: false, value: 'not-claimable' };
+    const rw = cqChest(i);
+    const pick = rw.any[Math.floor(Math.random() * rw.any.length)];
+    cq().tk['c' + i] = 1;
+    if (i === CQ_CHESTS.length - 1) statInc('cqMax');
+    return giveRewards([...rw.fix, pick]);
+  }, giveRewards.presentationHooks);
+  if (!tx.ok) return true;
+  render();
+  const lines = tx.value;
+  $('#overlay').innerHTML = `<div class="result won"><div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${MOUSE_SVG(false)}</div><h3>Сундук Джихада · ◆${CQ_CHESTS[i]}</h3><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><div class="acts" style="justify-content:center"><button class="btn go" data-close="1">Забрать</button></div></div></div>`;
+  return true;
+}
+
 // ===== events =====
 document.addEventListener('click', e => {
   const sl = e.target.closest('[data-sqlead]'); if (sl) { const a = sqArr(), k = +sl.dataset.sqlead, id = a[k]; a.splice(k, 1); a.unshift(id); persist(); return renderSquadSel(); }
@@ -64,7 +114,7 @@ document.addEventListener('click', e => {
   if (d.rwok) { const w = $('#rwwin'); if (w) w.remove(); setTimeout(() => { showCeleb(); renderNotes(); }, 50); return; }
   if (recyclerClick(d)) { e.stopImmediatePropagation(); if (d.ixback) render(); return; }
   if (d.ixenter) { closeInfo(true); closeOverlay(); set_view('recycler'); render(); return; }
-  if (metaClick(d) || meta2Click(d) || celebClick(d) || cqClick(d)) return;
+  if (metaClick(d) || meta2Click(d) || celebClick(d) || cqVerifiedClaimClick(d) || cqClick(d)) return;
   if (d.bh9Stage !== undefined) { if (selectBaronStage(Number(d.bh9Stage))) render(); return; }
   if (d.bh9Start !== undefined) { const outcome=launchBaronLegend(Number(d.bh9Start)); if (!outcome.ok) toast('Восхождение недоступно: '+outcome.reason); return; }
   if (d.storyEvent) { if(selectStoryEvent(d.storyEvent))render(); return; }
