@@ -253,6 +253,6 @@ for(const [id,kind] of [['T12','QuotaExceededError'],['T13','SecurityError']]){
  pass('T20','idempotent re-import retains prior verified backup');
 }
 assert.equal(new Set(results).size,results.length);
-assert.equal(results.length,20);
+assert.equal(results.length,22);
 console.log('ARCH-02C-B2: '+results.length+' SAFE import/export cases on '+html+
  '; confirms byte-readback but NOT fsync, origin retention or cross-tab CAS.');
