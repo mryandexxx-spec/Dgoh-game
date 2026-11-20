@@ -138,7 +138,7 @@ function sqGo() {
 // B4-B4a: UI-owned, read-only rule seam consumed by events.js.
 // Reuse the existing named import and established ESM edge; do not touch
 // frozen Conquest, or add a module/edge to the independently pinned graph.
-openSquadSel.conquestClaimRules = cq.claimRules;
+openSquadSel.conquestClaimRules = () => cq.claimRules;
 let SHCONV = 0, SHCONV_T = 0;
 rewardHooks.unlock = id => celebQueue({ type: 'unlock', id });
 rewardHooks.shardConv = n => { SHCONV += n; clearTimeout(SHCONV_T); SHCONV_T = setTimeout(convFlush, 700); };
