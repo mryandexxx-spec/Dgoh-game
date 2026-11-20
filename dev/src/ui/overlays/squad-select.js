@@ -1,7 +1,7 @@
 // ui/overlays/squad-select.js — строки 3859–3950 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import './calendar.js'; // порядок исполнения
-import { cq, cqCanClaim, cqChest, cqStCan, cqStatic, cqEn, cqEnSpend, cqEnTxt, cqLive, cqNode, cqOpen, cqSta, cqStaCol, cqTypeN } from '../../logic/conquest.js';
-import { CQ_CHESTS, CQ_EN, CQ_SECT, CQ_STA, cqMod } from '../../data/conquest-data.js';
+import { cq, cqEn, cqEnSpend, cqEnTxt, cqLive, cqNode, cqOpen, cqSta, cqStaCol, cqTypeN } from '../../logic/conquest.js';
+import { CQ_EN, CQ_SECT, CQ_STA, cqMod } from '../../data/conquest-data.js';
 import { trialOfSQ } from '../views/trials.js';
 import { launch, startBattle } from '../battle/battle-ui.js';
 import { SPOT_ICONS } from '../views/lobby.js';
@@ -138,7 +138,7 @@ function sqGo() {
 // B4-B4a: UI-owned, read-only rule seam consumed by events.js.
 // Reuse the existing named import and established ESM edge; do not touch
 // frozen Conquest, or add a module/edge to the independently pinned graph.
-openSquadSel.conquestClaimRules = Object.freeze({ cq, cqCanClaim, cqChest, cqStCan, cqStatic, CQ_CHESTS });
+openSquadSel.conquestClaimRules = cq.claimRules;
 let SHCONV = 0, SHCONV_T = 0;
 rewardHooks.unlock = id => celebQueue({ type: 'unlock', id });
 rewardHooks.shardConv = n => { SHCONV += n; clearTimeout(SHCONV_T); SHCONV_T = setTimeout(convFlush, 700); };
