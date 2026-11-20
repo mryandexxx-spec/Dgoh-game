@@ -161,6 +161,201 @@ function cqVerifiedDiskClick(d) {
   return true;
 }
 
+// ARCH-02C-B4-B4b2: settlement for all remaining Conquest store, energy,
+// consumable and cache-path actions. Every payable mutation revalidates inside
+// detached writer state. No new ESM imports and no edits to frozen conq.js.
+// Some Conquest feat notifications live in NOTES outside the v1 save; roll them
+// back on any denied/uncertain checkpoint, alongside writer's rollback of S.
+function cqVerifiedEconomyClick(d) {
+  if (d.cqnode === undefined && d.cqsec === undefined && d.cqbuy === undefined &&
+      d.cqjbuy === undefined && d.cqmed === undefined && d.cqrf === undefined &&
+      d.cqdon === undefined && d.cqdoff === undefined) return false;
+  if (!loadSave.writer.state().gated) return false; // historical B0 characterization
+  const r = openSquadSel.conquestClaimRules();
+  const run = stage => {
+    const before = r.notes.length;
+    const tx = loadSave.writer.transact(stage, giveRewards.presentationHooks);
+    if (!tx.ok) r.notes.length = before;
+    return tx;
+  };
+  const nodeKeyValid = k => /^[0-4]-(?:[0-9]|1[01])-[0-9]+$/.test(k);
+  if (d.cqnode !== undefined) {
+    const key = String(d.cqnode);
+    if (!nodeKeyValid(key)) return true;
+    const tx = run(() => {
+      const C = r.cq(), a = r.cqNode(key);
+      if (!a) return { commit: false, value: { kind: 'invalid' } };
+      if (a.type !== 'cache' || C.done[key] || !r.cqOpen(a))
+        return { commit: false, value: { kind: 'select', key } };
+      C.sel = key;
+      C.done[key] = 1;
+      r.cqCommitRoute(a);
+      return { kind: 'unlocked' };
+    });
+    if (!tx.ok) {
+      // Original cqClick persists only a newly opened cache. Other node taps
+      // set a local map selection without a storage write; retain that contract.
+      if (tx.status === 'cancelled' && tx.value?.kind === 'select' &&
+          loadSave.writer.state().status === 'owned') {
+        r.cq().sel = key;
+        render();
+      }
+      return true;
+    }
+    render();
+    return true;
+  }
+  if (d.cqsec !== undefined) {
+    const sec = Number(d.cqsec);
+    if (!Number.isInteger(sec) || sec < 0 || sec > 4) return true;
+    const tx = run(() => {
+      const C = r.cq();
+      if (!C.diff || sec > C.open) return { commit: false, value: 'sector-locked' };
+      if (C.sec === sec && C.sel === null)
+        return { commit: false, value: 'no-change' };
+      C.sec = sec;
+      C.sel = null;
+      return sec;
+    });
+    if (tx.ok) render();
+    return true;
+  }
+  if (d.cqbuy !== undefined) {
+    const spec = String(d.cqbuy), sep = spec.indexOf(':');
+    if (sep < 0 || spec.indexOf(':', sep + 1) >= 0) return true;
+    const key = spec.slice(0, sep), idx = Number(spec.slice(sep + 1));
+    if (!nodeKeyValid(key) || !/^(0|[1-9][0-9]*)$/.test(spec.slice(sep + 1)) ||
+        !Number.isSafeInteger(idx)) return true;
+    const tx = run(() => {
+      const C = r.cq(), a = r.cqNode(key);
+      if (!a || a.type !== 'cache' || !C.done[key])
+        return { commit: false, value: 'cache-locked' };
+      const got = C.buy[key] || [];
+      if (got.includes(idx)) return { commit: false, value: 'sold' };
+      const item = r.cqGoods(key)[idx];
+      if (!item || !Array.isArray(item.cost)) return { commit: false, value: 'unknown-item' };
+      const [resource, price] = item.cost;
+      if (!Number.isFinite(price) || price < 0 ||
+          getRes(resource) < price)
+        return { commit: false, value: { kind: 'short', resource } };
+      addRes(resource, -price);
+      (C.buy[key] ??= []).push(idx);
+      const lines = item.rw ? giveRewards(item.rw) : [item.use()];
+      return { kind: 'purchased', lines };
+    });
+    if (!tx.ok) {
+      if (tx.status === 'cancelled' && tx.value?.kind === 'short') openInfo(tx.value.resource);
+      return true;
+    }
+    toast(tx.value.lines.join(' · '));
+    render();
+    return true;
+  }
+  if (d.cqjbuy !== undefined) {
+    const key = String(d.cqjbuy);
+    const tx = run(() => {
+      const item = r.cqShopOffer().find(x => x.key === key);
+      if (!item || item.sold) return { commit: false, value: 'sold' };
+      if ((S.jt || 0) < item.price)
+        return { commit: false, value: 'short-trophies' };
+      S.jt -= item.price;
+      let notice;
+      if (key === 'med') {
+        S.cqMed = (S.cqMed || 0) + 1;
+        notice = 'Аптечка в запасе';
+      } else if (key === 'med3') {
+        S.cqMed = (S.cqMed || 0) + 3;
+        notice = '+3 аптечки';
+      } else {
+        const disk = key.slice(2), C = r.cq();
+        if (!key.startsWith('d:') || !r.CQ_DISKS[disk] ||
+            C.disks.some(x => x.k === disk))
+          return { commit: false, value: 'disk-owned' };
+        if (!S.cqShop || S.cqShop.wk !== C.wk)
+          S.cqShop = { wk: C.wk, b: {} };
+        S.cqShop.b[key] = 1;
+        r.cqAddDisk(disk);
+        notice = 'Диск «' + r.CQ_DISKS[disk].n + '» — ' +
+          (C.disks.find(x => x.k === disk).on ? 'надет' : 'в запасе');
+      }
+      return notice;
+    });
+    if (!tx.ok) {
+      if (tx.status === 'cancelled' && tx.value === 'short-trophies')
+        toast('Не хватает трофеев Джихада');
+      return true;
+    }
+    toast(tx.value);
+    render();
+    return true;
+  }
+  if (d.cqmed !== undefined) {
+    const id = String(d.cqmed);
+    if (!CH[id] || !prog(id)?.stars) return true;
+    const tx = run(() => {
+      if (!S.cqMed || r.cqSta(id) >= 100)
+        return { commit: false, value: 'no-medkit-or-full' };
+      S.cqMed--;
+      r.cqStaSet(id, r.cqSta(id) + r.CQ_MED);
+      return r.cqSta(id);
+    });
+    if (!tx.ok) return true;
+    toast(CH[id].sn + ': выносливость ' + tx.value + '%');
+    render();
+    return true;
+  }
+  if (d.cqrf !== undefined) {
+    const needed = Number(d.cqrf), want = Number.isFinite(needed) && needed > 0 ? needed : 0;
+    const tx = run(() => {
+      const n = r.cqRfN(), price = r.cqRfCost();
+      if (n >= r.CQ_REFILL_MAX)
+        return { commit: false, value: 'daily-limit' };
+      if (S.cry < price)
+        return { commit: false, value: 'short-crystals' };
+      S.cry -= price;
+      r.cqEn();
+      r.cq().en += r.CQ_RF_AMT;
+      S.cqRf = { d: todayKey(), n: n + 1 };
+      return r.cq().en;
+    });
+    if (!tx.ok) {
+      if (tx.status === 'cancelled' && tx.value === 'short-crystals')
+        openInfo('cry');
+      return true;
+    }
+    toast('+' + r.CQ_RF_AMT + ' Решимости');
+    if (view === 'conq') render();
+    // Presentation-only delegate reopens the frozen view's refill window.
+    // No legacy payment branch is ever invoked after this transaction.
+    cqClick({ cqres: '1' });
+    return true;
+  }
+  const equip = d.cqdon !== undefined, key = String(equip ? d.cqdon : d.cqdoff);
+  const tx = run(() => {
+    const C = r.cq(), disk = C.disks.find(x => x.k === key);
+    if (!disk) return { commit: false, value: 'not-owned' };
+    if (equip) {
+      if (disk.on || !r.cqCanOn(key))
+        return { commit: false, value: 'cannot-equip' };
+      disk.on = 1;
+    } else {
+      if (!disk.on) return { commit: false, value: 'not-equipped' };
+      if (!r.cqEnSpend(r.CQ_EN.unequip))
+        return { commit: false, value: 'short-energy' };
+      disk.on = 0;
+    }
+    return true;
+  });
+  if (!tx.ok) {
+    if (tx.status === 'cancelled' && tx.value === 'short-energy')
+      toast('Нужно ' + r.CQ_EN.unequip + ' Решимости');
+    return true;
+  }
+  render();
+  cqClick({ cqdisks: '1' }); // presentation-only read of saved state
+  return true;
+}
+
 // ===== events =====
 document.addEventListener('click', e => {
   const sl = e.target.closest('[data-sqlead]'); if (sl) { const a = sqArr(), k = +sl.dataset.sqlead, id = a[k]; a.splice(k, 1); a.unshift(id); persist(); return renderSquadSel(); }
@@ -176,7 +371,7 @@ document.addEventListener('click', e => {
   if (d.rwok) { const w = $('#rwwin'); if (w) w.remove(); setTimeout(() => { showCeleb(); renderNotes(); }, 50); return; }
   if (recyclerClick(d)) { e.stopImmediatePropagation(); if (d.ixback) render(); return; }
   if (d.ixenter) { closeInfo(true); closeOverlay(); set_view('recycler'); render(); return; }
-  if (metaClick(d) || meta2Click(d) || celebClick(d) || cqVerifiedClaimClick(d) || cqVerifiedDiskClick(d) || cqClick(d)) return;
+  if (metaClick(d) || meta2Click(d) || celebClick(d) || cqVerifiedClaimClick(d) || cqVerifiedDiskClick(d) || cqVerifiedEconomyClick(d) || cqClick(d)) return;
   if (d.bh9Stage !== undefined) { if (selectBaronStage(Number(d.bh9Stage))) render(); return; }
   if (d.bh9Start !== undefined) { const outcome=launchBaronLegend(Number(d.bh9Start)); if (!outcome.ok) toast('Восхождение недоступно: '+outcome.reason); return; }
   if (d.storyEvent) { if(selectStoryEvent(d.storyEvent))render(); return; }
