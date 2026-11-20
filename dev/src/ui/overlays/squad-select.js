@@ -100,7 +100,8 @@ function sqGo() {
     loadSave.writer.release();
     return; // never open a new battle after lease loss
   }
-  const a = sqArr(); if (!a.length || !SQ) return;
+  if (!SQ) return; // also blocks a repeated event after 3D loading replaced the selector
+  const a = sqArr(); if (!a.length) return;
   const mode = SQ.mode, i = SQ.i;
   if (mode === 'trial' && a.length < TRIAL_SQ) return toast(`Испытания — только полным составом: ${TRIAL_SQ} героев`);
   if (mode === 'camp' && reqMissing(i, a).length) return toast('В отряде обязательно: ' + reqMissing(i, a).map(id => CH[id].sn).join(', '));
