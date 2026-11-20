@@ -59,7 +59,7 @@ function readyDifficulty(g) {
  g.run('S.acc.lvl=20;persist()');
 }
 function readyStart(g) {
- g.run("S.acc.lvl=20;const C=cq();C.diff='easy';C.pick=cqDiskPick('start');persist()");
+ g.run("(function(){S.acc.lvl=20;const C=cq();C.diff='easy';C.pick=cqDiskPick('start');persist()})()");
  return g.run('cq().pick[0]');
 }
 function readyNode(g) {
