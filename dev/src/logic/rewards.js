@@ -28,6 +28,8 @@ function applyRewards(list) {
   return out;
 }
 // опыт аккаунта: начисляет уровни и награды, кладёт открытия в ACC_UPS; возвращает достигнутые уровни
+// Existing account notification queue is presentation-only, not save data.
+accGain.pendingQueue = ACC_UPS;
 function accGain(n) {
   if (!n || S.acc.lvl >= ACC_MAX) return [];
   S.acc.xp += Math.round(n); const out = [];

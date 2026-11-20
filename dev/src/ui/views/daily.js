@@ -2,27 +2,104 @@
 import { accXP, giveRewards, rewardWin, rewardsHtml } from '../rewards.js';
 import { MONTHS, loginCan, monthHero } from '../overlays/calendar.js';
 import { refreshAll } from '../overlays/sim.js';
-import { persist } from '../../core/save.js';
+import { loadSave, persist } from '../../core/save.js';
 import { portrait } from '../../render2d/figures.js';
 import { CH } from '../../data/chars.js';
 import { $ } from '../../core/dom.js';
 import { CHEST_CRY, CHEST_NEED, CHEST_RW, DAILY, activeDaily, dailyGot, dly, qState } from '../../logic/daily.js';
 
 // ===== daily quests =====
-function claimQuest(k, silent) {
-  const q = activeDaily().find(x => x.k === k); if (!q || qState(q) !== 'done') return;
-  dly().got[k] = true; const lines = giveRewards(q.rw); lines.push(...accXP(10)); persist();
-  if (!silent) { refreshAll(); rewardWin(q.n, lines); }
-  return lines;
+// The historical ungated branch is retained only for B0's forensic harness.
+// All ordinary booted sessions have a mandatory writer gate: never fall back
+// to a direct persist after a refused or ambiguous verified transaction.
+const claimDay = (expectedDay) => expectedDay == null ? new Date().toDateString() : String(expectedDay);
+const claimDayCurrent = (day) => day === new Date().toDateString();
+function claimQuest(k, silent = false, expectedDay = null) {
+  if (!loadSave.writer.state().gated) {
+    const q = activeDaily().find(x => x.k === k); if (!q || qState(q) !== 'done') return;
+    dly().got[k] = true; const lines = giveRewards(q.rw); lines.push(...accXP(10)); persist();
+    if (!silent) { refreshAll(); rewardWin(q.n, lines); }
+    return lines;
+  }
+  const day = claimDay(expectedDay);
+  if (!claimDayCurrent(day)) return;
+  const pendingBefore = accXP.pendingQueue.length;
+  const tx = loadSave.writer.transact(() => {
+    const D = dly();
+    if (D.d !== day) return { commit: false, value: 'stale-day' };
+    const q = activeDaily().find(x => x.k === k);
+    if (!q || qState(q) !== 'done') return { commit: false, value: 'not-ready' };
+    D.got[k] = true;
+    const lines = giveRewards(q.rw);
+    lines.push(...accXP(10));
+    return { title: q.n, lines };
+  }, giveRewards.presentationHooks);
+  if (!tx.ok) { accXP.pendingQueue.length = pendingBefore; return; }
+  if (!silent) { refreshAll(); rewardWin(tx.value.title, tx.value.lines); }
+  return tx.value.lines;
 }
-function claimChest() {
-  const D = dly(); if (D.chest || dailyGot() < CHEST_NEED) return;
-  D.chest = true; const cry = CHEST_CRY[0] + Math.round(Math.random() * (CHEST_CRY[1] - CHEST_CRY[0]) / 10) * 10;
-  const lines = giveRewards(CHEST_RW.map(r => r[0] === 'cry' ? ['cry', cry] : r)); persist(); refreshAll();
-  rewardWin('Сундук дня', lines, { sub: `Выполнено ${CHEST_NEED} заданий · кристаллы: ${cry} из 50–300` });
+function claimAllQuests(expectedDay = null) {
+  if (!loadSave.writer.state().gated) {
+    const lines = [];
+    for (const q of DAILY) if (qState(q) === 'done') lines.push(...(claimQuest(q.k, true) || []));
+    refreshAll(); if (lines.length) rewardWin('Задания дня', lines);
+    return lines;
+  }
+  const day = claimDay(expectedDay);
+  if (!claimDayCurrent(day)) return;
+  const pendingBefore = accXP.pendingQueue.length;
+  const tx = loadSave.writer.transact(() => {
+    const D = dly();
+    if (D.d !== day) return { commit: false, value: 'stale-day' };
+    const ready = activeDaily().filter(q => qState(q) === 'done');
+    if (!ready.length) return { commit: false, value: 'not-ready' };
+    const lines = [];
+    for (const q of ready) {
+      D.got[q.k] = true;
+      lines.push(...giveRewards(q.rw), ...accXP(10));
+    }
+    return lines;
+  }, giveRewards.presentationHooks);
+  if (!tx.ok) { accXP.pendingQueue.length = pendingBefore; return; }
+  refreshAll();
+  if (tx.value.length) rewardWin('Задания дня', tx.value);
+  return tx.value;
+}
+// Avoid a new named ESM export or import edge: events.js already imports claimQuest.
+claimQuest.all = claimAllQuests;
+function claimChest(expectedDay = null) {
+  if (!loadSave.writer.state().gated) {
+    const D = dly(); if (D.chest || dailyGot() < CHEST_NEED) return;
+    D.chest = true; const cry = CHEST_CRY[0] + Math.round(Math.random() * (CHEST_CRY[1] - CHEST_CRY[0]) / 10) * 10;
+    const lines = giveRewards(CHEST_RW.map(r => r[0] === 'cry' ? ['cry', cry] : r)); persist(); refreshAll();
+    rewardWin('Сундук дня', lines, { sub: `Выполнено ${CHEST_NEED} заданий · кристаллы: ${cry} из 50–300` });
+    return;
+  }
+  const day = claimDay(expectedDay);
+  if (!claimDayCurrent(day)) return;
+  const tx = loadSave.writer.transact(() => {
+    const D = dly();
+    if (D.d !== day || D.chest || dailyGot() < CHEST_NEED)
+      return { commit: false, value: 'not-claimable' };
+    // Keep the exact original RNG draw and rounding, but only on the detached
+    // candidate. An uncertain primary write fences the realm: never reroll.
+    const cry = CHEST_CRY[0] + Math.round(Math.random() * (CHEST_CRY[1] - CHEST_CRY[0]) / 10) * 10;
+    D.chest = true;
+    const lines = giveRewards(CHEST_RW.map(r => r[0] === 'cry' ? ['cry', cry] : r));
+    return { cry, lines };
+  }, giveRewards.presentationHooks);
+  if (!tx.ok) return;
+  refreshAll();
+  rewardWin('Сундук дня', tx.value.lines, {
+    sub: `Выполнено ${CHEST_NEED} заданий · кристаллы: ${tx.value.cry} из 50–300`
+  });
 }
 function renderDaily() {
   const D = dly(), got = dailyGot(), ready = activeDaily().filter(q => qState(q) === 'done').length;
+  // The rendered day belongs to the existing handler, not the save or DOM.
+  // An old screen cannot claim a new day until it has been rendered anew.
+  claimQuest.renderedDay = D.d;
+  claimChest.renderedDay = D.d;
   const msLeft = new Date(new Date().setHours(24, 0, 0, 0)) - Date.now(), hh = Math.floor(msLeft / 3.6e6), mm = Math.floor(msLeft % 3.6e6 / 6e4);
   $('#view').innerHTML = `<h2>Ежедневные задания</h2><p class="sub">Задания обновляются в полночь — осталось ${hh} ч ${mm} мин. Получите награды за ${CHEST_NEED} заданий, чтобы открыть Сундук дня: Печать Ландсраада и случайно от 50 до 300 кристаллов.</p>
     <div class="chest ${D.chest ? 'opened' : got >= CHEST_NEED ? 'ready' : ''}">

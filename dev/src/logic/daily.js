@@ -15,7 +15,17 @@ const DAILY = [
 ];
 const activeDaily = () => DAILY.filter(q => q.k !== 'skill' || (S.acc?.lvl || 1) <= 50);
 const CHEST_NEED = 7, CHEST_RW = [['seal', 1], ['cry', '50–300'], ['sol', 5000]], CHEST_CRY = [50, 300];
-function dly() { if (S.daily.d !== todayKey()) S.daily = { d: todayKey(), c: {}, got: {}, chest: false }; return S.daily; }
+function dly() {
+  const day = todayKey();
+  if (S.daily.d !== day) {
+    // A backwards device clock must not resurrect an already spent daily token.
+    // With offline client time we can block rollback, not prove real elapsed days.
+    const saved = Date.parse(S.daily.d), current = Date.parse(day);
+    if (!(Number.isFinite(saved) && saved > current))
+      S.daily = { d: day, c: {}, got: {}, chest: false };
+  }
+  return S.daily;
+}
 function quest(k, n = 1) { if (!S || (k === 'skill' && (S.acc?.lvl || 1) > 50)) return; const D = dly(); D.c[k] = Math.max(0, (D.c[k] || 0) + n); }
 function qState(q) { const D = dly(); return D.got[q.k] ? 'got' : (D.c[q.k] || 0) >= q.need ? 'done' : 'prog'; }
 const dailyGot = () => DAILY.filter(q => dly().got[q.k]).length;
