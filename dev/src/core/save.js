@@ -134,7 +134,12 @@ function persist0() {
   // ARCH-02C-B3-B1b: ONLY when an opt-in preboot writer gate is enabled.
   // A gate without a current exclusive lease must NEVER fall back to the
   // historical unchecked setItem (e.g. after pagehide or failed acquire).
-  if (writerGateEnabled) return writerPersist();
+  if (writerGateEnabled) {
+    // B4: an inner mode-specific persist is a *deferred request* while the
+    // outer battle settlement owns the single verified checkpoint.
+    if (writerSettlementActive) return { ok: true, status: 'deferred' };
+    return writerPersist();
+  }
   let json;
   try {
     json = JSON.stringify(S);
@@ -151,7 +156,7 @@ function persist0() {
 let notePend = 0;
 function persist() {
   const result = persist0(); // synchronous write; only UI hook is scheduled
-  if (result.ok && !notePend) notePend = setTimeout(() => {
+  if (result.ok && result.status !== 'deferred' && !notePend) notePend = setTimeout(() => {
     notePend = 0; if (persistHook) persistHook();
   }, 60);
   return result;
@@ -415,6 +420,27 @@ function writerPersist() {
   if (result.ok) return { ok: true, status: 'ok', verified: result.status };
   return saveWriteFailure(result.status, { name: result.error || result.status });
 }
+// This is RAM-only, never a save-schema field or a second storage layer.
+// A synchronous battle can defer nested persist() until XP/quests finish.
+let writerSettlementActive = false;
+function writerBeginSettlement() {
+  if (!writerGateEnabled || writerSettlementActive)
+    return checkpointFailure('settlement-busy', 'settlement-begin');
+  const checked = writerCheck();
+  if (!checked.ok) return checked;
+  writerSettlementActive = true;
+  return { ok: true, status: 'staging' };
+}
+function writerFinishSettlement() {
+  if (!writerSettlementActive)
+    return checkpointFailure('settlement-inactive', 'settlement-finish');
+  writerSettlementActive = false;
+  return persist(); // Existing B1 backup + byte-verified primary, once.
+}
+function writerAbortSettlement() {
+  writerSettlementActive = false;
+  return { ok: true, status: 'aborted' };
+}
 let writerLease = null;
 let writerAcquiring = false;
 let writerCancelAcquire = null;
@@ -428,6 +454,8 @@ function writerState() {
     (writerAcquiring ? 'acquiring' : writerLastStatus), gated: writerGateEnabled };
 }
 function writerRelease() {
+  // Any retired session invalidates an unfinished staged battle as well.
+  writerSettlementActive = false;
   const retiring = !!(writerAcquiring || writerLease);
   if (writerGateEnabled && retiring) writerGateInvalidated = true;
   if (writerAcquiring && writerCancelAcquire) {
@@ -624,6 +652,8 @@ loadSave.writer = Object.freeze({
   name: WRITER_LOCK_NAME, primaryKey: SAVE_KEY,
   acquire: writerAcquire, state: writerState,
   check: writerCheck, commit: writerCommit, recover: writerRecover,
+  beginSettlement: writerBeginSettlement, finishSettlement: writerFinishSettlement,
+  abortSettlement: writerAbortSettlement,
   release: writerRelease, enableGate: writerEnableGate,
   onRetired: writerOnRetired
 });
