@@ -75,7 +75,9 @@ function cqFinish(B, cfg, won) {
     const down = st.filter(x => x.h <= 0).length;
     html = `<h3>Поражение</h3><ul><li>Враги точки не восстанавливаются: повержено ${down} из ${st.length}, раны остальных сохранены до следующего захода.</li><li>Выносливость тратится только за победу — участники её не потеряли.</li></ul>`;
   }
-  cqSyncTrack(); persist();
+  // B4: the caller's battle settlement owns the sole verified checkpoint.
+  // Persisting here would commit an incomplete result before account XP.
+  cqSyncTrack();
   return { html, btns: `<button class="btn go" data-cqback="1">К карте Джихада</button>` };
 }
 
