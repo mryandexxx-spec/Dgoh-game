@@ -167,7 +167,13 @@ function raidEnd(g){
  const g=await boot();setupRaid(g);
  raidEnd(g);
  const settled=g.store.get(KEY);
- raidEnd(g);
+ // The real DOM no longer has the "end raid" button after the first cashout.
+ // Re-dispatching its now-stale event may not re-confirm, but must not pay.
+ for(const handler of g.listeners.click) handler({
+   target:{closest:selector=>selector==='button, [data-fxu], .unit.tgt, .detail'
+     ?{dataset:{raidend:'1',confirm:'1'}}:null},
+   preventDefault(){},stopPropagation(){},stopImmediatePropagation(){}
+ });
  assert.equal(g.store.get(KEY),settled);
  pass('B424','repeated Raid confirmation cannot pay twice');
  g.run('loadSave.writer.release()');
