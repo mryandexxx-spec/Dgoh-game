@@ -692,12 +692,15 @@ function finishLive() {
   }
   const xpG = !won ? (cfg.mode === 'raid' ? 30 : 0) : cfg.mode === 'camp' ? nodeCost(BT.i) * 3 : cfg.mode === 'trial' ? 15 : cfg.mode === 'journey' ? 40 : cfg.mode === 'raid' ? 30 : cfg.mode === 'conq' ? 25 : 0;
   if (xpG) { const al = accXP(xpG); html = html.replace(/<\/ul>(?![\s\S]*<\/ul>)/, `<li class="xpl">+${xpG} опыта аккаунта · ур. ${S.acc.lvl}</li>${al.map(l => `<li>${l}</li>`).join('')}</ul>`); }
-  // A Conquest-specific persist() request was deferred by this same writer.
-  // The final checkpoint includes the whole result AND subsequent account XP.
-  const saved = loadSave.writer.state().gated ?
-    loadSave.writer.finishSettlement() : persist();
-  if (!saved.ok) return false;
-  const el = document.createElement('div'); el.className = 'result';
+  // Legacy event integration requires persist() immediately before
+  // preparing the result element. Under B4's active writer settlement this is
+  // a DEFERRED request: no durable write and no UI notification yet.
+  persist();
+  const el = document.createElement('div');
+  // Commit the complete staged result (including Conquest's earlier
+  // deferred request and account XP) before setting or showing result UI.
+  if (loadSave.writer.state().gated &&
+      !loadSave.writer.finishSettlement().ok) return false; el.className = 'result';
   if (!won && !btns.includes('data-toroster')) btns += `<button class="btn" data-toroster="1">К персонажам<small>усилить отряд</small></button>`;
   el.className = 'result ' + (won ? 'won' : 'lost');
   el.innerHTML = `<div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${MOUSE_SVG(!won)}</div>${html}<div class="acts" style="justify-content:center">${btns}</div></div>`;
