@@ -18,7 +18,7 @@ The release run #44710145918 is **SUCCESS** at merge SHA `2994eaa`; published `m
 | `finish` Journey | `JP` first clear, shard grant, crystals/seal/wol or repeat solari | One-time flag and reward must share commit — **P0** |
 | `finish` Raid | Damage, participation, progress, and final loot/kill marker | All values must share one commit — **P0** |
 | `ui/events.js:data-raidend` | User-confirmed partial raid cash-out, fragment/currency rewards, `S.raid=null` | Separate non-battle handler, direct S then persist — **P1, NOT handled by B4-B1** |
-| `ui/views/conq.js:cqFinish` | Sector stars/route, one-time loot, feats, stamina, partial foe HP | Previously called `persist()` itself, then common finish wrote again after account XP — **P0** |
+| `ui/views/conq.js:cqFinish` | Sector stars/route, one-time loot, feats, stamina, partial foe HP | Contains its historical frozen inner `persist()`; B4 defers that write until account XP is included — **P0** |
 | `ui/views/trials.js:trialFinish` | Stars/attempts, random `trialRoll`, item/shard rewards | Shared `finish` commit — **P0** |
 | `logic/bh94-story-battle.js:finishStoryUnlockBattle` | First clear/daily shard limit, receipt `prepared.settled` | One-use in-memory receipt is not itself a durable transaction ID — **P1** |
 | `logic/baron-bh9-battle.js:finishBaronBH9Battle` | First clear legend shards/progress | Pure staged helper but actual public release of full BH9 battle is separately gated — **P1** |
@@ -37,11 +37,11 @@ Under mandatory `loadSave.writer` gate, `finish()`:
 
 1. Requires current Web Locks ownership via `writer.check()` before any new result-state mutations. Lost lease is retired, no stale commit.
 2. Creates a detached JSON-compatible v1 working snapshot from S; swaps the S binding to it *synchronously* for the existing result code. No schema fields, ledger, journal, IndexedDB or new economic rules.
-3. Defers `rewardHooks.unlock` and `rewardHooks.shardConv` presentation side effects until successful verified commit. Restores account level-up queue `ACC_UPS` on failure.
-4. Runs all existing campaign, Journey, Raid, Conquest, Trial and event settlement calculations, including RNG/pity, on that snapshot. `cqFinish` no longer writes its intermediate subset.
-5. Uses the existing `persist()` ONLY ONCE after computing account XP. Mandatory gate routes this to `writer.commit` / B1 checkpoint (backup first, exact primary readback); no parallel persistence engine.
+3. Defers `rewardHooks.unlock` and `rewardHooks.shardConv` presentation side effects until successful verified commit. Failed realms are blocked and discarded rather than flushing transient account level-up UI.
+4. Runs all existing campaign, Journey, Raid, Conquest, Trial and event settlement calculations, including RNG/pity, on that snapshot. The historical byte-frozen `cqFinish` still calls `persist()`, but a RAM-only writer settlement guard defers this nested request (no storage write or UI hook).
+5. Calls `writer.finishSettlement()` after computing account XP: it clears the RAM-only defer guard and invokes the existing `persist()` once. Mandatory gate routes this to `writer.commit` / B1 checkpoint (backup first, exact primary readback); no parallel persistence engine.
 6. Only on `persist().ok` displays battle results and leaves candidate S active; deferred UI hooks fire after confirmation. `BT.done` forbids a duplicate settlement in the same battle object.
-7. On failure/uncertainty, restores the preceding RAM binding and queue, explicitly releases authority, and invokes the already-installed blocked-writer lifecycle, requiring a fresh page. There is no silent retry.
+7. On failure/uncertainty, restores the preceding RAM binding, aborts any deferred settlement, explicitly releases authority, and invokes the already-installed blocked-writer lifecycle, requiring a fresh page. Transient UI queues in the blocked realm are not replayed. There is no silent retry.
 8. In deliberately ungated legacy VM tests, the historical direct path remains; this is NOT permission for the production composition root to skip mandatory gate.
 
 **Limits / safety interpretation:** A single successfully verified `dune-goh-v1` primary contains the *entire* result. Physical filesystem durability is not claimed for `localStorage`, and closing before the synchronous result checkpoint means the battle is **not acknowledged**, rather than magically replayed. An interrupted earlier battle-entry debit may still be stored. A corrupt/ambiguous write requires explicit recovery/reload rather than inferred rollback. No durable transaction-ID yet: it is not justified for one synchronous under-lock result; the existing first-clear flags and runtime `BT.done` protect their respective scopes. A future background battle replay or asynchronous server settlement would require an independently designed idempotency contract and migration.
