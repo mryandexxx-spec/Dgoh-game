@@ -186,5 +186,17 @@ function conqReady(g) {
   reopened.run('loadSave.writer.release()');
   pass('B415', 'ambiguous campaign debit blocks old realm, cold boot does not replay');
 }
-assert.deepEqual(passed, ['B407','B408','B409','B410','B411','B412','B413','B414','B415']);
+// B416: 3D engine loading may have started after a successful entry debit
+// but before BT exists. A second campaign tap cannot charge again.
+{
+  const g = await boot(), before = g.store.get(KEY), old = ram(g);
+  g.run('LAUNCH_WAIT = true; startBattle(3); LAUNCH_WAIT = false');
+  assert.equal(g.store.get(KEY), before);
+  assert.deepEqual(ram(g), old);
+  assert.equal(g.run('BT === null'), true);
+  assert.equal(g.run('loadSave.writer.check().ok'), true);
+  pass('B416', 'asynchronous 3D loading guard blocks duplicate campaign debit');
+  g.run('loadSave.writer.release()');
+}
+assert.deepEqual(passed, ['B407','B408','B409','B410','B411','B412','B413','B414','B415','B416']);
 console.log('ARCH-02C-B4-B2: ' + passed.length + ' entry scenarios passed on ' + html);
