@@ -66,6 +66,10 @@ jobs:
         run: |
           node tests/ci/arch02c-b5a-daily-claims-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b5a-daily-claims-acceptance.mjs dist/artifact.html
+      - name: ARCH-02C-B5b verified login calendar (PWA + HTML)
+        run: |
+          node tests/ci/arch02c-b5b-login-calendar-acceptance.mjs dist/pwa/index.html
+          node tests/ci/arch02c-b5b-login-calendar-acceptance.mjs dist/artifact.html
       - uses: browser-actions/setup-chrome@v1
         id: chrome
         with:
