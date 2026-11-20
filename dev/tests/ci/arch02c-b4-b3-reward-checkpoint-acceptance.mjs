@@ -28,7 +28,7 @@ class Locks {
 }
 async function boot(raw=fixture) {
  const listeners={};
- const g=loadGame(html,{seed:43,onDocumentListener:(type,fn)=>{listeners[type]=fn;},onQuerySelector:selector=>selector==='#simn'?{value:'2',focus(){}}:null});
+ const g=loadGame(html,{seed:43,onDocumentListener:(type,fn)=>{(listeners[type]??=[]).push(fn);},onQuerySelector:selector=>selector==='#simn'?{value:'2',focus(){}}:null});
  g.store.set(KEY,raw);
  g.ctx.navigator={locks:new Locks()};
  const started=await g.run('start({})');
@@ -52,11 +52,12 @@ function raidEnd(g){
  const button={dataset:{raidend:'1'},textContent:''};
  const e={target:{closest(selector){
   return selector==='button, [data-fxu], .unit.tgt, .detail'?button:null;
- }}};
- assert.equal(typeof g.listeners.click,'function');
- g.listeners.click(e);
+ }},preventDefault(){},stopPropagation(){},stopImmediatePropagation(){}};
+ assert.ok(g.listeners.click?.length>0);
+ const click=()=>{for(const handler of g.listeners.click)handler(e);};
+ click();
  assert.equal(button.dataset.confirm,'1');
- g.listeners.click(e);
+ click();
 }
 
 // B417: sim core RNG/shards/pity/quests/account XP and cost are one commit.
