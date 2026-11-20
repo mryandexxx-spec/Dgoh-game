@@ -168,15 +168,48 @@ for(const [id,kind] of [['T12','QuotaExceededError'],['T13','SecurityError']]){
  assert.equal(h.g.store.has(BACKUP),false);
  pass('T15','stale preview rejected without overwriting newer primary');
 }
-// T16: uncommitted working state changes after preview -> no import.
+// T16: background-like RAM change must NOT silently overwrite unsaved
+// progress. The first confirmation opens a distinct explicit consent screen;
+// only the next confirmation may overwrite, under original primary CAS, and
+// the verified predecessor (not uncommitted S) is backed up.
 {
- const h=init(),old=current(h),s=S(h);
- preview(h,changed(h));
+ const h=init(),old=current(h),s=S(h),candidate=changed(h);
+ preview(h,candidate);
  h.g.run('S.solari+=5');confirm(h);
  assert.equal(current(h),old);
  assert.equal(S(h).solari,s.solari+5);
  assert.equal(h.g.store.has(BACKUP),false);
- pass('T16','local working-state drift blocks accidental overwrite');
+ assert.match(h.fields.get('#overlay2').innerHTML,/Несохранённые изменения могут быть потеряны/);
+ assert.match(h.fields.get('#overlay2').innerHTML,/data-saveconfirm/);
+ confirm(h);
+ assert.equal(JSON.parse(current(h)).solari,candidate.solari);
+ assert.equal(JSON.parse(h.g.store.get(BACKUP)).raw,old);
+ pass('T16','background RAM drift requires a third explicit decision and preserves verified predecessor');
+}
+// T16b: if another tab changes the stored save while the drift warning is
+// displayed, even explicit acknowledgement must not defeat CAS.
+{
+ const h=init(),old=current(h),candidate=changed(h);
+ preview(h,candidate);
+ h.g.run('S.water+=1');confirm(h);
+ const outsider=raw({...JSON.parse(old),solari:987654});
+ h.g.store.set(KEY,outsider);
+ confirm(h);
+ assert.equal(current(h),outsider);
+ assert.equal(h.g.store.has(BACKUP),false);
+ pass('T16b','extra RAM-drift consent cannot overwrite concurrent stored progress');
+}
+// T16c: active battle is a hard denial, even for a previously granted
+// drift acknowledgement (explicit import consent is not battle consent).
+{
+ const h=init(),old=current(h);
+ preview(h,changed(h));
+ h.g.run('S.water+=1');confirm(h);
+ h.g.run('BT={done:false}');
+ confirm(h);
+ assert.equal(current(h),old);
+ assert.equal(h.g.store.has(BACKUP),false);
+ pass('T16c','drift acknowledgement cannot bypass active battle refusal');
 }
 // T17: double confirmation cannot replay previous import.
 {
