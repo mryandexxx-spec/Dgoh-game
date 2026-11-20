@@ -201,10 +201,32 @@ function metaClick(d) {
     const pending = pendingSaveImport;
     pendingSaveImport = null; // never reapply same candidate on a second click
     if (!pending) { toast('Сначала проверьте код импорта'); return true; }
-    let matching = false;
-    try { matching = !(BT && !BT.done) && JSON.stringify(S) === pending.memoryRaw; } catch (e) {}
-    if (!matching) {
-      toast('Состояние игры изменилось после проверки. Начните импорт заново.');
+    // Background clocks can update S while the import confirmation is open.
+    // Do not mistake that harmless timing race for a corrupted transfer, but
+    // NEVER silently discard unpersisted progress either. A changed heap
+    // requires a THIRD, explicit user choice warning that the independently
+    // backed-up predecessor is the STORED save, not the latest mutable RAM.
+    if (BT && !BT.done) {
+      toast('Завершите бой перед импортом сохранения.');
+      return true;
+    }
+    let memoryRaw;
+    try { memoryRaw = JSON.stringify(S); } catch (e) {
+      toast('Не удалось проверить состояние игры. Импорт отменён.');
+      return true;
+    }
+    if (memoryRaw !== pending.memoryRaw && !pending.driftApproved) {
+      pendingSaveImport = { ...pending, driftApproved: true };
+      $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true">' +
+        '<h3>Игра обновилась во время подтверждения</h3><p class="sub">' +
+        'Игровое время или другие действия изменили данные в памяти после проверки кода. ' +
+        'Резервная копия перед импортом будет создана из проверенного СОХРАНЕНИЯ, ' +
+        'а не из текущей памяти. Несохранённые изменения могут быть потеряны.' +
+        '</p><p class="sub">Импорт по-прежнему будет отклонён, если сохранение на диске ' +
+        'изменилось или блокировка записи утрачена. Подтвердите замену отдельно.' +
+        '</p><div class="acts"><button class="btn go" data-saveconfirm="1">' +
+        'Подтверждаю замену, включая несохранённые изменения</button>' +
+        '<button class="btn" data-iclose="1" style="margin-left:auto">Отмена</button></div></div></div>';
       return true;
     }
     // Persist under the *same* lease used to load and preview the primary.
