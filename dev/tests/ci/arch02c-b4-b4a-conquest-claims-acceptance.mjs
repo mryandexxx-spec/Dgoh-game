@@ -69,7 +69,7 @@ function claim(g,kind,n){
  const after=disk(g);
  assert.equal(after.conq.tk.s0,1);
  assert.ok(after.solari>old.solari);
- assert.ok(after.jt>old.jt);
+ assert.ok(after.jt>(old.jt || 0));
  assert.equal(writes.filter(k=>k===KEY).length,1);
  assert.equal(JSON.parse(g.store.get(BACKUP)).raw,before);
  assert.deepEqual(ram(g),after);
