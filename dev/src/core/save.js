@@ -1,5 +1,5 @@
 // core/save.js — строки 3151–3201 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
-import { S } from './state.js';
+import { S, set_S } from './state.js';
 import './format.js'; // порядок исполнения
 import { CMAX, WMAX } from '../logic/economy.js';
 import { CHARS } from '../data/chars.js';
@@ -441,6 +441,48 @@ function writerAbortSettlement() {
   writerSettlementActive = false;
   return { ok: true, status: 'aborted' };
 }
+// B4-B2: only synchronous, storage-backed entry mutations may use this.
+// A transaction callback changes ONLY the detached v1 save. It must not
+// launch a battle, show a reward, or perform other UI/external side effects.
+// Return {commit:false,value:reason} for a normal precondition failure.
+function writerTransact(stage) {
+  if (!writerGateEnabled || typeof stage !== 'function')
+    return checkpointFailure('writer-required', 'entry-transaction');
+  const checked = writerCheck();
+  if (!checked.ok) { writerRelease(); return checked; }
+  const previous = S;
+  let candidate;
+  try { candidate = JSON.parse(JSON.stringify(previous)); }
+  catch (e) {
+    writerRelease();
+    return checkpointFailure('serialization', 'entry-snapshot', e);
+  }
+  const begun = writerBeginSettlement();
+  if (!begun.ok) { writerRelease(); return begun; }
+  set_S(candidate);
+  try {
+    const value = stage();
+    if (value && typeof value.then === 'function')
+      throw new Error('entry-transaction-must-be-synchronous');
+    if (value && value.commit === false) {
+      set_S(previous);
+      writerAbortSettlement();
+      return { ok: false, status: 'cancelled', value: value.value };
+    }
+    const committed = writerFinishSettlement();
+    if (!committed.ok) {
+      set_S(previous);
+      writerRelease();
+      return committed;
+    }
+    return { ok: true, status: 'committed', value };
+  } catch (e) {
+    set_S(previous);
+    writerAbortSettlement();
+    writerRelease();
+    return checkpointFailure('transaction-error', 'entry-action', e);
+  }
+}
 let writerLease = null;
 let writerAcquiring = false;
 let writerCancelAcquire = null;
@@ -653,7 +695,7 @@ loadSave.writer = Object.freeze({
   acquire: writerAcquire, state: writerState,
   check: writerCheck, commit: writerCommit, recover: writerRecover,
   beginSettlement: writerBeginSettlement, finishSettlement: writerFinishSettlement,
-  abortSettlement: writerAbortSettlement,
+  abortSettlement: writerAbortSettlement, transact: writerTransact,
   release: writerRelease, enableGate: writerEnableGate,
   onRetired: writerOnRetired
 });
