@@ -50,7 +50,9 @@ function slotBtn(cid, k) {
     ${s.st !== 'eq' ? `<span class="gprog"><i style="width:${Math.min(100, s.have / s.need * 100)}%"></i></span>` : ''}
   </button>`;
 }
-let DETAIL_BACK = null, SQ_LP = 0;
+// A zero timestamp suppresses unrelated clicks during the first 650ms after boot.
+// Only an actual long-press sets SQ_LP to a finite performance.now() value.
+let DETAIL_BACK = null, SQ_LP = -Infinity;
 const SKI = { passive: '<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>', leader: '<path d="M4 18h16l-1.5-9-4 3.5L12 6l-2.5 6.5-4-3.5z" fill="currentColor"/><rect x="4" y="19" width="16" height="2" rx="1" fill="currentColor"/>' };
 function skIcon(d, k) { return skillSvg(d, k); }
 function lvlCost(from, to) { let c = 0; for (let l = from; l < to; l++) c += LVL_COST(l); return c; }
