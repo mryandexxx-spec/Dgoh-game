@@ -58,6 +58,28 @@ registerBaronView(renderBaronJourney);
 
 // ===== battle UI =====
 function startBattle(i) {
+  if (loadSave.writer.state().gated) {
+    // Entry is a separate verified debit, before any battle UI/engine launch.
+    // The old live-S path below remains for the pinned ungated B0 baseline.
+    const result = loadSave.writer.transact(() => {
+      tickWater();
+      const en = nodeEn(i), c = nodeCost(i);
+      const sq = campSquad(i).filter(id => sideOk(NODES[i].camp, id) && prog(id).stars);
+      if (enGet(en) < c) return { commit: false, value: { kind: 'need', en, c } };
+      if (!sq.length) return { commit: false, value: { kind: 'squad' } };
+      enSpend(en, c);
+      return { sq };
+    });
+    if (!result.ok) {
+      if (result.status === 'cancelled' && result.value?.kind === 'need')
+        return openInfo(`need:${result.value.en}:${result.value.c}`);
+      if (result.status === 'cancelled' && result.value?.kind === 'squad')
+        return openSquadSel('camp', i);
+      return; // failed/uncertain checkpoint has already retired the writer
+    }
+    const n = NODES[i];
+    return launch({ mode: 'camp', dlg: !!n.dlg && !S.skipDlg && !S.seenDlg[i], scene: NODE_SCENES[i], i, title: nodeTitle(i), desert: n.desert, squad: result.value.sq, enemy: n.enemy.map(id => enemyProg(id, n.lvl, n.m === 9)) });
+  }
   tickWater();
   const en = nodeEn(i), c = nodeCost(i), sq = campSquad(i).filter(id => sideOk(NODES[i].camp, id) && prog(id).stars);
   if (enGet(en) < c) return openInfo(`need:${en}:${c}`);
