@@ -25,12 +25,15 @@ class Locks {
  }
 }
 async function boot(raw=fixture){
- const overlay={innerHTML:'<p>unclaimed</p>'};
- const g=loadGame(html,{seed:59,onQuerySelector:s=>s==='#overlay'?overlay:null});
+ const overlay={innerHTML:'<p>unclaimed</p>'}, listeners={};
+ const g=loadGame(html,{seed:59,
+  onQuerySelector:s=>s==='#overlay'?overlay:null,
+  onDocumentListener:(type,fn)=>{(listeners[type]??=[]).push(fn);}
+ });
  g.store.set(KEY,raw);g.ctx.navigator={locks:new Locks()};
  assert.equal((await g.run('start({})')).status,'started');
  assert.equal(g.run('loadSave.writer.state().status'),'owned');
- g.overlay=overlay;
+ g.overlay=overlay;g.listeners=listeners;
  return g;
 }
 function prepared(g){
@@ -47,7 +50,17 @@ function spy(g,inject){
  };
  return puts;
 }
-const claim=(g,kind,n)=>g.run("cqVerifiedClaimClick({"+kind+":'"+n+"'})");
+// Dispatch through the real document listener, not directly into the helper:
+ // a reentrant/stale DOM event must be intercepted before frozen cqClick.
+function claim(g,kind,n){
+ const button={dataset:{[kind]:String(n)}};
+ const e={target:{closest:selector=>
+  selector==='button, [data-fxu], .unit.tgt, .detail'?button:null},
+  preventDefault(){},stopPropagation(){},stopImmediatePropagation(){}};
+ assert.ok(g.listeners.click?.length>0);
+ for(const handler of g.listeners.click)handler(e);
+ return true;
+}
 
 // B431: intermediate claim and all grants use exactly one verified checkpoint.
 {
