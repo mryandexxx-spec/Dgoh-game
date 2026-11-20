@@ -194,4 +194,8 @@ const cqHot = () => { if (!S) return false; const C = cq(); return S.acc.lvl >= 
 const cqRfN = () => (S.cqRf && S.cqRf.d === todayKey()) ? S.cqRf.n : 0;
 const cqRfCost = () => refillPrice(cqRfN());
 
+// B4-B4a: stable logic-owned read-only rule access for existing UI imports.
+// Do not alter Conquest formulas, frozen view, named ESM bindings or graph.
+cq.claimRules = () => Object.freeze({ cq, cqCanClaim, cqChest, cqStCan, cqStatic, CQ_CHESTS });
+
 export { cqWeek, cq, cqEn, cqEnSpend, cqEnNext, cqEnTxt, cqSta, cqStaSet, cqStaPen, cqStaCol, cqDiskOn, CQ_DROP, cqDropW, cqDiskPick, cqLegOn, cqCanOn, cqAddDisk, cqNodeDisks, CQ_GOODS, cqGoods, CQ_MEMO, CQ_MEMO_CLR, cqLayout, cqNode, cqFoes, cqLive, cqDifficultyAccess, cqRecordFinalBoss, cqRoute, cqRouteBlocked, cqCommitRoute, cqOpen, cqTypeN, cqTrack, cqStatic, cqChest, cqCanClaim, cqSyncTrack, cqStCan, cqStReady, cqRfN, cqRfCost, cqK, cqModD, cqScore, cqBump, cqHot };

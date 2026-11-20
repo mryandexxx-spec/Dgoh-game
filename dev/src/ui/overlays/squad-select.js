@@ -135,6 +135,10 @@ function sqGo() {
   if (mode === 'journey') { if (!jSelectedReady(JK(), i, a)) return toast('Проверьте требования к героям пути'); const t = JR().tiers[i]; return launch({ mode: 'journey', scene: JR().scenes[i], i, title: `Легенда ${i + 1}. ${t.n}`, desert: t.desert, squad: a.slice(), scriptedMuaddib: i >= 3, enemy: jFoes(JK(), i) }); }
   const R = S.raid; if (!R) return; return launch({ mode: 'raid', scene: RAID_SCENES[R.tier], title: 'Шаи-Хулуд · ' + RAID_TIERS[R.tier].n.split(' · ')[0], squad: a.slice(), boss: { tier: R.tier, hp: R.hp, maxHp: R.maxHp } });
 }
+// B4-B4a: UI-owned, read-only rule seam consumed by events.js.
+// Reuse the existing named import and established ESM edge; do not touch
+// frozen Conquest, or add a module/edge to the independently pinned graph.
+openSquadSel.conquestClaimRules = () => cq.claimRules();
 let SHCONV = 0, SHCONV_T = 0;
 rewardHooks.unlock = id => celebQueue({ type: 'unlock', id });
 rewardHooks.shardConv = n => { SHCONV += n; clearTimeout(SHCONV_T); SHCONV_T = setTimeout(convFlush, 700); };
