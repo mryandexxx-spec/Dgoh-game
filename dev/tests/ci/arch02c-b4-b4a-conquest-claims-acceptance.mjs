@@ -93,7 +93,7 @@ const claim=(g,kind,n)=>g.run("cqVerifiedClaimClick({"+kind+":'"+n+"'})");
 {
  const g=await boot();prepared(g);claim(g,'cqopen',0);
  const raw=g.store.get(KEY),writes=spy(g);
- for(const spec of [-1,0,1000,'NaN','0x1'])claim(g,'cqopen',spec);
+ for(const spec of [-1,0,1000,'NaN','1.2'])claim(g,'cqopen',spec);
  assert.equal(g.store.get(KEY),raw);
  assert.equal(writes.length,0);
  pass('B434','replayed/invalid chest clicks cannot mint another payout');
