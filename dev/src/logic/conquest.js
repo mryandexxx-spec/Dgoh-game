@@ -194,10 +194,37 @@ const cqHot = () => { if (!S) return false; const C = cq(); return S.acc.lvl >= 
 const cqRfN = () => (S.cqRf && S.cqRf.d === todayKey()) ? S.cqRf.n : 0;
 const cqRfCost = () => refillPrice(cqRfN());
 
+// B4b2: read-only *purchase eligibility* mirror of the SHA-frozen Conquest
+// shop view. Expose by lazy rule seam; do not change the pinned ESM export graph.
+// Acceptance asserts key/price/sold parity against frozen cqShopItems().
+// Do not perform any purchase here: write only on writer's detached save.
+function cqShopOffer() {
+  const C = cq(), bought = S.cqShop && S.cqShop.wk === C.wk ? S.cqShop.b : {},
+    own = new Set(C.disks.map(x => x.k)), rng = sRng(ghash(C.wk + 'jshop'));
+  const disks = [];
+  for (const [rarity, count] of [['r', 3], ['l', 2]]) {
+    const pool = Object.keys(CQ_DISKS).filter(k => CQ_DISKS[k].r === rarity);
+    for (let n = 0; n < count && pool.length; n++)
+      disks.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+  }
+  const price = { c: 150, r: 220, l: 480 };
+  return [
+    { key: 'med', price: 30, sold: false },
+    { key: 'med3', price: 80, sold: false },
+    ...disks.map(k => ({
+      key: 'd:' + k, price: price[CQ_DISKS[k].r],
+      sold: !!bought?.['d:' + k] || own.has(k),
+    })),
+  ];
+}
+
 // B4-B4a: stable logic-owned read-only rule access for existing UI imports.
 // Do not alter Conquest formulas, frozen view, named ESM bindings or graph.
 cq.claimRules = () => Object.freeze({ cq, cqCanClaim, cqChest, cqStCan, cqStatic, CQ_CHESTS,
   cqDifficultyAccess, cqDiskPick, cqAddDisk, cqNode, cqNodeDisks, cqOpen, cqCommitRoute,
-  CQ_DISKS, cqRar, notes: NOTES });
+  CQ_DISKS, cqRar, notes: NOTES,
+  cqGoods, cqEn, cqEnSpend, cqCanOn, cqSta, cqStaSet,
+  cqRfN, cqRfCost, CQ_EN, CQ_STA, CQ_DMAX, CQ_MED: 50, CQ_RF_AMT: 50,
+  CQ_REFILL_MAX: 15, cqShopOffer });
 
 export { cqWeek, cq, cqEn, cqEnSpend, cqEnNext, cqEnTxt, cqSta, cqStaSet, cqStaPen, cqStaCol, cqDiskOn, CQ_DROP, cqDropW, cqDiskPick, cqLegOn, cqCanOn, cqAddDisk, cqNodeDisks, CQ_GOODS, cqGoods, CQ_MEMO, CQ_MEMO_CLR, cqLayout, cqNode, cqFoes, cqLive, cqDifficultyAccess, cqRecordFinalBoss, cqRoute, cqRouteBlocked, cqCommitRoute, cqOpen, cqTypeN, cqTrack, cqStatic, cqChest, cqCanClaim, cqSyncTrack, cqStCan, cqStReady, cqRfN, cqRfCost, cqK, cqModD, cqScore, cqBump, cqHot };
