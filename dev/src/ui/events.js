@@ -75,7 +75,7 @@ function cqVerifiedClaimClick(d) {
     const el = document.querySelector(`[data-cqst="${j}"]`);
     if (el) {
       cqPop(el, rr.map(r => '+' + amt(r[0], r[1], r[2] ? 'shard:' + r[2] : undefined)).join(' '));
-      el.outerHTML = `<div class="cqst1 got">${el.innerHTML.replace(/<em>.*?<\\/em>/, '<i>✓</i>')}</div>`;
+      el.outerHTML = `<div class="cqst1 got">${el.innerHTML.replace(/<em>.*?<\/em>/, '<i>✓</i>')}</div>`;
     }
     renderRes();
     return true;
