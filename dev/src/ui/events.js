@@ -131,7 +131,7 @@ function cqVerifiedDiskClick(d) {
     const raw = String(d.cqnd), sep = raw.indexOf(':');
     if (sep < 0 || raw.indexOf(':', sep + 1) >= 0) return true;
     const key = raw.slice(0, sep), disk = raw.slice(sep + 1);
-    if (!/^[0-9]+-[0-9]+-[0-9]+$/.test(key)) return true;
+    if (!/^[0-4]-[0-9]+-[0-9]+$/.test(key)) return true; // 5 deterministic sectors
     tx = loadSave.writer.transact(() => {
       const C = r.cq(), a = r.cqNode(key);
       if (!a || a.type !== 'disk' || C.done[key] || !r.cqOpen(a))
