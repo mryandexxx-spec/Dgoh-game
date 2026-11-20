@@ -28,7 +28,7 @@ class Locks {
 }
 async function boot(raw=fixture) {
  const listeners={};
- const g=loadGame(html,{seed:43,onDocumentListener:(type,fn)=>{listeners[type]=fn;}});
+ const g=loadGame(html,{seed:43,onDocumentListener:(type,fn)=>{listeners[type]=fn;},onQuerySelector:selector=>selector==='#simn'?{value:'2',focus(){}}:null});
  g.store.set(KEY,raw);
  g.ctx.navigator={locks:new Locks()};
  const started=await g.run('start({})');
