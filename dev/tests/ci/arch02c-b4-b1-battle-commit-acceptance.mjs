@@ -41,14 +41,15 @@ const ram = g => JSON.parse(g.run('JSON.stringify(S)'));
 const disk = g => JSON.parse(g.store.get(KEY));
 const life = g => g.run('start.writerLifecycle()');
 function winCampaign(g) {
-  // The real campaign's seeded engine creates a battle, then the test sets
-  // victory exactly as legacy C13 did. Settlement is the unmodified UI path.
+  // The real campaign's seeded engine creates battle #3 (first uncleared
+  // mission in the v1 fixture), then the test sets victory as legacy C13 did.
+  // Settlement is the unmodified UI path.
   g.run(`(()=>{
-    const n=NODES[0], allies=S.squad.map(id=>({id,...S.roster[id]}));
+    const n=NODES[3], allies=S.squad.map(id=>({id,...S.roster[id]}));
     const foes=n.enemy.map(id=>enemyProg(id,n.lvl,n.m===9));
     const b=createBattle(allies,foes,{seed:142,desert:n.desert});
     b.over='A';
-    set_BT({B:b,cfg:{mode:'camp',i:0},i:0,timer:null,done:false});
+    set_BT({B:b,cfg:{mode:'camp',i:3},i:3,timer:null,done:false});
     finish();
   })()`);
 }
@@ -63,7 +64,7 @@ function winCampaign(g) {
   assert.equal(g.run('loadSave(true).status'), 'ok');
   assert.equal(g.run('loadSave.writer.check().ok'), true);
   assert.equal(g.run('BT.done'), true);
-  assert.ok(next.cleared[0] > (old.cleared[0] || 0));
+  assert.ok(next.cleared[3] > (old.cleared[3] || 0));
   assert.ok(next.cry > old.cry);
   assert.equal(ram(g).cry, next.cry);
   assert.deepEqual(ram(g).roster, next.roster);
