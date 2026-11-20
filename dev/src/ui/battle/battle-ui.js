@@ -58,6 +58,7 @@ registerBaronView(renderBaronJourney);
 
 // ===== battle UI =====
 function startBattle(i) {
+  if (loadSave.writer.state().gated && BT && !BT.done) return;
   if (loadSave.writer.state().gated) {
     // Entry is a separate verified debit, before any battle UI/engine launch.
     // The old live-S path below remains for the pinned ungated B0 baseline.
