@@ -81,6 +81,16 @@ async function clickRecoveryPrepare(page,label){
   });
   assert.equal(hit.reachable,true,label+' recovery button hit-test: '+JSON.stringify(hit));
   await page.touchscreen.tap(hit.x,hit.y);
+  // Chromium's trusted touch gesture can deliver the window capture phase
+  // before CDP returns to us, with target/bubble dispatch finishing later.
+  // Do not infer interception from a single immediate read of targetSeen.
+  // Wait for this SAME gesture to reach the button; never click twice.
+  try {
+    await page.waitForFunction(() => window.__recoveryClickAudit?.targetSeen === true,
+      {timeout:3000,polling:25});
+  } catch {
+    // Preserve detailed capture target and writer-state diagnostic below.
+  }
   const audit=await page.evaluate(()=>({
     ...window.__recoveryClickAudit,
     disabledAfter:document.getElementById('save-recover-prepare')?.disabled,
