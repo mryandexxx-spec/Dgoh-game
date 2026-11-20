@@ -96,6 +96,71 @@ function cqVerifiedClaimClick(d) {
   return true;
 }
 
+// ARCH-02C-B4-B4b1: weekly disk grants and their feat notifications
+// settle in ONE verified checkpoint. Frozen ui/views/conq.js is untouched.
+// Rule access is lazy via the existing B4a UI bridge: zero new ESM edges.
+// NOTES is a transient presentation queue outside S; a rejected candidate
+// must not leave an uncommitted feat notification in the live realm.
+function cqVerifiedDiskClick(d) {
+  if (d.cqdiff === undefined && d.cqdisk === undefined && d.cqnd === undefined) return false;
+  if (!loadSave.writer.state().gated) return false; // historical ungated harness
+  const r = openSquadSel.conquestClaimRules();
+  const previousNotes = r.notes.length;
+  let tx;
+  if (d.cqdiff !== undefined) {
+    const diff = String(d.cqdiff);
+    tx = loadSave.writer.transact(() => {
+      const C = r.cq();
+      if (C.diff || !r.cqDifficultyAccess(diff))
+        return { commit: false, value: 'difficulty-unavailable' };
+      C.diff = diff;
+      C.pick = r.cqDiskPick('start');
+      return { notice: null };
+    });
+  } else if (d.cqdisk !== undefined) {
+    const disk = String(d.cqdisk);
+    tx = loadSave.writer.transact(() => {
+      const C = r.cq();
+      if (!C.pick || !C.pick.includes(disk) || C.disks.some(x => x.k === disk))
+        return { commit: false, value: 'disk-unavailable' };
+      r.cqAddDisk(disk);
+      C.pick = null;
+      return { notice: r.cqRar(disk).n + ' диск «' + r.CQ_DISKS[disk].n + '» установлен' };
+    });
+  } else {
+    const raw = String(d.cqnd), sep = raw.indexOf(':');
+    if (sep < 0 || raw.indexOf(':', sep + 1) >= 0) return true;
+    const key = raw.slice(0, sep), disk = raw.slice(sep + 1);
+    if (!/^[0-4]-[0-9]+-[0-9]+$/.test(key)) return true; // 5 deterministic sectors
+    tx = loadSave.writer.transact(() => {
+      const C = r.cq(), a = r.cqNode(key);
+      if (!a || a.type !== 'disk' || C.done[key] || !r.cqOpen(a))
+        return { commit: false, value: 'node-unavailable' };
+      const offered = r.cqNodeDisks(a);
+      if (disk ? !offered.includes(disk) || C.disks.some(x => x.k === disk) : offered.length !== 0)
+        return { commit: false, value: 'disk-not-offered' };
+      let notice = null;
+      if (disk) {
+        r.cqAddDisk(disk);
+        notice = r.cqRar(disk).n + ' диск «' + r.CQ_DISKS[disk].n + '» ' +
+          (C.disks.find(x => x.k === disk).on ? 'надет' : 'отправлен в запас');
+      }
+      C.done[key] = 1;
+      r.cqCommitRoute(a);
+      return { notice };
+    });
+  }
+  if (!tx.ok) {
+    // writer.transact restores detached S, but NOTES lives outside S.
+    // All action stages are synchronous, so no unrelated note can interleave.
+    r.notes.length = previousNotes;
+    return true; // never fall through to the unverified Conquest handler
+  }
+  if (tx.value.notice) toast(tx.value.notice);
+  render(); // only committed choices are acknowledged
+  return true;
+}
+
 // ===== events =====
 document.addEventListener('click', e => {
   const sl = e.target.closest('[data-sqlead]'); if (sl) { const a = sqArr(), k = +sl.dataset.sqlead, id = a[k]; a.splice(k, 1); a.unshift(id); persist(); return renderSquadSel(); }
@@ -111,7 +176,7 @@ document.addEventListener('click', e => {
   if (d.rwok) { const w = $('#rwwin'); if (w) w.remove(); setTimeout(() => { showCeleb(); renderNotes(); }, 50); return; }
   if (recyclerClick(d)) { e.stopImmediatePropagation(); if (d.ixback) render(); return; }
   if (d.ixenter) { closeInfo(true); closeOverlay(); set_view('recycler'); render(); return; }
-  if (metaClick(d) || meta2Click(d) || celebClick(d) || cqVerifiedClaimClick(d) || cqClick(d)) return;
+  if (metaClick(d) || meta2Click(d) || celebClick(d) || cqVerifiedClaimClick(d) || cqVerifiedDiskClick(d) || cqClick(d)) return;
   if (d.bh9Stage !== undefined) { if (selectBaronStage(Number(d.bh9Stage))) render(); return; }
   if (d.bh9Start !== undefined) { const outcome=launchBaronLegend(Number(d.bh9Start)); if (!outcome.ok) toast('Восхождение недоступно: '+outcome.reason); return; }
   if (d.storyEvent) { if(selectStoryEvent(d.storyEvent))render(); return; }

@@ -2,7 +2,7 @@ name: ARCH-02C-B3 mandatory writer fast acceptance
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feature/arch02c-b4-b4a-conquest-claims]
     paths:
       - 'dev/src/**'
       - 'dev/tests/ci/arch02c-**'
@@ -54,6 +54,10 @@ jobs:
         run: |
           node tests/ci/arch02c-b4-b4a-conquest-claims-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b4-b4a-conquest-claims-acceptance.mjs dist/artifact.html
+      - name: ARCH-02C-B4-B4b1 one-time Conquest disk grants (PWA + HTML)
+        run: |
+          node tests/ci/arch02c-b4-b4b1-conquest-disks-acceptance.mjs dist/pwa/index.html
+          node tests/ci/arch02c-b4-b4b1-conquest-disks-acceptance.mjs dist/artifact.html
       - uses: browser-actions/setup-chrome@v1
         id: chrome
         with:
