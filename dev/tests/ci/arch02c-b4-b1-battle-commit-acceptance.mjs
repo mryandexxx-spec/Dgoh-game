@@ -160,7 +160,7 @@ function winCampaign(g) {
   assert.equal(JSON.parse(g.store.get(BACKUP)).raw, before);
   assert.equal(next.conq.done['0-0-0'], 3);
   assert.ok(next.solari > old.solari);
-  assert.ok(next.stats.wins > old.stats.wins);
+  assert.ok(next.stats.wins > (old.stats.wins || 0));
   assert.equal(g.run('loadSave.writer.check().ok'), true);
   g.run('loadSave.writer.release()');
   pass('B406', 'frozen Conquest nested persist deferred into single result/XP checkpoint');
