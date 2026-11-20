@@ -2,7 +2,7 @@ name: ARCH-02C-B3 mandatory writer fast acceptance
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feature/arch02c-b4-b4a-conquest-claims]
     paths:
       - 'dev/src/**'
       - 'dev/tests/ci/arch02c-**'
