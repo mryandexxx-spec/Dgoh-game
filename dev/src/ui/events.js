@@ -56,7 +56,7 @@ import { addRes, grantShards } from '../logic/rewards.js';
 function cqVerifiedClaimClick(d) {
   if (d.cqst === undefined && d.cqopen === undefined) return false;
   if (!loadSave.writer.state().gated) return false; // historical B0 harness
-  const { cq, cqCanClaim, cqChest, cqStCan, cqStatic, CQ_CHESTS } = openSquadSel.conquestClaimRules;
+  const { cq, cqCanClaim, cqChest, cqStCan, cqStatic, CQ_CHESTS } = openSquadSel.conquestClaimRules();
   if (d.cqst !== undefined) {
     const j = Number(d.cqst);
     if (!Number.isInteger(j) || j < 0) return true;
