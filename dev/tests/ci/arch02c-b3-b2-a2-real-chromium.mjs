@@ -58,18 +58,29 @@ async function clickRecoveryPrepare(page,label){
       targetSeen:false,
       windowSeen:false
     };
-    window.addEventListener('click',()=>{window.__recoveryClickAudit.windowSeen=true;},
-      {capture:true,once:true});
+    window.addEventListener('click',e=>{
+      const a=window.__recoveryClickAudit;
+      a.windowSeen=true;a.clickTarget=e.target?.id||e.target?.tagName;
+      a.trusted=e.isTrusted;
+    },{capture:true,once:true});
     probe?.addEventListener('click',()=>{window.__recoveryClickAudit.targetSeen=true;},
       {once:true});
   });
-  // Real user keyboard activation targets the focused native button directly.
-  // At iPhone landscape height Puppeteer's coordinate-based click can land on
-  // the scrollable alert-dialog instead, without activating the button.
-  // Enter exercises the same trusted browser click and production handler,
-  // without bypassing the UI via HTMLElement.click() or calling game internals.
-  await page.focus('#save-recover-prepare');
-  await page.keyboard.press('Enter');
+  // Safari-sized Chrome is a touch viewport. Scroll the actual dialog
+  // control into view, prove hit testing reaches it, then send one trusted
+  // browser touchscreen tap (not HTMLElement.click / a direct game API).
+  const hit=await page.evaluate(()=>{
+    const button=document.getElementById('save-recover-prepare');
+    button.scrollIntoView({block:'center',inline:'center'});
+    const rect=button.getBoundingClientRect();
+    const x=rect.left+rect.width/2,y=rect.top+rect.height/2;
+    const top=document.elementFromPoint(x,y);
+    return {x,y,reachable:top===button||button.contains(top),
+      top:top?.id||top?.outerHTML?.slice(0,160),rect:rect.toJSON(),
+      active:document.activeElement?.id};
+  });
+  assert.equal(hit.reachable,true,label+' recovery button hit-test: '+JSON.stringify(hit));
+  await page.touchscreen.tap(hit.x,hit.y);
   const audit=await page.evaluate(()=>({
     ...window.__recoveryClickAudit,
     disabledAfter:document.getElementById('save-recover-prepare')?.disabled,
