@@ -1,10 +1,6 @@
 // ui/events.js — строки 4473–4621 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { DLG, bPopClose, dlgEnd, dlgNext, doAct, finish, launch, launchBaronLegend, launchStoryUnlock, leaveBattle, openFxPop, playDialog, renderBattle, startBattle, useAbil } from './battle/battle-ui.js';
 import { cqClick, cqPop } from './views/conq.js';
-import { cq, cqCanClaim, cqChest, cqStCan, cqStatic } from '../logic/conquest.js';
-import { CQ_CHESTS } from '../data/conquest-data.js';
-import { MOUSE_SVG } from './mouse.js';
-import { statInc } from '../logic/stat-counters.js';
 import { celebClick, celebQueue, showCeleb } from './overlays/celebrate.js';
 import { meta2Click } from './overlays/battle-settings.js';
 import { renderNotes } from './notifications.js';
@@ -60,6 +56,7 @@ import { addRes, grantShards } from '../logic/rewards.js';
 function cqVerifiedClaimClick(d) {
   if (d.cqst === undefined && d.cqopen === undefined) return false;
   if (!loadSave.writer.state().gated) return false; // historical B0 harness
+  const { cq, cqCanClaim, cqChest, cqStCan, cqStatic, CQ_CHESTS } = openSquadSel.conquestClaimRules;
   if (d.cqst !== undefined) {
     const j = Number(d.cqst);
     if (!Number.isInteger(j) || j < 0) return true;
@@ -89,13 +86,13 @@ function cqVerifiedClaimClick(d) {
     const rw = cqChest(i);
     const pick = rw.any[Math.floor(Math.random() * rw.any.length)];
     cq().tk['c' + i] = 1;
-    if (i === CQ_CHESTS.length - 1) statInc('cqMax');
+    if (i === CQ_CHESTS.length - 1) S.stats.cqMax = (S.stats.cqMax || 0) + 1;
     return giveRewards([...rw.fix, pick]);
   }, giveRewards.presentationHooks);
   if (!tx.ok) return true;
   render();
   const lines = tx.value;
-  $('#overlay').innerHTML = `<div class="result won"><div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${MOUSE_SVG(false)}</div><h3>Сундук Джихада · ◆${CQ_CHESTS[i]}</h3><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><div class="acts" style="justify-content:center"><button class="btn go" data-close="1">Забрать</button></div></div></div>`;
+  $('#overlay').innerHTML = `<div class="result won"><div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${rewardWin.mouseSVG(false)}</div><h3>Сундук Джихада · ◆${CQ_CHESTS[i]}</h3><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><div class="acts" style="justify-content:center"><button class="btn go" data-close="1">Забрать</button></div></div></div>`;
   return true;
 }
 
