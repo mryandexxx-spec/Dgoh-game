@@ -29,8 +29,17 @@ try {
       localStorage.setItem('dune-cine-off', 'true');
       try { Object.defineProperty(navigator, 'serviceWorker', { value: undefined }); } catch {}
     }, fixture);
+    // The mandatory production writer starts asynchronously: the overlay
+    // element can exist while S is still undefined. Test only a confirmed,
+    // active native lease and a finished composition-root bootstrap.
+    await page.bringToFront();
     await page.goto(server.url(path.basename(html)), {waitUntil:'load'});
-    await page.waitForFunction(() => !!document.querySelector('#overlay'), {timeout:30000});
+    await page.waitForFunction(() => {
+      const phase = (0,eval)('start.writerLifecycle()');
+      return phase.armed && !phase.blocked &&
+        phase.reason === 'active' && phase.writer.status === 'owned' &&
+        !!document.querySelector('#overlay');
+    }, {timeout:30000,polling:50});
     await page.evaluate(code => (0, eval)(code), `
       { const p=prog('paul'); p.gear=8; p.eq=[false,false,false,false,false,false];
         S.solari=100000; S.plast=100;

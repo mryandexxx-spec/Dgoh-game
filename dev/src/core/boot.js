@@ -37,16 +37,16 @@ function initialSave(data) {
     // A denied/suspended/lost session never returns stale RAM, however.
     return writerLifecycleBlocked ? undefined : S;
   }
-  if (!writerPreviewReentry &&
-      window.__DGOH_B3_B1C_BOOT_MODE__ === 'writer-preview') {
-    // The historic start() must execute set_S(...) FIRST (ARCH-01C5a).
-    // Do not read storage here: arm exclusive writer asynchronously, return
-    // undefined for the first set_S; a second start() under the held lock
-    // will perform the actual load. Never create a writable fallback account.
+  if (!writerPreviewReentry) {
+    // B3-B1c-B3: EVERY ordinary composition-root start is a writer start.
+    // Preserve the mandatory first set_S(initialSave(data)) AST action.
+    // Never load the primary or create a fallback account before native
+    // exclusive Web Locks acknowledges ownership. No preview flag / opt-out.
     writerPreviewPromise = startWithWriter(data);
     return undefined;
   }
-  if (data && data.save) return data.save; // hot reload compatibility
+  // Reachable only through the private, under-lease startWithWriter reentry.
+  // Injected hot snapshots are rejected before reentry, never trusted here.
   const loaded = loadSave(true);
   if (loaded.status === 'ok') return loaded.save;
   if (loaded.status === 'missing') return newSave();
@@ -55,9 +55,9 @@ function initialSave(data) {
 }
 // B3-B1c-A0: the historical src/boot.js composition root is byte-frozen.
 // ARCH-01C5a requires set_S(...) to remain start()'s FIRST AST statement.
-// The initialSave callback launches the explicitly opted-in writer *without*
+// The initialSave callback launches the mandatory default writer *without*
 // reading persistent bytes; this first call sets S undefined and returns its
-// Promise. The writer re-enters after acquiring Web Locks and reads safely.
+// Promise. Only the under-lease reentry may read saved progress.
 let writerPreviewReentry = false, writerPreviewPromise = null;
 function start(data) {
   set_S(initialSave(data));
@@ -93,8 +93,8 @@ function start(data) {
   startupSucceeded = true;
 }
 
-// ARCH-02C-B3-B1b lifecycle slice. Only the OPT-IN start.writer path
-// installs these guards; production src/boot.js still calls legacy start.
+// ARCH-02C-B3-B1c-B3: every ordinary start() now installs these guards,
+// while the byte-frozen src/boot.js continues invoking the same export.
 // Reuse of suspended/stale in-memory S is strictly forbidden.
 let writerLifecycleArmed = false, writerLifecycleBlocked = false;
 let writerLifecycleReason = 'idle';
@@ -140,6 +140,10 @@ function writerLifecycleArm() {
   metaFill.stopWriterSession = writerLifecycleBlock;
   writerLifecycleBlocked = true; // no gameplay interaction while acquiring
   writerLifecycleReason = 'acquiring';
+  // Visible waiting state contains no save bytes and offers no unsafe input.
+  // On native refusal the normal blocked/recovery UI replaces this screen.
+  try { metaFill.showWriterWaiting(); }
+  catch (e) { /* the gate remains closed even if DOM is unavailable */ }
   const deny = e => {
     if (!writerLifecycleBlocked) return;
     // Only actions inside our diagnostic overlay are permitted (reload,
@@ -183,8 +187,8 @@ function writerLifecycleState() {
   return { armed: writerLifecycleArmed, blocked: writerLifecycleBlocked,
     reason: writerLifecycleReason, writer: loadSave.writer.state() };
 }
-// Explicit opt-in preboot coordination; production entry remains legacy
-// until old cached clients, import/recover and real Safari are gated.
+// Mandatory preboot coordination for every ordinary start(). Legacy v140
+// cached clients are still uncooperative: cutover needs a controlled handoff.
 async function startWithWriter(data = {}) {
   if (startupEntered) return { ok: false, status: 'already-started' };
   if (writerLifecycleArmed) return { ok: false, status: 'session-blocked' };
@@ -201,6 +205,12 @@ async function startWithWriter(data = {}) {
     writerLifecycleBlock('hot-reload-unsupported');
     return { ok: false, status: 'hot-reload-unsupported' };
   }
+  // A background-loaded standalone PWA may never deliver a new
+  // visibilitychange after the gate arms. Never hold a writer in that state.
+  if (document.visibilityState === 'hidden') {
+    writerLifecycleBlock('background-suspended');
+    return { ok: false, status: 'background-suspended' };
+  }
   const acquired = await loadSave.writer.acquire();
   if (!acquired.ok) {
     writerLifecycleBlock(acquired.status);
@@ -211,7 +221,8 @@ async function startWithWriter(data = {}) {
   // export through its blocked-screen rendering.
   writerLifecycleHasOwned = true;
   // A pagehide/freeze can race the asynchronous acquisition acknowledgement.
-  if (writerLifecycleReason !== 'acquiring' ||
+  if (document.visibilityState === 'hidden' ||
+      writerLifecycleReason !== 'acquiring' ||
       loadSave.writer.state().status !== 'owned') {
     writerLifecycleBlock('session-stale');
     return { ok: false, status: 'session-blocked' };
@@ -238,6 +249,9 @@ async function startWithWriter(data = {}) {
   }
   writerLifecycleBlocked = false;
   writerLifecycleReason = 'active';
+  // Never expose gameplay interaction through an acquiring-state overlay.
+  try { metaFill.clearWriterWaiting(); }
+  catch (e) { /* successful ownership/persistence is unaffected */ }
   return { ok: true, status: 'started' };
 }
 // Preserve the historical named-export/ESM initialization ABI.

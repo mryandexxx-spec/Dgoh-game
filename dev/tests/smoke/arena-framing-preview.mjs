@@ -24,7 +24,16 @@ try {
       localStorage.setItem('dune-gfx',JSON.stringify({p,auto:0}));
       try {Object.defineProperty(navigator,'serviceWorker',{value:undefined});}catch(e){}
     },save,gfx);
+    await page.bringToFront();
     await page.goto(srv.url(path.basename(html)),{waitUntil:'load'});
+    // With mandatory native Web Locks, loaded HTML does not imply that
+    // game RAM and the authenticated writer are ready. HIGH WebGL startup
+    // is particularly sensitive to the race with asynchronous boot.
+    await page.waitForFunction(() => {
+      const phase=(0,eval)('start.writerLifecycle()');
+      return phase.armed && !phase.blocked &&
+        phase.reason==='active' && phase.writer.status==='owned';
+    },{timeout:30000,polling:50});
     await page.evaluate(async()=>{
       if(!await loadB3())throw Error('3D unavailable');
       const ids=Object.keys(CH).filter(id=>!CH[id].boss&&prog(id).stars).slice(0,5);
@@ -36,7 +45,21 @@ try {
       ensureCur(BT.B,u); renderBattle();
       for(const el of document.querySelectorAll('.toast'))el.remove();
     });
-    await sleep(1500);
+    // GPU readiness must be established before camera-size measurements.
+    // Keep the original >=75px assertion unchanged; never hide real framing
+    // regressions by lowering the threshold or skipping HIGH.
+    await page.evaluate(async()=>{await BT.arena.scene.whenReadyAsync();});
+    await page.waitForFunction(()=>{
+      const A=BT?.arena;
+      if(!A?.alive || !A.worldHud?.rows?.size) return false;
+      const heroes=Object.values(A.units).filter(o=>!o.dead && o.side==='A');
+      return heroes.length===5 && heroes.every(o=>{
+        const foot=A.project(o.root.position);
+        const head=A.project(o.root.position.add(new __B3.Vector3(0,o.h,0)));
+        return Number.isFinite(foot[1]-head[1]) && foot[1]-head[1]>=75;
+      });
+    },{timeout:30000,polling:100});
+    await sleep(350);
     const results=[];
     const check = async tag=>{
       // Wait for an actually painted layout, not a fixed wall-clock delay.

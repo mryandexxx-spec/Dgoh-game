@@ -334,7 +334,7 @@ for(const [id,kind] of [['S29','QuotaExceededError'],['S30','SecurityError']]){
 }
 // S42: never silently activate the prepared save in live S.
 {
- const g=init();g.run('start({})');
+ const g=init();g.run('set_S(loadSave())'); // isolated old RAM, not default boot
  const was=JSON.parse(g.run('JSON.stringify(S)')).solari;
  const current=g.store.get(KEY);
  const out=commit(g,{expectedRaw:current,candidate:next(current,200)});
@@ -362,10 +362,11 @@ for(const [id,kind] of [['S29','QuotaExceededError'],['S30','SecurityError']]){
  assert.equal(g.store.get(KEY),primary);
  seen('S44','idempotent same-snapshot no-op never rotates backup');
 }
-// S45: demonstrate unchanged legacy v138 write API (not a B1 guarantee).
+// S45: demonstrate historical uncooperative low-level write API only.
+// Never interpret this isolated diagnostic as new mandatory production boot.
 {
  const g=committed(),before=g.store.get(BACKUP);
- g.run('start({})');
+ g.run('set_S(loadSave())'); // legacy low-level compatibility only
  g.run('S.solari+=2');
  assert.equal(g.run('persist0().ok'),true);
  assert.equal(g.store.get(BACKUP),before);

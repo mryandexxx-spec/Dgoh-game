@@ -1,6 +1,6 @@
 // ARCH-02C-B3-B2-A2 — REAL Chromium user-confirmed import & recovery proof.
 // Two genuine same-origin pages, browser-native Web Locks and localStorage,
-// actual compiled PWA and DOM; never a simulated lock manager. Opt-in only.
+// actual compiled PWA and DOM; never a simulated lock manager. Default-gated.
 // Old cached v140 clients remain uncooperative/UNSAFE; Safari still pending.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -39,39 +39,126 @@ async function open({seed=true}={}){
     {timeout:25000,polling:50});
   return page;
 }
-const start=page=>page.evaluate(()=>{
-  window.__DGOH_B3_B1C_BOOT_MODE__='writer-preview';
-  return window.__b3Entry({});
-});
+const start=page=>page.evaluate(()=>window.__b3Entry({}));
 const phase=page=>page.evaluate(()=>window.__b3Entry.writerLifecycle());
 const get=(page,key=KEY)=>page.evaluate(k=>localStorage.getItem(k),key);
 const evaluate=(page,code)=>page.evaluate(source=>(0,eval)(source),code);
 const release=page=>evaluate(page,'loadSave.writer.release()');
+// Exercise the REAL clickable recovery control, not HTMLElement.click()
+// while old browser capture handlers may filter synthetic interactions.
+// Audit the one user gesture without retrying a potentially ambiguous restore.
+async function clickRecoveryPrepare(page,label){
+  await page.evaluate(()=>{
+    const probe=document.getElementById('save-recover-prepare');
+    window.__recoveryClickAudit={
+      connected:!!probe?.isConnected,
+      insideOverlay:!!probe?.closest('#save-writer-blocked'),
+      blockedRoot:!!document.getElementById('save-writer-blocked')?.isConnected,
+      disabled:probe?.disabled,
+      targetSeen:false,
+      windowSeen:false
+    };
+    window.addEventListener('click',e=>{
+      const a=window.__recoveryClickAudit;
+      a.windowSeen=true;a.clickTarget=e.target?.id||e.target?.tagName;
+      a.trusted=e.isTrusted;
+    },{capture:true,once:true});
+    probe?.addEventListener('click',()=>{window.__recoveryClickAudit.targetSeen=true;},
+      {once:true});
+  });
+  // Safari-sized Chrome is a touch viewport. Scroll the actual dialog
+  // control into view, prove hit testing reaches it, then send one trusted
+  // browser touchscreen tap (not HTMLElement.click / a direct game API).
+  const hit=await page.evaluate(()=>{
+    const button=document.getElementById('save-recover-prepare');
+    button.scrollIntoView({block:'center',inline:'center'});
+    const rect=button.getBoundingClientRect();
+    const x=rect.left+rect.width/2,y=rect.top+rect.height/2;
+    const top=document.elementFromPoint(x,y);
+    return {x,y,reachable:top===button||button.contains(top),
+      top:top?.id||top?.outerHTML?.slice(0,160),rect:rect.toJSON(),
+      active:document.activeElement?.id};
+  });
+  assert.equal(hit.reachable,true,label+' recovery button hit-test: '+JSON.stringify(hit));
+  await page.touchscreen.tap(hit.x,hit.y);
+  // Chromium's trusted touch gesture can deliver the window capture phase
+  // before CDP returns to us, with target/bubble dispatch finishing later.
+  // Do not infer interception from a single immediate read of targetSeen.
+  // Wait for this SAME gesture to reach the button; never click twice.
+  try {
+    await page.waitForFunction(() => window.__recoveryClickAudit?.targetSeen === true,
+      {timeout:3000,polling:25});
+  } catch {
+    // Preserve detailed capture target and writer-state diagnostic below.
+  }
+  const audit=await page.evaluate(()=>({
+    ...window.__recoveryClickAudit,
+    disabledAfter:document.getElementById('save-recover-prepare')?.disabled,
+    message:document.getElementById('save-recover-status')?.textContent,
+    phase:window.__b3Entry.writerLifecycle()
+  }));
+  assert.equal(audit.targetSeen,true,label+' recovery click was intercepted: '+JSON.stringify(audit));
+}
 try{
   const a=await open(),denied=await open();
   assert.equal(await a.evaluate(()=>typeof navigator.locks?.request),'function');
+  await a.bringToFront();
+  assert.equal(await a.evaluate(()=>document.visibilityState),'visible');
   assert.equal((await start(a)).status,'started');
-  assert.equal((await start(denied)).status,'busy');
+  assert.equal(await denied.evaluate(name=>
+    navigator.locks.request(name,{mode:'exclusive',ifAvailable:true},lock=>!!lock),
+    KEY+'.writer'),false,
+    'a genuine native game lease must exclude a separate browser tab');
+  const deniedVisibility=await denied.evaluate(()=>document.visibilityState);
+  assert.equal((await start(denied)).status,
+    deniedVisibility==='hidden'?'background-suspended':'busy');
   assert.equal((await phase(denied)).blocked,true);
   const before=await get(a),base=JSON.parse(before).solari;
   const candidate={...JSON.parse(fixture),solari:base+1234};
   // Inspect/confirm through the real source-built UI and event function,
   // NOT an under-the-hood direct checkpoint call.
-  const preview=await a.evaluate(c=>{
+  // Keep preview, exact-byte no-write assertion and explicit confirm in
+  // ONE browser task: a background game timer must not mutate S between two
+  // awaited CDP round-trips. Production deliberately rejects stale previews,
+  // so treating a legitimate memory-changed denial as a save failure made
+  // this test flaky when CI ran many concurrent WebGL jobs.
+  const transfer=await a.evaluate(c=>{
+    const pre=localStorage.getItem('dune-goh-v1');
     metaClick({saveimp:1});
     const field=document.querySelector('#savecode');
     if(!field)throw new Error('missing import textarea');
     field.value=btoa(unescape(encodeURIComponent(JSON.stringify(c))));
     metaClick({saveload:1});
-    return {text:document.querySelector('#overlay2').textContent,
-      hasConfirm:!!document.querySelector('[data-saveconfirm]')};
+    const preview={text:document.querySelector('#overlay2').textContent,
+      hasConfirm:!!document.querySelector('[data-saveconfirm]'),
+      unchanged:localStorage.getItem('dune-goh-v1')===pre};
+    if(!preview.hasConfirm || !preview.unchanged)return {preview};
+    // A game timer can legitimately change RAM while the user reads the
+    // preview. First confirmation must NOT overwrite that working state.
+    S.water += 1;
+    metaClick({saveconfirm:1});
+    const drift={unchanged:localStorage.getItem('dune-goh-v1')===pre,
+      warning:document.querySelector('#overlay2')?.textContent || '',
+      stillOwned:window.__b3Entry.writerLifecycle().writer.status==='owned'};
+    // Third distinct, explicit user choice confirms replacing even unsaved
+    // RAM. The original disk CAS and native lease remain mandatory.
+    metaClick({saveconfirm:1});
+    return {preview,drift,imported:localStorage.getItem('dune-goh-v1'),
+      backup:localStorage.getItem('dune-goh-v1.backup'),
+      phase:window.__b3Entry.writerLifecycle()};
   },candidate);
-  assert.equal(preview.hasConfirm,true,'B2 preview requires an explicit confirm');
-  assert.equal(await get(a),before,'import preview must not write any bytes');
-  await a.evaluate(()=>metaClick({saveconfirm:1}));
-  const imported=await get(a);
+  assert.equal(transfer.preview.hasConfirm,true,
+    'B2 preview requires an explicit confirm');
+  assert.equal(transfer.preview.unchanged,true,
+    'import preview must not write any bytes');
+  assert.equal(transfer.drift.unchanged,true,
+    'first click after RAM drift must not write imported bytes');
+  assert.match(transfer.drift.warning,/Несохранённые изменения могут быть потеряны/);
+  assert.equal(transfer.drift.stillOwned,true,
+    'consent screen must keep native writer protection');
+  const imported=transfer.imported;
   assert.equal(JSON.parse(imported).solari,candidate.solari);
-  assert.equal(JSON.parse(await get(a,BACKUP)).raw,before);
+  assert.equal(JSON.parse(transfer.backup).raw,before);
   assert.equal((await phase(a)).blocked,true,
     'verified import must block all old-RAM gameplay input');
   assert.equal((await evaluate(a,'S.solari += 99; persist0()')).status,'session-stale');
@@ -92,6 +179,11 @@ try{
     new PageTransitionEvent('pagehide',{persisted:false})));
   await fresh.evaluate(()=>localStorage.setItem('dune-goh-v1','{CORRUPTED'));
   const damaged=await open({seed:false});
+  // Native recovery-only leases are intentionally denied in a background
+  // standalone page. A newly created Puppeteer tab may not be foreground.
+  await damaged.bringToFront();
+  assert.equal(await damaged.evaluate(()=>document.visibilityState),'visible',
+    'corrupt-primary manual recovery must be exercised in foreground');
   assert.equal((await start(damaged)).status,'corrupt');
   assert.equal(await get(damaged),'{CORRUPTED');
   assert.equal(await evaluate(damaged,'S === undefined'),true);
@@ -101,11 +193,21 @@ try{
     document.getElementById('save-recover-confirm').hidden),true);
   // Only click 1 may acquire and inspect. The original raw must persist
   // unchanged until click 2.
-  await damaged.evaluate(()=>document.getElementById('save-recover-prepare').click());
+  await clickRecoveryPrepare(damaged,'first');
   await damaged.waitForFunction(()=>{
-    const el=document.getElementById('save-recover-confirm');
-    return el && !el.hidden;
+    const confirm=document.getElementById('save-recover-confirm');
+    const message=document.getElementById('save-recover-status');
+    return (confirm && !confirm.hidden) ||
+      (message && /недоступно|прервана|Перезагрузите страницу|Окно в фоне/.test(message.textContent));
   },{timeout:10000,polling:50});
+  const damagedRecovery=await damaged.evaluate(()=>({
+    approved:!document.getElementById('save-recover-confirm')?.hidden,
+    status:document.getElementById('save-recover-status')?.textContent,
+    visibility:document.visibilityState,
+    phase:window.__b3Entry.writerLifecycle()
+  }));
+  assert.equal(damagedRecovery.approved,true,
+    'manual recovery MUST obtain same-origin native lease: '+JSON.stringify(damagedRecovery));
   assert.equal(await get(damaged),'{CORRUPTED');
   const previewText=await damaged.evaluate(()=>
     document.getElementById('save-recover-preview').textContent);
@@ -147,17 +249,33 @@ try{
   assert.equal(await interrupted.evaluate(()=>document.visibilityState),'visible',
     'the recovery test must exercise a foreground user action');
   assert.equal((await start(interrupted)).status,'corrupt');
-  await interrupted.evaluate(()=>
-    document.getElementById('save-recover-prepare').click());
+  await clickRecoveryPrepare(interrupted,'interrupted');
   // A failed preview is NOT a pass: report its actionable reason instead
   // of hiding a Web Locks/storage/lifecycle bug behind a generic timeout.
-  await interrupted.waitForFunction(()=>{
-    const confirm=document.getElementById('save-recover-confirm');
-    const message=document.getElementById('save-recover-status');
-    return (confirm && !confirm.hidden) ||
-      (message && /недоступно|прервана|Перезагрузите страницу/.test(
-        message.textContent));
-  },{timeout:10000,polling:50});
+  try {
+    await interrupted.waitForFunction(()=>{
+      const confirm=document.getElementById('save-recover-confirm');
+      const message=document.getElementById('save-recover-status');
+      return (confirm && !confirm.hidden) ||
+        (message && /недоступно|прервана|Перезагрузите страницу|Окно в фоне/.test(
+          message.textContent));
+    },{timeout:10000,polling:50});
+  } catch(e) {
+    const debug=await interrupted.evaluate(async ()=>{
+      let nativeLocks;
+      try { nativeLocks=await navigator.locks.query(); }
+      catch(err) { nativeLocks=String(err); }
+      return {
+        visible:document.visibilityState,
+        probeDisabled:document.getElementById('save-recover-prepare')?.disabled,
+        confirmHidden:document.getElementById('save-recover-confirm')?.hidden,
+        message:document.getElementById('save-recover-status')?.textContent,
+        phase:window.__b3Entry.writerLifecycle(),
+        nativeLocks
+      };
+    });
+    throw new Error('interrupted recovery preview never settled: '+JSON.stringify(debug),{cause:e});
+  }
   const interruptedStatus=await interrupted.evaluate(()=>({
     visible:!document.getElementById('save-recover-confirm')?.hidden,
     message:document.getElementById('save-recover-status')?.textContent,

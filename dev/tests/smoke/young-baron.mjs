@@ -23,7 +23,17 @@ try {
       localStorage.setItem('dune-cine-off','true');
       try {Object.defineProperty(navigator,'serviceWorker',{value:undefined});}catch{}
     },save,quality);
+    await p.bringToFront();
     await p.goto(srv.url(path.basename(file)),{waitUntil:'load'});
+    if (tag === 'after') {
+      // Historical baseline has no writer gate; the new PWA does. Avoid
+      // manipulating WebGL models while asynchronous startup still owns boot.
+      await p.waitForFunction(() => {
+        const phase = (0,eval)('start.writerLifecycle()');
+        return phase.armed && !phase.blocked &&
+          phase.reason === 'active' && phase.writer.status === 'owned';
+      }, {timeout:30000,polling:50});
+    }
     await p.evaluate(async()=>{window.openCalendar=()=>{};window.toast=()=>{};window.renderNotes=()=>{};window.__bakePortraits=bakePortraits;window.bakePortraits=()=>{};await loadB3();closeInfo(true);closeOverlay();openDetail('baron');});
     await new Promise(r=>setTimeout(r,2500));
     const summary=await p.evaluate(async tag=>{

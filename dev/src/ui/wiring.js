@@ -201,10 +201,32 @@ function metaClick(d) {
     const pending = pendingSaveImport;
     pendingSaveImport = null; // never reapply same candidate on a second click
     if (!pending) { toast('Сначала проверьте код импорта'); return true; }
-    let matching = false;
-    try { matching = !(BT && !BT.done) && JSON.stringify(S) === pending.memoryRaw; } catch (e) {}
-    if (!matching) {
-      toast('Состояние игры изменилось после проверки. Начните импорт заново.');
+    // Background clocks can update S while the import confirmation is open.
+    // Do not mistake that harmless timing race for a corrupted transfer, but
+    // NEVER silently discard unpersisted progress either. A changed heap
+    // requires a THIRD, explicit user choice warning that the independently
+    // backed-up predecessor is the STORED save, not the latest mutable RAM.
+    if (BT && !BT.done) {
+      toast('Завершите бой перед импортом сохранения.');
+      return true;
+    }
+    let memoryRaw;
+    try { memoryRaw = JSON.stringify(S); } catch (e) {
+      toast('Не удалось проверить состояние игры. Импорт отменён.');
+      return true;
+    }
+    if (memoryRaw !== pending.memoryRaw && !pending.driftApproved) {
+      pendingSaveImport = { ...pending, driftApproved: true };
+      $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true">' +
+        '<h3>Игра обновилась во время подтверждения</h3><p class="sub">' +
+        'Игровое время или другие действия изменили данные в памяти после проверки кода. ' +
+        'Резервная копия перед импортом будет создана из проверенного СОХРАНЕНИЯ, ' +
+        'а не из текущей памяти. Несохранённые изменения могут быть потеряны.' +
+        '</p><p class="sub">Импорт по-прежнему будет отклонён, если сохранение на диске ' +
+        'изменилось или блокировка записи утрачена. Подтвердите замену отдельно.' +
+        '</p><div class="acts"><button class="btn go" data-saveconfirm="1">' +
+        'Подтверждаю замену, включая несохранённые изменения</button>' +
+        '<button class="btn" data-iclose="1" style="margin-left:auto">Отмена</button></div></div></div>';
       return true;
     }
     // Persist under the *same* lease used to load and preview the primary.
@@ -345,10 +367,36 @@ function showSaveRecovery(issue) {
   document.body.appendChild(blocked);
 }
 
-// ARCH-02C-B3-B1b lifecycle UX for explicitly opted-in single-writer mode.
+// ARCH-02C-B3-B1c-B3: visible mandatory preboot waiting state. Rendering
+// this status never reads progress or exposes gameplay before exclusive lease.
+function clearWriterWaiting() {
+  const prior = document.getElementById('save-writer-waiting');
+  if (prior) prior.remove();
+}
+function showWriterWaiting() {
+  clearWriterWaiting();
+  const root = document.createElement('div');
+  root.id = 'save-writer-waiting';
+  root.setAttribute('role', 'status');
+  root.setAttribute('aria-live', 'polite');
+  root.style.cssText = 'position:fixed;inset:0;z-index:1000000;background:#070d16fa;color:#f4e8d6;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:18px;font-family:system-ui,sans-serif;text-align:center;';
+  const panel = document.createElement('section');
+  panel.style.cssText = 'max-width:520px;width:100%;background:#18232f;border:1px solid #b08a56;border-radius:12px;padding:24px;box-sizing:border-box;';
+  const title = document.createElement('h2');
+  title.textContent = 'Проверяем защищённый запуск';
+  title.style.cssText = 'font-size:20px;margin:0 0 12px;color:#f4c987;';
+  const detail = document.createElement('p');
+  detail.textContent = 'Запрашивается эксклюзивный Web Lock. До подтверждения блокировки прогресс не читается, игра не запускается и сохранение не записывается.';
+  detail.style.cssText = 'font-size:14px;line-height:1.5;margin:0;';
+  panel.appendChild(title);
+  panel.appendChild(detail);
+  root.appendChild(panel);
+  document.body.appendChild(root);
+}
+// B3-B1b lifecycle UX is now used by ALL ordinary production starts.
 // The verified export comes from storage, NEVER mutable S; no reset/import.
-// The old production bootstrap does NOT call this mode yet.
 function showWriterBlocked(outcome = {}) {
+  clearWriterWaiting();
   const previous = document.getElementById('save-writer-blocked');
   if (previous) previous.remove();
   const root = document.createElement('div');
@@ -545,6 +593,8 @@ function showWriterBlocked(outcome = {}) {
   document.body.appendChild(root);
 }
 metaFill.showWriterBlocked = showWriterBlocked;
+metaFill.showWriterWaiting = showWriterWaiting;
+metaFill.clearWriterWaiting = clearWriterWaiting;
 
 // Keep the historical 898 public names and ESM export order unchanged.
 // Boot already imports metaFill; this UI-owned diagnostic callback is attached

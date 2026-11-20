@@ -23,7 +23,16 @@ try{
    localStorage.setItem('dune-cine-off','true');
    try{Object.defineProperty(navigator,'serviceWorker',{value:undefined});}catch{}
   },save,p);
+  await page.bringToFront();
   await page.goto(srv.url(path.basename(html)),{waitUntil:'load'});
+  // The compiled PWA starts with an asynchronous exclusive Web Locks lease.
+  // Loading Babylon before gameplay boot is complete can call prog() with S
+  // undefined; a present DOM or loaded script does not establish authority.
+  await page.waitForFunction(() => {
+    const phase = (0,eval)('start.writerLifecycle()');
+    return phase.armed && !phase.blocked &&
+      phase.reason === 'active' && phase.writer.status === 'owned';
+  }, {timeout:30000,polling:50});
   await page.evaluate(async()=>{
    await loadB3();
    launch({mode:'camp',dlg:false,scene:'giedi',i:0,title:'Duncan ultimate',desert:false,
