@@ -151,6 +151,8 @@ function seedFeat(g){
  click(g,'cqnd',spec);
  click(g,'cqnd',spec.split(':')[0]+':'+offered[1]);
  click(g,'cqnd','__invalid__:disk');
+ click(g,'cqnd','999-4-0:'+spec.split(':')[1]);
+ assert.equal(g.run('loadSave.writer.check().ok'),true);
  assert.equal(g.store.get(KEY),raw);
  assert.equal(w.length,0);
  pass('B447','stale/invalid node cannot bypass one-time disk grant');
