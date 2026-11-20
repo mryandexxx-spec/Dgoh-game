@@ -48,7 +48,6 @@ import { amt, fmt } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
 import { quest } from '../../logic/daily.js';
 import { grantShards, rewardHooks } from '../../logic/rewards.js';
-import { ACC_UPS } from '../../logic/account-rules.js';
 import { finishStoryUnlockBattle } from '../../logic/bh94-story-battle.js';
 import { STORY_UNLOCK_EVENTS } from '../../data/bh94-unlock-events.js';
 import { prepareBaronBH9Battle, finishBaronBH9Battle } from '../../logic/baron-bh9-battle.js';
@@ -590,7 +589,7 @@ function finish() {
   // Reward hooks are presentation side effects, not part of the persisted v1
   // record. Hold them until the checkpoint confirms the entire settlement.
   const oldUnlock = rewardHooks.unlock, oldConversion = rewardHooks.shardConv;
-  const pending = [], upsBefore = ACC_UPS.length;
+  const pending = [];
   rewardHooks.unlock = (...args) => { pending.push(() => oldUnlock(...args)); };
   rewardHooks.shardConv = (...args) => { pending.push(() => oldConversion(...args)); };
   let committed = false;
@@ -604,7 +603,6 @@ function finish() {
       // Failed/uncertain commit: restore the last acknowledged RAM snapshot and
       // retire the whole session. NEVER retry with potentially changed bytes.
       set_S(previous);
-      ACC_UPS.length = upsBefore;
       loadSave.writer.release();
     }
   }
