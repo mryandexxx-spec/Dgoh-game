@@ -9,7 +9,6 @@ import { render } from '../router.js';
 import { S } from '../../core/state.js';
 import { loadSave, persist } from '../../core/save.js';
 import { grantFrags } from '../../logic/gear.js';
-import { rewardHooks } from '../../logic/rewards.js';
 import { ROMAN } from '../../logic/economy.js';
 import { portrait } from '../../render2d/figures.js';
 import { living } from '../../logic/battle/engine.js';
@@ -77,7 +76,7 @@ function trialMulti() {
       const current = eligible();
       if (!current.length) return { commit: false, value: 'no-attempts' };
       return { runs: current.map(([T, t, n]) => [T.id, t, n]), lines: trialSimMany(current) };
-    }, rewardHooks);
+    }, giveRewards.presentationHooks);
     if (!tx.ok) return;
     runs = tx.value.runs.map(([id, t, n]) => [TR(id), t, n]);
     lines = tx.value.lines;
@@ -111,7 +110,7 @@ function trialSimClick(spec) {
       if (k <= 0) return { commit: false, value: 'no-attempts' };
       const earned = trialSim(T, t, k);
       return { lines: earned, k, left: trialLeft(T) };
-    }, rewardHooks);
+    }, giveRewards.presentationHooks);
     if (!tx.ok) return;
     ({ lines, k, left } = tx.value);
   } else {
