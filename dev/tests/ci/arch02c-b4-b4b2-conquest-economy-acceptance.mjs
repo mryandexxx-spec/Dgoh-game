@@ -79,6 +79,9 @@ function verified(g,before,keys){
  const parity=g.run("JSON.stringify([cqShopItems().map(x=>({key:x.key,price:x.price,sold:!!x.sold})),cq.claimRules().cqShopOffer()])");
  const [frozen,mirror]=JSON.parse(parity);
  assert.deepEqual(mirror,frozen);assert.equal(frozen.length,7);
+ assert.equal(g.run('cq.claimRules().CQ_MED'),g.run('CQ_MED'));
+ assert.equal(g.run('cq.claimRules().CQ_RF_AMT'),g.run('CQ_RF.amt'));
+ assert.equal(g.run('cq.claimRules().CQ_REFILL_MAX'),g.run('REFILL_MAX'));
  pass('B451','frozen weekly shop stock, prices and ownership match rule mirror');
  g.run('loadSave.writer.release()');
 }
