@@ -87,7 +87,9 @@ jobs:
     needs: plan
     if: ${{ needs.plan.outputs['build'] == 'true' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    # B4-B3b: full compiled PWA + artifact writer/recovery suite now runs
+    # beyond 12 minutes on hosted runners. Keep every check; allow completion.
+    timeout-minutes: 24
     defaults:
       run:
         working-directory: dev
