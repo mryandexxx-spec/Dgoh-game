@@ -1,6 +1,6 @@
 # ARCH-02C-B4-B1 — battle settlement audit and first checkpoint integration
 
-Date: 2026-11-20. Base: `main=667dac3070c842d8fb68db4dc2daab5aa6950651` (published v141 after PR #217). Branch `feature/arch-02c-b4-b1-battle-settlement-20261120`. **CANDIDATE / NO MERGE / NO RELEASE.**
+Date: 2026-11-20. Base: `main=667dac3070c842d8fb68db4dc2daab5aa6950651` (published main after PR #217; `dev/version.json` is still v140). Branch `feature/arch-02c-b4-b1-battle-settlement-20261120`. **CANDIDATE / NO MERGE / NO RELEASE.**
 
 ## Ground truth / constraints
 
@@ -60,4 +60,4 @@ Full exact-head CI must continue to enforce PWA/artifact acceptance, B0 historic
 
 **Not complete in B4-B1:** battle *entry* must not launch if debit is unconfirmed; manual raid cash-out; all sim paths; Conquest chest/claim paths; replay-safe battle identity if later persisted midbattle; no rank PvP verified; legacy lower-level tests remain intentionally unsafe. Propose separate focused B4-B2/B4-B3 slices; do not claim full B4 safety from B4-B1 or erase B0 baseline.
 
-**Hard hold:** no merge, v142, publish, PWA uninstall/reinstall, site-data clear, change to existing checkpoint/backup import/recovery, balance/RNG configuration or golden fixtures without owner authorization.
+**Hard hold:** no merge, version bump, publish, PWA uninstall/reinstall, site-data clear, change to existing checkpoint/backup import/recovery, balance/RNG configuration or golden fixtures without owner authorization.
