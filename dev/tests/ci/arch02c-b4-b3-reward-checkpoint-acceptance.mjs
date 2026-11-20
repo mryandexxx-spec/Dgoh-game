@@ -128,7 +128,7 @@ function raidEnd(g){
  assert.equal(writes.filter(k=>k===KEY).length,1);
  assert.equal(JSON.parse(g.store.get(BACKUP)).raw,before);
  assert.ok(after.water<old.water);
- assert.ok(after.stats.wins>old.stats.wins);
+ assert.ok(after.stats.wins>(old.stats.wins||0));
  pass('B421','regular campaign simulation persists before result overlay');
  g.run('loadSave.writer.release()');
 }
