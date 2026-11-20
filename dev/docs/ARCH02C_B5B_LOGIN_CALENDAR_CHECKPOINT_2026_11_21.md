@@ -23,7 +23,7 @@ Reviewed `dev/CHANGES_STATUS.md`, `dev/ARCHITECTURE.md`, ARCH-02C B1–B4 and B5
 
 ## Acceptance and CI
 
-New `dev/tests/ci/arch02c-b5b-login-calendar-acceptance.mjs` contains **B515–B531**, required on both compiled `dist/pwa/index.html` and `dist/artifact.html` in Fast + Full Validate:
+New `dev/tests/ci/arch02c-b5b-login-calendar-acceptance.mjs` contains **B515–B532**, required on both compiled `dist/pwa/index.html` and `dist/artifact.html` in Fast + Full Validate:
 - one successful day-one verified token/reward/checkpoint; repeated same day; stale modal after midnight;
 - read-only month rollover preview, atomic month reset and next reward;
 - backwards month and same-month future claim date;
@@ -31,6 +31,8 @@ New `dev/tests/ci/arch02c-b5b-login-calendar-acceptance.mjs` contains **B515–B
 - uncertain after-primary write and cold boot no replay; regular cold boot idempotency; loss of Web Locks;
 - shard conversion presentation hook rollback on failed commit and exactly once after success;
 - exact original crystal reward day 10, final-day shards+Water of Life, completed-month cap.
+
+Existing first-boot v1 golden expects empty `login.m` to be initialized during startup. `loginCan.prepareBoot()` is invoked from `core/boot.js` before its already verified `persist()` to maintain that exact historical snapshot WITHOUT changing goldens or introducing a new ESM edge; pre-existing nonempty month records are not reset by the boot helper. B532 proves the v1 bootstrap month is durable.
 
 Old B0 historical ungated checks and B5a acceptance remain required; no updated golden, release, PWA reinstall, pricing or RNG change. Final merge requires owner approval and **both CI SUCCESS on exact PR HEAD**. Physical Safari/offline/time shift test remains open.
 

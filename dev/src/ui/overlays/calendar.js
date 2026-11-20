@@ -48,6 +48,12 @@ const loginCan = () => {
     L.n < monthDays() && L.last !== day &&
     !(Number.isFinite(previousDay) && previousDay > currentDay);
 };
+// The original v1 boot initializes a previously absent login month. Preserve
+// that golden-compatible initialization IN the existing verified boot persist,
+// while leaving every real cross-month rollover read-only until its claim.
+loginCan.prepareBoot = () => {
+  if (loadSave.writer.state().gated && !S.login.m) S.login.m = monthKey();
+};
 function loginReward(day) {
   const h = monthHero(), last = monthDays();
   if (day === last) return [['shard', 25, h], ['wol', 1]];

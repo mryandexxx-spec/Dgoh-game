@@ -262,5 +262,16 @@ function spy(g,fail=null){
  pass('B531','fully claimed month refuses overflow beyond monthDays');
  g.run('loadSave.writer.release()');
 }
-assert.deepEqual(passed,Array.from({length:17},(_,i)=>'B'+(515+i)));
+// B532: new/legacy v1 snapshots still initialize the login month in boot.
+{
+ const g=await boot();
+ const after=disk(g);
+ assert.equal(after.login.m,'2026-11');
+ assert.equal(after.login.n,0);
+ assert.equal(after.login.last,'');
+ assert.deepEqual(ram(g),after);
+ pass('B532','empty legacy login month is initialized by verified boot checkpoint');
+ g.run('loadSave.writer.release()');
+}
+assert.deepEqual(passed,Array.from({length:18},(_,i)=>'B'+(515+i)));
 console.log('ARCH-02C-B5b: '+passed.length+' login-calendar cases on '+html);
