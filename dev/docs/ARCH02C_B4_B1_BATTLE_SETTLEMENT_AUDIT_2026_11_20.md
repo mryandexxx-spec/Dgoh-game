@@ -55,6 +55,7 @@ New `dev/tests/ci/arch02c-b4-b1-battle-commit-acceptance.mjs` runs real compiled
 - B403 backup quota denies primary overwrite, restores RAM, blocks old session;
 - B404 explicit lost lock prevents a stale finish;
 - B405 write-then-throw uncertainty blocks old realm, cold reload sees precisely stored bytes with no automatic replay.
+- B406 frozen Conquest `cqFinish()` nested persist defers; one byte-verified primary and backup covers loot, stars, feats, and XP.
 
 Full exact-head CI must continue to enforce PWA/artifact acceptance, B0 historical characterization, B1/B2/B3, architecture strict and immutable ESM boundaries, golden battles and saves, Campaign 210, screenshots, real Chromium Web Locks, offline/SW and final gate. **Never mark this PR green before checking the actual jobs.** Physical iPhone Safari remains owner acceptance after a separate release approval.
 
