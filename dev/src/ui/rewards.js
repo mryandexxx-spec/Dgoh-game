@@ -8,7 +8,7 @@ import { amt } from '../core/format.js';
 import { $ } from '../core/dom.js';
 import { itemIcon } from './common.js';
 import { ITEMS } from '../logic/gear.js';
-import { accGain, applyRewards } from '../logic/rewards.js';
+import { accGain, applyRewards, rewardHooks } from '../logic/rewards.js';
 
 // ===== rewards helper =====
 function rewardWin(title, lines, o = {}) {
@@ -49,6 +49,9 @@ function rewardWin(title, lines, o = {}) {
 function giveRewards(list) {
   return applyRewards(list).map(r => r.k === 'shard' ? `+${amt('shard', r.q, 'shard:' + r.id)} ${CH[r.id].sn}${r.unlocked ? ' — персонаж открыт!' : ''}` : `+${amt(r.k, r.q)} ${RW_NAME[r.k]}`);
 }
+// UI-owned presentation bridge for staged payouts; existing named API and
+// static ESM graph remain unchanged (ARCH-01C3b2 1001-edge invariant).
+giveRewards.presentationHooks = rewardHooks;
 const rewardsHtml = list => rwGrid(list, { sm: 1 });
 function accXP(n) { return accGain(n).map(L => `<b class="acclv">Уровень аккаунта ${L}!</b>`); }
 function fragLines(list) {
