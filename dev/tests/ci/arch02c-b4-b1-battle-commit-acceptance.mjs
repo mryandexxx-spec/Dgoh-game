@@ -137,5 +137,34 @@ function winCampaign(g) {
   pass('B405', 'ambiguous after-write blocks old realm; cold boot does not replay result');
 }
 
-assert.deepEqual(passed, ['B401', 'B402', 'B403', 'B404', 'B405']);
-console.log('ARCH-02C-B4-B1: 5 battle checkpoint scenarios passed on ' + html);
+// B406: the real frozen Conquest finish calls persist() internally. Its
+// request must be deferred, with stars/loot/feats AND XP in ONE primary write.
+{
+  const g = await boot();
+  g.run("cq().diff='easy'; persist()");
+  const before = g.store.get(KEY), old = ram(g), writes = [];
+  const setter = g.ctx.localStorage.setItem;
+  g.ctx.localStorage.setItem = (k, v) => { writes.push(k); return setter(k, v); };
+  g.run(`(()=>{
+    const a=cqNode('0-0-0'), live=cqLive(a), squad=S.squad.slice();
+    const allies=squad.map(id=>({id,...S.roster[id]}));
+    const b=createBattle(allies,live.foes,{seed:142});
+    b.over='A';
+    set_BT({B:b,cfg:{mode:'conq',i:a.key,squad,
+      cq:{key:a.key,mods:a.mods,idx:live.idx,fresh:true}},
+      i:a.key,timer:null,done:false});
+    finish();
+  })()`);
+  const next = disk(g);
+  assert.equal(writes.filter(k => k === KEY).length, 1, 'exactly one primary commit, including nested Conquest request');
+  assert.equal(JSON.parse(g.store.get(BACKUP)).raw, before);
+  assert.equal(next.conq.done['0-0-0'], 3);
+  assert.ok(next.solari > old.solari);
+  assert.ok(next.stats.wins > old.stats.wins);
+  assert.equal(g.run('loadSave.writer.check().ok'), true);
+  g.run('loadSave.writer.release()');
+  pass('B406', 'frozen Conquest nested persist deferred into single result/XP checkpoint');
+}
+
+assert.deepEqual(passed, ['B401', 'B402', 'B403', 'B404', 'B405', 'B406']);
+console.log('ARCH-02C-B4-B1: 6 battle checkpoint scenarios passed on ' + html);
