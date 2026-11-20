@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "framework": null,
+  "buildCommand": "cd dev && npm ci && npm run build",
+  "outputDirectory": "dev/dist/pwa"
+}
