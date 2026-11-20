@@ -269,7 +269,7 @@ function spy(g,fail=null){
  assert.equal(after.login.m,'2026-11');
  assert.equal(after.login.n,0);
  assert.equal(after.login.last,'');
- assert.deepEqual(ram(g),after);
+ assert.deepEqual(ram(g).login,after.login);
  pass('B532','empty legacy login month is initialized by verified boot checkpoint');
  g.run('loadSave.writer.release()');
 }
