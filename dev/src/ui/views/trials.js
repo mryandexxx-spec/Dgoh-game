@@ -7,8 +7,9 @@ import { openSquadSel } from '../overlays/squad-select.js';
 import { accXP, fragLines, giveRewards, rewardWin } from '../rewards.js';
 import { render } from '../router.js';
 import { S } from '../../core/state.js';
-import { persist } from '../../core/save.js';
+import { loadSave, persist } from '../../core/save.js';
 import { grantFrags } from '../../logic/gear.js';
+import { rewardHooks } from '../../logic/rewards.js';
 import { ROMAN } from '../../logic/economy.js';
 import { portrait } from '../../render2d/figures.js';
 import { living } from '../../logic/battle/engine.js';
@@ -66,10 +67,27 @@ function renderTrials() {
     <div class="trcards">${cards}</div>
     <div class="trdetail"><div class="trdh"><h3>${sel.n}</h3><span class="tag">${sel.note}</span>${open ? `<span class="tag ok">Сегодня открыто · попыток ${left}/${TRIAL_RUNS}</span>` : `<span class="tag">Закрыто сегодня · открыто: ${sel.days.map(d => DAYS_RU[d]).join(', ')}</span>`}${sel.hero ? `<span class="tag">Герой недели: ${CH[sel.hero()].sn}</span>` : ''}</div>${tiers}</div>`;
 }
+// Normal Web Locks boot: all today's attempts, RNG and rewards settle together.
 function trialMulti() {
-  const list = TRIALS.filter(T => trialOpen(T) && trialLeft(T) > 0 && trialBest3(T) >= 0); if (!list.length) return;
-  const runs = list.map(T => [T, trialBest3(T), trialLeft(T)]), lines = trialSimMany(runs);
-  persist(); render();
+  const eligible = () => TRIALS.filter(T => trialOpen(T) && trialLeft(T) > 0 && trialBest3(T) >= 0)
+    .map(T => [T, trialBest3(T), trialLeft(T)]);
+  let runs, lines;
+  if (loadSave.writer.state().gated) {
+    const tx = loadSave.writer.transact(() => {
+      const current = eligible();
+      if (!current.length) return { commit: false, value: 'no-attempts' };
+      return { runs: current.map(([T, t, n]) => [T.id, t, n]), lines: trialSimMany(current) };
+    }, rewardHooks);
+    if (!tx.ok) return;
+    runs = tx.value.runs.map(([id, t, n]) => [TR(id), t, n]);
+    lines = tx.value.lines;
+  } else {
+    runs = eligible();
+    if (!runs.length) return;
+    lines = trialSimMany(runs);
+    persist();
+  }
+  render();
   rewardWin(`Мультисимуляция ×${runs.reduce((a, r) => a + r[2], 0)}`, lines, { sub: runs.map(([T, t, k]) => `${T.short} · ${ROMAN[t + 1]} ×${k}`).join('<br>'), ok: 'Готово' });
 }
 function trialGo(spec) {
@@ -78,10 +96,32 @@ function trialGo(spec) {
   openSquadSel('trial', T.ix * 10 + t);
 }
 function trialSimClick(spec) {
-  const [id, ts, ks] = spec.split(':'), T = TR(id), t = +ts, k = Math.min(+ks || 1, trialLeft(T));
-  if (!trialOpen(T) || k <= 0 || trialStars(T, t) !== 3) return;
-  const lines = trialSim(T, t, k); persist(); render();
-  const left = trialLeft(T);
+  const [id, ts, ks] = spec.split(':'), T = TR(id), t = +ts;
+  if (!T || !Number.isInteger(t) || t < 0 || t >= TRIAL_LVL.length) return;
+  const requested = ks === undefined ? 1 : Number(ks);
+  if (!Number.isInteger(requested) || requested < 1) return;
+  let lines, k, left;
+  if (loadSave.writer.state().gated) {
+    const tx = loadSave.writer.transact(() => {
+      // Re-check daily reset, star unlock and today's remaining attempts on
+      // the isolated candidate; a stale button cannot mint extra rewards.
+      if (!trialOpen(T) || trialStars(T, t) !== 3 || !tierOpen(T, t))
+        return { commit: false, value: 'locked' };
+      k = Math.min(requested, trialLeft(T));
+      if (k <= 0) return { commit: false, value: 'no-attempts' };
+      const earned = trialSim(T, t, k);
+      return { lines: earned, k, left: trialLeft(T) };
+    }, rewardHooks);
+    if (!tx.ok) return;
+    ({ lines, k, left } = tx.value);
+  } else {
+    k = Math.min(requested, trialLeft(T));
+    if (!trialOpen(T) || k <= 0 || trialStars(T, t) !== 3) return;
+    lines = trialSim(T, t, k);
+    persist();
+    left = trialLeft(T);
+  }
+  render();
   rewardWin(`Симуляция ×${k}`, lines, { sub: `${T.short} · ур. ${ROMAN[t + 1]} · осталось попыток: ${left}`, ok: 'Готово',
     btns: left > 0 ? `<button class="btn go" data-trsim="${T.id}:${t}:${left}">Ещё ×${left}</button>` : '' });
 }
