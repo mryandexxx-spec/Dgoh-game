@@ -8,7 +8,7 @@ import { SPOT_ICONS } from '../views/lobby.js';
 import { openInfo } from './info.js';
 import { glyph, renderRes, toast } from '../common.js';
 import { campSquad, enGet, nodePower, prog, reqFacOk, reqMissing, reqText, sideOk, unlockedIds } from '../../logic/progress.js';
-import { S, tickWater } from '../../core/state.js';
+import { BT, S, tickWater } from '../../core/state.js';
 import { loadSave, persist } from '../../core/save.js';
 import { TIER_COL } from '../../logic/gear.js';
 import { RAID_SCENES, ROMAN, enemyProg } from '../../logic/economy.js';
@@ -95,6 +95,7 @@ function renderSquadSel() {
   sceneThumb($('#overlay .sqbg')); renderRes();
 }
 function sqGo() {
+  if (loadSave.writer.state().gated && BT && !BT.done) return;
   if (loadSave.writer.state().gated && !loadSave.writer.check().ok) {
     loadSave.writer.release();
     return; // never open a new battle after lease loss
