@@ -205,7 +205,7 @@ for(const [id,kind] of [['T12','QuotaExceededError'],['T13','SecurityError']]){
  const h=init(),old=current(h);
  preview(h,changed(h));
  h.g.run('S.water+=1');confirm(h);
- h.g.run('BT={done:false}');
+ h.g.run('set_BT({done:false})');
  confirm(h);
  assert.equal(current(h),old);
  assert.equal(h.g.store.has(BACKUP),false);
