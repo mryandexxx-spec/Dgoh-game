@@ -123,9 +123,17 @@ try{
       hasConfirm:!!document.querySelector('[data-saveconfirm]'),
       unchanged:localStorage.getItem('dune-goh-v1')===pre};
     if(!preview.hasConfirm || !preview.unchanged)return {preview};
-    // Second explicit UI action, same synchronous browser task.
+    // A game timer can legitimately change RAM while the user reads the
+    // preview. First confirmation must NOT overwrite that working state.
+    S.water += 1;
     metaClick({saveconfirm:1});
-    return {preview,imported:localStorage.getItem('dune-goh-v1'),
+    const drift={unchanged:localStorage.getItem('dune-goh-v1')===pre,
+      warning:document.querySelector('#overlay2')?.textContent || '',
+      stillOwned:window.__b3Entry.writerLifecycle().writer.status==='owned'};
+    // Third distinct, explicit user choice confirms replacing even unsaved
+    // RAM. The original disk CAS and native lease remain mandatory.
+    metaClick({saveconfirm:1});
+    return {preview,drift,imported:localStorage.getItem('dune-goh-v1'),
       backup:localStorage.getItem('dune-goh-v1.backup'),
       phase:window.__b3Entry.writerLifecycle()};
   },candidate);
@@ -133,6 +141,11 @@ try{
     'B2 preview requires an explicit confirm');
   assert.equal(transfer.preview.unchanged,true,
     'import preview must not write any bytes');
+  assert.equal(transfer.drift.unchanged,true,
+    'first click after RAM drift must not write imported bytes');
+  assert.match(transfer.drift.warning,/Несохранённые изменения могут быть потеряны/);
+  assert.equal(transfer.drift.stillOwned,true,
+    'consent screen must keep native writer protection');
   const imported=transfer.imported;
   assert.equal(JSON.parse(imported).solari,candidate.solari);
   assert.equal(JSON.parse(transfer.backup).raw,before);
