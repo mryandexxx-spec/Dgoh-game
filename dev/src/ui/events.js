@@ -404,9 +404,9 @@ document.addEventListener('click', e => {
   if (d.fullscr) { const el = document.documentElement; Promise.resolve(el.requestFullscreen && el.requestFullscreen()).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {}).finally(() => { $('#rotate').hidden = true; }); return; }
   if (d.cal) return openCalendar();
   if (d.calclaim) return claimLogin();
-  if (d.qclaim) return claimQuest(d.qclaim);
-  if (d.qall) { const L = []; for (const q of DAILY) if (qState(q) === 'done') L.push(...(claimQuest(q.k, true) || [])); refreshAll(); if (L.length) rewardWin('Задания дня', L); return; }
-  if (d.qchest) return claimChest();
+  if (d.qclaim) return claimQuest(d.qclaim, false, claimQuest.renderedDay);
+  if (d.qall) return claimQuest.all(claimQuest.renderedDay);
+  if (d.qchest) return claimChest(claimChest.renderedDay);
   if (d.sqgo) return sqGo();
   if (d.sqback) { set_SQ(null); closeOverlay(); render(); return; }
   if (d.sqclear) { sqArr().length = 0; persist(); return renderSquadSel(); }

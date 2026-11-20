@@ -56,6 +56,9 @@ function giveRewards(list) {
 giveRewards.presentationHooks = rewardHooks;
 const rewardsHtml = list => rwGrid(list, { sm: 1 });
 function accXP(n) { return accGain(n).map(L => `<b class="acclv">Уровень аккаунта ${L}!</b>`); }
+// Transient level-up presentation queue is not part of S; B5a must roll back
+// additions from a denied reward transaction without adding an ESM edge.
+accXP.pendingQueue = accGain.pendingQueue;
 function fragLines(list) {
   const agg = {};
   for (const [id,q] of list) agg[id] = (agg[id] || 0) + q;
