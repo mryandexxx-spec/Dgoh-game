@@ -58,7 +58,9 @@ registerBaronView(renderBaronJourney);
 
 // ===== battle UI =====
 function startBattle(i) {
-  if (loadSave.writer.state().gated && BT && !BT.done) return;
+  // 3D loader can be pending before BT exists: an earlier debit is already
+  // committed, so a second tap must not create another entry transaction.
+  if (loadSave.writer.state().gated && (LAUNCH_WAIT || (BT && !BT.done))) return;
   if (loadSave.writer.state().gated) {
     // Entry is a separate verified debit, before any battle UI/engine launch.
     // The old live-S path below remains for the pinned ungated B0 baseline.
@@ -97,6 +99,7 @@ function launch(cfg) {
       !Number.isInteger(cfg.prepared.stageIndex))) return;
   if (!HAS3D && HAS_GL && !B3_TRIED) {   // фаза 4: чанк Babylon ещё грузится — бой ждёт его (2D-бой не подставляем)
     if (LAUNCH_WAIT) return; LAUNCH_WAIT = true;
+    set_SQ(null); // loading screen replaces selector; reject duplicate taps
     $('#overlay').innerHTML = `<div class="battle b3load"><div class="b3spin">Загрузка 3D…</div></div>`;
     loadB3().then(() => { LAUNCH_WAIT = false; B3_TRIED = true; launch(cfg); });   // не загрузился — 2D-бой
     return;
