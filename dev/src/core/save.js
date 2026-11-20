@@ -445,7 +445,7 @@ function writerAbortSettlement() {
 // A transaction callback changes ONLY the detached v1 save. It must not
 // launch a battle, show a reward, or perform other UI/external side effects.
 // Return {commit:false,value:reason} for a normal precondition failure.
-function writerTransact(stage) {
+function writerTransact(stage, presentationHooks = null) {
   if (!writerGateEnabled || typeof stage !== 'function')
     return checkpointFailure('writer-required', 'entry-transaction');
   const checked = writerCheck();
@@ -459,7 +459,20 @@ function writerTransact(stage) {
   }
   const begun = writerBeginSettlement();
   if (!begun.ok) { writerRelease(); return begun; }
+  // B4-B3: hooks are supplied by the UI; core knows nothing about rewards.
+  // Queue *presentation only*, never show an unlock/shard toast on failed IO.
+  const hookQueue = [], savedHooks = [];
+  if (presentationHooks) for (const name of ['unlock', 'shardConv']) {
+    if (typeof presentationHooks[name] !== 'function') continue;
+    savedHooks.push([name, presentationHooks[name]]);
+    presentationHooks[name] = (...args) => { hookQueue.push([name, args]); };
+  }
+  const restoreHooks = () => {
+    if (presentationHooks) for (const [name, fn] of savedHooks)
+      presentationHooks[name] = fn;
+  };
   set_S(candidate);
+  let committedValue;
   try {
     const value = stage();
     if (value && typeof value.then === 'function')
@@ -467,21 +480,30 @@ function writerTransact(stage) {
     if (value && value.commit === false) {
       set_S(previous);
       writerAbortSettlement();
+      restoreHooks();
       return { ok: false, status: 'cancelled', value: value.value };
     }
     const committed = writerFinishSettlement();
     if (!committed.ok) {
       set_S(previous);
+      restoreHooks();
       writerRelease();
       return committed;
     }
-    return { ok: true, status: 'committed', value };
+    committedValue = value;
   } catch (e) {
     set_S(previous);
     writerAbortSettlement();
+    restoreHooks();
     writerRelease();
     return checkpointFailure('transaction-error', 'entry-action', e);
   }
+  restoreHooks();
+  for (const [name, args] of hookQueue) {
+    try { presentationHooks[name](...args); }
+    catch (e) { /* durable result succeeded; a visual hook cannot roll it back */ }
+  }
+  return { ok: true, status: 'committed', value: committedValue };
 }
 let writerLease = null;
 let writerAcquiring = false;

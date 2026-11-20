@@ -32,7 +32,7 @@ import { prepareStoryUnlockBattle } from '../logic/bh94-story-battle.js';
 import { toast } from './common.js';
 import { getRes, prog } from '../logic/progress.js';
 import { BT, S, set_view, tickWater, view } from '../core/state.js';
-import { persist } from '../core/save.js';
+import { loadSave, persist } from '../core/save.js';
 import { CRAFT, GEAR_UP_SOL, ITEMS, SHOP_FRAG, grantFrags, raidFrags } from '../logic/gear.js';
 import { MEM, RELIC_MAX, isLegend, relicBuy } from '../logic/relics.js';
 import { BATTLE_WATER, GEAR_COST, LVL_COST, MAX_GEAR, MAX_LVL, RAID_SCENES, ROMAN, RW_NAME, STAR_COST, WMAX, todayKey } from '../logic/economy.js';
@@ -215,7 +215,28 @@ document.addEventListener('click', e => {
   if (false) { const R = S.raid; return launch({ mode: 'raid', scene: RAID_SCENES[R.tier], title: 'Шаи-Хулуд · ' + RAID_TIERS[R.tier].n.split(' · ')[0], squad: S.raidPick.slice(), boss: { tier: R.tier, hp: R.hp, maxHp: R.maxHp } }); }
   if (d.raidend && S.raid) {
     if (t.dataset.confirm !== '1') { t.dataset.confirm = '1'; t.textContent = 'Точно закончить? Нажмите ещё раз'; return; }
-    const pct = raidPct(), tier = S.raid.tier, rw = raidReward(tier, pct, false), rf = raidFrags(tier, pct), cr = Math.floor([5, 12, 25][tier] * pct * .6); S.teeth += rw.teeth; S.plast += rw.pl; S.solari += rw.sol; S.cry += rw.cry; S.folio += rw.folio; S.seal += rw.seal; S.ix_plate = (S.ix_plate || 0) + Math.floor(cr / 2); grantFrags(rf); S.raid = null; persist(); render();
+    // B4-B3: source raid state, partial fraction, loot and raid deletion
+    // belong to ONE checked snapshot. No victory dialog before commit.
+    const settleRaid = () => {
+      if (!S.raid) return { commit: false, value: 'already-ended' };
+      const pct = raidPct(), tier = S.raid.tier, rw = raidReward(tier, pct, false), rf = raidFrags(tier, pct), cr = Math.floor([5, 12, 25][tier] * pct * .6);
+      S.teeth += rw.teeth; S.plast += rw.pl; S.solari += rw.sol; S.cry += rw.cry; S.folio += rw.folio; S.seal += rw.seal;
+      S.ix_plate = (S.ix_plate || 0) + Math.floor(cr / 2);
+      grantFrags(rf);
+      S.raid = null;
+      return { pct, tier, rw, rf, cr };
+    };
+    let settled;
+    if (loadSave.writer.state().gated) {
+      const tx = loadSave.writer.transact(settleRaid);
+      if (!tx.ok) return; // denied/uncertain storage: retire without showing loot
+      settled = tx.value;
+    } else {
+      settled = settleRaid();
+      persist(); // frozen legacy unsafe VM mode, never production
+    }
+    const { pct, tier, rw, rf, cr } = settled;
+    render();
     const lines = [`+${amt('teeth', rw.teeth)} зубов червя`, `+${amt('sol', rw.sol)} соляриев`, `+${amt('pl', rw.pl)} пластали`, `+${amt('cry', rw.cry)} кристаллов`, `+${amt('folio', rw.folio)} фолиантов`, ...(rw.seal ? [`+${amt('seal', rw.seal)} Печать Ландсраада`] : []), ...(cr ? [`+${amt('ix_plate', Math.floor(cr / 2))} плат Икса`] : []), ...fragLines(rf)];
     $('#overlay').innerHTML = `<div class="result won raidres"><div class="box" role="dialog" aria-modal="true">${WORM_BADGE}<h3>Награда рейда</h3><p class="sub" style="margin:0">${RAID_TIERS[tier].n} · снято ${(pct * 100).toFixed(1)}% здоровья червя</p><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><div class="acts" style="justify-content:center"><button class="btn go" data-close="1">Забрать</button><button class="btn" data-toroster="1">Персонажи</button></div></div></div>`;
     return;
