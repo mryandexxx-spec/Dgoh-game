@@ -12,7 +12,7 @@ import { enGet, enSpend, prog } from '../../logic/progress.js';
 import { nextShards } from '../views/squad.js';
 import { unlockNeed } from '../../logic/relics.js';
 import { S, tickWater } from '../../core/state.js';
-import { persist } from '../../core/save.js';
+import { loadSave, persist } from '../../core/save.js';
 import { ITEMS, grantFrags } from '../../logic/gear.js';
 import { CANDLE_REFILL, CRY_WIN, REFILL_AMT, REFILL_MAX, WMAX, campReward, refillCost, refillN, refillPrice, todayKey } from '../../logic/economy.js';
 import { NODES, NODE_SCENES, nodeCost, nodeEn, nodeTitle } from '../../data/campaigns.js';
@@ -21,7 +21,7 @@ import { CH } from '../../data/chars.js';
 import { amt, ic } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
 import { quest } from '../../logic/daily.js';
-import { grantShards } from '../../logic/rewards.js';
+import { grantShards, rewardHooks } from '../../logic/rewards.js';
 
 function refreshAll() {
   render();
@@ -113,13 +113,30 @@ function simulationTiles(r, focusedKey) {
 function doXSim(spec) {
   const [i,kk] = spec.split(':').map(Number);
   if (!Number.isInteger(i) || !NODES[i] || !Number.isInteger(kk) || kk<1 || kk>50 || S.cleared[i]!==3) return;
-  const en=nodeEn(i),cost=kk*nodeCost(i);tickWater();
-  if (enGet(en)<cost) return openInfo(`need:${en}:${cost}`);
-  // Capture focus and recipe from the source lookup, prior to any render.
+  const en=nodeEn(i),cost=kk*nodeCost(i);
+  // Context is read before transaction but cannot mutate S or show rewards.
   const originKey=infoKey, context=itemCtx && ($('#overlay .isheet') || $('#overlay2 .isheet') || originKey?.startsWith('gefrag:') || originKey?.startsWith('gegear:'))
     ? {...itemCtx,itemId:slotState(itemCtx.cid,itemCtx.k).it.id} : null;
-  enSpend(en,cost);
-  const r=simCore(i,kk);persist();
+  let r;
+  if (loadSave.writer.state().gated) {
+    const tx = loadSave.writer.transact(() => {
+      if (S.cleared[i] !== 3) return { commit: false, value: 'locked' };
+      tickWater();
+      if (enGet(en) < cost) return { commit: false, value: 'need' };
+      enSpend(en,cost);
+      return simCore(i,kk);
+    }, rewardHooks);
+    if (!tx.ok) {
+      if (tx.status === 'cancelled' && tx.value === 'need') return openInfo(`need:${en}:${cost}`);
+      return; // no reward presentation on failed/uncertain checkpoint
+    }
+    r=tx.value;
+  } else {
+    tickWater();
+    if (enGet(en)<cost) return openInfo(`need:${en}:${cost}`);
+    enSpend(en,cost);
+    r=simCore(i,kk);persist();
+  }
   const focus=simFocus(originKey,context,r);
   refreshAll();
   if (context?.partId) openItem(context.cid,context.k,context.partId);
@@ -158,12 +175,31 @@ function updSim() {
   $('#simbtn').textContent = `Провести ${k}`;
 }
 function runSim() {
-  const i = simNode, k = +$('#simn').value, en = nodeEn(i), cost = k * nodeCost(i);
-  tickWater();
-  if (enGet(en) < cost) return openInfo(`need:${en}:${cost}`);
-  enSpend(en, cost);
-  const { lines } = simCore(i, k);
-  persist(); render();
+  const i = simNode, k = +$('#simn').value;
+  if (!Number.isInteger(i) || !NODES[i] || !Number.isInteger(k) || k < 1 || k > 50 || S.cleared[i] !== 3) return;
+  const en = nodeEn(i), cost = k * nodeCost(i);
+  let lines;
+  if (loadSave.writer.state().gated) {
+    const tx = loadSave.writer.transact(() => {
+      if (S.cleared[i] !== 3) return { commit: false, value: 'locked' };
+      tickWater();
+      if (enGet(en) < cost) return { commit: false, value: 'need' };
+      enSpend(en, cost);
+      return simCore(i, k);
+    }, rewardHooks);
+    if (!tx.ok) {
+      if (tx.status === 'cancelled' && tx.value === 'need') return openInfo(`need:${en}:${cost}`);
+      return;
+    }
+    lines = tx.value.lines;
+  } else {
+    tickWater();
+    if (enGet(en) < cost) return openInfo(`need:${en}:${cost}`);
+    enSpend(en, cost);
+    lines = simCore(i, k).lines;
+    persist();
+  }
+  render();
   $('#overlay').innerHTML = `<div class="result won"><div class="box" role="dialog" aria-modal="true"><div class="mousewrap">${MOUSE_SVG(false)}</div><h3>Симуляция ×${k}</h3><div style="color:var(--dust)">${nodeTitle(i)} · потрачено ${amt(en, cost)}</div><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><div class="acts" style="justify-content:center"><button class="btn go ${enGet(en) >= nodeCost(i) ? '' : 'lack'}" data-sim="${i}">Ещё симуляции</button><button class="btn" data-close="1">Готово</button></div></div></div>`;
 }
 function simCore(i, k) {
