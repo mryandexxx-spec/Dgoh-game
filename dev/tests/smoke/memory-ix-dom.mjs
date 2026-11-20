@@ -48,8 +48,20 @@ try {
     assert.ok(await page.$('[data-ixkind="ix_plate"]'),width+': categories');
     const initialPlate = await page.evaluate(() => (0,eval)('S.ix_plate'));
     await page.screenshot({path:'dist/ix-' + width + '.png'});
-    await page.click('[data-ixselect="mask2"]');
-    assert.ok(await page.$('[data-ixadd="10"]'),width+': selection modal');
+    // Touch-driven iPhone viewport: make the intended target visible and
+    // verify its actual hit-test before a trusted touchscreen gesture.
+    const target=await page.evaluate(()=>{
+      const el=document.querySelector('[data-ixselect="mask2"]');
+      el.scrollIntoView({block:'center',inline:'center'});
+      const rect=el.getBoundingClientRect();
+      const x=rect.left+rect.width/2,y=rect.top+rect.height/2;
+      const top=document.elementFromPoint(x,y);
+      return {x,y,reachable:top===el||el.contains(top),
+        top:top?.outerHTML?.slice(0,180)};
+    });
+    assert.ok(target.reachable,width+': recycler selection hit-test '+JSON.stringify(target));
+    await page.touchscreen.tap(target.x,target.y);
+    await page.waitForSelector('[data-ixadd="10"]',{timeout:10000});
     await page.click('[data-ixadd="10"]');
     assert.ok(await page.$('[data-ixconfirm]'),width+': quote');
     await page.click('[data-ixconfirm]');
