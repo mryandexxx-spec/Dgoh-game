@@ -9,7 +9,7 @@ import { openInfo } from './info.js';
 import { glyph, renderRes, toast } from '../common.js';
 import { campSquad, enGet, nodePower, prog, reqFacOk, reqMissing, reqText, sideOk, unlockedIds } from '../../logic/progress.js';
 import { S, tickWater } from '../../core/state.js';
-import { persist } from '../../core/save.js';
+import { loadSave, persist } from '../../core/save.js';
 import { TIER_COL } from '../../logic/gear.js';
 import { RAID_SCENES, ROMAN, enemyProg } from '../../logic/economy.js';
 import { JK, JR, jFoes, jSelectedReady } from '../../data/journeys.js';
@@ -95,12 +95,40 @@ function renderSquadSel() {
   sceneThumb($('#overlay .sqbg')); renderRes();
 }
 function sqGo() {
+  if (loadSave.writer.state().gated && !loadSave.writer.check().ok) {
+    loadSave.writer.release();
+    return; // never open a new battle after lease loss
+  }
   const a = sqArr(); if (!a.length || !SQ) return;
   const mode = SQ.mode, i = SQ.i;
   if (mode === 'trial' && a.length < TRIAL_SQ) return toast(`Испытания — только полным составом: ${TRIAL_SQ} героев`);
   if (mode === 'camp' && reqMissing(i, a).length) return toast('В отряде обязательно: ' + reqMissing(i, a).map(id => CH[id].sn).join(', '));
   if (mode === 'camp') { tickWater(); if (enGet(nodeEn(i)) < nodeCost(i)) return openInfo(`need:${nodeEn(i)}:${nodeCost(i)}`); return startBattle(i); }
-  if (mode === 'conq') { const nd = cqNode(i); if (!nd || !cqOpen(nd) || !nd.fight) return toast('Этот маршрут недоступен'); const SE = CQ_SECT[nd.s], lv = cqLive(nd); if (!lv.foes.length) return; if (!cqEnSpend(CQ_EN.fight)) { toast(`Нужно ${CQ_EN.fight} Решимости. ${cqEnTxt()}`); return; } persist(); return launch({ mode: 'conq', i, scene: SE.scene, desert: !!SE.desert, title: `${SE.n} · ${nd.type === 'boss' ? 'босс' : nd.type === 'elite' ? 'элита' : 'бой'}`, squad: a.slice(), enemy: lv.foes, cq: { key: i, mods: nd.mods, idx: lv.idx, fresh: !lv.st } }); }
+  if (mode === 'conq') {
+    if (loadSave.writer.state().gated) {
+      const spent = loadSave.writer.transact(() => {
+        const nd = cqNode(i);
+        if (!nd || !cqOpen(nd) || !nd.fight)
+          return { commit: false, value: 'unavailable' };
+        const lv = cqLive(nd);
+        if (!lv.foes.length) return { commit: false, value: 'unavailable' };
+        if (!cqEnSpend(CQ_EN.fight))
+          return { commit: false, value: 'no-energy' };
+        return { nd, lv };
+      });
+      if (!spent.ok) {
+        if (spent.status === 'cancelled' && spent.value === 'unavailable')
+          toast('Этот маршрут недоступен');
+        if (spent.status === 'cancelled' && spent.value === 'no-energy')
+          toast(`Нужно ${CQ_EN.fight} Решимости. ${cqEnTxt()}`);
+        return; // no launch on failed/uncertain checkpoint
+      }
+      const { nd, lv } = spent.value, SE = CQ_SECT[nd.s];
+      return launch({ mode: 'conq', i, scene: SE.scene, desert: !!SE.desert, title: `${SE.n} · ${nd.type === 'boss' ? 'босс' : nd.type === 'elite' ? 'элита' : 'бой'}`, squad: a.slice(), enemy: lv.foes, cq: { key: i, mods: nd.mods, idx: lv.idx, fresh: !lv.st } });
+    }
+    // Historical ungated VM baseline, deliberately kept for C12/C13.
+    const nd = cqNode(i); if (!nd || !cqOpen(nd) || !nd.fight) return toast('Этот маршрут недоступен'); const SE = CQ_SECT[nd.s], lv = cqLive(nd); if (!lv.foes.length) return; if (!cqEnSpend(CQ_EN.fight)) { toast(`Нужно ${CQ_EN.fight} Решимости. ${cqEnTxt()}`); return; } persist(); return launch({ mode: 'conq', i, scene: SE.scene, desert: !!SE.desert, title: `${SE.n} · ${nd.type === 'boss' ? 'босс' : nd.type === 'elite' ? 'элита' : 'бой'}`, squad: a.slice(), enemy: lv.foes, cq: { key: i, mods: nd.mods, idx: lv.idx, fresh: !lv.st } });
+  }
   if (mode === 'trial') { const { T, t } = trialOfSQ(i); return launch({ mode: 'trial', i, scene: T.scene, desert: !!T.desert, title: `${T.short} · ур. ${ROMAN[t + 1]}`, squad: a.slice(), enemy: trialFoes(T, t) }); }
   if (mode === 'journey') { if (!jSelectedReady(JK(), i, a)) return toast('Проверьте требования к героям пути'); const t = JR().tiers[i]; return launch({ mode: 'journey', scene: JR().scenes[i], i, title: `Легенда ${i + 1}. ${t.n}`, desert: t.desert, squad: a.slice(), scriptedMuaddib: i >= 3, enemy: jFoes(JK(), i) }); }
   const R = S.raid; if (!R) return; return launch({ mode: 'raid', scene: RAID_SCENES[R.tier], title: 'Шаи-Хулуд · ' + RAID_TIERS[R.tier].n.split(' · ')[0], squad: a.slice(), boss: { tier: R.tier, hp: R.hp, maxHp: R.maxHp } });
