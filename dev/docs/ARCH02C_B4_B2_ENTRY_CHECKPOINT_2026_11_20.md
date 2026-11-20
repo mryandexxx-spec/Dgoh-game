@@ -12,7 +12,7 @@ Before B4-B2, the campaign `startBattle(i)` called `enSpend; persist(); launch` 
 - An action returning `{commit:false,value:reason}` is a **normal no-spend precondition**, restores the original RAM binding and releases only the temporary staging guard (not the writer lease). The transaction rejects asynchronous action functions. **Never run launch, dialogs, reward presentation or other irreversible side effects inside the staged callback.**
 - `startBattle()`: under mandatory gate, **regen + affordability + available squad + actual energy/quest debit** are evaluated on the candidate and verified before `launch`. Missing energy / squad do not create an uncommitted debit. Ungated historical path stays pinned.
 - `sqGo()`: writer check before opening any squad-mode battle; Conquest resolves current node, remaining enemy list, and resolve energy inside the same candidate and commits before `launch`. No-budget, blocked route, or empty enemy list are benign cancellations. Other free modes retain their existing path (their **result** is protected by B4-B1).
-- Both campaign and squad selector reject a second entry while an existing `BT` is active and unfinished (duplicate-tap guard).
+- Both campaign and squad selector reject a second entry while an existing `BT` is active and unfinished (duplicate-tap guard). The campaign also rejects new entry while the 3D engine loader has reserved a launch but has not yet created `BT`; this loader replaces the squad selector and clears `SQ` so late selector taps do not charge Conquest resolve again.
 
 ## Acceptance
 
@@ -26,7 +26,8 @@ Before B4-B2, the campaign `startBattle(i)` called `enSpend; persist(); launch` 
 - B412 duplicate active Conquest click does not charge twice;
 - B413 Conquest backup quota prevents charge and launch;
 - B414 insufficient Conquest resolve cancels without disk write or lease retirement;
-- B415 ambiguous primary write-then-throw blocks old realm; fresh boot adopts exactly the stored debit, does **not** auto-start a battle.
+- B415 ambiguous primary write-then-throw blocks old realm; fresh boot adopts exactly the stored debit, does **not** auto-start a battle;
+- B416 pending asynchronous 3D loader cannot charge campaign energy a second time before `BT` exists.
 
 Existing B4-B1, B0, frozen Conquest source hash, strict 1001-import/898-export architecture, v1 saves, 200 golden battle fixtures, native Web Locks, PWA/offline and CI final gate remain mandatory.
 
