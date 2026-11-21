@@ -50,7 +50,7 @@ function doRefill(kind) {
       } else {
         const wasFull = S.water >= WMAX();
         S.water += REFILL_AMT;
-        if (!wasFull && S.water >= WMAX()) S.waterTs = Date.now();
+        if (!wasFull && S.water >= WMAX()) S.waterTs = todayKey.clock.regenNow();
         S.refills = { d: todayKey(), n: n + 1 };
       }
       return { cost, quantity: energy === 'candle' ? CANDLE_REFILL : REFILL_AMT };
@@ -67,7 +67,7 @@ function doRefill(kind) {
   if ((kind === 'candle' ? crefillN() : refillN()) >= REFILL_MAX) return toast(`Лимит пополнений на сегодня исчерпан: ${REFILL_MAX} из ${REFILL_MAX}`);
   if (kind === 'candle') { const c = crefillCost(); if (S.cry < c) return openInfo('cry'); S.cry -= c; S.candle += CANDLE_REFILL; S.crefills = { d: todayKey(), n: crefillN() + 1 }; persist(); toast(`+${amt('candle', CANDLE_REFILL)} Свечей за ${amt('cry', c)}`); return refreshAll(); }
   const c = refillCost(); if (S.cry < c) return openInfo('cry');
-  S.cry -= c; const wasFull = S.water >= WMAX(); S.water += REFILL_AMT; if (!wasFull && S.water >= WMAX()) S.waterTs = Date.now();
+  S.cry -= c; const wasFull = S.water >= WMAX(); S.water += REFILL_AMT; if (!wasFull && S.water >= WMAX()) S.waterTs = todayKey.clock.regenNow();
   S.refills = { d: todayKey(), n: refillN() + 1 };
   persist(); toast(`+${amt('water', REFILL_AMT)} Воды за ${amt('cry', c)}`); refreshAll();
 }
