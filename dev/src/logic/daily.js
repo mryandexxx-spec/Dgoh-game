@@ -28,7 +28,9 @@ function dly(stamp = todayKey.clock.snapshot()) {
 }
 // Existing exported function is the accessor for the same GameClock provider;
 // avoid changing the 167-module / named-export contract.
-dly.clock = todayKey.clock;
+// Lazy accessor: economy/state/daily are part of an approved ESM cycle.
+// Do not eagerly read the imported todayKey binding during module evaluation.
+Object.defineProperty(dly, 'clock', { get: () => todayKey.clock });
 function quest(k, n = 1) { if (!S || (k === 'skill' && (S.acc?.lvl || 1) > 50)) return; const D = dly(); D.c[k] = Math.max(0, (D.c[k] || 0) + n); }
 function qState(q, stamp = todayKey.clock.snapshot()) { const D = dly(stamp); return D.got[q.k] ? 'got' : (D.c[q.k] || 0) >= q.need ? 'done' : 'prog'; }
 const dailyGot = (stamp = todayKey.clock.snapshot()) => {
