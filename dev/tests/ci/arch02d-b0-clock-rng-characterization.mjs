@@ -1,6 +1,6 @@
 // ARCH-02D-B0: read-only characterization of published v141 clock/RNG semantics.
-// This intentionally records known rollback weaknesses; do not "fix" expectations
-// by changing production code, the v1 save schema, goldens or RNG draw order.
+// All original B0 observations remain pinned except D005: B1 explicitly reviews
+// and changes the known rollback weakness. No save/golden/RNG change.
 // Test on BOTH compiled PWA and standalone HTML, in several process TZ values.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -81,8 +81,8 @@ const disk=g=>g.store.get(KEY);
   g.ctx.Math.random=rand;
   pass('D004','daily shop seeded generation independent of payout random source');
 }
-// D005: Conquest's observable rollback bug: cq() replaces the current week in RAM
-// when the wall clock goes back seven days. This is characterization, not approval.
+// D005: explicit B1 change of the previously characterized Conquest rollback bug.
+// A backward week must retain the saved week and all claim markers.
 {
   const now=at(2026,11,2,12),g=await boot(now);
   g.run("(function(){const C=cq();C.diff='easy';C.done.__arch02d=1;persist()})()");
@@ -90,11 +90,12 @@ const disk=g=>g.store.get(KEY);
   g.setNow(now-7*DAY);
   assert.notEqual(g.run('cqWeek()'),oldWeek,'must cross a legacy Conquest week');
   assert.equal(g.run('S.conq.done.__arch02d'),1);
-  assert.equal(g.run('cq().done.__arch02d'),undefined,
-    'known P1: read after clock rollback creates another weekly run in RAM');
+  assert.equal(g.run('cq().done.__arch02d'),1,
+    'B1: read after clock rollback preserves the existing weekly run');
+  assert.equal(g.run('S.conq.wk'),oldWeek,'backwards time must retain the newest week key');
   assert.equal(disk(g),before,'characterization does not commit accidental rollback');
   release(g);
-  pass('D005','KNOWN WEAKNESS: backwards week recreates in-memory Conquest state');
+  pass('D005','B1 FIX: backwards week preserves Conquest progress');
 }
 // D006: at the same date a Conquest read should not discard progress.
 {
