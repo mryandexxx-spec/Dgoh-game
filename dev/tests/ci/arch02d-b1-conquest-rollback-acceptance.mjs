@@ -123,5 +123,22 @@ function claimState(g){
   assert.equal(g.store.get(KEY),disk);
   release(g);pass('B105 autumn DST rollback retains entitlements');
 }
-assert.equal(passed,5);
+// B106: historic J1 and migration unlock markers are not real dates.
+// Do not break their permanent unlock semantics during normal play; still
+// fail closed if the *current saved Conquest week* is later than device time.
+{
+  const now=at(2026,11,9),g=await boot(now);setup(g);
+  for (const marker of ['previous-week','old-week','legacy']) {
+    g.run('S.cqUnlock.easy='+JSON.stringify(marker));
+    assert.equal(g.run('cqDifficultyAccess("normal")'),true,
+      'historical non-date unlock must remain accepted: '+marker);
+    g.setNow(now-7*DAY);
+    assert.equal(g.run('cqDifficultyAccess("normal")'),false,
+      'historical unlock cannot bypass rollback: '+marker);
+    g.setNow(now);
+    assert.equal(g.run('cqDifficultyAccess("normal")'),true);
+  }
+  release(g);pass('B106 legacy J1 unlock markers and rollback guard');
+}
+assert.equal(passed,6);
 console.log('ARCH-02D-B1 '+passed+' verified Conquest scenarios PASS: '+html+' TZ='+zone);
