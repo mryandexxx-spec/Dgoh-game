@@ -15,8 +15,30 @@ const refillPrice = n => 50 * 2 ** Math.floor(n / 3);   // x2 after every 3rd re
 // Keep this seam on the existing todayKey export: no ESM module/order/export ABI
 // change. The test VM provides a virtual Date without writing to save v1.
 // Reading Date once prevents day/month/hero disagreement within an operation.
+// B3: an ephemeral monotonic epoch for resource regeneration only.
+// Persisted v1 timestamps retain their original wall-millisecond format.
+// On the first booted read, Date.now() honors legacy offline regeneration;
+// subsequently, wall-clock jumps cannot accelerate or reverse elapsed time.
+// No browser-only monotonic clock can authenticate elapsed time after relaunch.
+let regenAnchorWall = null, regenAnchorMono = null, regenLastMono = null;
+function regenNow() {
+  const mono = typeof performance === 'object' && performance &&
+    typeof performance.now === 'function' ? performance.now() : NaN;
+  if (regenAnchorWall === null) {
+    regenAnchorWall = Date.now();
+    if (!Number.isFinite(mono)) return regenAnchorWall; // ancient browser fallback
+    regenAnchorMono = regenLastMono = mono;
+    return regenAnchorWall;
+  }
+  if (regenAnchorMono === null) return Date.now(); // legacy fallback without performance
+  // Ignore a nonfinite/regressing monotonic sample: never re-anchor to
+  // untrusted Date.now() and thereby award a forward wall-clock jump.
+  if (Number.isFinite(mono)) regenLastMono = Math.max(regenLastMono, mono);
+  return Math.floor(regenAnchorWall + (regenLastMono - regenAnchorMono));
+}
 const gameClock = Object.freeze({
   now: () => Date.now(),
+  regenNow,
   date: () => new Date(),
   snapshot: () => {
     const d = new Date(), year = d.getFullYear(), monthIndex = d.getMonth();
