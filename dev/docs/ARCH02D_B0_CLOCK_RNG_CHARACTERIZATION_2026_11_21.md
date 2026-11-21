@@ -9,7 +9,7 @@ Date: 2026-11-21. Stacked on [ARCH-02D-A1 #235](https://github.com/mryandexxx-sp
 | ID | Category | Legacy expectation *being characterized*, NOT a post-fix acceptance policy |
 | --- | --- | --- |
 | D001 | local wall date | `todayKey()`, `monthKey()`, trial weekday match the runner's local calendar |
-| D002 | UTC versus local weeks | `weekNo()` rotates at UTC Monday while `cqWeek()` computes local Monday |
+| D002 | UTC versus local weeks | `weekNo()` rotates at **Sunday 00:00 UTC** (legacy `+4` epoch expression) while `cqWeek()` computes **local Monday** |
 | D003 | month/leap day | existing month key / month length logic on Feb/Mar and leap year |
 | D004 | deterministic shop | `dailyHeroes` seeded stock does not consume global loot `Math.random()` |
 | D005 | **known P1** rollback | after -7d, `cq()` re-creates current-week state in RAM on a read, even though old state had completed nodes |
