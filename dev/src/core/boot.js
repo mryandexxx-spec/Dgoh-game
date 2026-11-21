@@ -81,6 +81,9 @@ function start(data) {
     if (S.conq && S.conq.tk) { if (S.conq.tk.c6 && !S.stats.cqMax) S.stats.cqMax = 1; if (!S.stats.cqLeg) S.stats.cqLeg = (S.conq.disks || []).filter(x => CQ_DISKS[x.k] && CQ_DISKS[x.k].r === 'l').length; }
     if (!persist().ok) return; }
   dly().c.login = 1;
+  // B5b: preserve the original v1 empty-month boot snapshot through this
+  // existing under-lease verified persist; do not reset older months here.
+  loginCan.prepareBoot();
   const rot = () => { let ok = false; try { ok = sessionStorage.getItem('rotok') === '1'; } catch (e) {} const touch = matchMedia('(pointer: coarse)').matches, portrait = innerHeight > innerWidth; $('#rotok').style.display = touch ? 'none' : ''; $('#rotfs').style.display = document.documentElement.requestFullscreen ? '' : 'none'; $('#rotate').hidden = !portrait || (ok && !touch); };
   if (screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener('change', () => setTimeout(rot, 60));
   rot(); addEventListener('resize', rot);

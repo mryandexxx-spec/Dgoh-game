@@ -213,6 +213,11 @@ jobs:
           node tests/ci/arch02c-b5a-daily-claims-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b5a-daily-claims-acceptance.mjs dist/artifact.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-02C-B5b verified login calendar + month rollover (PWA + artifact; NO RELEASE)
+        run: |
+          node tests/ci/arch02c-b5b-login-calendar-acceptance.mjs dist/pwa/index.html
+          node tests/ci/arch02c-b5b-login-calendar-acceptance.mjs dist/artifact.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-02C-B3-B2-A1 protected import + recovery-only lease (PWA + artifact; NOT LIVE)
         run: |
           node tests/ci/arch02c-b3-b2-protected-transfer-acceptance.mjs dist/pwa/index.html
