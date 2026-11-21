@@ -25,3 +25,9 @@ When `S.conq.wk` represents a newer local Monday than the device's computed `cqW
 ## Gate / handoff
 
 **NO MERGE until exact-head CI SUCCESS and independent `arch-strict` + final gate. NO RELEASE without owner's separate authorization.** Next limited packet: centralized GameClock read seam and controlled daily/energy timestamp policy without changing historical shop/Trial UTC-week rotations. Full forward-clock exploit prevention requires a trusted time source and separate product policy.
+
+## Full CI attempt 2: independent UI race / E3 repair
+
+- Run [#44902457932](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44902457932), attempt 2, passed strict arch, compiled B0+B1, legacy J1, Golden 200/41, PWA offline and both previously flaky Arena WebGL jobs. Its **sole** remaining failure was the E3 recycler mobile hit-test: a late startup login calendar covered the recycler even after normal navigation. This was reproduced on both attempts; not a Conquest regression.
+- The actual runtime fix is restricted to `core/boot.js`: the delayed optional calendar auto-open now requires `view === 'lobby'`, so it cannot interrupt an already active recycler or other game screen. The regular login calendar claim flow and UI entry remain untouched. `tests/smoke/memory-ix-dom.mjs` now explicitly asserts that the deferred modal does not cover the recycler, **keeping the original touch/elementFromPoint and economic UI assertions unchanged**.
+- These are narrow UI correctness changes, not a waiver, retry-only masking, or a reason to skip the exact-new-HEAD full CI/final gate. No calendar reward, claim or save semantics change.
