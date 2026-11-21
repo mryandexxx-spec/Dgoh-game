@@ -91,7 +91,9 @@ function start(data) {
   if (!persist().ok) return;
   render();
   splashOff();
-  if (loginCan()) setTimeout(() => { if (!BT && !$('#overlay2').innerHTML) openCalendar(); }, Math.max(400, 2600 - performance.now()));
+  // A delayed login calendar must not interrupt a screen entered after startup.
+  // Players can still open the calendar through its normal menu entry.
+  if (loginCan()) setTimeout(() => { if (!BT && view === 'lobby' && !$('#overlay2').innerHTML) openCalendar(); }, Math.max(400, 2600 - performance.now()));
   setInterval(() => { if (!BT) renderRes(); else { tickWater(); } }, 1000);
   startupSucceeded = true;
 }

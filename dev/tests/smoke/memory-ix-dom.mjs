@@ -43,6 +43,11 @@ try {
       view='recycler';render();
     `);
     await page.waitForSelector('.ixpage');
+    // The scheduled login modal must not reappear over a non-lobby screen.
+    // Keep the real elementFromPoint() touch hit-test below unchanged.
+    await new Promise(resolve => setTimeout(resolve, 750));
+    assert.equal(await page.$eval('#overlay2', el => el.innerHTML.trim()), '',
+      width+': delayed login calendar must not cover the recycler');
     const box=await page.$eval('.ixpage',el=>{const b=el.getBoundingClientRect();return {x:b.x,y:b.y,right:b.right,bottom:b.bottom};});
     assert.ok(box.x>=-2 && box.right<=width+2 && box.y>=-2 && box.bottom<=height+2,width+': recycler viewport '+JSON.stringify(box));
     assert.ok(await page.$('[data-ixkind="ix_plate"]'),width+': categories');

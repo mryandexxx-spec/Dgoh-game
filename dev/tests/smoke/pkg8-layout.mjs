@@ -37,14 +37,22 @@ try {
     // shell. Closing the previous page can release its native lease later.
     await page.bringToFront();
     await page.goto(srv.url(path.basename(html)),{waitUntil:'load'});
-    // The v75 baseline ../index.html is intentionally frozen historical
-    // JavaScript with NO writerLifecycle API. Its original rendering oracle
-    // must not be subjected to the new production PWA startup contract.
-    if(!baseline) await page.waitForFunction(()=>{
+    // The baseline path ../index.html now resolves to the published root,
+    // which also uses mandatory asynchronous Web Locks startup (v141).
+    // Only truly old artifacts without writerLifecycle may skip this gate.
+    // Launching the arena before a newer root finishes boot can destroy the
+    // arena under test and leave a false 0-frame failure.
+    const hasWriterLifecycle=await page.evaluate(()=>{
+      try { return typeof (0,eval)('start.writerLifecycle') === 'function'; }
+      catch { return false; }
+    });
+    if (!baseline || hasWriterLifecycle) await page.waitForFunction(()=>{
       const phase=(0,eval)('start.writerLifecycle()');
       return phase.armed && !phase.blocked &&
         phase.reason==='active' && phase.writer.status==='owned';
     },{timeout:30000,polling:50});
+    // Headless Chrome can throttle WebGL when the tab is not foregrounded.
+    await page.bringToFront();
     const result = await page.evaluate(async ()=>{
       if(!await loadB3()) throw Error('3D engine did not load');
       const ids = Object.keys(CH).filter(id=>CH[id]&&!CH[id].boss&&prog(id).stars).slice(0,5);
