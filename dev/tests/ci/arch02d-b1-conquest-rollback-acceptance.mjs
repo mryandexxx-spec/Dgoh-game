@@ -47,6 +47,7 @@ function claimState(g){
   const oldWeek=g.run('S.conq.wk'),disk=g.store.get(KEY);
   assert.equal(g.run('cqCanClaim(1)'),true,'unclaimed chest is available at the true week');
   assert.equal(g.run('cqStCan(0)'),true,'unclaimed milestone is available at the true week');
+  assert.equal(g.run('cqOpen(cqNode("0-0-0"))'),true,'root fight available at true week');
   g.setNow(now-7*DAY);
   assert.notEqual(g.run('cqWeek()'),oldWeek);
   for(let i=0;i<3;i++){
@@ -66,11 +67,17 @@ function claimState(g){
   assert.equal(g.run('cqCanClaim(1)'),false);
   assert.equal(g.run('cqStCan(0)'),false);
   assert.equal(g.run('cqDifficultyAccess("normal")'),false);
+  assert.equal(g.run('cqOpen(cqNode("0-0-0"))'),false,'backdated combat is blocked');
+  const en=g.run('S.conq.en'),enTs=g.run('S.conq.enTs');
+  assert.equal(g.run('cqEnSpend(1)'),false,'backdated resolve spend is blocked');
+  assert.equal(g.run('S.conq.en'),en);
+  assert.equal(g.run('S.conq.enTs'),enTs);
   assert.equal(claimState(g),before);
   assert.equal(g.store.get(KEY),disk);
   g.setNow(now);
   assert.equal(g.run('cqCanClaim(1)'),true);
   assert.equal(g.run('cqStCan(0)'),true);
+  assert.equal(g.run('cqOpen(cqNode("0-0-0"))'),true,'normal combat resumes on clock restoration');
   assert.equal(g.run('cqDifficultyAccess("normal")'),false,'same-week unlock stays closed');
   assert.equal(claimState(g),before);
   release(g);pass('B102 rollback claim and difficulty fail closed; restoration stable');
