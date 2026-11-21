@@ -49,7 +49,7 @@ function cqEn() {
   if (k > 0) { C.en = Math.min(CQ_EN.max, C.en + k); C.enTs = C.en >= CQ_EN.max ? now : C.enTs + k * step; }
   return C.en;
 }
-function cqEnSpend(n) { const C = cq(); if (cqEn() < n) return false; if (C.en >= CQ_EN.max) C.enTs = Date.now(); C.en -= n; return true; }
+function cqEnSpend(n) { const C = cq(); if (C.wk !== cqWeek() || cqEn() < n) return false; if (C.en >= CQ_EN.max) C.enTs = Date.now(); C.en -= n; return true; }
 const cqEnNext = () => { const C = cq(); return C.en >= CQ_EN.max ? 0 : Math.max(1, Math.ceil((CQ_EN.sec * 1000 - (Date.now() - C.enTs)) / 1000)); };
 const cqEnTxt = () => { const s = cqEnNext(); return s ? `+1 через ${s >= 60 ? Math.ceil(s / 60) + ' мин' : s + ' с'}` : 'запас полон'; };
 // ---- выносливость героев ----
@@ -163,7 +163,7 @@ function cqCommitRoute(a) {
 }
 function cqOpen(a) {
   const C = cq();
-  if (!a || !C.diff || C.pick || a.s > C.open) return false;
+  if (C.wk !== cqWeek() || !a || !C.diff || C.pick || a.s > C.open) return false;
   if (C.done[a.key]) return true; // also preserves replay of pre-J1 completed paths
   if (cqRouteBlocked(a)) return false;
   if (a.L === 0) return true;
