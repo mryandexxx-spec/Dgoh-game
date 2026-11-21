@@ -356,6 +356,184 @@ function cqVerifiedEconomyClick(d) {
   return true;
 }
 
+// ARCH-02C-B6b: paid hero actions use one checked save snapshot. Re-read the
+// hero/recipe and all costs in the writer's DETACHED S, never mutate a captured
+// live prog() reference or show an upgrade celebration before verified IO.
+// The original handlers below remain reachable only by the B0 ungated harness.
+function verifiedUpgradeClick(d) {
+  if (!loadSave.writer.state().gated) return false;
+  if (!['glopen', 'skup', 'buildpart', 'craft', 'gup', 'relic', 'lvlto',
+    'lvl', 'lvl5', 'star', 'gear'].some(k => d[k] !== undefined)) return false;
+  if (d.glopen !== undefined) {
+    const id = String(d.glopen);
+    if (!CH[id]) return true;
+    const tx = loadSave.writer.transact(() => {
+      const p = prog(id);
+      if (!p.stars || p.gl) return { commit: false, value: 'locked' };
+      if (S.wol < 1) return { commit: false, value: 'wol' };
+      S.wol -= 1; p.gl = true;
+      return true;
+    });
+    if (!tx.ok) { if (tx.status === 'cancelled' && tx.value === 'wol') hcFind('wol'); return true; }
+    toast('Ультимативная способность открыта!'); render(); openDetail(id);
+    return true;
+  }
+  if (d.skup !== undefined) {
+    const [id, key, extra] = String(d.skup).split(':');
+    if (!CH[id] || extra !== undefined || !['basic','special','ult','passive','leader'].includes(key)) return true;
+    const tx = loadSave.writer.transact(() => {
+      const p = prog(id), lv = p.sk[key] || 1;
+      if (!p.stars || lv >= skMax(CH[id], key))
+        return { commit: false, value: { reason: 'locked' } };
+      const c = skCost(lv + 1), lack = lackKey(c);
+      if (lack) return { commit: false, value: { reason: lack } };
+      S.solari -= c.sol; S.folio -= c.folio || 0;
+      S.seal -= c.seal || 0; S.wol -= c.wol || 0;
+      p.sk[key] = lv + 1;
+      quest('skill');
+      return { level: lv + 1 };
+    });
+    if (!tx.ok) {
+      const reason = tx.status === 'cancelled' && tx.value?.reason;
+      if (reason && reason !== 'locked') hcFind(reason);
+      return true;
+    }
+    toast(`${CH[id].sn}: умение повышено до ${tx.value.level}`);
+    render(); openDetail(id);
+    return true;
+  }
+  if (d.buildpart !== undefined || d.craft !== undefined) {
+    if (!itemCtx) return true;
+    const { cid, k } = itemCtx;
+    if (!CH[cid] || !Number.isInteger(k) || k < 0 || k > 5) return true;
+    const partId = d.buildpart !== undefined ? String(d.buildpart) : null;
+    const tx = loadSave.writer.transact(() => {
+      const p = prog(cid), s = slotState(cid, k);
+      if (!p.stars || (partId === null && p.eq[k]))
+        return { commit: false, value: 'locked' };
+      const wallet = { sol: S.solari, pl: S.plast };
+      const result = partId === null
+        ? craftAndEquip(s.it.id, S.inv, S.gearParts, wallet, S.gearOwned)
+        : buildPart(s.it.id, partId, S.inv, S.gearParts, wallet);
+      if (!result.ok) return { commit: false, value: 'resources' };
+      S.solari = wallet.sol; S.plast = wallet.pl;
+      if (partId === null) { p.eq[k] = true; quest('craft'); }
+      return { name: s.it.n };
+    });
+    if (!tx.ok) {
+      if (tx.status === 'cancelled' && tx.value === 'resources')
+        toast(partId === null ? 'Недостаточно материалов для сборки' : 'Недостаточно материалов');
+      return true;
+    }
+    toast(partId === null ? `${tx.value.name} надет: ${CH[cid].sn}` : 'Компонент создан');
+    if (partId === null && $('#overlay2 .isheet')) closeInfo(true);
+    render(); openItem(cid, k);
+    return true;
+  }
+  if (d.gup !== undefined) {
+    const id = String(d.gup);
+    if (!CH[id]) return true;
+    const s0 = heroSnap(id);
+    const tx = loadSave.writer.transact(() => {
+      const p = prog(id);
+      if (p.gear >= MAX_GEAR || p.gear >= gearCap() || !p.eq.every(Boolean) ||
+        S.solari < GEAR_UP_SOL(p.gear)) return { commit: false, value: 'locked' };
+      const from = p.gear;
+      S.solari -= GEAR_UP_SOL(p.gear);
+      p.gear++; p.eq = [false, false, false, false, false, false];
+      return { from, to: p.gear };
+    });
+    if (!tx.ok) return true;
+    celebQueue({ type: 'hup', kind: 'gear', id, from: ROMAN[tx.value.from], to: ROMAN[tx.value.to], s0 });
+    render(); openDetail(id);
+    return true;
+  }
+  if (d.relic !== undefined) {
+    const id = String(d.relic);
+    if (!CH[id]) return true;
+    const s0 = heroSnap(id);
+    const tx = loadSave.writer.transact(() => {
+      const result = relicBuy(S, id, prog(id));
+      if (!result.ok) return { commit: false, value: result.reason };
+      return result.level;
+    });
+    if (!tx.ok) {
+      if (tx.status === 'cancelled' && tx.value !== 'locked') hcFind(tx.value);
+      return true;
+    }
+    celebQueue({ type: 'hup', kind: 'relic', id, from: MEM(tx.value - 1), to: MEM(tx.value), s0 });
+    render(); openDetail(id);
+    return true;
+  }
+  if (d.lvlto !== undefined || d.lvl !== undefined || d.lvl5 !== undefined) {
+    const slider = d.lvlto !== undefined;
+    const id = String(slider ? d.lvlto : d.lvl5 || d.lvl);
+    if (!CH[id]) return true;
+    const s0 = slider ? heroSnap(id) : null;
+    const tx = loadSave.writer.transact(() => {
+      const p = prog(id), from = p.lvl;
+      if (!p.stars) return { commit: false, value: 'locked' };
+      if (slider) {
+        const to = Math.min(heroCap(), +($('#lvlr') || {}).value || from);
+        if (!Number.isInteger(to) || to <= from) return { commit: false, value: 'locked' };
+        const cost = lvlCost(from, to);
+        if (S.solari < cost) return { commit: false, value: 'sol' };
+        S.solari -= cost; quest('lvl', to - from); p.lvl = to;
+      } else {
+        let n = d.lvl5 !== undefined ? 5 : 1;
+        while (n-- > 0 && p.lvl < MAX_LVL && S.solari >= LVL_COST(p.lvl)) {
+          S.solari -= LVL_COST(p.lvl); p.lvl++; quest('lvl');
+        }
+        if (p.lvl === from) return { commit: false, value: 'sol' };
+      }
+      return { from, to: p.lvl };
+    });
+    if (!tx.ok) {
+      if (tx.status === 'cancelled' && tx.value === 'sol') { toast('Не хватает соляриев'); openInfo('sol'); }
+      return true;
+    }
+    if (slider) celebQueue({ type: 'hup', kind: 'lvl', id, from: tx.value.from, to: tx.value.to, s0 });
+    render(); openDetail(id);
+    return true;
+  }
+  if (d.star !== undefined) {
+    const id = String(d.star);
+    if (!CH[id]) return true;
+    const pw0 = unitPower(CH[id], prog(id));
+    const tx = loadSave.writer.transact(() => {
+      const p = prog(id), need = nextShards(p);
+      if (!need || p.shards < need) return { commit: false, value: 'shards' };
+      const price = STAR_COST(p.stars);
+      if (S.solari < price) return { commit: false, value: 'sol' };
+      const from = p.stars;
+      S.solari -= price; p.shards -= need; p.stars++;
+      return { from, to: p.stars };
+    });
+    if (!tx.ok) {
+      if (tx.status === 'cancelled' && tx.value === 'shards') openInfo('shard:' + id);
+      if (tx.status === 'cancelled' && tx.value === 'sol') openInfo('sol');
+      return true;
+    }
+    toast(`${CH[id].sn}: ${tx.value.to}★`);
+    setTimeout(() => celebQueue({ type: 'star', id, from: tx.value.from, to: tx.value.to, pw0 }), 0);
+    if (infoKey) refreshAll(); else { render(); openDetail(id); }
+    return true;
+  }
+  if (d.gear !== undefined) {
+    const id = String(d.gear);
+    if (!CH[id]) return true;
+    const tx = loadSave.writer.transact(() => {
+      const p = prog(id), c = GEAR_COST(p.gear);
+      if (p.gear >= MAX_GEAR || S.solari < c.sol || S.plast < c.pl)
+        return { commit: false, value: 'locked' };
+      S.solari -= c.sol; S.plast -= c.pl; p.gear++;
+    });
+    if (tx.ok) { render(); openDetail(id); }
+    return true;
+  }
+  return false;
+}
+
 // ===== events =====
 document.addEventListener('click', e => {
   const sl = e.target.closest('[data-sqlead]'); if (sl) { const a = sqArr(), k = +sl.dataset.sqlead, id = a[k]; a.splice(k, 1); a.unshift(id); persist(); return renderSquadSel(); }
@@ -372,6 +550,7 @@ document.addEventListener('click', e => {
   if (recyclerClick(d)) { e.stopImmediatePropagation(); if (d.ixback) render(); return; }
   if (d.ixenter) { closeInfo(true); closeOverlay(); set_view('recycler'); render(); return; }
   if (metaClick(d) || meta2Click(d) || celebClick(d) || cqVerifiedClaimClick(d) || cqVerifiedDiskClick(d) || cqVerifiedEconomyClick(d) || cqClick(d)) return;
+  if (verifiedUpgradeClick(d)) return;
   if (d.bh9Stage !== undefined) { if (selectBaronStage(Number(d.bh9Stage))) render(); return; }
   if (d.bh9Start !== undefined) { const outcome=launchBaronLegend(Number(d.bh9Start)); if (!outcome.ok) toast('Восхождение недоступно: '+outcome.reason); return; }
   if (d.storyEvent) { if(selectStoryEvent(d.storyEvent))render(); return; }

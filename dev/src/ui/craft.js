@@ -7,7 +7,7 @@ import { render } from './router.js';
 import { toast } from './common.js';
 import { prog } from '../logic/progress.js';
 import { S } from '../core/state.js';
-import { persist } from '../core/save.js';
+import { loadSave, persist } from '../core/save.js';
 import { craftAndEquip } from '../logic/gear-crafting.js';
 import { CH } from '../data/chars.js';
 import { quest } from '../logic/daily.js';
@@ -25,6 +25,30 @@ function craftAllPlan(cid) {
   return out;
 }
 function craftAll(cid) {
+  if (loadSave.writer.state().gated) {
+    if (!CH[cid]) return;
+    const tx = loadSave.writer.transact(() => {
+      // Preview is advisory. Rebuild the plan on the committed writer's
+      // detached state, then pay and equip ALL eligible slots together.
+      const plan = craftAllPlan(cid), p = prog(cid);
+      if (!plan.length || !p.stars) return { commit: false, value: 'nothing-ready' };
+      const wallet = { sol: S.solari, pl: S.plast }, applied = [];
+      for (const { k, it } of plan) {
+        if (p.eq[k]) continue;
+        const result = craftAndEquip(it.id, S.inv, S.gearParts, wallet, S.gearOwned);
+        if (!result.ok) return { commit: false, value: 'materials-changed' };
+        p.eq[k] = true; quest('craft');
+        applied.push(it.n);
+      }
+      if (!applied.length) return { commit: false, value: 'nothing-ready' };
+      S.solari = wallet.sol; S.plast = wallet.pl;
+      return applied;
+    });
+    if (!tx.ok) return; // no toast, equip state, quest or preview before commit
+    toast(`${CH[cid].sn}: надето ${tx.value.length} — ${tx.value.join(', ')}`);
+    render(); openDetail(cid);
+    return;
+  }
   const plan = craftAllPlan(cid), p = prog(cid);
   if (!plan.length) return;
   const wallet = { sol: S.solari, pl: S.plast };
