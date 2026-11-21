@@ -1,0 +1,28 @@
+# ARCH-02D-B3 — monotonic in-session regeneration for Water, Candles, Resolve and Conquest stamina
+
+**Date:** 2026-11-21. **Base:** `main=16413d06161d84a2cd99792ac4c70399ca5e5d61` ([ARCH-02D-B2 #238](https://github.com/mryandexxx-spec/Dgoh-game/pull/238), verified exact-head [Fast #44917758554](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44917758554) and [Full #44917758547](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/44917758547)). Published **PWA v141** unchanged. Related: [A1 clock/RNG source audit](ARCH02D_A1_GAMECLOCK_RNG_SOURCE_AUDIT_2026_11_21.md), [B0 characterization](ARCH02D_B0_CLOCK_RNG_CHARACTERIZATION_2026_11_21.md), [B1 Conquest rollback](ARCH02D_B1_CONQUEST_ROLLBACK_GUARD_2026_11_21.md), [B2 GameClock snapshots](ARCH02D_B2_GAMECLOCK_DAILY_SNAPSHOT_2026_11_21.md).
+
+## Proven defect and narrowly adopted policy
+
+Four regeneration paths relied on `Date.now()` for elapsed milliseconds: `tickWater` Water/Candle, `cqEn` Resolve, `cqEnNext` UI countdown, and `cqSta` / `cqStaSet` hero stamina. While a running PWA was kept open, setting the device clock +48 hours could award *all available energy and stamina immediately*, then rolling back could create a future timestamp and block recovery. Baseline B0 D007 intentionally captured that old behavior; its VM `performance.now()` advanced with simulated `Date` and must not be mistaken for independent real monotonic evidence.
+
+**B3 policy:** keep the exact legacy resource rates, caps, weekly Conquest date semantics and v1 timestamp field names. After verified writer boot, take one in-memory `Date.now()` and `performance.now()` anchor. Subsequent regeneration reads use **anchor-wall + nondecreasing monotonic elapsed milliseconds**, rounded down to integer milliseconds. They do **not** consume subsequent wall-clock jumps for refill amounts or stamp updates. Regresing or nonfinite monotonic samples freeze the elapsed result until valid monotonic time catches up. Always allow ordinary positive monotonic time to regenerate at existing rates, even if the wall clock jumps backward. An old persisted Conquest stamina timestamp lying in the future cannot subtract stamina from a hero.
+
+- Provider `todayKey.clock.regenNow()` added as a method to the existing frozen, non-exported GameClock object, no new named ESM export/module. Existing `todayKey.clock.now()` and `snapshot()` remain wall time: calendar, daily reset and shop seeds **do not** silently switch to monotonic time.
+- `core/boot.js` seeds the anchor **only after** the mandatory native Web Lock and original `metaFill(S)` have loaded the account; no change to `start()` first AST action, boot structure or writer lease. This anchors a genuine running session before gameplay.
+- `core/state.js` Water/Candles `tickWater()`, `logic/progress.js` energy spend timestamps, and `logic/conquest.js` Resolve/cooldown/hero stamina timestamps use the same regen clock. Conquest **week eligibility** still uses original calendar date; the B1 rollback guard and transaction paths are untouched.
+- `save.js` schema, new-save initial timestamps, v1 validated checkpoint, transaction semantics and all RNG streams are untouched. No new persistent sidecar, version or migration. The only changed stamina calculation is `max(0, floor(elapsed/step))` so a future saved timestamp cannot reduce energy below its actual saved value.
+
+## Security boundary: NOT a trusted offline clock
+
+A purely browser/local PWA cannot validate real elapsed time across tab closes/relaunches or prevent a malicious user from editing JavaScript, `performance.now`, localStorage or browser internals. In this policy the **first read of a new verified session** still accepts historical wall elapsed time since the saved timestamp, with the existing caps; otherwise genuine offline users would lose accrued energy. This also means **pre-launch wall-clock forward spoofing is not solved**. A trusted server time source or explicitly owner-approved offline allowance policy is required for complete cross-session anti-cheat. Explicitly do **not** claim fraud-proof progress or rewards.
+
+If the Web Performance API is absent entirely, the existing wall-clock behavior is used as a compatibility fallback. No silent lockout in legacy/unsupported browsers; these lack the in-session anti-spoof guarantee. Wall-calendar Conquest week forward resets, trial/shop/daily rotation under a forged date and reward sources not addressed by B1/B2 are out of scope.
+
+## Acceptance and roll-forward requirements
+
+New B301–B309 (compiled PWA + standalone HTML × UTC/Europe-Amsterdam/America-Los_Angeles) exercise: +48h wall jump while monotonic is frozen (no energy/resolve/stamina mint), valid monotonic progression at exact original rate, -48h wall jump (no freeze/loss), spend timestamps under forward spoof, negative-future stamina safety, monotonic sample regression/NaN (no wall reanchor), legacy genuine offline accrual at first boot, one exact verified checkpoint, v1 save shape and no RNG draws or claim token duplication.
+
+Run in addition to existing B0 D001–D010, B1 B101–B106, B2 B201–B207, B5 transaction acceptance, strict zero forbidden imports, exact ABI, Golden 200-battle and 41-screen baselines, 3D/WebGL and offline PWA. New test uses separate injected monotonic samples (unlike B0 test VM's coupled wall and `performance.now`).
+
+**No merge until exact-head Fast AND Full CI, arch-strict and final gate all SUCCESS.** No release, root app/sw or public version modification. Owner can reinstall published PWA later only when explicitly told; v141 currently remains unchanged. Future B4: decide cross-session policy and clock-forward weekly resets with owner approval or trusted authority.
