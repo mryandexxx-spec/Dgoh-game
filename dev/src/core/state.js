@@ -1,10 +1,10 @@
 // core/state.js — строки 3202–3209 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import './save.js'; // порядок исполнения
-import { CANDLE_SEC, CMAX, WATER_SEC, WMAX } from '../logic/economy.js';
+import { CANDLE_SEC, CMAX, WATER_SEC, WMAX, todayKey } from '../logic/economy.js';
 
 let S, view = 'lobby', BT = null;
 function tickWater() {
-  const now = Date.now();
+  const now = todayKey.clock.now();
   if (S.candle >= CMAX()) S.candleTs = now; else { const g = Math.floor((now - S.candleTs) / (CANDLE_SEC * 1000)); if (g > 0) { S.candle = Math.min(CMAX(), S.candle + g); S.candleTs += g * CANDLE_SEC * 1000; if (S.candle >= CMAX()) S.candleTs = now; } }
   if (S.water >= WMAX()) { S.waterTs = now; return; }
   const gained = Math.floor((now - S.waterTs) / (WATER_SEC * 1000));

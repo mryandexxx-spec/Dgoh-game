@@ -15,8 +15,8 @@ const DAILY = [
 ];
 const activeDaily = () => DAILY.filter(q => q.k !== 'skill' || (S.acc?.lvl || 1) <= 50);
 const CHEST_NEED = 7, CHEST_RW = [['seal', 1], ['cry', '50–300'], ['sol', 5000]], CHEST_CRY = [50, 300];
-function dly() {
-  const day = todayKey();
+function dly(stamp = todayKey.clock.snapshot()) {
+  const day = stamp.day;
   if (S.daily.d !== day) {
     // A backwards device clock must not resurrect an already spent daily token.
     // With offline client time we can block rollback, not prove real elapsed days.
@@ -26,10 +26,20 @@ function dly() {
   }
   return S.daily;
 }
+// Existing exported function is the accessor for the same GameClock provider;
+// avoid changing the 167-module / named-export contract.
+// Lazy accessor: economy/state/daily are part of an approved ESM cycle.
+// Do not eagerly read the imported todayKey binding during module evaluation.
+Object.defineProperty(dly, 'clock', { get: () => todayKey.clock });
 function quest(k, n = 1) { if (!S || (k === 'skill' && (S.acc?.lvl || 1) > 50)) return; const D = dly(); D.c[k] = Math.max(0, (D.c[k] || 0) + n); }
-function qState(q) { const D = dly(); return D.got[q.k] ? 'got' : (D.c[q.k] || 0) >= q.need ? 'done' : 'prog'; }
-const dailyGot = () => DAILY.filter(q => dly().got[q.k]).length;
-const dailyReady = () => activeDaily().filter(q => qState(q) === 'done').length + (dailyGot() >= CHEST_NEED && !dly().chest ? 1 : 0);
+function qState(q, stamp = todayKey.clock.snapshot()) { const D = dly(stamp); return D.got[q.k] ? 'got' : (D.c[q.k] || 0) >= q.need ? 'done' : 'prog'; }
+const dailyGot = (stamp = todayKey.clock.snapshot()) => {
+  const D = dly(stamp);
+  return DAILY.filter(q => D.got[q.k]).length;
+};
+const dailyReady = (stamp = todayKey.clock.snapshot()) =>
+  activeDaily().filter(q => qState(q, stamp) === 'done').length +
+  (dailyGot(stamp) >= CHEST_NEED && !dly(stamp).chest ? 1 : 0);
 
 
 export { DAILY, activeDaily, CHEST_NEED, CHEST_RW, CHEST_CRY, dly, quest, qState, dailyGot, dailyReady };

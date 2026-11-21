@@ -11,7 +11,25 @@ import { SIGNAL_NODES, MEM_MATS } from '../data/memory-scrap.js';
 const RAID_REWARD = [ { teeth: 300, kill: 200, pl: 6, sol: 10000, cry: 60, cryK: 40, folio: 10, sealK: 2, wolK: 0 }, { teeth: 700, kill: 500, pl: 15, sol: 25000, cry: 140, cryK: 80, folio: 20, sealK: 3, wolK: 1 }, { teeth: 1500, kill: 1200, pl: 30, sol: 60000, cry: 300, cryK: 150, folio: 40, sealK: 5, wolK: 2 } ];
 const REFILL_AMT = 120, REFILL_MAX = 15, CRY_WIN = 2, CRY_3STAR = 25, CRY_JOURNEY = 50;
 const refillPrice = n => 50 * 2 ** Math.floor(n / 3);   // x2 after every 3rd refill, resets daily
-const todayKey = () => new Date().toDateString();
+// ARCH-02D-B2: one-operation, non-authoritative local wall-clock snapshot.
+// Keep this seam on the existing todayKey export: no ESM module/order/export ABI
+// change. The test VM provides a virtual Date without writing to save v1.
+// Reading Date once prevents day/month/hero disagreement within an operation.
+const gameClock = Object.freeze({
+  now: () => Date.now(),
+  date: () => new Date(),
+  snapshot: () => {
+    const d = new Date(), year = d.getFullYear(), monthIndex = d.getMonth();
+    return Object.freeze({
+      now: d.getTime(), day: d.toDateString(), month: year + '-' + (monthIndex + 1),
+      year, monthIndex, weekday: d.getDay(),
+      daysInMonth: new Date(year, monthIndex + 1, 0).getDate(),
+      nextMidnight: new Date(year, monthIndex, d.getDate() + 1).getTime(),
+    });
+  },
+});
+const todayKey = () => gameClock.date().toDateString();
+todayKey.clock = gameClock;
 function refillN() { return S.refills.d === todayKey() ? S.refills.n : 0; }
 function refillCost() { return refillPrice(refillN()); }
 const SHOP = [
