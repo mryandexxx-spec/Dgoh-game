@@ -192,7 +192,7 @@ function realNow(g){return g.run('todayKey.clock.regenNow()');}
   assert.ok(box.innerHTML.includes('Вода · +1 через '+g.run('WATER_SEC')+'с'),
     'visible Water countdown must use same in-session monotonic time');
   g.ctx.document=originalDocument;
-  g.run('S.cry=1000;S.water=WMAX()-1;S.waterTs=todayKey.clock.regenNow()');
+  g.run('S.cry=1000;S.water=WMAX()-1;S.waterTs=todayKey.clock.regenNow();persist()');
   const before=g.run('S.cry');
   g.run('doRefill("water")');
   assert.ok(g.run('S.cry')<before,'verified refill should charge exactly once');
