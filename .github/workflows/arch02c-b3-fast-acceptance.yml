@@ -2,7 +2,7 @@ name: ARCH-02C-B3 mandatory writer fast acceptance
 
 on:
   pull_request:
-    branches: [main, feature/arch02c-b4-b4a-conquest-claims, feature/arch02c-b4-b4b1-conquest-disks, feature/arch02c-b6a-market-recycler]
+    branches: [main, feature/arch02c-b4-b4a-conquest-claims, feature/arch02c-b4-b4b1-conquest-disks, feature/arch02c-b6a-market-recycler, feature/arch02c-b6b-hero-upgrades]
     paths:
       - 'dev/src/**'
       - 'dev/tests/ci/arch02c-**'
@@ -78,6 +78,10 @@ jobs:
         run: |
           node tests/ci/arch02c-b6b-upgrade-crafting-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b6b-upgrade-crafting-acceptance.mjs dist/artifact.html
+      - name: ARCH-02C-B6c verified feat claims and raid start (PWA + HTML)
+        run: |
+          node tests/ci/arch02c-b6c-feat-raid-acceptance.mjs dist/pwa/index.html
+          node tests/ci/arch02c-b6c-feat-raid-acceptance.mjs dist/artifact.html
       - uses: browser-actions/setup-chrome@v1
         id: chrome
         with:

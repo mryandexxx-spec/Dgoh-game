@@ -5,7 +5,7 @@ import { EMBLEMS, FRAMES, TITLES } from '../../data/cosmetics.js';
 import { giveRewards, rewardWin, rewardsHtml } from '../rewards.js';
 import { render } from '../router.js';
 import { S } from '../../core/state.js';
-import { persist } from '../../core/save.js';
+import { loadSave, persist } from '../../core/save.js';
 import { ROMAN } from '../../logic/economy.js';
 import { avatarHtml } from '../overlays/profile.js';
 import { fmt } from '../../core/format.js';
@@ -38,6 +38,25 @@ const featsReady = () => FEATS.reduce((total, F) => total + F.at.slice(featStep(
 const featRank = () => FEATS.reduce((a, F) => a + featStep(F), 0), featMax = FEATS.reduce((a, F) => a + F.at.length, 0);
 const cosHtml = c => !c ? '' : [c.title ? `<span class="cosi t">Титул «${TITLES[c.title]}»</span>` : '', c.ava ? `<span class="cosi a">${avatarHtml('emb:' + c.ava, 'basic', 22)} Аватар «${EMBLEMS[c.ava].n}»</span>` : '', c.frame ? `<span class="cosi f">${avatarHtml(S.profile.ava, c.frame, 22)} Рамка «${FRAMES[c.frame].n}»</span>` : ''].join('');
 function featClaim(id) {
+  if (loadSave.writer.state().gated) {
+    const tx = loadSave.writer.transact(() => {
+      // The card may be stale: re-evaluate the actual metric, next tier and
+      // unclaimed token inside the isolated writer snapshot.
+      const F = FEATS.find(x => x.id === id);
+      if (!F || !featReady(F)) return { commit: false, value: 'not-ready' };
+      const s = featStep(F), lines = giveRewards(featRw(F, s)), c = F.cos[s];
+      if (c) {
+        if (c.title) { S.unlocks.title[c.title] = 1; lines.push(`Титул «${TITLES[c.title]}»`); }
+        if (c.ava) { S.unlocks.ava['emb:' + c.ava] = 1; lines.push(`Аватар «${EMBLEMS[c.ava].n}»`); }
+        if (c.frame) { S.unlocks.frame[c.frame] = 1; lines.push(`Рамка «${FRAMES[c.frame].n}»`); }
+      }
+      S.feats[F.id] = s + 1;
+      return { title: `Подвиг: ${F.n} ${ROMAN[s + 1]}`, lines };
+    }, giveRewards.presentationHooks);
+    if (!tx.ok) return; // no entitlement/reward animation after failed IO
+    render(); rewardWin(tx.value.title, tx.value.lines);
+    return;
+  }
   const F = FEATS.find(x => x.id === id); if (!F || !featReady(F)) return;
   const s = featStep(F), lines = giveRewards(featRw(F, s)), c = F.cos[s];
   if (c) { if (c.title) { S.unlocks.title[c.title] = 1; lines.push(`Титул «${TITLES[c.title]}»`); } if (c.ava) { S.unlocks.ava['emb:' + c.ava] = 1; lines.push(`Аватар «${EMBLEMS[c.ava].n}»`); } if (c.frame) { S.unlocks.frame[c.frame] = 1; lines.push(`Рамка «${FRAMES[c.frame].n}»`); } }

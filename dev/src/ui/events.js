@@ -534,6 +534,22 @@ function verifiedUpgradeClick(d) {
   return false;
 }
 
+// ARCH-02C-B6c: raid session initialization has no energy debit, but it is
+// nevertheless durable progress. A failed write cannot announce a new raid
+// over a still-committed previous raid. Preserve original restart semantics.
+function verifiedRaidStartClick(d) {
+  if (d.raidstart === undefined || !loadSave.writer.state().gated) return false;
+  const tier = Number(d.raidstart);
+  if (!Number.isInteger(tier) || !RAID_TIERS[tier]) return true;
+  const tx = loadSave.writer.transact(() => {
+    const T = RAID_TIERS[tier];
+    S.raid = { tier, hp: T.hp, maxHp: T.hp, used: [], log: [] };
+    S.raidPick = [];
+  });
+  if (tx.ok) render();
+  return true;
+}
+
 // ===== events =====
 document.addEventListener('click', e => {
   const sl = e.target.closest('[data-sqlead]'); if (sl) { const a = sqArr(), k = +sl.dataset.sqlead, id = a[k]; a.splice(k, 1); a.unshift(id); persist(); return renderSquadSel(); }
@@ -551,6 +567,7 @@ document.addEventListener('click', e => {
   if (d.ixenter) { closeInfo(true); closeOverlay(); set_view('recycler'); render(); return; }
   if (metaClick(d) || meta2Click(d) || celebClick(d) || cqVerifiedClaimClick(d) || cqVerifiedDiskClick(d) || cqVerifiedEconomyClick(d) || cqClick(d)) return;
   if (verifiedUpgradeClick(d)) return;
+  if (verifiedRaidStartClick(d)) return;
   if (d.bh9Stage !== undefined) { if (selectBaronStage(Number(d.bh9Stage))) render(); return; }
   if (d.bh9Start !== undefined) { const outcome=launchBaronLegend(Number(d.bh9Start)); if (!outcome.ok) toast('Восхождение недоступно: '+outcome.reason); return; }
   if (d.storyEvent) { if(selectStoryEvent(d.storyEvent))render(); return; }
