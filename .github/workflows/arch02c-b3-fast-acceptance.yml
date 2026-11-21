@@ -28,7 +28,10 @@ jobs:
   mandatory-writer-native:
     name: Mandatory PWA + HTML and native Web Locks (NO RELEASE)
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    # B4b1b adds six intact 104-week pressure scenarios; the prior 20-minute
+    # cap cancelled BH8 AFTER its PASS, before the final Chromium recovery job.
+    # Extend wall-clock budget; never skip/shorten any acceptance or golden.
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: dev
