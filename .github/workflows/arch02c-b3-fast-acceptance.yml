@@ -6,6 +6,7 @@ on:
     paths:
       - 'dev/src/**'
       - 'dev/tests/ci/arch02c-**'
+      - 'dev/tests/ci/arch02d-**'
       - 'dev/tests/lib/**'
       - 'dev/tests/golden/saves.mjs'
       - 'dev/tests/smoke/gear-e3-dom.mjs'
@@ -87,6 +88,12 @@ jobs:
         with:
           chrome-version: stable
       - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+      - name: ARCH-02D-B4a offline restart clock characterization (PWA + HTML, TZ matrix; NO RELEASE)
+        run: |
+          for zone in UTC Europe/Amsterdam America/Los_Angeles; do
+            TZ="$zone" node tests/ci/arch02d-b4-offline-clock-characterization.mjs dist/pwa/index.html
+            TZ="$zone" node tests/ci/arch02d-b4-offline-clock-characterization.mjs dist/artifact.html
+          done
       - name: Real Chromium unflagged automatic PWA bootstrap
         run: node tests/ci/arch02c-b3-b1c-b3-native-auto-chromium.mjs
       - name: Real Chromium two-tab lifecycle and lease-loss regression
