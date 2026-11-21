@@ -25,9 +25,13 @@ const cqModD = m => { const x = cqMod(m); return typeof x.d === 'function' ? x.d
 const cqScore = () => { const C = cq(); return C.stars + (C.pts || 0); };
 
 const cqWeek = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toDateString(); };
+// B1: compare legacy local-Monday keys only; never infer trusted time from the device.
+const cqWeekAfter = (a, b) => { const x = Date.parse(a), y = Date.parse(b); return Number.isFinite(x) && Number.isFinite(y) && x > y; };
 function cq() {
   const wk = cqWeek();
-  if (!S.conq || S.conq.wk !== wk) S.conq = { v: 2, wk, diff: null, open: 0, done: {}, sta: {}, foe: {}, disks: [], pick: null, dpick: {}, buy: {}, stars: 0, got: {}, rest: 0, sel: null, sec: 0, squad: [], en: CQ_EN.max, enTs: Date.now(), v3: 1, pts: 0, fp: {}, fd: {}, tk: {}, route: {} };
+  // A rollback (or timezone-induced earlier Monday) must not wipe newer progress or claim markers.
+  // Invalid legacy week keys still follow the historical initialization path.
+  if (!S.conq || (S.conq.wk !== wk && !cqWeekAfter(S.conq.wk, wk))) S.conq = { v: 2, wk, diff: null, open: 0, done: {}, sta: {}, foe: {}, disks: [], pick: null, dpick: {}, buy: {}, stars: 0, got: {}, rest: 0, sel: null, sec: 0, squad: [], en: CQ_EN.max, enTs: Date.now(), v3: 1, pts: 0, fp: {}, fd: {}, tk: {}, route: {} };
   const C = S.conq;
   if (C.v !== 2) {        // v1 → v2: new map layout, stamina instead of shared HP/fatigue, equipable disks
     Object.assign(C, { v: 2, done: {}, open: 0, sec: 0, sel: null, sta: {}, foe: {}, dpick: {}, buy: {}, rest: 0, en: CQ_EN.max, enTs: Date.now(), disks: (C.disks || []).map(k => typeof k === 'string' ? { k: k === 'leech' ? 'stam' : k, on: 1 } : k) });
@@ -135,7 +139,7 @@ function cqDifficultyAccess(diff) {
   if (diff === 'easy') return true;
   const prerequisite = diff === 'normal' ? 'easy' : 'normal';
   const completedWeek = S.cqUnlock?.[prerequisite];
-  return !!completedWeek && completedWeek !== cqWeek();
+  return !!completedWeek && cqWeekAfter(cqWeek(), completedWeek);
 }
 function cqRecordFinalBoss(a) {
   if (!a || a.s !== 4 || a.L !== CQ_LAST || a.type !== 'boss') return false;
@@ -184,9 +188,9 @@ function cqChest(i) {        // fix: гарантированно; any: одна
   const any = [['shard', 6 * m, 'robot'], ['shard', 6 * m, 'cymek'], ['folio', 4 * m + i], ['pl', 10 * m + 3 * i], ['cry', 50 * m]];
   return { fix, any };
 }
-const cqCanClaim = i => { const C = cq(); return !!C.diff && cqScore() >= CQ_CHESTS[i] && !C.tk['c' + i]; };
+const cqCanClaim = i => { const C = cq(); return C.wk === cqWeek() && !!C.diff && cqScore() >= CQ_CHESTS[i] && !C.tk['c' + i]; };
 function cqSyncTrack() {}      // промежуточные награды больше не начисляются сами — «доступно», забираются по тапу
-const cqStCan = j => { const C = cq(); if (!C.diff || C.tk['s' + j]) return false; const T = cqTrack().find(x => x.kind === 'st' && x.i === j); return !!T && cqScore() >= T.at; };
+const cqStCan = j => { const C = cq(); if (C.wk !== cqWeek() || !C.diff || C.tk['s' + j]) return false; const T = cqTrack().find(x => x.kind === 'st' && x.i === j); return !!T && cqScore() >= T.at; };
 const cqStReady = () => cqTrack().filter(x => x.kind === 'st' && cqStCan(x.i)).length;
 const cqHot = () => { if (!S) return false; const C = cq(); return S.acc.lvl >= CQ_DIFF.easy.acc && (!C.diff || !!C.pick || CQ_CHESTS.some((t, i) => cqCanClaim(i)) || cqStReady() > 0); };
 
