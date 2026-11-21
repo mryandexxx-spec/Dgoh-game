@@ -23,7 +23,10 @@ const SHOPS = {
   ring: { n: 'Водохранилище', d: 'Хранители воды племени: лишние осколки героев на 7★ становятся водяными кольцами, а кольца — осколками тех, кому ещё расти.' },
 };
 function buysToday() { if (S.buys.d !== todayKey()) S.buys = { d: todayKey(), n: {} }; return S.buys.n; }
-const shopLeft = it => it.lim ? Math.max(0, it.lim - (buysToday()[it.key] || 0)) : -1;
+// Viewing stock must not reset the saved daily purchase ledger. The explicit
+// purchase transaction is the only place that rolls it forward and commits it.
+const shopLeft = it => it.lim ? Math.max(0, it.lim -
+  ((S.buys.d === todayKey() ? S.buys.n[it.key] : 0) || 0)) : -1;
 // BH9.7 event-exclusive shards must not leak into rotating shops.
 // Keep legacy shop RNG pools stable as characters are registered in CHARS.
 const STORY_EXCLUSIVE_HEROES = new Set(['margot', 'yue']);

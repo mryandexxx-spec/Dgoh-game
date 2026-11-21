@@ -495,8 +495,21 @@ document.addEventListener('click', e => {
   if (d.fbuy) {
     const parts = d.fbuy.split(':'), q = Number(parts.pop()), id = parts.join(':');
     const item = ITEMS[id.startsWith('frag:') ? id.split(':')[1] : id];
-    if (!item || !Number.isInteger(q) || q < 1 || !id.startsWith('frag:')) return;
+    if (!item || !Number.isSafeInteger(q) || q < 1 || !id.startsWith('frag:')) return;
     const cost = q * SHOP_FRAG[item.t];
+    if (!Number.isSafeInteger(cost)) return;
+    if (loadSave.writer.state().gated) {
+      const tx = loadSave.writer.transact(() => {
+        if (S.teeth < cost) return { commit: false, value: 'funds' };
+        S.teeth -= cost;
+        S.inv[id] = (S.inv[id] || 0) + q;
+        quest('shop');
+        return true;
+      });
+      if (tx.ok) toast(`+${amt('frag', q)} ${item.n} · компонент`);
+      if (tx.ok) refreshAll();
+      return; // refused or uncertain write must never reach the legacy purchase
+    }
     if (S.teeth >= cost) {
       S.teeth -= cost; S.inv[id] = (S.inv[id] || 0) + q;
       quest('shop'); persist(); toast(`+${amt('frag', q)} ${item.n} · компонент`);
@@ -550,10 +563,42 @@ document.addEventListener('click', e => {
   }
   if (d.jgo) return openSquadSel('journey', +d.jgo);
   if (false) { const i = 0, t = JR().tiers[i]; return launch({ mode: 'journey', scene: JR().scenes[i], i, title: `Легенда ${i + 1}. ${t.n}`, desert: t.desert, squad: S.jPicks[JK()].slice(), enemy: t.enemy.map(id => ({ id, lvl: t.el, stars: t.stars, gear: Math.min(5, 1 + Math.floor(t.el / 7)) })) }); }
-  if (d.buy) { const it = findShopItem(d.buy); if (!it) return; const left = shopLeft(it); if (left === 0) return; if (getRes(it.cur) < it.price) { toast(`Не хватает: ${RES_INFO[it.cur] ? RES_INFO[it.cur].n : 'соляриев'}`); return openInfo(it.cur); }
+  if (d.buy) {
+    if (loadSave.writer.state().gated) {
+      const tx = loadSave.writer.transact(() => {
+        // Resolve today's actual offer, price and daily stock under writer
+        // authority; the clicked UI may be stale by the time it is handled.
+        const item = findShopItem(String(d.buy));
+        if (!item || shopLeft(item) === 0)
+          return { commit: false, value: { status: 'unavailable' } };
+        if (getRes(item.cur) < item.price)
+          return { commit: false, value: { status: 'funds', currency: item.cur } };
+        addRes(item.cur, -item.price);
+        if (item.lim) { buysToday(); S.buys.n[item.key] = (S.buys.n[item.key] || 0) + 1; }
+        quest('shop');
+        const unlocked = item.kind === 'sh' ? grantShards(item.id, item.qty) : false;
+        if (item.kind !== 'sh') addRes(item.kind, item.qty);
+        return { item, unlocked };
+      }, giveRewards.presentationHooks);
+      if (!tx.ok) {
+        if (tx.status === 'cancelled' && tx.value?.status === 'funds') {
+          const cur = tx.value.currency;
+          toast(`Не хватает: ${RES_INFO[cur] ? RES_INFO[cur].n : 'соляриев'}`);
+          openInfo(cur);
+        }
+        return;
+      }
+      const { item, unlocked } = tx.value;
+      if (item.kind === 'sh') toast(`+${amt('shard', item.qty, 'shard:' + item.id)} ${CH[item.id].sn}${unlocked ? ' — открыт!' : ''}`);
+      else toast(`+${amt(item.kind, item.qty)} ${RW_NAME[item.kind]}`);
+      refreshAll();
+      return;
+    }
+    const it = findShopItem(d.buy); if (!it) return; const left = shopLeft(it); if (left === 0) return; if (getRes(it.cur) < it.price) { toast(`Не хватает: ${RES_INFO[it.cur] ? RES_INFO[it.cur].n : 'соляриев'}`); return openInfo(it.cur); }
     addRes(it.cur, -it.price); if (it.lim) { buysToday(); S.buys.n[it.key] = (S.buys.n[it.key] || 0) + 1; } quest('shop');
     if (it.kind === 'sh') { const un = grantShards(it.id, it.qty); toast(`+${amt('shard', it.qty, 'shard:' + it.id)} ${CH[it.id].sn}${un ? ' — открыт!' : ''}`); } else { addRes(it.kind, it.qty); toast(`+${amt(it.kind, it.qty)} ${RW_NAME[it.kind]}`); }
-    persist(); refreshAll(); return; }
+    persist(); refreshAll(); return;
+  }
   if (!BT) return;
   if (d.auto) { BT.auto = BT.autoPref = !BT.auto; BT.autoTargetUid = null; if (BT.auto && BT.waiting) { const u = BT.waiting; const p = aiPlan(BT.B, u); doAct(u, p.key, p.target && p.target.uid); } else renderBattle(); return; }
   if (d.bdrawer && BT.pkg9) { BT.drawerOpen = !BT.drawerOpen; renderBattle(); return; }

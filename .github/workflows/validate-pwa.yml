@@ -218,6 +218,11 @@ jobs:
           node tests/ci/arch02c-b5b-login-calendar-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b5b-login-calendar-acceptance.mjs dist/artifact.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-02C-B6a verified markets, energy refills and recycling (PWA + artifact; NO RELEASE)
+        run: |
+          node tests/ci/arch02c-b6a-market-recycler-acceptance.mjs dist/pwa/index.html
+          node tests/ci/arch02c-b6a-market-recycler-acceptance.mjs dist/artifact.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-02C-B3-B2-A1 protected import + recovery-only lease (PWA + artifact; NOT LIVE)
         run: |
           node tests/ci/arch02c-b3-b2-protected-transfer-acceptance.mjs dist/pwa/index.html
