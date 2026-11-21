@@ -1,7 +1,7 @@
 // ui/common.js — строки 3252–3271 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import '../core/errlog.js'; // порядок исполнения
 import { S, tickWater } from '../core/state.js';
-import { CMAX, WATER_SEC, WMAX } from '../logic/economy.js';
+import { CMAX, WATER_SEC, WMAX, todayKey } from '../logic/economy.js';
 import { fc, fmt, ic } from '../core/format.js';
 import { SPOT_ICONS } from './views/lobby.js';
 import { figureSVG } from '../render2d/figures.js';
@@ -16,7 +16,7 @@ function toast(t) {
 
 function renderRes() {
   tickWater();
-  const next = S.water < WMAX() ? Math.ceil(WATER_SEC - (Date.now() - S.waterTs) / 1000) : null;
+  const next = S.water < WMAX() ? Math.ceil(WATER_SEC - (todayKey.clock.regenNow() - S.waterTs) / 1000) : null;
   // фаза 7, шаг 2: раз в секунду (core/boot.js) — точечно: пересоздаются только изменившиеся плашки, без innerHTML всей полосы
   const NL = '\n    ';   // пробелы между плашками — как в прежней разметке (DOM-golden)
   const pills = [

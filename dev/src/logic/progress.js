@@ -1,7 +1,7 @@
 // logic/progress.js — бывший core/util (строки 3210–3233 монолита); в фазе 3a из него вынесены dom, rng, daily, glyph. Правится вручную.
 import '../core/rng.js'; // порядок исполнения
 import { S, tickWater } from '../core/state.js';
-import { CMAX, ROSTER_IDS, WMAX, enemyProg } from './economy.js';
+import { CMAX, ROSTER_IDS, WMAX, enemyProg, todayKey } from './economy.js';
 import { CAMP_DEF, NODES } from '../data/campaigns.js';
 import { unitPower } from './battle/stats.js';
 import { CH } from '../data/chars.js';
@@ -9,7 +9,7 @@ import { quest } from './daily.js';
 
 const EN_MAX = { get water() { return WMAX(); }, get candle() { return CMAX(); } };
 const enGet = k => k === 'candle' ? S.candle : S.water;
-function enSpend(k, n) { tickWater(); const key = k === 'candle' ? 'candle' : 'water', ts = key + 'Ts'; if (S[key] >= EN_MAX[key]) S[ts] = Date.now(); S[key] -= n; if (key === 'water') quest('water', n); }
+function enSpend(k, n) { tickWater(); const key = k === 'candle' ? 'candle' : 'water', ts = key + 'Ts'; if (S[key] >= EN_MAX[key]) S[ts] = todayKey.clock.regenNow(); S[key] -= n; if (key === 'water') quest('water', n); }
 function enRefund(k, n) { const key = k === 'candle' ? 'candle' : 'water'; S[key] = Math.min(EN_MAX[key], S[key] + n); if (key === 'water') quest('water', -n); }
 const campSquad = i => { const c = NODES[i].camp; return c === 'D' ? S.squadD : c === 'C' ? S.squadC : S.squad; };
 const sideOk = (ck, id) => { const s = CAMP_DEF[ck].side; return s === 'all' || CH[id].side === s; };

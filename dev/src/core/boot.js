@@ -11,7 +11,7 @@ import { renderRes, toast } from '../ui/common.js';
 import { prog } from '../logic/progress.js';
 import { BT, S, set_S, tickWater, view } from './state.js';
 import { loadSave, newSave, persist, onPersist } from './save.js';
-import { ROSTER_IDS } from '../logic/economy.js';
+import { ROSTER_IDS, todayKey } from '../logic/economy.js';
 import { amt } from './format.js';
 import { $, LAND_MQ } from './dom.js';
 import { dly } from '../logic/daily.js';
@@ -74,7 +74,11 @@ function start(data) {
   startupSucceeded = false;
   onPersist(null, metaFill.showSaveRecovery);
   if (startupReadFailure) { metaFill.showSaveRecovery(startupReadFailure); return; }
-  metaFill(S); if (!S.notes) noteSnap(true);
+  metaFill(S);
+  // B3: anchor the session's monotonic regeneration clock only after the
+  // mandatory writer has loaded the real save. No persisted migration.
+  todayKey.clock.regenNow();
+  if (!S.notes) noteSnap(true);
   if (!S.migB) { S.migB = 1; S.stats = S.stats || {}; let n = 0;
     for (const id of ROSTER_IDS) { const p = prog(id); if (p.stars >= 7 && p.shards > 0) { n += p.shards * RING_RATE; p.shards = 0; } }
     if (n) { S.wring = (S.wring || 0) + n; setTimeout(() => toast(`Лишние осколки героев 7★ обменены: +${amt('wring', n)} водяных колец (Лавки → Водохранилище)`), 1500); }
