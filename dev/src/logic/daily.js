@@ -30,9 +30,14 @@ function dly(stamp = todayKey.clock.snapshot()) {
 // avoid changing the 167-module / named-export contract.
 dly.clock = todayKey.clock;
 function quest(k, n = 1) { if (!S || (k === 'skill' && (S.acc?.lvl || 1) > 50)) return; const D = dly(); D.c[k] = Math.max(0, (D.c[k] || 0) + n); }
-function qState(q) { const D = dly(); return D.got[q.k] ? 'got' : (D.c[q.k] || 0) >= q.need ? 'done' : 'prog'; }
-const dailyGot = () => DAILY.filter(q => dly().got[q.k]).length;
-const dailyReady = () => activeDaily().filter(q => qState(q) === 'done').length + (dailyGot() >= CHEST_NEED && !dly().chest ? 1 : 0);
+function qState(q, stamp = todayKey.clock.snapshot()) { const D = dly(stamp); return D.got[q.k] ? 'got' : (D.c[q.k] || 0) >= q.need ? 'done' : 'prog'; }
+const dailyGot = (stamp = todayKey.clock.snapshot()) => {
+  const D = dly(stamp);
+  return DAILY.filter(q => D.got[q.k]).length;
+};
+const dailyReady = (stamp = todayKey.clock.snapshot()) =>
+  activeDaily().filter(q => qState(q, stamp) === 'done').length +
+  (dailyGot(stamp) >= CHEST_NEED && !dly(stamp).chest ? 1 : 0);
 
 
 export { DAILY, activeDaily, CHEST_NEED, CHEST_RW, CHEST_CRY, dly, quest, qState, dailyGot, dailyReady };
