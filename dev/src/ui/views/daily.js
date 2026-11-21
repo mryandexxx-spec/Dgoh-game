@@ -30,7 +30,7 @@ function claimQuest(k, silent = false, expectedDay = null) {
     const D = dly(current);
     if (D.d !== day) return { commit: false, value: 'stale-day' };
     const q = activeDaily().find(x => x.k === k);
-    if (!q || qState(q) !== 'done') return { commit: false, value: 'not-ready' };
+    if (!q || qState(q, current) !== 'done') return { commit: false, value: 'not-ready' };
     D.got[k] = true;
     const lines = giveRewards(q.rw);
     lines.push(...accXP(10));
@@ -55,7 +55,7 @@ function claimAllQuests(expectedDay = null) {
     if (!claimDayCurrent(day, current)) return { commit: false, value: 'stale-day' };
     const D = dly(current);
     if (D.d !== day) return { commit: false, value: 'stale-day' };
-    const ready = activeDaily().filter(q => qState(q) === 'done');
+    const ready = activeDaily().filter(q => qState(q, current) === 'done');
     if (!ready.length) return { commit: false, value: 'not-ready' };
     const lines = [];
     for (const q of ready) {
@@ -85,7 +85,7 @@ function claimChest(expectedDay = null) {
     const current = dly.clock.snapshot();
     if (!claimDayCurrent(day, current)) return { commit: false, value: 'stale-day' };
     const D = dly(current);
-    if (D.d !== day || D.chest || dailyGot() < CHEST_NEED)
+    if (D.d !== day || D.chest || dailyGot(current) < CHEST_NEED)
       return { commit: false, value: 'not-claimable' };
     // Keep the exact original RNG draw and rounding, but only on the detached
     // candidate. An uncertain primary write fences the realm: never reroll.
@@ -102,7 +102,7 @@ function claimChest(expectedDay = null) {
 }
 function renderDaily() {
   const stamp = dly.clock.snapshot(), D = dly(stamp),
-    got = dailyGot(), ready = activeDaily().filter(q => qState(q) === 'done').length;
+    got = dailyGot(stamp), ready = activeDaily().filter(q => qState(q, stamp) === 'done').length;
   // The rendered day belongs to the existing handler, not the save or DOM.
   // An old screen cannot claim a new day until it has been rendered anew.
   claimQuest.renderedDay = D.d;
@@ -117,7 +117,7 @@ function renderDaily() {
       <button class="btn ${got >= CHEST_NEED && !D.chest ? 'go' : ''}" data-qchest="1" ${got >= CHEST_NEED && !D.chest ? '' : 'disabled'}>${D.chest ? 'Получено' : 'Открыть'}</button>
     </div>
     <div class="qhead"><p class="chap" style="margin:18px 0 8px">Задания дня</p>${ready ? `<button class="btn go mini" data-qall="1">Забрать всё (${ready})</button>` : ''}</div>
-    <div class="quests">${activeDaily().map(q => { const st = qState(q), c = Math.min(q.need, D.c[q.k] || 0);
+    <div class="quests">${activeDaily().map(q => { const st = qState(q, stamp), c = Math.min(q.need, D.c[q.k] || 0);
       return `<div class="quest ${st}"><div class="qtx"><b>${q.n}</b><div class="qbar"><i style="width:${c / q.need * 100}%"></i></div><span class="mono">${c}/${q.need}</span></div>
         <div class="qrw">${rewardsHtml(q.rw)}</div>
         <div class="qbtn">${st === 'got' ? '<span class="qok">✓ Получено</span>' : st === 'done' ? `<button class="btn go mini" data-qclaim="${q.k}">Забрать</button>` : q.go ? `<button class="btn mini" data-goto="${q.go}">Перейти</button>` : ''}</div></div>`; }).join('')}</div>
