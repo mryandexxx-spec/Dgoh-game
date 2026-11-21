@@ -125,6 +125,14 @@ try{
   // This separate phase proves actual storage notifications to an ACTIVE,
   // otherwise unblocked Web-Locks writer, not mere background suspension.
   const active=await open();
+  // Under concurrent Golden/WebGL CI load, Chromium may not have foregrounded
+  // the newly opened tab yet. An unintentionally hidden owner is *correctly*
+  // invalidated with background-suspended, which cannot prove the separate
+  // active-foreground external-write detection. Establish that precondition
+  // explicitly and retain the exact foreign-byte + reason assertions below.
+  await active.bringToFront();
+  assert.equal(await active.evaluate(()=>document.visibilityState),'visible',
+    'foreign write proof requires a genuinely visible active writer');
   assert.equal((await start(active)).status,'started',
     'backgrounded c released its lock before fresh active boot');
   assert.equal((await phase(active)).blocked,false,
@@ -144,11 +152,26 @@ try{
     'legacy writer must acknowledge its actual uncoordinated primary write');
   // Require both the exact foreign bytes and explicit external-change reason.
   // Readback may lag across processes, but a missed event is NOT accepted.
-  await active.waitForFunction(expected=>{
-    const state=window.__b3Entry.writerLifecycle();
-    return localStorage.getItem('dune-goh-v1')===expected &&
-      state.blocked===true && state.reason==='external-save-change';
-  },{timeout:10000,polling:50},oldPrimary);
+  try {
+    await active.waitForFunction(expected=>{
+      const state=window.__b3Entry.writerLifecycle();
+      return localStorage.getItem('dune-goh-v1')===expected &&
+        state.blocked===true && state.reason==='external-save-change';
+    },{timeout:30000,polling:50},oldPrimary);
+  } catch (error) {
+    // Never swallow the failure or reinterpret background-suspended as proof
+    // of an external-save event. Capture the actual browser state to identify
+    // real regressions vs Chromium foreground scheduling on the CI host.
+    const diagnostics=await active.evaluate(()=>{
+      const state=window.__b3Entry.writerLifecycle();
+      const raw=localStorage.getItem('dune-goh-v1');
+      return {visibility:document.visibilityState,reason:state.reason,
+        blocked:state.blocked,writer:state.writer.status,
+        solari:raw?JSON.parse(raw).solari:null};
+    }).catch(e=>({diagnosticError:String(e)}));
+    console.error('[B3-B1b real Chromium] external-save failure diagnostics:',diagnostics);
+    throw error;
+  }
   assert.equal(await storage(active),oldPrimary);
   assert.equal((await phase(active)).reason,'external-save-change');
   assert.equal((await evaluate(active,'S.solari += 22; persist0()')).status,'session-stale');

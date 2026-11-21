@@ -69,6 +69,32 @@ for (const entry of historical.saves) {
       assert.deepEqual(hero.eq, [false, false, false, false, false, false], `${entry.file}: ${id} has no equipped slots`);
       delete roster[id];
     }
+    // ARCH-02D-B4b1: a fixture with a past Conquest week now carries its
+    // FULL previously earned run in the inert weekArchive. Assert the complete
+    // exact old object (not just a marker) BEFORE removing this newly added
+    // optional field from the long-frozen legacy golden comparison.
+    // All historical fields and every other save snapshot remain byte-strict.
+    if (stage === 'start') {
+      const loadedRun = entry.fillSave?.conq;
+      const liveRun = entry.start?.conq;
+      const oldWeek = Date.parse(loadedRun?.wk);
+      const newWeek = Date.parse(liveRun?.wk);
+      if (loadedRun && Number.isFinite(oldWeek) && Number.isFinite(newWeek) &&
+          newWeek > oldWeek) {
+        assert.ok(Array.isArray(liveRun.weekArchive),
+          entry.file + ': Conquest past week must be preserved');
+        assert.equal(liveRun.weekArchive.length, 1,
+          entry.file + ': one rollover produces exactly one archived week');
+        assert.deepEqual(liveRun.weekArchive[0], loadedRun,
+          entry.file + ': archived Conquest must preserve every legacy field');
+        assert.equal(liveRun.weekArchive[0].weekArchive, undefined,
+          entry.file + ': archived week must be flat');
+        delete liveRun.weekArchive;
+      } else {
+        assert.equal(liveRun?.weekArchive, undefined,
+          entry.file + ': same-week/absent Conquest must not create an archive');
+      }
+    }
     // BH9.9 creates an isolated empty legend journey without touching Muad'Dib.
     const journeys=entry[stage]?.journeys;
     assert.ok(journeys && typeof journeys.baron_legend==='object', 'Baron journey migration present');
