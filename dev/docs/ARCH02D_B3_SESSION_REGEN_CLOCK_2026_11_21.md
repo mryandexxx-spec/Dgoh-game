@@ -11,7 +11,7 @@ Four regeneration paths relied on `Date.now()` for elapsed milliseconds: `tickWa
 - Provider `todayKey.clock.regenNow()` added as a method to the existing frozen, non-exported GameClock object, no new named ESM export/module. Existing `todayKey.clock.now()` and `snapshot()` remain wall time: calendar, daily reset and shop seeds **do not** silently switch to monotonic time.
 - `core/boot.js` seeds the anchor **only after** the mandatory native Web Lock and original `metaFill(S)` have loaded the account; no change to `start()` first AST action, boot structure or writer lease. This anchors a genuine running session before gameplay.
 - `core/state.js` Water/Candles `tickWater()`, `logic/progress.js` energy spend timestamps, and `logic/conquest.js` Resolve/cooldown/hero stamina timestamps use the same regen clock. Conquest **week eligibility** still uses original calendar date; the B1 rollback guard and transaction paths are untouched.
-- `save.js` schema, new-save initial timestamps, v1 validated checkpoint, transaction semantics and all RNG streams are untouched. No new persistent sidecar, version or migration. The only changed stamina calculation is `max(0, floor(elapsed/step))` so a future saved timestamp cannot reduce energy below its actual saved value.
+- `save.js` schema, new-save initial timestamps, v1 validated checkpoint, transaction semantics and all RNG streams are untouched. The Water UI countdown (`ui/common.js`) and both verified/legacy paid water-refill completion timestamps (`ui/overlays/sim.js`) also use the same monotonic source so the display and the paid cooldown cannot diverge. No new persistent sidecar, version or migration. The only changed stamina calculation is `max(0, floor(elapsed/step))` so a future saved timestamp cannot reduce energy below its actual saved value.
 
 ## Security boundary: NOT a trusted offline clock
 
@@ -21,7 +21,7 @@ If the Web Performance API is absent entirely, the existing wall-clock behavior 
 
 ## Acceptance and roll-forward requirements
 
-New B301–B309 (compiled PWA + standalone HTML × UTC/Europe-Amsterdam/America-Los_Angeles) exercise: +48h wall jump while monotonic is frozen (no energy/resolve/stamina mint), valid monotonic progression at exact original rate, -48h wall jump (no freeze/loss), spend timestamps under forward spoof, negative-future stamina safety, monotonic sample regression/NaN (no wall reanchor), legacy genuine offline accrual at first boot, one exact verified checkpoint, v1 save shape and no RNG draws or claim token duplication.
+New B301–B310 (compiled PWA + standalone HTML × UTC/Europe-Amsterdam/America-Los_Angeles) exercise: +48h wall jump while monotonic is frozen (no energy/resolve/stamina mint), valid monotonic progression at exact original rate, -48h wall jump (no freeze/loss), spend timestamps under forward spoof, negative-future stamina safety, monotonic sample regression/NaN (no wall reanchor), legacy genuine offline accrual at first boot, one exact verified checkpoint, live Water countdown and paid refill under wall spoof, v1 save shape and no RNG draws or claim token duplication.
 
 Run in addition to existing B0 D001–D010, B1 B101–B106, B2 B201–B207, B5 transaction acceptance, strict zero forbidden imports, exact ABI, Golden 200-battle and 41-screen baselines, 3D/WebGL and offline PWA. New test uses separate injected monotonic samples (unlike B0 test VM's coupled wall and `performance.now`).
 
