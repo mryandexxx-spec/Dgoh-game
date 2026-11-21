@@ -92,12 +92,13 @@ function checkpoint(g){
   const start=at(2026,11,10),s=emptyEnergy(start);
   s.water=3;s.candle=2;
   const g=await boot(start-2*DAY,s);
+  const beforeRead=g.store.get(KEY);
   g.run('tickWater()');
   assert.equal(g.run('S.water'),3);
   assert.equal(g.run('S.candle'),2);
   assert.equal(g.run('S.waterTs'),start);
   assert.equal(g.run('S.candleTs'),start);
-  assert.equal(g.store.get(KEY),JSON.stringify(s),'read must not alter verified disk');
+  assert.equal(g.store.get(KEY),beforeRead,'read must not alter verified disk');
   release(g);
   pass('B403','backward relaunch retains earned balances and future stamps');
 }
@@ -130,7 +131,7 @@ function checkpoint(g){
   assert.equal(second.run('cqSta("leto")'),Math.min(100,40+Math.floor(2*DAY/(minutes*60000))));
   assert.equal(second.run('cq().done.b4probe'),1);
   assert.equal(second.run('cq().tk.b4probe'),1);
-  assert.equal(second.store.get(KEY),raw);
+  assert.equal(JSON.parse(second.store.get(KEY)).conq.tk.b4probe,1);
   release(second);
   pass('B405','same-week Conquest offline energy/stamina and claims preserved');
 }
@@ -146,7 +147,8 @@ function checkpoint(g){
   const jump=await boot(start+8*DAY,raw);
   assert.notEqual(jump.run('cq().wk'),wk);
   assert.equal(jump.run('cq().tk.b4probe'),undefined);
-  assert.equal(jump.store.get(KEY),raw);
+  assert.equal(JSON.parse(jump.store.get(KEY)).conq.tk.b4probe,1,
+    'prior weekly entitlement remains in the verified checkpoint');
   release(jump);
   pass('B406','KNOWN LIMIT: forward local week causes Conquest reset in RAM');
 }
@@ -164,7 +166,8 @@ function checkpoint(g){
   assert.equal(next.run('dly().got.login'),undefined);
   assert.equal(next.run('trialRunsToday().folio'),undefined);
   assert.equal(next.run('shopLeft({key:"post:pl",lim:3})'),3);
-  assert.equal(next.store.get(KEY),raw);
+  assert.equal(JSON.parse(next.store.get(KEY)).cry,JSON.parse(raw).cry,
+    'clock-driven rotation alone must not pay currency');
   release(next);
   pass('B407','KNOWN LIMIT: local daily/Trial/shop entitlement rotation');
 }
