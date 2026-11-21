@@ -27,11 +27,29 @@ const cqScore = () => { const C = cq(); return C.stars + (C.pts || 0); };
 const cqWeek = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toDateString(); };
 // B1: compare legacy local-Monday keys only; never infer trusted time from the device.
 const cqWeekAfter = (a, b) => { const x = Date.parse(a), y = Date.parse(b); return Number.isFinite(x) && Number.isFinite(y) && x > y; };
+// B4b1: a forward local-week read may start the next run, but must never
+// discard the preceding saved run. Keep a lossless, inactive history INSIDE
+// the existing v1 Conquest field. It is never used for gameplay/claims.
+// No expiry, eviction, clock-trust token or second storage mechanism: pruning
+// archival progress needs a separate user-approved retention policy.
+const cqFresh = wk => ({ v: 2, wk, diff: null, open: 0, done: {}, sta: {}, foe: {}, disks: [], pick: null, dpick: {}, buy: {}, stars: 0, got: {}, rest: 0, sel: null, sec: 0, squad: [], en: CQ_EN.max, enTs: todayKey.clock.regenNow(), v3: 1, pts: 0, fp: {}, fd: {}, tk: {}, route: {} });
+function cqAdvance(previous, wk) {
+  const history = previous.weekArchive;
+  // A malformed/imported archive cannot authorize erasing previous entries.
+  // Keep the current run while its week differs: B1 guards spending/claims.
+  if (history !== undefined && !Array.isArray(history)) return previous;
+  const saved = { ...previous };
+  delete saved.weekArchive; // never nest earlier archives inside snapshots
+  return { ...cqFresh(wk), weekArchive: [...(history || []), saved] };
+}
 function cq() {
   const wk = cqWeek();
-  // A rollback (or timezone-induced earlier Monday) must not wipe newer progress or claim markers.
-  // Invalid legacy week keys still follow the historical initialization path.
-  if (!S.conq || (S.conq.wk !== wk && !cqWeekAfter(S.conq.wk, wk))) S.conq = { v: 2, wk, diff: null, open: 0, done: {}, sta: {}, foe: {}, disks: [], pick: null, dpick: {}, buy: {}, stars: 0, got: {}, rest: 0, sel: null, sec: 0, squad: [], en: CQ_EN.max, enTs: todayKey.clock.regenNow(), v3: 1, pts: 0, fp: {}, fd: {}, tk: {}, route: {} };
+  // B1 still prevents moving BACK to an earlier local Monday and re-claiming.
+  // A legitimate forward Monday remains playable, but its predecessor is
+  // archived before anything can persist the new week (including boot writes).
+  if (!S.conq) S.conq = cqFresh(wk);
+  else if (S.conq.wk !== wk && !cqWeekAfter(S.conq.wk, wk))
+    S.conq = cqAdvance(S.conq, wk);
   const C = S.conq;
   if (C.v !== 2) {        // v1 → v2: new map layout, stamina instead of shared HP/fatigue, equipable disks
     Object.assign(C, { v: 2, done: {}, open: 0, sec: 0, sel: null, sta: {}, foe: {}, dpick: {}, buy: {}, rest: 0, en: CQ_EN.max, enTs: todayKey.clock.regenNow(), disks: (C.disks || []).map(k => typeof k === 'string' ? { k: k === 'leech' ? 'stam' : k, on: 1 } : k) });
