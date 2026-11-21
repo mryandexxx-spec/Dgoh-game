@@ -41,8 +41,8 @@ function markedRun(g) {
   return {wk:g.run('cq().wk'),raw:checkpoint(g)};
 }
 
-// B411: reading a *forward* week resets an existing Conquest run in RAM,
-// but until checkpoint the verified previous-week record is intact on disk.
+// B411 after B4b1: a forward-week read still opens the new active run,
+// but its previous run is archived, and the original checkpoint is unchanged.
 {
   const start=at(2026,11,10),first=await boot(start);
   const {wk,raw}=markedRun(first);release(first);
@@ -52,14 +52,17 @@ function markedRun(g) {
   assert.notEqual(g.run('cq().wk'),wk);
   assert.equal(g.run('cq().tk.b4b'),undefined);
   assert.equal(g.run('cq().done.b4b'),undefined);
+  assert.equal(g.run('S.conq.weekArchive[0].wk'),wk);
+  assert.equal(g.run('S.conq.weekArchive[0].done.b4b'),1);
+  assert.equal(g.run('S.conq.weekArchive[0].tk.b4b'),1);
   assert.equal(g.store.get(KEY),disk,'read must not itself write to disk');
   release(g);
-  pass('B411','KNOWN P1: forward-week read drops prior Conquest run in RAM');
+  pass('B411','forward-week active reset now retains inactive old run in RAM');
 }
 
-// B412: if any legitimate verified checkpoint persists that forward-week
-// view, B1 correctly blocks backward-week access but cannot resurrect the
-// earlier weekly run. This is a SAVE-SAFETY design problem, not just anti-cheat.
+// B412 after B4b1: a verified forward-week checkpoint persists the old
+// run INACTIVE in v1; B1 continues to block old-week claims after rollback.
+// Resuming play in the archived run requires a separately agreed policy.
 {
   const start=at(2026,11,10),first=await boot(start);
   const {wk,raw}=markedRun(first);release(first);
@@ -67,14 +70,18 @@ function markedRun(g) {
   assert.notEqual(forward.run('cq().wk'),wk);
   const advanced=checkpoint(forward);
   assert.notEqual(JSON.parse(advanced).conq.wk,wk);
+  assert.equal(JSON.parse(advanced).conq.weekArchive[0].wk,wk);
+  assert.equal(JSON.parse(advanced).conq.weekArchive[0].tk.b4b,1);
   release(forward);
   const back=await boot(start,advanced);
   assert.notEqual(back.run('cq().wk'),wk);
   assert.equal(back.run('cq().done.b4b'),undefined);
   assert.equal(back.run('cq().tk.b4b'),undefined);
+  assert.equal(back.run('S.conq.weekArchive[0].wk'),wk);
+  assert.equal(back.run('S.conq.weekArchive[0].tk.b4b'),1);
   assert.equal(back.run('cqCanClaim(0)'),false);
   release(back);
-  pass('B412','KNOWN P1: verified future-week save can lose prior entitlement');
+  pass('B412','verified future-week save retains inactive prior entitlement');
 }
 
 // B413: the historical local Monday boundary legitimately changes Conquest
