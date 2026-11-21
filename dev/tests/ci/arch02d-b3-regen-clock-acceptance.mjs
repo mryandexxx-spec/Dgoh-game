@@ -180,5 +180,26 @@ function realNow(g){return g.run('todayKey.clock.regenNow()');}
   assert.deepEqual(Object.keys(JSON.parse(g.store.get(KEY))).sort(),Object.keys(old).sort());
   release(g);pass('B309','v1 save shape, RNG and claim markers remain unchanged');
 }
-assert.equal(passed,9);
+// B310: a forged future wall clock must not corrupt the visible Water
+// countdown or the verified purchase refill timestamp.
+{
+  const now=at(2026,11,9),g=await boot(now);prepare(g);
+  const originalDocument=g.ctx.document;
+  const box={innerHTML:'',children:[]};
+  g.ctx.document={querySelectorAll:selector=>selector==='.resbox'?[box]:[]};
+  g.setNow(now+2*DAY);
+  g.run('renderRes()');
+  assert.ok(box.innerHTML.includes('Вода · +1 через '+g.run('WATER_SEC')+'с'),
+    'visible Water countdown must use same in-session monotonic time');
+  g.ctx.document=originalDocument;
+  g.run('S.cry=1000;S.water=WMAX()-1;S.waterTs=todayKey.clock.regenNow()');
+  const before=g.run('S.cry');
+  g.run('doRefill("water")');
+  assert.ok(g.run('S.cry')<before,'verified refill should charge exactly once');
+  assert.equal(g.run('S.waterTs'),now,
+    'purchased refill cannot persist spoofed future wall timestamp');
+  assert.equal(JSON.parse(g.store.get(KEY)).waterTs,now);
+  release(g);pass('B310','Water countdown and verified refill keep monotonic stamps');
+}
+assert.equal(passed,10);
 console.log('ARCH-02D-B3 '+passed+' monotonic regen scenarios PASS: '+html+' TZ='+zone);
