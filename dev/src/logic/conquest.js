@@ -31,10 +31,10 @@ function cq() {
   const wk = cqWeek();
   // A rollback (or timezone-induced earlier Monday) must not wipe newer progress or claim markers.
   // Invalid legacy week keys still follow the historical initialization path.
-  if (!S.conq || (S.conq.wk !== wk && !cqWeekAfter(S.conq.wk, wk))) S.conq = { v: 2, wk, diff: null, open: 0, done: {}, sta: {}, foe: {}, disks: [], pick: null, dpick: {}, buy: {}, stars: 0, got: {}, rest: 0, sel: null, sec: 0, squad: [], en: CQ_EN.max, enTs: Date.now(), v3: 1, pts: 0, fp: {}, fd: {}, tk: {}, route: {} };
+  if (!S.conq || (S.conq.wk !== wk && !cqWeekAfter(S.conq.wk, wk))) S.conq = { v: 2, wk, diff: null, open: 0, done: {}, sta: {}, foe: {}, disks: [], pick: null, dpick: {}, buy: {}, stars: 0, got: {}, rest: 0, sel: null, sec: 0, squad: [], en: CQ_EN.max, enTs: todayKey.clock.regenNow(), v3: 1, pts: 0, fp: {}, fd: {}, tk: {}, route: {} };
   const C = S.conq;
   if (C.v !== 2) {        // v1 → v2: new map layout, stamina instead of shared HP/fatigue, equipable disks
-    Object.assign(C, { v: 2, done: {}, open: 0, sec: 0, sel: null, sta: {}, foe: {}, dpick: {}, buy: {}, rest: 0, en: CQ_EN.max, enTs: Date.now(), disks: (C.disks || []).map(k => typeof k === 'string' ? { k: k === 'leech' ? 'stam' : k, on: 1 } : k) });
+    Object.assign(C, { v: 2, done: {}, open: 0, sec: 0, sel: null, sta: {}, foe: {}, dpick: {}, buy: {}, rest: 0, en: CQ_EN.max, enTs: todayKey.clock.regenNow(), disks: (C.disks || []).map(k => typeof k === 'string' ? { k: k === 'leech' ? 'stam' : k, on: 1 } : k) });
     for (const k of ['hp', 'fat', 'med', 'stim', 'regroup']) delete C[k];
   }
   if (!C.v3) { Object.assign(C, { v3: 1, pts: 0, fp: {}, fd: {}, tk: {} }); delete C.got; CQ_MEMO_CLR(); }     // v3: feats + new reward track, boss modifiers
@@ -43,18 +43,18 @@ function cq() {
 }
 // ---- Решимость (energy of the mode) ----
 function cqEn() {
-  const C = cq(), now = Date.now(), step = CQ_EN.sec * 1000;
+  const C = cq(), now = todayKey.clock.regenNow(), step = CQ_EN.sec * 1000;
   if (C.en >= CQ_EN.max) { C.enTs = now; return C.en; }
   const k = Math.floor((now - C.enTs) / step);
   if (k > 0) { C.en = Math.min(CQ_EN.max, C.en + k); C.enTs = C.en >= CQ_EN.max ? now : C.enTs + k * step; }
   return C.en;
 }
-function cqEnSpend(n) { const C = cq(); if (C.wk !== cqWeek() || cqEn() < n) return false; if (C.en >= CQ_EN.max) C.enTs = Date.now(); C.en -= n; return true; }
-const cqEnNext = () => { const C = cq(); return C.en >= CQ_EN.max ? 0 : Math.max(1, Math.ceil((CQ_EN.sec * 1000 - (Date.now() - C.enTs)) / 1000)); };
+function cqEnSpend(n) { const C = cq(); if (C.wk !== cqWeek() || cqEn() < n) return false; if (C.en >= CQ_EN.max) C.enTs = todayKey.clock.regenNow(); C.en -= n; return true; }
+const cqEnNext = () => { const C = cq(); return C.en >= CQ_EN.max ? 0 : Math.max(1, Math.ceil((CQ_EN.sec * 1000 - (todayKey.clock.regenNow() - C.enTs)) / 1000)); };
 const cqEnTxt = () => { const s = cqEnNext(); return s ? `+1 через ${s >= 60 ? Math.ceil(s / 60) + ' мин' : s + ' с'}` : 'запас полон'; };
 // ---- выносливость героев ----
-function cqSta(id) { const r = cq().sta[id]; return r ? Math.min(100, r.v + Math.floor((Date.now() - r.t) / (CQ_STA.regenMin * 60000))) : 100; }
-function cqStaSet(id, v) { const C = cq(); v = Math.max(0, Math.min(100, Math.round(v))); if (v >= 100) delete C.sta[id]; else C.sta[id] = { v, t: Date.now() }; }
+function cqSta(id) { const r = cq().sta[id]; return r ? Math.min(100, r.v + Math.max(0, Math.floor((todayKey.clock.regenNow() - r.t) / (CQ_STA.regenMin * 60000)))) : 100; }
+function cqStaSet(id, v) { const C = cq(); v = Math.max(0, Math.min(100, Math.round(v))); if (v >= 100) delete C.sta[id]; else C.sta[id] = { v, t: todayKey.clock.regenNow() }; }
 const cqStaPen = s => { const x = 1 - s / 100; return { dmg: CQ_STA.dmg * x, spd: CQ_STA.spd * x }; };
 const cqStaCol = s => s >= 70 ? '#7fbb6c' : s >= 40 ? '#e8c04f' : '#d9604f';
 // ---- диски ----
