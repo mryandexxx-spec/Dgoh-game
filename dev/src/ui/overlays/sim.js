@@ -32,6 +32,38 @@ function refreshAll() {
 function crefillN() { return S.crefills.d === todayKey() ? S.crefills.n : 0; }
 function crefillCost() { return refillPrice(crefillN()); }
 function doRefill(kind) {
+  // The shipped water buttons use data-refill="1"; keep that exact contract.
+  if (kind !== '1' && kind !== 'water' && kind !== 'candle') return;
+  const energy = kind === 'candle' ? 'candle' : 'water';
+  if (loadSave.writer.state().gated) {
+    const tx = loadSave.writer.transact(() => {
+      // Recalculate the daily counter and escalating price inside the writer's
+      // detached save; payment, energy, timestamp and limit share one record.
+      const n = energy === 'candle' ? crefillN() : refillN();
+      if (n >= REFILL_MAX) return { commit: false, value: 'limit' };
+      const cost = energy === 'candle' ? crefillCost() : refillCost();
+      if (S.cry < cost) return { commit: false, value: 'cry' };
+      S.cry -= cost;
+      if (energy === 'candle') {
+        S.candle += CANDLE_REFILL;
+        S.crefills = { d: todayKey(), n: n + 1 };
+      } else {
+        const wasFull = S.water >= WMAX();
+        S.water += REFILL_AMT;
+        if (!wasFull && S.water >= WMAX()) S.waterTs = Date.now();
+        S.refills = { d: todayKey(), n: n + 1 };
+      }
+      return { cost, quantity: energy === 'candle' ? CANDLE_REFILL : REFILL_AMT };
+    });
+    if (!tx.ok) {
+      if (tx.status === 'cancelled' && tx.value === 'limit')
+        toast(`Лимит пополнений на сегодня исчерпан: ${REFILL_MAX} из ${REFILL_MAX}`);
+      if (tx.status === 'cancelled' && tx.value === 'cry') openInfo('cry');
+      return; // no success UI or unsafe persist after failed/uncertain checkpoint
+    }
+    toast(`+${amt(energy, tx.value.quantity)} ${energy === 'candle' ? 'Свечей' : 'Воды'} за ${amt('cry', tx.value.cost)}`);
+    return refreshAll();
+  }
   if ((kind === 'candle' ? crefillN() : refillN()) >= REFILL_MAX) return toast(`Лимит пополнений на сегодня исчерпан: ${REFILL_MAX} из ${REFILL_MAX}`);
   if (kind === 'candle') { const c = crefillCost(); if (S.cry < c) return openInfo('cry'); S.cry -= c; S.candle += CANDLE_REFILL; S.crefills = { d: todayKey(), n: crefillN() + 1 }; persist(); toast(`+${amt('candle', CANDLE_REFILL)} Свечей за ${amt('cry', c)}`); return refreshAll(); }
   const c = refillCost(); if (S.cry < c) return openInfo('cry');

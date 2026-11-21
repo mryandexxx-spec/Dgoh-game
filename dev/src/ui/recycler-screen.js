@@ -1,6 +1,6 @@
 // Отдельный экран Утилизатора Икса. Вход временно из Лавок.
 import { S, set_view } from '../core/state.js';
-import { persist } from '../core/save.js';
+import { loadSave, persist } from '../core/save.js';
 import { MEM_MATS, SCRAP, scrapPoint, scrapAvailable, protectedStock, scrapQuote, scrapCommit, scrapAutoPick } from '../logic/recycler.js';
 import { ITEMS } from '../logic/gear.js';
 import { fmt, ic } from '../core/format.js';
@@ -92,7 +92,22 @@ function recyclerClick(d) {
   if (d.ixkind) { kind=d.ixkind; tab='work'; basket=[]; renderRecycler(); return true; }
   if (d.ixclear) { basket=[]; renderRecycler(); return true; }
   if (d.ixauto) { basket=scrapAutoPick(S,kind); renderRecycler(); return true; }
-  if (d.ixlock) { S.scrapLocks ??= {}; S.scrapLocks[d.ixlock]=!S.scrapLocks[d.ixlock]; basket=[]; persist(); renderRecycler(); return true; }
+  if (d.ixlock) {
+    if (loadSave.writer.state().gated) {
+      const key = String(d.ixlock);
+      const exists = Object.values(ITEMS).some(it => it.id === key) ||
+        Object.keys(S.gearParts || {}).includes(key);
+      if (!exists) return true;
+      const tx = loadSave.writer.transact(() => {
+        S.scrapLocks ??= {};
+        S.scrapLocks[key] = !S.scrapLocks[key];
+      });
+      if (!tx.ok) return true;
+    } else {
+      S.scrapLocks ??= {}; S.scrapLocks[d.ixlock] = !S.scrapLocks[d.ixlock]; persist();
+    }
+    basket=[]; renderRecycler(); return true;
+  }
   if (d.ixremove) { basket=basket.filter(x=>keyOf(x)!==d.ixremove); renderRecycler(); return true; }
   if (d.ixselect) {
     selected=itemPool().find(x=>keyOf(x)===d.ixselect);
@@ -110,10 +125,31 @@ function recyclerClick(d) {
     return true;
   }
   if (d.ixdo) {
-    const q=scrapCommit(S,kind,basket);
+    let q;
+    if (loadSave.writer.state().gated) {
+      // The preview is not authoritative: revalidate the same basket against
+      // current protected stock inside the exclusive verified checkpoint.
+      const copy = basket.map(x => ({ ...x })), selectedKind = kind;
+      const tx = loadSave.writer.transact(() => {
+        const quote = scrapCommit(S, selectedKind, copy);
+        return quote.ok ? quote : { commit: false, value: 'changed' };
+      });
+      if (!tx.ok) {
+        if (tx.status === 'cancelled' && tx.value === 'changed') {
+          $('#overlay2').innerHTML='';
+          toast('Материалы изменились. Проверьте корзину.');
+          basket=[]; renderRecycler();
+        }
+        return true; // storage errors leave preview and durable stock unchanged
+      }
+      q = tx.value;
+    } else {
+      q = scrapCommit(S,kind,basket);
+      if(!q.ok) { $('#overlay2').innerHTML=''; toast('Материалы изменились. Проверьте корзину.'); basket=[]; renderRecycler(); return true; }
+      persist();
+    }
     $('#overlay2').innerHTML='';
-    if(!q.ok) { toast('Материалы изменились. Проверьте корзину.'); basket=[]; renderRecycler(); return true; }
-    persist(); toast('Получено: '+q.output+' × '+qtyName(kind)); basket=[]; renderRecycler(); return true;
+    toast('Получено: '+q.output+' × '+qtyName(kind)); basket=[]; renderRecycler(); return true;
   }
   return false;
 }
