@@ -47,17 +47,17 @@ const disk=g=>g.store.get(KEY);
   assert.equal(g.run('trialOpen(TRIALS[0])'),true);
   pass('D001','local daily, month and trial-weekday identity');
 }
-// D002: UTC clock week and local-Monday Conquest week remain distinct concepts.
+// D002: UTC-SUNDAY rotation (epoch +4) and local-Monday Conquest week differ.
 {
-  const before=at(2026,11,1,23),after=at(2026,11,2,1),g=fresh(before);
+  const before=at(2026,10,31,23),after=at(2026,11,1,1),g=fresh(before);
   const oldNumber=g.run('weekNo()'),oldLocal=g.run('cqWeek()'),oldDay=g.run('todayKey()');
   g.setNow(after);
-  assert.equal(g.run('weekNo()'),oldNumber+1,'trial rotation ticks on UTC Monday');
+  assert.equal(g.run('weekNo()'),oldNumber+1,'trial rotation ticks at UTC Sunday (legacy +4 epoch formula)');
   assert.equal(g.run('cqWeek()'),new Date(after-( ((new Date(after).getDay()+6)%7)*DAY )).toDateString(),
     'local Monday must match the historical algorithm for this Sunday/Monday fixture');
   // Do not assert local dates differ: that depends on runner TZ.
   assert.ok(typeof oldLocal==='string'&&typeof oldDay==='string');
-  pass('D002','UTC trial rotation versus local Conquest date boundaries');
+  pass('D002','UTC Sunday trial rotation versus local Monday Conquest boundary');
 }
 // D003: a local calendar month is reconstructed on reads, without side effects.
 {
