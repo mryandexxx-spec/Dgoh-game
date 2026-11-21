@@ -139,7 +139,11 @@ function cqDifficultyAccess(diff) {
   if (diff === 'easy') return true;
   const prerequisite = diff === 'normal' ? 'easy' : 'normal';
   const completedWeek = S.cqUnlock?.[prerequisite];
-  return !!completedWeek && cqWeekAfter(cqWeek(), completedWeek);
+  if (!completedWeek || completedWeek === cqWeek()) return false;
+  // Preserve legacy J1 migration's non-date unlock markers, but never
+  // allow them to bypass an actual rollback of the current Conquest run.
+  if (S.conq && cqWeekAfter(S.conq.wk, cqWeek())) return false;
+  return !Number.isFinite(Date.parse(completedWeek)) || cqWeekAfter(cqWeek(), completedWeek);
 }
 function cqRecordFinalBoss(a) {
   if (!a || a.s !== 4 || a.L !== CQ_LAST || a.type !== 'boss') return false;
