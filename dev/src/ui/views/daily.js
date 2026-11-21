@@ -12,8 +12,8 @@ import { CHEST_CRY, CHEST_NEED, CHEST_RW, DAILY, activeDaily, dailyGot, dly, qSt
 // The historical ungated branch is retained only for B0's forensic harness.
 // All ordinary booted sessions have a mandatory writer gate: never fall back
 // to a direct persist after a refused or ambiguous verified transaction.
-const claimDay = (expectedDay) => expectedDay == null ? new Date().toDateString() : String(expectedDay);
-const claimDayCurrent = (day) => day === new Date().toDateString();
+const claimDay = (expectedDay, stamp) => expectedDay == null ? stamp.day : String(expectedDay);
+const claimDayCurrent = (day, stamp) => day === stamp.day;
 function claimQuest(k, silent = false, expectedDay = null) {
   if (!loadSave.writer.state().gated) {
     const q = activeDaily().find(x => x.k === k); if (!q || qState(q) !== 'done') return;
@@ -21,11 +21,13 @@ function claimQuest(k, silent = false, expectedDay = null) {
     if (!silent) { refreshAll(); rewardWin(q.n, lines); }
     return lines;
   }
-  const day = claimDay(expectedDay);
-  if (!claimDayCurrent(day)) return;
+  const stamp = dly.clock.snapshot(), day = claimDay(expectedDay, stamp);
+  if (!claimDayCurrent(day, stamp)) return;
   const pendingBefore = accXP.pendingQueue.length;
   const tx = loadSave.writer.transact(() => {
-    const D = dly();
+    const current = dly.clock.snapshot();
+    if (!claimDayCurrent(day, current)) return { commit: false, value: 'stale-day' };
+    const D = dly(current);
     if (D.d !== day) return { commit: false, value: 'stale-day' };
     const q = activeDaily().find(x => x.k === k);
     if (!q || qState(q) !== 'done') return { commit: false, value: 'not-ready' };
@@ -45,11 +47,13 @@ function claimAllQuests(expectedDay = null) {
     refreshAll(); if (lines.length) rewardWin('Задания дня', lines);
     return lines;
   }
-  const day = claimDay(expectedDay);
-  if (!claimDayCurrent(day)) return;
+  const stamp = dly.clock.snapshot(), day = claimDay(expectedDay, stamp);
+  if (!claimDayCurrent(day, stamp)) return;
   const pendingBefore = accXP.pendingQueue.length;
   const tx = loadSave.writer.transact(() => {
-    const D = dly();
+    const current = dly.clock.snapshot();
+    if (!claimDayCurrent(day, current)) return { commit: false, value: 'stale-day' };
+    const D = dly(current);
     if (D.d !== day) return { commit: false, value: 'stale-day' };
     const ready = activeDaily().filter(q => qState(q) === 'done');
     if (!ready.length) return { commit: false, value: 'not-ready' };
@@ -75,10 +79,12 @@ function claimChest(expectedDay = null) {
     rewardWin('Сундук дня', lines, { sub: `Выполнено ${CHEST_NEED} заданий · кристаллы: ${cry} из 50–300` });
     return;
   }
-  const day = claimDay(expectedDay);
-  if (!claimDayCurrent(day)) return;
+  const stamp = dly.clock.snapshot(), day = claimDay(expectedDay, stamp);
+  if (!claimDayCurrent(day, stamp)) return;
   const tx = loadSave.writer.transact(() => {
-    const D = dly();
+    const current = dly.clock.snapshot();
+    if (!claimDayCurrent(day, current)) return { commit: false, value: 'stale-day' };
+    const D = dly(current);
     if (D.d !== day || D.chest || dailyGot() < CHEST_NEED)
       return { commit: false, value: 'not-claimable' };
     // Keep the exact original RNG draw and rounding, but only on the detached
@@ -95,12 +101,15 @@ function claimChest(expectedDay = null) {
   });
 }
 function renderDaily() {
-  const D = dly(), got = dailyGot(), ready = activeDaily().filter(q => qState(q) === 'done').length;
+  const stamp = dly.clock.snapshot(), D = dly(stamp),
+    got = dailyGot(), ready = activeDaily().filter(q => qState(q) === 'done').length;
   // The rendered day belongs to the existing handler, not the save or DOM.
   // An old screen cannot claim a new day until it has been rendered anew.
   claimQuest.renderedDay = D.d;
   claimChest.renderedDay = D.d;
-  const msLeft = new Date(new Date().setHours(24, 0, 0, 0)) - Date.now(), hh = Math.floor(msLeft / 3.6e6), mm = Math.floor(msLeft % 3.6e6 / 6e4);
+  // Civil midnight from this one local Date snapshot (DST 23/25h safe).
+  const msLeft = Math.max(0, stamp.nextMidnight - stamp.now),
+    hh = Math.floor(msLeft / 3.6e6), mm = Math.floor(msLeft % 3.6e6 / 6e4);
   $('#view').innerHTML = `<h2>Ежедневные задания</h2><p class="sub">Задания обновляются в полночь — осталось ${hh} ч ${mm} мин. Получите награды за ${CHEST_NEED} заданий, чтобы открыть Сундук дня: Печать Ландсраада и случайно от 50 до 300 кристаллов.</p>
     <div class="chest ${D.chest ? 'opened' : got >= CHEST_NEED ? 'ready' : ''}">
       <div class="chico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18v10H3z" fill="#7a4a22"/><path d="M3 10c0-4 4-6 9-6s9 2 9 6z" fill="#a8642a"/><rect x="10" y="9" width="4" height="5" rx="1" fill="#f0c860"/><path d="M3 14h18" stroke="#3a2210" stroke-width="1.4"/></svg></div>
@@ -112,7 +121,7 @@ function renderDaily() {
       return `<div class="quest ${st}"><div class="qtx"><b>${q.n}</b><div class="qbar"><i style="width:${c / q.need * 100}%"></i></div><span class="mono">${c}/${q.need}</span></div>
         <div class="qrw">${rewardsHtml(q.rw)}</div>
         <div class="qbtn">${st === 'got' ? '<span class="qok">✓ Получено</span>' : st === 'done' ? `<button class="btn go mini" data-qclaim="${q.k}">Забрать</button>` : q.go ? `<button class="btn mini" data-goto="${q.go}">Перейти</button>` : ''}</div></div>`; }).join('')}</div>
-    <div class="calcard"><div>${portrait(CH[monthHero()], 56, '#e0a83a')}</div><div><b>Календарь входа</b><span>${MONTHS[new Date().getMonth()]} — месяц героя ${CH[monthHero()].n}. ${loginCan() ? 'Сегодняшняя награда ждёт!' : 'Сегодняшняя награда получена.'}</span></div><button class="btn ${loginCan() ? 'go' : ''}" data-cal="1">Открыть</button></div>`;
+    <div class="calcard"><div>${portrait(CH[monthHero(stamp)], 56, '#e0a83a')}</div><div><b>Календарь входа</b><span>${MONTHS[stamp.monthIndex]} — месяц героя ${CH[monthHero(stamp)].n}. ${loginCan(stamp) ? 'Сегодняшняя награда ждёт!' : 'Сегодняшняя награда получена.'}</span></div><button class="btn ${loginCan(stamp) ? 'go' : ''}" data-cal="1">Открыть</button></div>`;
 }
 
 export { claimQuest, claimChest, renderDaily };
