@@ -275,6 +275,43 @@ for (const command of [
   'golden/saves.mjs dist/pwa/index.html',
   'golden/saves.mjs dist/artifact.html',
 ]) assert.ok(releaseSmokeStep.includes(command), command + ': must stay required for reused release');
+// CI-OPT-01 final focused economy contract: keep exact save-v1 golden,
+// real daily/chest browser DOM and offline PWA (including native writer) while
+// skipping all unrelated 200-battle/41-screen/optional 3D asset checks.
+const scopeGolden = workflow.match(/^  golden:\n([\s\S]*?)^  pwa:/m)?.[1];
+assert.ok(scopeGolden,'required golden job exists for economy and full');
+const goldenSteps = scopeGolden.split(/\n      - /).slice(1);
+const goldenStep = label => goldenSteps.find(x=>x.includes('name: '+label+'\n'));
+const savesFocused=goldenStep('CI-OPT-01 economy exact save-v1 Golden (PWA + HTML)');
+assert.ok(savesFocused,'scoped economy save golden must exist');
+assert.match(savesFocused,/if: \$\{\{ needs\.plan\.outputs\.scope == 'economy' \}\}/);
+for(const f of ['dist/pwa/index.html','dist/artifact.html'])
+  assert.ok(savesFocused.includes('node tests/golden/saves.mjs '+f),'save v1 '+f+' required');
+const goldenFull=goldenStep('Golden full regression (200 battles, 41 screens, PWA + HTML)');
+assert.ok(goldenFull);
+assert.match(goldenFull,/if: \$\{\{ needs\.plan\.outputs\.scope != 'economy' \}\}/);
+assert.ok(goldenFull.includes('npm test'),'full regression cannot be silently removed');
+assert.ok(goldenSteps.some(x=>x.includes('npm install --no-save --package-lock=false playwright@1.56.1') &&
+  x.includes("scope != 'economy'")), 'Playwright setup only for full golden');
+const economyDailyDom=economyPwa.split(/\n      - /).find(x=>
+  x.includes('name: CI-OPT-01 economy daily and chest DOM (PWA + HTML)'));
+assert.ok(economyDailyDom,'real daily UI smoke must remain in required PWA job');
+assert.match(economyDailyDom,/scope == 'economy' \|\| needs\.plan\.outputs\.scope == 'full'/);
+for(const f of ['dist/pwa/index.html','dist/artifact.html'])
+  assert.ok(economyDailyDom.includes('node tests/ci/econ01-daily-dom-smoke.mjs '+f));
+for(const name of ['Service worker installs even if optional 3D asset stalls','PWA update and offline assets']){
+  const required=economyPwa.split(/\n      - /).find(x=>x.includes('name: '+name+'\n'));
+  assert.ok(required && !required.includes("scope != 'economy'"),name+': critical offline PWA check must remain');
+}
+for(const name of ['Core model stalled on iPhone must not block 3D lobby',
+  'Optional Muad-Dib download must not block 3D lobby']){
+  const optional=economyPwa.split(/\n      - /).find(x=>x.includes('name: '+name+'\n'));
+  assert.ok(optional && optional.includes("scope != 'economy'"),name+': unrelated optional 3D check gated for economy only');
+}
+assert.equal(classify(['dev/src/logic/daily.js','dev/src/render3d/quality.js']).scope,'full',
+  'mixed visuals never enter shortened economy golden');
+assert.equal(checkGate(needsForScope(scoped)).mode,'economy',
+  'focused golden+pwa results must still satisfy the exact unchanged gate');
 const strict=workflow.match(/^  arch-strict:\n([\s\S]*?)^  build:/m)?.[1];
 assert.ok(strict,'dedicated strict job must exist outside scope/reuse selection');
 assert.match(strict,/node tools\/check-deps\.mjs --strict/);
