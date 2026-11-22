@@ -1,7 +1,7 @@
 // core/save.js — строки 3151–3201 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import { S, set_S } from './state.js';
 import './format.js'; // порядок исполнения
-import { CMAX, WMAX } from '../logic/economy.js';
+import { CMAX, WMAX, todayKey } from '../logic/economy.js';
 import { CHARS } from '../data/chars.js';
 import { MEM_MATS, SCRAP } from '../data/memory-scrap.js';
 
@@ -88,6 +88,9 @@ function validSaveV1(s) {
     if (k in s && s[k] !== null && !saveRecord(s[k])) return false;
   for (const k of ['squad', 'squadD', 'squadC', 'raidPick', 'jPick'])
     if (k in s && !Array.isArray(s[k])) return false;
+  // B4b2: optional v1 per-day ledgers must not conceal corrupt or nested history.
+  // Rejection is non-destructive: raw primary/backup are never repaired in place.
+  if (!todayKey.dayLedgerValid(s.buys) || !todayKey.dayLedgerValid(s.trialRuns)) return false;
   // Live metaFill initializes squadTr as a map of trial squads, not an array.
   // Old migration code also tolerates an array; never reject game-written v1.
   if ('squadTr' in s && !saveRecord(s.squadTr) && !Array.isArray(s.squadTr)) return false;
