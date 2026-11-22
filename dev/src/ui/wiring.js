@@ -33,6 +33,7 @@ const FILE_TRANSFER_LIMIT = 8000000; // bytes; bound File API memory, NOT storag
 let pendingSaveImport = null;
 let pendingFileExportRaw = null; // exact verified primary seen in export preview
 let fileTransferTicket = 0; // invalidate asynchronous reads when another transfer starts
+let pendingHistoryExport = null; // only prepared from byte-verified primary, never RAM
 const transferRecord = x => !!x && typeof x === 'object' && !Array.isArray(x);
 const transferQuantity = x => typeof x === 'number' && Number.isFinite(x) &&
   x >= 0 && x <= Number.MAX_SAFE_INTEGER;
@@ -241,6 +242,231 @@ function downloadVerifiedSaveFile() {
   }
 }
 
+
+// B4b1d: separate, portable INACTIVE Conquest history. A SHA-256 protects
+// file integrity, NOT account ownership or entitlement. Week history is never
+// a claim ledger. No pruning is exposed or performed in this packet.
+const HISTORY_FORMAT = 'dune-goh-conquest-history';
+const HISTORY_LIMIT = FILE_TRANSFER_LIMIT; // 8 MB selected-file + candidate guard
+const historyRecord = v => !!v && typeof v === 'object' && !Array.isArray(v);
+function historyWeekDate(key) {
+  if (typeof key !== 'string' || !/^Mon [A-Z][a-z]{2} [ 0-9]\d \d{4}$/.test(key))
+    throw new Error('bad-local-monday');
+  const day = Date.parse(key);
+  if (!Number.isFinite(day) || new Date(day).getUTCDay() !== 1)
+    throw new Error('bad-monday-value');
+  return day;
+}
+function validatedHistory(history, activeWeek) {
+  if (!Array.isArray(history)) throw new Error('history-not-array');
+  const active = historyWeekDate(activeWeek), seen = new Map();
+  for (const run of history) {
+    if (!historyRecord(run) || Object.prototype.hasOwnProperty.call(run, 'weekArchive') ||
+        !historyRecord(run.done) || !historyRecord(run.tk) ||
+        !historyRecord(run.route) || !Array.isArray(run.disks))
+      throw new Error('bad-week-record');
+    const date = historyWeekDate(run.wk);
+    if (date >= active) throw new Error('active-or-future-history');
+    const bytes = JSON.stringify(run);
+    if (seen.has(run.wk)) {
+      // Even byte-identical duplicate weeks are suspicious in an exported
+      // history: do not silently collapse or rewrite evidence.
+      throw new Error('duplicate-week');
+    }
+    seen.set(run.wk, bytes);
+  }
+  return seen;
+}
+async function historySha256(raw) {
+  // HTTPS PWA/local secure context only. No weak fallback/checksum downgrade.
+  if (!crypto?.subtle?.digest) throw new Error('sha256-unavailable');
+  const sum = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+  return Array.from(new Uint8Array(sum), b => b.toString(16).padStart(2, '0')).join('');
+}
+function historyPanelCurrent(ticket, input) {
+  return ticket === fileTransferTicket && !!input && input.isConnected;
+}
+function requireHistoryOwner() {
+  const writer = loadSave.writer.state();
+  if (!writer.gated || writer.status !== 'owned' || !loadSave.writer.check().ok)
+    throw new Error('history-needs-writer');
+  const state = loadSave.checkpoint.inspect();
+  if (state.primary.status !== 'ok' || state.primary.raw !== writer.raw)
+    throw new Error('history-primary-mismatch');
+  return { writer, state };
+}
+async function prepareHistoryExport(raw, ticket, input) {
+  try {
+    const saved = JSON.parse(raw);
+    validateTransferSave(saved);
+    const archive = saved.conq?.weekArchive;
+    if (!Array.isArray(archive) || archive.length === 0) {
+      if (historyPanelCurrent(ticket,input))
+        $('#cqarc-status').textContent = 'В этом сохранении пока нет завершённых архивных недель.';
+      return;
+    }
+    validatedHistory(archive, saved.conq.wk);
+    const historyRaw = JSON.stringify(archive);
+    const hash = await historySha256(historyRaw);
+    if (!historyPanelCurrent(ticket,input)) return;
+    const { state } = requireHistoryOwner();
+    if (state.primary.raw !== raw) throw new Error('history-changed');
+    const content = JSON.stringify({ format: HISTORY_FORMAT, version: 1,
+      sourceWeek: saved.conq.wk, count: archive.length, historyRaw, sha256: hash });
+    pendingHistoryExport = { sourceRaw: raw, content, count: archive.length };
+    const length = new TextEncoder().encode(content).length;
+    $('#cqarc-status').textContent = archive.length + ' недель; SHA-256: ' +
+      hash + '; файл: ' + length + ' байт.' +
+      (length > HISTORY_LIMIT ? ' Превышен предел восстановления 8 МБ; храните полное сохранение.' :
+        ' После скачивания выберите файл здесь для проверки восстановления.');
+    $('#cqarc-actions').insertAdjacentHTML('afterbegin',
+      '<button class="btn go" data-cqarcdownload="1">Скачать архив недель</button>');
+  } catch (e) {
+    if (historyPanelCurrent(ticket,input))
+      $('#cqarc-status').textContent =
+        'Архив не подготовлен: повреждённые данные или доступ к сохранению изменился. Не очищайте PWA.';
+    pendingHistoryExport = null;
+  }
+}
+function downloadHistoryArchive() {
+  const prepared = pendingHistoryExport;
+  try {
+    const { state } = requireHistoryOwner();
+    if (!prepared || state.primary.raw !== prepared.sourceRaw)
+      throw new Error('stale-export');
+    const blob = new Blob([prepared.content], {type:'application/json;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    try {
+      const link = document.createElement('a');
+      try {
+        link.href = url;
+        link.download = 'dune-goh-conquest-history-v1.json';
+        link.hidden = true;
+        document.body.appendChild(link);
+        link.click(); // stays in the direct user gesture (mobile Safari)
+      } finally { link.remove(); }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      toast('Архив передан браузеру. Выберите скачанный файл для независимой проверки; пока ничего не удалено.');
+    } catch (e) { URL.revokeObjectURL(url); throw e; }
+  } catch (e) {
+    pendingHistoryExport = null;
+    toast('Не удалось выгрузить подтверждённый архив. Повторите экспорт; не удаляйте PWA.');
+  }
+}
+function showHistoryDialog() {
+  const { state } = requireHistoryOwner();
+  const save = JSON.parse(state.primary.raw);
+  validateTransferSave(save);
+  const count = Array.isArray(save.conq?.weekArchive) ?
+    save.conq.weekArchive.length : 0;
+  const ticket = ++fileTransferTicket;
+  pendingSaveImport = null;
+  pendingHistoryExport = null;
+  $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true">' +
+    '<h3>Архив Conquest</h3><p class="sub">История завершённых недель: ' + count +
+    '. Файл содержит только историю, а не валюту, героев или действующую неделю. ' +
+    'Он защищён SHA-256 от случайной порчи, но не подтверждает владельца аккаунта.</p>' +
+    '<p class="sub">Архивные недели не дают наград повторно. Импорт лишь дополняет историю. ' +
+    'Удаление записей и очистка хранилища здесь НЕ предусмотрены. ' +
+    'Не удаляйте полную резервную копию сохранения.</p>' +
+    '<p id="cqarc-status" class="sub" role="status">Подготавливается архив…</p>' +
+    '<p class="sub"><label for="cqarcfile">Выбрать архив Conquest для проверки или восстановления (до 8 МБ)</label>' +
+    '<input id="cqarcfile" type="file" accept=".json,application/json"></p>' +
+    '<div class="acts" id="cqarc-actions"><button class="btn" data-cqarcread="1">' +
+    'Проверить файл и предпросмотр</button><button class="btn" data-iclose="1" style="margin-left:auto">Закрыть</button></div></div></div>';
+  // Async digest may take time on a phone. Never turn a stale view into a
+  // downloadable package: after awaiting verify the original primary again.
+  void prepareHistoryExport(state.primary.raw,ticket,$('#cqarcfile'));
+}
+async function readHistoryArchive(input, ticket) {
+  try {
+    const file = input?.files?.[0];
+    if (!file || !Number.isSafeInteger(file.size) || file.size < 1 ||
+        file.size > HISTORY_LIMIT || typeof file.arrayBuffer !== 'function')
+      throw new Error('archive-file-size');
+    const bytes = await file.arrayBuffer();
+    if (!historyPanelCurrent(ticket,input)) return;
+    requireHistoryOwner(); // lease may have been lost during file read
+    if (!(bytes instanceof ArrayBuffer) || bytes.byteLength !== file.size ||
+        bytes.byteLength > HISTORY_LIMIT)
+      throw new Error('archive-bytes-changed');
+    const raw = new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+    if (raw.length > HISTORY_LIMIT) throw new Error('archive-oversize');
+    const pkg = JSON.parse(raw);
+    if (!historyRecord(pkg) || Object.keys(pkg).sort().join(',') !==
+        'count,format,historyRaw,sha256,sourceWeek,version' ||
+        pkg.format !== HISTORY_FORMAT || pkg.version !== 1 ||
+        !Number.isSafeInteger(pkg.count) || pkg.count < 1 ||
+        typeof pkg.historyRaw !== 'string' ||
+        typeof pkg.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(pkg.sha256))
+      throw new Error('wrong-archive-envelope');
+    historyWeekDate(pkg.sourceWeek);
+    const archive = JSON.parse(pkg.historyRaw);
+    if (!Array.isArray(archive) || archive.length !== pkg.count ||
+        JSON.stringify(archive) !== pkg.historyRaw)
+      throw new Error('archive-noncanonical');
+    validatedHistory(archive, pkg.sourceWeek);
+    const hash = await historySha256(pkg.historyRaw);
+    if (!historyPanelCurrent(ticket,input)) return;
+    if (hash !== pkg.sha256) throw new Error('archive-sha256-mismatch');
+    const {writer,state} = requireHistoryOwner();
+    const candidate = JSON.parse(state.primary.raw);
+    validateTransferSave(candidate);
+    if (!historyRecord(candidate.conq)) throw new Error('no-active-conquest');
+    const existing = candidate.conq.weekArchive || [];
+    const known = validatedHistory(existing,candidate.conq.wk);
+    const incoming = validatedHistory(archive,candidate.conq.wk);
+    let added = 0, duplicates = 0;
+    for (const [week, recordRaw] of incoming) {
+      if (known.has(week)) {
+        if (known.get(week) !== recordRaw) throw new Error('conflicting-week');
+        duplicates++;
+      } else {
+        known.set(week,recordRaw);added++;
+      }
+    }
+    if (added === 0) {
+      $('#cqarc-status').textContent = 'SHA-256 проверен. Все ' + duplicates +
+        ' архивных недель уже сохранены. Повторный импорт не нужен.';
+      return; // no write and no backup rotation for idempotent import
+    }
+    // Preserve all data outside archived history BYTE-FOR-BYTE at JSON value
+    // level. Never import balances/roster/current Conquest/entitlements.
+    candidate.conq.weekArchive = Array.from(known.entries())
+      .sort((a,b)=>historyWeekDate(a[0])-historyWeekDate(b[0]))
+      .map(([,recordRaw])=>JSON.parse(recordRaw));
+    validateTransferSave(candidate);
+    if (new TextEncoder().encode(JSON.stringify(candidate)).length > HISTORY_LIMIT)
+      throw new Error('candidate-over-8mb');
+    // Strictly owner-gated preview. The standard existing confirmation path
+    // backs up exact OLD primary, commits once and forces a cold reload.
+    if (!loadSave.writer.check().ok || loadSave.writer.state().raw !== state.primary.raw)
+      throw new Error('writer-no-longer-current');
+    pendingSaveImport = { candidate, expectedRaw: state.primary.raw,
+      memoryRaw: JSON.stringify(S), mode:'writer' };
+    $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true">' +
+      '<h3>Восстановить архивные недели?</h3><p class="sub">SHA-256 проверен. ' +
+      'Добавится архивных недель: ' + added + '; уже присутствует: ' + duplicates +
+      '. Все существующие данные недели остаются; валюты, герои, награды и активный забег не меняются. ' +
+      'Снимок текущего сохранения будет зарезервирован. После записи игра перезапустится.</p>' +
+      '<p class="sub">Хеш подтверждает целостность ФАЙЛА, а не принадлежность другому аккаунту. ' +
+      'Продолжайте только если узнаёте свою историю Conquest.</p>' +
+      '<div class="acts"><button class="btn go" data-saveconfirm="1">Подтверждаю восстановление истории</button>' +
+      '<button class="btn" data-iclose="1" style="margin-left:auto">Отмена</button></div></div></div>';
+  } catch (e) {
+    if (!historyPanelCurrent(ticket,input)) return;
+    pendingSaveImport = null;
+    const status=$('#cqarc-status');
+    if(status) status.textContent =
+      'Файл отклонён: формат, SHA-256, история недель, конфликт или хранилище недоступны. ' +
+      'Существующий прогресс не заменён.';
+    // A lost native writer may have invalidated the whole gameplay session.
+    const writer=loadSave.writer.state();
+    if (writer.gated && (writer.status !== 'owned' || !loadSave.writer.check().ok))
+      stopAfterProtectedTransfer('history-import-writer-lost');
+  }
+}
+
 function stopAfterProtectedTransfer(status) {
   // The boot-owned lifecycle blocker is installed only after Web Locks opt-in.
   // It synchronously rejects further game input and releases the writer,
@@ -256,7 +482,8 @@ function metaClick(d) {
   // the save-transfer API boundary. A denied tab may not inspect the primary,
   // decode a candidate, or confirm an old preview without a native owner.
   if (d.saveexp || d.saveunsaved || d.saveimp || d.saveload ||
-      d.saveconfirm || d.savefileexp || d.savefileload) {
+      d.saveconfirm || d.savefileexp || d.savefileload ||
+      d.cqarc || d.cqarcread || d.cqarcdownload) {
     const writer = loadSave.writer.state();
     if (writer.gated && writer.status !== 'owned') {
       pendingSaveImport = null;
@@ -274,6 +501,18 @@ function metaClick(d) {
   if (d.pframe) { if (unlocked('frame', d.pframe)) { S.profile.frame = d.pframe; persist(); render(); openProfile(); } return true; }
   if (d.ptitle) { if (unlocked('title', d.ptitle)) { S.profile.title = d.ptitle; persist(); render(); openProfile(); } return true; }
   if (d.pnick) { const v = ($('#pnick').value || '').trim().slice(0, 20); if (v) { S.profile.nick = v; persist(); render(); openProfile(); toast('Никнейм сохранён'); } return true; }
+  if (d.cqarc) {
+    try { showHistoryDialog(); }
+    catch (e) { pendingSaveImport = null; toast('Архив Conquest недоступен без подтверждённого сохранения и Web Lock.'); }
+    return true;
+  }
+  if (d.cqarcdownload) { downloadHistoryArchive(); return true; }
+  if (d.cqarcread) {
+    pendingSaveImport = null;
+    const ticket=++fileTransferTicket;
+    void readHistoryArchive($('#cqarcfile'),ticket);
+    return true;
+  }
   if (d.saveexp) {
     fileTransferTicket++;
     pendingSaveImport = null;
