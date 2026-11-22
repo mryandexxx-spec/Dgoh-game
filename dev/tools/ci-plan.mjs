@@ -19,7 +19,7 @@ export async function planForEvent(eventName,event,head,cwd=process.cwd(),{looku
         repo: env.GITHUB_REPOSITORY, runId: env.GITHUB_RUN_ID,
         token: env.GITHUB_TOKEN, ...key,
       });
-      if (proof?.exact === true) {
+      if (proof?.exact === true && proof.source_sha === head && proof.scope !== 'docs') {
         const plan = {
           ...key, mode: 'reuse', scope: proof.scope,
           paths: [...proof.paths], groups: ['build'],
