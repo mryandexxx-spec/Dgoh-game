@@ -45,9 +45,15 @@ function trialRunsToday() {
   S.trialRuns = next;
   return next.n;
 }
-// Viewing trials must not persist a different calendar day's empty ledger.
+// Keep the legacy golden save's initial empty day stamp: no earned
+// entitlement is involved. All NONEMPTY spent-day ledgers are read-only.
 const trialLeft = T => {
-  const n = todayKey.dayLedgerRead(S.trialRuns, todayKey());
+  const day = todayKey(), current = S.trialRuns;
+  if (todayKey.dayLedgerValid(current) && current?.d !== day &&
+      !Object.keys(current?.n || {}).length &&
+      !Object.keys(current?.days || {}).length)
+    S.trialRuns = todayKey.dayLedgerSelect(current, day);
+  const n = todayKey.dayLedgerRead(S.trialRuns, day);
   return n ? Math.max(0, TRIAL_RUNS - (n[T.id] || 0)) : 0;
 };
 const trialStars = (T, t) => (S.trials[T.id] || {})[t] || 0;
