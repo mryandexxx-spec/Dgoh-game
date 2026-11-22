@@ -8,6 +8,7 @@ on:
       - 'dev/tests/ci/arch02c-**'
       - 'dev/tests/ci/arch02d-**'
       - 'dev/tests/lib/**'
+      - 'dev/tests/economy/**'
       - 'dev/tests/golden/saves.mjs'
       - 'dev/tests/smoke/gear-e3-dom.mjs'
       - 'dev/tests/smoke/pkg8-layout.mjs'
@@ -43,6 +44,8 @@ jobs:
           cache: npm
           cache-dependency-path: dev/package-lock.json
       - run: npm ci
+      - name: ECON-01 deterministic F2P economy model acceptance (read-only)
+        run: node tests/economy/acceptance.mjs
       - run: node tools/check-deps.mjs --strict
       - run: npm run build
       - run: node tools/check-bundle.mjs dist/pwa/app.js
