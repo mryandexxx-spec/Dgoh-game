@@ -39,8 +39,17 @@ const TR = id => TRIALS.find(T => T.id === id);
 const trialOpen = T => T.days.includes(new Date().getDay());
 const TRIAL_SQ = 5;
 const trialOk = (T, id) => !T.req || (T.req.role ? T.req.role.includes(CH[id].role) : T.req.f.some(f => CH[id].f.includes(f)));
-function trialRunsToday() { if (S.trialRuns.d !== todayKey()) S.trialRuns = { d: todayKey(), n: {} }; return S.trialRuns.n; }
-const trialLeft = T => TRIAL_RUNS - (trialRunsToday()[T.id] || 0);
+function trialRunsToday() {
+  const next = todayKey.dayLedgerSelect(S.trialRuns, todayKey());
+  if (!next) return null; // a damaged history never reopens attempts
+  S.trialRuns = next;
+  return next.n;
+}
+// Viewing trials must not persist a different calendar day's empty ledger.
+const trialLeft = T => {
+  const n = todayKey.dayLedgerRead(S.trialRuns, todayKey());
+  return n ? Math.max(0, TRIAL_RUNS - (n[T.id] || 0)) : 0;
+};
 const trialStars = (T, t) => (S.trials[T.id] || {})[t] || 0;
 const tierOpen = (T, t) => t === 0 || trialStars(T, t - 1) > 0;
 const trialBest3 = T => { for (let t = 5; t >= 0; t--) if (trialStars(T, t) === 3) return t; return -1; };
