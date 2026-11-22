@@ -1,4 +1,5 @@
 // ECON-01: daily-quest OR requirements, same quest IDs, rewards and save v1.
+// PR-to-main verification: exercise this test on the exact retargeted merge candidate.
 import assert from 'node:assert/strict';
 import { loadGame } from '../lib/load.mjs';
 const html = process.argv[2] || 'dist/pwa/index.html';
