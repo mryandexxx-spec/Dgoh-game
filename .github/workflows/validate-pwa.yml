@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-24.04
     # B4-B3b: full compiled PWA + artifact writer/recovery suite now runs
     # beyond 12 minutes on hosted runners. Keep every check; allow completion.
-    timeout-minutes: 32
+    timeout-minutes: 65
     defaults:
       run:
         working-directory: dev
