@@ -52,6 +52,48 @@ const gameClock = Object.freeze({
 });
 const todayKey = () => gameClock.date().toDateString();
 todayKey.clock = gameClock;
+// B4b2: retain spent daily entitlements across reversible calendar switches.
+// Optional "days" contains ONLY inactive nonempty daily ledgers. No automatic
+// pruning and no absolute-time claim: device-local dates remain untrusted.
+const dayLedgerOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+const dayLedgerRecord = o => !!o && typeof o === 'object' && !Array.isArray(o);
+const dayLedgerCounts = o => dayLedgerRecord(o) && Object.entries(o).every(([k, v]) =>
+  !['__proto__', 'constructor', 'prototype'].includes(k) &&
+  Number.isSafeInteger(v) && v >= 0);
+function dayLedgerValid(o) {
+  if (o == null) return true; // legacy v1 has optional ledgers
+  if (!dayLedgerRecord(o) || (o.d !== undefined && typeof o.d !== 'string') ||
+      (o.n !== undefined && !dayLedgerCounts(o.n)) ||
+      (o.d && !o.n)) return false;
+  if (o.days === undefined) return true;
+  return dayLedgerRecord(o.days) && Object.entries(o.days).every(([day, counts]) =>
+    day.length > 0 && day.length <= 64 &&
+    !['__proto__', 'constructor', 'prototype'].includes(day) &&
+    day !== o.d && dayLedgerCounts(counts));
+}
+function dayLedgerRead(o, day) {
+  if (!dayLedgerValid(o)) return null; // never turn corrupt history into free stock
+  return o?.d === day ? (o.n || {}) :
+    o?.days && dayLedgerOwn(o.days, day) ? o.days[day] : {};
+}
+function dayLedgerSelect(o, day) {
+  if (!dayLedgerValid(o)) return null;
+  if (o?.d === day) return o;
+  const days = Object.assign(Object.create(null), o?.days || {});
+  if (o?.d && o.n && Object.keys(o.n).length) {
+    if (dayLedgerOwn(days, o.d)) return null;
+    days[o.d] = o.n; // entire prior day's spent entitlement is preserved
+  }
+  const n = dayLedgerOwn(days, day) ? days[day] : {};
+  delete days[day]; // activated day lives in n, never duplicated in days
+  const next = { ...(o || {}), d: day, n };
+  if (Object.keys(days).length) next.days = days;
+  else delete next.days;
+  return next;
+}
+todayKey.dayLedgerValid = dayLedgerValid;
+todayKey.dayLedgerRead = dayLedgerRead;
+todayKey.dayLedgerSelect = dayLedgerSelect;
 function refillN() { return S.refills.d === todayKey() ? S.refills.n : 0; }
 function refillCost() { return refillPrice(refillN()); }
 const SHOP = [

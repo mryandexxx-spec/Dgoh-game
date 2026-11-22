@@ -303,6 +303,13 @@ jobs:
             TZ="$zone" node tests/ci/arch02d-b4b1d-conquest-archive-acceptance.mjs dist/artifact.html
           done
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-02D-B4b2 paid-day ledger history and rollback protection (PWA + HTML, 3 TZ; NO RELEASE)
+        run: |
+          for zone in UTC Europe/Amsterdam America/Los_Angeles; do
+            TZ="$zone" node tests/ci/arch02d-b4b2-daily-entitlement-acceptance.mjs dist/pwa/index.html
+            TZ="$zone" node tests/ci/arch02d-b4b2-daily-entitlement-acceptance.mjs dist/artifact.html
+          done
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-02D-B4b1e opt-in archive retention and recovery (PWA + HTML, 3 TZ; NO RELEASE)
         run: |
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
