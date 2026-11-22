@@ -117,8 +117,11 @@ function renderDaily() {
       <button class="btn ${got >= CHEST_NEED && !D.chest ? 'go' : ''}" data-qchest="1" ${got >= CHEST_NEED && !D.chest ? '' : 'disabled'}>${D.chest ? 'Получено' : 'Открыть'}</button>
     </div>
     <div class="qhead"><p class="chap" style="margin:18px 0 8px">Задания дня</p>${ready ? `<button class="btn go mini" data-qall="1">Забрать всё (${ready})</button>` : ''}</div>
-    <div class="quests">${activeDaily().map(q => { const st = qState(q, stamp), c = Math.min(q.need, D.c[q.k] || 0);
-      return `<div class="quest ${st}"><div class="qtx"><b>${q.n}</b><div class="qbar"><i style="width:${c / q.need * 100}%"></i></div><span class="mono">${c}/${q.need}</span></div>
+    <div class="quests">${activeDaily().map(q => { const st = qState(q, stamp), c = Math.min(q.need, D.c[q.k] || 0),
+        alternativeCount = q.alt ? Math.min(q.alt.need, D.c[q.alt.k] || 0) : 0,
+        progressRatio = q.alt ? Math.max(c / q.need, alternativeCount / q.alt.need) : c / q.need,
+        progressText = q.alt ? `${c}/${q.need} или ${alternativeCount}/${q.alt.need}` : `${c}/${q.need}`;
+      return `<div class="quest ${st}"><div class="qtx"><b>${q.n}</b><div class="qbar"><i style="width:${progressRatio * 100}%"></i></div><span class="mono">${progressText}</span></div>
         <div class="qrw">${rewardsHtml(q.rw)}</div>
         <div class="qbtn">${st === 'got' ? '<span class="qok">✓ Получено</span>' : st === 'done' ? `<button class="btn go mini" data-qclaim="${q.k}">Забрать</button>` : q.go ? `<button class="btn mini" data-goto="${q.go}">Перейти</button>` : ''}</div></div>`; }).join('')}</div>
     <div class="calcard"><div>${portrait(CH[monthHero(stamp)], 56, '#e0a83a')}</div><div><b>Календарь входа</b><span>${MONTHS[stamp.monthIndex]} — месяц героя ${CH[monthHero(stamp)].n}. ${loginCan(stamp) ? 'Сегодняшняя награда ждёт!' : 'Сегодняшняя награда получена.'}</span></div><button class="btn ${loginCan(stamp) ? 'go' : ''}" data-cal="1">Открыть</button></div>`;
