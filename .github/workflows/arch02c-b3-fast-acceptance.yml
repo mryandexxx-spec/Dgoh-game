@@ -17,6 +17,14 @@ on:
       - 'dev/package-lock.json'
       - '.github/workflows/arch02c-b3-fast-acceptance.yml'
       - '.github/workflows/validate-pwa.yml'
+      # CI-OPT-01: economy-only changes already receive compiled save/transaction
+      # acceptance and native Chromium Web Locks tests in Validate PWA.
+      # Mixed PRs with any other included path still trigger this suite.
+      - '!dev/src/logic/economy.js'
+      - '!dev/src/logic/daily.js'
+      - '!dev/src/ui/views/daily.js'
+      - '!dev/tests/economy/**'
+      - '!dev/tests/ci/arch02c-b5a-daily-claims-acceptance.mjs'
 
 permissions:
   contents: read

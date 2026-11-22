@@ -173,6 +173,37 @@ for (const name of [
 const economySkipped = buildSteps.filter(x => x.startsWith("if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}"));
 assert.ok(economySkipped.length >= 50,
   'economy-only changes should avoid unrelated heavy build regression steps');
+// CI-OPT-01: no duplicate 36-minute Fast job for economy-only PRs.
+// The normal Full/Scoped PWA job must supply actual native-browser writer
+// and protected-import coverage on the *same* compiled artifact.
+const fastWorkflow = fs.readFileSync(
+  new URL('../../../.github/workflows/arch02c-b3-fast-acceptance.yml', import.meta.url), 'utf8');
+const fastPathBlock = fastWorkflow.match(/^    paths:\n([\s\S]*?)\npermissions:/m)?.[1];
+assert.ok(fastPathBlock, 'Fast path inclusion/exclusion block must be present');
+assert.match(fastPathBlock, /      - 'dev\/src\/\*\*'/, 'non-economy source changes continue to trigger Fast');
+for (const economyExclusion of [
+  'dev/src/logic/economy.js', 'dev/src/logic/daily.js',
+  'dev/src/ui/views/daily.js', 'dev/tests/economy/**',
+  'dev/tests/ci/arch02c-b5a-daily-claims-acceptance.mjs',
+]) {
+  assert.ok(fastPathBlock.includes("      - '!" + economyExclusion + "'"),
+    economyExclusion + ': exclude only the already-safety-covered economy file');
+}
+assert.ok(fastPathBlock.lastIndexOf("      - '!dev/src/logic/daily.js'") >
+  fastPathBlock.indexOf("      - 'dev/src/**'"),
+  'GitHub path exclusion must come after the positive source glob');
+const economyPwa = workflow.match(/^  pwa:\n([\s\S]*?)^  ui:/m)?.[1];
+assert.ok(economyPwa, 'required compiled PWA job must remain');
+for (const command of [
+  'arch02c-b3-b1c-b3-native-auto-chromium.mjs',
+  'arch02c-b3-b1b-real-multitab-chromium.mjs',
+  'arch02c-b3-b2-a2-real-chromium.mjs',
+]) {
+  const step = economyPwa.split(/\n      - /).find(x => x.includes(command));
+  assert.ok(step, command + ': missing native Chromium safety');
+  assert.match(step, /if: \$\{\{ needs\.plan\.outputs\.scope == 'economy' \}\}/,
+    command + ': native Chromium acceptance must not run as a full-suite duplicate');
+}
 const strict=workflow.match(/^  arch-strict:\n([\s\S]*?)^  build:/m)?.[1];
 assert.ok(strict,'dedicated strict job must exist outside scope/reuse selection');
 assert.match(strict,/node tools\/check-deps\.mjs --strict/);
