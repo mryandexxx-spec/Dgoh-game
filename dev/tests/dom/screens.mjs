@@ -429,12 +429,14 @@ function normalizeApprovedEcon01EnergyScreens(current, expected) {
       start + old[kind] + end);
     // The lobby header is also embedded in several historical view snapshots.
     // Restrict the exception to the two fully identified energy pills.
-    const mirrored = new Set(['fresh:lobby', 'view:lobby', 'squadsel:camp0',
-      'calendar', 'profile', 'battle-settings']);
-    if (mirrored.has(screen.name)) {
-      assert.equal(typeof screen.view, 'string', screen.name + ': view must exist');
+    const mirroredView = new Set(['fresh:lobby', 'view:lobby', 'calendar',
+      'profile', 'battle-settings']);
+    const embedded = mirroredView.has(screen.name) ? 'view' :
+      screen.name === 'squadsel:camp0' ? 'overlay' : null;
+    if (embedded) {
+      assert.equal(typeof screen[embedded], 'string', screen.name + ': embedded header must exist');
       let count = 0;
-      screen.view = screen.view.replace(pill, (_all, start, kind, value, end) => {
+      screen[embedded] = screen[embedded].replace(pill, (_all, start, kind, value, end) => {
         assert.equal(value, newValues(fresh)[kind], screen.name + ': mirrored energy must match');
         count++;
         return start + old[kind] + end;
