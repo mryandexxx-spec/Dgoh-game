@@ -132,12 +132,12 @@ const workflow=fs.readFileSync(new URL('../../../.github/workflows/validate-pwa.
 // transactional coverage while skipping unrelated historical content/3D.
 const buildSection = workflow.match(/^  build:\n([\s\S]*?)^  golden:/m)?.[1];
 assert.ok(buildSection, 'compiled build job exists');
-const buildSteps = buildSection.split(/\\n      - /).slice(1);
-const stepNamed = name => buildSteps.find(x => x.includes('name: ' + name + '\\n'));
+const buildSteps = buildSection.split(/\n      - /).slice(1);
+const stepNamed = name => buildSteps.find(x => x.includes('name: ' + name + '\n'));
 const requireScoped = name => {
   const step = stepNamed(name);
   assert.ok(step, name + ': build smoke/safety step must exist');
-  assert.match(step, /^if: \\$\\{\\{ needs\\.plan\\.outputs\\.mode != 'reuse' \\}\\}/,
+  assert.match(step, /^if: \$\{\{ needs\.plan\.outputs\.mode != 'reuse' \}\}/,
     name + ': must execute for economy scope');
 };
 for (const name of [
@@ -167,10 +167,10 @@ for (const name of [
 ]) {
   const step = stepNamed(name);
   assert.ok(step, name + ': full-suite step must remain available');
-  assert.match(step, /^if: \\$\\{\\{ needs\\.plan\\.outputs\\.mode != 'reuse' && needs\\.plan\\.outputs\\.scope != 'economy' \\}\\}/,
+  assert.match(step, /^if: \$\{\{ needs\.plan\.outputs\.mode != 'reuse' && needs\.plan\.outputs\.scope != 'economy' \}\}/,
     name + ': run for full scope, not economy-only');
 }
-const economySkipped = buildSteps.filter(x => x.startsWith("if: \${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}"));
+const economySkipped = buildSteps.filter(x => x.startsWith("if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}"));
 assert.ok(economySkipped.length >= 50,
   'economy-only changes should avoid unrelated heavy build regression steps');
 const strict=workflow.match(/^  arch-strict:\n([\s\S]*?)^  build:/m)?.[1];
