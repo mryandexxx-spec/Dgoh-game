@@ -114,8 +114,29 @@ try {
    // any candidate for the final checkpoint.
    await tab.page.click('[data-cqarcapprove]');
    assert.equal(!!(await tab.page.$('[data-saveconfirm]')),false);
+   // The deliberate refusal shows a temporary toast. On narrow mobile
+   // viewports this can cover the consent controls until it disappears;
+   // avoid testing a click accidentally intercepted by the toast.
+   await tab.page.waitForFunction(()=>!document.querySelector('.toast'),
+     {timeout:6500,polling:100});
    await tab.page.click('#cqarcack');
-   await tab.page.type('#cqarcphrase','УДАЛИТЬ');
+   await tab.page.focus('#cqarcphrase');
+   // Native insertText handles Russian characters independently of the
+   // runner's keyboard layout (type() can synthesize a different layout).
+   await tab.page.keyboard.insertText('УДАЛИТЬ');
+   const consent=await tab.page.evaluate(()=>({
+     checked:document.querySelector('#cqarcack')?.checked,
+     phrase:document.querySelector('#cqarcphrase')?.value,
+     pending:!!pendingHistoryRetention,
+     ticket:pendingHistoryRetention?.ticket,
+     currentTicket:fileTransferTicket,
+     writer:loadSave.writer.state().status
+   }));
+   assert.equal(consent.checked,true,JSON.stringify(consent));
+   assert.equal(consent.phrase,'УДАЛИТЬ',JSON.stringify(consent));
+   assert.equal(consent.pending,true,JSON.stringify(consent));
+   assert.equal(consent.ticket,consent.currentTicket,JSON.stringify(consent));
+   assert.equal(consent.writer,'owned',JSON.stringify(consent));
    await tab.page.click('[data-cqarcapprove]');
    await tab.page.waitForSelector('[data-saveconfirm]',{timeout:10000});
    assert.equal(await tab.page.evaluate(k=>localStorage.getItem(k),key),previous,
