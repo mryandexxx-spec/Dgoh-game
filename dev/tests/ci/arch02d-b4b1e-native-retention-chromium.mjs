@@ -121,9 +121,9 @@ try {
      {timeout:6500,polling:100});
    await tab.page.click('#cqarcack');
    await tab.page.focus('#cqarcphrase');
-   // Native insertText handles Russian characters independently of the
-   // runner's keyboard layout (type() can synthesize a different layout).
-   await tab.page.keyboard.insertText('УДАЛИТЬ');
+   // Supported Puppeteer Keyboard.sendCharacter() dispatches Unicode input
+   // per code point without depending on the runner's keyboard layout.
+   for(const char of 'УДАЛИТЬ')await tab.page.keyboard.sendCharacter(char);
    const consent=await tab.page.evaluate(()=>({
      checked:document.querySelector('#cqarcack')?.checked,
      phrase:document.querySelector('#cqarcphrase')?.value,
