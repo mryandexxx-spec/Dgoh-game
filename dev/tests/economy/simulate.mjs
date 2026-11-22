@@ -175,9 +175,11 @@ const gearCraftSol = RATES.fragments.slice(1).reduce((sum, _, tier) => {
 }, 0);
 const gearUpSol = Array.from({ length: 12 }, (_, i) => i + 1)
   .reduce((sum, g) => sum + 800 * g + 150 * g * g, 0);
-const levelSol = Array.from({ length: 84 }, (_, i) => i + 2)
+// LVL_COST is charged on the CURRENT level: leveling 1→85 spends levels 1..84.
+const levelSol = Array.from({ length: 84 }, (_, i) => i + 1)
   .reduce((sum, l) => sum + l * 40 + (l >= 30 ? (l - 29) ** 2 * 15 : 0), 0);
-const starSol = [2, 3, 4, 5, 6, 7].reduce((sum, s) => sum + s * s * 500, 0);
+// STAR_COST is charged on the CURRENT star: upgrading 1★→7★ costs stars 1..6.
+const starSol = [1, 2, 3, 4, 5, 6].reduce((sum, s) => sum + s * s * 500, 0);
 const gearPl = RATES.fragments.slice(1).reduce((sum, _, i) => sum + 6 * Math.ceil((i + 1) * .6), 0);
 export const SINKS = Object.freeze({
   sevenStar: { sol: starSol, pl: 0 },
@@ -197,7 +199,7 @@ assert.equal(SIGNAL_NODES.age_resonance.chance, .18);
 
 // Monte Carlo samples FARM ATTEMPTS, not full PWA playthroughs.
 // Exclusive dedicated target node, no bonus sources, failures, stage unlocks,
-// item overlap or starting stock: these are conditional lower-bound estimates.
+// item overlap or starting stock: illustrative assumptions, NOT rigorous bounds.
 export function sampleTargets(teamCount, seed) {
   assert.ok(TEAMS.includes(teamCount));
   const r = rng32(seed), heroes = teamCount * 5;
@@ -229,7 +231,8 @@ export function simulate({ samples = 128, seed = 2401 } = {}) {
       'one focused target per attempt, 18% fragment chance', 'all equipment farmable with Water',
       'recycler uses mask fragments at indicated tiers with no starting carry',
       'only reliable free daily claims, no chest, raid or shop rewards', 'evenly spaced visits with full spend',
-      'no account-XP timeline, event/raid reward, starting stock, extra drops or lucky complete equipment'],
+      'no account-XP timeline, event/raid reward, starting stock, extra drops or lucky complete equipment',
+      'all hero levels 1→85 included in resource sink, even if goal gate is lower'],
     rows: [] };
   const series = new Map();
   for (const team of TEAMS) {
@@ -260,7 +263,7 @@ export function toMarkdown(result) {
   const lines = [
     '# ECON-01: source-bound F2P model (NOT player telemetry)',
     '',
-    'Fixed seed ' + result.seed + ', Monte Carlo ' + result.samples + ' samples. Days are CONDITIONAL farming lower bounds (account gates/failed battles/availability are not modeled).',
+    'Fixed seed ' + result.seed + ', Monte Carlo ' + result.samples + ' samples. Days are CONDITIONAL illustrative estimates, not rigorous bounds (account gates/failed battles/availability are not modeled).',
     '',
     '| Profile | Cap | Refills/day | Water attempts/day | Lost Water/day | 5 heroes 7★ p50/p90 | XIII p50/p90 | DP3 p50/p90 | DP7 p50/p90 |',
     '|---|---|---:|---:|---:|---:|---:|---:|---:|',
