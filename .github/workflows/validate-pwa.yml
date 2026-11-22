@@ -543,6 +543,18 @@ jobs:
         run: node tests/smoke/optional-model-boot.mjs dist/pwa/index.html
       - name: PWA update and offline assets
         run: node tests/smoke/sw.mjs .. dist/pwa
+      # Fast's full 36-minute duplicate is excluded for economy-only changes.
+      # Keep real native Web Locks and recovery acceptance on the *same*
+      # immutable build in the mandatory PWA job instead.
+      - name: CI-OPT-01 economy native Chromium writer-ready startup
+        if: ${{ needs.plan.outputs.scope == 'economy' }}
+        run: node tests/ci/arch02c-b3-b1c-b3-native-auto-chromium.mjs
+      - name: CI-OPT-01 economy native Chromium two-tab writer isolation
+        if: ${{ needs.plan.outputs.scope == 'economy' }}
+        run: node tests/ci/arch02c-b3-b1b-real-multitab-chromium.mjs
+      - name: CI-OPT-01 economy native Chromium protected import and rescue
+        if: ${{ needs.plan.outputs.scope == 'economy' }}
+        run: node tests/ci/arch02c-b3-b2-a2-real-chromium.mjs
 
   ui:
     name: E3 iPhone UI + DOM idle layout
