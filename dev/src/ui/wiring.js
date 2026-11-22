@@ -253,7 +253,7 @@ function historyWeekDate(key) {
   if (typeof key !== 'string' || !/^Mon [A-Z][a-z]{2} [ 0-9]\d \d{4}$/.test(key))
     throw new Error('bad-local-monday');
   const day = Date.parse(key);
-  if (!Number.isFinite(day) || new Date(day).getUTCDay() !== 1)
+  if (!Number.isFinite(day) || new Date(day).getDay() !== 1)
     throw new Error('bad-monday-value');
   return day;
 }
