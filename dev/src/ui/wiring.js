@@ -34,6 +34,7 @@ let pendingSaveImport = null;
 let pendingFileExportRaw = null; // exact verified primary seen in export preview
 let fileTransferTicket = 0; // invalidate asynchronous reads when another transfer starts
 let pendingHistoryExport = null; // only prepared from byte-verified primary, never RAM
+let pendingHistoryRetention = null; // only verified off-origin re-selected file can stage pruning
 const transferRecord = x => !!x && typeof x === 'object' && !Array.isArray(x);
 const transferQuantity = x => typeof x === 'number' && Number.isFinite(x) &&
   x >= 0 && x <= Number.MAX_SAFE_INTEGER;
@@ -356,6 +357,106 @@ function downloadHistoryArchive() {
     toast('Не удалось выгрузить подтверждённый архив. Повторите экспорт; не удаляйте PWA.');
   }
 }
+
+// B4b1e: OPT-IN manual archive retention; never a background compact/evict.
+// This does NOT prove off-device custody. User re-selects independently kept
+// full history file, requests explicit count, acknowledges risk, then confirms
+// through existing writer CAS+verified predecessor backup+restart.
+const HISTORY_MIN_RECENT = 4;
+const HISTORY_DELETE_PHRASE = 'УДАЛИТЬ';
+function planHistoryRetention({pkg, known, incoming, state, candidate, ticket}) {
+  if (pkg.sourceWeek !== candidate.conq.wk)
+    throw new Error('stale-archive-week');
+  const previous = candidate.conq.weekArchive;
+  const count = previous.length;
+  if (count <= HISTORY_MIN_RECENT) throw new Error('not-enough-history');
+  const input = $('#cqarcmove');
+  const n = Number(input?.value);
+  if (!input || input.value.trim() === '' || !Number.isSafeInteger(n) ||
+      n < 1 || n > count - HISTORY_MIN_RECENT)
+    throw new Error('invalid-explicit-count');
+  // A re-selected SHA-verified archive must cover the ENTIRE current history.
+  // Never partially prune based on an incomplete or older file.
+  if (known.size !== count) throw new Error('duplicate-local-week');
+  for (const [wk, record] of known) {
+    if (incoming.get(wk) !== record) throw new Error('missing-or-conflicting-file-week');
+  }
+  const oldest = [...known.keys()]
+    .sort((a,b)=>historyWeekDate(a)-historyWeekDate(b)).slice(0,n);
+  const toRemove = new Set(oldest);
+  const retained = previous.filter(run=>!toRemove.has(run.wk));
+  if (retained.length !== count-n || retained.length < HISTORY_MIN_RECENT)
+    throw new Error('retention-mismatch');
+  // Keep EVERY other JSON value in the save identical; do not migrate a
+  // borrowed avatar/account, mutate current-week game, or touch live RAM.
+  candidate.conq.weekArchive = retained;
+  validateTransferSave(candidate);
+  validatedHistory(retained,candidate.conq.wk);
+  const candidateRaw=JSON.stringify(candidate);
+  const oldUtf8 = new TextEncoder().encode(state.primary.raw).byteLength;
+  const newUtf8 = new TextEncoder().encode(candidateRaw).byteLength;
+  if (newUtf8 >= oldUtf8) throw new Error('no-space-saving');
+  if (!loadSave.writer.check().ok || loadSave.writer.state().raw !== state.primary.raw)
+    throw new Error('stale-retention-owner');
+  pendingHistoryRetention = {ticket,expectedRaw:state.primary.raw,
+    candidate,memoryRaw:JSON.stringify(S),count:n,oldUtf8,newUtf8};
+  $('#overlay2').innerHTML =
+    '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true">' +
+    '<h3>Ручное освобождение истории Conquest</h3>' +
+    '<p class="sub"><strong>БУДУТ УДАЛЕНЫ ИЗ ЛОКАЛЬНОГО СОХРАНЕНИЯ: ' + n +
+    ' самых старых архивных недель.</strong> Последние ' + retained.length +
+    ' архивных недель и действующий забег останутся. Награды, герои, валюта и текущие задания не меняются.</p>' +
+    '<p class="sub">Файл независимо прочитан и проверен SHA-256, он содержит каждую удаляемую неделю без изменений. ' +
+    'Однако это НЕ доказательство сохранности файла после очистки телефона или PWA.</p>' +
+    '<p class="sub">Размер JSON до/после: ' + oldUtf8 + ' / ' + newUtf8 +
+    ' байт (UTF-8). Экономия в основном сохранении: ' + (oldUtf8-newUtf8) +
+    ' байт. <strong>Резервная копия на первом шаге сохранит старый полный архив</strong>; ' +
+    'реальная квота браузера может освободиться позже и не гарантирована.</p>' +
+    '<p class="sub">Если внешний файл пропадёт, удалённые недели могут быть утрачены безвозвратно. ' +
+    'Для восстановления потребуется снова выбрать этот файл в «Архив Conquest».</p>' +
+    '<p class="sub"><label><input id="cqarcack" type="checkbox"> ' +
+    'Я самостоятельно сохранил и проверил файл вне данных этого PWA и принимаю риск потери истории.</label></p>' +
+    '<p class="sub"><label for="cqarcphrase">Введите УДАЛИТЬ для продолжения</label>' +
+    '<input id="cqarcphrase" type="text" autocomplete="off"></p>' +
+    '<div class="acts"><button class="btn" data-cqarcapprove="1">Перейти к последнему подтверждению</button>' +
+    '<button class="btn" data-iclose="1" style="margin-left:auto">Отмена</button></div></div></div>';
+}
+function approveHistoryRetention() {
+  const prepared = pendingHistoryRetention;
+  if (!prepared || prepared.ticket !== fileTransferTicket ||
+      !$('#cqarcack')?.checked ||
+      $('#cqarcphrase')?.value?.trim() !== HISTORY_DELETE_PHRASE) {
+    toast('Нужно подтвердить внешнюю копию и ввести слово УДАЛИТЬ. Ничего не изменено.');
+    return;
+  }
+  let state;
+  try { ({state}=requireHistoryOwner()); }
+  catch(e) {
+    pendingHistoryRetention=null;
+    stopAfterProtectedTransfer('history-retention-writer-lost');
+    return;
+  }
+  if (state.primary.raw !== prepared.expectedRaw) {
+    pendingHistoryRetention=null;
+    toast('Сохранение изменилось — повторите проверку файла. Ничего не удалено.');
+    return;
+  }
+  pendingHistoryRetention=null;
+  pendingSaveImport = {candidate:prepared.candidate,
+    expectedRaw:prepared.expectedRaw,memoryRaw:prepared.memoryRaw,mode:'writer'};
+  $('#overlay2').innerHTML =
+    '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true">' +
+    '<h3>Последнее подтверждение: удалить старые недели?</h3>' +
+    '<p class="sub">В локальном сохранении будет удалено старых архивных недель: ' +
+    prepared.count + '. Это необратимое для текущего устройства действие; ' +
+    'единственная долговременная копия удалённой истории — ваш внешний проверенный файл.</p>' +
+    '<p class="sub">Сначала будет записана резервная копия прежнего сохранения, ' +
+    'затем проверена запись уменьшенного варианта. Игра потребует перезапуска. ' +
+    'Если запись не подтверждена, процедура прервётся без молчаливого повтора.</p>' +
+    '<div class="acts"><button class="btn go" data-saveconfirm="1">Да, удалить выбранные архивные недели</button>' +
+    '<button class="btn" data-iclose="1" style="margin-left:auto">Отмена</button></div></div></div>';
+}
+
 function showHistoryDialog() {
   const { state } = requireHistoryOwner();
   const save = JSON.parse(state.primary.raw);
@@ -365,23 +466,30 @@ function showHistoryDialog() {
   const ticket = ++fileTransferTicket;
   pendingSaveImport = null;
   pendingHistoryExport = null;
+  pendingHistoryRetention = null;
   $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true">' +
     '<h3>Архив Conquest</h3><p class="sub">История завершённых недель: ' + count +
     '. Файл содержит только историю, а не валюту, героев или действующую неделю. ' +
     'Он защищён SHA-256 от случайной порчи, но не подтверждает владельца аккаунта.</p>' +
     '<p class="sub">Архивные недели не дают наград повторно. Импорт лишь дополняет историю. ' +
-    'Удаление записей и очистка хранилища здесь НЕ предусмотрены. ' +
+    'Автоматического удаления нет. Вы можете вручную освободить старые недели ' +
+    'ТОЛЬКО после повторной проверки сохранённого архива и двойного согласия. ' +
     'Не удаляйте полную резервную копию сохранения.</p>' +
     '<p id="cqarc-status" class="sub" role="status">Подготавливается архив…</p>' +
     '<p class="sub"><label for="cqarcfile">Выбрать архив Conquest для проверки или восстановления (до 8 МБ)</label>' +
     '<input id="cqarcfile" type="file" accept=".json,application/json"></p>' +
+    '<p class="sub"><label for="cqarcmove">Для ручного освобождения укажите, сколько САМЫХ СТАРЫХ недель удалить ' +
+    '(последние ' + HISTORY_MIN_RECENT + ' сохранятся):</label>' +
+    '<input id="cqarcmove" type="number" min="1" step="1" placeholder="Число недель"></p>' +
     '<div class="acts" id="cqarc-actions"><button class="btn" data-cqarcread="1">' +
-    'Проверить файл и предпросмотр</button><button class="btn" data-iclose="1" style="margin-left:auto">Закрыть</button></div></div></div>';
+    'Проверить файл и восстановить</button><button class="btn" data-cqarcplan="1">' +
+    'Проверить файл для ручного освобождения</button>' +
+    '<button class="btn" data-iclose="1" style="margin-left:auto">Закрыть</button></div></div></div>';
   // Async digest may take time on a phone. Never turn a stale view into a
   // downloadable package: after awaiting verify the original primary again.
   void prepareHistoryExport(state.primary.raw,ticket,$('#cqarcfile'));
 }
-async function readHistoryArchive(input, ticket) {
+async function readHistoryArchive(input, ticket, retention=false) {
   try {
     const file = input?.files?.[0];
     if (!file || !Number.isSafeInteger(file.size) || file.size < 1 ||
@@ -421,6 +529,10 @@ async function readHistoryArchive(input, ticket) {
     const existing = candidate.conq.weekArchive || [];
     const known = validatedHistory(existing,candidate.conq.wk);
     const incoming = validatedHistory(archive,candidate.conq.wk);
+    if (retention) {
+      planHistoryRetention({pkg,known,incoming,state,candidate,ticket});
+      return;
+    }
     let added = 0, duplicates = 0;
     for (const [week, recordRaw] of incoming) {
       if (known.has(week)) {
@@ -461,6 +573,7 @@ async function readHistoryArchive(input, ticket) {
   } catch (e) {
     if (!historyPanelCurrent(ticket,input)) return;
     pendingSaveImport = null;
+    pendingHistoryRetention = null;
     const status=$('#cqarc-status');
     if(status) status.textContent =
       'Файл отклонён: формат, SHA-256, история недель, конфликт или хранилище недоступны. ' +
@@ -488,7 +601,8 @@ function metaClick(d) {
   // decode a candidate, or confirm an old preview without a native owner.
   if (d.saveexp || d.saveunsaved || d.saveimp || d.saveload ||
       d.saveconfirm || d.savefileexp || d.savefileload ||
-      d.cqarc || d.cqarcread || d.cqarcdownload) {
+      d.cqarc || d.cqarcread || d.cqarcdownload ||
+      d.cqarcplan || d.cqarcapprove) {
     const writer = loadSave.writer.state();
     if (writer.gated && writer.status !== 'owned') {
       pendingSaveImport = null;
@@ -512,14 +626,17 @@ function metaClick(d) {
     return true;
   }
   if (d.cqarcdownload) { downloadHistoryArchive(); return true; }
-  if (d.cqarcread) {
+  if (d.cqarcapprove) { approveHistoryRetention(); return true; }
+  if (d.cqarcplan || d.cqarcread) {
     pendingSaveImport = null;
+    pendingHistoryRetention = null;
     const ticket=++fileTransferTicket;
-    void readHistoryArchive($('#cqarcfile'),ticket);
+    void readHistoryArchive($('#cqarcfile'),ticket,!!d.cqarcplan);
     return true;
   }
   if (d.saveexp) {
     fileTransferTicket++;
+    pendingHistoryRetention = null;
     pendingSaveImport = null;
     pendingFileExportRaw = null;
     const state = loadSave.checkpoint.inspect();
@@ -545,6 +662,7 @@ function metaClick(d) {
   }
   if (d.saveunsaved) {
     fileTransferTicket++;
+    pendingHistoryRetention = null;
     pendingFileExportRaw = null;
     try {
       showTransferCode('НЕ ПОДТВЕРЖДЕНО СОХРАНЕНИЕМ',
@@ -557,6 +675,7 @@ function metaClick(d) {
   if (d.savecopy) { const t = $('#savecode'); t.select(); (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(() => toast('Код скопирован'), () => { try { document.execCommand('copy'); toast('Код скопирован'); } catch (e) { toast('Выделите и скопируйте вручную'); } }); return true; }
   if (d.saveimp) {
     fileTransferTicket++;
+    pendingHistoryRetention = null;
     pendingSaveImport = null;
     pendingFileExportRaw = null;
     $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>Импорт сохранения</h3><p class="sub">Вставьте код или выберите JSON-файл до 8 МБ. Сначала проверим данные, затем запросим отдельное подтверждение замены текущего прогресса.</p><textarea id="savecode" class="savebox" placeholder="Вставьте код сюда"></textarea><p class="sub">Файл: <input id="savefile" type="file" accept=".json,application/json" aria-label="Файл сохранения JSON"></p><div class="acts"><button class="btn go" data-saveload="1">Проверить код</button><button class="btn" data-savefileload="1">Проверить файл</button><button class="btn" data-iclose="1" style="margin-left:auto">Отмена</button></div></div></div>';
@@ -578,6 +697,7 @@ function metaClick(d) {
     return true;
   }
   if (d.saveconfirm) {
+    pendingHistoryRetention = null;
     fileTransferTicket++; // any late File.arrayBuffer completion is obsolete
     const pending = pendingSaveImport;
     pendingSaveImport = null; // never reapply same candidate on a second click
