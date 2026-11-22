@@ -40,9 +40,10 @@ jobs:
           test "$(tr -d '\n' < dev/version.json)" = '{"v":142}'
           test "$(git show HEAD^:dev/version.json | tr -d '\n')" = '{"v":141}'
 
-          # Only four reviewed metadata/one-shot paths in the release squash.
+          # Only the five reviewed release/CI-timeout paths in the release squash.
           test "$(git diff --name-only HEAD^ HEAD | LC_ALL=C sort)" = "$(printf '%s\n' \
             .github/workflows/release-v142-once.yml \
+            .github/workflows/validate-pwa.yml \
             dev/CHANGES_STATUS.md \
             dev/docs/ARCH02_V142_RELEASE_HANDOFF_2026_11_22.md \
             dev/version.json | LC_ALL=C sort)"
@@ -53,7 +54,7 @@ jobs:
           test "$(git rev-parse HEAD:app.js)" = 'b3a29bc4484b916e335f17038959b68017e8a78b'
           test "$(git rev-parse HEAD:dev/tools/arch-import-baseline.json)" = 'fbf40920c7092eea83238d1320bb188fd8dedc6e'
           test "$(git rev-parse HEAD:dev/tests/ci/arch01c5b-b1-proposed-order.json)" = 'f817f3df91dc75247e049a0e4d512676d2de3fdf'
-          test "$(git rev-parse HEAD:.github/workflows/validate-pwa.yml)" = '2dad387e9c851f3df40b7a73b30251284753d8e3'
+          test "$(git rev-parse HEAD:.github/workflows/validate-pwa.yml)" = '3df6b11258252ccbb23f11264e4e886910ba8835'
 
           node - <<'NODE'
           const fs=require('fs');
