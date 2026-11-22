@@ -151,3 +151,5 @@ jobs:
         run: node tests/ci/arch02d-b4b1c-native-file-chromium.mjs
       - name: ARCH-02D-B4b1d real Chromium archive download and additive restore (PWA + HTML; NO RELEASE)
         run: node tests/ci/arch02d-b4b1d-native-archive-chromium.mjs
+      - name: ARCH-02D-B4b1e real Chromium manual history pruning and native verified recovery (PWA + HTML; NO RELEASE)
+        run: node tests/ci/arch02d-b4b1e-native-retention-chromium.mjs
