@@ -152,17 +152,50 @@ function normalizedGE1Meta(input) {
   }
   return x;
 }
+// ECON-01: narrow only the THREE approved energy values and TWO account
+// energy outputs. Assert their exact delta before comparing the unchanged
+// historical meta golden (costs, drops, other resources stay byte-strict).
+function normalizeApprovedEnergyMeta(actual, baseline) {
+  const copy = structuredClone(actual);
+  for (let i = 0; i < copy.cases.length; i++) {
+    const row = copy.cases[i], old = baseline.cases[i];
+    assertSame(row.g === old.g && row.f === old.f, 'stable meta case order');
+    if (row.g === 'const' && row.f.startsWith('({ MAX_LVL, MAX_GEAR, WATER_BASE')) {
+      for (const [key, value] of Object.entries({ WATER_BASE: 360, WATER_SEC: 240, CANDLE_BASE: 288 })) {
+        assertSame(row.out[key] === value, 'new ' + key + ' must match owner-approved economy');
+        row.out[key] = old.out[key];
+      }
+    }
+    if (row.g === 'acc' && row.f.includes('accXP(5000).length')) {
+      assertSame(row.out.res.water === old.out.res.water + 210, 'account XP adds unchanged water rewards');
+      assertSame(row.out.res.candle === old.out.res.candle + 168, 'account XP adds unchanged candle rewards');
+      row.out.res.water = old.out.res.water;
+      row.out.res.candle = old.out.res.candle;
+    }
+    if (row.g === 'acc' && row.f.includes('heroCap(), gearCap(), relicCap(), WMAX(), CMAX()')) {
+      assertSame(row.out[4] === old.out[4] + 210, 'water cap still retains account bonus');
+      assertSame(row.out[5] === old.out[5] + 168, 'candle cap still retains account bonus');
+      row.out[4] = old.out[4];
+      row.out[5] = old.out[5];
+    }
+  }
+  return copy;
+}
+function assertSame(ok, label) { if (!ok) throw new Error('ECON-01 strict meta acceptance: ' + label); }
 if (rest.includes('--update')) writeGolden('meta', out);
 else {
   const old = readGolden('meta');
   const baseline = old && JSON.parse(old);
   const expected = baseline && { ...baseline.meta, cases: baseline.cases };
-  if (expected && canon(normalizedBH4Meta(normalizedBH99Meta(normalizedGE1Meta(expected)))) === canon(normalizedBH4Meta(normalizedBH99Meta(normalizedGE1Meta(out)))))
-    console.log('OK meta: golden unchanged except approved BH4 baron roster position');
+  const normalize = x => normalizedBH4Meta(normalizedBH99Meta(normalizedGE1Meta(x)));
+  const expectedNormalized = expected && normalize(expected);
+  const gotNormalized = expectedNormalized && normalizeApprovedEnergyMeta(normalize(out), expectedNormalized);
+  if (expectedNormalized && canon(expectedNormalized) === canon(gotNormalized))
+    console.log('OK meta: historical golden exact outside approved ECON-01 energy and prior BH4/GE1 exceptions');
   else {
     if(expected){
-      const a=normalizedBH4Meta(normalizedBH99Meta(normalizedGE1Meta(expected)));
-      const b=normalizedBH4Meta(normalizedBH99Meta(normalizedGE1Meta(out)));
+      const a=expectedNormalized;
+      const b=gotNormalized;
       const diff=a.cases.filter((row,i)=>canon(row)!==canon(b.cases[i])).map(row=>({g:row.g,f:row.f,a:row.out,b:b.cases.find(x=>x.g===row.g&&x.f===row.f)?.out}));
       console.error('BH9.9 narrowly divergent golden meta cases:',JSON.stringify(diff.slice(0,16)).slice(0,12000));
     }
