@@ -128,6 +128,51 @@ console.log('PASS CI scope/gate/input keys: docs-after-code, version-only behavi
 // A reuse run has intentionally skipped ancestors; publication must depend on
 // the explicit plan/gate results, while still refusing canceled workflows.
 const workflow=fs.readFileSync(new URL('../../../.github/workflows/validate-pwa.yml',import.meta.url),'utf8');
+// CI-OPT-01 phase 2: the scoped economy build must retain safety and
+// transactional coverage while skipping unrelated historical content/3D.
+const buildSection = workflow.match(/^  build:\n([\s\S]*?)^  golden:/m)?.[1];
+assert.ok(buildSection, 'compiled build job exists');
+const buildSteps = buildSection.split(/\\n      - /).slice(1);
+const stepNamed = name => buildSteps.find(x => x.includes('name: ' + name + '\\n'));
+const requireScoped = name => {
+  const step = stepNamed(name);
+  assert.ok(step, name + ': build smoke/safety step must exist');
+  assert.match(step, /^if: \\$\\{\\{ needs\\.plan\\.outputs\\.mode != 'reuse' \\}\\}/,
+    name + ': must execute for economy scope');
+};
+for (const name of [
+  'ECON-01 deterministic economy simulation contract (approved energy)',
+  'ECON-01 energy regen save-v1 regression (PWA + HTML)',
+  'ECON-01 daily quest alternatives and reward-once semantics',
+  'ARCH-02B1 fail-closed storage acceptance (PWA + artifact)',
+  'ARCH-02C-B1 verified checkpoint + explicit restore (PWA + artifact)',
+  'ARCH-02C-B2 safe import/export and fault acceptance (PWA + artifact)',
+  'ARCH-02C-B3-B1c-B3 MANDATORY ordinary startup writer gate (PWA + artifact)',
+  'ARCH-02C-B4-B1 battle checkpoint settlement (PWA + artifact; NO RELEASE)',
+  'ARCH-02C-B4-B2 campaign + Conquest entry debit checkpoint (PWA + artifact; NO RELEASE)',
+  'ARCH-02C-B4-B4b2 Conquest shops/refills/consumables (PWA + artifact; NO RELEASE)',
+  'ARCH-02C-B5a verified daily quest and chest claims (PWA + artifact; NO RELEASE)',
+  'ARCH-02C-B5b verified login calendar + month rollover (PWA + artifact; NO RELEASE)',
+  'ARCH-02C-B6a verified markets, energy refills and recycling (PWA + artifact; NO RELEASE)',
+  'ARCH-02C-B6b verified hero upgrades and crafting (PWA + artifact; NO RELEASE)',
+  'ARCH-02D-B2 GameClock daily/calendar snapshots and DST (PWA + artifact; NO RELEASE)',
+  'ARCH-02D-B3 monotonic resource regeneration + wall spoof (PWA + artifact; NO RELEASE)',
+  'ARCH-02D-B4a offline relaunch clock limits + v1 safety (PWA + artifact; NO RELEASE)',
+  'ARCH-02D-B4b2 paid-day ledger history and rollback protection (PWA + HTML, 3 TZ; NO RELEASE)',
+]) requireScoped(name);
+for (const name of [
+  'ARCH-02C-B3-A0 multi-tab race characterization (PWA + artifact; UNSAFE baseline)',
+  'ARCH-02D-B4b1b archive quota, growth and transfer limits (PWA + HTML, 3 TZ; NO RELEASE)',
+  'ARCH-01C2a all 210 mission costs (PWA + artifact)',
+]) {
+  const step = stepNamed(name);
+  assert.ok(step, name + ': full-suite step must remain available');
+  assert.match(step, /^if: \\$\\{\\{ needs\\.plan\\.outputs\\.mode != 'reuse' && needs\\.plan\\.outputs\\.scope != 'economy' \\}\\}/,
+    name + ': run for full scope, not economy-only');
+}
+const economySkipped = buildSteps.filter(x => x.startsWith("if: \${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}"));
+assert.ok(economySkipped.length >= 50,
+  'economy-only changes should avoid unrelated heavy build regression steps');
 const strict=workflow.match(/^  arch-strict:\n([\s\S]*?)^  build:/m)?.[1];
 assert.ok(strict,'dedicated strict job must exist outside scope/reuse selection');
 assert.match(strict,/node tools\/check-deps\.mjs --strict/);
