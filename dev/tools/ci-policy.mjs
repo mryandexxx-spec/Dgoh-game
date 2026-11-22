@@ -2,6 +2,19 @@
 export const JOBS = ['build','golden','pwa','ui','ui-campaign','campaign-lifecycle','ui-heroes','ui-arena','three-d','three-d-desktop','perf','bh8-preview','bh98-procedural','md-ult1','arena-animation','arena-ab'];
 export const RELEASE = ['build','golden','pwa'];
 export const CAMPAIGN = [...RELEASE,'ui-campaign','campaign-lifecycle','perf'];
+// Economy/daily changes still receive full compiled safety, golden and PWA
+// coverage, but do not gate on unrelated WebGL, 3D or performance jobs.
+export const ECONOMY = [...RELEASE];
+const ECONOMY_PATHS = new Set([
+  'dev/src/logic/economy.js',
+  'dev/src/logic/daily.js',
+  'dev/src/ui/views/daily.js',
+  'dev/tests/economy/acceptance.mjs',
+  'dev/tests/ci/econ01-energy-acceptance.mjs',
+  'dev/tests/ci/econ01-daily-acceptance.mjs',
+  'dev/tests/ci/arch02c-b5a-daily-claims-acceptance.mjs',
+]);
+const isEconomy = p => ECONOMY_PATHS.has(p);
 export const isDoc = p => /^(?:README\.md|dev\/(?:README|ARCHITECTURE|CHANGES_STATUS)\.md)$/.test(p)
   || /^dev\/docs\/.+\.(?:md|html|png|jpg|jpeg|webp|svg)$/.test(p)
   || p === 'dev/docs/ci/AUDIT_EVIDENCE_2026_11_14.json';
@@ -26,7 +39,7 @@ export function groupsFor(scope, paths=[]) {
     const selected=new Set([...RELEASE,...code.flatMap(testGroups)]);
     return JOBS.filter(k=>selected.has(k));
   }
-  const groups = { docs: [], release: RELEASE, pwa: RELEASE, campaign: CAMPAIGN, full: JOBS }[scope];
+  const groups = { docs: [], release: RELEASE, pwa: RELEASE, economy: ECONOMY, campaign: CAMPAIGN, full: JOBS }[scope];
   if (!groups) throw Error('Unknown CI scope: ' + scope);
   return [...groups];
 }
@@ -37,13 +50,14 @@ export function classify(paths, { forceFull = false, campaignRegistry = false } 
     if (!code.length) scope = 'docs';
     else if (code.every(p => p === 'dev/version.json')) scope = 'release';
     else if (code.every(p => p === 'dev/src/pwa/sw.js' || p === 'dev/version.json')) scope = 'pwa';
+    else if (code.every(p => isEconomy(p))) scope = 'economy';
     else if (code.every(p => testGroups(p))) scope = 'tests';
     else if (code.every(p => isCampaign(p) || p === 'dev/version.json' || (p === 'dev/tools/split.config.mjs' && campaignRegistry))) scope = 'campaign';
   }
   return { mode: scope, scope, groups: groupsFor(scope,paths), coverage: groupsFor(scope,paths), paths, reason: 'Scope: ' + scope };
 }
 export function validatePlan(plan) {
-  if (!plan || !['docs','release','pwa','tests','campaign','full','reuse'].includes(plan.mode)) throw Error('Missing/invalid CI mode');
+  if (!plan || !['docs','release','pwa','economy','tests','campaign','full','reuse'].includes(plan.mode)) throw Error('Missing/invalid CI mode');
   const required = groupsFor(plan.scope,plan.paths);
   const selected = plan.mode === 'reuse' ? ['build'] : groupsFor(plan.mode,plan.paths);
   if (JSON.stringify(plan.groups) !== JSON.stringify(selected)) throw Error('Invalid selected jobs');
