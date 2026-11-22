@@ -427,6 +427,30 @@ function normalizeApprovedEcon01EnergyScreens(current, expected) {
     const old = oldValues(fresh);
     screen.header = screen.header.replace(pill, (_all, start, kind, _value, end) =>
       start + old[kind] + end);
+    // The lobby header is also embedded in several historical view snapshots.
+    // Restrict the exception to the two fully identified energy pills.
+    const mirrored = new Set(['fresh:lobby', 'view:lobby', 'squadsel:camp0',
+      'calendar', 'profile', 'battle-settings']);
+    if (mirrored.has(screen.name)) {
+      assert.equal(typeof screen.view, 'string', screen.name + ': view must exist');
+      let count = 0;
+      screen.view = screen.view.replace(pill, (_all, start, kind, value, end) => {
+        assert.equal(value, newValues(fresh)[kind], screen.name + ': mirrored energy must match');
+        count++;
+        return start + old[kind] + end;
+      });
+      assert.equal(count, 2, screen.name + ': exactly two mirrored energy pills');
+    }
+    if (screen.name === 'info:need:water:6') {
+      assert.ok(screen.overlay2?.includes('Нужно 6 · у вас 450/450'),
+        'water shortage dialog must show approved current stock');
+      screen.overlay2 = screen.overlay2.replace('Нужно 6 · у вас 450/450',
+        'Нужно 6 · у вас 300/240');
+    }
+    if (screen.name === 'sim:node3') {
+      assert.ok(screen.overlay?.includes('из 450'), 'simulator must show approved water stock');
+      screen.overlay = screen.overlay.replace('из 450', 'из 300');
+    }
   }
   return copy;
 }
