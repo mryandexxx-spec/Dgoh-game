@@ -103,6 +103,9 @@ jobs:
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: npm ci
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ECON-01 deterministic economy simulation contract (no gameplay changes)
+        run: node tests/economy/acceptance.mjs
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: node tools/check-deps.mjs --strict
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-01 Acorn import-boundary regression gate
