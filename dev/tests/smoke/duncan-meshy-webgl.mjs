@@ -23,7 +23,20 @@ try {
    localStorage.setItem('dune-cine-off','true');
    try{Object.defineProperty(navigator,'serviceWorker',{value:undefined});}catch{}
   },save,quality);
+  await page.bringToFront();
   await page.goto(srv.url(path.basename(html)),{waitUntil:'load'});
+  // The ordinary PWA entrypoint acquires its exclusive writer lease
+  // asynchronously. Opening the 3D hero card before that startup settles
+  // can call prog() while S is still undefined. Fail if the real lease is
+  // not acquired; never bypass or mock the writer gate for this smoke.
+  await page.waitForFunction(() => {
+    try {
+      const phase=(0,eval)('start.writerLifecycle()');
+      return phase.armed && !phase.blocked &&
+        phase.reason === 'active' && phase.writer.status === 'owned' &&
+        (0,eval)('typeof S !== "undefined"');
+    } catch { return false; }
+  }, {timeout:30000,polling:50});
   await page.evaluate(async()=>{
    window.openCalendar=()=>{};window.toast=()=>{};window.renderNotes=()=>{};
    await loadB3();closeInfo(true);closeOverlay();openDetail('duncan');
