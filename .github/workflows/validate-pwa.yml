@@ -505,21 +505,34 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: dev/package-lock.json
+      # Economy changes need the exact compiled legacy save snapshots,
+      # not unrelated 200-battle, character and 41-screen Golden regressions.
+      # Unknown/mixed/graphics changes still use the original full suite.
       - run: npm ci
+        if: ${{ needs.plan.outputs.scope != 'economy' }}
       - uses: actions/download-artifact@v4
         with:
           name: dune-validated-build
           path: dev/dist
       - run: node tools/ci-artifact.mjs verify
       - name: Cache Playwright Chromium
+        if: ${{ needs.plan.outputs.scope != 'economy' }}
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-chromium-1.56.1
-      - run: |
+      - if: ${{ needs.plan.outputs.scope != 'economy' }}
+        run: |
           npm install --no-save --package-lock=false playwright@1.56.1
           npx playwright install chromium
-      - run: npm test
+      - name: Golden full regression (200 battles, 41 screens, PWA + HTML)
+        if: ${{ needs.plan.outputs.scope != 'economy' }}
+        run: npm test
+      - name: CI-OPT-01 economy exact save-v1 Golden (PWA + HTML)
+        if: ${{ needs.plan.outputs.scope == 'economy' }}
+        run: |
+          node tests/golden/saves.mjs dist/pwa/index.html
+          node tests/golden/saves.mjs dist/artifact.html
 
   pwa:
     name: PWA update + offline + boot fallback
@@ -551,11 +564,20 @@ jobs:
       - name: Service worker installs even if optional 3D asset stalls
         run: node tests/sw-install-stall.mjs
       - name: Core model stalled on iPhone must not block 3D lobby
+        if: ${{ needs.plan.outputs.scope != 'economy' }}
         run: node tests/smoke/core-model-stall.mjs dist/pwa/index.html
       - name: Optional Muad-Dib download must not block 3D lobby
+        if: ${{ needs.plan.outputs.scope != 'economy' }}
         run: node tests/smoke/optional-model-boot.mjs dist/pwa/index.html
       - name: PWA update and offline assets
         run: node tests/smoke/sw.mjs .. dist/pwa
+      # Validate this focused browser smoke during full CI as well, so a
+      # changes-to-CI PR tests the runner before economy-only PRs use it.
+      - name: CI-OPT-01 economy daily and chest DOM (PWA + HTML)
+        if: ${{ needs.plan.outputs.scope == 'economy' || needs.plan.outputs.scope == 'full' }}
+        run: |
+          node tests/ci/econ01-daily-dom-smoke.mjs dist/pwa/index.html
+          node tests/ci/econ01-daily-dom-smoke.mjs dist/artifact.html
       # Fast's full 36-minute duplicate is excluded for economy-only changes.
       # Keep real native Web Locks and recovery acceptance on the *same*
       # immutable build in the mandatory PWA job instead.
