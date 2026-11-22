@@ -443,9 +443,8 @@ function normalizeApprovedEcon01DailyScreens(current, expected) {
     ['Собрать предмет снаряжения', 'Собрать предмет или провести 10 боёв', '0/1', '0/1 или 0/10'],
     ['Повысить уровень героев 3 раза', '3 повышения уровня или 3 боя Хроник', '0/3', '0/3 или 0/3'],
   ];
-  const esc = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\if (rest.includes('--update')) writeGolden('screens', out);');
   for (const [oldLabel, newLabel, oldProgress, newProgress] of changes) {
-    const re = new RegExp('(<b>)' + esc(newLabel) + '(</b><div class="qbar"><i style="width:[^"]+"><\\/i><\\/div><span class="mono">)([^<]+)(<\\/span>)', 'g');
+    const re = new RegExp('(<b>)' + newLabel + '(</b><div class="qbar"><i style="width:[^"]+"><\\/i><\\/div><span class="mono">)([^<]+)(<\\/span>)', 'g');
     const matched = [...actual.view.matchAll(re)];
     assert.equal(matched.length, 1, newLabel + ': exactly one approved quest in rendered daily');
     assert.equal(matched[0][3], newProgress, newLabel + ': approved alternative progress only');
