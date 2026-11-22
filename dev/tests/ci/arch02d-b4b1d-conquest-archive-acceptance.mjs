@@ -91,8 +91,9 @@ async function verifyFile(h,text) {
 function noPreview(h){assert.doesNotMatch(h.f.get('#overlay2').innerHTML,/data-saveconfirm/);}
 async function packageWith(weeks,source=ACTIVE) {
  const historyRaw=raw(weeks);
- return raw({format:'dune-goh-conquest-history',version:1,
-  sourceWeek:source,count:weeks.length,historyRaw,sha256:await md(historyRaw)});
+ const manifest={format:'dune-goh-conquest-history',version:1,
+  sourceWeek:source,count:weeks.length,historyRaw};
+ return raw({...manifest,sha256:await md(raw(manifest))});
 }
 let exported;
 // H01: verified primary, same bytes/historical flags with explicit digest.
@@ -103,7 +104,8 @@ let exported;
  const pkg=JSON.parse(exported);
  assert.equal(pkg.sourceWeek,ACTIVE);
  assert.equal(pkg.count,2);assert.deepEqual(JSON.parse(pkg.historyRaw),[ONE,TWO]);
- assert.equal(pkg.sha256,await md(pkg.historyRaw));
+ assert.equal(pkg.sha256,await md(raw({format:pkg.format,version:pkg.version,
+   sourceWeek:pkg.sourceWeek,count:pkg.count,historyRaw:pkg.historyRaw})));
  assert.equal(before(h),initial);
  done(h);pass('H01','exact stored history exported with SHA-256, never RAM');
 }
@@ -150,6 +152,7 @@ let exported;
  for(const candidate of [
   raw({...JSON.parse(exported),historyRaw:JSON.parse(exported).historyRaw.replace('"stars":120','"stars":121')}),
   raw({...JSON.parse(exported),sha256:'f'.repeat(64)}),
+  raw({...JSON.parse(exported),sourceWeek:new Date(2026,10,16,12).toDateString()}),
   raw({...JSON.parse(exported),unexpected:true})
  ]) {
    h.g.run('metaClick({cqarc:1})');

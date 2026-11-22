@@ -307,12 +307,14 @@ async function prepareHistoryExport(raw, ticket, input) {
     }
     validatedHistory(archive, saved.conq.wk);
     const historyRaw = JSON.stringify(archive);
-    const hash = await historySha256(historyRaw);
+    const manifest = {format: HISTORY_FORMAT, version: 1,
+      sourceWeek: saved.conq.wk, count: archive.length, historyRaw};
+    // SHA covers ALL manifest metadata, not just the historical record bytes.
+    const hash = await historySha256(JSON.stringify(manifest));
     if (!historyPanelCurrent(ticket,input)) return;
     const { state } = requireHistoryOwner();
     if (state.primary.raw !== raw) throw new Error('history-changed');
-    const content = JSON.stringify({ format: HISTORY_FORMAT, version: 1,
-      sourceWeek: saved.conq.wk, count: archive.length, historyRaw, sha256: hash });
+    const content = JSON.stringify({...manifest,sha256:hash});
     pendingHistoryExport = { sourceRaw: raw, content, count: archive.length };
     const length = new TextEncoder().encode(content).length;
     $('#cqarc-status').textContent = archive.length + ' недель; SHA-256: ' +
@@ -406,7 +408,9 @@ async function readHistoryArchive(input, ticket) {
         JSON.stringify(archive) !== pkg.historyRaw)
       throw new Error('archive-noncanonical');
     validatedHistory(archive, pkg.sourceWeek);
-    const hash = await historySha256(pkg.historyRaw);
+    const hash = await historySha256(JSON.stringify({format:pkg.format,
+      version:pkg.version,sourceWeek:pkg.sourceWeek,count:pkg.count,
+      historyRaw:pkg.historyRaw}));
     if (!historyPanelCurrent(ticket,input)) return;
     if (hash !== pkg.sha256) throw new Error('archive-sha256-mismatch');
     const {writer,state} = requireHistoryOwner();

@@ -18,13 +18,21 @@ const key='dune-goh-v1',backup=key+'.backup';
 const chrome=process.env.CHROME_PATH ||
  ['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'].find(fs.existsSync);
 assert.ok(chrome,'real Chromium required for archive import/download');
-const date=new Date(2026,10,10,12), active=new Date(2026,10,9,12).toDateString();
+// Match the REAL browser's current local week; fixed November dates would
+// auto-rotate Conquest at boot and make the archive export test misleading.
+const date=new Date();
+date.setHours(12,0,0,0);
+const monday=new Date(date);
+monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
+const active=monday.toDateString();
 function week(wk,points=15){return {v:2,wk,diff:'easy',
  done:{'0-0-0':1},tk:{c0:1,s0:1},route:{0:{0:'0-0-0'}},
  disks:[{k:'stam',on:1}],stars:points,pts:10,fp:{},fd:{},
  dpick:{},foe:{},sta:{},buy:{}};}
-const first=week(new Date(2026,9,26,12).toDateString());
-const second=week(new Date(2026,10,2,12).toDateString());
+const previousWeek=new Date(monday);previousWeek.setDate(previousWeek.getDate()-7);
+const weekBefore=new Date(monday);weekBefore.setDate(weekBefore.getDate()-14);
+const first=week(weekBefore.toDateString());
+const second=week(previousWeek.toDateString());
 function save(history) {return {...fixture,conq:{v:2,wk:active,
  diff:'easy',done:{},tk:{},route:{},disks:[],sta:{},foe:{},dpick:{},
  buy:{},stars:0,pts:0,fp:{},fd:{},en:100,enTs:date.getTime(),
@@ -81,7 +89,9 @@ try {
    const pkg=JSON.parse(fs.readFileSync(filename,'utf8'));
    assert.equal(pkg.format,'dune-goh-conquest-history');
    assert.deepEqual(JSON.parse(pkg.historyRaw),[first,second]);
-   assert.equal(pkg.sha256,createHash('sha256').update(pkg.historyRaw,'utf8').digest('hex'));
+   const manifest=JSON.stringify({format:pkg.format,version:pkg.version,
+     sourceWeek:pkg.sourceWeek,count:pkg.count,historyRaw:pkg.historyRaw});
+   assert.equal(pkg.sha256,createHash('sha256').update(manifest,'utf8').digest('hex'));
    assert.equal(await exportTab.page.evaluate(k=>localStorage.getItem(k),key),before,
      name+' history export unexpectedly modified primary');
    assert.deepEqual(exportTab.errors,[]);
