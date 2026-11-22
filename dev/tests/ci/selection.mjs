@@ -96,6 +96,52 @@ try {
  write('dev/docs/file with spaces.md','doc');write('dev/src/game.js','const game=1;');write('dev/version.json','{"v":1}');write('sw.js','baseline');
  const registry="export const SPLIT = [\n  [1, 'data/game.js'],\n];\n";write('dev/tools/split.config.mjs',registry);
  const base=commit(),key=inputs(dir);assert.deepEqual(key,inputsAt(base,dir));
+
+// CI-OPT-01 release: only an immutable *current-main* successful push
+// may inherit its risk-scoped checks. A manual regression (publish=false)
+// or a missing/stale/forged proof keeps the original full run.
+const manualEnv = {
+  GITHUB_REF: 'refs/heads/main', GITHUB_REPOSITORY: 'owner/game',
+  GITHUB_RUN_ID: '50', GITHUB_TOKEN: 'test',
+};
+const scopePaths = ['dev/src/logic/daily.js'];
+const manualProof = {
+  run_id: 77, exact: true, source_sha: base,
+  scope: 'economy', paths: scopePaths,
+  fingerprint: key.fingerprint, behavior: key.behavior,
+  coverage: groupsFor('economy'),
+  artifact_id: 17, artifact_digest: 'sha256:' + 'a'.repeat(64),
+};
+const manualEvent = { inputs: { publish: 'true' } };
+const manualArgs = {
+  lookupMain: async () => manualProof, env: manualEnv,
+};
+const manualPlan = await planForEvent(
+  'workflow_dispatch', manualEvent, base, dir, manualArgs);
+assert.equal(manualPlan.mode, 'reuse');
+assert.equal(manualPlan.scope, 'economy');
+assert.deepEqual(manualPlan.groups, ['build']);
+assert.deepEqual(manualPlan.coverage, ['build', 'golden', 'pwa']);
+assert.equal(checkGate(needs(manualPlan)).mode, 'reuse');
+for (const patch of [
+  { source_sha: '0'.repeat(40) },
+  { fingerprint: '0'.repeat(64) },
+  { coverage: ['build'] },
+  { artifact_digest: 'invalid' },
+  { scope: 'full' },
+]) {
+  const failedSafe = await planForEvent('workflow_dispatch', manualEvent, base, dir, {
+    ...manualArgs, lookupMain: async () => ({ ...manualProof, ...patch }),
+  });
+  assert.equal(failedSafe.mode, 'full', 'bad manual release proof must force full regression');
+}
+assert.equal((await planForEvent('workflow_dispatch',
+  { inputs: { publish: 'false' } }, base, dir, manualArgs)).mode, 'full');
+assert.equal((await planForEvent('workflow_dispatch', manualEvent, base, dir,
+  { ...manualArgs, lookupMain: async () => null })).mode, 'full');
+assert.equal((await planForEvent('workflow_dispatch', manualEvent, base, dir,
+  { ...manualArgs, env: { ...manualEnv, GITHUB_REF: 'refs/heads/feature' } })).mode, 'full');
+
  write('dev/docs/file with spaces.md','changed');const docs=commit();assert.deepEqual(inputs(dir),key);
  assert.deepEqual(changedPaths(base,docs,dir),['dev/docs/file with spaces.md']);
  assert.equal((await planForEvent('push',{before:base},docs,dir,{lookup:async()=>null})).mode,'docs');
