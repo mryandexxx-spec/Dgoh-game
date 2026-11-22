@@ -22,5 +22,5 @@ History currently lives **inside** `dune-goh-v1.conq.weekArchive` with no expiry
 ## CI / release gates
 
 - New H01–H10 acceptance cases PWA + standalone × UTC/Europe/Amsterdam/America/Los_Angeles: exact snapshot archive, SHA-256 readback, additive merge without reward changes, idempotency, stale export, conflicting duplicates, tampering/unsafe archives, oversize, Web Locks loss, transactional quota failure and cold reload.
-- Real Chromium proof for actual native file download, file chooser, verified merge/restart on both compiled builds; preserve Golden 200 battles/41 screens, strict ABI, WebGL, offline and previous B4b1c F01–F10.
+- Real Chromium proof for actual native file download, file chooser, verified merge/restart on both compiled builds (not mocked); preserve Golden 200 battles/41 screens, strict ABI, WebGL, offline and previous B4b1c F01–F10.
 - No root PWA, `sw.js`, `dev/version.json` or Golden changes. No merge before exact-head Fast + Full SUCCESS, explicit owner approval and no PWA release.

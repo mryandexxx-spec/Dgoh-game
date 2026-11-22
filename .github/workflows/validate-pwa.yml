@@ -556,6 +556,8 @@ jobs:
         run: node tests/ci/arch02c-b3-b2-a2-real-chromium.mjs
       - name: ARCH-02D-B4b1c REAL Chromium JSON download and native file import (PWA + standalone; NO RELEASE)
         run: node tests/ci/arch02d-b4b1c-native-file-chromium.mjs
+      - name: ARCH-02D-B4b1d REAL Chromium Conquest archive SHA-256 download and user-approved additive restore
+        run: node tests/ci/arch02d-b4b1d-native-archive-chromium.mjs
       - run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
       - name: Upload E3 screenshots
         if: always()

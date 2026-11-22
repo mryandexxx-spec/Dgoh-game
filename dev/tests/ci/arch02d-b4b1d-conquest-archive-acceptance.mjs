@@ -148,7 +148,7 @@ let exported;
 {
  const h=await boot(full([TWO])),prior=before(h);
  for(const candidate of [
-  exported.replace('"stars":120','"stars":121'),
+  raw({...JSON.parse(exported),historyRaw:JSON.parse(exported).historyRaw.replace('"stars":120','"stars":121')}),
   raw({...JSON.parse(exported),sha256:'f'.repeat(64)}),
   raw({...JSON.parse(exported),unexpected:true})
  ]) {
@@ -197,7 +197,8 @@ let exported;
  h.g.run('metaClick({cqarcread:1})');
  h.g.run('loadSave.writer.release()');
  finish(Uint8Array.from(b).buffer);
- await wait(()=>h.g.run('loadSave.writer.state().status')==='session-stale');
+ await new Promise(done=>setTimeout(done,20));
+ assert.equal(h.g.run('loadSave.writer.state().status'),'session-stale');
  assert.equal(before(h),prior);noPreview(h);
  pass('H08','lease loss while read pending cannot create valid preview');
 }
