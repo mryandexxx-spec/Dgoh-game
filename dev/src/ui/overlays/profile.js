@@ -37,7 +37,7 @@ function openProfile() {
     <p class="chap">Титул · получено ${ownedT} из ${Object.keys(TITLES).length}</p><div class="tgrid">${Object.keys(TITLES).map(tBtn).join('')}</div>
     <p class="chap">Сохранение</p>
     <p class="sub" style="margin:0 0 6px;font-size:12px">Прогресс хранится на этом устройстве. Сделайте резервную копию, чтобы перенести игру на другое устройство или не потерять её при очистке данных браузера.</p>
-    <div class="acts" style="margin-top:0"><button class="btn" data-saveexp="1">Экспорт сохранения</button><button class="btn" data-saveimp="1">Импорт сохранения</button><button class="btn" data-cqarc="1">Архив Conquest</button></div>
+    <div class="acts" style="margin-top:0"><button class="btn" data-saveexp="1">Экспорт сохранения</button><button class="btn" data-saveimp="1">Импорт сохранения</button></div>
     <details class="asset-credits" style="margin:8px 0 14px;font-size:11px;color:var(--dust)">
       <summary style="cursor:pointer">Авторы 3D-ассетов лагеря · CC BY 4.0</summary>
       <p style="line-height:1.65;margin:7px 0">Модели адаптированы для мобильной игры: уменьшены текстуры, изменены материалы и масштаб.</p>

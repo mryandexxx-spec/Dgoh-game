@@ -99,6 +99,8 @@ let exported;
 // H01: verified primary, same bytes/historical flags with explicit digest.
 {
  const h=await boot(),initial=before(h);
+ h.g.run('metaClick({saveexp:1})');
+ assert.match(h.f.get('#overlay2').innerHTML,/data-cqarc/);
  h.g.run('S.solari += 7777'); // uncommitted RAM is never archived
  exported=await exportPackage(h);
  const pkg=JSON.parse(exported);

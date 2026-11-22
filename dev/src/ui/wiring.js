@@ -124,7 +124,8 @@ function showTransferCode(title, detail, raw, verifiedFile = false) {
     'Скачать его можно, но эта версия не сможет восстановить его обратно. ' +
     'Не очищайте данные игры.</strong></p>' : '';
   const fileButton = verifiedFile ?
-    '<button class="btn go" data-savefileexp="1">Скачать JSON-файл</button>' : '';
+    '<button class="btn go" data-savefileexp="1">Скачать JSON-файл</button>' +
+    '<button class="btn" data-cqarc="1">Архив Conquest</button>' : '';
   $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>' +
     title + '</h3><p class="sub">' + detail +
     '</p>' + diagnostic + warning + fileWarning +
