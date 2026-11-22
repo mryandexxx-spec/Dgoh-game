@@ -547,6 +547,8 @@ jobs:
         run: node tests/ci/arch02c-b3-b1b-real-multitab-chromium.mjs
       - name: ARCH-02C-B3-B2-A2 REAL Chromium protected import and user-confirmed recovery (MANDATORY)
         run: node tests/ci/arch02c-b3-b2-a2-real-chromium.mjs
+      - name: ARCH-02D-B4b1c REAL Chromium JSON download and native file import (PWA + standalone; NO RELEASE)
+        run: node tests/ci/arch02d-b4b1c-native-file-chromium.mjs
       - run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
       - name: Upload E3 screenshots
         if: always()

@@ -13,6 +13,7 @@
 ## Gate / tests
 
 - New F01–F10 scenarios (PWA + standalone, 3 TZ) exercise file UI, >2M character raw saves and archive markers, byte-accurate file export, legacy Base64 compatibility, bad UTF-8/oversize/v2/nested archive rejection, native Web Lock denied tab, async lease-loss, quota and stale-primary conflict, and the original backup/reload contracts.
+- Separate **real native Chromium browser** proof (PWA + standalone): browser-generated JSON download exact-byte equal to verified primary, native file-picker import, user confirmation, previous verified backup and cold reload; no mocked File, Blob or Web Locks.
 - Preserve ARCH-02C and B4b1b, strict 898 exports, v1 fixtures, Golden 200 battles/41 screens, WebGL, PWA offline and final gate. No Golden updates, no test weakening, no `dev/version.json` change and no root PWA publish.
 - Later **B4b1d** (requires separate approval): optional user-authorized off-device historical archive, verified round-trip and only then deliberate retention handling. The new transport alone does **not** cap localStorage growth.
 

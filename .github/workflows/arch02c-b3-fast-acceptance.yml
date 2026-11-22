@@ -135,3 +135,5 @@ jobs:
         run: node tests/smoke/baron-legend-gl.mjs dist/pwa/index.html
       - name: Real Chromium protected import and explicit backup recovery
         run: node tests/ci/arch02c-b3-b2-a2-real-chromium.mjs
+      - name: ARCH-02D-B4b1c native browser JSON download and file-picker restore (PWA + HTML; NO RELEASE)
+        run: node tests/ci/arch02d-b4b1c-native-file-chromium.mjs
