@@ -10,6 +10,54 @@ assert.equal(classify(['dev/docs/a.md','README.md']).mode,'docs');
 assert.equal(classify(['dev/version.json']).mode,'release');
 assert.equal(classify(['dev/src/pwa/sw.js']).mode,'pwa');
 assert.equal(classify(['dev/src/render3d/scenes/campaign-map.js','dev/src/styles/campaign20.css','dev/version.json']).mode,'campaign');
+
+// CI-OPT-01: narrow, explicit economy/daily changes keep save, golden,
+// PWA, writer and transaction coverage without unrelated 3D/WebGL jobs.
+const economyPaths = [
+  'dev/src/logic/economy.js', 'dev/src/logic/daily.js',
+  'dev/src/ui/views/daily.js',
+  'dev/tests/ci/econ01-energy-acceptance.mjs',
+  'dev/tests/ci/econ01-daily-acceptance.mjs',
+  'dev/tests/ci/arch02c-b5a-daily-claims-acceptance.mjs',
+];
+for (const entry of economyPaths) {
+  const plan = classify([entry]);
+  assert.equal(plan.mode, 'economy', entry);
+  assert.deepEqual(plan.groups, ['build', 'golden', 'pwa'], entry);
+  assert.equal(checkGate(needsForScope(plan)).mode, 'economy', entry);
+}
+assert.equal(classify(economyPaths).mode, 'economy');
+for (const unrelated of [
+  'dev/src/logic/battle/engine.js',
+  'dev/src/render3d/quality.js',
+  'dev/src/storage/save.js',
+  'dev/tests/dom/screens.mjs',
+  'dev/tools/ci-policy.mjs',
+  '.github/workflows/validate-pwa.yml',
+  'dev/package-lock.json',
+]) assert.equal(classify(['dev/src/logic/daily.js', unrelated]).mode, 'full',
+  'mixed or unknown files must fail closed: ' + unrelated);
+const scoped = classify(['dev/src/logic/daily.js']);
+assert.throws(() => validatePlan({ ...scoped, groups: ['build'] }), /Invalid selected jobs/);
+assert.throws(() => validatePlan({ ...scoped, coverage: ['build', 'pwa'] }), /Incomplete validation coverage/);
+// A scoped gate must reject missing/failing required checks and a "green"
+// unrequested 3D job that would invalidate the exact planned coverage.
+function needsForScope(plan) {
+  return {
+    plan: { result: 'success', outputs: { decision: JSON.stringify(plan) } },
+    'arch-strict': { result: 'success' },
+    ...Object.fromEntries(JOBS.map(k => [k, { result: plan.groups.includes(k) ? 'success' : 'skipped' }])),
+  };
+}
+for (const key of ['build', 'golden', 'pwa', 'arch-strict']) {
+  const broken = needsForScope(scoped);
+  broken[key].result = 'skipped';
+  assert.throws(() => checkGate(broken), key);
+}
+const rogue = needsForScope(scoped);
+rogue['three-d'].result = 'success';
+assert.throws(() => checkGate(rogue), /Unexpected checks/);
+
 assert.deepEqual(classify(['dev/tests/smoke/3d.mjs']).groups,['build','golden','pwa','three-d','three-d-desktop']);
 assert.deepEqual(classify(['dev/tests/smoke/dom.mjs']).groups,['build','golden','pwa','ui','ui-arena']);
 for(const paths of [[],['dev/src/render3d/engine-host.js'],['dev/src/render3d/quality.js'],['dev/src/logic/battle/engine.js'],['dev/src/assets/models.js'],['dev/assets/new.glb'],['dev/tests/lib/load.mjs'],['dev/tests/fixtures/a.json'],['.github/workflows/validate-pwa.yml'],['dev/tools/build.mjs'],['dev/package-lock.json'],['sw.js'],['unknown.md'],['dev/docs/script.js'],['dev/src/render3d/scenes/campaign-map.js','dev/src/render3d/quality.js']])assert.equal(classify(paths).mode,'full',paths.join(','));
