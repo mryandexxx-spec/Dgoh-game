@@ -76,7 +76,7 @@ export const PROFILES = Object.freeze([
 ]);
 export const TEAMS = Object.freeze([1, 2, 5]); // one team = five heroes
 export const GOALS = Object.freeze(['sevenStar', 'gearXIII', 'memory3', 'memory7']);
-export const HOURS = Object.freeze([0, 6, 8]); // zero = CURRENT; others HYPOTHETICAL
+export const HOURS = Object.freeze([0, 24, 36]); // zero = CURRENT; 24/36h are read-only capacity scenarios
 
 // Spend all energy at evenly spaced login visits. No timers or browser state.
 // Generated energy beyond cap is LOST; account rank bonuses are retained.
