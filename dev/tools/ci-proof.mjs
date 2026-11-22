@@ -58,3 +58,97 @@ export async function findProof({ eventName,event,head,repo,runId,token,fingerpr
   }
   return null;
 }
+
+// CI-OPT-01: manual publication may reuse only a *completed successful main
+// push* validation for the identical current main commit, inputs, and build
+// digest. It never trusts a PR branch, an older main SHA, or user-supplied scope.
+export function acceptMainPushReceipt(receipt, run, self, repo, head, artifacts) {
+  if (run.status !== 'completed' || run.conclusion !== 'success' ||
+      run.event !== 'push' || run.workflow_id !== self.workflow_id ||
+      run.path !== self.path || run.head_repository?.full_name !== repo ||
+      run.head_branch !== 'main' || run.head_sha !== head)
+    throw Error('Untrusted exact-main validation run');
+  if (receipt.schema !== SCHEMA || receipt.repository !== repo ||
+      receipt.run_id !== run.id || receipt.attempt !== run.run_attempt ||
+      receipt.event !== 'push' || receipt.pr_number !== null ||
+      receipt.head_sha !== head || receipt.source_sha !== head)
+    throw Error('Main receipt/run/head identity mismatch');
+  if (!/^[a-f0-9]{64}$/.test(receipt.fingerprint || '') ||
+      !/^[a-f0-9]{64}$/.test(receipt.behavior || ''))
+    throw Error('Malformed main receipt inputs');
+  const plan = validatePlan(receipt.plan);
+  if (plan.scope === 'docs' || receipt.plan.fingerprint !== receipt.fingerprint ||
+      receipt.plan.behavior !== receipt.behavior ||
+      JSON.stringify(receipt.coverage) !== JSON.stringify(receipt.plan.coverage))
+    throw Error('Uncertified main validation coverage');
+  const build = artifacts.find(a => a.name === 'dune-validated-build' && !a.expired);
+  const receiptArtifact = artifacts.find(a => a.name === 'dune-validation-receipt' && !a.expired);
+  if (!build || !receiptArtifact ||
+      receipt.build_artifact_id !== build.id ||
+      receipt.build_digest !== build.digest ||
+      !/^sha256:[a-f0-9]{64}$/.test(build.digest || ''))
+    throw Error('Missing immutable main build/receipt digest');
+  return {
+    run_id: run.id, exact: true, fingerprint: receipt.fingerprint,
+    behavior: receipt.behavior, coverage: [...receipt.coverage],
+    artifact_id: build.id, artifact_digest: build.digest,
+    source_sha: head, scope: plan.scope, paths: [...plan.paths],
+  };
+}
+
+export async function findMainPushProof({
+  eventName, head, repo, runId, token, fingerprint, behavior,
+  ref, api, download,
+}) {
+  if (eventName !== 'workflow_dispatch' || ref !== 'refs/heads/main' ||
+      !repo || !runId || !token || !/^[a-f0-9]{40}$/.test(head || ''))
+    return null;
+  const request = api || (async endpoint => {
+    const r = await fetch('https://api.github.com/repos/' + repo + endpoint, {
+      headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json' },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!r.ok) throw Error('GitHub main proof lookup failed: ' + r.status);
+    return r.json();
+  });
+  const self = await request('/actions/runs/' + runId);
+  if (self.event !== 'workflow_dispatch' || self.head_sha !== head ||
+      self.head_branch !== 'main' || self.head_repository?.full_name !== repo)
+    return null;
+  const current = await request('/branches/main');
+  if (current.commit?.sha !== head) return null;
+  const list = await request('/actions/workflows/' + self.workflow_id +
+    '/runs?event=push&status=success&branch=main&per_page=12');
+  for (const run of list.workflow_runs || []) {
+    if (run.id === Number(runId) || run.status !== 'completed' ||
+        run.conclusion !== 'success' || run.event !== 'push' ||
+        run.head_sha !== head || run.head_branch !== 'main' ||
+        run.head_repository?.full_name !== repo ||
+        run.workflow_id !== self.workflow_id || run.path !== self.path) continue;
+    const { artifacts } = await request('/actions/runs/' + run.id + '/artifacts?per_page=100');
+    const a = artifacts.find(x => x.name === 'dune-validation-receipt' &&
+      !x.expired && x.size_in_bytes < 1024 * 1024);
+    if (!a) continue;
+    try {
+      let receipt;
+      if (download) receipt = await download(a);
+      else {
+        const bytes = await fetchArtifact(repo, a.id, a.digest, token, 1024 * 1024);
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dune-ci-main-proof-'));
+        try {
+          const file = path.join(dir, 'receipt.zip');
+          fs.writeFileSync(file, bytes);
+          if (execFileSync('unzip', ['-Z1', file],
+              { encoding: 'utf8', maxBuffer: 1024 * 1024, timeout: 5000 }).trim() !== 'receipt.json')
+            throw Error('Unexpected main receipt archive');
+          receipt = JSON.parse(execFileSync('unzip', ['-p', file, 'receipt.json'],
+            { encoding: 'utf8', maxBuffer: 1024 * 1024, timeout: 5000 }));
+        } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+      }
+      const proof = acceptMainPushReceipt(receipt, run, self, repo, head, artifacts);
+      if (proof.fingerprint !== fingerprint || proof.behavior !== behavior) continue;
+      return proof;
+    } catch { continue; }
+  }
+  return null;
+}

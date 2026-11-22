@@ -27,6 +27,12 @@ for (const entry of economyPaths) {
   assert.equal(checkGate(needsForScope(plan)).mode, 'economy', entry);
 }
 assert.equal(classify(economyPaths).mode, 'economy');
+assert.equal(classify([...economyPaths, 'dev/version.json']).mode, 'economy',
+  'economy with a release-version bump must not trigger unrelated graphics');
+assert.equal(classify(['dev/version.json']).mode, 'release',
+  'a version-only publish keeps its own PWA/release tests');
+assert.equal(classify(['dev/src/logic/daily.js', 'dev/src/pwa/sw.js']).mode, 'full',
+  'service worker + economy is mixed infrastructure and must fail closed');
 for (const unrelated of [
   'dev/src/logic/battle/engine.js',
   'dev/src/render3d/quality.js',
@@ -96,6 +102,52 @@ try {
  write('dev/docs/file with spaces.md','doc');write('dev/src/game.js','const game=1;');write('dev/version.json','{"v":1}');write('sw.js','baseline');
  const registry="export const SPLIT = [\n  [1, 'data/game.js'],\n];\n";write('dev/tools/split.config.mjs',registry);
  const base=commit(),key=inputs(dir);assert.deepEqual(key,inputsAt(base,dir));
+
+// CI-OPT-01 release: only an immutable *current-main* successful push
+// may inherit its risk-scoped checks. A manual regression (publish=false)
+// or a missing/stale/forged proof keeps the original full run.
+const manualEnv = {
+  GITHUB_REF: 'refs/heads/main', GITHUB_REPOSITORY: 'owner/game',
+  GITHUB_RUN_ID: '50', GITHUB_TOKEN: 'test',
+};
+const scopePaths = ['dev/src/logic/daily.js'];
+const manualProof = {
+  run_id: 77, exact: true, source_sha: base,
+  scope: 'economy', paths: scopePaths,
+  fingerprint: key.fingerprint, behavior: key.behavior,
+  coverage: groupsFor('economy'),
+  artifact_id: 17, artifact_digest: 'sha256:' + 'a'.repeat(64),
+};
+const manualEvent = { inputs: { publish: 'true' } };
+const manualArgs = {
+  lookupMain: async () => manualProof, env: manualEnv,
+};
+const manualPlan = await planForEvent(
+  'workflow_dispatch', manualEvent, base, dir, manualArgs);
+assert.equal(manualPlan.mode, 'reuse');
+assert.equal(manualPlan.scope, 'economy');
+assert.deepEqual(manualPlan.groups, ['build']);
+assert.deepEqual(manualPlan.coverage, ['build', 'golden', 'pwa']);
+assert.equal(checkGate(needs(manualPlan)).mode, 'reuse');
+for (const patch of [
+  { source_sha: '0'.repeat(40) },
+  { fingerprint: '0'.repeat(64) },
+  { coverage: ['build'] },
+  { artifact_digest: 'invalid' },
+  { scope: 'full' },
+]) {
+  const failedSafe = await planForEvent('workflow_dispatch', manualEvent, base, dir, {
+    ...manualArgs, lookupMain: async () => ({ ...manualProof, ...patch }),
+  });
+  assert.equal(failedSafe.mode, 'full', 'bad manual release proof must force full regression');
+}
+assert.equal((await planForEvent('workflow_dispatch',
+  { inputs: { publish: 'false' } }, base, dir, manualArgs)).mode, 'full');
+assert.equal((await planForEvent('workflow_dispatch', manualEvent, base, dir,
+  { ...manualArgs, lookupMain: async () => null })).mode, 'full');
+assert.equal((await planForEvent('workflow_dispatch', manualEvent, base, dir,
+  { ...manualArgs, env: { ...manualEnv, GITHUB_REF: 'refs/heads/feature' } })).mode, 'full');
+
  write('dev/docs/file with spaces.md','changed');const docs=commit();assert.deepEqual(inputs(dir),key);
  assert.deepEqual(changedPaths(base,docs,dir),['dev/docs/file with spaces.md']);
  assert.equal((await planForEvent('push',{before:base},docs,dir,{lookup:async()=>null})).mode,'docs');
@@ -204,6 +256,25 @@ for (const command of [
   assert.match(step, /if: \$\{\{ needs\.plan\.outputs\.scope == 'economy' \}\}/,
     command + ': native Chromium acceptance must not run as a full-suite duplicate');
 }
+// CI-OPT-01: only explicit manual publishing may take the exact-main
+// receipt reuse route, and it must still smoke both compiled artifacts.
+const releaseParserStep = workflow.split(/\n      - /).find(x =>
+  x.includes('name: CI-OPT-01 install isolated parser for reused release smoke'));
+assert.ok(releaseParserStep, 'reused release smoke must install Acorn dependencies');
+assert.match(releaseParserStep,
+  /if: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.publish == true && needs\.plan\.outputs\.mode == 'reuse' \}\}/);
+assert.ok(releaseParserStep.includes('npm ci --ignore-scripts --no-audit --no-fund'));
+const releaseSmokeStep = workflow.split(/\n      - /).find(x =>
+  x.includes('name: CI-OPT-01 release smoke on exact PWA and HTML artifact'));
+assert.ok(releaseSmokeStep, 'manual scoped publish must have fresh legacy-save smoke');
+assert.match(releaseSmokeStep, /github\.event_name == 'workflow_dispatch' && inputs\.publish == true && needs\.plan\.outputs\.mode == 'reuse'/);
+for (const command of [
+  'tools/check-bundle.mjs dist/pwa/app.js',
+  'arch02c-b3-b1c-b3-mandatory-boot-acceptance.mjs dist/pwa/index.html',
+  'arch02c-b3-b1c-b3-mandatory-boot-acceptance.mjs dist/artifact.html',
+  'golden/saves.mjs dist/pwa/index.html',
+  'golden/saves.mjs dist/artifact.html',
+]) assert.ok(releaseSmokeStep.includes(command), command + ': must stay required for reused release');
 const strict=workflow.match(/^  arch-strict:\n([\s\S]*?)^  build:/m)?.[1];
 assert.ok(strict,'dedicated strict job must exist outside scope/reuse selection');
 assert.match(strict,/node tools\/check-deps\.mjs --strict/);

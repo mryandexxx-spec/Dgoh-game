@@ -2,10 +2,34 @@ import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { classify, validatePlan, RELEASE } from './ci-policy.mjs';
 import { inputs, changedPaths, campaignRegistryOnly, git } from './ci-inputs.mjs';
-import { findProof } from './ci-proof.mjs';
+import { findProof, findMainPushProof } from './ci-proof.mjs';
 export { classify, changedPaths };
-export async function planForEvent(eventName,event,head,cwd=process.cwd(),{lookup=findProof,env=process.env}={}) {
+export async function planForEvent(eventName,event,head,cwd=process.cwd(),{lookup=findProof,lookupMain=findMainPushProof,env=process.env}={}) {
   const key=inputs(cwd);
+  // Manual publish is not a reason to rerun unrelated regressions. Only an
+  // exact, complete successful push of the *current main SHA* with immutable
+  // artifact/coverage receipt may authorize the scoped reuse route. Otherwise
+  // keep the original full fail-closed workflow_dispatch behaviour.
+  if (eventName === 'workflow_dispatch' &&
+      (event?.inputs?.publish === true || event?.inputs?.publish === 'true') &&
+      env.GITHUB_REF === 'refs/heads/main') {
+    try {
+      const proof = await lookupMain({
+        eventName, event, head, ref: env.GITHUB_REF,
+        repo: env.GITHUB_REPOSITORY, runId: env.GITHUB_RUN_ID,
+        token: env.GITHUB_TOKEN, ...key,
+      });
+      if (proof?.exact === true && proof.source_sha === head && proof.scope !== 'docs') {
+        const plan = {
+          ...key, mode: 'reuse', scope: proof.scope,
+          paths: [...proof.paths], groups: ['build'],
+          coverage: [...proof.coverage], proof,
+          reason: 'Manual release: exact current-main certified push #' + proof.run_id,
+        };
+        return validatePlan(plan);
+      }
+    } catch { /* No trusted exact-main proof: run full regression, never skip. */ }
+  }
   const base=eventName==='pull_request'?event.pull_request?.base?.sha:event.before;
   let plan;
   if(!['pull_request','push'].includes(eventName)) plan=classify([],{forceFull:true});

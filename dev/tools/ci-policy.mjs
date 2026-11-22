@@ -50,7 +50,7 @@ export function classify(paths, { forceFull = false, campaignRegistry = false } 
     if (!code.length) scope = 'docs';
     else if (code.every(p => p === 'dev/version.json')) scope = 'release';
     else if (code.every(p => p === 'dev/src/pwa/sw.js' || p === 'dev/version.json')) scope = 'pwa';
-    else if (code.every(p => isEconomy(p))) scope = 'economy';
+    else if (code.some(isEconomy) && code.every(p => isEconomy(p) || p === 'dev/version.json')) scope = 'economy';
     else if (code.every(p => testGroups(p))) scope = 'tests';
     else if (code.every(p => isCampaign(p) || p === 'dev/version.json' || (p === 'dev/tools/split.config.mjs' && campaignRegistry))) scope = 'campaign';
   }

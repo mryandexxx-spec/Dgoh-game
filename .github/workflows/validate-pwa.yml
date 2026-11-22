@@ -468,6 +468,19 @@ jobs:
       - name: Verify reused build against current inputs and SHA-256
         if: ${{ needs.plan.outputs.mode == 'reuse' }}
         run: node tools/ci-artifact.mjs verify
+      # Reuse skips duplicated suites, but publication itself still exercises
+      # the precise validated bytes against actual legacy v1 save boot.
+      - name: CI-OPT-01 install isolated parser for reused release smoke
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true && needs.plan.outputs.mode == 'reuse' }}
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: CI-OPT-01 release smoke on exact PWA and HTML artifact
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true && needs.plan.outputs.mode == 'reuse' }}
+        run: |
+          node tools/check-bundle.mjs dist/pwa/app.js
+          node tests/ci/arch02c-b3-b1c-b3-mandatory-boot-acceptance.mjs dist/pwa/index.html
+          node tests/ci/arch02c-b3-b1c-b3-mandatory-boot-acceptance.mjs dist/artifact.html
+          node tests/golden/saves.mjs dist/pwa/index.html
+          node tests/golden/saves.mjs dist/artifact.html
       - name: Upload the only production build
         uses: actions/upload-artifact@v4
         with:
