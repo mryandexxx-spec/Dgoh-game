@@ -115,6 +115,12 @@ jobs:
             TZ="$zone" node tests/ci/arch02d-b4b1b-archive-pressure.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b4b1b-archive-pressure.mjs dist/artifact.html
           done
+      - name: ARCH-02D-B4b1c offline JSON file export/import (PWA + HTML, 3 TZ; NO RELEASE)
+        run: |
+          for zone in UTC Europe/Amsterdam America/Los_Angeles; do
+            TZ="$zone" node tests/ci/arch02d-b4b1c-file-transfer-acceptance.mjs dist/pwa/index.html
+            TZ="$zone" node tests/ci/arch02d-b4b1c-file-transfer-acceptance.mjs dist/artifact.html
+          done
       - name: Real Chromium unflagged automatic PWA bootstrap
         run: node tests/ci/arch02c-b3-b1c-b3-native-auto-chromium.mjs
       - name: Real Chromium two-tab lifecycle and lease-loss regression

@@ -28,8 +28,11 @@ function metaFill(s) {
 
 // ARCH-02C-B2: save transfer is opt-in and never calls legacy persist().
 // Expected raw checks are sequential only; true cross-tab exclusion is B3.
-const TRANSFER_LIMIT = 2000000;
+const TRANSFER_LIMIT = 2000000; // legacy Base64 code — deliberately unchanged
+const FILE_TRANSFER_LIMIT = 8000000; // bytes; bound File API memory, NOT storage quota
 let pendingSaveImport = null;
+let pendingFileExportRaw = null; // exact verified primary seen in export preview
+let fileTransferTicket = 0; // invalidate asynchronous reads when another transfer starts
 const transferRecord = x => !!x && typeof x === 'object' && !Array.isArray(x);
 const transferQuantity = x => typeof x === 'number' && Number.isFinite(x) &&
   x >= 0 && x <= Number.MAX_SAFE_INTEGER;
@@ -90,8 +93,9 @@ function decodeTransferCode(input) {
   return parsed;
 }
 function transferCode(raw) { return btoa(unescape(encodeURIComponent(raw))); }
-function showTransferCode(title, detail, raw) {
+function showTransferCode(title, detail, raw, verifiedFile = false) {
   const code = transferCode(raw);
+  pendingFileExportRaw = verifiedFile ? raw : null;
   // B4b1b: base64 can cross the B2 input limit LONG before JSON does.
   // Observe ONLY this exact export payload (not potentially different RAM).
   // This is advisory: never truncate, prune or silently replace the export.
@@ -102,6 +106,7 @@ function showTransferCode(title, detail, raw) {
   } catch (e) { /* emergency RAM may not be a complete validated v1 save */ }
   const over = raw.length > TRANSFER_LIMIT || code.length > TRANSFER_LIMIT;
   const near = !over && code.length >= TRANSFER_LIMIT * 0.75;
+  const tooLargeFile = verifiedFile && new TextEncoder().encode(raw).length > FILE_TRANSFER_LIMIT;
   const diagnostic = '<p class="sub">Архив Conquest: ' + weeks +
     ' недель. Размер JSON: ' + raw.length +
     ' символов; код: ' + code.length + ' из ' + TRANSFER_LIMIT +
@@ -110,19 +115,130 @@ function showTransferCode(title, detail, raw) {
     '<p class="sub"><strong>ВНИМАНИЕ: этот код превышает лимит импорта текущей версии. ' +
     'Он НЕ является проверенной на восстановление копией. ' +
     'Не очищайте данные PWA; история не удалена. ' +
-    'Для восстановления потребуется отдельный поддерживаемый способ импорта.</strong></p>' :
+    'Для восстановления используйте файл JSON, если его размер не выше 8 МБ.</strong></p>' :
     near ? '<p class="sub"><strong>ВНИМАНИЕ: код близок к лимиту импорта. ' +
     'Сохраните внешнюю копию и не очищайте данные PWA.</strong></p>' : '';
+  const fileWarning = tooLargeFile ?
+    '<p class="sub"><strong>Этот файл больше текущего безопасного лимита импорта 8 МБ. ' +
+    'Скачать его можно, но эта версия не сможет восстановить его обратно. ' +
+    'Не очищайте данные игры.</strong></p>' : '';
+  const fileButton = verifiedFile ?
+    '<button class="btn go" data-savefileexp="1">Скачать JSON-файл</button>' : '';
   $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>' +
     title + '</h3><p class="sub">' + detail +
-    '</p>' + diagnostic + warning +
-    '<textarea id="savecode" class="savebox" readonly></textarea><div class="acts"><button class="btn go" data-savecopy="1">Скопировать</button><button class="btn" data-iclose="1" style="margin-left:auto">Закрыть</button></div></div></div>';
+    '</p>' + diagnostic + warning + fileWarning +
+    '<textarea id="savecode" class="savebox" readonly></textarea><div class="acts">' + fileButton +
+    '<button class="btn go" data-savecopy="1">Скопировать</button><button class="btn" data-iclose="1" style="margin-left:auto">Закрыть</button></div></div></div>';
   $('#savecode').value = code; // never embed save-derived data in innerHTML
 }
 function transferFingerprint(raw) {
   let h = 2166136261;
   for (let i = 0; i < raw.length; i++) h = Math.imul(h ^ raw.charCodeAt(i), 16777619);
   return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+
+// B4b1c: use the exact same isolated validation, preview, checkpoint and
+// user confirmation for both transfer transports. Legacy Base64 keeps 2M
+// limits; the separate file input is bounded by 8M UTF-8 bytes.
+function prepareTransferPreview(parsed, viaFile = false) {
+  if (BT && !BT.done) throw new Error('battle-in-progress');
+  validateTransferSave(parsed); // BEFORE migration (including unsafe nested keys)
+  const candidate = fillSave(parsed);
+  metaFill(candidate);
+  validateTransferSave(candidate);
+  const candidateRaw = JSON.stringify(candidate);
+  if (candidateRaw.length > (viaFile ? FILE_TRANSFER_LIMIT : TRANSFER_LIMIT))
+    throw new Error('oversize');
+  const state = loadSave.checkpoint.inspect();
+  if (state.primary.status !== 'ok' ||
+      (state.backup.status !== 'ok' && state.backup.status !== 'missing'))
+    throw new Error('storage-not-ready');
+  const writer = loadSave.writer.state();
+  // Files are new functionality: unlike B2 legacy code test harness, require
+  // mandatory native Web Locks. Never offer a legacy direct-checkpoint fallback.
+  if (viaFile && !writer.gated) throw new Error('file-requires-writer');
+  if (writer.gated && (writer.status !== 'owned' ||
+      writer.raw !== state.primary.raw || !loadSave.writer.check().ok))
+    throw new Error('writer-not-owner');
+  pendingSaveImport = { candidate, expectedRaw: state.primary.raw,
+    memoryRaw: JSON.stringify(S), mode: writer.gated ? 'writer' : 'legacy' };
+  const heroes = Object.keys(candidate.roster).length;
+  const weeks = Array.isArray(candidate.conq?.weekArchive) ?
+    candidate.conq.weekArchive.length : 0;
+  $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>Подтвердить замену прогресса?</h3><p class="sub">Импорт v1 проверен. ' +
+    (viaFile ? 'JSON-файл; архив Conquest: ' + weeks + ' недель. ' : '') +
+    'Героев: ' + heroes + '. Солярии: ' + candidate.solari + '. Пласталь: ' + candidate.plast +
+    '. Контрольный код: ' + transferFingerprint(candidateRaw) +
+    '. Текущий проверенный прогресс будет зарезервирован перед записью нового.</p><p class="sub">' + (writer.gated ?
+      'Защищённый Web Locks сеанс: после проверки записи потребуется перезагрузка игры.' :
+      'Другие вкладки могут менять сохранение: защита одновременных записей относится к этапу B3.') +
+    '</p><div class="acts"><button class="btn go" data-saveconfirm="1">Подтверждаю замену</button><button class="btn" data-iclose="1" style="margin-left:auto">Отмена</button></div></div></div>';
+}
+async function readTransferFile(input, ticket) {
+  try {
+    const file = input?.files?.[0];
+    if (!file || !Number.isSafeInteger(file.size) || file.size <= 0 ||
+        file.size > FILE_TRANSFER_LIMIT || typeof file.arrayBuffer !== 'function')
+      throw new Error('invalid-file-size');
+    const bytes = await file.arrayBuffer();
+    // A slow file picker/read must NEVER resurrect an old preview after close,
+    // new transfer, pagehide or native lease loss.
+    if (ticket !== fileTransferTicket || !input.isConnected) return;
+    const writer = loadSave.writer.state();
+    if (!writer.gated || writer.status !== 'owned' || !loadSave.writer.check().ok) {
+      pendingSaveImport = null;
+      stopAfterProtectedTransfer('file-import-writer-lost');
+      return;
+    }
+    if (!(bytes instanceof ArrayBuffer) || bytes.byteLength !== file.size ||
+        bytes.byteLength > FILE_TRANSFER_LIMIT)
+      throw new Error('file-size-changed');
+    // Fatal UTF-8 decoder rejects replacement-character corruption. No
+    // FileReader/base64 expansion; no remote services or new save schema.
+    const raw = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    if (raw.length > FILE_TRANSFER_LIMIT) throw new Error('file-oversize');
+    prepareTransferPreview(JSON.parse(raw), true);
+  } catch (e) {
+    if (ticket !== fileTransferTicket || !input?.isConnected) return;
+    pendingSaveImport = null;
+    toast('Файл отклонён: некорректный JSON, превышен лимит 8 МБ или нет доступа к сохранению.');
+  }
+}
+function downloadVerifiedSaveFile() {
+  const writer = loadSave.writer.state();
+  if (!writer.gated || writer.status !== 'owned' || !loadSave.writer.check().ok) {
+    stopAfterProtectedTransfer('file-export-writer-lost');
+    return;
+  }
+  const state = loadSave.checkpoint.inspect();
+  if (state.primary.status !== 'ok' || !pendingFileExportRaw ||
+      state.primary.raw !== pendingFileExportRaw ||
+      state.primary.raw !== writer.raw) {
+    toast('Сохранение изменилось. Заново откройте проверенный экспорт.');
+    pendingFileExportRaw = null;
+    return;
+  }
+  // Only the VERIFIED primary raw is eligible. This never serializes RAM,
+  // truncates history or claims the browser successfully saved the file.
+  let url;
+  try {
+    const blob = new Blob([state.primary.raw], { type: 'application/json;charset=utf-8' });
+    url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    try {
+      link.href = url;
+      link.download = 'dune-goh-v1-verified.json';
+      link.hidden = true;
+      document.body.appendChild(link);
+      link.click(); // synchronous user gesture: required by mobile Safari
+    } finally { link.remove(); }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    toast('Файл передан браузеру. Проверьте, что он действительно сохранён.');
+  } catch (e) {
+    if (url) URL.revokeObjectURL(url);
+    toast('Не удалось создать файл. Не очищайте данные PWA.');
+  }
 }
 
 function stopAfterProtectedTransfer(status) {
@@ -139,7 +255,8 @@ function metaClick(d) {
   // Capture-phase DOM guard is not a substitute for an authority check at
   // the save-transfer API boundary. A denied tab may not inspect the primary,
   // decode a candidate, or confirm an old preview without a native owner.
-  if (d.saveexp || d.saveunsaved || d.saveimp || d.saveload || d.saveconfirm) {
+  if (d.saveexp || d.saveunsaved || d.saveimp || d.saveload ||
+      d.saveconfirm || d.savefileexp || d.savefileload) {
     const writer = loadSave.writer.state();
     if (writer.gated && writer.status !== 'owned') {
       pendingSaveImport = null;
@@ -158,7 +275,9 @@ function metaClick(d) {
   if (d.ptitle) { if (unlocked('title', d.ptitle)) { S.profile.title = d.ptitle; persist(); render(); openProfile(); } return true; }
   if (d.pnick) { const v = ($('#pnick').value || '').trim().slice(0, 20); if (v) { S.profile.nick = v; persist(); render(); openProfile(); toast('Никнейм сохранён'); } return true; }
   if (d.saveexp) {
+    fileTransferTicket++;
     pendingSaveImport = null;
+    pendingFileExportRaw = null;
     const state = loadSave.checkpoint.inspect();
     if (state.primary.status !== 'ok') {
       // Never silently substitute RAM for a trusted storage export.
@@ -171,7 +290,7 @@ function metaClick(d) {
       showTransferCode('Экспорт сохранённого прогресса',
         'Проверенный снимок из хранилища (v1); не защищён от очистки данных сайта.' +
         (unsaved ? ' Текущая память отличается и НЕ включена в этот экспорт.' : '') +
-        ' Сохраните код вне браузера.', state.primary.raw);
+        ' Сохраните код вне браузера.', state.primary.raw, true);
       if (unsaved) {
         const actions = $('#overlay2 .acts');
         if (actions && actions.insertAdjacentHTML)
@@ -181,6 +300,8 @@ function metaClick(d) {
     return true;
   }
   if (d.saveunsaved) {
+    fileTransferTicket++;
+    pendingFileExportRaw = null;
     try {
       showTransferCode('НЕ ПОДТВЕРЖДЕНО СОХРАНЕНИЕМ',
         'Аварийная копия текущей памяти. Изменения могут отсутствовать в хранилище. Не считайте этот код подтверждённым прогрессом.',
@@ -188,45 +309,32 @@ function metaClick(d) {
     } catch (e) { toast('Не удалось экспортировать память'); }
     return true;
   }
+  if (d.savefileexp) { downloadVerifiedSaveFile(); return true; }
   if (d.savecopy) { const t = $('#savecode'); t.select(); (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(() => toast('Код скопирован'), () => { try { document.execCommand('copy'); toast('Код скопирован'); } catch (e) { toast('Выделите и скопируйте вручную'); } }); return true; }
   if (d.saveimp) {
+    fileTransferTicket++;
     pendingSaveImport = null;
-    $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>Импорт сохранения</h3><p class="sub">Вставьте код. Сначала проверим данные, затем запросим отдельное подтверждение замены текущего прогресса.</p><textarea id="savecode" class="savebox" placeholder="Вставьте код сюда"></textarea><div class="acts"><button class="btn go" data-saveload="1">Проверить код</button><button class="btn" data-iclose="1" style="margin-left:auto">Отмена</button></div></div></div>';
+    pendingFileExportRaw = null;
+    $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>Импорт сохранения</h3><p class="sub">Вставьте код или выберите JSON-файл до 8 МБ. Сначала проверим данные, затем запросим отдельное подтверждение замены текущего прогресса.</p><textarea id="savecode" class="savebox" placeholder="Вставьте код сюда"></textarea><p class="sub">Файл: <input id="savefile" type="file" accept=".json,application/json" aria-label="Файл сохранения JSON"></p><div class="acts"><button class="btn go" data-saveload="1">Проверить код</button><button class="btn" data-savefileload="1">Проверить файл</button><button class="btn" data-iclose="1" style="margin-left:auto">Отмена</button></div></div></div>';
+    return true;
+  }
+  if (d.savefileload) {
+    pendingSaveImport = null;
+    const input = $('#savefile');
+    const ticket = ++fileTransferTicket;
+    // No await in the click handler; validation runs after a bounded file read.
+    void readTransferFile(input, ticket);
     return true;
   }
   if (d.saveload) {
+    fileTransferTicket++;
     pendingSaveImport = null;
-    try {
-      if (BT && !BT.done) throw new Error('battle-in-progress');
-      const candidate = fillSave(decodeTransferCode($('#savecode').value || ''));
-      metaFill(candidate); // isolated migration; never touch S before commit
-      validateTransferSave(candidate);
-      const candidateRaw = JSON.stringify(candidate);
-      if (candidateRaw.length > TRANSFER_LIMIT) throw new Error('oversize');
-      const state = loadSave.checkpoint.inspect();
-      if (state.primary.status !== 'ok' ||
-          (state.backup.status !== 'ok' && state.backup.status !== 'missing'))
-        throw new Error('storage-not-ready');
-      const writer = loadSave.writer.state();
-      // Under an armed gate, never inspect/prepare a transfer without the
-      // native exclusive gameplay lease. Even a stale second tab is denied.
-      if (writer.gated && (writer.status !== 'owned' ||
-          writer.raw !== state.primary.raw || !loadSave.writer.check().ok))
-        throw new Error('writer-not-owner');
-      pendingSaveImport = { candidate, expectedRaw: state.primary.raw,
-        memoryRaw: JSON.stringify(S), mode: writer.gated ? 'writer' : 'legacy' };
-      const heroes = Object.keys(candidate.roster).length;
-      $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>Подтвердить замену прогресса?</h3><p class="sub">Импорт v1 проверен. Героев: ' +
-        heroes + '. Солярии: ' + candidate.solari + '. Пласталь: ' + candidate.plast +
-        '. Контрольный код: ' + transferFingerprint(candidateRaw) +
-        '. Текущий проверенный прогресс будет зарезервирован перед записью нового.</p><p class="sub">' + (writer.gated ?
-          'Защищённый Web Locks сеанс: после проверки записи потребуется перезагрузка игры.' :
-          'Другие вкладки могут менять сохранение: защита одновременных записей относится к этапу B3.') +
-        '</p><div class="acts"><button class="btn go" data-saveconfirm="1">Подтверждаю замену</button><button class="btn" data-iclose="1" style="margin-left:auto">Отмена</button></div></div></div>';
-    } catch (e) { toast('Импорт отклонён: некорректный, неподдерживаемый код или недоступное хранилище'); }
+    try { prepareTransferPreview(decodeTransferCode($('#savecode').value || '')); }
+    catch (e) { toast('Импорт отклонён: некорректный, неподдерживаемый код или недоступное хранилище'); }
     return true;
   }
   if (d.saveconfirm) {
+    fileTransferTicket++; // any late File.arrayBuffer completion is obsolete
     const pending = pendingSaveImport;
     pendingSaveImport = null; // never reapply same candidate on a second click
     if (!pending) { toast('Сначала проверьте код импорта'); return true; }

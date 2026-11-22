@@ -289,6 +289,13 @@ jobs:
             TZ="$zone" node tests/ci/arch02d-b4b1b-archive-pressure.mjs dist/artifact.html
           done
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-02D-B4b1c offline JSON file export/import (PWA + HTML, 3 TZ; NO RELEASE)
+        run: |
+          for zone in UTC Europe/Amsterdam America/Los_Angeles; do
+            TZ="$zone" node tests/ci/arch02d-b4b1c-file-transfer-acceptance.mjs dist/pwa/index.html
+            TZ="$zone" node tests/ci/arch02d-b4b1c-file-transfer-acceptance.mjs dist/artifact.html
+          done
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-02C-B3-B2-A1 protected import + recovery-only lease (PWA + artifact; NOT LIVE)
         run: |
           node tests/ci/arch02c-b3-b2-protected-transfer-acceptance.mjs dist/pwa/index.html
