@@ -53,11 +53,11 @@ const snap=(h,exp)=>JSON.parse(h.g.run('JSON.stringify('+exp+')'));
 const old=h=>h.g.store.get(KEY);
 const largeRun={v:2,wk:'Mon Nov 02 2026',diff:'easy',done:{'0-0-0':1},
   tk:{s0:1,c0:1},route:{0:{0:'0-0-0'}},disks:[{k:'stam',on:1}],
-  note:'Ж'.repeat(1100000)};
+  note:'Ж'.repeat(2100000)};
 const huge={...fixture,conq:{v:2,wk:'Mon Nov 09 2026',diff:null,
   done:{},tk:{},route:{},weekArchive:[largeRun]}};
 const hugeRaw=raw(huge);
-assert(hugeRaw.length>1100000&&hugeRaw.length<MAX);
+assert(hugeRaw.length>2000000&&hugeRaw.length<MAX);
 assert(bytes(hugeRaw).length>2000000&&bytes(hugeRaw).length<MAX);
 // F01: ordinary export still emits legacy code plus new verified file option.
 {
@@ -169,8 +169,9 @@ assert(bytes(hugeRaw).length>2000000&&bytes(hugeRaw).length<MAX);
    revokeObjectURL(){}};
  const fakeAnchor={click(){},remove(){},set href(v){this.url=v;},
    set download(v){this.name=v;}};
- h.g.ctx.document={createElement:()=>fakeAnchor,
-   body:{appendChild(){}},querySelector:sel=>h.f.get(sel)};
+ h.g.ctx.document={createElement:tag=>tag==='a'?fakeAnchor:
+     {className:'',innerHTML:'',setAttribute(){},remove(){}},
+   body:{appendChild(){}},querySelectorAll:()=>[],querySelector:sel=>h.f.get(sel)};
  h.g.run('S.solari+=12345');
  h.g.run('metaClick({saveexp:1})');
  assert.match(h.f.get('#overlay2').innerHTML,/НЕ включена/);
