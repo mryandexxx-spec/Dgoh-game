@@ -15,6 +15,9 @@ assert.equal(TARGETS.dp3BloodEcho, 32);
 assert.equal(TARGETS.dp7BloodEcho, 44);
 assert.equal(TARGETS.dp7LegacyThread, 56);
 assert.equal(TARGETS.dp7AgeResonance, 15);
+assert.equal(SINKS.sevenStar.sol, 45500, 'stars 1→7 pay current-star levels 1..6');
+assert.equal(SINKS.gearXIII.sol, 1563260, 'includes hero levels 1→85 at CURRENT level cost');
+assert.equal(SINKS.gearXIII.pl, 360);
 assert.equal(SINKS.memory7.sol - SINKS.gearXIII.sol, 1450000);
 
 const one = dailyBudget(PROFILES[0], 0, 0);
