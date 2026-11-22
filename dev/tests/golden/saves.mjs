@@ -129,7 +129,7 @@ if (!rest.includes('--update')) {
       const raw = JSON.parse(readSave(entry.file));
       const loaded = entry.fillSave, started = entry.start;
       assert.equal(loaded.water, raw.water, 'legacy water stock preserved by fillSave');
-      assert.equal(loaded.candle, raw.candle ?? candleCap(loaded.acc.lvl),
+      assert.equal(loaded.candle, raw.candle ?? 288,
         'legacy candle stock/default preserved by fillSave');
       assert.equal(started.water, regen(loaded.water, loaded.waterTs, waterCap(started.acc.lvl), 240),
         'legacy water only accrues genuine approved offline regeneration');
