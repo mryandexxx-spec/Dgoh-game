@@ -250,6 +250,19 @@ for (const command of [
   assert.match(step, /if: \$\{\{ needs\.plan\.outputs\.scope == 'economy' \}\}/,
     command + ': native Chromium acceptance must not run as a full-suite duplicate');
 }
+// CI-OPT-01: only explicit manual publishing may take the exact-main
+// receipt reuse route, and it must still smoke both compiled artifacts.
+const releaseSmokeStep = workflow.split(/\n      - /).find(x =>
+  x.includes('name: CI-OPT-01 release smoke on exact PWA and HTML artifact'));
+assert.ok(releaseSmokeStep, 'manual scoped publish must have fresh legacy-save smoke');
+assert.match(releaseSmokeStep, /github\.event_name == 'workflow_dispatch' && inputs\.publish == true && needs\.plan\.outputs\.mode == 'reuse'/);
+for (const command of [
+  'tools/check-bundle.mjs dist/pwa/app.js',
+  'arch02c-b3-b1c-b3-mandatory-boot-acceptance.mjs dist/pwa/index.html',
+  'arch02c-b3-b1c-b3-mandatory-boot-acceptance.mjs dist/artifact.html',
+  'golden/saves.mjs dist/pwa/index.html',
+  'golden/saves.mjs dist/artifact.html',
+]) assert.ok(releaseSmokeStep.includes(command), command + ': must stay required for reused release');
 const strict=workflow.match(/^  arch-strict:\n([\s\S]*?)^  build:/m)?.[1];
 assert.ok(strict,'dedicated strict job must exist outside scope/reuse selection');
 assert.match(strict,/node tools\/check-deps\.mjs --strict/);
