@@ -110,11 +110,15 @@ const seven=()=>Object.fromEntries(['login','water','camp','chron','shop','raid'
   const before=g.store.get(KEY),old=ram(g),calls=spy(g);
   all(g);
   const next=disk(g);
-  for(const k of ['login','water','camp'])assert.equal(next.daily.got[k],true);
-  assert.equal(next.cry,old.cry+50);
+  // ECON-01 OR-goal: eight completed campaign fights also satisfy shop via
+  // five-fight alternative; batch claiming must include its original reward
+  // exactly once and preserve the backup-first settlement.
+  for(const k of ['login','water','camp','shop'])assert.equal(next.daily.got[k],true);
+  assert.equal(next.cry,old.cry+70);
+  assert.equal(next.plast,old.plast+5);
   assert.equal(next.solari,old.solari+5000);
   assert.equal(next.folio,old.folio+3);
-  assert.equal(next.acc.xp,old.acc.xp+30);
+  assert.equal(next.acc.xp,old.acc.xp+40);
   assert.equal(calls.filter(k=>k===KEY).length,1);
   assert.equal(JSON.parse(g.store.get(BACKUP)).raw,before);
   assert.deepEqual(ram(g),next);
@@ -261,5 +265,26 @@ const seven=()=>Object.fromEntries(['login','water','camp','chron','shop','raid'
   re.run('loadSave.writer.release()');
   pass('B514','cold boot does not issue an already received daily quest again');
 }
-assert.deepEqual(passed,Array.from({length:14},(_,i)=>'B'+(501+i)));
+// B515: rewards from both alternate and primary progress cannot be duplicated.
+{
+  const g=await boot();setup(g,{counts:{camp:10,chron:3,shop:0,craft:0,lvl:0}});
+  const before=g.store.get(KEY),old=ram(g),calls=spy(g);
+  all(g);
+  const after=disk(g);
+  for(const k of ['camp','chron','shop','craft','lvl']) assert.equal(after.daily.got[k],true);
+  assert.equal(after.cry,old.cry+40); // chron +20 and shop +20
+  assert.equal(after.plast,old.plast+8); // shop +5 and craft +3
+  assert.equal(after.solari,old.solari+4500); // camp +3000 and lvl +1500
+  assert.equal(after.acc.xp,old.acc.xp+50);
+  assert.equal(calls.filter(k=>k===KEY).length,1);
+  assert.equal(JSON.parse(g.store.get(BACKUP)).raw,before);
+  assert.deepEqual(ram(g),after);
+  const saved=g.store.get(KEY),extra=spy(g);
+  claim(g,'shop');claim(g,'craft');claim(g,'lvl');all(g);
+  assert.equal(g.store.get(KEY),saved);
+  assert.equal(extra.length,0);
+  pass('B515','OR-path batch reward pays once; replay and original keys cannot double-claim');
+  g.run('loadSave.writer.release()');
+}
+assert.deepEqual(passed,Array.from({length:15},(_,i)=>'B'+(501+i)));
 console.log('ARCH-02C-B5a: '+passed.length+' quest/chest cases on '+html);

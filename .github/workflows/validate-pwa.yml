@@ -124,6 +124,11 @@ jobs:
           node tests/ci/econ01-energy-acceptance.mjs dist/pwa/index.html
           node tests/ci/econ01-energy-acceptance.mjs dist/artifact.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ECON-01 daily quest alternatives and reward-once semantics
+        run: |
+          node tests/ci/econ01-daily-acceptance.mjs dist/pwa/index.html
+          node tests/ci/econ01-daily-acceptance.mjs dist/artifact.html
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: node tools/check-bundle.mjs dist/pwa/app.js
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-02B1 fail-closed storage acceptance (PWA + artifact)
