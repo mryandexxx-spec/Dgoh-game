@@ -128,6 +128,9 @@ const trialOfSQ = i => ({ T: TRIALS[Math.floor(i / 10)], t: i % 10 });
 function trialFinish(B, cfg, won) {
   const { T, t } = trialOfSQ(cfg.i);
   if (!won) return { html: `<h3>Поражение</h3><ul><li>Попытка не потрачена — дневной лимит считает только победы.</li><li>Ограничение: ${T.note.toLowerCase()}. Усильте подходящих героев.</li></ul>`, btns: `<button class="btn go" data-trgo="${T.id}:${t}">Ещё раз</button><button class="btn" data-leave="1">К испытаниям</button>` };
+  // The clock can cross days while a fight is in progress. An exhausted
+  // historical day must never mint an extra reward on battle settlement.
+  if (trialLeft(T) <= 0) return { html: '<h3>Награда недоступна</h3><p>Дневные попытки уже использованы. Прогресс сохранён.</p>', btns: '<button class="btn" data-leave="1">К испытаниям</button>' };
   const surv = living(B, 'A').length, tot = B.units.filter(u => u.side === 'A').length, st = surv === tot ? 3 : surv >= Math.ceil(tot / 2) ? 2 : 1;
   (S.trials[T.id] ??= {})[t] = Math.max(trialStars(T, t), st);
   trialRunsToday()[T.id] = (trialRunsToday()[T.id] || 0) + 1; statInc('trialRuns');
