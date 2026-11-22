@@ -79,7 +79,7 @@ for (const row of model.rows) {
 }
 for (const profile of PROFILES) for (const teams of TEAMS) for (const goal of GOALS) {
   assert.ok(key(profile.id, 36, 0, teams, goal).p50Days <= key(profile.id, 24, 0, teams, goal).p50Days);
-  assert.ok(key(profile.id, 6, 0, teams, goal).p50Days <= key(profile.id, 0, 0, teams, goal).p50Days);
+  assert.ok(key(profile.id, 24, 0, teams, goal).p50Days <= key(profile.id, 0, 0, teams, goal).p50Days);
   assert.ok(key(profile.id, 0, 1, teams, goal).p50Days <= key(profile.id, 0, 0, teams, goal).p50Days);
 }
 const md = toMarkdown(model);
