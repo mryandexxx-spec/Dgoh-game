@@ -99,9 +99,8 @@ function markedRun(g) {
   pass('B413','legitimate local Monday Conquest rollover unchanged');
 }
 
-// B414: unlike daily-quest rollback, Trial attempt ledger rotates on *any*
-// local-day change. A +1 day followed by -1 day may clear the original
-// exhausted attempts twice, even though no real day has elapsed.
+// B414 after B4b2: reading another day never erases spent attempts;
+// activating a different day preserves the old counter for rollback.
 {
   const start=at(2026,11,10),g=await boot(start);
   g.run('S.trialRuns={d:todayKey(),n:{folio:3}}');
@@ -109,18 +108,19 @@ function markedRun(g) {
   assert.equal(g.run('trialLeft(TR("folio"))'),0);
   g.setNow(start+DAY);
   assert.equal(g.run('trialLeft(TR("folio"))'),3);
-  assert.equal(g.run('S.trialRuns.n.folio'),undefined);
+  assert.equal(g.run('S.trialRuns.n.folio'),3,'read never clears current ledger');
+  g.run('trialRunsToday()'); // deliberately activate the next day
+  assert.equal(g.run('S.trialRuns.days[Object.keys(S.trialRuns.days)[0]].folio'),3);
   g.setNow(start);
-  assert.equal(g.run('trialLeft(TR("folio"))'),3);
-  assert.equal(g.run('S.trialRuns.n.folio'),undefined);
+  assert.equal(g.run('trialLeft(TR("folio"))'),0);
+  assert.equal(g.run('trialRunsToday().folio'),3);
   assert.equal(JSON.parse(saved).trialRuns.n.folio,3);
   release(g);
-  pass('B414','KNOWN P1: Trial attempts can reset on forward-back day flip');
+  pass('B414','trial day flip restores spent counts instead of replaying attempts');
 }
 
-// B415: shop VIEW stays read-only, but a paid purchase invokes the mutable
-// current-day ledger. Clock spoof plus return can reopen a prior-day quota.
-// No paid action or RNG draw is performed by this characterization.
+// B415: shop viewing is read-only and a paid-day rollover retains the
+// previous stock counts. The original quota still applies on return.
 {
   const start=at(2026,11,10),g=await boot(start);
   g.run('S.buys={d:todayKey(),n:{"post:pl":3}}');
@@ -131,12 +131,14 @@ function markedRun(g) {
   assert.equal(g.run('S.buys.n["post:pl"]'),3,'stock read must not erase ledger');
   g.run('buysToday()');
   assert.equal(g.run('S.buys.n["post:pl"]'),undefined);
+  assert.equal(g.run('Object.values(S.buys.days)[0]["post:pl"]'),3);
   g.setNow(start);
+  assert.equal(g.run('shopLeft({key:"post:pl",lim:3})'),0);
   g.run('buysToday()');
-  assert.equal(g.run('shopLeft({key:"post:pl",lim:3})'),3);
+  assert.equal(g.run('shopLeft({key:"post:pl",lim:3})'),0);
   assert.equal(JSON.parse(old).buys.n['post:pl'],3);
   release(g);
-  pass('B415','KNOWN P1: shop paid-ledger day flip can reopen limits');
+  pass('B415','shop day flip retains old paid-limit counts');
 }
 
 // B416: existing B5 daily-quest ledger blocks backwards *from a saved future
