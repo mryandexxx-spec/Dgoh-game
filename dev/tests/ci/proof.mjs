@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';import crypto from 'node:crypto';
-import { acceptReceipt,findProof } from '../../tools/ci-proof.mjs';
+import { acceptReceipt,findProof,acceptMainPushReceipt,findMainPushProof } from '../../tools/ci-proof.mjs';
 import { classify,JOBS } from '../../tools/ci-policy.mjs';
 import { SCHEMA } from '../../tools/ci-inputs.mjs';
 import { verifyArchive } from '../../tools/ci-archive.mjs';
@@ -34,4 +34,72 @@ assert.equal((await findProof({...args,eventName:'push'})).exact,true,'merged sa
 assert.equal(await findProof({...args,eventName:'push',api:async e=>e.startsWith('/commits/')?[{...pr,merged_at:'today',merge_commit_sha:'0'.repeat(40)}]:api(e)}),null,'wrong merge commit');
 assert.equal(await findProof({...args,eventName:'push',api:async e=>e.startsWith('/commits/')?[]:api(e)}),null,'direct push has no PR proof');
 const bytes=Buffer.from('archive');assert.equal(verifyArchive(bytes,'sha256:'+crypto.createHash('sha256').update(bytes).digest('hex')),bytes);assert.throws(()=>verifyArchive(bytes,'sha256:'+'0'.repeat(64)));
+// CI-OPT-01: a manual release can reuse only a *successful same-SHA main
+// push*, not a green PR, a stale main run, or a forged scope/coverage.
+const mainRun = {
+  ...run, id: 77, event: 'push', status: 'completed',
+  head_branch: 'main', head_sha: head,
+};
+const mainPlan = { ...classify(['dev/src/logic/daily.js']), fingerprint: fp, behavior };
+const mainReceipt = {
+  ...receipt, run_id: 77, event: 'push', pr_number: null,
+  source_sha: head, head_sha: head,
+  coverage: [...mainPlan.coverage], plan: mainPlan,
+};
+assert.equal(acceptMainPushReceipt(mainReceipt, mainRun, self, repo, head, artifacts).scope, 'economy');
+for (const patch of [
+  { event: 'pull_request' }, { pr_number: 9 }, { run_id: 42 },
+  { source_sha: source }, { head_sha: source },
+  { fingerprint: '0'.repeat(64) }, { coverage: ['build'] },
+  { build_artifact_id: 222 }, { build_digest: 'sha256:' + '0'.repeat(64) },
+]) assert.throws(() => acceptMainPushReceipt(
+  { ...mainReceipt, ...patch }, mainRun, self, repo, head, artifacts));
+for (const patch of [
+  { status: 'in_progress' }, { conclusion: 'failure' }, { event: 'pull_request' },
+  { head_branch: 'feature' }, { head_sha: source },
+  { workflow_id: 99 }, { path: 'other.yml' },
+  { head_repository: { full_name: 'fork/game' } },
+]) assert.throws(() => acceptMainPushReceipt(
+  mainReceipt, { ...mainRun, ...patch }, self, repo, head, artifacts));
+assert.throws(() => acceptMainPushReceipt(
+  { ...mainReceipt, plan: { ...mainPlan, scope: 'full' } },
+  mainRun, self, repo, head, artifacts), 'forged full scope');
+const manualSelf = {
+  ...self, event: 'workflow_dispatch', head_sha: head,
+  head_branch: 'main', head_repository: { full_name: repo },
+};
+const mainApi = async endpoint => {
+  if (endpoint === '/actions/runs/50') return manualSelf;
+  if (endpoint === '/branches/main') return { commit: { sha: head } };
+  if (endpoint.startsWith('/actions/workflows/7/runs?')) return { workflow_runs: [mainRun] };
+  if (endpoint === '/actions/runs/77/artifacts?per_page=100') return { artifacts };
+  throw Error('Unexpected main API ' + endpoint);
+};
+const mainArgs = {
+  eventName: 'workflow_dispatch', head, repo, runId: '50',
+  token: 'test', fingerprint: fp, behavior, ref: 'refs/heads/main',
+  api: mainApi, download: async () => mainReceipt,
+};
+const validMainProof = await findMainPushProof(mainArgs);
+assert.equal(validMainProof.exact, true);
+assert.deepEqual(validMainProof.coverage, ['build', 'golden', 'pwa']);
+assert.equal(validMainProof.source_sha, head);
+assert.equal(await findMainPushProof({ ...mainArgs, head: source }), null);
+assert.equal(await findMainPushProof({ ...mainArgs, fingerprint: '0'.repeat(64) }), null);
+assert.equal(await findMainPushProof({ ...mainArgs, eventName: 'pull_request' }), null);
+assert.equal(await findMainPushProof({ ...mainArgs, ref: 'refs/heads/feature' }), null);
+assert.equal(await findMainPushProof({ ...mainArgs, token: '' }), null);
+assert.equal(await findMainPushProof({
+  ...mainArgs, api: async endpoint =>
+    endpoint === '/branches/main' ? { commit: { sha: source } } : mainApi(endpoint),
+}), null, 'main advanced while manual release was being planned');
+assert.equal(await findMainPushProof({
+  ...mainArgs, download: async () => ({ ...mainReceipt, coverage: ['build'] }),
+}), null, 'tampered receipt must fail closed');
+assert.equal(await findMainPushProof({
+  ...mainArgs, api: async endpoint =>
+    endpoint.startsWith('/actions/workflows/7/runs?')
+      ? { workflow_runs: [{ ...mainRun, head_sha: source }] } : mainApi(endpoint),
+}), null, 'successful but stale push is not a release proof');
+console.log('PASS exact-main manual proof: same SHA+workflow+run+scope+digest only; foreign/stale/forged fail closed.');
 console.log('PASS proof binding: repo/workflow/PR/run/attempt/coverage/immutable digest; fork/stale/missing/changed inputs rejected; exact merge promotion and version inheritance.');
