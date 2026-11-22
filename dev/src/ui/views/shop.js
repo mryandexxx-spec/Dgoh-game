@@ -22,11 +22,18 @@ const SHOPS = {
   chron: { n: 'Лавка хроник', d: 'Магазин Хроник Дюны: ридулианские кристаллы меняют на осколки любых героев, материалы прокачки, Печати и Воду жизни.' },
   ring: { n: 'Водохранилище', d: 'Хранители воды племени: лишние осколки героев на 7★ становятся водяными кольцами, а кольца — осколками тех, кому ещё расти.' },
 };
-function buysToday() { if (S.buys.d !== todayKey()) S.buys = { d: todayKey(), n: {} }; return S.buys.n; }
-// Viewing stock must not reset the saved daily purchase ledger. The explicit
-// purchase transaction is the only place that rolls it forward and commits it.
-const shopLeft = it => it.lim ? Math.max(0, it.lim -
-  ((S.buys.d === todayKey() ? S.buys.n[it.key] : 0) || 0)) : -1;
+function buysToday() {
+  const next = todayKey.dayLedgerSelect(S.buys, todayKey());
+  if (!next) return null; // never charge for an untrackable daily limit
+  S.buys = next;
+  return next.n;
+}
+// Pure stock display reads the active OR archived count for this local day.
+const shopLeft = it => {
+  if (!it.lim) return -1;
+  const n = todayKey.dayLedgerRead(S.buys, todayKey());
+  return n ? Math.max(0, it.lim - (n[it.key] || 0)) : 0;
+};
 // BH9.7 event-exclusive shards must not leak into rotating shops.
 // Keep legacy shop RNG pools stable as characters are registered in CHARS.
 const STORY_EXCLUSIVE_HEROES = new Set(['margot', 'yue']);
