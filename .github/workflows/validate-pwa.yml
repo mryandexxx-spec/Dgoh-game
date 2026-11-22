@@ -103,7 +103,7 @@ jobs:
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: npm ci
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
-        name: ECON-01 deterministic economy simulation contract (no gameplay changes)
+        name: ECON-01 deterministic economy simulation contract (approved energy)
         run: node tests/economy/acceptance.mjs
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: node tools/check-deps.mjs --strict
@@ -118,6 +118,11 @@ jobs:
           node tests/ci/arch-account-bootstrap.mjs
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: npm run build
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ECON-01 energy regen save-v1 regression (PWA + HTML)
+        run: |
+          node tests/ci/econ01-energy-acceptance.mjs dist/pwa/index.html
+          node tests/ci/econ01-energy-acceptance.mjs dist/artifact.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: node tools/check-bundle.mjs dist/pwa/app.js
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}

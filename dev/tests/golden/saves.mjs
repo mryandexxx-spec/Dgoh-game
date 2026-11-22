@@ -7,8 +7,8 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadGame } from '../lib/load.mjs';
-import { writeGolden, compareGolden, argv } from '../lib/golden.mjs';
+import { loadGame, FIXED_NOW } from '../lib/load.mjs';
+import { writeGolden, compareGolden, readGolden, argv } from '../lib/golden.mjs';
 
 const [html, ...rest] = argv();
 const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'saves');
@@ -103,6 +103,44 @@ for (const entry of historical.saves) {
     // GE1 releases a separate, initially empty stock for ready equipment.
     assert.deepEqual(entry[stage].gearOwned, {}, entry.file + ': GE1 whole-gear stock migration');
     delete entry[stage].gearOwned;
+  }
+}
+// ECON-01: keep the historical strict snapshot unchanged for EVERY non-energy
+// field. Only owner-approved energy capacity/regeneration may differ. Validate
+// those current fields against a separate, deterministic fixture-derived oracle
+// BEFORE restoring their old golden values for the byte-exact comparison.
+if (!rest.includes('--update')) {
+  const archived = readGolden('saves');
+  assert.ok(archived, 'historical save golden is required');
+  const old = JSON.parse(archived).saves;
+  assert.equal(old.length, historical.saves.length);
+  const waterCap = lvl => 360 + 15 * Math.floor(lvl / 10);
+  const candleCap = lvl => 288 + 10 * Math.floor(lvl / 10);
+  const regen = (value, stamp, cap, sec) => value >= cap ? value :
+    Math.min(cap, value + Math.max(0, Math.floor((FIXED_NOW - stamp) / (sec * 1000))));
+  for (let i = 0; i < historical.saves.length; i++) {
+    const entry = historical.saves[i], original = old[i];
+    assert.equal(original.file, entry.file, 'save fixture order unchanged');
+    const fresh = entry.file === '(нет сохранения → newSave)';
+    if (fresh) {
+      assert.equal(entry.start.water, waterCap(entry.start.acc.lvl), 'newSave receives approved water cap');
+      assert.equal(entry.start.candle, candleCap(entry.start.acc.lvl), 'newSave receives approved candle cap');
+    } else {
+      const raw = JSON.parse(readSave(entry.file));
+      const loaded = entry.fillSave, started = entry.start;
+      assert.equal(loaded.water, raw.water, 'legacy water stock preserved by fillSave');
+      assert.equal(loaded.candle, raw.candle ?? 288,
+        'legacy candle stock/default preserved by fillSave');
+      assert.equal(started.water, regen(loaded.water, loaded.waterTs, waterCap(started.acc.lvl), 240),
+        'legacy water only accrues genuine approved offline regeneration');
+      assert.equal(started.candle, regen(loaded.candle, loaded.candleTs, candleCap(started.acc.lvl), 300),
+        'legacy candle only accrues genuine approved offline regeneration');
+    }
+    for (const stage of ['fillSave', 'start']) if (entry[stage]) {
+      assert.ok(original[stage], 'historical save snapshot stage exists');
+      entry[stage].water = original[stage].water;
+      entry[stage].candle = original[stage].candle;
+    }
   }
 }
 if (rest.includes('--update')) writeGolden('saves', out);

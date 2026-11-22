@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { RATES, TARGETS, SINKS, PROFILES, TEAMS, GOALS, HOURS,
   dailyBudget, sampleTargets, simulate, toMarkdown } from './simulate.mjs';
 
-assert.equal(RATES.waterSeconds, 20);
-assert.equal(RATES.candleSeconds, 30);
+assert.equal(RATES.waterSeconds, 240);
+assert.equal(RATES.candleSeconds, 300);
 assert.equal(RATES.waterBattle, 6);
 assert.equal(RATES.candleBattle, 8);
 assert.equal(TARGETS.sevenStarShards, 330);
@@ -21,37 +21,37 @@ assert.equal(SINKS.gearXIII.pl, 360);
 assert.equal(SINKS.memory7.sol - SINKS.gearXIII.sol, 1450000);
 
 const one = dailyBudget(PROFILES[0], 0, 0);
-assert.equal(one.producedWater, 4320);
-assert.equal(one.producedCandle, 2880);
-assert.equal(one.waterRecovered, 150);
-assert.equal(one.candleRecovered, 120);
-assert.equal(one.waterAttempts, 25);
-assert.equal(one.candleAttempts, 15);
-assert.equal(one.lostWater, 4170);
+assert.equal(one.producedWater, 360);
+assert.equal(one.producedCandle, 288);
+assert.equal(one.waterRecovered, 360);
+assert.equal(one.candleRecovered, 288);
+assert.equal(one.waterAttempts, 60);
+assert.equal(one.candleAttempts, 36);
+assert.equal(one.lostWater, 0);
 assert.equal(one.dailyCrystals, 70);
 assert.equal(one.dailyCrystalNet, 70);
 assert.equal(one.dailySol, 5000);
 assert.equal(dailyBudget(PROFILES[0], 0, 1).dailyCrystalNet, 20);
-assert.equal(dailyBudget(PROFILES[0], 0, 1).waterAttempts, 45);
+assert.equal(dailyBudget(PROFILES[0], 0, 1).waterAttempts, 80);
 
 const two = dailyBudget(PROFILES[1], 0, 0);
-assert.equal(two.waterCap, 195);
-assert.equal(two.waterRecovered, 390);
-assert.equal(two.candleCap, 150);
-assert.equal(two.candleRecovered, 300);
+assert.equal(two.waterCap, 405);
+assert.equal(two.waterRecovered, 360);
+assert.equal(two.candleCap, 318);
+assert.equal(two.candleRecovered, 288);
 
 for (const profile of PROFILES) {
   for (const refills of [0, 1]) {
     const b0 = dailyBudget(profile, 0, refills);
-    const b6 = dailyBudget(profile, 6, refills);
-    const b8 = dailyBudget(profile, 8, refills);
-    assert.ok(b0.waterRecovered <= b6.waterRecovered);
-    assert.ok(b6.waterRecovered <= b8.waterRecovered);
-    assert.ok(b0.candleRecovered <= b6.candleRecovered);
-    assert.ok(b6.candleRecovered <= b8.candleRecovered);
+    const b24 = dailyBudget(profile, 24, refills);
+    const b36 = dailyBudget(profile, 36, refills);
+    assert.ok(b0.waterRecovered <= b24.waterRecovered);
+    assert.ok(b24.waterRecovered <= b36.waterRecovered);
+    assert.ok(b0.candleRecovered <= b24.candleRecovered);
+    assert.ok(b24.candleRecovered <= b36.candleRecovered);
     assert.ok(b0.dailyCrystalNet >= 0, 'modeled refill is self-funded by daily claims');
-    assert.ok(b8.waterRecovered <= b8.producedWater);
-    assert.ok(b8.candleRecovered <= b8.producedCandle);
+    assert.ok(b36.waterRecovered <= b36.producedWater);
+    assert.ok(b36.candleRecovered <= b36.producedCandle);
   }
 }
 for (const team of TEAMS) {
@@ -78,8 +78,8 @@ for (const row of model.rows) {
   if (row.goal === 'memory7' && row.accountLevel < 80) assert.equal(row.accountGateUnmodeled, true);
 }
 for (const profile of PROFILES) for (const teams of TEAMS) for (const goal of GOALS) {
-  assert.ok(key(profile.id, 8, 0, teams, goal).p50Days <= key(profile.id, 6, 0, teams, goal).p50Days);
-  assert.ok(key(profile.id, 6, 0, teams, goal).p50Days <= key(profile.id, 0, 0, teams, goal).p50Days);
+  assert.ok(key(profile.id, 36, 0, teams, goal).p50Days <= key(profile.id, 24, 0, teams, goal).p50Days);
+  assert.ok(key(profile.id, 24, 0, teams, goal).p50Days <= key(profile.id, 0, 0, teams, goal).p50Days);
   assert.ok(key(profile.id, 0, 1, teams, goal).p50Days <= key(profile.id, 0, 0, teams, goal).p50Days);
 }
 const md = toMarkdown(model);

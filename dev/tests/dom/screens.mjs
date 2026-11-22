@@ -396,6 +396,79 @@ function normalizeApprovedRosterDp(src, current) {
   }
   return copy;
 }
+// ECON-01: new approved energy changes ONLY the numbers in two header pills.
+// Retain the historical 41-screen golden for all other DOM and UX content,
+// and assert exact old/new values before normalizing (never blanket-rewrite).
+function normalizeApprovedEcon01EnergyScreens(current, expected) {
+  const copy = structuredClone(current);
+  const oldValues = (fresh) => fresh
+    ? { water: '150/150', candle: '120/120' }
+    : { water: '300/240', candle: '200/180' };
+  const newValues = (fresh) => fresh
+    ? { water: '360/360', candle: '288/288' }
+    : { water: '450/450', candle: '348/348' };
+  const pill = /(data-info="(water|candle)"><span>(?:Вода|Свечи)<\/span><b><svg\b[^>]*>#[0-9a-f]{10}<\/svg>)(\d+\/\d+)(<\/b>)/g;
+  function readPills(screen, name) {
+    assert.equal(typeof screen.header, 'string', name + ': a visible header is required');
+    const matches = [...screen.header.matchAll(pill)];
+    assert.equal(matches.length, 2, name + ': exactly two energy pills');
+    assert.deepEqual(matches.map(m => m[2]), ['water', 'candle'], name + ': pill order must stay');
+    return Object.fromEntries(matches.map(m => [m[2], m[3]]));
+  }
+  assert.equal(copy.screens.length, expected.screens.length, 'no screen count changes');
+  for (let i = 0; i < copy.screens.length; i++) {
+    const screen = copy.screens[i], baseline = expected.screens[i];
+    assert.equal(screen.name, baseline.name, 'no screen ordering changes');
+    const fresh = screen.name.startsWith('fresh:');
+    assert.deepEqual(readPills(baseline, screen.name + ' historical'), oldValues(fresh),
+      screen.name + ': historical energy golden must be unchanged');
+    assert.deepEqual(readPills(screen, screen.name + ' new'), newValues(fresh),
+      screen.name + ': ECON-01 exact approved new header energy required');
+    const old = oldValues(fresh);
+    screen.header = screen.header.replace(pill, (_all, start, kind, _value, end) =>
+      start + old[kind] + end);
+    // The lobby header is also embedded in several historical view snapshots.
+    // Restrict the exception to the two fully identified energy pills.
+    const mirroredView = new Set(['fresh:lobby', 'view:lobby', 'calendar',
+      'profile', 'battle-settings']);
+    const embedded = mirroredView.has(screen.name) ? 'view' :
+      screen.name === 'squadsel:camp0' ? 'overlay' : null;
+    if (embedded) {
+      assert.equal(typeof screen[embedded], 'string', screen.name + ': embedded header must exist');
+      let count = 0;
+      screen[embedded] = screen[embedded].replace(pill, (_all, start, kind, value, end) => {
+        assert.equal(value, newValues(fresh)[kind], screen.name + ': mirrored energy must match');
+        count++;
+        return start + old[kind] + end;
+      });
+      assert.equal(count, 2, screen.name + ': exactly two mirrored energy pills');
+    }
+    if (screen.name === 'info:need:water:6') {
+      assert.ok(screen.overlay2?.includes('Нужно 6 · у вас 450/450'),
+        'water shortage dialog must show approved current stock');
+      screen.overlay2 = screen.overlay2.replace('Нужно 6 · у вас 450/450',
+        'Нужно 6 · у вас 300/240');
+    }
+    if (screen.name === 'profile') {
+      // The account panel repeats maximum energy values independently of
+      // the header. Keep the full surrounding profile/level text byte-strict.
+      const currentCaps = /(<span>Запас энергии<\/span><b><svg\b[^>]*>#[0-9a-f]{10}<\/svg> )(450)( · <svg\b[^>]*>#[0-9a-f]{10}<\/svg> )(348)( <small style="color:var\(--dust\)">\+15\/\+10 каждые 10 ур\.<\/small><\/b>)/g;
+      const oldCaps = /(<span>Запас энергии<\/span><b><svg\b[^>]*>#[0-9a-f]{10}<\/svg> )(240)( · <svg\b[^>]*>#[0-9a-f]{10}<\/svg> )(180)( <small style="color:var\(--dust\)">\+15\/\+10 каждые 10 ур\.<\/small><\/b>)/g;
+      assert.equal([...baseline.overlay2.matchAll(oldCaps)].length, 1,
+        'profile historical account-energy caps must be unchanged');
+      assert.equal([...screen.overlay2.matchAll(currentCaps)].length, 1,
+        'profile new account-energy caps must match approved ECON-01 values');
+      screen.overlay2 = screen.overlay2.replace(currentCaps,
+        (_full, waterIcon, _water, candleIcon, _candle, bonus) =>
+          waterIcon + '240' + candleIcon + '180' + bonus);
+    }
+    if (screen.name === 'sim:node3') {
+      assert.ok(screen.overlay?.includes('из 450'), 'simulator must show approved water stock');
+      screen.overlay = screen.overlay.replace('из 450', 'из 300');
+    }
+  }
+  return copy;
+}
 if (rest.includes('--update')) writeGolden('screens', out);
 else {
   validateV86Legend(out);
@@ -403,7 +476,8 @@ else {
   if (!baseline) throw new Error('screens golden baseline missing');
   const parsed = JSON.parse(baseline);
   const want = normalizeApprovedCampaign20(normalizeApprovedC412(normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGE1({ ...parsed.meta, screens: parsed.screens }, false))), false), false);
-  const got = normalizeApprovedCampaign20(normalizeApprovedC412(normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGearMemory(normalizeApprovedBH97(normalizeApprovedGE1(normalizeApprovedRosterDp(out, true), true)), true))), true), true);
+  const gotBeforeEnergy = normalizeApprovedCampaign20(normalizeApprovedC412(normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGearMemory(normalizeApprovedBH97(normalizeApprovedGE1(normalizeApprovedRosterDp(out, true), true)), true))), true), true);
+  const got = normalizeApprovedEcon01EnergyScreens(gotBeforeEnergy, want);
   if (!isDeepStrictEqual(want, got)) {
     const changed = want.screens.filter((v, i) => !isDeepStrictEqual(v, got.screens[i])).map(x => x.name);
     console.error('Unapproved golden screen differences:', changed.join(', '));
