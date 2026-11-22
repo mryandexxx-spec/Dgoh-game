@@ -37,7 +37,12 @@ function cqAdvance(previous, wk) {
   const history = previous.weekArchive;
   // A malformed/imported archive cannot authorize erasing previous entries.
   // Keep the current run while its week differs: B1 guards spending/claims.
-  if (history !== undefined && !Array.isArray(history)) return previous;
+  // B4b1b: untrusted/partial imported history is not permission to append or
+  // replace anything. Never normalize, prune or silently repair its contents.
+  if (history !== undefined && (!Array.isArray(history) ||
+      history.some(run => !run || typeof run !== 'object' ||
+        Array.isArray(run) || typeof run.wk !== 'string' ||
+        Object.prototype.hasOwnProperty.call(run, 'weekArchive')))) return previous;
   const saved = { ...previous };
   delete saved.weekArchive; // never nest earlier archives inside snapshots
   return { ...cqFresh(wk), weekArchive: [...(history || []), saved] };

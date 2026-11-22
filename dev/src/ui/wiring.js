@@ -54,6 +54,13 @@ function validateTransferSave(s) {
       throw new Error('invalid-roster');
     if ('sk' in hero && !transferRecord(hero.sk)) throw new Error('invalid-roster');
   }
+  // B4b1b: reject malformed imported history before fillSave() traversal.
+  // A bad archive is never silently dropped or reinterpreted as an empty one.
+  const archive = s.conq?.weekArchive;
+  if (archive !== undefined && (!Array.isArray(archive) ||
+      archive.some(run => !transferRecord(run) || typeof run.wk !== 'string' ||
+        Object.prototype.hasOwnProperty.call(run, 'weekArchive'))))
+    throw new Error('invalid-conquest-archive');
   // Reject unsafe JSON property names before migration's recursive walkers.
   const stack = [[s, 0]];
   let nodes = 0;
@@ -85,9 +92,31 @@ function decodeTransferCode(input) {
 function transferCode(raw) { return btoa(unescape(encodeURIComponent(raw))); }
 function showTransferCode(title, detail, raw) {
   const code = transferCode(raw);
+  // B4b1b: base64 can cross the B2 input limit LONG before JSON does.
+  // Observe ONLY this exact export payload (not potentially different RAM).
+  // This is advisory: never truncate, prune or silently replace the export.
+  let weeks = 0;
+  try {
+    const saved = JSON.parse(raw);
+    if (Array.isArray(saved.conq?.weekArchive)) weeks = saved.conq.weekArchive.length;
+  } catch (e) { /* emergency RAM may not be a complete validated v1 save */ }
+  const over = raw.length > TRANSFER_LIMIT || code.length > TRANSFER_LIMIT;
+  const near = !over && code.length >= TRANSFER_LIMIT * 0.75;
+  const diagnostic = '<p class="sub">Архив Conquest: ' + weeks +
+    ' недель. Размер JSON: ' + raw.length +
+    ' символов; код: ' + code.length + ' из ' + TRANSFER_LIMIT +
+    ' допустимых для импорта.</p>';
+  const warning = over ?
+    '<p class="sub"><strong>ВНИМАНИЕ: этот код превышает лимит импорта текущей версии. ' +
+    'Он НЕ является проверенной на восстановление копией. ' +
+    'Не очищайте данные PWA; история не удалена. ' +
+    'Для восстановления потребуется отдельный поддерживаемый способ импорта.</strong></p>' :
+    near ? '<p class="sub"><strong>ВНИМАНИЕ: код близок к лимиту импорта. ' +
+    'Сохраните внешнюю копию и не очищайте данные PWA.</strong></p>' : '';
   $('#overlay2').innerHTML = '<div class="detail info-layer" data-iclose="1"><div class="sheet infosheet" role="dialog" aria-modal="true"><h3>' +
     title + '</h3><p class="sub">' + detail +
-    '</p><textarea id="savecode" class="savebox" readonly></textarea><div class="acts"><button class="btn go" data-savecopy="1">Скопировать</button><button class="btn" data-iclose="1" style="margin-left:auto">Закрыть</button></div></div></div>';
+    '</p>' + diagnostic + warning +
+    '<textarea id="savecode" class="savebox" readonly></textarea><div class="acts"><button class="btn go" data-savecopy="1">Скопировать</button><button class="btn" data-iclose="1" style="margin-left:auto">Закрыть</button></div></div></div>';
   $('#savecode').value = code; // never embed save-derived data in innerHTML
 }
 function transferFingerprint(raw) {

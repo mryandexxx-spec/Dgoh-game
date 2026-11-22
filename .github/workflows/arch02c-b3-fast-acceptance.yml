@@ -28,7 +28,10 @@ jobs:
   mandatory-writer-native:
     name: Mandatory PWA + HTML and native Web Locks (NO RELEASE)
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    # B4b1b adds six intact 104-week pressure scenarios; the prior 20-minute
+    # cap cancelled BH8 AFTER its PASS, before the final Chromium recovery job.
+    # Extend wall-clock budget; never skip/shorten any acceptance or golden.
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: dev
@@ -105,6 +108,12 @@ jobs:
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
             TZ="$zone" node tests/ci/arch02d-b4b1-conquest-week-retention.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b4b1-conquest-week-retention.mjs dist/artifact.html
+          done
+      - name: ARCH-02D-B4b1b archive quota, growth and transfer limits (PWA + HTML, 3 TZ; NO RELEASE)
+        run: |
+          for zone in UTC Europe/Amsterdam America/Los_Angeles; do
+            TZ="$zone" node tests/ci/arch02d-b4b1b-archive-pressure.mjs dist/pwa/index.html
+            TZ="$zone" node tests/ci/arch02d-b4b1b-archive-pressure.mjs dist/artifact.html
           done
       - name: Real Chromium unflagged automatic PWA bootstrap
         run: node tests/ci/arch02c-b3-b1c-b3-native-auto-chromium.mjs
