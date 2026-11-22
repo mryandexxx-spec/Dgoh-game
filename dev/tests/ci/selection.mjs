@@ -258,6 +258,12 @@ for (const command of [
 }
 // CI-OPT-01: only explicit manual publishing may take the exact-main
 // receipt reuse route, and it must still smoke both compiled artifacts.
+const releaseParserStep = workflow.split(/\n      - /).find(x =>
+  x.includes('name: CI-OPT-01 install isolated parser for reused release smoke'));
+assert.ok(releaseParserStep, 'reused release smoke must install Acorn dependencies');
+assert.match(releaseParserStep,
+  /if: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.publish == true && needs\.plan\.outputs\.mode == 'reuse' \}\}/);
+assert.ok(releaseParserStep.includes('npm ci --ignore-scripts --no-audit --no-fund'));
 const releaseSmokeStep = workflow.split(/\n      - /).find(x =>
   x.includes('name: CI-OPT-01 release smoke on exact PWA and HTML artifact'));
 assert.ok(releaseSmokeStep, 'manual scoped publish must have fresh legacy-save smoke');
