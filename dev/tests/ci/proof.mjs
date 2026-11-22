@@ -61,6 +61,19 @@ for (const patch of [
   { head_repository: { full_name: 'fork/game' } },
 ]) assert.throws(() => acceptMainPushReceipt(
   mainReceipt, { ...mainRun, ...patch }, self, repo, head, artifacts));
+// Regression: neither a different workflow attempt nor expired receipt
+// is eligible as a release proof, even when source SHA and checksum match.
+assert.throws(() => acceptMainPushReceipt(
+  { ...mainReceipt, attempt: mainRun.run_attempt + 1 },
+  mainRun, self, repo, head, artifacts), 'wrong workflow attempt');
+assert.throws(() => acceptMainPushReceipt(
+  mainReceipt, mainRun, self, repo, head,
+  artifacts.map(a => a.name === 'dune-validation-receipt' ? { ...a, expired: true } : a)),
+  'expired receipt');
+assert.throws(() => acceptMainPushReceipt(
+  mainReceipt, mainRun, self, repo, head,
+  artifacts.map(a => a.name === 'dune-validated-build' ? { ...a, expired: true } : a)),
+  'expired immutable build');
 assert.throws(() => acceptMainPushReceipt(
   { ...mainReceipt, plan: { ...mainPlan, scope: 'full' } },
   mainRun, self, repo, head, artifacts), 'forged full scope');
