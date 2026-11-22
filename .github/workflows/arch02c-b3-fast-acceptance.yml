@@ -127,6 +127,12 @@ jobs:
             TZ="$zone" node tests/ci/arch02d-b4b1d-conquest-archive-acceptance.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b4b1d-conquest-archive-acceptance.mjs dist/artifact.html
           done
+      - name: ARCH-02D-B4b2 historical paid-day entitlement replay guard (PWA + HTML, 3 TZ; NO RELEASE)
+        run: |
+          for zone in UTC Europe/Amsterdam America/Los_Angeles; do
+            TZ="$zone" node tests/ci/arch02d-b4b2-daily-entitlement-acceptance.mjs dist/pwa/index.html
+            TZ="$zone" node tests/ci/arch02d-b4b2-daily-entitlement-acceptance.mjs dist/artifact.html
+          done
       - name: ARCH-02D-B4b1e manual oldest-week Conquest retention and verified restore (PWA + HTML, 3 TZ; NO RELEASE)
         run: |
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
