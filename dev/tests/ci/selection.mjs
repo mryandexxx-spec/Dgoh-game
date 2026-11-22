@@ -27,6 +27,12 @@ for (const entry of economyPaths) {
   assert.equal(checkGate(needsForScope(plan)).mode, 'economy', entry);
 }
 assert.equal(classify(economyPaths).mode, 'economy');
+assert.equal(classify([...economyPaths, 'dev/version.json']).mode, 'economy',
+  'economy with a release-version bump must not trigger unrelated graphics');
+assert.equal(classify(['dev/version.json']).mode, 'release',
+  'a version-only publish keeps its own PWA/release tests');
+assert.equal(classify(['dev/src/logic/daily.js', 'dev/src/pwa/sw.js']).mode, 'full',
+  'service worker + economy is mixed infrastructure and must fail closed');
 for (const unrelated of [
   'dev/src/logic/battle/engine.js',
   'dev/src/render3d/quality.js',
