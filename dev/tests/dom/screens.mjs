@@ -396,6 +396,65 @@ function normalizeApprovedRosterDp(src, current) {
   }
   return copy;
 }
+// ECON-01: new approved energy changes ONLY the numbers in two header pills.
+// Retain the historical 41-screen golden for all other DOM and UX content,
+// and assert exact old/new values before normalizing (never blanket-rewrite).
+function normalizeApprovedEcon01EnergyScreens(current, expected) {
+  const copy = structuredClone(current);
+  const oldValues = (fresh) => fresh
+    ? { water: '150/150', candle: '120/120' }
+    : { water: '300/240', candle: '200/180' };
+  const newValues = (fresh) => fresh
+    ? { water: '360/360', candle: '288/288' }
+    : { water: '450/450', candle: '348/348' };
+  const pill = /(data-info="(water|candle)"><span>(?:Вода|Свечи)<\/span><b><svg\b[^>]*>#[0-9a-f]{10}<\/svg>)(\d+\/\d+)(<\/b>)/g;
+  function readPills(screen, name) {
+    assert.equal(typeof screen.header, 'string', name + ': a visible header is required');
+    const matches = [...screen.header.matchAll(pill)];
+    assert.equal(matches.length, 2, name + ': exactly two energy pills');
+    assert.deepEqual(matches.map(m => m[2]), ['water', 'candle'], name + ': pill order must stay');
+    return Object.fromEntries(matches.map(m => [m[2], m[3]]));
+  }
+  assert.equal(copy.screens.length, expected.screens.length, 'no screen count changes');
+  for (let i = 0; i < copy.screens.length; i++) {
+    const screen = copy.screens[i], baseline = expected.screens[i];
+    assert.equal(screen.name, baseline.name, 'no screen ordering changes');
+    const fresh = screen.name.startsWith('fresh:');
+    assert.deepEqual(readPills(baseline, screen.name + ' historical'), oldValues(fresh),
+      screen.name + ': historical energy golden must be unchanged');
+    assert.deepEqual(readPills(screen, screen.name + ' new'), newValues(fresh),
+      screen.name + ': ECON-01 exact approved new header energy required');
+    const old = oldValues(fresh);
+    screen.header = screen.header.replace(pill, (_all, start, kind, _value, end) =>
+      start + old[kind] + end);
+  }
+  return copy;
+}
+// ECON-01: the only approved daily view changes are three quest labels and
+// their *alternative* progress text. Do not alter reward/claim markup, slots,
+// numerical bars, body, other screens or the established golden baseline.
+function normalizeApprovedEcon01DailyScreens(current, expected) {
+  const copy = structuredClone(current);
+  const actual = copy.screens.find(x => x.name === 'view:daily');
+  const baseline = expected.screens.find(x => x.name === 'view:daily');
+  assert.ok(actual && baseline, 'daily screen must exist in 41-screen suite');
+  const changes = [
+    ['Совершить 3 покупки в Лавке сиетча', '3 покупки или 5 боёв кампании', '0/3', '0/3 или 0/5'],
+    ['Собрать предмет снаряжения', 'Собрать предмет или провести 10 боёв', '0/1', '0/1 или 0/10'],
+    ['Повысить уровень героев 3 раза', '3 повышения уровня или 3 боя Хроник', '0/3', '0/3 или 0/3'],
+  ];
+  const esc = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\if (rest.includes('--update')) writeGolden('screens', out);');
+  for (const [oldLabel, newLabel, oldProgress, newProgress] of changes) {
+    const re = new RegExp('(<b>)' + esc(newLabel) + '(</b><div class="qbar"><i style="width:[^"]+"><\\/i><\\/div><span class="mono">)([^<]+)(<\\/span>)', 'g');
+    const matched = [...actual.view.matchAll(re)];
+    assert.equal(matched.length, 1, newLabel + ': exactly one approved quest in rendered daily');
+    assert.equal(matched[0][3], newProgress, newLabel + ': approved alternative progress only');
+    assert.ok(baseline.view.includes('<b>' + oldLabel + '</b>'), oldLabel + ': old golden quest preserved');
+    assert.ok(baseline.view.includes('<span class="mono">' + oldProgress + '</span>'), oldLabel + ': old baseline progress retained');
+    actual.view = actual.view.replace(re, (_all, a, b, _value, d) => a + oldLabel + b + oldProgress + d);
+  }
+  return copy;
+}
 if (rest.includes('--update')) writeGolden('screens', out);
 else {
   validateV86Legend(out);
@@ -403,7 +462,9 @@ else {
   if (!baseline) throw new Error('screens golden baseline missing');
   const parsed = JSON.parse(baseline);
   const want = normalizeApprovedCampaign20(normalizeApprovedC412(normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGE1({ ...parsed.meta, screens: parsed.screens }, false))), false), false);
-  const got = normalizeApprovedCampaign20(normalizeApprovedC412(normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGearMemory(normalizeApprovedBH97(normalizeApprovedGE1(normalizeApprovedRosterDp(out, true), true)), true))), true), true);
+  const gotBeforeEnergy = normalizeApprovedCampaign20(normalizeApprovedC412(normalizeApprovedBH4(normalizeApprovedV86(normalizeApprovedGearMemory(normalizeApprovedBH97(normalizeApprovedGE1(normalizeApprovedRosterDp(out, true), true)), true))), true), true);
+  const gotEnergyNormalized = normalizeApprovedEcon01EnergyScreens(gotBeforeEnergy, want);
+  const got = normalizeApprovedEcon01DailyScreens(gotEnergyNormalized, want);
   if (!isDeepStrictEqual(want, got)) {
     const changed = want.screens.filter((v, i) => !isDeepStrictEqual(v, got.screens[i])).map(x => x.name);
     console.error('Unapproved golden screen differences:', changed.join(', '));
