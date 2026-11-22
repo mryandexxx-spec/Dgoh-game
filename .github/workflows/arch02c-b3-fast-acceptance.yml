@@ -31,7 +31,7 @@ jobs:
     # B4b1b adds six intact 104-week pressure scenarios; the prior 20-minute
     # cap cancelled BH8 AFTER its PASS, before the final Chromium recovery job.
     # Extend wall-clock budget; never skip/shorten any acceptance or golden.
-    timeout-minutes: 30
+    timeout-minutes: 36
     defaults:
       run:
         working-directory: dev
@@ -115,6 +115,12 @@ jobs:
             TZ="$zone" node tests/ci/arch02d-b4b1b-archive-pressure.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b4b1b-archive-pressure.mjs dist/artifact.html
           done
+      - name: ARCH-02D-B4b1c offline JSON file export/import (PWA + HTML, 3 TZ; NO RELEASE)
+        run: |
+          for zone in UTC Europe/Amsterdam America/Los_Angeles; do
+            TZ="$zone" node tests/ci/arch02d-b4b1c-file-transfer-acceptance.mjs dist/pwa/index.html
+            TZ="$zone" node tests/ci/arch02d-b4b1c-file-transfer-acceptance.mjs dist/artifact.html
+          done
       - name: Real Chromium unflagged automatic PWA bootstrap
         run: node tests/ci/arch02c-b3-b1c-b3-native-auto-chromium.mjs
       - name: Real Chromium two-tab lifecycle and lease-loss regression
@@ -129,3 +135,5 @@ jobs:
         run: node tests/smoke/baron-legend-gl.mjs dist/pwa/index.html
       - name: Real Chromium protected import and explicit backup recovery
         run: node tests/ci/arch02c-b3-b2-a2-real-chromium.mjs
+      - name: ARCH-02D-B4b1c native browser JSON download and file-picker restore (PWA + HTML; NO RELEASE)
+        run: node tests/ci/arch02d-b4b1c-native-file-chromium.mjs

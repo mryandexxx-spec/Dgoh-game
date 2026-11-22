@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-24.04
     # B4-B3b: full compiled PWA + artifact writer/recovery suite now runs
     # beyond 12 minutes on hosted runners. Keep every check; allow completion.
-    timeout-minutes: 24
+    timeout-minutes: 32
     defaults:
       run:
         working-directory: dev
@@ -287,6 +287,13 @@ jobs:
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
             TZ="$zone" node tests/ci/arch02d-b4b1b-archive-pressure.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b4b1b-archive-pressure.mjs dist/artifact.html
+          done
+      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+        name: ARCH-02D-B4b1c offline JSON file export/import (PWA + HTML, 3 TZ; NO RELEASE)
+        run: |
+          for zone in UTC Europe/Amsterdam America/Los_Angeles; do
+            TZ="$zone" node tests/ci/arch02d-b4b1c-file-transfer-acceptance.mjs dist/pwa/index.html
+            TZ="$zone" node tests/ci/arch02d-b4b1c-file-transfer-acceptance.mjs dist/artifact.html
           done
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         name: ARCH-02C-B3-B2-A1 protected import + recovery-only lease (PWA + artifact; NOT LIVE)
@@ -540,6 +547,8 @@ jobs:
         run: node tests/ci/arch02c-b3-b1b-real-multitab-chromium.mjs
       - name: ARCH-02C-B3-B2-A2 REAL Chromium protected import and user-confirmed recovery (MANDATORY)
         run: node tests/ci/arch02c-b3-b2-a2-real-chromium.mjs
+      - name: ARCH-02D-B4b1c REAL Chromium JSON download and native file import (PWA + standalone; NO RELEASE)
+        run: node tests/ci/arch02d-b4b1c-native-file-chromium.mjs
       - run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
       - name: Upload E3 screenshots
         if: always()
