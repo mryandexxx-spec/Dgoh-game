@@ -452,8 +452,8 @@ function normalizeApprovedEcon01EnergyScreens(current, expected) {
     if (screen.name === 'profile') {
       // The account panel repeats maximum energy values independently of
       // the header. Keep the full surrounding profile/level text byte-strict.
-      const currentCaps = /(<span>Запас энергии<\/span><b><svg\\b[^>]*>#[0-9a-f]{10}<\/svg> )(450)( · <svg\\b[^>]*>#[0-9a-f]{10}<\/svg> )(348)( <small style="color:var\\(--dust\\)">\\+15\\/\\+10 каждые 10 ур\\.<\/small><\/b>)/g;
-      const oldCaps = /(<span>Запас энергии<\/span><b><svg\\b[^>]*>#[0-9a-f]{10}<\/svg> )(240)( · <svg\\b[^>]*>#[0-9a-f]{10}<\/svg> )(180)( <small style="color:var\\(--dust\\)">\\+15\\/\\+10 каждые 10 ур\\.<\/small><\/b>)/g;
+      const currentCaps = /(<span>Запас энергии<\/span><b><svg\b[^>]*>#[0-9a-f]{10}<\/svg> )(450)( · <svg\b[^>]*>#[0-9a-f]{10}<\/svg> )(348)( <small style="color:var\(--dust\)">\+15\/\+10 каждые 10 ур\.<\/small><\/b>)/g;
+      const oldCaps = /(<span>Запас энергии<\/span><b><svg\b[^>]*>#[0-9a-f]{10}<\/svg> )(240)( · <svg\b[^>]*>#[0-9a-f]{10}<\/svg> )(180)( <small style="color:var\(--dust\)">\+15\/\+10 каждые 10 ур\.<\/small><\/b>)/g;
       assert.equal([...baseline.overlay2.matchAll(oldCaps)].length, 1,
         'profile historical account-energy caps must be unchanged');
       assert.equal([...screen.overlay2.matchAll(currentCaps)].length, 1,
