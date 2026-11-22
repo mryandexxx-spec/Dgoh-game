@@ -449,6 +449,19 @@ function normalizeApprovedEcon01EnergyScreens(current, expected) {
       screen.overlay2 = screen.overlay2.replace('Нужно 6 · у вас 450/450',
         'Нужно 6 · у вас 300/240');
     }
+    if (screen.name === 'profile') {
+      // The account panel repeats maximum energy values independently of
+      // the header. Keep the full surrounding profile/level text byte-strict.
+      const currentCaps = /(<span>Запас энергии<\/span><b><svg\\b[^>]*>#[0-9a-f]{10}<\/svg> )(450)( · <svg\\b[^>]*>#[0-9a-f]{10}<\/svg> )(348)( <small style="color:var\\(--dust\\)">\\+15\\/\\+10 каждые 10 ур\\.<\/small><\/b>)/g;
+      const oldCaps = /(<span>Запас энергии<\/span><b><svg\\b[^>]*>#[0-9a-f]{10}<\/svg> )(240)( · <svg\\b[^>]*>#[0-9a-f]{10}<\/svg> )(180)( <small style="color:var\\(--dust\\)">\\+15\\/\\+10 каждые 10 ур\\.<\/small><\/b>)/g;
+      assert.equal([...baseline.overlay2.matchAll(oldCaps)].length, 1,
+        'profile historical account-energy caps must be unchanged');
+      assert.equal([...screen.overlay2.matchAll(currentCaps)].length, 1,
+        'profile new account-energy caps must match approved ECON-01 values');
+      screen.overlay2 = screen.overlay2.replace(currentCaps,
+        (_full, waterIcon, _water, candleIcon, _candle, bonus) =>
+          waterIcon + '240' + candleIcon + '180' + bonus);
+    }
     if (screen.name === 'sim:node3') {
       assert.ok(screen.overlay?.includes('из 450'), 'simulator must show approved water stock');
       screen.overlay = screen.overlay.replace('из 450', 'из 300');
