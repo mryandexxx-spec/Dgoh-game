@@ -56,6 +56,10 @@ try {
     const s = (0,eval)('start.writerLifecycle()');
     return s.armed && !s.blocked && s.writer.status==='owned';
   }, { timeout:30000, polling:100 });
+  // Normal game boot may show the daily-login calendar in #overlay2.
+  // Close it using the real visible control before testing squad touch targets.
+  if (await page.$('#overlay2 .calsheet')) await click('#overlay2 button[data-iclose]');
+  await page.waitForFunction(() => !document.querySelector('#overlay2 .calsheet'), { timeout:5000 });
   await page.evaluate(async () => {
     if (!await loadB3()) throw Error('Babylon WebGL unavailable');
     S.skipDlg = true; set_view('camp'); render(); openSquadSel('camp', 0);
