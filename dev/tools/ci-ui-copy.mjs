@@ -57,6 +57,17 @@ function toastCall(chain) {
     n.callee?.type === 'Identifier' && n.callee.name === 'toast');
 }
 function approvedStringSite(file, chain, node) {
+  // A literal in the displayed branch of a ternary inside an HTML/template
+  // is text, but the condition and every expression operand remain immutable.
+  // A ternary used in an if/lookup without a display template is NOT copy.
+  const directBranch = chain.find(n => n.type === 'ConditionalExpression' &&
+    (n.consequent === node || n.alternate === node));
+  if (directBranch && file.startsWith('dev/src/ui/')) {
+    const templates = chain.filter(n => n.type === 'TemplateLiteral');
+    const htmlContext = templates.some(t => t.quasis?.some(q =>
+      q.value.raw.includes('<') && q.value.raw.includes('>')));
+    if (htmlContext || toastCall(chain)) return true;
+  }
   const root = declared(chain), property = prop(chain);
   if (property?.value !== node) return false;
   const k = getKey(property.key);
