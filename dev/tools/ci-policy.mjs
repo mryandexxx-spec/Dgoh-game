@@ -37,7 +37,7 @@ export function systemsForPaths(paths) {
       if(/(?:hero|ability|battle|enemy|skill|kit)/.test(p))add('battle');
       continue;
     }
-    if (/^dev\/assets\/(?:img|icons|ui)\//.test(p) ||
+    if (/^dev\/assets\/(?:img|icons|ui|font)\//.test(p) ||
         /^dev\/src\/assets\/(?:img|icons|ui)\//.test(p)) {add('ui');continue;}
     if (/^dev\/src\/(?:render3d\/|assets\/)/.test(p) || /^dev\/assets(?:-src)?\//.test(p)) {add('render3d');continue;}
     if (/^dev\/src\/(?:ui\/|render2d\/|styles\/)/.test(p)) {add('ui');continue;}
@@ -51,7 +51,7 @@ export function systemsForPaths(paths) {
     if (/^dev\/tests\/ci\/arch02c-b[56]/.test(p)) {add('progression');continue;}
     if (/^dev\/tests\/smoke\/(?:3d|ab|perf|baron|muad|young-baron|bh9|md-ult1|arena-animation)/.test(p)) {add('render3d');continue;}
     if (/^dev\/tests\/smoke\/sw\.mjs$/.test(p)) {add('pwa');continue;}
-    if (/^dev\/tests\/(?:golden\/|dom\/|smoke\/|ci\/(?:ui-copy-dom-smoke|ui01-))/.test(p)) {add('ui');continue;}
+    if (/^dev\/tests\/(?:golden\/|dom\/|smoke\/|ci\/(?:ui-copy-dom-smoke|ui01-|hud01-))/.test(p)) {add('ui');continue;}
     if (/^dev\/tests\//.test(p)) {add('ci');continue;}
     throw Error('No safe CI subsystem mapping for: '+p);
   }
@@ -71,7 +71,7 @@ const ECONOMY_PATHS = new Set([
 ]);
 const isEconomy = p => ECONOMY_PATHS.has(p);
 export const isDoc = p => /^(?:README\.md|dev\/(?:README|ARCHITECTURE|CHANGES_STATUS)\.md)$/.test(p)
-  || /^dev\/docs\/.+\.(?:md|html|png|jpg|jpeg|webp|svg)$/.test(p)
+  || /^dev\/docs\/.+\.(?:md|txt|html|png|jpg|jpeg|webp|svg)$/.test(p)
   || p === 'dev/docs/ci/AUDIT_EVIDENCE_2026_11_14.json';
 export const isCampaign = p => /^dev\/src\/render3d\/scenes\/campaign-[\w-]+\.js$/.test(p)
   || ['dev/src/data/campaign-map-presets.js','dev/src/ui/views/campaign20.js','dev/src/styles/campaign20.css','dev/tests/smoke/campaign20.mjs','dev/tests/campaign-gestures.mjs'].includes(p);
