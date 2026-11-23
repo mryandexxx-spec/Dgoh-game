@@ -93,7 +93,7 @@ assert.match(workflow,/node tests\/smoke\/sw\.mjs \.\. dist\/pwa/);
 assert.match(workflow,/node dev\/tools\/ci-gate\.mjs/);
 assert.match(workflow,/node tools\/ci-artifact\.mjs rehearse/);
 assert.match(workflow,/github.event_name == 'workflow_dispatch' && inputs.publish == true/);
-assert.match(workflow,/github.event_name == 'push' && github.actor != 'github-actions\\[bot\\]'/,
+assert.ok(workflow.includes("github.event_name == 'push' && github.actor != 'github-actions[bot]'"),
   'main merge must publish verified output, but action-pushed assets must not recursively deploy');
 const build=workflow.split('\n  build:\n')[1].split('\n  golden:\n')[0];
 const legacyHeavy=build.match(/- if: \$\{\{[^\n]*scope != 'focused'[^\n]*\}\}/g)||[];
