@@ -64,9 +64,15 @@ function approvedStringSite(file, chain, node) {
     (n.consequent === node || n.alternate === node));
   if (directBranch && file.startsWith('dev/src/ui/')) {
     const templates = chain.filter(n => n.type === 'TemplateLiteral');
-    const htmlContext = templates.some(t => t.quasis?.some(q =>
-      q.value.raw.includes('<') && q.value.raw.includes('>')));
-    if (htmlContext || toastCall(chain)) return true;
+    const htmlTextSlot = templates.some(t => {
+      const i = t.expressions?.indexOf(directBranch);
+      if (i === undefined || i < 0) return false;
+      const before = t.quasis[i]?.value.raw || '';
+      // The interpolation MUST follow a completed tag, rather than sit
+      // inside a class, href, data-* attribute or partial HTML opening tag.
+      return before.lastIndexOf('>') > before.lastIndexOf('<');
+    });
+    if (htmlTextSlot || toastCall(chain)) return true;
   }
   const root = declared(chain), property = prop(chain);
   if (property?.value !== node) return false;
