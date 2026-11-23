@@ -354,10 +354,11 @@ assert.ok(deploy,'publication condition exists');
 assert.match(deploy,/!\s*cancelled\(\)/,'override implicit success() for skipped ancestors');
 assert.match(deploy,/needs\.plan\.result == 'success'/);
 assert.match(deploy,/needs\.gate\.result == 'success'/);
-// A main merge is not a release: only an explicitly approved manual run
-// with publish=true may proceed past the certified gate to GitHub Pages.
+// Main merge should publish verified build automatically after green checks.
+ // Manual dispatch still needs explicit publish=true; PRs, bot pushes and
+ // failures must never publish.
 const publish=Function('github','needs','cancelled','inputs','return ('+deploy+')');
-const github={event_name:'workflow_dispatch',ref:'refs/heads/main'};
+const github={event_name:'workflow_dispatch',ref:'refs/heads/main',actor:'maintainer'};
 const approved={publish:true},notApproved={publish:false};
 const ready={plan:{result:'success',outputs:{mode:'reuse'}},gate:{result:'success'},golden:{result:'skipped'},renderer:{result:'skipped'}};
 assert.equal(publish(github,ready,()=>false,approved),true,'approved manual dispatch may publish validated reuse despite skipped ancestors');
@@ -366,7 +367,18 @@ assert.equal(publish(github,ready,()=>true,approved),false,'canceled workflow ca
 for(const mode of ['full','campaign','release','pwa','tests'])assert.equal(publish(github,{...ready,plan:{...ready.plan,outputs:{mode}}},()=>false,approved),true);
 assert.equal(publish(github,{...ready,plan:{...ready.plan,outputs:{mode:'docs'}}},()=>false,approved),false);
 for(const key of ['plan','gate'])for(const result of ['failure','cancelled','skipped'])assert.equal(publish(github,{...ready,[key]:{...ready[key],result}},()=>false,approved),false);
-assert.equal(publish({...github,event_name:'push'},ready,()=>false,approved),false,'main push from merge must not publish');
+assert.equal(publish({...github,event_name:'push'},ready,()=>false,notApproved),true,
+  'green main push must publish validated artifact without manual action');
+assert.equal(publish({...github,event_name:'push',actor:'github-actions[bot]'},ready,()=>false,approved),false,
+  'publication bot commits must not trigger a second publication');
+assert.equal(publish({...github,event_name:'push'},ready,()=>true,approved),false,
+  'canceled push must not deploy');
+for(const key of ['plan','gate'])for(const result of ['failure','cancelled','skipped'])
+  assert.equal(publish({...github,event_name:'push'}, {...ready,[key]:{...ready[key],result}},()=>false,approved),false,
+    'push must never bypass '+key+' gate');
+assert.equal(publish({...github,event_name:'push'}, {...ready,plan:{...ready.plan,outputs:{mode:'docs'}}},()=>false,approved),false,
+  'docs-only main push does not publish game');
+
 assert.equal(publish({...github,event_name:'pull_request'},ready,()=>false,approved),false);
 assert.equal(publish({...github,ref:'refs/heads/feature'},ready,()=>false,approved),false);
-console.log('PASS publication condition: explicit manual release opt-in, successful plan/gate, reuse skips, cancellation, docs, push/PR/non-main refusals.');
+console.log('PASS publication condition: green main merge publishes validated artifact; manual remains opt-in; failures, bot, docs, PR, branch blocked.');
