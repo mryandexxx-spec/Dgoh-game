@@ -46,6 +46,11 @@ assert.equal(classify(['dev/version.json'],{focused:true}).mode,'focused');
 assert.deepEqual(classify(['dev/version.json'],{focused:true}).systems,['pwa']);
 assert.deepEqual(classify(['dev/src/pwa/sw.js'],{focused:true}).systems,['pwa']);
 assert.deepEqual(classify(['dev/src/logic/daily.js'],{focused:true}).systems,['economy','daily']);
+assert.deepEqual(classify(['dev/src/ui/views/daily.js'],{focused:true}).systems,['economy','daily','ui']);
+assert.deepEqual(classify(['dev/src/ui/views/conquest.js'],{focused:true}).systems,['conquest','ui']);
+assert.deepEqual(classify(['dev/src/ui/battle/hud.js'],{focused:true}).systems,['battle','ui']);
+assert.deepEqual(classify(['dev/src/ui/hero-window.js'],{focused:true}).systems,['progression','ui']);
+
 assert.equal(classify(['dev/docs/roadmap.md'],{focused:true}).mode,'docs');
 for(const path of ['unknown.txt','dev/src/game.js','dev/src/random-unsafe-area/file.js'])
   assert.throws(()=>classify([path],{focused:true}),/No safe CI subsystem mapping/);
