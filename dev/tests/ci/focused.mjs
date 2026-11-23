@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { classify, systemsForPaths, validatePlan, JOBS } from '../../tools/ci-policy.mjs';
+import { classify, systemsForPaths, validatePlan, JOBS, uiBrowserCasesForPaths } from '../../tools/ci-policy.mjs';
 import { commandsFor, runFocused, CASES } from '../../tools/ci-focused.mjs';
+import { uiAffectedOutputs, uiAffected } from '../../tools/ci-ui-affected.mjs';
 import { checkGate } from '../../tools/ci-gate.mjs';
 
 function focus(path) {
@@ -131,4 +132,40 @@ assert.deepEqual(commandsFor(waterPlan).filter(([file])=>file.endsWith('ui01-wat
 assert.equal(commandsFor(focus('dev/src/ui/common.js')).filter(([file])=>file.endsWith('ui01-water-literjon-acceptance.mjs')).length,0,
  'unrelated UI PR must not run water-specific acceptance');
 assert.equal(commandsFor(focus('dev/src/ui/common.js')).some(([path])=>path.endsWith('tests/run.mjs')),false);
+
+const HUD_ONLY = ['dev/src/styles/hud-resources.css','dev/assets/font/inter-variable.woff2'];
+assert.deepEqual(uiBrowserCasesForPaths(HUD_ONLY),[]);
+const hud=focus(HUD_ONLY);
+assert.ok(!hud.groups.includes('ui'),'HUD-only browser proof already belongs to compiled build');
+assert.ok(commandsFor(hud).some(([f])=>f.endsWith('hud01-resource-acceptance.mjs')),
+  'HUD-only compiled Chromium acceptance must be required');
+assert.deepEqual(uiBrowserCasesForPaths(['dev/src/ui/recycler-screen.js']),['recycler']);
+assert.deepEqual(uiBrowserCasesForPaths(['dev/src/ui/hero-window.js']),['gear']);
+assert.deepEqual(uiBrowserCasesForPaths(['dev/src/ui/recycler-screen.js','dev/src/ui/craft.js']),['gear','recycler']);
+assert.deepEqual(uiBrowserCasesForPaths(['dev/src/ui/common.js']),['gear','recycler','item'],
+  'shared resource UI must not be assumed safe by its filename');
+assert.deepEqual(uiBrowserCasesForPaths(['dev/src/styles/hud-resources.css','dev/src/ui/events.js']),
+  ['gear','recycler','item'], 'unsafe mixed UI diff must fall back to all');
+assert.deepEqual(uiBrowserCasesForPaths(['dev/src/styles/hud-resources.css','dev/src/styles/landscape.css']),
+  ['gear','recycler','item'], 'shared responsive layout must receive all UI checks');
+assert.deepEqual(uiBrowserCasesForPaths(['dev/src/styles/hud-resources.css','dev/src/ui/recycler-screen.js']),
+  ['recycler']);
+assert.ok(focus('dev/src/ui/recycler-screen.js').groups.includes('ui'));
+assert.deepEqual(uiAffectedOutputs(focus('dev/src/ui/recycler-screen.js')),
+  {gear:'false',recycler:'true',item:'false'});
+assert.deepEqual(uiAffectedOutputs(focus('dev/src/ui/common.js')),
+  {gear:'true',recycler:'true',item:'true'});
+assert.throws(()=>uiAffected({...focus('dev/src/ui/recycler-screen.js'),paths:HUD_ONLY}), /Invalid|Forged|mapping/);
+assert.deepEqual(uiAffected({mode:'full',scope:'full',paths:[],groups:JOBS,coverage:JOBS}),
+  ['gear','recycler','item']);
+const uiJob=workflow.split('\\n  ui:\\n')[1].split('\\n  ui-campaign:\\n')[0];
+assert.match(uiJob,/id: ui-affected/);
+assert.match(uiJob,/node tools\\/ci-ui-affected\\.mjs/);
+for(const name of ['gear','recycler','item']) {
+  assert.ok(uiJob.includes("steps.ui-affected.outputs."+name+" == 'true'"),
+    name+' browser check must require verified diff selection');
+}
+assert.doesNotMatch(uiJob,/^      - run: node tests\\/smoke\\/(?:gear-e3-dom|memory-ix-dom)\\.mjs/m,
+  'unconditional peripheral DOM smoke must not return');
+
 console.log('PASS CI-OPT-03 focused policy, touched-system matrix, smoke, fail closed, manual full, immutable gate and native-only storage.');

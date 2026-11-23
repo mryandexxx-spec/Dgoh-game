@@ -60,6 +60,49 @@ export function systemsForPaths(paths) {
   return FOCUSED_ORDER.filter(x=>found.has(x));
 }
 
+
+// CI-OPT-04: explicit UI browser-test ownership. Unknown/shared UI paths
+// conservatively run every existing UI acceptance. Pure HUD assets/styles
+// are already covered by the compiled HUD-01 Chromium test in ci-focused.
+// Classify the ENTIRE diff, never an individual filename in isolation.
+export const UI_BROWSER_CASES = Object.freeze(['gear','recycler','item']);
+const UI_HUD_ONLY = new Set([
+  'dev/src/styles/hud-resources.css',
+  'dev/assets/font/inter-variable.woff2',
+  'dev/tests/ci/hud01-resource-acceptance.mjs',
+]);
+const UI_GEAR_ONLY = new Set([
+  'dev/src/ui/craft.js',
+  'dev/src/ui/hero-window.js',
+  'dev/tests/smoke/gear-e3-dom.mjs',
+]);
+const UI_RECYCLER_ONLY = new Set([
+  'dev/src/ui/recycler-screen.js',
+  'dev/tests/smoke/memory-ix-dom.mjs',
+]);
+const UI_ITEM_ONLY = new Set([
+  'dev/tests/smoke/dom.mjs',
+]);
+export function uiBrowserCasesForPaths(paths) {
+  if (!Array.isArray(paths) || !paths.length) throw Error('UI diff paths required');
+  const selected = new Set();
+  for (const p of paths) {
+    if (isDoc(p) || p === 'dev/version.json') continue;
+    // CI-only changes are separately verified by the CI contract tests;
+    // they do not grant a UI filename exemption in a mixed code diff.
+    if (/^\\.github\\/workflows\\/.+\\.ya?ml$/.test(p) ||
+        /^dev\\/(?:tools\\/|tests\\/ci\\/(?:selection|focused|proof|resource-growth|ui-copy-proof)\\.mjs$)/.test(p)) continue;
+    if (UI_HUD_ONLY.has(p)) continue;
+    if (UI_GEAR_ONLY.has(p)) { selected.add('gear'); continue; }
+    if (UI_RECYCLER_ONLY.has(p)) { selected.add('recycler'); continue; }
+    if (UI_ITEM_ONLY.has(p)) { selected.add('item'); continue; }
+    // Includes shared renderer, common JS, events, layouts, unknown paths:
+    // the safe response is all legacy UI checks, not silently skipping any.
+    return [...UI_BROWSER_CASES];
+  }
+  return UI_BROWSER_CASES.filter(k => selected.has(k));
+}
+
 const ECONOMY_PATHS = new Set([
   'dev/src/logic/economy.js',
   'dev/src/logic/daily.js',
@@ -94,7 +137,9 @@ export function groupsFor(scope, paths=[]) {
     // The existing browser-native safety checks live in the UI runner.
     // Select it for storage/conquest/PWA changes as well; individual steps
     // below have system-specific guards, while pure UI skips unrelated suites.
-    if(systems.some(s=>['ui','storage','conquest','pwa'].includes(s)))selected.add('ui');
+    if(systems.some(s=>['storage','conquest','pwa'].includes(s)) ||
+       (systems.includes('ui') && uiBrowserCasesForPaths(paths).length))
+      selected.add('ui');
     if(systems.includes('render3d')){selected.add('three-d');selected.add('three-d-desktop');}
     return JOBS.filter(k=>selected.has(k));
   }
