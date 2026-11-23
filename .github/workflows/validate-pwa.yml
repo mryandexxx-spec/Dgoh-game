@@ -654,8 +654,18 @@ jobs:
         with:
           chrome-version: stable
       - run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
-      - run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
-      - run: node tests/smoke/memory-ix-dom.mjs dist/pwa/index.html
+      - name: CI-OPT-04 select UI browser acceptance from verified diff
+        id: ui-affected
+        env:
+          CI_PLAN: ${{ needs.plan.outputs.decision }}
+          CI_UI_FULL: ${{ needs.plan.outputs.scope == 'full' }}
+        run: node tools/ci-ui-affected.mjs
+      - name: E3 gear DOM (affected gear only)
+        if: ${{ steps.ui-affected.outputs.gear == 'true' }}
+        run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html
+      - name: Ix recycler DOM (affected recycler only)
+        if: ${{ steps.ui-affected.outputs.recycler == 'true' }}
+        run: node tests/smoke/memory-ix-dom.mjs dist/pwa/index.html
       - name: ARCH-01C5a-B1 real Conquest CELEB visible NOTES + save + DGM (cold/warm)
         if: ${{ needs.plan.outputs.scope == 'full' || contains(needs.plan.outputs.decision, '"conquest"') }}
         run: node tests/ci/arch01c5a-b1-real-lifecycle.mjs
@@ -677,7 +687,9 @@ jobs:
       - name: ARCH-02D-B4b1e REAL Chromium explicit oldest-week retention and native file restore
         if: ${{ needs.plan.outputs.scope == 'full' || contains(needs.plan.outputs.decision, '"storage"') || contains(needs.plan.outputs.decision, '"conquest"') }}
         run: node tests/ci/arch02d-b4b1e-native-retention-chromium.mjs
-      - run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
+      - name: E3 item/itempart DOM (affected items only)
+        if: ${{ steps.ui-affected.outputs.item == 'true' }}
+        run: node tests/smoke/dom.mjs dist/pwa/index.html --phone --only item,itempart --win 800
       - name: Upload E3 screenshots
         if: always()
         uses: actions/upload-artifact@v4
