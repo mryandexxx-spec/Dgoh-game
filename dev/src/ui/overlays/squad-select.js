@@ -95,7 +95,8 @@ function renderSquadSel() {
   sceneThumb($('#overlay .sqbg')); renderRes();
 }
 function sqGo() {
-  if (loadSave.writer.state().gated && BT && !BT.done) return;
+  // BT can be preferences-only after leaveBattle(); only a real B blocks re-entry.
+  if (loadSave.writer.state().gated && BT?.B && !BT.done) return;
   if (loadSave.writer.state().gated && !loadSave.writer.check().ok) {
     loadSave.writer.release();
     return; // never open a new battle after lease loss

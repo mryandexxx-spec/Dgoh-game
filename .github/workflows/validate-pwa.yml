@@ -660,6 +660,9 @@ jobs:
           CI_PLAN: ${{ needs.plan.outputs.decision }}
           CI_UI_FULL: ${{ needs.plan.outputs.scope == 'full' }}
         run: node tools/ci-ui-affected.mjs
+      - name: Battle settings HIGH 30fps retreat and re-entry (targeted WebGL phone)
+        if: ${{ needs.plan.outputs.scope == 'focused' && (contains(needs.plan.outputs.decision, 'dev/src/ui/overlays/battle-settings.js') || contains(needs.plan.outputs.decision, 'dev/src/ui/battle/battle-ui.js') || contains(needs.plan.outputs.decision, 'dev/tests/smoke/battle-settings-reentry.mjs')) }}
+        run: node tests/smoke/battle-settings-reentry.mjs dist/pwa/index.html
       - name: E3 gear DOM (affected gear only)
         if: ${{ steps.ui-affected.outputs.gear == 'true' }}
         run: node tests/smoke/gear-e3-dom.mjs dist/pwa/index.html

@@ -145,7 +145,7 @@ function transferFingerprint(raw) {
 // user confirmation for both transfer transports. Legacy Base64 keeps 2M
 // limits; the separate file input is bounded by 8M UTF-8 bytes.
 function prepareTransferPreview(parsed, viaFile = false) {
-  if (BT && !BT.done) throw new Error('battle-in-progress');
+  if (BT?.B && !BT.done) throw new Error('battle-in-progress');
   validateTransferSave(parsed); // BEFORE migration (including unsafe nested keys)
   const candidate = fillSave(parsed);
   metaFill(candidate);
@@ -707,7 +707,7 @@ function metaClick(d) {
     // NEVER silently discard unpersisted progress either. A changed heap
     // requires a THIRD, explicit user choice warning that the independently
     // backed-up predecessor is the STORED save, not the latest mutable RAM.
-    if (BT && !BT.done) {
+    if (BT?.B && !BT.done) {
       toast('Завершите бой перед импортом сохранения.');
       return true;
     }
