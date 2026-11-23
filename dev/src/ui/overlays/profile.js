@@ -50,7 +50,22 @@ function openProfile() {
   </div></div>`;
 }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const profileChip = () => `<button class="pchip" data-profile="1" aria-label="Профиль игрока, уровень ${S.acc.lvl}"><span class="pchav">${avatarHtml(S.profile.ava, S.profile.frame, 40)}${accBadge()}</span><span><b>${esc(S.profile.nick)}</b><small>${TITLES[S.profile.title] || ''}</small></span></button>`;
+// UI-02: the approved unified top-bar profile uses the EXISTING user-selected
+// avatar/frame, real account XP and squad power. It does not touch saved data.
+const profileChip = () => {
+  const lvl = S.acc.lvl;
+  const xpPct = lvl >= ACC_MAX ? 100 : Math.min(100, Math.max(0, Math.round(S.acc.xp / Math.max(1, accNeed(lvl)) * 100)));
+  return `<button class="pchip ui02-profile" type="button" data-profile="1" aria-label="Профиль игрока ${esc(S.profile.nick)}, уровень ${lvl}, мощь отряда ${fmt(squadPower())}">
+    <span class="ui02-ribbon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 4q5-3 9 3 3 3 7 2-2 5-8 5l-4 6-1-7z" fill="currentColor"/><path d="M6 7q6 1 6 7" stroke="#173d39" stroke-width="1.4"/></svg></span>
+    <span class="ui02-avatar">${avatarHtml(S.profile.ava, S.profile.frame, 76)}<span class="ui02-level">Ур. ${lvl}</span></span>
+    <span class="ui02-player-copy">
+      <strong class="ui02-player-name">${esc(S.profile.nick)}</strong>
+      <span class="ui02-power"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 2 9 4-2 10-7 6L5 16 3 6Z" stroke="currentColor" stroke-width="2"/><path d="m12 6 2 5 5 1-5 2-2 5-2-5-5-2 5-1Z" fill="currentColor"/></svg>Мощь ${fmt(squadPower())}</span>
+      <span class="ui02-xp" aria-label="Опыт аккаунта: ${xpPct}%"><i style="width:${xpPct}%"></i></span>
+      <span class="ui02-title">${esc(TITLES[S.profile.title] || 'Ваш Малый Дом')}</span>
+    </span>
+  </button>`;
+};
 function avatarHtml(ava, frame, size = 56) {
   let inner;
   if (ava && ava.startsWith('emb:') && EMBLEMS[ava.slice(4)]) { const E = EMBLEMS[ava.slice(4)]; inner = `<svg viewBox="0 0 40 40" aria-hidden="true"><defs><radialGradient id="eg-${ava.slice(4)}" cx=".5" cy=".35" r=".75"><stop offset="0" stop-color="${E.bg[0]}"/><stop offset="1" stop-color="${E.bg[1]}"/></radialGradient></defs><rect width="40" height="40" fill="url(#eg-${ava.slice(4)})"/>${E.svg}</svg>`; }
