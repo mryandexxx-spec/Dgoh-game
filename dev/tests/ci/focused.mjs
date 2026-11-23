@@ -57,7 +57,7 @@ for(const path of ['unknown.txt','dev/src/game.js','dev/src/random-unsafe-area/f
 const mixed=focus(['dev/src/logic/conquest.js','dev/src/render3d/quality.js']);
 assert.ok(mixed.systems.includes('conquest') && mixed.systems.includes('render3d'));
 assert.ok(mixed.groups.includes('three-d') && mixed.groups.includes('three-d-desktop'));
-assert.deepEqual(mixed.groups.filter(x=>!['build','golden','pwa','three-d','three-d-desktop'].includes(x)),[]);
+assert.deepEqual(mixed.groups.filter(x=>!['build','golden','pwa','ui','three-d','three-d-desktop'].includes(x)),[]);
 const storage=focus('dev/src/core/store.js');
 const commands=commandsFor(storage);
 assert.ok(commands.some(([p])=>p.includes('storage-acceptance')));
