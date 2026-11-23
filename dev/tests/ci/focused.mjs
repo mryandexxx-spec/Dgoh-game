@@ -81,7 +81,7 @@ assert.match(workflow,/node tools\/ci-focused\.mjs/);
 assert.match(workflow,/scope == 'focused' \|\| needs.plan.outputs.scope == 'ui-copy'|scope == 'ui-copy' \|\| needs.plan.outputs.scope == 'focused'/);
 assert.match(workflow,/scope == 'focused' && contains\(needs.plan.outputs.decision, '"storage"'\)/);
 assert.match(workflow,/node tests\/smoke\/sw\.mjs \.\. dist\/pwa/);
-assert.match(workflow,/node tools\/ci-gate\.mjs/);
+assert.match(workflow,/node dev\/tools\/ci-gate\.mjs/);
 assert.match(workflow,/node tools\/ci-artifact\.mjs rehearse/);
 assert.match(workflow,/github.event_name == 'workflow_dispatch' && inputs.publish == true/);
 const build=workflow.split('\n  build:\n')[1].split('\n  golden:\n')[0];
