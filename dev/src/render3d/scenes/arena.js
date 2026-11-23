@@ -19,7 +19,7 @@ import { B3, SLOT3, cvSize } from '../base.js';
 import { FX } from '../../data/fx.js';
 import { GameScene } from '../game-scene.js';
 import { WorldHudLayout } from '../world-hud.js';
-import { shieldOpacity } from '../vfx/shield-rules.js';
+import { syncShieldBubble } from '../vfx/shield-rules.js';
 import { configureShieldBubble, shieldImpactFX } from '../vfx/shield-impact.js';
 
 // ---------- arena ----------
@@ -84,7 +84,7 @@ class Arena3D extends GameScene {
     o.legend = !!u.def.legendary && !u.def.boss; if (o.legend) { o.root.scaling.scaleInPlace(1.5 / 1.08); o.h *= 1.5 / 1.08; }
     o.tierC = col3(u.relic ? RELIC_COL : TIER_COL[u.gear || 1] || '#e8913f');
     o.side = u.side; o.uid = u.uid; o.phase = Math.random() * 6;
-    if (!o.boss) { o.bubble = add(o.root, mk(bSph(1, 24), basic3('#3f8ee0', { add: true, alpha: 0 }), 0, .98, 0, false)); o.bubble.scaling.set(.55, 1.08, .55); o.bubble.material.disableDepthWrite = true; configureShieldBubble(o.bubble.material, gfx(this.small)); }
+    if (!o.boss) { o.bubble = add(o.root, mk(bSph(1, 24), basic3('#3f8ee0', { add: true, alpha: 0 }), 0, .98, 0, false)); o.bubble.scaling.set(.55, 1.08, .55); o.bubble.material.disableDepthWrite = true; configureShieldBubble(o.bubble.material, gfx(this.small)); o.bubble.setEnabled(false); o.bubble._shieldVisible = false; }
     const r0 = o.boss ? 2.8 : o.legend ? .78 : .52, th = o.boss ? .4 : o.legend ? .2 : .15;
     o.ring = mk(MB().CreateTorus('ring', { diameter: 2 * r0, thickness: th, tessellation: 48 }, CTX.scene), basic3('#e8913f', { alpha: 0 }), x, y + .05, z, false); o.ring.scaling.y = .08; o.ring.material.disableDepthWrite = true;
     if (this.raid && u.def.boss) o.ring.scaling.set(1.9, .08, 1.9);
@@ -192,7 +192,9 @@ class Arena3D extends GameScene {
         if (e.kind === 'crit') this.at(now + dl, () => { this.shakeT = performance.now(); });
       }
       o.active = B.active === u; o.tgt = targets.has(u.uid); o.charm = !!u.charmed;
-      o.shieldK = u.maxShield ? u.shield / u.maxShield : 0; o.stealth = !!u.fx.stealth; o.phaseN = u.phase || 1;
+      o.shieldK = u.alive && u.maxShield > 0 && u.shield > 0 ? u.shield / u.maxShield : 0;
+      if (o.bubble) syncShieldBubble(o, now / 1000);
+      o.stealth = !!u.fx.stealth; o.phaseN = u.phase || 1;
     }
     if (B.flash === 'worm' || B.flash === 'wormSmall' || B.flash === 'holtz' || B.flash === 'gl') this.shakeT = now;
     if (B.flash === 'wormSmall') this.wormSmall(B, now);
@@ -594,7 +596,7 @@ class Arena3D extends GameScene {
         }
         const hk = o.hitT && now >= o.hitT ? Math.max(0, 1 - (now - o.hitT) / 260) : 0, hl = o.healT && now >= o.healT ? Math.max(0, 1 - (now - o.healT) / 500) : 0;
         for (const m of o.mats) { const b0 = m._baseEm; m.emissiveColor.set(b0.r + hk * .9 + hl * .05, b0.g + hk * .35 + hl * .5, b0.b + hk * .2 + hl * .1); m.alpha = o.stealth ? .38 : 1; }
-        if (o.bubble) o.bubble.material.alpha = o.dead ? 0 : shieldOpacity(o.shieldK, t, o.phase, hk);
+        if (o.bubble) syncShieldBubble(o, t, hk);
       }
       const rm = o.ring.material, pul = Math.sin(t * 6);
       if (!rm._emOwn) { rm.emissiveColor = rm.emissiveColor.clone(); rm._emOwn = 1; }
