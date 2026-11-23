@@ -12,6 +12,13 @@ for (const name of ['game-ui-ux','game-feel','create-game-assets','rpg','perform
   assert.equal(classify([`.agents/skills/${name}/SKILL.md`]).mode,'docs');
 }
 assert.equal(classify(['.agents/skills/README.md']).mode,'docs');
+assert.equal(classify(['docs/AI_WORKFLOW.md'],{focused:true}).mode,'docs',
+  'exact AI workflow Markdown belongs to documentation-only CI');
+assert.equal(classify(['docs/AI_WORKFLOW.md','dev/src/render3d/quality.js'],{focused:true}).mode,'focused',
+  'workflow documentation must not conceal a source change');
+assert.throws(() => classify(['docs/AI_WORKFLOW.js'],{focused:true}), /No safe CI subsystem mapping/,
+  'other files under docs/ are not automatically exempt');
+
 // Babylon docs-only scope is exact and must never hide new JS or renderer modifications.
 const babylonSkillDocs = [
   '.agents/skills/babylonjs/SKILL.md',
