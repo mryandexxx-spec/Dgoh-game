@@ -22,6 +22,7 @@ import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator.
 import { GlowLayer } from '@babylonjs/core/Layers/glowLayer.js';
 import '@babylonjs/core/Layers/effectLayerSceneComponent.js';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial.js';
+import { FresnelParameters } from '@babylonjs/core/Materials/fresnelParameters.js';
 import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial.js';
 import { Effect } from '@babylonjs/core/Materials/effect.js';
 import { ImageProcessingConfiguration } from '@babylonjs/core/Materials/imageProcessingConfiguration.js';
@@ -62,7 +63,7 @@ const MeshBuilder = { CreateBox, CreateCylinder, CreateDisc, CreateGround, Creat
 
 const B3 = {
   Engine, EngineStore, Constants, Scene, Vector3, Quaternion, Matrix, Color3, Color4, Axis, Curve3, Viewport, Skeleton, Bone,
-  UniversalCamera, DirectionalLight, HemisphericLight, PointLight, SpotLight, ShadowGenerator, GlowLayer, StandardMaterial, PBRMaterial,
+  UniversalCamera, DirectionalLight, HemisphericLight, PointLight, SpotLight, ShadowGenerator, GlowLayer, StandardMaterial, PBRMaterial, FresnelParameters,
   Effect, ImageProcessingConfiguration, Texture, DynamicTexture, RenderTargetTexture, CubeTexture, KhronosTextureContainer2, Mesh, TransformNode, VertexData,
   VertexBuffer, ParticleSystem, DefaultRenderingPipeline, SSAO2RenderingPipeline, DepthOfFieldEffectBlurLevel, ReflectionProbe, MeshBuilder, Ray,
 };
