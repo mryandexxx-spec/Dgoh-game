@@ -41,7 +41,7 @@ export const CASES = Object.freeze({
   ],
   content: [],
   ui: [],
-  render3d: [],
+  render3d: ['shield-vfx-acceptance'],
 });
 export const CONTENT_CASES = ['tests/arch01c2a-energy.mjs','tests/arch01c2b-node-open.mjs','tests/arch01c2c-nodes-digest.mjs'];
 const ARTIFACTS = ['dist/pwa/index.html','dist/artifact.html'];
