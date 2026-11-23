@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { compareCopySource, verifyUiCopy, copyCandidate } from '../../tools/ci-ui-copy.mjs';
+import { compareCopySource, compareCopyVersion, verifyUiCopy, copyCandidate } from '../../tools/ci-ui-copy.mjs';
 import { classify } from '../../tools/ci-policy.mjs';
 
 const tick = String.fromCharCode(96);
@@ -15,6 +15,9 @@ const name = x => 'const RW_NAME = { candle: "' + x + '" };\n';
 const accept = (file, a, b) => assert.equal(compareCopySource(a,b,file),true,file+' safe');
 const reject = (file, a, b) => assert.equal(compareCopySource(a,b,file),false,file+' unsafe');
 
+assert.equal(compareCopyVersion('{"v":142}\n','{"v":143}\n'),true);
+assert.equal(compareCopyVersion('{"v":142}\n','{"v":144}\n'),false);
+assert.equal(compareCopyVersion('{"v":142}\n','{"v":143,"persist":false}\n'),false);
 assert.equal(copyCandidate(ui),true);
 assert.equal(copyCandidate('dev/src/ui/views/squad.js'),true);
 assert.equal(copyCandidate('dev/src/logic/battle/engine.js'),false);
@@ -52,6 +55,8 @@ reject('dev/src/ui/common.js',"const x='Свечи';\n","const x='Огни';\n")
 assert.equal(classify([ui]).scope,'full','no unproven filename-only scope');
 assert.equal(classify([ui],{verifiedUiCopy:true}).scope,'ui-copy');
 assert.deepEqual(classify([ui],{verifiedUiCopy:true}).groups,['build','golden','pwa']);
+assert.equal(classify([ui,'dev/version.json'],{verifiedUiCopy:true}).scope,'ui-copy');
+assert.equal(classify(['dev/version.json'],{verifiedUiCopy:true}).scope,'release');
 assert.equal(classify([ui,'dev/src/render3d/quality.js']).scope,'full',
   'mixed visual/3d changes cannot become ui-copy');
 
@@ -72,10 +77,17 @@ try {
   git(['config','user.name','UI copy CI']);
   git(['config','user.email','ui-copy@example.invalid']);
   put(ui,html('Свечи'));put(econ,name('Свечей хроник'));
+  put('dev/version.json','{"v":142}\n');
   const base=commit();
   put(ui,html('Огни'));put(econ,name('Огней Хроник'));
+  put('dev/version.json','{"v":143}\n');
   const valid=commit();
-  assert.equal(verifyUiCopy(base,valid,dir),true,'actual safe base..head diff');
+  assert.equal(verifyUiCopy(base,valid,dir),true,'actual safe base..head diff + version bump');
+  put('dev/version.json','{"v":144}\n');
+  const versionOnly=commit();
+  assert.equal(verifyUiCopy(valid,versionOnly,dir),false,'version-only is not UI-copy');
+  put('dev/version.json','{"v":143}\n');
+  commit();
   put(ui,html('Огни').replace('const view','const battle'));
   const logic=commit();
   assert.equal(verifyUiCopy(valid,logic,dir),false,'executable change fails closed');
