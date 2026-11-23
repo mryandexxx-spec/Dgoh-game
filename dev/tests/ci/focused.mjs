@@ -45,6 +45,11 @@ for(const [system,paths] of Object.entries(coverage)){
 const shieldFocused = commandsFor(focus(['dev/src/render3d/vfx/shield-impact.js','dev/src/render3d/scenes/arena.js']));
 assert.equal(shieldFocused.filter(([p])=>p.endsWith('shield-vfx-acceptance.mjs')).length,1);
 assert.equal(commandsFor(focus('dev/src/render3d/quality.js')).some(([p])=>p.endsWith('shield-vfx-acceptance.mjs')),false);
+const battleReentry = commandsFor(focus(['dev/src/ui/battle/battle-ui.js', 'dev/src/ui/overlays/squad-select.js']));
+assert.deepEqual(battleReentry.filter(([p])=>p.endsWith('battle-reentry-acceptance.mjs')).map(x=>x[1][0]),
+  ['dist/pwa/index.html','dist/artifact.html'], 'battle re-entry must verify both built artifacts');
+assert.ok(!commandsFor(focus('dev/src/ui/overlays/calendar.js')).some(([p])=>p.endsWith('battle-reentry-acceptance.mjs')),
+  'unrelated popups do not trigger battle acceptance');
 assert.equal(classify(['dev/src/ui/common.js'],{verifiedUiCopy:true,focused:true}).mode,'ui-copy');
 assert.equal(classify(['dev/src/logic/daily.js'],{focused:true}).mode,'focused');
 assert.equal(classify(['dev/version.json'],{focused:true}).mode,'focused');
