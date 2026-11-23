@@ -12,6 +12,22 @@ for (const name of ['game-ui-ux','game-feel','create-game-assets','rpg','perform
   assert.equal(classify([`.agents/skills/${name}/SKILL.md`]).mode,'docs');
 }
 assert.equal(classify(['.agents/skills/README.md']).mode,'docs');
+// Babylon docs-only scope is exact and must never hide new JS or renderer modifications.
+const babylonSkillDocs = [
+  '.agents/skills/babylonjs/SKILL.md',
+  '.agents/skills/babylonjs/references/rendering-and-assets.md',
+  '.agents/skills/babylonjs/references/visual-proof.md',
+];
+assert.equal(classify(babylonSkillDocs,{focused:true}).mode,'docs');
+const babylonWithSource = classify([...babylonSkillDocs,'dev/src/render3d/materials.js'],{focused:true});
+assert.equal(babylonWithSource.mode,'focused','docs must not hide a real renderer change');
+assert.deepEqual(babylonWithSource.systems,['render3d']);
+for (const unsafe of [
+  '.agents/skills/babylonjs/references/unreviewed.md',
+  '.agents/skills/babylonjs/helpers/run.mjs',
+  '.agents/skills/babylonjs/SKILL.js',
+]) assert.throws(()=>classify([unsafe],{focused:true}),/No safe CI subsystem mapping/,unsafe);
+
 assert.throws(()=>classify(['.agents/skills/new-unknown/SKILL.md'],{focused:true}),/No safe CI subsystem mapping/);
 assert.throws(()=>classify(['.agents/skills/game-ui-ux/execute.js'],{focused:true}),/No safe CI subsystem mapping/);
 assert.equal(classify(['dev/version.json']).mode,'release');
