@@ -156,7 +156,7 @@ assert.deepEqual(uiAffectedOutputs(focus('dev/src/ui/recycler-screen.js')),
 assert.deepEqual(uiAffectedOutputs(focus('dev/src/ui/common.js')),
   {gear:'true',recycler:'true',item:'true'});
 assert.throws(()=>uiAffected({...focus('dev/src/ui/recycler-screen.js'),paths:HUD_ONLY}), /Invalid|Forged|mapping/);
-assert.deepEqual(uiAffected({mode:'full',scope:'full',paths:[],groups:JOBS,coverage:JOBS}),
+assert.deepEqual(uiAffected({mode:'full',scope:'full',paths:[],groups:JOBS,coverage:JOBS},true),
   ['gear','recycler','item']);
 const uiJob=workflow.split('\n  ui:\n')[1].split('\n  ui-campaign:\n')[0];
 assert.match(uiJob,/id: ui-affected/);
