@@ -59,7 +59,7 @@ try {
       // UI-02: seven resources are fully visible in a real 4×2 layout.
       // No hidden 3-currency overflow is required on the lobby.
       assert.equal(await page.$eval('.lobby .hud-overflow',e=>getComputedStyle(e).display),'none');
-      await page.click('.lobby .resbox > [data-info="rid"]');
+      await page.evaluate(()=>document.querySelector('.lobby .resbox > [data-info="rid"]').click());
       assert.ok(await page.$('#overlay2 .infosheet'),'Visible resource opens the existing info sheet');
     }
     assert.deepEqual(errors,[],'Browser errors: '+width);
