@@ -100,6 +100,28 @@ assert.ok(scopedStep,'focused smoke must exist');
 assert.match(scopedStep,/scope == 'focused' && needs\.plan\.outputs\.mode != 'reuse'/,
   'exact validated source reuse must not rerun fresh compiled acceptance before artifact restore');
 
+const ciFlow=workflow.split('\n  ui:\n')[1].split('\n  ui-campaign:\n')[0];
+const nativeContracts=[
+  ['arch01c5a-b1-real-lifecycle.mjs',['conquest']],
+  ['arch02c-b3-b1c-b3-native-auto-chromium.mjs',['storage','pwa']],
+  ['arch02c-b3-b1b-real-multitab-chromium.mjs',['storage']],
+  ['arch02c-b3-b2-a2-real-chromium.mjs',['storage']],
+  ['arch02d-b4b1c-native-file-chromium.mjs',['storage']],
+  ['arch02d-b4b1d-native-archive-chromium.mjs',['storage','conquest']],
+  ['arch02d-b4b1e-native-retention-chromium.mjs',['storage','conquest']],
+];
+for(const [file,sys] of nativeContracts){
+ const step=ciFlow.split(/\n      - /).find(x=>x.includes(file));
+ assert.ok(step,'native browser acceptance must be retained: '+file);
+ assert.match(step,/if: \$\{\{[^\n]*scope == 'full'/,'manual full suite must retain native test: '+file);
+ for(const s of sys)assert.ok(step.includes('"'+s+'"'),'native test must cover '+s+': '+file);
+ assert.ok(!step.includes('scope != \'focused\''),'no unconditional native tests');
+}
+for(const path of ['dev/src/core/store.js','dev/src/logic/conquest.js','dev/src/pwa/sw.js'])
+ assert.ok(focus(path).groups.includes('ui'),'native browser runner must be selected for '+path);
+assert.ok(focus('dev/assets/img/water-literjon.webp').groups.includes('ui'));
+assert.ok(!systemsForPaths(['dev/assets/img/water-literjon.webp']).some(x=>['storage','conquest'].includes(x)),
+ 'water artwork must not select native storage or Conquest acceptance');
 const waterPlan=focus(['dev/assets/img/water-literjon.webp','dev/src/core/format.js']);
 assert.deepEqual(commandsFor(waterPlan).filter(([file])=>file.endsWith('ui01-water-literjon-acceptance.mjs')).map(x=>x[1][0]),
  ['dist/pwa/index.html','dist/artifact.html']);

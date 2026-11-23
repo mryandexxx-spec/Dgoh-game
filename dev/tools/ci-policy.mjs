@@ -91,7 +91,10 @@ export function groupsFor(scope, paths=[]) {
   if(scope==='focused') {
     const systems=systemsForPaths(paths);
     const selected=new Set(RELEASE);
-    if(systems.includes('ui'))selected.add('ui');
+    // The existing browser-native safety checks live in the UI runner.
+    // Select it for storage/conquest/PWA changes as well; individual steps
+    // below have system-specific guards, while pure UI skips unrelated suites.
+    if(systems.some(s=>['ui','storage','conquest','pwa'].includes(s)))selected.add('ui');
     if(systems.includes('render3d')){selected.add('three-d');selected.add('three-d-desktop');}
     return JOBS.filter(k=>selected.has(k));
   }
