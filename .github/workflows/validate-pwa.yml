@@ -64,6 +64,7 @@ jobs:
         run: |
           node dev/tests/ci/ui-copy-proof.mjs
           node dev/tests/ci/selection.mjs
+          node dev/tests/ci/focused.mjs
           node dev/tests/ci/proof.mjs
           node dev/tests/ci/resource-growth.mjs
       - name: Determine scope from the actual git diff
