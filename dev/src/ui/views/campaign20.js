@@ -45,7 +45,7 @@ function homeHtml(){
         <span class="c20-art c20-sun">✦</span><span class="c20-copy"><strong>СЮЖЕТ</strong><span>Путь Атрейдесов и интриги Харконненов</span><small>Светлые / Тёмные · вода · ${completed('L')+completed('D')}/140 миссий</small></span>
       </button>
       <button class="c20-cover c20-cover-chron" data-c20="chron" aria-label="Открыть хроники">
-        <span class="c20-art c20-moon">✧</span><span class="c20-copy"><strong>ХРОНИКИ</strong><span>Забытые эпохи и великие войны</span><small>Все герои · свечи · ${completed('C')}/70 миссий</small></span>
+        <span class="c20-art c20-moon">✧</span><span class="c20-copy"><strong>ХРОНИКИ</strong><span>Забытые эпохи и великие войны</span><small>Все герои · Огни Хроник · ${completed('C')}/70 миссий</small></span>
       </button>
     </div>
   </div>`;
