@@ -41,6 +41,10 @@ for(const [system,paths] of Object.entries(coverage)){
     }
   }
 }
+// The shield VFX acceptance must never run for unrelated 3D modifications.
+const shieldFocused = commandsFor(focus(['dev/src/render3d/vfx/shield-impact.js','dev/src/render3d/scenes/arena.js']));
+assert.equal(shieldFocused.filter(([p])=>p.endsWith('shield-vfx-acceptance.mjs')).length,1);
+assert.equal(commandsFor(focus('dev/src/render3d/quality.js')).some(([p])=>p.endsWith('shield-vfx-acceptance.mjs')),false);
 assert.equal(classify(['dev/src/ui/common.js'],{verifiedUiCopy:true,focused:true}).mode,'ui-copy');
 assert.equal(classify(['dev/src/logic/daily.js'],{focused:true}).mode,'focused');
 assert.equal(classify(['dev/version.json'],{focused:true}).mode,'focused');

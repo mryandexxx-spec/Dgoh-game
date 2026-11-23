@@ -158,6 +158,9 @@ export const SPLIT = [
 
   [1800, 'render3d/world-hud.js'],
 
+  // Babylon shield VFX pure rules and WebGL renderer are imported by arena.
+  [1800, 'render3d/vfx/shield-rules.js'],
+  [1800, 'render3d/vfx/shield-impact.js'],
   [1800, 'render3d/scenes/arena.js'],
 
   [2196, 'render3d/characters/pose-duncan.js'],

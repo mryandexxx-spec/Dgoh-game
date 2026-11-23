@@ -67,6 +67,17 @@ export function commandsFor(plan) {
       add('tests/ci/'+test+'.mjs',[artifact]);
     if(system==='content')for(const file of CONTENT_CASES)for(const artifact of ARTIFACTS)add(file,[artifact]);
   }
+  // Tiny source-level VFX contract: only run for shield-related changes,
+  // not for every unrelated graphics refactor or model update.
+  const shieldPaths = new Set([
+    'dev/src/render3d/vfx/shield-rules.js',
+    'dev/src/render3d/vfx/shield-impact.js',
+    'dev/src/render3d/scenes/arena.js',
+    'dev/src/render3d/babylon.js',
+    'dev/tests/ci/shield-vfx-acceptance.mjs',
+  ]);
+  if(plan.paths.some(p=>shieldPaths.has(p)))
+    add('tests/ci/shield-vfx-acceptance.mjs');
   // Only HUD/shared UI changes require the HUD-specific Chromium acceptance.
   if (plan.systems.includes('ui') && uiHudAcceptanceForPaths(plan.paths))
     for (const artifact of ARTIFACTS)
