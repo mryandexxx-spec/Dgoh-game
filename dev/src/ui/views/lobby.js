@@ -33,6 +33,23 @@ const SPOT_ICONS = {
   helm: '<path d="M5 13a7 7 0 0114 0v5H5z" fill="currentColor"/><rect x="7" y="12" width="10" height="2.6" rx="1.2" fill="#140f12"/>',
   book: '<path d="M4 5h7v15H4zM13 5h7v15h-7z" fill="none" stroke="currentColor" stroke-width="1.8"/>',
 };
+// UI-02 actions are presentation only: existing data-v / data-cal route to
+// the game's verified achievement, daily and calendar flows (no demo claims).
+const ui02Action = (key, label, svg, data, ready, count = 0) =>
+  `<button class="topb ui02-action ui02-${key}" type="button" ${data}
+    aria-label="${label}${ready ? ', доступна награда' : ''}" title="${label}">
+    ${svg}<span class="ui02-action-label">${label}</span>
+    ${ready ? `<b class="ui02-notif" aria-hidden="true">${count > 0 ? Math.min(9, count) + (count > 9 ? '+' : '') : ''}</b>` : ''}
+  </button>`;
+const ui02Actions = () => {
+  const feat = featsReady(), daily = dailyReady(), calendar = loginCan();
+  return `<nav class="topbtns ui02-top-actions" aria-label="Быстрые действия">
+    ${ui02Action('feats','Подвиги',`<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M17 37C8 34 3 26 4 16m9 19-6-6m6 1-9-2m12-4-10-1m10-8-8 2M31 37c9-3 14-11 13-21m-9 19 6-6m-6 1 9-2m-12-4 10-1m-10-8 8 2"/><path d="m24 10 3.7 8 8.3 1-6 6 1.5 8-7.5-4-7.5 4L18 25l-6-6 8.3-1Z" fill="currentColor" stroke="#282016" stroke-width="1.2"/></svg>`,'data-v="feats"',feat > 0,feat)}
+    ${ui02Action('daily','Задания',`<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="10" y="8" width="29" height="35" rx="4"/><path d="M19 8V5h9v3M17 17l2 2 3-4m3 2h9M17 27l2 2 3-4m3 2h9M17 36l2 2 3-4m3 2h9"/></svg>`,'data-v="daily"',daily > 0,daily)}
+    ${ui02Action('calendar','Календарь',`<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="10" width="34" height="32" rx="4"/><path d="M15 5v9m18-9v9M8 20h32M16 27h4m7 0h4m-15 7h4m7 0h4"/></svg>`,'data-cal="1"',calendar)}
+  </nav>`;
+};
+
 function renderLobby() {
   const sp = squadPower();
   const lN = campNodes('L'), campNext = lN.findIndex(i => !S.cleared[i]);
@@ -54,7 +71,7 @@ function renderLobby() {
   const LF = [[50, 90, 1.2], [39, 82, .95], [61, 82, .95], [29, 92, 1], [71, 92, 1]];
   $('#view').innerHTML = `<div class="lobby" data-lzone="${lobbyZone}">
     <div class="lobby-scroll2d" aria-hidden="true"><div class="lobby-scrollworld"><canvas class="bgc" id="lobbybg"></canvas><div class="lobby-snap-points"><span></span><span></span><span></span></div></div></div>
-    <div class="ltop">${profileChip()}<div class="res resbox"></div><div class="topbtns"><button class="topb" data-v="feats" aria-label="Подвиги" title="Подвиги">★${featsReady() ? `<b class="badge">${featsReady()}</b>` : ""}</button><button class="topb" data-v="daily"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.5 9l1.5 1.5 3-3M8.5 15l1.5 1.5 3-3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>Задания</span>${dailyReady() ? `<b class="badge">${dailyReady()}</b>` : ''}</button><button class="topb" data-cal="1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2"/></svg><span>Вход</span>${loginCan() ? '<b class="badge">!</b>' : ''}</button></div></div>
+    <div class="ltop">${profileChip()}<div class="res resbox"></div>${ui02Actions()}</div>
     <div class="lhouse"><span>Ваш Малый Дом</span><b class="mono">Мощь отряда ${fmt(sp)}</b></div>
     ${spots.filter(s => s.v !== "rules" && s.v !== "feats").map(s => `<button class="spot ${s.hot ? 'hot' : ''}" data-zone="${["legend", "trials", "raid"].includes(s.v) ? 0 : ["squad", "camp"].includes(s.v) ? 1 : 2}" data-wx="${ANCHORS[s.v][0]}" data-wz="${ANCHORS[s.v][1]}" data-v="${s.v}" style="--x:${s.x}%;--y:${s.y}%;--mx:${s.mx}%;--my:${s.my}%;--lx:${s.lx ?? s.mx}%;--ly:${s.ly ?? s.my}%"><span class="slabel">${s.n}</span>${s.b ? `<span class="sbadge">${s.b}</span>` : ''}</button>`).join('')}
     <div class="lzones" aria-label="Зоны лагеря"><button data-lnav="0" aria-label="Легенды, Испытания и Рейд">●</button><button data-lnav="1" aria-label="Персонажи и Кампания">●</button><button data-lnav="2" aria-label="Джихад и Лавки">●</button></div>

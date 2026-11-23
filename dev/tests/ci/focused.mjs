@@ -138,6 +138,9 @@ assert.equal(commandsFor(focus('dev/src/ui/common.js')).some(([path])=>path.ends
 const HUD_ONLY = ['dev/src/styles/hud-resources.css','dev/assets/font/inter-variable.woff2'];
 assert.deepEqual(uiBrowserCasesForPaths(HUD_ONLY),[]);
 assert.equal(uiHudAcceptanceForPaths(HUD_ONLY),true);
+assert.ok(commandsFor(focus('dev/src/ui/views/lobby.js')).some(([p])=>p.includes('ui02-unified-header-acceptance.mjs')));
+assert.equal(commandsFor(focus('dev/src/ui/views/lobby.js')).filter(([p])=>p.includes('ui02-unified-header-acceptance.mjs')).length,2);
+assert.equal(commandsFor(focus('dev/src/ui/recycler-screen.js')).some(([p])=>p.includes('ui02-unified-header-acceptance.mjs')),false);
 assert.equal(uiHudAcceptanceForPaths(['dev/src/ui/recycler-screen.js']),false);
 assert.equal(uiHudAcceptanceForPaths(['dev/src/ui/hero-window.js','dev/src/ui/recycler-screen.js']),false);
 assert.equal(uiHudAcceptanceForPaths(['dev/src/ui/common.js']),true);

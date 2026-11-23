@@ -51,7 +51,7 @@ export function systemsForPaths(paths) {
     if (/^dev\/tests\/ci\/arch02c-b[56]/.test(p)) {add('progression');continue;}
     if (/^dev\/tests\/smoke\/(?:3d|ab|perf|baron|muad|young-baron|bh9|md-ult1|arena-animation)/.test(p)) {add('render3d');continue;}
     if (/^dev\/tests\/smoke\/sw\.mjs$/.test(p)) {add('pwa');continue;}
-    if (/^dev\/tests\/(?:golden\/|dom\/|smoke\/|ci\/(?:ui-copy-dom-smoke|ui01-|hud01-))/.test(p)) {add('ui');continue;}
+    if (/^dev\/tests\/(?:golden\/|dom\/|smoke\/|ci\/(?:ui-copy-dom-smoke|ui01-|hud01-|ui02-))/.test(p)) {add('ui');continue;}
     if (/^dev\/tests\//.test(p)) {add('ci');continue;}
     throw Error('No safe CI subsystem mapping for: '+p);
   }

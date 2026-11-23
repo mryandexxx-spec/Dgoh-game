@@ -1,4 +1,4 @@
-// HUD-01: real compiled PWA/artifact resource bar, Inter font and mobile UI.
+// HUD-01 / UI-02: existing real resource bar, local Inter and seven visible currencies at all screen sizes.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,7 +16,7 @@ try {
   browser = await puppeteer.launch({executablePath:chrome,headless:true,args:
     ['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader',
      '--ignore-gpu-blocklist','--disable-background-networking']});
-  for(const [width,height,visible] of [[1280,720,7],[844,390,7],[667,375,4],[390,844,4]]) {
+  for(const [width,height,visible] of [[1280,720,7],[844,390,7],[667,375,7],[390,844,7]]) {
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', e=>errors.push(e.message));
@@ -56,12 +56,11 @@ try {
     assert.ok(result.fontFaces>=1&&result.cssFont.includes('Dune Inter'),'Local Inter font: '+width);
     assert.ok(result.noCurrencyMutation&&result.meters&&result.hasTimers&&result.details,'HUD contract: '+width);
     if(width===667) {
-      await page.evaluate(()=>document.querySelector('.lobby .hud-overflow summary').click());
-      const menu=await page.$eval('.lobby .hud-dropdown',e=>({visible:getComputedStyle(e).display!=='none',keys:[...e.querySelectorAll('[data-info]')].map(n=>n.dataset.info)}));
-      assert.deepEqual(menu.keys,['pl','teeth','rid']);
-      assert.ok(menu.visible);
-      await page.evaluate(()=>document.querySelector('.lobby .hud-dropdown [data-info="rid"]').click());
-      assert.ok(await page.$('#overlay2 .infosheet'),'Resource button must open existing info sheet');
+      // UI-02: seven resources are fully visible in a real 4×2 layout.
+      // No hidden 3-currency overflow is required on the lobby.
+      assert.equal(await page.$eval('.lobby .hud-overflow',e=>getComputedStyle(e).display),'none');
+      await page.evaluate(()=>document.querySelector('.lobby .resbox > [data-info="rid"]').click());
+      assert.ok(await page.$('#overlay2 .infosheet'),'Visible resource opens the existing info sheet');
     }
     assert.deepEqual(errors,[],'Browser errors: '+width);
     await page.close();

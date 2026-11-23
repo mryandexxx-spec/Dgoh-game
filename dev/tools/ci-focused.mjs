@@ -71,6 +71,15 @@ export function commandsFor(plan) {
   if (plan.systems.includes('ui') && uiHudAcceptanceForPaths(plan.paths))
     for (const artifact of ARTIFACTS)
       add('tests/ci/hud01-resource-acceptance.mjs',[artifact]);
+  // UI-02: cover the assembled profile + HUD + existing buttons in Chromium,
+  // only when its source, presentation or acceptance is touched.
+  if (plan.paths.some(p=>[
+    'dev/src/ui/views/lobby.js','dev/src/ui/overlays/profile.js',
+    'dev/src/styles/ui02-unified-header.css','dev/src/styles/index.css',
+    'dev/tests/ci/ui02-unified-header-acceptance.mjs'
+  ].includes(p)))
+    for (const artifact of ARTIFACTS)
+      add('tests/ci/ui02-unified-header-acceptance.mjs',[artifact]);
   // UI-01: run the actual Water WebP compiled-artifact contract only when
   // relevant source, asset, or its own acceptance was changed.
   const waterFiles = new Set([
