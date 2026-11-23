@@ -386,7 +386,7 @@ class Arena3D extends GameScene {
     const tgSelf = [o], tgAll = allies;
     if (ab.heal) on(ab.tgt === 'self' ? tgSelf : tgAll, x => this.healFX(x));
     if (want('defUp')) on(fx.some(f => f[0] === 'defUp' && f[2] === 'allies') ? tgAll : tgSelf, x => this.domeFX(x, '#5aa8ff'));
-    if (ab.shieldSelf) this.domeFX(o, '#8fd8ff', 1.4);
+    if (ab.shieldSelf) this.domeFX(o, '#8fd8ff', 1.4, true);
     if (want('evaUp')) on(fx.some(f => f[0] === 'evaUp' && f[2] === 'allies') ? tgAll : tgSelf, x => this.swirlFX(x, '#c8f0ff'));
     if (want('counter')) on(tgSelf, x => this.swirlFX(x, '#ffb060'));
     if (want('taunt')) this.tauntFX(o);
@@ -397,9 +397,17 @@ class Arena3D extends GameScene {
     if (deb.length && !ab.dt) on(ab.tgt === 'enemies' ? foes : foes.slice(0, 1), x => this.miasmaFX(x, deb.includes('poison') ? '#7ad36a' : deb.includes('fear') ? '#b07aff' : '#ff7a5a'));
     if (ab.tm && ab.tm.enemies < 0) on(foes, x => this.ringFX(x, '#8a7aff', .5));
   }
-  domeFX(x, c, k = 1) {
+  domeFX(x, c, k = 1, shieldBound = false) {
+    if (!x?.root || x.dead || x.root.isDisposed?.() || (shieldBound && !(x.shieldK > 0))) return;
     withCtx({ scene: this.scene }, () => { const p = x.root.position, d = this.fx('dome' + k, () => bSph(.95 * k, 24, 1, .5), c, 0, p.x, p.y, p.z); d.scaling.y = 1.3; d.material.backFaceCulling = false;
-    this.fade(d, 1300, (m, kk) => { m.position.copyFrom(x.root.position); m.material.alpha = .75 * Math.sin(Math.min(1, kk * 1.6) * Math.PI * .5) * (1 - kk); m.scaling.set(.6 + kk * .5, (.6 + kk * .5) * 1.3, .6 + kk * .5); });
+    this.fade(d, 1300, (m, kk) => {
+      if (x.dead || x.root.isDisposed?.() || (shieldBound && !(x.shieldK > 0))) {
+        m.material.alpha = 0; m.setEnabled(false); return;
+      }
+      m.position.copyFrom(x.root.position);
+      m.material.alpha = .75 * Math.sin(Math.min(1, kk * 1.6) * Math.PI * .5) * (1 - kk);
+      m.scaling.set(.6 + kk * .5, (.6 + kk * .5) * 1.3, .6 + kk * .5);
+    });
     this.ringFX(x, c, .9);
     });
   }
