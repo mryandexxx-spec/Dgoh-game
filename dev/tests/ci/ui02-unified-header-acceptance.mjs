@@ -63,6 +63,10 @@ try{
       assert.ok(b.width>35&&b.height>=45,'responsive touch geometry: '+JSON.stringify({width,b}));
       assert.ok(b.left>=-1 && b.right<=width+1 && b.top>=-1,'header fits viewport: '+JSON.stringify({width,b}));
     }
+    // The profile must fill its allocated HUD column: the previous chip
+    // inherited justify-self:start, leaving a large empty gap at 667px.
+    assert.ok(measured.layout[0].width >= (width<=510?150:width<=770?150:width<=1100?195:250),
+      'profile card fills the approved layout: '+JSON.stringify({width,layout:measured.layout}));
     // In landscape the three groups share one line, portrait is the approved two-row layout.
     if(width>510)assert.ok(Math.abs(measured.layout[0].top-measured.layout[1].top)<=2,'one unified HUD row: '+width);
     else assert.ok(measured.layout[1].top>measured.layout[0].bottom,'portrait resources below profile');

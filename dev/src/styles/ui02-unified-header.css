@@ -31,6 +31,7 @@
 .lobby .ltop .ui02-profile {
   display: flex;
   grid-column: 1; grid-row: 1;
+  justify-self: stretch; width: 100%; /* override HUD-01's old shrink-to-chip placement */
   position: relative;
   align-items: center;
   padding: 10px 11px 10px 14px;
