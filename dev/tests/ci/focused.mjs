@@ -100,5 +100,10 @@ assert.ok(scopedStep,'focused smoke must exist');
 assert.match(scopedStep,/scope == 'focused' && needs\.plan\.outputs\.mode != 'reuse'/,
   'exact validated source reuse must not rerun fresh compiled acceptance before artifact restore');
 
+const waterPlan=focus(['dev/assets/img/water-literjon.webp','dev/src/core/format.js']);
+assert.deepEqual(commandsFor(waterPlan).filter(([file])=>file.endsWith('ui01-water-literjon-acceptance.mjs')).map(x=>x[1][0]),
+ ['dist/pwa/index.html','dist/artifact.html']);
+assert.equal(commandsFor(focus('dev/src/ui/common.js')).filter(([file])=>file.endsWith('ui01-water-literjon-acceptance.mjs')).length,0,
+ 'unrelated UI PR must not run water-specific acceptance');
 assert.equal(commandsFor(focus('dev/src/ui/common.js')).some(([path])=>path.endsWith('tests/run.mjs')),false);
 console.log('PASS CI-OPT-03 focused policy, touched-system matrix, smoke, fail closed, manual full, immutable gate and native-only storage.');

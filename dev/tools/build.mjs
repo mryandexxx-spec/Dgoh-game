@@ -120,7 +120,12 @@ const { code: code0, meta } = await js(), styles = css(), b3 = await babylonChun
 const VNUM = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8')).v;
 const ver = sha(Buffer.from(`v${VNUM}\n${read('index.html')}\n${['pwa/sw.js', 'pwa/tail.html', 'pwa/pwa-head.html', 'pwa/doc-head.html'].map(read).join('\n')}\n${code0}\n${styles}\n${b3}\n${ASSETS.map(a => a.pwa).join('\n')}\n${MINIFY}`, 'utf8')).slice(0, 10);
 if (code0.split('__APP_VER__').length !== 2) throw new Error('в коде должен быть ровно один __APP_VER__');
-const APP_VER = `v${VNUM} · ${ver}`, code1 = code0.replace('__APP_VER__', () => APP_VER);
+const APP_VER = `v${VNUM} · ${ver}`;
+const waterIcon = ASSETS.find(a => a.name === 'img/water-literjon.webp');
+if (!waterIcon || code0.split('__WATER_ICON_URL__').length !== 2)
+  throw new Error('UI-01 water icon missing from immutable asset map or source');
+const code1 = code0.replace('__APP_VER__', () => APP_VER)
+  .replace('__WATER_ICON_URL__', () => waterIcon.pwa);
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(path.join(OUT, 'app.unmin.js'), withAssets(code1, 'pwa'));   // для tools/check-bundle.mjs (порядок модулей по комментариям-маркерам)
 console.log(`версия: ${APP_VER}`);

@@ -67,6 +67,16 @@ export function commandsFor(plan) {
       add('tests/ci/'+test+'.mjs',[artifact]);
     if(system==='content')for(const file of CONTENT_CASES)for(const artifact of ARTIFACTS)add(file,[artifact]);
   }
+  // UI-01: run the actual Water WebP compiled-artifact contract only when
+  // relevant source, asset, or its own acceptance was changed.
+  const waterFiles = new Set([
+    'dev/assets/img/water-literjon.webp',
+    'dev/src/core/format.js',
+    'dev/tests/ci/ui01-water-literjon-acceptance.mjs',
+  ]);
+  if(plan.paths.some(p=>waterFiles.has(p)))
+    for(const artifact of ARTIFACTS)
+      add('tests/ci/ui01-water-literjon-acceptance.mjs',[artifact]);
   return commands;
 }
 export function runFocused(plan, runner=(file,args)=>execFileSync(process.execPath,[file,...args],{stdio:'inherit',env:process.env})) {
