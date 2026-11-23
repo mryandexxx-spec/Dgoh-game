@@ -124,8 +124,12 @@ const APP_VER = `v${VNUM} · ${ver}`;
 const waterIcon = ASSETS.find(a => a.name === 'img/water-literjon.webp');
 if (!waterIcon || code0.split('__WATER_ICON_URL__').length !== 2)
   throw new Error('UI-01 water icon missing from immutable asset map or source');
+const candleIcon = ASSETS.find(a => a.name === 'img/candle-glowglobe.webp');
+if (!candleIcon || code0.split('__CANDLE_ICON_URL__').length !== 2)
+  throw new Error('UI-01 candle glowglobe missing from immutable asset map or source');
 const code1 = code0.replace('__APP_VER__', () => APP_VER)
-  .replace('__WATER_ICON_URL__', () => waterIcon.pwa);
+  .replace('__WATER_ICON_URL__', () => waterIcon.pwa)
+  .replace('__CANDLE_ICON_URL__', () => candleIcon.pwa);
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(path.join(OUT, 'app.unmin.js'), withAssets(code1, 'pwa'));   // для tools/check-bundle.mjs (порядок модулей по комментариям-маркерам)
 console.log(`версия: ${APP_VER}`);
