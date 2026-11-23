@@ -25,10 +25,12 @@ export function systemsForPaths(paths) {
     if (p==='dev/src/core/format.js') {add('ui','economy');continue;}
     if (/^dev\/src\/(?:boot\.js|main\.js|core\/)/.test(p)) {add('storage','clock');continue;}
     if (/^dev\/src\/logic\/(?:economy|daily)\.js$/.test(p)) {add('economy','daily');continue;}
-    if (/^dev\/src\/logic\/(?:conquest|trials|journey-gates)\.js$/.test(p) ||
-        /^dev\/src\/ui\/views\/conquest/.test(p)) {add('conquest');continue;}
-    if (/^dev\/src\/logic\/(?:battle\/|baron-bh9-battle|bh94-story-battle|rewards|campaign-gates|campaign-map)/.test(p) ||
-        /^dev\/src\/ui\/battle\//.test(p)) {add('battle');continue;}
+    if (/^dev\/src\/ui\/views\/conquest/.test(p)) {add('conquest','ui');continue;}
+    if (/^dev\/src\/ui\/views\/daily/.test(p)) {add('economy','daily','ui');continue;}
+    if (/^dev\/src\/ui\/(?:hero-window|craft|recycler-screen|skill-window|hero-card|reward-tiles|rewards)\.js$/.test(p)) {add('progression','ui');continue;}
+    if (/^dev\/src\/logic\/(?:conquest|trials|journey-gates)\.js$/.test(p)) {add('conquest');continue;}
+    if (/^dev\/src\/ui\/battle\//.test(p)) {add('battle','ui');continue;}
+    if (/^dev\/src\/logic\/(?:battle\/|baron-bh9-battle|bh94-story-battle|rewards|campaign-gates|campaign-map)/.test(p)) {add('battle');continue;}
     if (/^dev\/src\/logic\//.test(p)) {add('progression');continue;}
     if (/^dev\/src\/data\//.test(p)) {
       add('content');
