@@ -84,6 +84,24 @@ for (const [name, save, code, wait = 1500] of SCREENS) {
     return { header: clean(document.querySelector('header')), view: clean(document.getElementById('view')), overlay: clean(document.getElementById('overlay')), overlay2: clean(document.getElementById('overlay2')), bodyClass: document.body.className };
   });
   if (shots) await page.screenshot({ path: path.join(shots, name.replace(/[:]/g, '_') + '.png') });
+  // UI-01 water icon is the approved artist-designed Fremen literjon WebP.
+  // Strictly validate its immutable path/element in the *actual* rendered DOM,
+  // then reverse ONLY this approved inner-SVG replacement for the frozen golden.
+  // Do not update 44 historical snapshots or normalize unrelated icons.
+  const OLD_WATER_SVG = '<path d="M8 1.5C10.2 5 12.5 7.4 12.5 10a4.5 4.5 0 01-9 0C3.5 7.4 5.8 5 8 1.5z" fill="#6fb3ea"/><path d="M6 10.5a2 2 0 002 2" stroke="#d6ecff" stroke-width="1.1" fill="none" stroke-linecap="round"/>';
+  const waterTag = /(<svg class="ico" viewBox="0 0 16 16" aria-hidden="true">)<image\b([^>]*)\/?>(?:<\/image>)?(<\/svg>)/g;
+  let waterIcons = 0;
+  for (const k of ['header', 'view', 'overlay', 'overlay2']) {
+    if (!snap[k]) continue;
+    snap[k] = snap[k].replace(waterTag, (_full, open, attrs, close) => {
+      const normalized = attrs.replace(/\s*\/\s*$/, '').trim();
+      assert.match(normalized, /^href="assets\/img\/water-literjon\.[0-9a-f]{8}\.webp" x="0" y="0" width="16" height="16" preserveAspectRatio="xMidYMid meet"$/,
+        name + ': approved water icon WebP must keep geometry, content-hashed URL and no handlers');
+      waterIcons++;
+      return open + OLD_WATER_SVG + close;
+    });
+  }
+  if (name === 'fresh:lobby') assert.ok(waterIcons > 0, 'UI-01 water literjon is rendered in the actual HUD');
   // тела <svg> → короткий хэш (портреты/иконки дают ~90% объёма; любое изменение внутри всё равно ловится)
   for (const k of ['header', 'view', 'overlay', 'overlay2']) if (snap[k]) snap[k] = snap[k].replace(/(<svg\b[^>]*>)([\s\S]*?)(<\/svg>)/g, (m, a, b, c) => a + '#' + crypto.createHash('sha1').update(b).digest('hex').slice(0, 10) + c);
   screens.push({ name, errors, ...snap });
