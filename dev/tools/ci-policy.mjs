@@ -124,7 +124,7 @@ const ECONOMY_PATHS = new Set([
   'dev/tests/ci/arch02c-b5a-daily-claims-acceptance.mjs',
 ]);
 const isEconomy = p => ECONOMY_PATHS.has(p);
-export const isDoc = p => /^(?:README\.md|dev\/(?:README|ARCHITECTURE|CHANGES_STATUS)\.md)$/.test(p)
+export const isDoc = p => /^(?:README\.md|docs\/AI_WORKFLOW\.md|dev\/(?:README|ARCHITECTURE|CHANGES_STATUS)\.md)$/.test(p)
   || /^\.agents\/skills\/(?:README\.md|(?:game-ui-ux|game-feel|create-game-assets|rpg|performance-optimization|ai-behavior-trees-utility-ai|audio-design)\/SKILL\.md)$/.test(p)
   // Only approved Babylon Markdown references are docs; executable/unknown files fail closed.
   || /^\.agents\/skills\/babylonjs\/(?:SKILL\.md|references\/(?:rendering-and-assets|visual-proof)\.md)$/.test(p)
