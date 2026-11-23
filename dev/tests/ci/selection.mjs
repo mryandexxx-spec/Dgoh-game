@@ -12,8 +12,8 @@ for (const name of ['game-ui-ux','game-feel','create-game-assets','rpg','perform
   assert.equal(classify([`.agents/skills/${name}/SKILL.md`]).mode,'docs');
 }
 assert.equal(classify(['.agents/skills/README.md']).mode,'docs');
-assert.equal(classify(['.agents/skills/new-unknown/SKILL.md'],{focused:true}).mode,'full');
-assert.equal(classify(['.agents/skills/game-ui-ux/execute.js'],{focused:true}).mode,'full');
+assert.throws(()=>classify(['.agents/skills/new-unknown/SKILL.md'],{focused:true}),/No safe CI subsystem mapping/);
+assert.throws(()=>classify(['.agents/skills/game-ui-ux/execute.js'],{focused:true}),/No safe CI subsystem mapping/);
 assert.equal(classify(['dev/version.json']).mode,'release');
 assert.equal(classify(['dev/src/pwa/sw.js']).mode,'pwa');
 const uiCopyOnly=classify(['dev/src/ui/common.js'],{verifiedUiCopy:true});
