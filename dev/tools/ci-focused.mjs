@@ -78,6 +78,17 @@ export function commandsFor(plan) {
   ]);
   if(plan.paths.some(p=>shieldPaths.has(p)))
     add('tests/ci/shield-vfx-acceptance.mjs');
+  // BATTLE-REENTRY: run tiny VM acceptance only when entry/retreat guards changed.
+  // Does not expand unrelated content, economy or 3D PRs.
+  const reentryPaths = new Set([
+    'dev/src/ui/battle/battle-ui.js',
+    'dev/src/ui/overlays/squad-select.js',
+    'dev/src/ui/wiring.js',
+    'dev/tests/ci/battle-reentry-acceptance.mjs',
+  ]);
+  if (plan.paths.some(p=>reentryPaths.has(p)))
+    for(const artifact of ARTIFACTS)
+      add('tests/ci/battle-reentry-acceptance.mjs',[artifact]);
   // Only HUD/shared UI changes require the HUD-specific Chromium acceptance.
   if (plan.systems.includes('ui') && uiHudAcceptanceForPaths(plan.paths))
     for (const artifact of ARTIFACTS)
