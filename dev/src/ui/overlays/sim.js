@@ -61,11 +61,11 @@ function doRefill(kind) {
       if (tx.status === 'cancelled' && tx.value === 'cry') openInfo('cry');
       return; // no success UI or unsafe persist after failed/uncertain checkpoint
     }
-    toast(`+${amt(energy, tx.value.quantity)} ${energy === 'candle' ? 'Свечей' : 'Воды'} за ${amt('cry', tx.value.cost)}`);
+    toast(`+${amt(energy, tx.value.quantity)} ${energy === 'candle' ? 'Огней Хроник' : 'Воды'} за ${amt('cry', tx.value.cost)}`);
     return refreshAll();
   }
   if ((kind === 'candle' ? crefillN() : refillN()) >= REFILL_MAX) return toast(`Лимит пополнений на сегодня исчерпан: ${REFILL_MAX} из ${REFILL_MAX}`);
-  if (kind === 'candle') { const c = crefillCost(); if (S.cry < c) return openInfo('cry'); S.cry -= c; S.candle += CANDLE_REFILL; S.crefills = { d: todayKey(), n: crefillN() + 1 }; persist(); toast(`+${amt('candle', CANDLE_REFILL)} Свечей за ${amt('cry', c)}`); return refreshAll(); }
+  if (kind === 'candle') { const c = crefillCost(); if (S.cry < c) return openInfo('cry'); S.cry -= c; S.candle += CANDLE_REFILL; S.crefills = { d: todayKey(), n: crefillN() + 1 }; persist(); toast(`+${amt('candle', CANDLE_REFILL)} Огней Хроник за ${amt('cry', c)}`); return refreshAll(); }
   const c = refillCost(); if (S.cry < c) return openInfo('cry');
   S.cry -= c; const wasFull = S.water >= WMAX(); S.water += REFILL_AMT; if (!wasFull && S.water >= WMAX()) S.waterTs = todayKey.clock.regenNow();
   S.refills = { d: todayKey(), n: refillN() + 1 };
