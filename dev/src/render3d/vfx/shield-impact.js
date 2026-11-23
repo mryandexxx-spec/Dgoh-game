@@ -13,14 +13,15 @@ export function configureShieldBubble(material, Q) {
   // Keep the centre transparent so silhouettes and health cues remain legible.
   const edge = new B3.FresnelParameters();
   edge.leftColor = B3.Color3.White();
-  edge.rightColor = B3.Color3.Black().add(new B3.Color3(.12, .12, .12));
+  edge.rightColor = new B3.Color3(.12, .12, .12);
   edge.power = 2.2;
   material.opacityFresnelParameters = edge;
 }
 
 export function shieldImpactFX(arena, unit, now = performance.now()) {
-  if (!arena?.alive || !acceptShieldRipple(unit, now)) return false;
-  if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  if (!arena?.alive || !unit?.root ||
+      (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) ||
+      !acceptShieldRipple(unit, now)) return false;
 
   const { rings } = shieldQuality(gfx(arena.small));
   const normal = unit.hitDir ? unit.hitDir.scale(-1) : V3(unit.side === 'A' ? -1 : 1, 0, 0);
@@ -40,7 +41,9 @@ export function shieldImpactFX(arena, unit, now = performance.now()) {
       ripple.material.disableDepthWrite = true;
       // Fade and travel follow the visual model, not the world-space spawn point.
       arena.fade(ripple, life, (mesh, k) => {
-        const progress = Math.max(0, (k * life - delay) / (life - delay));
+        const elapsed = k * life - delay;
+        if (elapsed <= 0 || unit.root.isDisposed?.()) { mesh.material.alpha = 0; return; }
+        const progress = Math.min(1, elapsed / (life - delay));
         mesh.position.copyFrom(unit.root.position).addInPlace(offset);
         mesh.position.y += 1.05;
         mesh.scaling.setAll(.58 + progress * 1.85);
