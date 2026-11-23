@@ -144,23 +144,28 @@ for (const patch of [
   { artifact_digest: 'invalid' },
   { scope: 'full' },
 ]) {
-  const failedSafe = await planForEvent('workflow_dispatch', manualEvent, base, dir, {
-    ...manualArgs, lookupMain: async () => ({ ...manualProof, ...patch }),
-  });
-  assert.equal(failedSafe.mode, 'full', 'bad manual release proof must force full regression');
+  await assert.rejects(
+    () => planForEvent('workflow_dispatch', manualEvent, base, dir, {
+      ...manualArgs, lookupMain: async () => ({ ...manualProof, ...patch }),
+    }),
+    /No exact-main release proof/,
+    'invalid proof must BLOCK release instead of silently running full regression');
 }
-assert.equal((await planForEvent('workflow_dispatch',
-  { inputs: { publish: 'false' } }, base, dir, manualArgs)).mode, 'full');
-assert.equal((await planForEvent('workflow_dispatch', manualEvent, base, dir,
-  { ...manualArgs, lookupMain: async () => null })).mode, 'full');
-assert.equal((await planForEvent('workflow_dispatch', manualEvent, base, dir,
-  { ...manualArgs, env: { ...manualEnv, GITHUB_REF: 'refs/heads/feature' } })).mode, 'full');
-
+await assert.rejects(() => planForEvent('workflow_dispatch',
+  {inputs:{publish:'false'}},base,dir,manualArgs),/full_regression=true/);
+await assert.rejects(() => planForEvent('workflow_dispatch',manualEvent,base,dir,
+  {...manualArgs,lookupMain:async()=>null}),/No exact-main release proof/);
+await assert.rejects(() => planForEvent('workflow_dispatch',manualEvent,base,dir,
+  {...manualArgs,env:{...manualEnv,GITHUB_REF:'refs/heads/feature'}}),/full_regression=true/);
+const approvedFull=await planForEvent('workflow_dispatch',
+  {inputs:{full_regression:'true',publish:'false'}},base,dir,manualArgs);
+assert.equal(approvedFull.mode,'full');
+assert.deepEqual(approvedFull.groups,JOBS);
  write('dev/docs/file with spaces.md','changed');const docs=commit();assert.deepEqual(inputs(dir),key);
  assert.deepEqual(changedPaths(base,docs,dir),['dev/docs/file with spaces.md']);
  assert.equal((await planForEvent('push',{before:base},docs,dir,{lookup:async()=>null})).mode,'docs');
- assert.equal((await planForEvent('workflow_dispatch',{},docs,dir)).mode,'full');
- assert.equal((await planForEvent('push',{before:'0'.repeat(40)},docs,dir,{lookup:async()=>null})).mode,'full');
+ await assert.rejects(()=>planForEvent('workflow_dispatch',{},docs,dir),/full_regression=true/);
+ await assert.rejects(()=>planForEvent('push',{before:'0'.repeat(40)},docs,dir,{lookup:async()=>null}),/Cannot safely classify CI diff/);
  const proof={run_id:42,...key,coverage:JOBS,artifact_id:17,artifact_digest:'sha256:'+'a'.repeat(64),exact:true};
  const event={pull_request:{base:{sha:base},head:{sha:docs}}};
  // An existing code PR followed by docs must reuse an exact proven input set.
@@ -173,7 +178,7 @@ assert.equal((await planForEvent('workflow_dispatch', manualEvent, base, dir,
  // Its cumulative diff contains only docs/version, so release remains minimal.
  assert.equal(metadata.mode,'release');assert.deepEqual(metadata.groups,groupsFor('release'));
  write('dev/src/game.js','const game=2;');const code=commit();assert.notEqual(inputs(dir).behavior,key.behavior);
- const fallback=await planForEvent('push',{before:version},code,dir,{lookup:async()=>{throw Error('unavailable');}});assert.equal(fallback.mode,'full');
+ await assert.rejects(()=>planForEvent('push',{before:version},code,dir,{lookup:async()=>{throw Error('unavailable');}}),/No safe CI subsystem mapping/);
  // Dirty code cannot be certified using stale git blob IDs.
  write('dev/src/game.js','dirty');assert.throws(()=>inputs(dir));git(['checkout','--','dev/src/game.js']);
  write('sw.js','new baseline');commit();assert.notEqual(inputs(dir).behavior,versionKey.behavior);
@@ -197,7 +202,7 @@ const stepNamed = name => buildSteps.find(x => x.includes('name: ' + name + '\n'
 const requireScoped = name => {
   const step = stepNamed(name);
   assert.ok(step, name + ': build smoke/safety step must exist');
-  assert.match(step, /^if: \$\{\{ needs\.plan\.outputs\.mode != 'reuse' && needs\.plan\.outputs\.scope != 'ui-copy' \}\}/,
+  assert.match(step, /^if: \$\{\{ needs\.plan\.outputs\.mode != 'reuse' && needs\.plan\.outputs\.scope != 'ui-copy' && needs\.plan\.outputs\.scope != 'focused' \}\}/,
     name + ': must execute for economy, skip UI-copy');
 };
 for (const name of [
@@ -227,10 +232,10 @@ for (const name of [
 ]) {
   const step = stepNamed(name);
   assert.ok(step, name + ': full-suite step must remain available');
-  assert.match(step, /^if: \$\{\{ needs\.plan\.outputs\.mode != 'reuse' && needs\.plan\.outputs\.scope != 'economy' && needs\.plan\.outputs\.scope != 'ui-copy' \}\}/,
+  assert.match(step, /^if: \$\{\{ needs\.plan\.outputs\.mode != 'reuse' && needs\.plan\.outputs\.scope != 'economy' && needs\.plan\.outputs\.scope != 'ui-copy' && needs\.plan\.outputs\.scope != 'focused' \}\}/,
     name + ': run for full scope, not economy or UI-copy');
 }
-const economySkipped = buildSteps.filter(x => x.startsWith("if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}"));
+const economySkipped = buildSteps.filter(x => x.startsWith("if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' && needs.plan.outputs.scope != 'focused' }}"));
 assert.ok(economySkipped.length >= 50,
   'economy-only changes should avoid unrelated heavy build regression steps');
 // CI-OPT-01: no duplicate 36-minute Fast job for economy-only PRs.
@@ -238,30 +243,10 @@ assert.ok(economySkipped.length >= 50,
 // and protected-import coverage on the *same* compiled artifact.
 const fastWorkflow = fs.readFileSync(
   new URL('../../../.github/workflows/arch02c-b3-fast-acceptance.yml', import.meta.url), 'utf8');
-const fastPathBlock = fastWorkflow.match(/^    paths:\n([\s\S]*?)\npermissions:/m)?.[1];
-assert.ok(fastPathBlock, 'Fast path inclusion/exclusion block must be present');
-assert.match(fastPathBlock, /      - 'dev\/src\/\*\*'/, 'non-economy source changes continue to trigger Fast');
-for (const economyExclusion of [
-  'dev/src/logic/economy.js', 'dev/src/logic/daily.js',
-  'dev/src/ui/views/daily.js', 'dev/tests/economy/**',
-  'dev/tests/ci/arch02c-b5a-daily-claims-acceptance.mjs',
-]) {
-  assert.ok(fastPathBlock.includes("      - '!" + economyExclusion + "'"),
-    economyExclusion + ': exclude only the already-safety-covered economy file');
-}
-assert.ok(fastPathBlock.lastIndexOf("      - '!dev/src/logic/daily.js'") >
-  fastPathBlock.indexOf("      - 'dev/src/**'"),
-  'GitHub path exclusion must come after the positive source glob');
-// CI-OPT-02: maintain broad Fast trigger, but require independent complete
-// proof before skipping expensive Web Locks or legacy Conquest tests.
-assert.match(fastWorkflow,/^  ui-copy-proof:/m,'native Fast has proof job');
-assert.match(fastWorkflow,/fetch-depth: 0/,'proof must compare full git history');
-assert.match(fastWorkflow,/verifyUiCopy\(process.env.BASE_SHA, process.env.HEAD_SHA\)/,
-  'native workflow uses same source proof as primary selector');
-assert.match(fastWorkflow,/needs\.ui-copy-proof\.result != 'success'/,
-  'failed proof fails closed into native safety suite');
-assert.match(fastWorkflow,/needs\.ui-copy-proof\.outputs\.is_ui_copy != 'true'/,
-  'only proven safe text may skip native suite');
+// No automatic 36-minute duplicate job: available only on explicit dispatch.
+const fastTrigger=fastWorkflow.split('\npermissions:')[0];
+assert.match(fastTrigger,/on:\n  workflow_dispatch:/);
+assert.doesNotMatch(fastTrigger,/pull_request:/);
 const economyPwa = workflow.match(/^  pwa:\n([\s\S]*?)^  ui:/m)?.[1];
 assert.ok(economyPwa, 'required compiled PWA job must remain');
 for (const command of [
@@ -302,12 +287,12 @@ const goldenSteps = scopeGolden.split(/\n      - /).slice(1);
 const goldenStep = label => goldenSteps.find(x=>x.includes('name: '+label+'\n'));
 const savesFocused=goldenStep('CI-OPT-02 focused save-v1 Golden (PWA + HTML)');
 assert.ok(savesFocused,'scoped economy save golden must exist');
-assert.match(savesFocused,/if: \$\{\{ needs\.plan\.outputs\.scope == 'economy' \|\| needs\.plan\.outputs\.scope == 'ui-copy' \}\}/);
+assert.match(savesFocused,/if: \$\{\{ needs\.plan\.outputs\.scope == 'economy' \|\| needs\.plan\.outputs\.scope == 'ui-copy' \|\| needs\.plan\.outputs\.scope == 'focused' \}\}/);
 for(const f of ['dist/pwa/index.html','dist/artifact.html'])
   assert.ok(savesFocused.includes('node tests/golden/saves.mjs '+f),'save v1 '+f+' required');
 const goldenFull=goldenStep('Golden full regression (200 battles, 41 screens, PWA + HTML)');
 assert.ok(goldenFull);
-assert.match(goldenFull,/if: \$\{\{ needs\.plan\.outputs\.scope != 'economy' && needs\.plan\.outputs\.scope != 'ui-copy' \}\}/);
+assert.match(goldenFull,/if: \$\{\{ needs\.plan\.outputs\.scope != 'economy' && needs\.plan\.outputs\.scope != 'ui-copy' && needs\.plan\.outputs\.scope != 'focused' \}\}/);
 assert.ok(goldenFull.includes('npm test'),'full regression cannot be silently removed');
 assert.ok(goldenSteps.some(x=>x.includes('npm install --no-save --package-lock=false playwright@1.56.1') &&
   x.includes("scope != 'economy'")), 'Playwright setup only for full golden');
