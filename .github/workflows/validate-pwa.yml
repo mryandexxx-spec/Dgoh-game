@@ -145,7 +145,7 @@ jobs:
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: node tools/check-bundle.mjs dist/pwa/app.js
       - name: CI-OPT-03 scoped compiled smoke + affected subsystem acceptance
-        if: ${{ needs.plan.outputs.scope == 'focused' }}
+        if: ${{ needs.plan.outputs.scope == 'focused' && needs.plan.outputs.mode != 'reuse' }}
         env:
           CI_PLAN: ${{ needs.plan.outputs.decision }}
         run: node tools/ci-focused.mjs
