@@ -47,6 +47,9 @@ reject('dev/src/logic/economy.js',
   'const RW_NAME={candle:"Свечи"}; const cost=8;\n',
   'const RW_NAME={candle:"Огни"}; const cost=0;\n');
 reject(ui,html('Свечи 8'),html('Огни 0')); // numeric semantics never waived
+reject(ui,html('Счёт 2'),html('Счёт ٢')); // Arabic-Indic numeric substitution
+reject(ui,'const f=()=>'+tick+'<script>Свечи</script>'+tick+';\n',
+  'const f=()=>'+tick+'<script>Огни</script>'+tick+';\n'); // raw executable HTML
 reject(ui,"const f=()=>"+tick+'<span>Свечи</span>'+tick+';\n',
   "const f=()=>"+tick+'<span>'+ '$'+'{S.solari}' +'</span>'+tick+';\n'); // interpolation
 reject(ui,html('Свечи'),html('Огни').replace('const view','const game'));
