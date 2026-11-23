@@ -255,7 +255,7 @@ for (const command of [
   'arch02c-b3-b1b-real-multitab-chromium.mjs',
   'arch02c-b3-b2-a2-real-chromium.mjs',
 ]) {
-  const step = economyPwa.split(/\n      - /).find(x => x.includes(command));
+  const step = economyPwa.split(/\n      - /).find(x => x.includes(command) && x.includes('name: CI-OPT-01 economy'));
   assert.ok(step, command + ': missing native Chromium safety');
   assert.match(step, /if: \$\{\{ needs\.plan\.outputs\.scope == 'economy' \}\}/,
     command + ': native Chromium acceptance must not run as a full-suite duplicate');
