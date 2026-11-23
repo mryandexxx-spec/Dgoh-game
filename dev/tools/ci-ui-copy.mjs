@@ -25,8 +25,8 @@ function safeText(before, after) {
   // delimiters must not be disguised as "copy" to escape behaviour tests.
   if (/[\x00-\x1f<>&{}$\\]/.test(before + after) ||
       (before + after).includes(String.fromCharCode(96))) return false;
-  if (JSON.stringify(before.match(/\d+(?:[.,]\d+)*/g) || []) !==
-      JSON.stringify(after.match(/\d+(?:[.,]\d+)*/g) || [])) return false;
+  if (JSON.stringify(before.match(/\p{Nd}+(?:[.,]\p{Nd}+)*/gu) || []) !==
+      JSON.stringify(after.match(/\p{Nd}+(?:[.,]\p{Nd}+)*/gu) || [])) return false;
   return /\p{L}/u.test(before) && /\p{L}/u.test(after);
 }
 function visibleMarkupOnly(before, after) {
@@ -41,7 +41,11 @@ function visibleMarkupOnly(before, after) {
     if (i % 2 === 1) {
       if (a[i] !== b[i]) return false; // no tag or attribute changes
     } else if (a[i] !== b[i]) {
-      if (i === 0 || !a[i - 1].endsWith('>') ||
+      // Raw-text/script and option contents may have executable or form
+      // semantics even when their surrounding HTML tags are identical.
+      const prev = a[i - 1].toLowerCase();
+      if (i === 0 || !prev.endsWith('>') ||
+          /^<(?:script|style|textarea|option|title|code|pre)\b/.test(prev) ||
           /[<>]/.test(a[i] + b[i]) || !safeText(a[i], b[i])) return false;
       changed++;
     }
