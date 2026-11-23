@@ -122,6 +122,9 @@ for(const path of ['dev/src/core/store.js','dev/src/logic/conquest.js','dev/src/
 assert.ok(focus('dev/assets/img/water-literjon.webp').groups.includes('ui'));
 assert.ok(!systemsForPaths(['dev/assets/img/water-literjon.webp']).some(x=>['storage','conquest'].includes(x)),
  'water artwork must not select native storage or Conquest acceptance');
+const candlePlan=focus(['dev/assets/img/candle-glowglobe.webp','dev/src/core/format.js']);
+assert.deepEqual(commandsFor(candlePlan).filter(([file])=>file.endsWith('ui01-candle-glowglobe-acceptance.mjs')).map(x=>x[1][0]), ['dist/pwa/index.html','dist/artifact.html']);
+assert.equal(commandsFor(focus('dev/src/ui/common.js')).filter(([file])=>file.endsWith('ui01-candle-glowglobe-acceptance.mjs')).length,0);
 const waterPlan=focus(['dev/assets/img/water-literjon.webp','dev/src/core/format.js']);
 assert.deepEqual(commandsFor(waterPlan).filter(([file])=>file.endsWith('ui01-water-literjon-acceptance.mjs')).map(x=>x[1][0]),
  ['dist/pwa/index.html','dist/artifact.html']);

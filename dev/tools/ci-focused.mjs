@@ -71,12 +71,17 @@ export function commandsFor(plan) {
   // relevant source, asset, or its own acceptance was changed.
   const waterFiles = new Set([
     'dev/assets/img/water-literjon.webp',
+    'dev/assets/img/candle-glowglobe.webp',
+    'dev/tests/ci/ui01-candle-glowglobe-acceptance.mjs',
     'dev/src/core/format.js',
     'dev/tests/ci/ui01-water-literjon-acceptance.mjs',
   ]);
   if(plan.paths.some(p=>waterFiles.has(p)))
     for(const artifact of ARTIFACTS)
       add('tests/ci/ui01-water-literjon-acceptance.mjs',[artifact]);
+  if(plan.paths.some(p=>['dev/assets/img/candle-glowglobe.webp', 'dev/tests/ci/ui01-candle-glowglobe-acceptance.mjs', 'dev/src/core/format.js', 'dev/tools/build.mjs'].includes(p)))
+    for(const artifact of ARTIFACTS)
+      add('tests/ci/ui01-candle-glowglobe-acceptance.mjs',[artifact]);
   return commands;
 }
 export function runFocused(plan, runner=(file,args)=>execFileSync(process.execPath,[file,...args],{stdio:'inherit',env:process.env})) {
