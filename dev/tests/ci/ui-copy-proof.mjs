@@ -7,6 +7,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { compareCopySource, compareCopyVersion, verifyUiCopy, copyCandidate } from '../../tools/ci-ui-copy.mjs';
 import { classify } from '../../tools/ci-policy.mjs';
+import { planForEvent } from '../../tools/ci-plan.mjs';
 
 const tick = String.fromCharCode(96);
 const html = x => 'const view = () => ' + tick + '<div><span>' + x + '</span></div>' + tick + ';\n';
@@ -91,6 +92,12 @@ try {
   put('dev/version.json','{"v":143}\n');
   const valid=commit();
   assert.equal(verifyUiCopy(base,valid,dir),true,'actual safe base..head diff + version bump');
+  const event={pull_request:{base:{sha:base},head:{sha:valid}}};
+  const plan=await planForEvent('pull_request',event,valid,dir,
+    {lookup:async()=>null,env:{}});
+  assert.equal(plan.mode,'ui-copy','real PR diff should select proven UI-copy');
+  assert.deepEqual(plan.groups,['build','golden','pwa']);
+  assert.equal(plan.paths.length,3,'UI copy and version bump only');
   put('dev/version.json','{"v":144}\n');
   const versionOnly=commit();
   assert.equal(verifyUiCopy(valid,versionOnly,dir),false,'version-only is not UI-copy');
