@@ -21,7 +21,7 @@ function renderRes() {
   const NL = '\n    ';   // пробелы между плашками — как в прежней разметке (DOM-golden)
   const pills = [
     NL + `<div class="pill" data-info="water"><span>Вода${next ? ` · +1 через ${next}с` : ''}</span><b>${ic('water')}${S.water}/${WMAX()}</b></div>`,
-    NL + `<div class="pill" data-info="candle"><span>Свечи</span><b>${ic('candle')}${S.candle}/${CMAX()}</b></div>`,
+    NL + `<div class="pill" data-info="candle"><span>Огни</span><b>${ic('candle')}${S.candle}/${CMAX()}</b></div>`,
     NL + `<div class="pill" data-info="sol"><span>Солярии</span><b>${ic('sol')}${fmt(S.solari)}</b></div>`,
     NL + `<div class="pill" data-info="pl"><span>Пласталь</span><b>${ic('pl')}${S.plast}</b></div>`,
     NL + `<div class="pill" data-info="teeth"><span>Зубы червя</span><b>${ic('teeth')}${fmt(S.teeth)}</b></div>`,
