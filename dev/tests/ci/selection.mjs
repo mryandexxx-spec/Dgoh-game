@@ -169,9 +169,10 @@ assert.deepEqual(approvedFull.groups,JOBS);
  const proof={run_id:42,...key,coverage:JOBS,artifact_id:17,artifact_digest:'sha256:'+'a'.repeat(64),exact:true};
  const event={pull_request:{base:{sha:base},head:{sha:docs}}};
  // An existing code PR followed by docs must reuse an exact proven input set.
- const mode=await planForEvent('pull_request',{pull_request:{base:{sha:'f'.repeat(40)}}},docs,dir,{lookup:async()=>proof});
- assert.equal(mode.mode,'reuse');assert.equal(checkGate(needs(mode)).mode,'reuse');
- assert.throws(()=>checkGate(needs({...mode,proof:{...proof,fingerprint:'b'.repeat(64)}})));
+ await assert.rejects(()=>planForEvent('pull_request',{pull_request:{base:{sha:'f'.repeat(40)}}},docs,dir,{lookup:async()=>proof}),/Cannot safely classify CI diff/,'missing diff blocks unsafe reuse');
+ const reused={...classify(['dev/version.json']),mode:'reuse',groups:['build'],coverage:JOBS,...key,proof};
+ assert.equal(checkGate(needs(reused)).mode,'reuse');
+ assert.throws(()=>checkGate(needs({...reused,proof:{...proof,fingerprint:'b'.repeat(64)}})));
  write('dev/version.json','{"v":2}');const version=commit(),versionKey=inputs(dir);
  assert.notEqual(versionKey.fingerprint,key.fingerprint);assert.equal(versionKey.behavior,key.behavior);
  const metadata=await planForEvent('pull_request',event,version,dir,{lookup:async()=>({...proof,exact:false})});
