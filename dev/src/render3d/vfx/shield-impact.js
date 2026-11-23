@@ -39,10 +39,18 @@ export function shieldImpactFX(arena, unit, now = performance.now()) {
         unit.root.position.x, unit.root.position.y + 1, unit.root.position.z);
       ripple.rotationQuaternion = facing.clone();
       ripple.material.disableDepthWrite = true;
-      // Fade and travel follow the visual model, not the world-space spawn point.
+      // A ripple is transient and must never resurrect after a shield break,
+      // dispel, death or wave switch, even if a new shield arrives immediately.
+      let cancelled = false;
       arena.fade(ripple, life, (mesh, k) => {
+        if (cancelled || unit.dead || !(unit.shieldK > 0) || unit.root.isDisposed?.()) {
+          cancelled = true;
+          mesh.material.alpha = 0;
+          mesh.setEnabled(false);
+          return;
+        }
         const elapsed = k * life - delay;
-        if (elapsed <= 0 || unit.root.isDisposed?.()) { mesh.material.alpha = 0; return; }
+        if (elapsed <= 0) { mesh.material.alpha = 0; return; }
         const progress = Math.min(1, elapsed / (life - delay));
         mesh.position.copyFrom(unit.root.position).addInPlace(offset);
         mesh.position.y += 1.05;

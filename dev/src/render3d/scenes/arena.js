@@ -19,7 +19,7 @@ import { B3, SLOT3, cvSize } from '../base.js';
 import { FX } from '../../data/fx.js';
 import { GameScene } from '../game-scene.js';
 import { WorldHudLayout } from '../world-hud.js';
-import { shieldOpacity } from '../vfx/shield-rules.js';
+import { syncShieldBubble } from '../vfx/shield-rules.js';
 import { configureShieldBubble, shieldImpactFX } from '../vfx/shield-impact.js';
 
 // ---------- arena ----------
@@ -84,7 +84,7 @@ class Arena3D extends GameScene {
     o.legend = !!u.def.legendary && !u.def.boss; if (o.legend) { o.root.scaling.scaleInPlace(1.5 / 1.08); o.h *= 1.5 / 1.08; }
     o.tierC = col3(u.relic ? RELIC_COL : TIER_COL[u.gear || 1] || '#e8913f');
     o.side = u.side; o.uid = u.uid; o.phase = Math.random() * 6;
-    if (!o.boss) { o.bubble = add(o.root, mk(bSph(1, 24), basic3('#3f8ee0', { add: true, alpha: 0 }), 0, .98, 0, false)); o.bubble.scaling.set(.55, 1.08, .55); o.bubble.material.disableDepthWrite = true; configureShieldBubble(o.bubble.material, gfx(this.small)); }
+    if (!o.boss) { o.bubble = add(o.root, mk(bSph(1, 24), basic3('#3f8ee0', { add: true, alpha: 0 }), 0, .98, 0, false)); o.bubble.scaling.set(.55, 1.08, .55); o.bubble.material.disableDepthWrite = true; configureShieldBubble(o.bubble.material, gfx(this.small)); o.bubble.setEnabled(false); o.bubble._shieldVisible = false; }
     const r0 = o.boss ? 2.8 : o.legend ? .78 : .52, th = o.boss ? .4 : o.legend ? .2 : .15;
     o.ring = mk(MB().CreateTorus('ring', { diameter: 2 * r0, thickness: th, tessellation: 48 }, CTX.scene), basic3('#e8913f', { alpha: 0 }), x, y + .05, z, false); o.ring.scaling.y = .08; o.ring.material.disableDepthWrite = true;
     if (this.raid && u.def.boss) o.ring.scaling.set(1.9, .08, 1.9);
@@ -192,7 +192,9 @@ class Arena3D extends GameScene {
         if (e.kind === 'crit') this.at(now + dl, () => { this.shakeT = performance.now(); });
       }
       o.active = B.active === u; o.tgt = targets.has(u.uid); o.charm = !!u.charmed;
-      o.shieldK = u.maxShield ? u.shield / u.maxShield : 0; o.stealth = !!u.fx.stealth; o.phaseN = u.phase || 1;
+      o.shieldK = u.alive && u.maxShield > 0 && u.shield > 0 ? u.shield / u.maxShield : 0;
+      if (o.bubble) syncShieldBubble(o, now / 1000);
+      o.stealth = !!u.fx.stealth; o.phaseN = u.phase || 1;
     }
     if (B.flash === 'worm' || B.flash === 'wormSmall' || B.flash === 'holtz' || B.flash === 'gl') this.shakeT = now;
     if (B.flash === 'wormSmall') this.wormSmall(B, now);
@@ -384,7 +386,7 @@ class Arena3D extends GameScene {
     const tgSelf = [o], tgAll = allies;
     if (ab.heal) on(ab.tgt === 'self' ? tgSelf : tgAll, x => this.healFX(x));
     if (want('defUp')) on(fx.some(f => f[0] === 'defUp' && f[2] === 'allies') ? tgAll : tgSelf, x => this.domeFX(x, '#5aa8ff'));
-    if (ab.shieldSelf) this.domeFX(o, '#8fd8ff', 1.4);
+    if (ab.shieldSelf) this.domeFX(o, '#8fd8ff', 1.4, true);
     if (want('evaUp')) on(fx.some(f => f[0] === 'evaUp' && f[2] === 'allies') ? tgAll : tgSelf, x => this.swirlFX(x, '#c8f0ff'));
     if (want('counter')) on(tgSelf, x => this.swirlFX(x, '#ffb060'));
     if (want('taunt')) this.tauntFX(o);
@@ -395,9 +397,17 @@ class Arena3D extends GameScene {
     if (deb.length && !ab.dt) on(ab.tgt === 'enemies' ? foes : foes.slice(0, 1), x => this.miasmaFX(x, deb.includes('poison') ? '#7ad36a' : deb.includes('fear') ? '#b07aff' : '#ff7a5a'));
     if (ab.tm && ab.tm.enemies < 0) on(foes, x => this.ringFX(x, '#8a7aff', .5));
   }
-  domeFX(x, c, k = 1) {
+  domeFX(x, c, k = 1, shieldBound = false) {
+    if (!x?.root || x.dead || x.root.isDisposed?.() || (shieldBound && !(x.shieldK > 0))) return;
     withCtx({ scene: this.scene }, () => { const p = x.root.position, d = this.fx('dome' + k, () => bSph(.95 * k, 24, 1, .5), c, 0, p.x, p.y, p.z); d.scaling.y = 1.3; d.material.backFaceCulling = false;
-    this.fade(d, 1300, (m, kk) => { m.position.copyFrom(x.root.position); m.material.alpha = .75 * Math.sin(Math.min(1, kk * 1.6) * Math.PI * .5) * (1 - kk); m.scaling.set(.6 + kk * .5, (.6 + kk * .5) * 1.3, .6 + kk * .5); });
+    this.fade(d, 1300, (m, kk) => {
+      if (x.dead || x.root.isDisposed?.() || (shieldBound && !(x.shieldK > 0))) {
+        m.material.alpha = 0; m.setEnabled(false); return;
+      }
+      m.position.copyFrom(x.root.position);
+      m.material.alpha = .75 * Math.sin(Math.min(1, kk * 1.6) * Math.PI * .5) * (1 - kk);
+      m.scaling.set(.6 + kk * .5, (.6 + kk * .5) * 1.3, .6 + kk * .5);
+    });
     this.ringFX(x, c, .9);
     });
   }
@@ -594,7 +604,7 @@ class Arena3D extends GameScene {
         }
         const hk = o.hitT && now >= o.hitT ? Math.max(0, 1 - (now - o.hitT) / 260) : 0, hl = o.healT && now >= o.healT ? Math.max(0, 1 - (now - o.healT) / 500) : 0;
         for (const m of o.mats) { const b0 = m._baseEm; m.emissiveColor.set(b0.r + hk * .9 + hl * .05, b0.g + hk * .35 + hl * .5, b0.b + hk * .2 + hl * .1); m.alpha = o.stealth ? .38 : 1; }
-        if (o.bubble) o.bubble.material.alpha = o.dead ? 0 : shieldOpacity(o.shieldK, t, o.phase, hk);
+        if (o.bubble) syncShieldBubble(o, t, hk);
       }
       const rm = o.ring.material, pul = Math.sin(t * 6);
       if (!rm._emOwn) { rm.emissiveColor = rm.emissiveColor.clone(); rm._emOwn = 1; }
