@@ -67,6 +67,15 @@ try{
     if(width>510)assert.ok(Math.abs(measured.layout[0].top-measured.layout[1].top)<=2,'one unified HUD row: '+width);
     else assert.ok(measured.layout[1].top>measured.layout[0].bottom,'portrait resources below profile');
     if(width===844){
+      // The boot login calendar may appear asynchronously over the HUD.
+      // Dismiss it only after the writer is ready; taps must hit our buttons.
+      await page.waitForFunction(()=>{
+        try {const x=(0,eval)('start.writerLifecycle()');
+          return x.armed && !x.blocked && x.writer.status==='owned';
+        } catch {return false;}
+      },{timeout:35000,polling:50});
+      await new Promise(resolve=>setTimeout(resolve,3100));
+      await page.evaluate(()=>(0,eval)('closeInfo(true);closeOverlay()'));
       await page.click('.ui02-profile');
       assert.ok(await page.$('.profsheet'),'existing native profile dialog');
       await page.evaluate(()=>(0,eval)('closeInfo(true)'));
