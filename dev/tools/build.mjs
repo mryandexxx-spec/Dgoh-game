@@ -115,7 +115,13 @@ function page({ head, cssTag, babylon, jsTag, tail }) {
 }
 
 const ASSETS = assets();
-const { code: code0, meta } = await js(), styles = css(), b3 = await babylonChunk();
+const interFont = ASSETS.find(a => a.name === 'font/inter-variable.woff2');
+if (!interFont) throw new Error('HUD-01 local Inter font is missing');
+const stylesSource = css();
+if (stylesSource.split('__HUD_INTER_FONT_URL__').length !== 2)
+  throw new Error('HUD-01 font URL placeholder must occur exactly once');
+const styles = stylesSource.replace('__HUD_INTER_FONT_URL__', () => interFont.pwa);
+const { code: code0, meta } = await js(), b3 = await babylonChunk();
 // номер версии: dev/version.json (правится вручную при выкатке) + хеш сборки (он же версия кэша SW); выводится в лобби (ui/views/lobby.js APP_VER)
 const VNUM = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8')).v;
 const ver = sha(Buffer.from(`v${VNUM}\n${read('index.html')}\n${['pwa/sw.js', 'pwa/tail.html', 'pwa/pwa-head.html', 'pwa/doc-head.html'].map(read).join('\n')}\n${code0}\n${styles}\n${b3}\n${ASSETS.map(a => a.pwa).join('\n')}\n${MINIFY}`, 'utf8')).slice(0, 10);
@@ -144,9 +150,13 @@ if (target === 'artifact' || target === 'all') {   // фаза 4, шаг 4: ар
   const acode = await minify(withAssets(code1, 'art'));
   fs.rmSync(path.join(OUT, 'assets'), { recursive: true, force: true });
   fs.writeFileSync(path.join(OUT, 'artifact.html'), html); fs.writeFileSync(path.join(OUT, B3_FILE), b3);
-  fs.writeFileSync(path.join(OUT, 'app.js'), acode); fs.writeFileSync(path.join(OUT, 'app.css'), styles);
-  for (const a of ASSETS) { const p = path.join(OUT, a.art); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, a.art === a.pwa ? a.bytes : a.bytes.toString('base64')); }
-  fs.writeFileSync(path.join(OUT, 'artifact-files.json'), JSON.stringify(['app.js', 'app.css', B3_FILE, ...ASSETS.map(a => a.art)], null, 1));
+  fs.writeFileSync(path.join(OUT, 'app.js'), acode);
+  // Artifact hosting does not guarantee a WOFF2 MIME type: embed the font there.
+  // Offline PWA keeps the independent content-hashed asset and SW warm cache.
+  const artifactCss = styles.replace(interFont.pwa, () => 'data:font/woff2;base64,' + interFont.bytes.toString('base64'));
+  fs.writeFileSync(path.join(OUT, 'app.css'), artifactCss);
+  for (const a of ASSETS.filter(a => a !== interFont)) { const p = path.join(OUT, a.art); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, a.art === a.pwa ? a.bytes : a.bytes.toString('base64')); }
+  fs.writeFileSync(path.join(OUT, 'artifact-files.json'), JSON.stringify(['app.js', 'app.css', B3_FILE, ...ASSETS.filter(a => a !== interFont).map(a => a.art)], null, 1));
   console.log(`artifact.html: ${html.length} Б + app.js ${(acode.length / 1e6).toFixed(2)} МБ + app.css + ${B3_FILE} + ${ASSETS.length} ассетов, модулей ${mods}`);
 }
 

@@ -40,7 +40,7 @@ export const CASES = Object.freeze({
     'arch02c-b6c-feat-raid-acceptance',
   ],
   content: [],
-  ui: [],
+  ui: ['hud01-resource-acceptance'],
   render3d: [],
 });
 export const CONTENT_CASES = ['tests/arch01c2a-energy.mjs','tests/arch01c2b-node-open.mjs','tests/arch01c2c-nodes-digest.mjs'];

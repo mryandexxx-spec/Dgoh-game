@@ -84,8 +84,8 @@ check(Object.keys(stB).includes('dune-goh-' + vB) && !Object.keys(stB).includes(
 check(!LOG.some(([, c]) => c === 404), `A→B: без 404 (${LOG.filter(([, c]) => c === 404).map(x => x[0]).join(', ') || '—'})`);
 const sameB3 = fs.readFileSync(path.join(A, 'babylon3d.js')).equals(fs.readFileSync(path.join(B, 'babylon3d.js')));   // изменённый чанк качается законно
 const newB = new Set(swList(B, 'ASSETS').filter(f => !swList(A, 'ASSETS').includes(f) && !swList(B, 'LAZY').includes(f))), hitsB = new Set(assetHits().map(x => x[0]));
-check([...hitsB].every(f => newB.has(f)) && [...newB].every(f => hitsB.has(f)) && !LOG.some(([f]) => (f === 'babylon3d.js' && sameB3) || /\.woff2$|\.png$/.test(f)),
-  `A→B: из ассетов скачаны ровно новые (${hitsB.size} из ${newB.size}), ${sameB3 ? 'babylon3d.js, ' : ''}шрифты, иконки не качались; прочие запросы: ${[...new Set(LOG.map(x => x[0]).filter(f => !f.startsWith('assets/')))].join(', ')}`);
+check([...hitsB].every(f => newB.has(f)) && [...newB].every(f => hitsB.has(f)) && !LOG.some(([f]) => (f === 'babylon3d.js' && sameB3) || (/\.woff2$|\.png$/.test(f) && !newB.has(f))),
+  `A→B: скачаны ровно новые ассеты (${hitsB.size} из ${newB.size}), неизменённые шрифты/иконки не качались; прочие запросы: ${[...new Set(LOG.map(x => x[0]).filter(f => !f.startsWith('assets/')))].join(', ')}`);
 check((stB['dune-goh-assets'] || []).length >= 30, `A→B: кэш ассетов — ${(stB['dune-goh-assets'] || []).length} записей (перенос из кэша A)`);
 // старая вкладка: открыть героя, вернуться в лобби, 3D
 const oldOk = await pa.evaluate(async () => { try { (0, eval)("closeInfo(true); closeOverlay(); view = 'lobby'; render(); openDetail('paul');"); await new Promise(r => setTimeout(r, 1500)); (0, eval)("closeInfo(true); closeOverlay(); view = 'lobby'; render();"); return await loadB3(); } catch (e) { return String(e); } });

@@ -1,7 +1,7 @@
 // ui/common.js — строки 3252–3271 монолита (src/app.js прохода 1). Сгенерировано tools/modularize.mjs; дальше правится вручную.
 import '../core/errlog.js'; // порядок исполнения
 import { S, tickWater } from '../core/state.js';
-import { CMAX, WATER_SEC, WMAX, todayKey } from '../logic/economy.js';
+import { CMAX, CANDLE_SEC, WATER_SEC, WMAX, todayKey } from '../logic/economy.js';
 import { fc, fmt, ic } from '../core/format.js';
 import { SPOT_ICONS } from './views/lobby.js';
 import { figureSVG } from '../render2d/figures.js';
@@ -14,25 +14,62 @@ function toast(t) {
   document.body.appendChild(el); setTimeout(() => el.remove(), 2200);
 }
 
+// HUD-01: presentation-only. Existing save IDs, regen policy and event keys stay intact.
+const hudCountdown = seconds => {
+  const n = Math.max(0, seconds);
+  return String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0');
+};
 function renderRes() {
   tickWater();
-  const next = S.water < WMAX() ? Math.ceil(WATER_SEC - (todayKey.clock.regenNow() - S.waterTs) / 1000) : null;
-  // фаза 7, шаг 2: раз в секунду (core/boot.js) — точечно: пересоздаются только изменившиеся плашки, без innerHTML всей полосы
-  const NL = '\n    ';   // пробелы между плашками — как в прежней разметке (DOM-golden)
-  const pills = [
-    NL + `<div class="pill" data-info="water"><span>Вода${next ? ` · +1 через ${next}с` : ''}</span><b>${ic('water')}${S.water}/${WMAX()}</b></div>`,
-    NL + `<div class="pill" data-info="candle"><span>Огни</span><b>${ic('candle')}${S.candle}/${CMAX()}</b></div>`,
-    NL + `<div class="pill" data-info="sol"><span>Солярии</span><b>${ic('sol')}${fmt(S.solari)}</b></div>`,
-    NL + `<div class="pill" data-info="pl"><span>Пласталь</span><b>${ic('pl')}${S.plast}</b></div>`,
-    NL + `<div class="pill" data-info="teeth"><span>Зубы червя</span><b>${ic('teeth')}${fmt(S.teeth)}</b></div>`,
-    NL + `<div class="pill" data-info="cry"><span>Кристаллы</span><b>${ic('cry')}${fmt(S.cry)}</b></div>`,
-    NL + `<div class="pill" data-info="rid"><span>Ридулиан</span><b>${ic('rid')}${fmt(S.rid)}</b></div>`,
+  const now = todayKey.clock.regenNow();
+  const energy = (key, name, value, cap, ts, period) => {
+    const waiting = value < cap;
+    const remaining = waiting ? Math.max(1, Math.ceil(period - (now - ts) / 1000)) : null;
+    const label = waiting ? '+1 через ' + hudCountdown(remaining) : 'Полный запас';
+    const progress = cap > 0 ? Math.min(100, Math.max(0, Math.round(value * 100 / cap))) : 0;
+    return `<button type="button" class="hud-cell hud-energy hud-${key}" data-info="${key}" aria-label="${name}: ${fmt(value)} из ${fmt(cap)}. ${label}">
+      <span class="hud-icon">${ic(key)}</span>
+      <span class="hud-content">
+        <span class="hud-title-row"><span class="hud-title">${name}</span><span class="hud-timer">${label}</span></span>
+        <span class="hud-value">${fmt(value)}<small> / ${fmt(cap)}</small></span>
+        <span class="hud-meter" aria-hidden="true"><i style="width:${progress}%"></i></span>
+      </span>
+    </button>`;
+  };
+  const money = (key, name, value, extra = '') => `<button type="button" class="hud-cell hud-currency hud-${key} ${extra}" data-info="${key}" aria-label="${name}: ${fmt(value)}">
+    <span class="hud-icon">${ic(key)}</span>
+    <span class="hud-content"><span class="hud-title">${name}</span><span class="hud-value">${fmt(value)}</span></span>
+  </button>`;
+  const chunks = [
+    energy('water', 'Вода', S.water, WMAX(), S.waterTs, WATER_SEC),
+    energy('candle', 'Огни', S.candle, CMAX(), S.candleTs, CANDLE_SEC),
+    money('sol', 'Солярии', S.solari),
+    money('pl', 'Пласталь', S.plast, 'hud-optional'),
+    money('teeth', 'Зубы червя', S.teeth, 'hud-optional'),
+    money('cry', 'Кристаллы', S.cry),
+    money('rid', 'Ридулиан', S.rid, 'hud-optional'),
+    `<details class="hud-overflow"><summary aria-label="Остальные ресурсы" title="Остальные ресурсы">
+      <span aria-hidden="true">•••</span></summary>
+      <div class="hud-dropdown">
+        ${money('pl', 'Пласталь', S.plast)}
+        ${money('teeth', 'Зубы червя', S.teeth)}
+        ${money('rid', 'Ридулиан', S.rid)}
+      </div></details>`,
   ];
   document.querySelectorAll('.resbox').forEach(el => {
     const old = el._rp;
-    if (!old || el.children.length !== pills.length) { el.innerHTML = pills.join(''); el._rp = pills; return; }
-    for (let i = 0; i < pills.length; i++) if (old[i] !== pills[i]) { const t = document.createElement('template'); t.innerHTML = pills[i].trim(); el.children[i].replaceWith(t.content); }
-    el._rp = pills;
+    if (!old || el.children.length !== chunks.length) {
+      el.innerHTML = chunks.join('');
+      el._rp = chunks;
+      el.setAttribute('aria-label', 'Игровые ресурсы');
+      return;
+    }
+    for (let i = 0; i < chunks.length; i++) if (old[i] !== chunks[i]) {
+      const t = document.createElement('template');
+      t.innerHTML = chunks[i];
+      el.children[i].replaceWith(t.content);
+    }
+    el._rp = chunks;
   });
 }
 const starStr = (n, max = 7) => '★'.repeat(n) + `<i>${'★'.repeat(max - n)}</i>`;
