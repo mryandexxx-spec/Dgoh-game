@@ -239,6 +239,7 @@ header.top nav.tabs { order: 2; margin-top: 0; }
   header.top .brand { display: none; }
   header.top .wrap { padding-top: 4px; }
   header.top .resbox, header.top .resbox .hud-cell { min-height: 46px; }
+  header.top .hud-overflow summary { min-height: 46px; }
   header.top .resbox .hud-cell { padding-block: 3px; }
   header.top .resbox .hud-content { gap: 3px; }
   header.top nav.tabs { gap: 6px; }
