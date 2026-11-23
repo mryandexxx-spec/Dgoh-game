@@ -22,6 +22,7 @@ export function systemsForPaths(paths) {
     if (/^\.github\/workflows\/.+\.ya?ml$/.test(p) ||
         /^dev\/(?:tools\/|tests\/lib\/|tests\/ci\/(?:selection|proof|resource-growth|ui-copy-proof)\.mjs$|package(?:-lock)?\.json$)/.test(p)) {add('ci');continue;}
     if (/^(?:sw\.js|dev\/src\/(?:pwa\/|index\.html$))/.test(p)) {add('pwa');continue;}
+    if (p==='dev/src/core/format.js') {add('ui','economy');continue;}
     if (/^dev\/src\/(?:boot\.js|main\.js|core\/)/.test(p)) {add('storage','clock');continue;}
     if (/^dev\/src\/logic\/(?:economy|daily)\.js$/.test(p)) {add('economy','daily');continue;}
     if (/^dev\/src\/logic\/(?:conquest|trials|journey-gates)\.js$/.test(p) ||
@@ -29,7 +30,13 @@ export function systemsForPaths(paths) {
     if (/^dev\/src\/logic\/(?:battle\/|baron-bh9-battle|bh94-story-battle|rewards|campaign-gates|campaign-map)/.test(p) ||
         /^dev\/src\/ui\/battle\//.test(p)) {add('battle');continue;}
     if (/^dev\/src\/logic\//.test(p)) {add('progression');continue;}
-    if (/^dev\/src\/data\//.test(p)) {add('content');continue;}
+    if (/^dev\/src\/data\//.test(p)) {
+      add('content');
+      if(/(?:hero|ability|battle|enemy|skill|kit)/.test(p))add('battle');
+      continue;
+    }
+    if (/^dev\/assets\/(?:img|icons|ui)\//.test(p) ||
+        /^dev\/src\/assets\/(?:img|icons|ui)\//.test(p)) {add('ui');continue;}
     if (/^dev\/src\/(?:render3d\/|assets\/)/.test(p) || /^dev\/assets(?:-src)?\//.test(p)) {add('render3d');continue;}
     if (/^dev\/src\/(?:ui\/|render2d\/|styles\/)/.test(p)) {add('ui');continue;}
     if (/^dev\/tests\/ci\/(?:econ01-|arch02c-b5a-)/.test(p) ||
@@ -40,10 +47,13 @@ export function systemsForPaths(paths) {
     if (/^dev\/tests\/ci\/arch02d-/.test(p)) {add('clock','storage');continue;}
     if (/^dev\/tests\/ci\/arch02(?:b|c-b[123])/.test(p)) {add('storage');continue;}
     if (/^dev\/tests\/ci\/arch02c-b[56]/.test(p)) {add('progression');continue;}
-    if (/^dev\/tests\/(?:golden\/|smoke\/|ci\/ui-copy-dom-smoke\.mjs$)/.test(p)) {add('ui');continue;}
+    if (/^dev\/tests\/smoke\/(?:3d|ab|perf|baron|muad|young-baron|bh9|md-ult1|arena-animation)/.test(p)) {add('render3d');continue;}
+    if (/^dev\/tests\/smoke\/sw\.mjs$/.test(p)) {add('pwa');continue;}
+    if (/^dev\/tests\/(?:golden\/|dom\/|smoke\/|ci\/(?:ui-copy-dom-smoke|ui01-))/.test(p)) {add('ui');continue;}
     if (/^dev\/tests\//.test(p)) {add('ci');continue;}
     throw Error('No safe CI subsystem mapping for: '+p);
   }
+  if(!found.size && paths.length && paths.every(p=>isDoc(p)||p==='dev/version.json'))add('pwa');
   if(!found.size)throw Error('No subsystem selected for a source change');
   return FOCUSED_ORDER.filter(x=>found.has(x));
 }
@@ -109,7 +119,13 @@ export function classify(paths, { forceFull = false, campaignRegistry = false, v
     else if (code.every(p => testGroups(p))) scope = 'tests';
     else if (code.every(p => isCampaign(p) || p === 'dev/version.json' || (p === 'dev/tools/split.config.mjs' && campaignRegistry))) scope = 'campaign';
   }
-  if(focused && scope==='full' && !forceFull) { systemsForPaths(paths); scope='focused'; }
+  // Every automatic non-doc, non-proven-copy change uses the same scoped
+  // baseline. No legacy PWA/campaign/release/economy/test route may sneak
+  // back into the 200-battle full Golden.
+  if(focused && scope!=='docs' && scope!=='ui-copy' && !forceFull) {
+    systemsForPaths(paths);
+    scope='focused';
+  }
   return { mode: scope, scope, ...(scope==='focused'?{systems:systemsForPaths(paths)}:{}), groups: groupsFor(scope,paths), coverage: groupsFor(scope,paths), paths, reason: 'Scope: ' + scope };
 }
 export function validatePlan(plan) {
