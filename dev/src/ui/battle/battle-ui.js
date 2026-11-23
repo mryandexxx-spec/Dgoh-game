@@ -60,7 +60,7 @@ registerBaronView(renderBaronJourney);
 function startBattle(i) {
   // 3D loader can be pending before BT exists: an earlier debit is already
   // committed, so a second tap must not create another entry transaction.
-  if (loadSave.writer.state().gated && (LAUNCH_WAIT || (BT && !BT.done))) return;
+  if (loadSave.writer.state().gated && (LAUNCH_WAIT || (BT?.B && !BT.done))) return;
   if (loadSave.writer.state().gated) {
     // Entry is a separate verified debit, before any battle UI/engine launch.
     // The old live-S path below remains for the pinned ungated B0 baseline.
@@ -134,7 +134,7 @@ function launch(cfg) {
   BT.fx = new FXLayer($('#fxc'));
   if (typeof renderNotes === 'function') renderNotes();
   renderBattle();
-  if (cfg.dlg) playDialog(cfg.i, () => { S.seenDlg[cfg.i] = 1; persist(); if (BT && !BT.done) later(step, 300); });
+  if (cfg.dlg) playDialog(cfg.i, () => { S.seenDlg[cfg.i] = 1; persist(); if (BT?.B && !BT.done) later(step, 300); });
   else later(step, 500);
 }
 let DLG = null;
