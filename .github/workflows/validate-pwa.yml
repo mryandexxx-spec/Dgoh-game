@@ -588,7 +588,7 @@ jobs:
           node tests/ci/econ01-daily-dom-smoke.mjs dist/pwa/index.html
           node tests/ci/econ01-daily-dom-smoke.mjs dist/artifact.html
       - name: CI-OPT-02 UI-copy real Chromium display smoke (PWA + HTML)
-        if: ${{ needs.plan.outputs.scope == 'ui-copy' }}
+        if: ${{ needs.plan.outputs.scope == 'ui-copy' || (github.event_name == 'pull_request' && contains(needs.plan.outputs.decision, 'dev/tests/ci/ui-copy-dom-smoke.mjs')) }}
         run: |
           node tests/ci/ui-copy-dom-smoke.mjs dist/pwa/index.html
           node tests/ci/ui-copy-dom-smoke.mjs dist/artifact.html
