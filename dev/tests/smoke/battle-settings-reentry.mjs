@@ -56,9 +56,11 @@ try {
     const s = (0,eval)('start.writerLifecycle()');
     return s.armed && !s.blocked && s.writer.status==='owned';
   }, { timeout:30000, polling:100 });
-  // Normal game boot may show the daily-login calendar in #overlay2.
-  // Close it using the real visible control before testing squad touch targets.
-  if (await page.$('#overlay2 .calsheet')) await click('#overlay2 button[data-iclose]');
+  // Normal boot opens the daily calendar; remove this unrelated modal via
+  // the existing closeInfo API before testing actual battle touch targets.
+  // (In a 390px SwiftShader viewport, Puppeteer's click on a scrolled
+  // calendar button is not a reliable test of the squad entry route.)
+  await page.evaluate(() => closeInfo(true));
   await page.waitForFunction(() => !document.querySelector('#overlay2 .calsheet'), { timeout:5000 });
   await page.evaluate(async () => {
     if (!await loadB3()) throw Error('Babylon WebGL unavailable');
