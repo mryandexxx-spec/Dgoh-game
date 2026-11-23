@@ -90,8 +90,8 @@ export function uiBrowserCasesForPaths(paths) {
     if (isDoc(p) || p === 'dev/version.json') continue;
     // CI-only changes are separately verified by the CI contract tests;
     // they do not grant a UI filename exemption in a mixed code diff.
-    if (/^\\.github\\/workflows\\/.+\\.ya?ml$/.test(p) ||
-        /^dev\\/(?:tools\\/|tests\\/ci\\/(?:selection|focused|proof|resource-growth|ui-copy-proof)\\.mjs$)/.test(p)) continue;
+    if (/^\.github\/workflows\/.+\.ya?ml$/.test(p) ||
+        /^dev\/(?:tools\/|tests\/ci\/(?:selection|focused|proof|resource-growth|ui-copy-proof)\.mjs$)/.test(p)) continue;
     if (UI_HUD_ONLY.has(p)) continue;
     if (UI_GEAR_ONLY.has(p)) { selected.add('gear'); continue; }
     if (UI_RECYCLER_ONLY.has(p)) { selected.add('recycler'); continue; }
