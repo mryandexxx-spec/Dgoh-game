@@ -41,6 +41,207 @@ reject(ui,"const f=()=>"+tick+'<span data-info="candle">Свечи</span>'+tick+
   "const f=()=>"+tick+'<span data-info="water">Огни</span>'+tick+';\n'); // attribute
 reject(ui,'const f=()=>'+tick+'<span>Свечи</span>'+tick+';\n',
   'const f=()=>'+tick+'<span onclick="danger()">Огни</span>'+tick+';\n');
+const exposed = (label) =>
+  'const f=()=>'+tick+'<h3>'+ '
+reject(econ,"const key='candle';\n","const key='water';\n");
+reject('dev/src/logic/economy.js',
+  'const RW_NAME={candle:"Свечи"}; const cost=8;\n',
+  'const RW_NAME={candle:"Огни"}; const cost=0;\n');
+reject(ui,html('Свечи 8'),html('Огни 0')); // numeric semantics never waived
+reject(ui,html('Счёт 2'),html('Счёт ٢')); // Arabic-Indic numeric substitution
+reject(ui,'const f=()=>'+tick+'<script>Свечи</script>'+tick+';\n',
+  'const f=()=>'+tick+'<script>Огни</script>'+tick+';\n'); // raw executable HTML
+reject(ui,"const f=()=>"+tick+'<span>Свечи</span>'+tick+';\n',
+  "const f=()=>"+tick+'<span>'+ '$'+'{S.solari}' +'</span>'+tick+';\n'); // interpolation
+reject(ui,html('Свечи'),html('Огни').replace('const view','const game'));
+reject('dev/src/pwa/sw.js',html('Свечи'),html('Огни'));
+reject('dev/src/ui/common.js',"const x='Свечи';\n","const x='Огни';\n"); // generic literals not approved
+assert.equal(classify([ui]).scope,'full','no unproven filename-only scope');
+assert.equal(classify([ui],{verifiedUiCopy:true}).scope,'ui-copy');
+assert.deepEqual(classify([ui],{verifiedUiCopy:true}).groups,['build','golden','pwa']);
+assert.equal(classify([ui,'dev/version.json'],{verifiedUiCopy:true}).scope,'ui-copy');
+assert.equal(classify(['dev/version.json'],{verifiedUiCopy:true}).scope,'release');
+assert.equal(classify([ui,'dev/src/render3d/quality.js']).scope,'full',
+  'mixed visual/3d changes cannot become ui-copy');
+
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dune-ui-copy-proof-'));
+const git=args=>execFileSync('git',args,{cwd:dir,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+const put=(file,body)=>{
+  const abs=path.join(dir,file);
+  fs.mkdirSync(path.dirname(abs),{recursive:true});
+  fs.writeFileSync(abs,body);
+};
+const commit=()=>{
+  git(['add','.']);
+  git(['commit','-qm','fixture']);
+  return git(['rev-parse','HEAD']);
+};
+try {
+  git(['init','-q']);
+  git(['config','user.name','UI copy CI']);
+  git(['config','user.email','ui-copy@example.invalid']);
+  put(ui,html('Свечи'));put(econ,name('Свечей хроник'));
+  put('dev/version.json','{"v":142}\n');
+  const base=commit();
+  put(ui,html('Огни'));put(econ,name('Огней Хроник'));
+  put('dev/version.json','{"v":143}\n');
+  const valid=commit();
+  assert.equal(verifyUiCopy(base,valid,dir),true,'actual safe base..head diff + version bump');
+  put('dev/version.json','{"v":144}\n');
+  const versionOnly=commit();
+  assert.equal(verifyUiCopy(valid,versionOnly,dir),false,'version-only is not UI-copy');
+  put('dev/version.json','{"v":143}\n');
+  commit();
+  put(ui,html('Огни').replace('const view','const battle'));
+  const logic=commit();
+  assert.equal(verifyUiCopy(valid,logic,dir),false,'executable change fails closed');
+  put(ui,html('Огни'));
+  put('dev/src/render3d/quality.js','const low=0;\n');
+  const mixed=commit();
+  assert.equal(verifyUiCopy(valid,mixed,dir),false,'mixed added graphics input fails closed');
+  put(ui,html('Огни 0'));
+  const number=commit();
+  assert.equal(verifyUiCopy(mixed,number,dir),false,'numbers and text are not copy');
+} finally {
+  fs.rmSync(dir,{recursive:true,force:true});
+}
+console.log('PASS CI-OPT-02 ui-copy proof: approved DOM/map literals; executable, attributes, numbers, interpolations, mixed paths rejected');
+ + '{flag ? "' + label + '" : "Воды"}' +'</h3>'+tick+';\n';
+accept('dev/src/ui/overlays/info.js',exposed('Свечей'),exposed('Огней Хроник'));
+const inAttribute = (label) =>
+  'const f=()=>'+tick+'<div title="'+ '
+reject(econ,"const key='candle';\n","const key='water';\n");
+reject('dev/src/logic/economy.js',
+  'const RW_NAME={candle:"Свечи"}; const cost=8;\n',
+  'const RW_NAME={candle:"Огни"}; const cost=0;\n');
+reject(ui,html('Свечи 8'),html('Огни 0')); // numeric semantics never waived
+reject(ui,html('Счёт 2'),html('Счёт ٢')); // Arabic-Indic numeric substitution
+reject(ui,'const f=()=>'+tick+'<script>Свечи</script>'+tick+';\n',
+  'const f=()=>'+tick+'<script>Огни</script>'+tick+';\n'); // raw executable HTML
+reject(ui,"const f=()=>"+tick+'<span>Свечи</span>'+tick+';\n',
+  "const f=()=>"+tick+'<span>'+ '$'+'{S.solari}' +'</span>'+tick+';\n'); // interpolation
+reject(ui,html('Свечи'),html('Огни').replace('const view','const game'));
+reject('dev/src/pwa/sw.js',html('Свечи'),html('Огни'));
+reject('dev/src/ui/common.js',"const x='Свечи';\n","const x='Огни';\n"); // generic literals not approved
+assert.equal(classify([ui]).scope,'full','no unproven filename-only scope');
+assert.equal(classify([ui],{verifiedUiCopy:true}).scope,'ui-copy');
+assert.deepEqual(classify([ui],{verifiedUiCopy:true}).groups,['build','golden','pwa']);
+assert.equal(classify([ui,'dev/version.json'],{verifiedUiCopy:true}).scope,'ui-copy');
+assert.equal(classify(['dev/version.json'],{verifiedUiCopy:true}).scope,'release');
+assert.equal(classify([ui,'dev/src/render3d/quality.js']).scope,'full',
+  'mixed visual/3d changes cannot become ui-copy');
+
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dune-ui-copy-proof-'));
+const git=args=>execFileSync('git',args,{cwd:dir,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+const put=(file,body)=>{
+  const abs=path.join(dir,file);
+  fs.mkdirSync(path.dirname(abs),{recursive:true});
+  fs.writeFileSync(abs,body);
+};
+const commit=()=>{
+  git(['add','.']);
+  git(['commit','-qm','fixture']);
+  return git(['rev-parse','HEAD']);
+};
+try {
+  git(['init','-q']);
+  git(['config','user.name','UI copy CI']);
+  git(['config','user.email','ui-copy@example.invalid']);
+  put(ui,html('Свечи'));put(econ,name('Свечей хроник'));
+  put('dev/version.json','{"v":142}\n');
+  const base=commit();
+  put(ui,html('Огни'));put(econ,name('Огней Хроник'));
+  put('dev/version.json','{"v":143}\n');
+  const valid=commit();
+  assert.equal(verifyUiCopy(base,valid,dir),true,'actual safe base..head diff + version bump');
+  put('dev/version.json','{"v":144}\n');
+  const versionOnly=commit();
+  assert.equal(verifyUiCopy(valid,versionOnly,dir),false,'version-only is not UI-copy');
+  put('dev/version.json','{"v":143}\n');
+  commit();
+  put(ui,html('Огни').replace('const view','const battle'));
+  const logic=commit();
+  assert.equal(verifyUiCopy(valid,logic,dir),false,'executable change fails closed');
+  put(ui,html('Огни'));
+  put('dev/src/render3d/quality.js','const low=0;\n');
+  const mixed=commit();
+  assert.equal(verifyUiCopy(valid,mixed,dir),false,'mixed added graphics input fails closed');
+  put(ui,html('Огни 0'));
+  const number=commit();
+  assert.equal(verifyUiCopy(mixed,number,dir),false,'numbers and text are not copy');
+} finally {
+  fs.rmSync(dir,{recursive:true,force:true});
+}
+console.log('PASS CI-OPT-02 ui-copy proof: approved DOM/map literals; executable, attributes, numbers, interpolations, mixed paths rejected');
++'{flag ? "'+label+'" : "Воды"}'+'">Text</div>'+tick+';\n';
+reject('dev/src/ui/overlays/info.js',inAttribute('Свечей'),inAttribute('Огней Хроник'));
+const changedPredicate = (flag) =>
+  'const f=()=>'+tick+'<h3>'+ '
+reject(econ,"const key='candle';\n","const key='water';\n");
+reject('dev/src/logic/economy.js',
+  'const RW_NAME={candle:"Свечи"}; const cost=8;\n',
+  'const RW_NAME={candle:"Огни"}; const cost=0;\n');
+reject(ui,html('Свечи 8'),html('Огни 0')); // numeric semantics never waived
+reject(ui,html('Счёт 2'),html('Счёт ٢')); // Arabic-Indic numeric substitution
+reject(ui,'const f=()=>'+tick+'<script>Свечи</script>'+tick+';\n',
+  'const f=()=>'+tick+'<script>Огни</script>'+tick+';\n'); // raw executable HTML
+reject(ui,"const f=()=>"+tick+'<span>Свечи</span>'+tick+';\n',
+  "const f=()=>"+tick+'<span>'+ '$'+'{S.solari}' +'</span>'+tick+';\n'); // interpolation
+reject(ui,html('Свечи'),html('Огни').replace('const view','const game'));
+reject('dev/src/pwa/sw.js',html('Свечи'),html('Огни'));
+reject('dev/src/ui/common.js',"const x='Свечи';\n","const x='Огни';\n"); // generic literals not approved
+assert.equal(classify([ui]).scope,'full','no unproven filename-only scope');
+assert.equal(classify([ui],{verifiedUiCopy:true}).scope,'ui-copy');
+assert.deepEqual(classify([ui],{verifiedUiCopy:true}).groups,['build','golden','pwa']);
+assert.equal(classify([ui,'dev/version.json'],{verifiedUiCopy:true}).scope,'ui-copy');
+assert.equal(classify(['dev/version.json'],{verifiedUiCopy:true}).scope,'release');
+assert.equal(classify([ui,'dev/src/render3d/quality.js']).scope,'full',
+  'mixed visual/3d changes cannot become ui-copy');
+
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dune-ui-copy-proof-'));
+const git=args=>execFileSync('git',args,{cwd:dir,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+const put=(file,body)=>{
+  const abs=path.join(dir,file);
+  fs.mkdirSync(path.dirname(abs),{recursive:true});
+  fs.writeFileSync(abs,body);
+};
+const commit=()=>{
+  git(['add','.']);
+  git(['commit','-qm','fixture']);
+  return git(['rev-parse','HEAD']);
+};
+try {
+  git(['init','-q']);
+  git(['config','user.name','UI copy CI']);
+  git(['config','user.email','ui-copy@example.invalid']);
+  put(ui,html('Свечи'));put(econ,name('Свечей хроник'));
+  put('dev/version.json','{"v":142}\n');
+  const base=commit();
+  put(ui,html('Огни'));put(econ,name('Огней Хроник'));
+  put('dev/version.json','{"v":143}\n');
+  const valid=commit();
+  assert.equal(verifyUiCopy(base,valid,dir),true,'actual safe base..head diff + version bump');
+  put('dev/version.json','{"v":144}\n');
+  const versionOnly=commit();
+  assert.equal(verifyUiCopy(valid,versionOnly,dir),false,'version-only is not UI-copy');
+  put('dev/version.json','{"v":143}\n');
+  commit();
+  put(ui,html('Огни').replace('const view','const battle'));
+  const logic=commit();
+  assert.equal(verifyUiCopy(valid,logic,dir),false,'executable change fails closed');
+  put(ui,html('Огни'));
+  put('dev/src/render3d/quality.js','const low=0;\n');
+  const mixed=commit();
+  assert.equal(verifyUiCopy(valid,mixed,dir),false,'mixed added graphics input fails closed');
+  put(ui,html('Огни 0'));
+  const number=commit();
+  assert.equal(verifyUiCopy(mixed,number,dir),false,'numbers and text are not copy');
+} finally {
+  fs.rmSync(dir,{recursive:true,force:true});
+}
+console.log('PASS CI-OPT-02 ui-copy proof: approved DOM/map literals; executable, attributes, numbers, interpolations, mixed paths rejected');
++'{x === "'+flag+'" ? "Свечей" : "Воды"}'+'</h3>'+tick+';\n';
+reject('dev/src/ui/overlays/info.js',changedPredicate('candle'),changedPredicate('water'));
 reject(ui,"const x = amount === 'Свечи';\n","const x = amount === 'Огни';\n");
 reject(econ,"const key='candle';\n","const key='water';\n");
 reject('dev/src/logic/economy.js',
