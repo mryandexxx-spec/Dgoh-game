@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { classify, validatePlan, RELEASE } from './ci-policy.mjs';
+import { classify, validatePlan, systemsForPaths, RELEASE } from './ci-policy.mjs';
 import { inputs, changedPaths, campaignRegistryOnly, git } from './ci-inputs.mjs';
 import { copyCandidate, verifyUiCopy } from './ci-ui-copy.mjs';
 import { findProof, findMainPushProof } from './ci-proof.mjs';
@@ -23,7 +23,9 @@ export async function planForEvent(eventName,event,head,cwd=process.cwd(),{looku
       if (proof?.exact === true && proof.source_sha === head && proof.scope !== 'docs') {
         const plan = {
           ...key, mode: 'reuse', scope: proof.scope,
-          paths: [...proof.paths], groups: ['build'],
+          paths: [...proof.paths],
+          ...(proof.scope === 'focused' ? { systems: systemsForPaths(proof.paths) } : {}),
+          groups: ['build'],
           coverage: [...proof.coverage], proof,
           reason: 'Manual release: exact current-main certified push #' + proof.run_id,
         };
