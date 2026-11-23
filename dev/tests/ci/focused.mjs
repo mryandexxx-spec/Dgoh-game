@@ -95,5 +95,10 @@ assert.match(workflow,/github.event_name == 'workflow_dispatch' && inputs.publis
 const build=workflow.split('\n  build:\n')[1].split('\n  golden:\n')[0];
 const legacyHeavy=build.match(/- if: \$\{\{[^\n]*scope != 'focused'[^\n]*\}\}/g)||[];
 assert.ok(legacyHeavy.length>=65,'all legacy heavy build suites must be disabled on focused PRs');
+const scopedStep=build.split(/\n      - /).find(x=>x.includes('name: CI-OPT-03 scoped compiled smoke + affected subsystem acceptance'));
+assert.ok(scopedStep,'focused smoke must exist');
+assert.match(scopedStep,/scope == 'focused' && needs\.plan\.outputs\.mode != 'reuse'/,
+  'exact validated source reuse must not rerun fresh compiled acceptance before artifact restore');
+
 assert.equal(commandsFor(focus('dev/src/ui/common.js')).some(([path])=>path.endsWith('tests/run.mjs')),false);
 console.log('PASS CI-OPT-03 focused policy, touched-system matrix, smoke, fail closed, manual full, immutable gate and native-only storage.');
