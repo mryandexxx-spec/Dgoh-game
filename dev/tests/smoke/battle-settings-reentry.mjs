@@ -26,6 +26,13 @@ const detail = async () => page.evaluate(() => ({
   check: loadSave.writer.check().ok,
   selector: document.querySelector('[data-sqgo]')?.disabled,
   overlay: document.querySelector('#overlay')?.textContent?.slice(0, 120),
+  info: document.querySelector('#overlay2')?.textContent?.slice(0, 200),
+  mode: SQ?.mode, i: SQ?.i, chosen: SQ ? sqArr().slice() : null,
+  available: SQ?.mode==='camp' ? enGet(nodeEn(SQ.i)) : null,
+  cost: SQ?.mode==='camp' ? nodeCost(SQ.i) : null,
+  pending3d: LAUNCH_WAIT, hold: BT?.hold,
+  bpopCount: document.querySelectorAll('#bpop').length,
+  button: (() => { const e=document.querySelector('[data-sqgo]');if(!e)return null;const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,atPoint:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.outerHTML?.slice(0,200)}; })(),
 }));
 const click = async selector => {
   await page.waitForSelector(selector, { timeout: 15000 });
@@ -53,7 +60,9 @@ try {
     if (!await loadB3()) throw Error('Babylon WebGL unavailable');
     S.skipDlg = true; set_view('camp'); render(); openSquadSel('camp', 0);
   });
+  console.log('INITIAL',JSON.stringify(await detail()));
   await click('[data-sqgo]:not([disabled])');
+  console.log('FIRST CLICK',JSON.stringify(await detail()));
   await page.waitForFunction(() => BT?.B && !!document.querySelector('#battle'), {timeout:20000});
   await page.evaluate(() => clearTimeout(BT.timer));
   await click('[data-bset]');
@@ -83,6 +92,7 @@ try {
 } catch (e) {
   console.error('FAIL settings reentry',e.message);
   try { console.error(JSON.stringify(await detail())); } catch (x) { console.error(String(x)); }
+  try { console.error('captured browser errors', JSON.stringify(await page.evaluate(() => errLog?.entries || []))); } catch (x) {}
   throw e;
 } finally {
   if (page) await page.close().catch(() => {});
