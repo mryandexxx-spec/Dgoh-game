@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: 'Explicitly approve publishing the validated PWA to GitHub Pages'
+        description: 'Manual publication/re-publication of the validated PWA; merges to main publish automatically after green checks'
         required: true
         type: boolean
         default: false
@@ -1325,9 +1325,12 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  # Merge-to-main only: publish the same immutable CI-validated artifact after gate.
+  # The GITHUB_TOKEN publication commit does not trigger another push workflow.
+  # Manual publish remains available for exact-current-main release reuse.
   deploy-pages:
     name: Publish verified PWA to GitHub Pages
-    if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.publish == true && github.ref == 'refs/heads/main' && needs.plan.result == 'success' && needs.gate.result == 'success' && needs.plan.outputs.mode != 'docs' }}
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && ((github.event_name == 'workflow_dispatch' && inputs.publish == true) || (github.event_name == 'push' && github.actor != 'github-actions[bot]')) && needs.plan.result == 'success' && needs.gate.result == 'success' && needs.plan.outputs.mode != 'docs' }}
     needs: [plan, gate]
     runs-on: ubuntu-24.04
     permissions:
