@@ -17,6 +17,9 @@ export function uiAffected(plan, full = false) {
   if (plan.mode === 'reuse') throw Error('UI verification must use a fresh validated plan');
   if (plan.scope === 'focused') {
     if (!plan.groups.includes('ui')) throw Error('UI job was not selected');
+    // Native storage/Conquest/PWA browser checks are separate workflow steps.
+    // Do not launch unrelated gear/recycler screens for an otherwise non-UI diff.
+    if (!plan.systems.includes('ui')) return [];
     return uiBrowserCasesForPaths(plan.paths);
   }
   // Legacy/manual modes preserve the conservative historical checks.

@@ -158,6 +158,12 @@ assert.deepEqual(uiBrowserCasesForPaths(['dev/src/styles/hud-resources.css','dev
 assert.deepEqual(uiBrowserCasesForPaths(['dev/src/styles/hud-resources.css','dev/src/ui/recycler-screen.js']),
   ['recycler']);
 assert.ok(focus('dev/src/ui/recycler-screen.js').groups.includes('ui'));
+assert.deepEqual(uiAffectedOutputs(focus('dev/src/core/store.js')),
+  {gear:'false',recycler:'false',item:'false'},
+  'native storage checks must not run unrelated UI DOM tests');
+assert.deepEqual(uiAffectedOutputs(focus('dev/src/pwa/sw.js')),
+  {gear:'false',recycler:'false',item:'false'},
+  'PWA checks must not run unrelated UI DOM tests');
 assert.deepEqual(uiAffectedOutputs(focus('dev/src/ui/recycler-screen.js')),
   {gear:'false',recycler:'true',item:'false'});
 assert.deepEqual(uiAffectedOutputs(focus('dev/src/ui/common.js')),
