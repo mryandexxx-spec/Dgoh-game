@@ -235,7 +235,11 @@ header.top nav.tabs { order: 2; margin-top: 0; }
   .lobby .ltop .topbtns { gap: 3px; }
 }
 @media (orientation: landscape) and (max-height: 520px) {
-  header.top .wrap { padding-top: 5px; }
+  /* Keep secondary screens inside the phone viewport; breadcrumbs identify the view. */
+  header.top .brand { display: none; }
+  header.top .wrap { padding-top: 4px; }
+  header.top .resbox, header.top .resbox .hud-cell { min-height: 54px; }
+  header.top .resbox .hud-cell { padding-block: 5px; }
   .lobby .ltop { gap: 4px 8px; }
   .lobby .ltop .pchip { max-width: 160px; }
 }
