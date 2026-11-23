@@ -51,7 +51,10 @@ export function classify(paths, { forceFull = false, campaignRegistry = false, v
   let scope = 'full';
   if (!forceFull && paths.length) {
     if (!code.length) scope = 'docs';
-    else if (verifiedUiCopy && code.length === paths.length) scope = 'ui-copy';
+    else if (verifiedUiCopy && code.length === paths.length &&
+             code.every(p => /^dev\/src\/ui\/[\w/-]+\.js$/.test(p) ||
+               ['dev/src/data/campaigns.js','dev/src/logic/economy.js','dev/src/logic/rewards.js'].includes(p)))
+      scope = 'ui-copy';
     else if (code.every(p => p === 'dev/version.json')) scope = 'release';
     else if (code.every(p => p === 'dev/src/pwa/sw.js' || p === 'dev/version.json')) scope = 'pwa';
     else if (code.some(isEconomy) && code.every(p => isEconomy(p) || p === 'dev/version.json')) scope = 'economy';
