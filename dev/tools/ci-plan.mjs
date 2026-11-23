@@ -31,6 +31,12 @@ export async function planForEvent(eventName,event,head,cwd=process.cwd(),{looku
       }
     } catch { /* No trusted exact-main proof: run full regression, never skip. */ }
   }
+  // Full regression is a manual, explicit diagnostic choice only.
+  // Manual publication with no certified main push does NOT start full tests.
+  if(eventName==='workflow_dispatch' &&
+     event?.inputs?.full_regression!==true &&
+     event?.inputs?.full_regression!=='true')
+    throw Error('No exact-main release proof. Full regression requires explicit full_regression=true.');
   const base=eventName==='pull_request'?event.pull_request?.base?.sha:event.before;
   let plan;
   if(!['pull_request','push'].includes(eventName)) plan=classify([],{forceFull:true});
@@ -45,8 +51,8 @@ export async function planForEvent(eventName,event,head,cwd=process.cwd(),{looku
       // restricted to approved visible text nodes / display-name literals.
       const verifiedUiCopy = paths.length > 0 && paths.every(copyCandidate) &&
         verifyUiCopy(base,head,cwd);
-      plan=classify(paths,{campaignRegistry,verifiedUiCopy});
-    } catch {plan={...classify([],{forceFull:true}),reason:'Unavailable diff; full validation'};}
+      plan=classify(paths,{campaignRegistry,verifiedUiCopy,focused:true});
+    } catch (error) {throw Error('Cannot safely classify CI diff (no automatic full fallback): '+error.message);}
   }
   plan={...plan,...key};
   if(plan.mode==='docs'||!['pull_request','push'].includes(eventName))return validatePlan(plan);

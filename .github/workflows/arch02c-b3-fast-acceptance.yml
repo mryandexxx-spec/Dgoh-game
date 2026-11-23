@@ -1,30 +1,9 @@
 name: ARCH-02C-B3 mandatory writer fast acceptance
 
+# CI-OPT-03: heavy native writer suite is diagnostic and explicitly manual.
+# Normal PR/push has one SHA-bound scoped gate in validate-pwa.yml.
 on:
-  pull_request:
-    branches: [main, feature/arch02c-b4-b4a-conquest-claims, feature/arch02c-b4-b4b1-conquest-disks, feature/arch02c-b6a-market-recycler, feature/arch02c-b6b-hero-upgrades]
-    paths:
-      - 'dev/src/**'
-      - 'dev/tests/ci/arch02c-**'
-      - 'dev/tests/ci/arch02d-**'
-      - 'dev/tests/lib/**'
-      - 'dev/tests/economy/**'
-      - 'dev/tests/golden/saves.mjs'
-      - 'dev/tests/smoke/gear-e3-dom.mjs'
-      - 'dev/tests/smoke/pkg8-layout.mjs'
-      - 'dev/tests/smoke/baron-legend-gl.mjs'
-      - 'dev/package.json'
-      - 'dev/package-lock.json'
-      - '.github/workflows/arch02c-b3-fast-acceptance.yml'
-      - '.github/workflows/validate-pwa.yml'
-      # CI-OPT-01: economy-only changes already receive compiled save/transaction
-      # acceptance and native Chromium Web Locks tests in Validate PWA.
-      # Mixed PRs with any other included path still trigger this suite.
-      - '!dev/src/logic/economy.js'
-      - '!dev/src/logic/daily.js'
-      - '!dev/src/ui/views/daily.js'
-      - '!dev/tests/economy/**'
-      - '!dev/tests/ci/arch02c-b5a-daily-claims-acceptance.mjs'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -37,6 +16,7 @@ jobs:
   # The broad paths filter remains intact. Independently prove the full diff
   # before skipping any native Web Locks or archive acceptance.
   ui-copy-proof:
+    if: ${{ github.event_name == 'pull_request' }}
     name: Verify UI-copy-only diff before native-suite skip
     runs-on: ubuntu-24.04
     timeout-minutes: 4
