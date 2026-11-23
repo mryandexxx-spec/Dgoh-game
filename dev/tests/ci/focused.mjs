@@ -158,14 +158,16 @@ assert.deepEqual(uiAffectedOutputs(focus('dev/src/ui/common.js')),
 assert.throws(()=>uiAffected({...focus('dev/src/ui/recycler-screen.js'),paths:HUD_ONLY}), /Invalid|Forged|mapping/);
 assert.deepEqual(uiAffected({mode:'full',scope:'full',paths:[],groups:JOBS,coverage:JOBS}),
   ['gear','recycler','item']);
-const uiJob=workflow.split('\\n  ui:\\n')[1].split('\\n  ui-campaign:\\n')[0];
+const uiJob=workflow.split('\n  ui:\n')[1].split('\n  ui-campaign:\n')[0];
 assert.match(uiJob,/id: ui-affected/);
-assert.match(uiJob,/node tools\\/ci-ui-affected\\.mjs/);
+assert.ok(uiJob.includes('node tools/ci-ui-affected.mjs'));
 for(const name of ['gear','recycler','item']) {
   assert.ok(uiJob.includes("steps.ui-affected.outputs."+name+" == 'true'"),
     name+' browser check must require verified diff selection');
 }
-assert.doesNotMatch(uiJob,/^      - run: node tests\\/smoke\\/(?:gear-e3-dom|memory-ix-dom)\\.mjs/m,
-  'unconditional peripheral DOM smoke must not return');
+for(const name of ['gear-e3-dom','memory-ix-dom']) {
+  assert.ok(!uiJob.includes('- run: node tests/smoke/'+name+'.mjs'),
+    'unconditional peripheral DOM smoke must not return');
+}
 
 console.log('PASS CI-OPT-03 focused policy, touched-system matrix, smoke, fail closed, manual full, immutable gate and native-only storage.');
