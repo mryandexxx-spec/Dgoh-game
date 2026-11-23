@@ -4,7 +4,7 @@
 // again before any test is launched.
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { classify, validatePlan, systemsForPaths } from './ci-policy.mjs';
+import { classify, validatePlan, systemsForPaths, uiHudAcceptanceForPaths } from './ci-policy.mjs';
 
 export const CASES = Object.freeze({
   ci: [],
@@ -40,7 +40,7 @@ export const CASES = Object.freeze({
     'arch02c-b6c-feat-raid-acceptance',
   ],
   content: [],
-  ui: ['hud01-resource-acceptance'],
+  ui: [],
   render3d: [],
 });
 export const CONTENT_CASES = ['tests/arch01c2a-energy.mjs','tests/arch01c2b-node-open.mjs','tests/arch01c2c-nodes-digest.mjs'];
@@ -67,6 +67,10 @@ export function commandsFor(plan) {
       add('tests/ci/'+test+'.mjs',[artifact]);
     if(system==='content')for(const file of CONTENT_CASES)for(const artifact of ARTIFACTS)add(file,[artifact]);
   }
+  // Only HUD/shared UI changes require the HUD-specific Chromium acceptance.
+  if (plan.systems.includes('ui') && uiHudAcceptanceForPaths(plan.paths))
+    for (const artifact of ARTIFACTS)
+      add('tests/ci/hud01-resource-acceptance.mjs',[artifact]);
   // UI-01: run the actual Water WebP compiled-artifact contract only when
   // relevant source, asset, or its own acceptance was changed.
   const waterFiles = new Set([

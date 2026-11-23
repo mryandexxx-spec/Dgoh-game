@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { classify, systemsForPaths, validatePlan, JOBS, uiBrowserCasesForPaths } from '../../tools/ci-policy.mjs';
+import { classify, systemsForPaths, validatePlan, JOBS, uiBrowserCasesForPaths, uiHudAcceptanceForPaths } from '../../tools/ci-policy.mjs';
 import { commandsFor, runFocused, CASES } from '../../tools/ci-focused.mjs';
 import { uiAffectedOutputs, uiAffected } from '../../tools/ci-ui-affected.mjs';
 import { checkGate } from '../../tools/ci-gate.mjs';
@@ -135,6 +135,13 @@ assert.equal(commandsFor(focus('dev/src/ui/common.js')).some(([path])=>path.ends
 
 const HUD_ONLY = ['dev/src/styles/hud-resources.css','dev/assets/font/inter-variable.woff2'];
 assert.deepEqual(uiBrowserCasesForPaths(HUD_ONLY),[]);
+assert.equal(uiHudAcceptanceForPaths(HUD_ONLY),true);
+assert.equal(uiHudAcceptanceForPaths(['dev/src/ui/recycler-screen.js']),false);
+assert.equal(uiHudAcceptanceForPaths(['dev/src/ui/hero-window.js','dev/src/ui/recycler-screen.js']),false);
+assert.equal(uiHudAcceptanceForPaths(['dev/src/ui/common.js']),true);
+assert.equal(uiHudAcceptanceForPaths(['dev/src/styles/hud-resources.css','dev/src/ui/recycler-screen.js']),true);
+assert.equal(commandsFor(focus('dev/src/ui/recycler-screen.js')).some(([file])=>file.includes('hud01-resource-acceptance')),false);
+assert.equal(commandsFor(focus('dev/src/ui/common.js')).some(([file])=>file.includes('hud01-resource-acceptance')),true);
 const hud=focus(HUD_ONLY);
 assert.ok(!hud.groups.includes('ui'),'HUD-only browser proof already belongs to compiled build');
 assert.ok(commandsFor(hud).some(([f])=>f.endsWith('hud01-resource-acceptance.mjs')),

@@ -83,6 +83,17 @@ const UI_RECYCLER_ONLY = new Set([
 const UI_ITEM_ONLY = new Set([
   'dev/tests/smoke/dom.mjs',
 ]);
+// The HUD-01 Chromium test belongs to HUD/shared UI changes, not to
+// positively isolated gear, recycler, or item changes.
+export function uiHudAcceptanceForPaths(paths) {
+  if (!Array.isArray(paths) || !paths.length) throw Error('HUD paths required');
+  return paths.some(p => {
+    if (isDoc(p) || p === 'dev/version.json') return false;
+    if (p.startsWith('.github/workflows/') || p.startsWith('dev/tools/') ||
+        p === 'dev/tests/ci/focused.mjs' || p === 'dev/tests/ci/selection.mjs') return false;
+    return !(UI_GEAR_ONLY.has(p) || UI_RECYCLER_ONLY.has(p) || UI_ITEM_ONLY.has(p));
+  });
+}
 export function uiBrowserCasesForPaths(paths) {
   if (!Array.isArray(paths) || !paths.length) throw Error('UI diff paths required');
   const selected = new Set();
