@@ -36,7 +36,7 @@ function renderRes() {
       </span>
     </button>`;
   };
-  const money = (key, name, value, extra = '') => `<button type="button" class="hud-cell hud-currency ${extra}" data-info="${key}" aria-label="${name}: ${fmt(value)}">
+  const money = (key, name, value, extra = '') => `<button type="button" class="hud-cell hud-currency hud-${key} ${extra}" data-info="${key}" aria-label="${name}: ${fmt(value)}">
     <span class="hud-icon">${ic(key)}</span>
     <span class="hud-content"><span class="hud-title">${name}</span><span class="hud-value">${fmt(value)}</span></span>
   </button>`;
