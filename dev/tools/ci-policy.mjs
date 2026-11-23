@@ -126,6 +126,8 @@ const ECONOMY_PATHS = new Set([
 const isEconomy = p => ECONOMY_PATHS.has(p);
 export const isDoc = p => /^(?:README\.md|dev\/(?:README|ARCHITECTURE|CHANGES_STATUS)\.md)$/.test(p)
   || /^\.agents\/skills\/(?:README\.md|(?:game-ui-ux|game-feel|create-game-assets|rpg|performance-optimization|ai-behavior-trees-utility-ai|audio-design)\/SKILL\.md)$/.test(p)
+  // Only approved Babylon Markdown references are docs; executable/unknown files fail closed.
+  || /^\.agents\/skills\/babylonjs\/(?:SKILL\.md|references\/(?:rendering-and-assets|visual-proof)\.md)$/.test(p)
   || /^dev\/docs\/.+\.(?:md|txt|html|png|jpg|jpeg|webp|svg)$/.test(p)
   || p === 'dev/docs/ci/AUDIT_EVIDENCE_2026_11_14.json';
 export const isCampaign = p => /^dev\/src\/render3d\/scenes\/campaign-[\w-]+\.js$/.test(p)
