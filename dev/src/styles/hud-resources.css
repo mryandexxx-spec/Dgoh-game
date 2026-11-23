@@ -238,8 +238,13 @@ header.top nav.tabs { order: 2; margin-top: 0; }
   /* Keep secondary screens inside the phone viewport; breadcrumbs identify the view. */
   header.top .brand { display: none; }
   header.top .wrap { padding-top: 4px; }
-  header.top .resbox, header.top .resbox .hud-cell { min-height: 54px; }
-  header.top .resbox .hud-cell { padding-block: 5px; }
+  header.top .resbox, header.top .resbox .hud-cell { min-height: 46px; }
+  header.top .resbox .hud-cell { padding-block: 3px; }
+  header.top .resbox .hud-content { gap: 3px; }
+  header.top nav.tabs { gap: 6px; }
+  header.top nav.tabs button.home { padding: 2px 8px 2px 6px; }
+  header.top nav.tabs button.home svg { width: 18px; height: 18px; }
+  header.top nav.tabs .vname { font-size: 17px; }
   .lobby .ltop { gap: 4px 8px; }
   .lobby .ltop .pchip { max-width: 160px; }
 }

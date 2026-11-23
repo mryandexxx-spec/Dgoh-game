@@ -43,8 +43,9 @@ try {
   },{timeout:35000,polling:50});
   const result=await page.evaluate(()=>{
     const run=code=>(0,eval)(code);
-    const pill=document.querySelector('header .pill[data-info="candle"]');
-    const water=document.querySelector('header .pill[data-info="water"]');
+    const pill=document.querySelector('header [data-info="candle"].pill, header [data-info="candle"].hud-cell');
+    const water=document.querySelector('header [data-info="water"].pill, header [data-info="water"].hud-cell');
+    const hudLabel=el=>el?.querySelector('.hud-title')?.textContent || el?.querySelector('span')?.textContent;
     const candle=run('S.candle'), waterCount=run('S.water');
     const title=run('RES_INFO.candle.n');
     const reward=run('RW_TITLE.candle');
@@ -52,8 +53,8 @@ try {
     const chronicle=run('CAMP_DEF.C.desc');
     return {
       writer:run('start.writerLifecycle().writer.status'),
-      pill:pill?.querySelector('span')?.textContent,
-      waterLabel:water?.querySelector('span')?.textContent,
+      pill:hudLabel(pill),
+      waterLabel:hudLabel(water),
       candle,candleAfter:run('S.candle'),waterCount,
       display:title,reward,help,chronicle,
       pillText:pill?.textContent
