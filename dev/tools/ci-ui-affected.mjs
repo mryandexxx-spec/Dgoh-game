@@ -29,7 +29,7 @@ export function uiAffectedOutputs(plan, full = false) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (!process.env.CI_PLAN) throw Error('Missing verified CI_PLAN');
   const outputs = uiAffectedOutputs(JSON.parse(process.env.CI_PLAN), process.env.CI_UI_FULL === 'true');
-  const data = Object.entries(outputs).map(([k,v]) => k + '=' + v).join('\\n') + '\\n';
+  const data = Object.entries(outputs).map(([k,v]) => k + '=' + v).join('\n') + '\n';
   if (!process.env.GITHUB_OUTPUT) throw Error('GITHUB_OUTPUT required');
   fs.appendFileSync(process.env.GITHUB_OUTPUT, data);
   console.log('CI-OPT-04 affected UI browser checks:', JSON.stringify(outputs));
