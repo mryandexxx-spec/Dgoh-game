@@ -12,6 +12,8 @@
 - Не читать целиком `dev/tests/golden/data/*.b64` (это сжатые эталоны) и собранные `app.js`/`babylon3d.js`.
 
 ## Обязательно при любой доработке (кратко; детали — ARCHITECTURE.md)
+
+- Перед **каждой новой задачей** самостоятельно определить применимые навыки и прочитать их актуальные инструкции из репозитория по [`docs/AI_WORKFLOW.md`](../../docs/AI_WORKFLOW.md); список и маршрутизация — [`.agents/skills/README.md`](../../.agents/skills/README.md). Пользователь не обязан выбирать или передавать навыки.
 - Модульность: слои `data ← logic ← ui`, `data ← render3d`; в `logic/` и `data/` нет DOM, HTML, Babylon; HTML только в `ui/`; `logic → ui` только через хуки. `src/` правится вручную, `modularize.mjs` не запускать, перенос объявлений — `tools/move-decl.mjs`, порядок модулей — цепочка импортов предшественника (`import './prev.js'; // порядок исполнения`) + `tools/split.config.mjs`. Проверки: `node tools/check-deps.mjs`, `node tools/check-bundle.mjs dist/pwa/app.js`.
 - 3D: один Engine через EngineHost, сцены по контракту GameScene с `mode()`, dispose всего созданного, 0 компиляций после wake, ассеты — файлами (KTX2), не base64.
 - Профили графики: все параметры качества — только в `render3d/quality.js`; каждый новый эффект задаёт поведение для HIGH / MED (телефон по умолчанию) / LOW; автопонижение и переключатель «Графика» не обходить.
