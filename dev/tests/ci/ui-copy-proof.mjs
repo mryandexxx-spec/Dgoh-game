@@ -41,8 +41,12 @@ reject(ui,"const f=()=>"+tick+'<span data-info="candle">Свечи</span>'+tick+
   "const f=()=>"+tick+'<span data-info="water">Огни</span>'+tick+';\n'); // attribute
 reject(ui,'const f=()=>'+tick+'<span>Свечи</span>'+tick+';\n',
   'const f=()=>'+tick+'<span onclick="danger()">Огни</span>'+tick+';\n');
-const exposed = (label) =>
-  'const f=()=>'+tick+'<h3>'+ '
+const exposed = name => ['const f=()=>',tick,'<h3>','$','{flag ? "',name,'" : "Воды"}','</h3>',tick,';\n'].join('');
+accept('dev/src/ui/overlays/info.js', exposed('Свечей'), exposed('Огней Хроник'));
+const inAttribute = name => ['const f=()=>',tick,'<div title="','$','{flag ? "',name,'" : "Воды"}','">Text</div>',tick,';\n'].join('');
+reject('dev/src/ui/overlays/info.js', inAttribute('Свечей'), inAttribute('Огней Хроник'));
+const changedPredicate = name => ['const f=()=>',tick,'<h3>','$','{x === "',name,'" ? "Свечей" : "Воды"}','</h3>',tick,';\n'].join('');
+reject('dev/src/ui/overlays/info.js', changedPredicate('candle'), changedPredicate('water'));
 reject(econ,"const key='candle';\n","const key='water';\n");
 reject('dev/src/logic/economy.js',
   'const RW_NAME={candle:"Свечи"}; const cost=8;\n',
