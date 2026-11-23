@@ -7,6 +7,13 @@ import { planForEvent } from '../../tools/ci-plan.mjs';
 import { checkGate } from '../../tools/ci-gate.mjs';
 
 assert.equal(classify(['dev/docs/a.md','README.md']).mode,'docs');
+// Explicit allowlist: only selected skill Markdown is docs; unknown/JS remains fail-closed.
+for (const name of ['game-ui-ux','game-feel','create-game-assets','rpg','performance-optimization','ai-behavior-trees-utility-ai','audio-design']) {
+  assert.equal(classify([`.agents/skills/${name}/SKILL.md`]).mode,'docs');
+}
+assert.equal(classify(['.agents/skills/README.md']).mode,'docs');
+assert.throws(()=>classify(['.agents/skills/new-unknown/SKILL.md'],{focused:true}),/No safe CI subsystem mapping/);
+assert.throws(()=>classify(['.agents/skills/game-ui-ux/execute.js'],{focused:true}),/No safe CI subsystem mapping/);
 assert.equal(classify(['dev/version.json']).mode,'release');
 assert.equal(classify(['dev/src/pwa/sw.js']).mode,'pwa');
 const uiCopyOnly=classify(['dev/src/ui/common.js'],{verifiedUiCopy:true});
