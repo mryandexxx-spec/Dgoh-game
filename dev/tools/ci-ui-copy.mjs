@@ -5,13 +5,14 @@ import { parse } from 'acorn';
 import { execFileSync } from 'node:child_process';
 import { changedPaths } from './ci-inputs.mjs';
 
+const VERSION = 'dev/version.json';
 const EXTRA_DISPLAY = new Set([
   'dev/src/data/campaigns.js',
   'dev/src/logic/economy.js',
   'dev/src/logic/rewards.js',
 ]);
 export const copyCandidate = p =>
-  /^dev\/src\/ui\/[\w/-]+\.js$/.test(p) || EXTRA_DISPLAY.has(p);
+  p === VERSION || /^dev\/src\/ui\/[\w/-]+\.js$/.test(p) || EXTRA_DISPLAY.has(p);
 const getKey = node =>
   node?.type === 'Identifier' ? node.name :
   node?.type === 'Literal' ? String(node.value) : null;
@@ -144,17 +145,28 @@ export function compareCopySource(before, after, file) {
   // imported paths and unchanged literals must remain byte-for-byte identical.
   return skeleton(before, slotsA) === skeleton(after, slotsB);
 }
+// A normal shipping PR can also increment the public app version.
+// Prove exactly one numeric bump with otherwise byte-identical JSON.
+// Version-only changes remain classified as "release", never "ui-copy".
+export function compareCopyVersion(before, after) {
+  const re = /^(\s*\{\s*"v"\s*:\s*)(\d+)(\s*\}\s*)$/;
+  const a = before.match(re), b = after.match(re);
+  return !!a && !!b && a[1] === b[1] && a[3] === b[3] &&
+    Number.isSafeInteger(Number(a[2])) &&
+    Number.isSafeInteger(Number(b[2])) &&
+    Number(b[2]) === Number(a[2]) + 1;
+}
 const git = (args, cwd) => execFileSync('git', args, {
   cwd, encoding: 'utf8', timeout: 30000, maxBuffer: 8 * 1024 * 1024
 });
 export function verifyUiCopy(base, head, cwd = process.cwd()) {
   try {
     const paths = changedPaths(base, head, cwd);
-    if (!paths.length || paths.some(p => !copyCandidate(p))) return false;
+    if (!paths.some(p => p !== VERSION) || paths.some(p => !copyCandidate(p))) return false;
     return paths.every(p => {
       const before = git(['show', base + ':' + p], cwd);
       const after = git(['show', head + ':' + p], cwd);
-      return compareCopySource(before, after, p);
+      return p === VERSION ? compareCopyVersion(before, after) : compareCopySource(before, after, p);
     });
   } catch {
     // Missing git object, deleted/added file, parse error or ambiguity: full.
