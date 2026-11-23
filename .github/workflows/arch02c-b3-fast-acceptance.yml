@@ -34,7 +34,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The broad paths filter remains intact. Independently prove the full diff
+  # before skipping any native Web Locks or archive acceptance.
+  ui-copy-proof:
+    name: Verify UI-copy-only diff before native-suite skip
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    outputs:
+      is_ui_copy: ${{ steps.scope.outputs.is_ui_copy }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: cd dev && npm ci --ignore-scripts --no-audit --no-fund
+      - name: AST, markup, source byte and changed-path proof
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node --input-type=module -e 'import fs from "node:fs"; import { verifyUiCopy } from "./dev/tools/ci-ui-copy.mjs"; const safe = verifyUiCopy(process.env.BASE_SHA, process.env.HEAD_SHA); fs.appendFileSync(process.env.GITHUB_OUTPUT, "is_ui_copy=" + (safe ? "true" : "false") + "\n"); console.log("Native suite:", safe ? "proven UI-copy; skipped" : "full native acceptance required");'
   mandatory-writer-native:
+    needs: ui-copy-proof
+    # Failed/missing proof must not silently skip the safety suite.
+    if: ${{ !cancelled() && (needs.ui-copy-proof.result != 'success' || needs.ui-copy-proof.outputs.is_ui_copy != 'true') }}
     name: Mandatory PWA + HTML and native Web Locks (NO RELEASE)
     runs-on: ubuntu-24.04
     # B4b1b adds six intact 104-week pressure scenarios; the prior 20-minute

@@ -48,8 +48,16 @@ jobs:
       arena-ab: ${{ steps.scope.outputs['arena-ab'] }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - name: Install parser for independent full-diff proof
+        run: cd dev && npm ci --ignore-scripts --no-audit --no-fund
       - name: Test CI selection and resource-result validation
         run: |
+          node dev/tests/ci/ui-copy-proof.mjs
           node dev/tests/ci/selection.mjs
           node dev/tests/ci/proof.mjs
           node dev/tests/ci/resource-growth.mjs
@@ -102,12 +110,12 @@ jobs:
           cache-dependency-path: dev/package-lock.json
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: npm ci
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ECON-01 deterministic economy simulation contract (approved energy)
         run: node tests/economy/acceptance.mjs
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: node tools/check-deps.mjs --strict
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-01 Acorn import-boundary regression gate
         run: |
           node tests/ci/arch-imports.mjs
@@ -118,344 +126,344 @@ jobs:
           node tests/ci/arch-account-bootstrap.mjs
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: npm run build
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ECON-01 energy regen save-v1 regression (PWA + HTML)
         run: |
           node tests/ci/econ01-energy-acceptance.mjs dist/pwa/index.html
           node tests/ci/econ01-energy-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ECON-01 daily quest alternatives and reward-once semantics
         run: |
           node tests/ci/econ01-daily-acceptance.mjs dist/pwa/index.html
           node tests/ci/econ01-daily-acceptance.mjs dist/artifact.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: node tools/check-bundle.mjs dist/pwa/app.js
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02B1 fail-closed storage acceptance (PWA + artifact)
         run: |
           node tests/ci/arch02b1-storage-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02b1-storage-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B0 transaction fault characterization (PWA + artifact; unsafe baseline)
         run: |
           node tests/ci/arch02c-b0-transaction-characterization.mjs dist/pwa/index.html
           node tests/ci/arch02c-b0-transaction-characterization.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B1 verified checkpoint + explicit restore (PWA + artifact)
         run: |
           node tests/ci/arch02c-b1-checkpoint-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b1-checkpoint-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B2 safe import/export and fault acceptance (PWA + artifact)
         run: |
           node tests/ci/arch02c-b2-transfer-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b2-transfer-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B3-A0 multi-tab race characterization (PWA + artifact; UNSAFE baseline)
         run: |
           node tests/ci/arch02c-b3-multitab-characterization.mjs dist/pwa/index.html
           node tests/ci/arch02c-b3-multitab-characterization.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B3-B1a opt-in Web Locks lease proof (PWA + artifact; NOT LIVE GATE)
         run: |
           node tests/ci/arch02c-b3-b1-writer-lease-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b3-b1-writer-lease-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B3-B1b opted-in boot and persist writer gate (PWA + artifact; NOT LIVE)
         run: |
           node tests/ci/arch02c-b3-b1b-gated-boot-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b3-b1b-gated-boot-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B3-B1b opt-in lifecycle and verified rescue (PWA + artifact; NOT LIVE)
         run: |
           node tests/ci/arch02c-b3-b1b-lifecycle-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b3-b1b-lifecycle-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B3-B1c preview-selected composition-root startup (PWA + artifact; NOT LIVE)
         run: |
           node tests/ci/arch02c-b3-b1c-entrypoint-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b3-b1c-entrypoint-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B3-B1c-B2 lease loss + duplicate entrypoint acceptance (PWA + artifact; PRE-CUTOVER)
         run: |
           node tests/ci/arch02c-b3-b1c-b2-lock-loss-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b3-b1c-b2-lock-loss-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B3-B1c-B3 MANDATORY ordinary startup writer gate (PWA + artifact)
         run: |
           node tests/ci/arch02c-b3-b1c-b3-mandatory-boot-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b3-b1c-b3-mandatory-boot-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B4-B1 battle checkpoint settlement (PWA + artifact; NO RELEASE)
         run: |
           node tests/ci/arch02c-b4-b1-battle-commit-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b4-b1-battle-commit-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B4-B2 campaign + Conquest entry debit checkpoint (PWA + artifact; NO RELEASE)
         run: |
           node tests/ci/arch02c-b4-b2-entry-checkpoint-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b4-b2-entry-checkpoint-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B4-B3 simulation and Raid reward checkpoint (PWA + artifact; NO RELEASE)
         run: |
           node tests/ci/arch02c-b4-b3-reward-checkpoint-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b4-b3-reward-checkpoint-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B4-B3b trial attempts and reward checkpoint (PWA + artifact; NO RELEASE)
         run: |
           node tests/ci/arch02c-b4-b3b-trials-checkpoint-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b4-b3b-trials-checkpoint-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B4-B4a Conquest track and chest verified claim (PWA + artifact; NO RELEASE)
         run: |
           node tests/ci/arch02c-b4-b4a-conquest-claims-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b4-b4a-conquest-claims-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B4-B4b1 Conquest disk/reward route settlement (PWA + artifact; NO RELEASE)
         run: |
           node tests/ci/arch02c-b4-b4b1-conquest-disks-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b4-b4b1-conquest-disks-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B4-B4b2 Conquest shops/refills/consumables (PWA + artifact; NO RELEASE)
         run: |
           node tests/ci/arch02c-b4-b4b2-conquest-economy-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b4-b4b2-conquest-economy-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B5a verified daily quest and chest claims (PWA + artifact; NO RELEASE)
         run: |
           node tests/ci/arch02c-b5a-daily-claims-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b5a-daily-claims-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B5b verified login calendar + month rollover (PWA + artifact; NO RELEASE)
         run: |
           node tests/ci/arch02c-b5b-login-calendar-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b5b-login-calendar-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B6a verified markets, energy refills and recycling (PWA + artifact; NO RELEASE)
         run: |
           node tests/ci/arch02c-b6a-market-recycler-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b6a-market-recycler-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B6b verified hero upgrades and crafting (PWA + artifact; NO RELEASE)
         run: |
           node tests/ci/arch02c-b6b-upgrade-crafting-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b6b-upgrade-crafting-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B6c verified one-time feats and raid creation (PWA + artifact; NO RELEASE)
         run: |
           node tests/ci/arch02c-b6c-feat-raid-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b6c-feat-raid-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02D-B0 clock/week/timezone and RNG characterization (PWA + artifact; NO RELEASE)
         run: |
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
             TZ="$zone" node tests/ci/arch02d-b0-clock-rng-characterization.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b0-clock-rng-characterization.mjs dist/artifact.html
           done
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02D-B1 Conquest rollback guard and claims (PWA + artifact; NO RELEASE)
         run: |
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
             TZ="$zone" node tests/ci/arch02d-b1-conquest-rollback-acceptance.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b1-conquest-rollback-acceptance.mjs dist/artifact.html
           done
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02D-B2 GameClock daily/calendar snapshots and DST (PWA + artifact; NO RELEASE)
         run: |
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
             TZ="$zone" node tests/ci/arch02d-b2-gameclock-daily-acceptance.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b2-gameclock-daily-acceptance.mjs dist/artifact.html
           done
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02D-B3 monotonic resource regeneration + wall spoof (PWA + artifact; NO RELEASE)
         run: |
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
             TZ="$zone" node tests/ci/arch02d-b3-regen-clock-acceptance.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b3-regen-clock-acceptance.mjs dist/artifact.html
           done
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02D-B4a offline relaunch clock limits + v1 safety (PWA + artifact; NO RELEASE)
         run: |
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
             TZ="$zone" node tests/ci/arch02d-b4-offline-clock-characterization.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b4-offline-clock-characterization.mjs dist/artifact.html
           done
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02D-B4b0 forward-week + daily clock replay (PWA + artifact, 3 TZ; NO RELEASE)
         run: |
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
             TZ="$zone" node tests/ci/arch02d-b4b-entitlement-clock-characterization.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b4b-entitlement-clock-characterization.mjs dist/artifact.html
           done
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02D-B4b1 lossless Conquest week history (PWA + HTML, 3 TZ; NO RELEASE)
         run: |
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
             TZ="$zone" node tests/ci/arch02d-b4b1-conquest-week-retention.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b4b1-conquest-week-retention.mjs dist/artifact.html
           done
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02D-B4b1b archive quota, growth and transfer limits (PWA + HTML, 3 TZ; NO RELEASE)
         run: |
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
             TZ="$zone" node tests/ci/arch02d-b4b1b-archive-pressure.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b4b1b-archive-pressure.mjs dist/artifact.html
           done
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02D-B4b1c offline JSON file export/import (PWA + HTML, 3 TZ; NO RELEASE)
         run: |
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
             TZ="$zone" node tests/ci/arch02d-b4b1c-file-transfer-acceptance.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b4b1c-file-transfer-acceptance.mjs dist/artifact.html
           done
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02D-B4b1d SHA-256 Conquest archive recovery (PWA + HTML, 3 TZ; NO RELEASE)
         run: |
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
             TZ="$zone" node tests/ci/arch02d-b4b1d-conquest-archive-acceptance.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b4b1d-conquest-archive-acceptance.mjs dist/artifact.html
           done
-      - if: ${{ needs.plan.outputs.mode != 'reuse' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02D-B4b2 paid-day ledger history and rollback protection (PWA + HTML, 3 TZ; NO RELEASE)
         run: |
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
             TZ="$zone" node tests/ci/arch02d-b4b2-daily-entitlement-acceptance.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b4b2-daily-entitlement-acceptance.mjs dist/artifact.html
           done
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02D-B4b1e opt-in archive retention and recovery (PWA + HTML, 3 TZ; NO RELEASE)
         run: |
           for zone in UTC Europe/Amsterdam America/Los_Angeles; do
             TZ="$zone" node tests/ci/arch02d-b4b1e-manual-retention-acceptance.mjs dist/pwa/index.html
             TZ="$zone" node tests/ci/arch02d-b4b1e-manual-retention-acceptance.mjs dist/artifact.html
           done
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B3-B2-A1 protected import + recovery-only lease (PWA + artifact; NOT LIVE)
         run: |
           node tests/ci/arch02c-b3-b2-protected-transfer-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b3-b2-protected-transfer-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-02C-B3-B2-A2 explicit recovery UI + lifecycle (PWA + artifact; NOT LIVE)
         run: |
           node tests/ci/arch02c-b3-b2-a2-recovery-ui-acceptance.mjs dist/pwa/index.html
           node tests/ci/arch02c-b3-b2-a2-recovery-ui-acceptance.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-01C2a all 210 mission costs (PWA + artifact)
         run: |
           node tests/arch01c2a-energy.mjs dist/pwa/index.html
           node tests/arch01c2a-energy.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-01C2b all 210 campaign unlocks (PWA + artifact)
         run: |
           node tests/arch01c2b-node-open.mjs dist/pwa/index.html
           node tests/arch01c2b-node-open.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-01C2c immutable complete NODES fingerprint (PWA + artifact)
         run: |
           node tests/arch01c2c-nodes-digest.mjs dist/pwa/index.html
           node tests/arch01c2c-nodes-digest.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-01C3a1 exact cosmetics entitlement and worm SVG snapshot (PWA + artifact)
         run: |
           node tests/arch01c3a1-cosmetics-snapshot.mjs dist/pwa/index.html
           node tests/arch01c3a1-cosmetics-snapshot.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-01C3a2 exact worm avatar SVG and HTML (PWA + artifact)
         run: |
           node tests/arch01c3a2-worm-avatar-html.mjs dist/pwa/index.html
           node tests/arch01c3a2-worm-avatar-html.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-01C3b1 Conquest weekly state, 21 daily refill prices and feats (PWA + artifact)
         run: |
           node tests/arch01c3b1-conquest-refill.mjs dist/pwa/index.html
           node tests/arch01c3b1-conquest-refill.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-01C3b2 Conquest feat state, NOTES, weekly reset, persistence (PWA + artifact)
         run: |
           node tests/arch01c3b2-conquest-state.mjs dist/pwa/index.html
           node tests/arch01c3b2-conquest-state.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-01C3b3 Conquest difficulty, boss text, score, thresholds, saves (PWA + artifact)
         run: |
           node tests/arch01c3b3-conquest-selectors.mjs dist/pwa/index.html
           node tests/arch01c3b3-conquest-selectors.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-01C4a boss bootstrap, Shai-Hulud and AI integrity (PWA + artifact)
         run: |
           node tests/arch01c4a-boss-bootstrap.mjs dist/pwa/index.html
           node tests/arch01c4a-boss-bootstrap.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         name: ARCH-01C1b journey runtime compatibility (PWA + artifact)
         run: |
           node tests/arch01c1b-journey-runtime.mjs dist/pwa/index.html
           node tests/arch01c1b-journey-runtime.mjs dist/artifact.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/arena-hud-layout.mjs dist/pwa/index.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/smoke/young-baron-cpu.mjs dist/pwa/index.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-legend-contract.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-legend-progress.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-future-heroes.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-approved-data.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-bh9-encounters.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-bh9-battle.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-bh9-event.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-bh99-public-journey.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-bh9-hero-kits.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-bh94-story-events.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-bh95-integration.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-bh96-story-screen.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-bh97-character-release.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-horror.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-abilities.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-mechanics.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-gl-greed.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-staged-kit.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-roster-integration.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-legend-model-asset.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/muad-dib-asset.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/muad-dib-skinning.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/muad-dib-babylon.mjs dist/pwa/index.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/arena-animation-recovery.mjs dist/pwa/index.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-legend-animation.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-legend-skinning.mjs dist/pwa/index.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/baron-legend-cinematic.mjs dist/pwa/index.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/smoke/gear-e3.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/smoke/gear-ge1.mjs
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/smoke/memory-ix.mjs dist/pwa/index.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/smoke/v83-v85.mjs dist/pwa/index.html
-      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/smoke/jihad-j1.mjs dist/pwa/index.html
       - if: ${{ needs.plan.outputs.mode != 'reuse' }}
         run: node tools/ci-artifact.mjs make
@@ -505,31 +513,32 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: dev/package-lock.json
+      # Economy/UI-copy need exact legacy save snapshots, not unrelated full DOM/battles.
       # Economy changes need the exact compiled legacy save snapshots,
       # not unrelated 200-battle, character and 41-screen Golden regressions.
       # Unknown/mixed/graphics changes still use the original full suite.
       - run: npm ci
-        if: ${{ needs.plan.outputs.scope != 'economy' }}
+        if: ${{ needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
       - uses: actions/download-artifact@v4
         with:
           name: dune-validated-build
           path: dev/dist
       - run: node tools/ci-artifact.mjs verify
       - name: Cache Playwright Chromium
-        if: ${{ needs.plan.outputs.scope != 'economy' }}
+        if: ${{ needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-chromium-1.56.1
-      - if: ${{ needs.plan.outputs.scope != 'economy' }}
+      - if: ${{ needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: |
           npm install --no-save --package-lock=false playwright@1.56.1
           npx playwright install chromium
       - name: Golden full regression (200 battles, 41 screens, PWA + HTML)
-        if: ${{ needs.plan.outputs.scope != 'economy' }}
+        if: ${{ needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: npm test
-      - name: CI-OPT-01 economy exact save-v1 Golden (PWA + HTML)
-        if: ${{ needs.plan.outputs.scope == 'economy' }}
+      - name: CI-OPT-02 focused save-v1 Golden (PWA + HTML)
+        if: ${{ needs.plan.outputs.scope == 'economy' || needs.plan.outputs.scope == 'ui-copy' }}
         run: |
           node tests/golden/saves.mjs dist/pwa/index.html
           node tests/golden/saves.mjs dist/artifact.html
@@ -564,10 +573,10 @@ jobs:
       - name: Service worker installs even if optional 3D asset stalls
         run: node tests/sw-install-stall.mjs
       - name: Core model stalled on iPhone must not block 3D lobby
-        if: ${{ needs.plan.outputs.scope != 'economy' }}
+        if: ${{ needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/smoke/core-model-stall.mjs dist/pwa/index.html
       - name: Optional Muad-Dib download must not block 3D lobby
-        if: ${{ needs.plan.outputs.scope != 'economy' }}
+        if: ${{ needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}
         run: node tests/smoke/optional-model-boot.mjs dist/pwa/index.html
       - name: PWA update and offline assets
         run: node tests/smoke/sw.mjs .. dist/pwa
@@ -578,6 +587,11 @@ jobs:
         run: |
           node tests/ci/econ01-daily-dom-smoke.mjs dist/pwa/index.html
           node tests/ci/econ01-daily-dom-smoke.mjs dist/artifact.html
+      - name: CI-OPT-02 UI-copy real Chromium display smoke (PWA + HTML)
+        if: ${{ needs.plan.outputs.scope == 'ui-copy' || (github.event_name == 'pull_request' && contains(needs.plan.outputs.decision, 'dev/tests/ci/ui-copy-dom-smoke.mjs')) }}
+        run: |
+          node tests/ci/ui-copy-dom-smoke.mjs dist/pwa/index.html
+          node tests/ci/ui-copy-dom-smoke.mjs dist/artifact.html
       # Fast's full 36-minute duplicate is excluded for economy-only changes.
       # Keep real native Web Locks and recovery acceptance on the *same*
       # immutable build in the mandatory PWA job instead.

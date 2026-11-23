@@ -5,6 +5,9 @@ export const CAMPAIGN = [...RELEASE,'ui-campaign','campaign-lifecycle','perf'];
 // Economy/daily changes still receive full compiled safety, golden and PWA
 // coverage, but do not gate on unrelated WebGL, 3D or performance jobs.
 export const ECONOMY = [...RELEASE];
+// UI-copy is selected only after AST-backed, byte-strict diff proof in ci-ui-copy.mjs.
+// This does NOT exempt whole paths or allow executable/HTML attribute edits.
+export const UI_COPY = [...RELEASE];
 const ECONOMY_PATHS = new Set([
   'dev/src/logic/economy.js',
   'dev/src/logic/daily.js',
@@ -39,15 +42,20 @@ export function groupsFor(scope, paths=[]) {
     const selected=new Set([...RELEASE,...code.flatMap(testGroups)]);
     return JOBS.filter(k=>selected.has(k));
   }
-  const groups = { docs: [], release: RELEASE, pwa: RELEASE, economy: ECONOMY, campaign: CAMPAIGN, full: JOBS }[scope];
+  const groups = { docs: [], release: RELEASE, pwa: RELEASE, economy: ECONOMY, 'ui-copy': UI_COPY, campaign: CAMPAIGN, full: JOBS }[scope];
   if (!groups) throw Error('Unknown CI scope: ' + scope);
   return [...groups];
 }
-export function classify(paths, { forceFull = false, campaignRegistry = false } = {}) {
+export function classify(paths, { forceFull = false, campaignRegistry = false, verifiedUiCopy = false } = {}) {
   const code = paths.filter(p => !isDoc(p));
   let scope = 'full';
   if (!forceFull && paths.length) {
     if (!code.length) scope = 'docs';
+    else if (verifiedUiCopy && code.length === paths.length &&
+             code.some(p => p !== 'dev/version.json') &&
+             code.every(p => p === 'dev/version.json' || /^dev\/src\/ui\/[\w/-]+\.js$/.test(p) ||
+               ['dev/src/data/campaigns.js','dev/src/logic/economy.js','dev/src/logic/rewards.js'].includes(p)))
+      scope = 'ui-copy';
     else if (code.every(p => p === 'dev/version.json')) scope = 'release';
     else if (code.every(p => p === 'dev/src/pwa/sw.js' || p === 'dev/version.json')) scope = 'pwa';
     else if (code.some(isEconomy) && code.every(p => isEconomy(p) || p === 'dev/version.json')) scope = 'economy';
@@ -57,7 +65,7 @@ export function classify(paths, { forceFull = false, campaignRegistry = false } 
   return { mode: scope, scope, groups: groupsFor(scope,paths), coverage: groupsFor(scope,paths), paths, reason: 'Scope: ' + scope };
 }
 export function validatePlan(plan) {
-  if (!plan || !['docs','release','pwa','economy','tests','campaign','full','reuse'].includes(plan.mode)) throw Error('Missing/invalid CI mode');
+  if (!plan || !['docs','release','pwa','economy','ui-copy','tests','campaign','full','reuse'].includes(plan.mode)) throw Error('Missing/invalid CI mode');
   const required = groupsFor(plan.scope,plan.paths);
   const selected = plan.mode === 'reuse' ? ['build'] : groupsFor(plan.mode,plan.paths);
   if (JSON.stringify(plan.groups) !== JSON.stringify(selected)) throw Error('Invalid selected jobs');

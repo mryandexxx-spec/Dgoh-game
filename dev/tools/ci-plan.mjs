@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { classify, validatePlan, RELEASE } from './ci-policy.mjs';
 import { inputs, changedPaths, campaignRegistryOnly, git } from './ci-inputs.mjs';
+import { copyCandidate, verifyUiCopy } from './ci-ui-copy.mjs';
 import { findProof, findMainPushProof } from './ci-proof.mjs';
 export { classify, changedPaths };
 export async function planForEvent(eventName,event,head,cwd=process.cwd(),{lookup=findProof,lookupMain=findMainPushProof,env=process.env}={}) {
@@ -40,7 +41,11 @@ export async function planForEvent(eventName,event,head,cwd=process.cwd(),{looku
       if(paths.includes('dev/tools/split.config.mjs')) {
         try {campaignRegistry=campaignRegistryOnly(base,head,cwd);} catch {}
       }
-      plan=classify(paths,{campaignRegistry});
+      // Full-source diff, not filenames, must prove every edited byte is
+      // restricted to approved visible text nodes / display-name literals.
+      const verifiedUiCopy = paths.length > 0 && paths.every(copyCandidate) &&
+        verifyUiCopy(base,head,cwd);
+      plan=classify(paths,{campaignRegistry,verifiedUiCopy});
     } catch {plan={...classify([],{forceFull:true}),reason:'Unavailable diff; full validation'};}
   }
   plan={...plan,...key};

@@ -9,6 +9,14 @@ import { checkGate } from '../../tools/ci-gate.mjs';
 assert.equal(classify(['dev/docs/a.md','README.md']).mode,'docs');
 assert.equal(classify(['dev/version.json']).mode,'release');
 assert.equal(classify(['dev/src/pwa/sw.js']).mode,'pwa');
+const uiCopyOnly=classify(['dev/src/ui/common.js'],{verifiedUiCopy:true});
+assert.equal(uiCopyOnly.mode,'ui-copy');
+assert.deepEqual(uiCopyOnly.groups,['build','golden','pwa']);
+assert.equal(checkGate(needsForScope(uiCopyOnly)).mode,'ui-copy');
+assert.equal(classify(['dev/src/ui/common.js']).mode,'full',
+  'filenames alone can NEVER skip compiled safety suites');
+assert.equal(classify(['dev/src/ui/common.js','dev/src/render3d/quality.js'],
+  {verifiedUiCopy:true}).mode,'full','mixed code is not UI-copy');
 assert.equal(classify(['dev/src/render3d/scenes/campaign-map.js','dev/src/styles/campaign20.css','dev/version.json']).mode,'campaign');
 
 // CI-OPT-01: narrow, explicit economy/daily changes keep save, golden,
@@ -189,8 +197,8 @@ const stepNamed = name => buildSteps.find(x => x.includes('name: ' + name + '\n'
 const requireScoped = name => {
   const step = stepNamed(name);
   assert.ok(step, name + ': build smoke/safety step must exist');
-  assert.match(step, /^if: \$\{\{ needs\.plan\.outputs\.mode != 'reuse' \}\}/,
-    name + ': must execute for economy scope');
+  assert.match(step, /^if: \$\{\{ needs\.plan\.outputs\.mode != 'reuse' && needs\.plan\.outputs\.scope != 'ui-copy' \}\}/,
+    name + ': must execute for economy, skip UI-copy');
 };
 for (const name of [
   'ECON-01 deterministic economy simulation contract (approved energy)',
@@ -219,10 +227,10 @@ for (const name of [
 ]) {
   const step = stepNamed(name);
   assert.ok(step, name + ': full-suite step must remain available');
-  assert.match(step, /^if: \$\{\{ needs\.plan\.outputs\.mode != 'reuse' && needs\.plan\.outputs\.scope != 'economy' \}\}/,
-    name + ': run for full scope, not economy-only');
+  assert.match(step, /^if: \$\{\{ needs\.plan\.outputs\.mode != 'reuse' && needs\.plan\.outputs\.scope != 'economy' && needs\.plan\.outputs\.scope != 'ui-copy' \}\}/,
+    name + ': run for full scope, not economy or UI-copy');
 }
-const economySkipped = buildSteps.filter(x => x.startsWith("if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' }}"));
+const economySkipped = buildSteps.filter(x => x.startsWith("if: ${{ needs.plan.outputs.mode != 'reuse' && needs.plan.outputs.scope != 'economy' && needs.plan.outputs.scope != 'ui-copy' }}"));
 assert.ok(economySkipped.length >= 50,
   'economy-only changes should avoid unrelated heavy build regression steps');
 // CI-OPT-01: no duplicate 36-minute Fast job for economy-only PRs.
@@ -244,6 +252,16 @@ for (const economyExclusion of [
 assert.ok(fastPathBlock.lastIndexOf("      - '!dev/src/logic/daily.js'") >
   fastPathBlock.indexOf("      - 'dev/src/**'"),
   'GitHub path exclusion must come after the positive source glob');
+// CI-OPT-02: maintain broad Fast trigger, but require independent complete
+// proof before skipping expensive Web Locks or legacy Conquest tests.
+assert.match(fastWorkflow,/^  ui-copy-proof:/m,'native Fast has proof job');
+assert.match(fastWorkflow,/fetch-depth: 0/,'proof must compare full git history');
+assert.match(fastWorkflow,/verifyUiCopy\(process.env.BASE_SHA, process.env.HEAD_SHA\)/,
+  'native workflow uses same source proof as primary selector');
+assert.match(fastWorkflow,/needs\.ui-copy-proof\.result != 'success'/,
+  'failed proof fails closed into native safety suite');
+assert.match(fastWorkflow,/needs\.ui-copy-proof\.outputs\.is_ui_copy != 'true'/,
+  'only proven safe text may skip native suite');
 const economyPwa = workflow.match(/^  pwa:\n([\s\S]*?)^  ui:/m)?.[1];
 assert.ok(economyPwa, 'required compiled PWA job must remain');
 for (const command of [
@@ -282,14 +300,14 @@ const scopeGolden = workflow.match(/^  golden:\n([\s\S]*?)^  pwa:/m)?.[1];
 assert.ok(scopeGolden,'required golden job exists for economy and full');
 const goldenSteps = scopeGolden.split(/\n      - /).slice(1);
 const goldenStep = label => goldenSteps.find(x=>x.includes('name: '+label+'\n'));
-const savesFocused=goldenStep('CI-OPT-01 economy exact save-v1 Golden (PWA + HTML)');
+const savesFocused=goldenStep('CI-OPT-02 focused save-v1 Golden (PWA + HTML)');
 assert.ok(savesFocused,'scoped economy save golden must exist');
-assert.match(savesFocused,/if: \$\{\{ needs\.plan\.outputs\.scope == 'economy' \}\}/);
+assert.match(savesFocused,/if: \$\{\{ needs\.plan\.outputs\.scope == 'economy' \|\| needs\.plan\.outputs\.scope == 'ui-copy' \}\}/);
 for(const f of ['dist/pwa/index.html','dist/artifact.html'])
   assert.ok(savesFocused.includes('node tests/golden/saves.mjs '+f),'save v1 '+f+' required');
 const goldenFull=goldenStep('Golden full regression (200 battles, 41 screens, PWA + HTML)');
 assert.ok(goldenFull);
-assert.match(goldenFull,/if: \$\{\{ needs\.plan\.outputs\.scope != 'economy' \}\}/);
+assert.match(goldenFull,/if: \$\{\{ needs\.plan\.outputs\.scope != 'economy' && needs\.plan\.outputs\.scope != 'ui-copy' \}\}/);
 assert.ok(goldenFull.includes('npm test'),'full regression cannot be silently removed');
 assert.ok(goldenSteps.some(x=>x.includes('npm install --no-save --package-lock=false playwright@1.56.1') &&
   x.includes("scope != 'economy'")), 'Playwright setup only for full golden');
@@ -312,6 +330,15 @@ assert.equal(classify(['dev/src/logic/daily.js','dev/src/render3d/quality.js']).
   'mixed visuals never enter shortened economy golden');
 assert.equal(checkGate(needsForScope(scoped)).mode,'economy',
   'focused golden+pwa results must still satisfy the exact unchanged gate');
+const uiCopyPwaSmoke=economyPwa.split(/\n      - /).find(x =>
+  x.includes('name: CI-OPT-02 UI-copy real Chromium display smoke (PWA + HTML)'));
+assert.ok(uiCopyPwaSmoke,'UI-copy real browser acceptance must exist');
+assert.match(uiCopyPwaSmoke,/scope == 'ui-copy'/);
+for(const f of ['dist/pwa/index.html','dist/artifact.html'])
+  assert.ok(uiCopyPwaSmoke.includes('node tests/ci/ui-copy-dom-smoke.mjs '+f),
+    'UI-copy smoke runs against both compiled artifacts');
+assert.equal(checkGate(needsForScope(uiCopyOnly)).mode,'ui-copy',
+  'UI-copy retains strict gate and required compiled build, save and PWA jobs');
 const strict=workflow.match(/^  arch-strict:\n([\s\S]*?)^  build:/m)?.[1];
 assert.ok(strict,'dedicated strict job must exist outside scope/reuse selection');
 assert.match(strict,/node tools\/check-deps\.mjs --strict/);
