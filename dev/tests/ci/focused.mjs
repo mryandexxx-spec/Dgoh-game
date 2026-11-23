@@ -25,7 +25,7 @@ const coverage={
   conquest:['dev/src/logic/conquest.js','dev/tests/ci/arch02d-b4b1b-archive-pressure.mjs'],
   progression:['dev/src/logic/recycler.js','dev/src/logic/gear-crafting.js'],
   content:['dev/src/data/heroes.js','dev/src/data/campaigns.js'],
-  ui:['dev/src/ui/common.js','dev/src/styles/game.css'],
+  ui:['dev/src/ui/common.js','dev/src/styles/game.css','dev/assets/img/water-literjon.webp','dev/tests/ci/ui01-water-literjon-acceptance.mjs'],
   render3d:['dev/src/render3d/quality.js','dev/assets/models/hero.glb'],
 };
 for(const [system,paths] of Object.entries(coverage)){
@@ -41,8 +41,11 @@ for(const [system,paths] of Object.entries(coverage)){
   }
 }
 assert.equal(classify(['dev/src/ui/common.js'],{verifiedUiCopy:true,focused:true}).mode,'ui-copy');
-assert.equal(classify(['dev/src/logic/daily.js'],{focused:true}).mode,'economy');
-assert.equal(classify(['dev/version.json'],{focused:true}).mode,'release');
+assert.equal(classify(['dev/src/logic/daily.js'],{focused:true}).mode,'focused');
+assert.equal(classify(['dev/version.json'],{focused:true}).mode,'focused');
+assert.deepEqual(classify(['dev/version.json'],{focused:true}).systems,['pwa']);
+assert.deepEqual(classify(['dev/src/pwa/sw.js'],{focused:true}).systems,['pwa']);
+assert.deepEqual(classify(['dev/src/logic/daily.js'],{focused:true}).systems,['economy','daily']);
 assert.equal(classify(['dev/docs/roadmap.md'],{focused:true}).mode,'docs');
 for(const path of ['unknown.txt','dev/src/game.js','dev/src/random-unsafe-area/file.js'])
   assert.throws(()=>classify([path],{focused:true}),/No safe CI subsystem mapping/);
