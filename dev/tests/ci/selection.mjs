@@ -137,6 +137,22 @@ assert.equal(manualPlan.scope, 'economy');
 assert.deepEqual(manualPlan.groups, ['build']);
 assert.deepEqual(manualPlan.coverage, ['build', 'golden', 'pwa']);
 assert.equal(checkGate(needs(manualPlan)).mode, 'reuse');
+const focusedProof = {
+  ...manualProof, scope: 'focused',
+  paths: ['.github/workflows/validate-pwa.yml','dev/tools/ci-policy.mjs'],
+  coverage: groupsFor('focused',['.github/workflows/validate-pwa.yml','dev/tools/ci-policy.mjs']),
+};
+const focusedManual = await planForEvent('workflow_dispatch',manualEvent,base,dir,{
+  ...manualArgs,lookupMain:async()=>focusedProof,
+});
+assert.equal(focusedManual.scope,'focused');
+assert.equal(focusedManual.mode,'reuse');
+assert.deepEqual(focusedManual.systems,['ci']);
+assert.deepEqual(focusedManual.groups,['build']);
+assert.equal(checkGate(needs(focusedManual)).mode,'reuse');
+await assert.rejects(()=>planForEvent('workflow_dispatch',manualEvent,base,dir,{
+  ...manualArgs,lookupMain:async()=>({...focusedProof,paths:['dev/src/unknown-unsafe.js']}),
+}),/No exact-main release proof/,'unknown proof paths must be rejected');
 for (const patch of [
   { source_sha: '0'.repeat(40) },
   { fingerprint: '0'.repeat(64) },
