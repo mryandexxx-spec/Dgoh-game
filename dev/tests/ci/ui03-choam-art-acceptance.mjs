@@ -20,7 +20,7 @@ assert.match(daily, /Имперская поставка/);
 assert.match(daily, /Открыть поставку/);
 assert.match(daily, /rewardsHtml\(q\.rw, \{ art: true/);
 assert.match(calendar, /choamMarkArt\(\)/);
-for (const key of ['sol', 'cry', 'seal', 'folio', 'water', 'pl']) {
+for (const key of ['sol', 'cry', 'seal', 'folio', 'water', 'pl', 'rid', 'teeth']) {
   const svg = dailyRewardIcon(key, 'test-1');
   assert.match(svg, new RegExp('u03-chip-' + key + '-test-1'));
   assert.match(svg, /ui03-daily-loot-svg/);
