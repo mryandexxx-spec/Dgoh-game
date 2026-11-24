@@ -65,7 +65,18 @@ function renderRes() {
 const starStr = (n, max = 7) => '★'.repeat(n) + `<i>${'★'.repeat(max - n)}</i>`;
 const glyph = (def, extra = '') => def.boss ? `<span class="gl ${extra}" style="--fc:var(--worm);color:var(--worm)" aria-hidden="true"><svg viewBox="0 0 24 24">${SPOT_ICONS.worm}</svg></span>` : `<span class="gl face ${extra}" style="--fc:${fc(def)}" aria-hidden="true">${figureSVG(def)}</span>`;
 const thumb = (scene, n) => `<div class="thumb"><canvas data-scene="${scene}" width="200" height="100"></canvas><span>${n}</span></div>`;
-const skillSvg = (def, key) => `<svg viewBox="0 0 24 24" aria-hidden="true">${skillGlyph(def, key)}</svg>`;
+// UI-07: one registry for all hero/skill/battle surfaces. The existing glyph
+// stays underneath the opaque center of the artwork as a no-network fallback.
+const SKILL_ART = Object.freeze({ duncan: Object.freeze({
+  basic: '__DUNCAN_BASIC_ICON_URL__',
+  special: '__DUNCAN_SPECIAL_ICON_URL__',
+  ult: '__DUNCAN_ULT_ICON_URL__',
+  passive: '__DUNCAN_PASSIVE_ICON_URL__'
+}) });
+const skillSvg = (def, key) => {
+  const art = SKILL_ART[def?.id]?.[key], url = art && !art.startsWith('__') ? art : null;
+  return `<svg${url ? ' class="skill-art"' : ''} viewBox="0 0 24 24" aria-hidden="true">${skillGlyph(def, key)}${url ? `<image href="${url}" x="0" y="0" width="24" height="24" preserveAspectRatio="xMidYMid meet"/>` : ''}</svg>`;
+};
 function itemIcon(it, size = 40, extra = '') {
   return `<span class="itm ${extra}" data-info="frag:${it.id}" style="--tc:${TIER_COL[it.t]};width:${size}px;height:${size}px"><svg viewBox="0 0 24 24" aria-hidden="true">${IG[it.kind]('#efe6d6', '#1a1420')}</svg></span>`;
 }

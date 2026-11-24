@@ -139,11 +139,25 @@ if (!solariIcon || code0.split('__SOL_ICON_URL__').length !== 3)
 const soostoneIcon = ASSETS.find(a => a.name === 'img/soostone.webp');
 if (!soostoneIcon || code0.split('__SOOSTONE_ICON_URL__').length !== 3)
   throw new Error('UI-05 shared resource/calendar Soostone artwork is missing');
-const code1 = code0.replace('__APP_VER__', () => APP_VER)
+const ui07Icons = {
+  __DUNCAN_BASIC_ICON_URL__: 'img/skill-duncan-basic.webp',
+  __DUNCAN_SPECIAL_ICON_URL__: 'img/skill-duncan-special.webp',
+  __DUNCAN_ULT_ICON_URL__: 'img/skill-duncan-ult.webp',
+  __DUNCAN_PASSIVE_ICON_URL__: 'img/skill-duncan-passive.webp',
+  __MEMORY_RANK_ICON_URL__: 'img/memory-rank-plaque.webp',
+};
+// Resolve UI-only assets at build time, preserving the approved ESM order.
+let code1 = code0.replace('__APP_VER__', () => APP_VER)
   .replace('__WATER_ICON_URL__', () => waterIcon.pwa)
   .replace('__CANDLE_ICON_URL__', () => candleIcon.pwa)
   .replaceAll('__SOL_ICON_URL__', () => solariIcon.pwa)
   .replaceAll('__SOOSTONE_ICON_URL__', () => soostoneIcon.pwa);
+for (const [token, name] of Object.entries(ui07Icons)) {
+  const asset = ASSETS.find(a => a.name === name);
+  if (!asset || code1.split(token).length !== 2 || asset.pwa !== asset.art)
+    throw new Error('UI-07 immutable artwork missing or ambiguous: ' + name);
+  code1 = code1.replace(token, () => asset.pwa);
+}
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(path.join(OUT, 'app.unmin.js'), withAssets(code1, 'pwa'));   // для tools/check-bundle.mjs (порядок модулей по комментариям-маркерам)
 console.log(`версия: ${APP_VER}`);
