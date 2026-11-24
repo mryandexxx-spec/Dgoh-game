@@ -127,7 +127,7 @@ function renderDaily() {
       <div class="ui03-right"><div class="ui03-timer"><small>ОБНОВЛЕНИЕ ЧЕРЕЗ</small><b>${hh} ч ${mm} мин</b></div><button class="ui03-close" data-v="lobby" aria-label="Вернуться в лагерь">×</button></div>
     </div>
     <div class="ui03-main daily">
-      <section class="ui03-panel ui03-hero" aria-labelledby="ui03-chest-title">
+      <section class="ui03-panel ui03-hero ${D.chest?'opened':chestReady?'ready':''}" aria-labelledby="ui03-chest-title">
         <div class="ui03-eyebrow">НАГРАДА ЗА ПОСТОЯНСТВО</div><div class="ui03-title" id="ui03-chest-title">Сундук дня</div>
         <div class="ui03-sub">Завершите ${CHEST_NEED} заданий и получите имперские припасы.</div>
         <div class="ui03-art">${chestArt}</div>
