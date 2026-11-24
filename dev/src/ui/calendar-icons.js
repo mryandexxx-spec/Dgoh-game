@@ -69,6 +69,15 @@ const ART = Object.freeze({
     + '<circle cx="24" cy="27.9" r="8.5" fill="none" stroke="#5a1716" stroke-width="1.2"/>'
     + '<path d="m24 19.8 2.4 5.5 5.9.8-4.3 4.3 1.1 6-5.1-3-5.2 3 1-6-4.3-4.3 6-.8Z" fill="url(#`-gold)" stroke="#fff3b8" stroke-width=".7"/>'
     + '<path d="M12.5 23.9c1.5-6.6 7-10.2 14-9.5" fill="none" stroke="#ffd7a1" stroke-width="1.4" opacity=".8"/>',
+  rid: '<ellipse cx="24" cy="25" rx="22" ry="21" fill="url(#`-halo)"/>'
+    + '<path d="m6 17 18-10 19 10v21L24 46 6 37Z" fill="#213b4b" stroke="#e6c78f" stroke-width="1.7"/>'
+    + '<path d="M6 17 24 7l19 10-19 11Z" fill="#68d7e5" stroke="#e4faff" stroke-width="1.7"/>'
+    + '<path d="m6 17 18 11v18L6 37Z" fill="#2f8097" stroke="#b3f5f2" stroke-width="1.3"/>'
+    + '<path d="m43 17-19 11v18l19-9Z" fill="#15566f" stroke="#97dae2" stroke-width="1.3"/>'
+    + '<path d="m24 7 4 15-4 6-5-8Z" fill="#d8fff7" opacity=".6"/>'
+    + '<path d="m6 17 13 3 5 8m19-11-15 5-4 6" fill="none" stroke="#f3fcf1" stroke-width="1.3" opacity=".65"/>'
+    + '<path d="m9 33 10 5m10-5 10-5" fill="none" stroke="#b7f1f0" stroke-width="1.2" opacity=".64"/>'
+    + '<path d="m34 2 1.4 5 5 1.4-5 1.4-1.4 5-1.4-5-5-1.4 5-1.4Z" fill="#f8fbd1"/>',
   wol: '<ellipse cx="24" cy="26" rx="21" ry="21" fill="url(#`-halo)"/>'
     + '<path d="M20.1 4h7.8v7.6l5.3 7.1v17.8c0 4.1-3.2 6.5-7 6.5h-4.4c-4 0-7-2.4-7-6.5V18.7l5.3-7.1Z" fill="#153948" stroke="#d1b078" stroke-width="2"/>'
     + '<path d="M17.9 22.5h12.2v14.4c0 2-1.3 3.2-3.7 3.2h-4.8c-2.5 0-3.7-1.2-3.7-3.2Z" fill="url(#`-aqua)"/>'
