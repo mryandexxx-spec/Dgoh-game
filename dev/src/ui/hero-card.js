@@ -13,7 +13,7 @@ import { S } from '../core/state.js';
 import { GEAR_UP_SOL, TIER_COL } from '../logic/gear.js';
 import { RELIC_MAX, relicReady, sideName, unlockNeed } from '../logic/relics.js';
 import { MAX_GEAR, MAX_LVL, ROMAN, STAR_COST } from '../logic/economy.js';
-import { mountHeroStage, heroThemeKey, heroThemeUrl } from '../render3d/scenes/hero.js';
+import { mountHeroStage, heroThemeKey, heroThemeUrl, heroShowcasePilot } from '../render3d/scenes/hero.js';
 import { figureSVG } from '../render2d/figures.js';
 import { unitPower, unitStats } from '../logic/battle/stats.js';
 import { SK_KEYS, skMax } from '../logic/battle/skills.js';
@@ -157,7 +157,7 @@ function openDetail(id, stagedPreview = null) {
   const hc = $('#overlay .hc'); hc.dataset.cid = id;
   // GFX-02 pilot: move existing zones, never copy controls or change handlers.
   // Restore the legacy DOM order when leaving Duncan, retaining the same canvas.
-  const pilot = id === 'duncan' && !stagedPreview;
+  const pilot = heroShowcasePilot(id) && !stagedPreview;
   if (hc.classList.contains('gfx02-pilot') !== pilot) {
     const controls = hc.querySelector('.hcpilot-controls'), stage = hc.querySelector('.hcstage');
     const right = hc.querySelector('.hcright'), skills = hc.querySelector('.hcleft'), gear = hc.querySelector('.hcgear');
