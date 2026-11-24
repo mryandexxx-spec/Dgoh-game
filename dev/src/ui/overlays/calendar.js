@@ -123,6 +123,7 @@ function openCalendar() {
           <div class="ui03-cal-leftfoot"><div>Награды идут по порядку за входы. За месяц — ${total} осколков, Печать Ландсраада и Вода жизни.</div>
             <div class="ui03-progressline"><span>Получено дней</span><b>${L.n} / ${days}</b></div>
           </div>
+          <div class="ui03-hero-actions"><button class="ui03-button" data-bio="${h.id}">Биография</button><button class="ui03-button" data-iswitch="shard:${h.id}">Осколки героя</button></div>
         </section>
         <section class="ui03-panel ui03-calendar-body" aria-label="Награды за вход">
           <div class="ui03-listhead"><strong>Награды за вход</strong><span class="ui03-count">${can?`День ${L.n+1} доступен`:'Сегодня получено'}</span></div>
