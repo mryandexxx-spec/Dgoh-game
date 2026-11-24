@@ -151,6 +151,11 @@ const uiArtwork = {
   __MUADDIB_PASSIVE_ICON_URL__: 'img/skill-muaddib-passive.webp',
   __MUADDIB_LEADER_ICON_URL__: 'img/skill-muaddib-leader.webp',
   __MUADDIB_GL_ICON_URL__: 'img/skill-muaddib-gl.webp',
+  __BARON_BASIC_ICON_URL__: 'img/skill-baron-basic.webp',
+  __BARON_SPECIAL_ICON_URL__: 'img/skill-baron-special.webp',
+  __BARON_ULT_ICON_URL__: 'img/skill-baron-ult.webp',
+  __BARON_PASSIVE_ICON_URL__: 'img/skill-baron-passive.webp',
+  __BARON_LEADER_ICON_URL__: 'img/skill-baron-leader.webp',
 };
 // Resolve UI-only assets at build time, preserving the approved ESM order.
 let code1 = code0.replace('__APP_VER__', () => APP_VER)

@@ -117,7 +117,7 @@ try{
           const card=[...document.querySelectorAll('#overlay .hcsk svg.skill-art image')];
           const urls=card.map(e=>e.getAttribute('href'));
           const render=['basic','special','ult','passive'].map(k=>call('skillSvg(CH.duncan,'+JSON.stringify(k)+')').includes('skill-art'));
-          const other=call('Object.values(CH).find(d=>d.id!=="duncan"&&d.id!=="muaddib")');
+          const other=call('Object.values(CH).find(d=>!["duncan","muaddib","baron"].includes(d.id))');
           const fallback=!call('skillSvg(CH['+JSON.stringify(other.id)+'],"basic")').includes('skill-art');
           const plaque=document.querySelector('#overlay .memory-plaque')?.getAttribute('src');
           const loaded=await Promise.all([...urls,plaque].map(url=>new Promise(resolve=>{
@@ -184,6 +184,40 @@ try{
       assert.ok(legend.unowned&&legend.locked&&legend.canUnlock&&legend.opened,'UI-08 ultimate states and skill window');
       assert.ok(legend.fit&&legend.fixed&&legend.visibleLast&&legend.titlesFit&&legend.listHeight>60&&legend.screenScroll<=1,'UI-08 no overlap or screen scroll: '+JSON.stringify({width,legend}));
       assert.ok(legend.ordinaryRestored,'UI-08 ordinary hero layout restored on navigation');
+    }
+    // UI-09: all five Young Baron skill images are distinct, load locally,
+    // and are shared by the card, detail overlay and common battle renderer.
+    if(width>height){
+      const baron=await page.evaluate(async()=>{
+        const call=s=>(0,eval)(s),p=call('prog("baron")');
+        const old={stars:p.stars,gear:p.gear,relic:p.relic,eq:p.eq};
+        try{
+          call('closeInfo(true);closeOverlay()');
+          p.stars=7;p.gear=13;p.eq=Array(6).fill(true);p.relic=5;
+          call('openDetail("baron")');
+          const root=document.querySelector('#overlay .hc'),list=root.querySelector('.hcsks');
+          const rows=[...list.querySelectorAll('[data-hcsk]')];
+          const keys=rows.map(el=>el.dataset.hcsk.split(':')[1]);
+          const urls=rows.map(el=>el.querySelector('svg.skill-art image')?.getAttribute('href'));
+          const loaded=await Promise.all(urls.map(url=>new Promise(resolve=>{
+            const img=new Image();img.onload=()=>resolve(img.naturalWidth===128&&img.naturalHeight===128);img.onerror=()=>resolve(false);
+            if(url)img.src=url;else resolve(false);
+          })));
+          const renderer=keys.every((k,i)=>urls[i]&&call('skillSvg(CH.baron,'+JSON.stringify(k)+')').includes(urls[i]));
+          const dialogs=keys.every((k,i)=>{
+            call('hcSkill("baron:'+k+'")');
+            const match=document.querySelector('#overlay2 .swhd svg.skill-art image')?.getAttribute('href')===urls[i];
+            call('closeInfo(true)');return match;
+          });
+          const standard=!root.classList.contains('has-ultimate')&&!root.querySelector('.hcleft > .hcsk.gl');
+          const plain=call('Object.values(CH).find(d=>!["duncan","muaddib","baron"].includes(d.id))');
+          const fallback=!call('skillSvg(CH['+JSON.stringify(plain.id)+'],"basic")').includes('skill-art');
+          return {keys,unique:new Set(urls).size,loaded,renderer,dialogs,standard,fallback,overflow:root.scrollHeight-root.clientHeight};
+        }finally{Object.assign(p,old);call('closeInfo(true);closeOverlay()');}
+      });
+      assert.deepEqual(baron.keys,['basic','special','ult','passive','leader'],'UI-09 exactly five actual Young Baron skills');
+      assert.equal(baron.unique,5,'UI-09 five unique files');
+      assert.ok(baron.loaded.every(Boolean)&&baron.renderer&&baron.dialogs&&baron.standard&&baron.fallback&&baron.overflow<=1,'UI-09 art and standard card: '+JSON.stringify({width,baron}));
     }
     // UI-04: verify the actual compiled dossier, not the standalone mockup.
     if(width>height){
