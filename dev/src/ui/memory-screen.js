@@ -3,6 +3,7 @@
 import './skill-window.js'; // порядок исполнения
 import { RES_N, matCell, set_WIN } from './skill-window.js';
 import { HC_REFRESH } from './hero-card.js';
+import { memoryBadge } from './portrait.js';
 import { closeInfo, set_INFO_ON_CLOSE } from './overlays/info.js';
 import { MEM, RELIC_AT, memView } from '../logic/relics.js';
 import { prog } from '../logic/progress.js';
@@ -46,11 +47,11 @@ function midHtml(id, v) {
     <div class="membuy"><div class="swmats"><span class="swcap">Нужно</span>${mats.map(([k,n]) => matCell(k,n)).join('')}</div>${act}</div>`;
 }
 function stepsHtml(v) {
-  return v.steps.map(s => `<li class="${s.st}"><span class="hx">${s.l}</span><span class="nm">${s.lore[0]}</span><span class="r">${s.st === 'got' ? '✓' : s.l > v.cap ? 'акк. ' + s.acc : s.st === 'next' ? 'далее' : ''}</span></li>`).join('');
+  return v.steps.map(s => `<li class="${s.st}"><span class="hx">${memoryBadge(s.l, s.st === 'lock')}</span><span class="nm">${s.lore[0]}</span><span class="r">${s.st === 'got' ? '✓' : s.l > v.cap ? 'акк. ' + s.acc : s.st === 'next' ? 'далее' : ''}</span></li>`).join('');
 }
 function render() {
   const id = MEMID, d = CH[id], p = prog(id), v = memView(d, p);
-  const centre = v.block === 'ready' ? `<span class="mrlock">${LOCK}</span><span>закрыто</span>` : `<small>уровень</small><b>${v.rl}</b><span>из ${v.max}</span>`;
+  const centre = v.block === 'ready' ? `${memoryBadge(0, true)}<span>закрыто</span>` : `${memoryBadge(v.rl)}<span>уровень из ${v.max}</span>`;
   $('#overlay2').innerHTML = `<div class="detail info-layer memwrap"><div class="sheet memscr" role="dialog" aria-modal="true" aria-labelledby="mem-t" data-win="mem">
     <div class="memtop"><button class="hcib" data-iclose="1" aria-label="К карточке">${BACK}</button><div class="memt"><h3 id="mem-t">Другая память</h3><span>${d.n} · ${p.stars}★ · сн. ${ROMAN[p.gear]} ${p.eq.filter(Boolean).length}/6</span></div>
       <span class="memres"><button class="memchip" data-hcfind="ix_plate" aria-label="${RES_N.ix_plate}">${ic('ix_plate')}${fmt(S.ix_plate || 0)}</button><button class="memchip" data-hcfind="sol" aria-label="${RES_N.sol}">${ic('sol')}${fmt(S.solari)}</button></span></div>

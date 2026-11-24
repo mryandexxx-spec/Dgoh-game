@@ -21,7 +21,7 @@ import { FACTIONS, ROLES } from '../data/fx.js';
 import { amt, fmt, ic } from '../core/format.js';
 import { $ } from '../core/dom.js';
 import { itemIcon } from './common.js';
-import { ptShards } from './portrait.js';
+import { ptShards, memoryBadge } from './portrait.js';
 
 let detailCid = null;
 let detailSk = 'basic';
@@ -45,7 +45,7 @@ function hcTop(d) {
   const tags = [`<span class="hctag side ${d.side}">${sideName(d)}</span>`, ...d.f.map(f => `<span class="hctag">${FACTIONS[f].n}</span>`), `<span class="hctag">${ROLES[d.role]}</span>`, ...(d.prof ? [`<span class="hctag">${d.prof}</span>`] : [])];
   return `<button class="hcib" data-dback="1" aria-label="Назад">${IC.back}</button>
     <div class="hcnm"><h3 id="dt-name">${d.n}</h3><span class="hctags">${tags.join('')}</span></div>
-    <span class="hcres">${amt('sol', getRes('sol'))}${amt('pl', getRes('pl'))}</span>
+    <span class="hcres">${amt('sol', getRes('sol'))}</span>
     <button class="hcib${HC_STAT ? ' on' : ''}" data-hcstat="1" aria-label="Характеристики" aria-pressed="${HC_STAT}">${IC.stat}</button>
     <button class="hcib" data-bio="${d.id}" aria-label="Биография">${IC.info}</button>
     <button class="hcib" data-close="1" aria-label="Закрыть">${IC.x}</button>`;
@@ -54,17 +54,19 @@ function hcTop(d) {
 function skKeys(d) { return [...(d.gl ? ['gl'] : []), ...SK_KEYS.filter(k => k !== 'leader' || d.leader)]; }
 function hcSkills(id, d, p) {
   const locked = !p.stars;
+  let available = 0;
   const rows = skKeys(d).map(k => {
     let sub, up = false;
     if (k === 'gl') sub = `${p.gl ? 'Открыта' : 'Закрыта'} (ультимативная)`;
     else { const lv = p.sk[k] || 1, max = skMax(d, k); sub = locked ? SK_NAME[k] : `Ур. ${lv} (${SK_NAME[k]})`; up = !locked && lv < max && hasCost(skCost(lv + 1)); }
     if (k === 'gl' && !locked && !p.gl && S.wol >= 1) up = true;
+    if (up) available++;
     const ab = k === 'gl' ? d.gl : d[k];
     return `<button class="hcsk${k === 'gl' ? ' gl' : k === 'leader' ? ' ldr' : ''}${locked ? ' dim' : ''}" data-hcsk="${id}:${k}"><span class="hcski">${skIcon(d, k)}</span><span class="hcskt"><b>${ab.n}</b><small>${sub}</small></span>${up ? '<span class="hcup" aria-label="Можно улучшить">▲</span>' : ''}</button>`;
   }).join('');
   const rl = p.relic || 0, open = rl > 0 || (!locked && relicReady(p));
-  const mem = `<button class="hcmem${p.gear >= MAX_GEAR ? ' next' : ''}" data-hcmem="${id}"${locked ? ' disabled' : ''} aria-label="Другая память — ${rl >= RELIC_MAX ? 'максимум' : open ? 'продолжить развитие героя' : 'условия открытия'}"><span class="hex${open ? '' : ' lk'}">${open ? (rl || '0') : LOCK}</span><span><b>Другая память ${p.gear >= MAX_GEAR ? '›' : ''}</b><small>${locked ? 'после открытия' : rl >= RELIC_MAX ? 'максимум' : rl ? `уровень ${rl} из ${RELIC_MAX}` : open ? 'следующий этап усиления' : p.gear >= MAX_GEAR ? 'нужно 7★ для пробуждения' : 'с 7★ и сн. XIII'}</small></span></button>`;
-  return `<span class="hccap">Умения</span><div class="hcsks">${rows}</div>${mem}`;
+  const mem = `<button class="hcmem${p.gear >= MAX_GEAR ? ' next' : ''}" data-hcmem="${id}"${locked ? ' disabled' : ''} aria-label="Другая память — ${rl >= RELIC_MAX ? 'максимум' : open ? 'продолжить развитие героя' : 'условия открытия'}">${memoryBadge(rl, !open)}<span><b>Другая память ${p.gear >= MAX_GEAR ? '›' : ''}</b><small>${locked ? 'после открытия' : rl >= RELIC_MAX ? 'максимум' : rl ? `уровень ${rl} из ${RELIC_MAX}` : open ? 'следующий этап усиления' : p.gear >= MAX_GEAR ? 'нужно 7★ для пробуждения' : 'с 7★ и сн. XIII'}</small></span></button>`;
+  return `<div class="hc-capline"><span class="hccap">Умения</span>${available ? `<span class="hc-available">Доступно: ${available}</span>` : ''}</div><div class="hcsks">${rows}</div>${mem}`;
 }
 
 function hcSlot(id, k) {
@@ -73,7 +75,7 @@ function hcSlot(id, k) {
   const badge = s.st === 'eq' ? '<span class="ok">✓</span>' : s.st === 'ready' ? '<span class="plus">+</span>' : '';
   return `<button class="hcgs ${s.st}" data-slot="${id}:${k}" aria-label="${s.it.n}: ${s.st === 'eq' ? 'надет' : `фрагменты ${s.have} из ${s.need}`}"><span class="box" style="--tc:${TIER_COL[s.it.t]}">${itemIcon(s.it, 0)}${badge}${s.st === 'part' || s.st === 'none' ? `<span class="bar"><i style="width:${Math.min(100, s.have / s.need * 100)}%"></i></span>` : ''}</span>${cap}</button>`;
 }
-function hcSlots(id, p, ks) { return p.stars ? ks.map(k => hcSlot(id, k)).join('') : ''; }
+function hcSlots(id, p, ks) { return p.stars && !(p.relic > 0) ? ks.map(k => hcSlot(id, k)).join('') : ''; }
 
 function hcBot(id, d, p, nav) {
   const arr = (dir, l) => nav ? `<button class="hcarr" data-dnav="${dir}" aria-label="${l}">${dir < 0 ? '‹' : '›'}</button>` : '<span class="hcarr off"></span>';
@@ -83,10 +85,12 @@ function hcBot(id, d, p, nav) {
     const filled = p.eq.filter(Boolean).length, full = filled === 6, gcap = gearCap();
     let btn;
     if (!full) { const n = craftAllPlan(id).length; btn = `<button class="btn hcbtn ${n ? 'buy' : ''}" data-craftall="${id}" ${n ? '' : 'disabled'}>Надеть всё${n ? ' · ' + n : ''}<small>${n ? `готово предметов: ${n}` : 'нечего собрать'}</small></button>`; }
-    else if (p.gear >= MAX_GEAR) btn = `<button class="btn hcbtn go" data-hcmem="${id}" aria-label="Перейти к Другой памяти"><span>Снаряжение XIII — завершено</span><small>${(p.relic || 0) >= RELIC_MAX ? 'Другая память — максимум' : 'Дальнейшее усиление → Другая память'}</small></button>`;
+    else if (p.gear >= MAX_GEAR) btn = (p.relic || 0) >= RELIC_MAX
+      ? '<span class="hc-max">Развитие завершено · ДП7</span>'
+      : `<button class="btn hcbtn go" data-hcmem="${id}" aria-label="Перейти к Другой памяти">${p.relic ? 'Усилить Другую память' : relicReady(p) ? 'Пробудить Другую память' : 'Условия пробуждения'}<small>${p.relic ? 'ДП' + p.relic + ' → ДП' + (p.relic + 1) : 'Снаряжение XIII · 6/6'}</small></button>`;
     else if (p.gear >= gcap) btn = `<button class="btn hcbtn" disabled>Повысить до ${ROMAN[p.gear + 1]}<small>нужен ур. аккаунта ${GEAR_CAP_AT[p.gear + 1]}</small></button>`;
     else btn = `<button class="btn hcbtn ${S.solari >= GEAR_UP_SOL(p.gear) ? 'go' : 'lack'}" data-gup="${id}" ${S.solari >= GEAR_UP_SOL(p.gear) ? '' : 'disabled'}>Повысить до ${ROMAN[p.gear + 1]}<small>${amt('sol', GEAR_UP_SOL(p.gear))}</small></button>`;
-    mid = `<div class="hcpwl"><span class="hcgt" style="--tc:${TIER_COL[p.gear]}">Сн. ${ROMAN[p.gear]}</span><span>${filled}/6</span><span class="hcpw">мощь <b>${fmt(unitPower(d, p))}</b></span></div>${btn}`;
+    mid = `<div class="hcpwl"><span class="hcgt" style="--tc:${TIER_COL[p.gear]}">Сн. ${ROMAN[p.gear]}</span>${p.relic ? `<span>ДП${p.relic}</span>` : `<span>${filled}/6</span>`}<span class="hcpw">Мощь <b>${fmt(unitPower(d, p))}</b></span></div>${btn}`;
   }
   return `${arr(-1, 'Предыдущий персонаж')}<div class="hcmid">${mid}</div>${arr(1, 'Следующий персонаж')}`;
 }
@@ -111,7 +115,8 @@ function hcRight(id, d, p) {
   }
   let st = `<span class="hcstars">${Array.from({ length: 7 }, (_, i) => `<i class="${i < p.stars ? 'on' : ''}">★</i>`).join('')}</span>${ptShards(d, p)}`;
   if (need) { const ok = p.shards >= need && S.solari >= STAR_COST(p.stars); st += `<button class="btn ${ok ? 'go' : 'lack'}" data-star="${id}">Повысить до ${p.stars + 1}★<small>${amt('sol', STAR_COST(p.stars))}</small></button><button class="hclnk" data-shfind="${id}">${ic('shard')} Найти осколки</button>`; }
-  return `<div class="hcblk"><span class="hccap">Уровень героя</span>${lvl}</div><div class="hcblk"><span class="hccap">Звёзды</span>${st}</div>`;
+  const s = unitStats(d, p);
+  return `<div class="hcblk"><span class="hccap">Уровень героя</span>${lvl}</div><div class="hcblk"><span class="hccap">Звёзды</span>${st}</div><div class="hcblk hc-quickstats"><span class="hccap">Характеристики</span><div><span>Здоровье</span><b>${fmt(s.maxHp)}</b><span>Урон</span><b>${fmt(s.dmg)}</b><span>Скорость</span><b>${s.spd}</b></div></div>`;
 }
 
 function hcStats(d, p) {
@@ -145,7 +150,7 @@ function openDetail(id, stagedPreview = null) {
     const f = $('#overlay .hcfig'); if (!f.classList.contains('has3d')) f.innerHTML = figureSVG(d, true);   // 2D-фолбэк — смена фигуры
   }
   for (const k in Z) setZone(k, Z[k]);
-  const hc = $('#overlay .hc'); hc.dataset.cid = id; hc.classList.toggle('locked', !p.stars);
+  const hc = $('#overlay .hc'); hc.dataset.cid = id; hc.classList.toggle('locked', !p.stars); hc.classList.toggle('memory-awakened', p.relic > 0);
   if (stagedPreview) {
     // Prevent preview-only controls from writing into a real player's roster.
     // Close/back and the stats toggle retain the same shared card behavior.
