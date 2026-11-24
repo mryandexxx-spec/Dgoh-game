@@ -158,8 +158,8 @@ function cqResWin(need) {
   const en = cqEn(), n = cqRfN(), c = cqRfCost(), lim = n >= REFILL_MAX;
   $('#overlay').innerHTML = `<div class="result" data-close="1"><div class="box cqcbox" role="dialog" aria-modal="true" aria-label="Решимость"><h3>${need && en < need ? 'Не хватает Решимости' : 'Решимость'}</h3>
     <div class="cqresh">${cqI('res')}<b class="mono">${en} / ${CQ_EN.max}</b>${need ? `<span>нужно ${need}</span>` : ''}</div>
-    <p class="sub" style="margin:0">Энергия Джихада. Бой стоит ${CQ_EN.fight} Решимости, снятие диска — ${CQ_EN.unequip}. Восстанавливается сама: +1 каждые ${CQ_EN.sec / 60} мин (${cqEnTxt()}). Каждую неделю запас снова полон. Пополнить можно за кристаллы пряности — по тем же правилам, что Воду: цена удваивается после каждого третьего пополнения и сбрасывается в полночь, не больше ${REFILL_MAX} в день; запас может превысить максимум.</p>
-    <div class="kv"><span>Пополнений сегодня</span><div>${n} из ${REFILL_MAX}</div><span>Кристаллы</span><div>${amt('cry', S.cry)}</div></div>
+    <p class="sub" style="margin:0">Энергия Джихада. Бой стоит ${CQ_EN.fight} Решимости, снятие диска — ${CQ_EN.unequip}. Восстанавливается сама: +1 каждые ${CQ_EN.sec / 60} мин (${cqEnTxt()}). Каждую неделю запас снова полон. Пополнить можно за камни су — по тем же правилам, что Воду: цена удваивается после каждого третьего пополнения и сбрасывается в полночь, не больше ${REFILL_MAX} в день; запас может превысить максимум.</p>
+    <div class="kv"><span>Пополнений сегодня</span><div>${n} из ${REFILL_MAX}</div><span>Камни су</span><div>${amt('cry', S.cry)}</div></div>
     <div class="acts" style="justify-content:center">${lim ? '<span class="lockd">Лимит на сегодня исчерпан</span>' : `<button class="btn ${S.cry >= c ? 'go' : 'lack'}" data-cqrf="${need || 0}">Пополнить +${CQ_RF.amt}<small>${amt('cry', c)}</small></button>`}${need && en >= need ? '<span class="qok">✓ Теперь хватает</span>' : ''}<button class="btn" data-close="1">Закрыть</button></div></div></div>`;
 }
 // ---- магазин Джихада (вкладка в Лавках) ----

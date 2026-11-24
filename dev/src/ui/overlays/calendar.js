@@ -64,7 +64,7 @@ function loginReward(day, stamp = todayKey.clock.snapshot()) {
   return [[['sol', 3000]], [['folio', 3]], [['cry', 30]], [['pl', 5]], [['water', 60]], [['teeth', 50]]][(day - 1) % 6];
 }
 
-const ui03RewardNames = { shard:'Осколки героя',sol:'Солярии',folio:'Фолианты',cry:'Кристаллы',pl:'Пласт',water:'Вода',teeth:'Зубы червя',seal:'Печать Ландсраада',wol:'Вода жизни' };
+const ui03RewardNames = { shard:'Осколки героя',sol:'Солярии',folio:'Фолианты',cry:'Камни су',pl:'Пласт',water:'Вода',teeth:'Зубы червя',seal:'Печать Ландсраада',wol:'Вода жизни' };
 function ui03RewardText(day, stamp) {
   return loginReward(day,stamp).map(([k,n]) => `${ui03RewardNames[k]||k} ×${n}`).join(' · ');
 }

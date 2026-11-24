@@ -136,10 +136,14 @@ if (!candleIcon || code0.split('__CANDLE_ICON_URL__').length !== 2)
 const solariIcon = ASSETS.find(a => a.name === 'img/solari-stack.webp');
 if (!solariIcon || code0.split('__SOL_ICON_URL__').length !== 3)
   throw new Error('UI-04 shared resource/calendar Solari artwork is missing');
+const soostoneIcon = ASSETS.find(a => a.name === 'img/soostone.webp');
+if (!soostoneIcon || code0.split('__SOOSTONE_ICON_URL__').length !== 3)
+  throw new Error('UI-05 shared resource/calendar Soostone artwork is missing');
 const code1 = code0.replace('__APP_VER__', () => APP_VER)
   .replace('__WATER_ICON_URL__', () => waterIcon.pwa)
   .replace('__CANDLE_ICON_URL__', () => candleIcon.pwa)
-  .replaceAll('__SOL_ICON_URL__', () => solariIcon.pwa);
+  .replaceAll('__SOL_ICON_URL__', () => solariIcon.pwa)
+  .replaceAll('__SOOSTONE_ICON_URL__', () => soostoneIcon.pwa);
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(path.join(OUT, 'app.unmin.js'), withAssets(code1, 'pwa'));   // для tools/check-bundle.mjs (порядок модулей по комментариям-маркерам)
 console.log(`версия: ${APP_VER}`);

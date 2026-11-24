@@ -1,6 +1,7 @@
 // UI-03 calendar-only collectible art. Editable SVG silhouettes, no remote assets.
 // Names/keys remain canonical: this module only renders a graphic.
 const SOLARI_ICON_SRC = '__SOL_ICON_URL__';
+const SOOSTONE_ICON_SRC = '__SOOSTONE_ICON_URL__';
 const DEFINITIONS = '<defs>'
   + '<linearGradient id="`-gold" x1=".1" y1=".1" x2=".9" y2=".95"><stop stop-color="#fff1b9"/><stop offset=".26" stop-color="#e7b55a"/><stop offset=".59" stop-color="#a76a2e"/><stop offset="1" stop-color="#523018"/></linearGradient>'
   + '<linearGradient id="`-steel" x1=".1" y1=".05" x2=".9" y2=".94"><stop stop-color="#edf3ed"/><stop offset=".27" stop-color="#aeb5b4"/><stop offset=".61" stop-color="#5a6870"/><stop offset="1" stop-color="#28323b"/></linearGradient>'
@@ -21,15 +22,7 @@ const ART = Object.freeze({
     + '<path d="M24 10v29.4" stroke="#fbe1ab" stroke-width=".8" opacity=".85"/>'
     + '<path d="M5.9 12.5v25.2M42.2 12v26.2" stroke="#f3bb72" stroke-width="2"/>'
     + '<path d="m33.7 7.5 2.6 4.3-2.3 7.1-2-5Z" fill="#b33e29" stroke="#f8c36f" stroke-width=".8"/>',
-  cry: '<ellipse cx="24" cy="24" rx="21" ry="20" fill="url(#`-halo)"/>'
-    + '<path d="m8 22 7.8-12.5 9 3.2 2.2 21.4-12.8 7.3Z" fill="url(#`-spice)" stroke="#ffd6a0" stroke-width="1.3"/>'
-    + '<path d="m15.8 9.5 9 3.2-7 10.2L8 22Z" fill="#ffc17c" opacity=".9"/>'
-    + '<path d="m17.8 22.9 7-10.2 2.2 21.4-12.8 7.3Z" fill="#882b24" opacity=".58"/>'
-    + '<path d="m27 13.2 10.9 2.9 4.6 13.2-13.1 9.6-5-11.6Z" fill="url(#`-spice)" stroke="#f6ad70" stroke-width="1.2"/>'
-    + '<path d="m27 13.2 10.9 2.9-13.5 11.2Z" fill="#ffd096"/>'
-    + '<path d="m24.4 27.3 5 11.6 13.1-9.6-10.7 1.5Z" fill="#862c25"/>'
-    + '<path d="m32.5 4.5 1 5.3 5.2.8-5.2 1.1-1 5.2-1.1-5.2-5.1-1.1 5.1-.8Z" fill="#fff4ca"/>'
-    + '<path d="m9 5.6.7 3.3 3.4.7-3.4.7L9 13.6l-.7-3.3-3.3-.7 3.3-.7Z" fill="#ffd88d"/>',
+  cry: '', // approved soostone WebP
   pl: '<ellipse cx="24" cy="25" rx="22" ry="19" fill="url(#`-halo)"/>'
     + '<path d="m5.8 22 17.6-8.5L41 22.4v12.3L23.7 44l-17.9-9Z" fill="#475057" stroke="#8d9b98" stroke-width="1.6"/>'
     + '<path d="M5.8 22 23.4 13.5 41 22.4l-17.3 9.4Z" fill="url(#`-steel)" stroke="#e0e9db" stroke-width="1.6"/>'
@@ -161,6 +154,9 @@ function defsFor(id) { return DEFINITIONS.replaceAll('`',id); }
 function solariLootSvg(cssClass, uniqueId) {
   return `<svg class="${cssClass}" viewBox="0 0 48 48" data-solari-art="${uniqueId}" aria-hidden="true" focusable="false"><image href="${SOLARI_ICON_SRC}" x="0" y="0" width="48" height="48" preserveAspectRatio="xMidYMid meet"/></svg>`;
 }
+function soostoneLootSvg(cssClass, uniqueId) {
+  return `<svg class="${cssClass}" viewBox="0 0 48 48" data-soostone-art="${uniqueId}" aria-hidden="true" focusable="false"><image href="${SOOSTONE_ICON_SRC}" x="0" y="0" width="48" height="48" preserveAspectRatio="xMidYMid meet"/></svg>`;
+}
 // id is local to each day's SVG. Repeated icon types cannot collide with
 // another day's gradients when several month calendars are mounted in tests.
 function calendarRewardIcon(kind, day, portraitMarkup = '') {
@@ -168,7 +164,7 @@ function calendarRewardIcon(kind, day, portraitMarkup = '') {
   const safeKind = Object.hasOwn(ART,kind) || kind === 'shard' ? kind : 'sol';
   const id = 'u03-' + safeKind + '-' + safeDay;
   const illustration = (safeKind === 'shard' ? SHARD_ART : ART[safeKind]).replaceAll('`',id);
-  const svg = safeKind === "sol" ? solariLootSvg("ui03-loot-svg",id) : `<svg class="ui03-loot-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">${defsFor(id)}${illustration}</svg>`;
+  const svg = safeKind === "sol" ? solariLootSvg("ui03-loot-svg",id) : safeKind === "cry" ? soostoneLootSvg("ui03-loot-svg",id) : `<svg class="ui03-loot-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">${defsFor(id)}${illustration}</svg>`;
   return safeKind === 'shard' ? `<span class="ui03-shard-art">${svg}<span class="ui03-shard-face">${portraitMarkup}</span></span>` : svg;
 }
 // Shared miniature object art for daily rewards. Separate per-tile gradient IDs.
@@ -176,6 +172,7 @@ function dailyRewardIcon(kind, scope = 'daily') {
   if (!Object.hasOwn(ART, kind)) return '';
   const id = 'u03-chip-' + kind + '-' + String(scope).replace(/[^a-z0-9_-]/gi, '').slice(0, 38);
   if (kind === 'sol') return solariLootSvg('ui03-loot-svg ui03-daily-loot-svg',id);
+  if (kind === 'cry') return soostoneLootSvg('ui03-loot-svg ui03-daily-loot-svg',id);
   return '<svg class="ui03-loot-svg ui03-daily-loot-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">' +
     defsFor(id) + ART[kind].replaceAll(String.fromCharCode(96), id) + '</svg>';
 }

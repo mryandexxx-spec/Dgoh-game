@@ -111,7 +111,7 @@ const GEAR_COST = g => ({ sol: g * 1000, pl: g * 3 });
 const MAX_LVL = 85, WATER_BASE = 360, WATER_SEC = 240, CANDLE_BASE = 288, CANDLE_SEC = 300, CANDLE_REFILL = 100;
 const enCapStep = () => Math.floor((S && S.acc ? S.acc.lvl : 1) / 10), WMAX = () => WATER_BASE + 15 * enCapStep(), CMAX = () => CANDLE_BASE + 10 * enCapStep();
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII'];
-const RW_NAME = { wring: 'водяных колец', jt: 'трофеев Джихада', core: 'устаревших голосов предков', ...Object.fromEntries(Object.entries(MEM_MATS).map(([k, m]) => [k, m.label.toLowerCase()])), rid: 'ридулианских кристаллов', candle: 'Огней Хроник', sol: 'соляриев', cry: 'кристаллов', folio: 'фолиантов', seal: 'Печать Ландсраада', wol: 'Вода жизни', pl: 'пластали', teeth: 'зубов червя', water: 'Воды' };
+const RW_NAME = { wring: 'водяных колец', jt: 'трофеев Джихада', core: 'устаревших голосов предков', ...Object.fromEntries(Object.entries(MEM_MATS).map(([k, m]) => [k, m.label.toLowerCase()])), rid: 'ридулианских кристаллов', candle: 'Огней Хроник', sol: 'соляриев', cry: 'камней су', folio: 'фолиантов', seal: 'Печать Ландсраада', wol: 'Вода жизни', pl: 'пластали', teeth: 'зубов червя', water: 'Воды' };
 function rollShards(n, ch) {   // never more than 2 shards per attempt
   const r = Math.random(), a = r < (ch ? .4 : .5) ? 0 : r < (ch ? .78 : .8) ? 1 : 2, b = a < 2 && Math.random() < .3 ? 1 : 0;
   return [[n.drops[0], a], [n.drops[1], b]].filter(x => x[1] > 0);
