@@ -52,17 +52,17 @@ try {
     const balances = () => run('JSON.stringify([S.cry,S.solari,S.plast,S.seal])');
     const read = () => {
       const host=document.querySelector('#view');
-      const quests=[...host.querySelectorAll('.quest')];
+      const quests=[...host.querySelectorAll('.quest, .ui03-quest')];
       const quest=label => {
-        const q=quests.find(x=>x.querySelector('.qtx b')?.textContent===label);
+        const q=quests.find(x=>x.querySelector('.qtx b, .ui03-qcopy b')?.textContent===label);
         if(!q) throw Error('Missing daily quest: '+label);
         return {state:q.classList.contains('done')?'done':q.classList.contains('got')?'got':'prog',
-          progress:q.querySelector('.qtx .mono')?.textContent,
+          progress:q.querySelector('.qtx .mono, .ui03-qstat span')?.textContent,
           claim:!!q.querySelector('button[data-qclaim]')};
       };
-      const chest=host.querySelector('.chest'),btn=chest?.querySelector('[data-qchest]');
+      const chest=host.querySelector('.chest, .ui03-hero'),btn=chest?.querySelector('[data-qchest]');
       return {
-        title:host.querySelector('h2')?.textContent,
+        title:host.querySelector('h2, .ui03-brand-copy strong')?.textContent,
         questCount:quests.length,
         shop:quest('3 покупки или 5 боёв кампании'),
         craft:quest('Собрать предмет или провести 10 боёв'),
@@ -70,7 +70,7 @@ try {
         chest: { ready:!!chest?.classList.contains('ready'),
           opened:!!chest?.classList.contains('opened'),
           disabled:!!btn?.disabled, text:btn?.textContent,
-          progress:chest?.querySelector('.chtx .mono')?.textContent },
+          progress:chest?.querySelector('.chtx .mono, .ui03-progressline b')?.textContent },
       };
     };
     const initialBalances=balances();
@@ -88,7 +88,7 @@ try {
   });
   assert.equal(output.writer,'owned');
   assert.equal(output.noRewardsFromRender,true,'daily rendering must not award resources');
-  assert.equal(output.fresh.title,'Ежедневные задания');
+  assert.match(output.fresh.title,/^(Ежедневные задания|Задания дня)$/);
   assert.equal(output.fresh.questCount,9,'level-60 legacy save hides skill daily only');
   assert.deepEqual(output.fresh.shop,{state:'prog',progress:'0/3 или 0/5',claim:false});
   assert.deepEqual(output.fresh.craft,{state:'prog',progress:'0/1 или 0/10',claim:false});
