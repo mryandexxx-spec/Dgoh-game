@@ -1,14 +1,14 @@
-name: GFX-02 optimized Duncan A/B (temporary branch)
+name: GFX-02 Duncan repeated compact MED QA (temporary branch)
 on:
   push:
-    branches: [qa/gfx02-duncan-opt]
+    branches: [qa/gfx02-duncan-repeat]
 permissions:
   contents: read
   actions: read
 jobs:
   compare:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,7 +18,7 @@ jobs:
         id: chrome
       - uses: actions/checkout@v4
         with:
-          ref: ba470f00c90f62f3b38aefa8528472f27a7735fd
+          ref: 4fe68f13213528fbe833ca5f929c0be8e3676bba
           path: candidate
       - name: Build exact optimized candidate
         working-directory: candidate/dev
@@ -33,36 +33,42 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh run download 45466003391 --name dune-validated-build --dir /tmp/gfx156
-      - name: Eight equivalent Duncan captures
+      - name: Alternating repeated compact MED samples and reference screens
         working-directory: candidate/dev
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: |
           mkdir -p /tmp/gfx02-qa
-          for profile in med low; do
-            for width in 844 667; do
-              height=390; if [ "$width" = 667 ]; then height=375; fi
-              for version in 156 157; do
-                name="$version-$profile-$width"
-                node tests/smoke/gfx02-ab-once.mjs "/tmp/gfx$version/pwa/index.html" --phone --dpr 1 --gfx "$profile" --width "$width" --height "$height" --shot "/tmp/gfx02-qa/$name.png" --out "/tmp/gfx02-qa/$name.json"
-              done
-            done
-          done
-      - name: Compare same-run samples (software rendering)
+          capture() {
+            version="$1"; profile="$2"; width="$3"; rep="$4"
+            height=390; if [ "$width" = 667 ]; then height=375; fi
+            name="$version-$profile-$width-$rep"
+            node tests/smoke/gfx02-ab-once.mjs "/tmp/gfx$version/pwa/index.html" --phone --dpr 1 --gfx "$profile" --width "$width" --height "$height" --shot "/tmp/gfx02-qa/$name.png" --out "/tmp/gfx02-qa/$name.json"
+          }
+          capture 156 med 667 1
+          capture 157 med 667 1
+          capture 157 med 667 2
+          capture 156 med 667 2
+          capture 156 med 667 3
+          capture 157 med 667 3
+          capture 157 med 844 1
+          capture 157 low 667 1
+          capture 157 low 844 1
+      - name: Report paired p95 and median (software renderer)
         run: |
           python3 - <<'PY'
-          import json, pathlib
-          for profile in ('med','low'):
-            for width in (844,667):
-              a,b=[json.loads(pathlib.Path(f'/tmp/gfx02-qa/{v}-{profile}-{width}.json').read_text()) for v in (156,157)]
-              def summary(x):
-                m=x['hero']['vram']; c=x['hero']['cost']; s=x['sample']
-                return {'draws':c['draws'],'pixels_M':c['mpx'],'rt_MB':round(sum(t['mb'] for t in m['rows'] if t['rt'])+m['depthMB']+m['backbufMB'],2),'texture_MB':round(sum(t['mb'] for t in m['rows'] if not t['rt']),2),'p95_interval_ms':s['p95Interval'],'canvas':m['canvas']}
-              print(profile,width,summary(a),'->',summary(b))
+          import pathlib,json,statistics
+          p=pathlib.Path('/tmp/gfx02-qa')
+          samples={}
+          for v in (156,157):
+            samples[v]=[json.loads((p/f'{v}-med-667-{i}.json').read_text())['sample']['p95Interval'] for i in (1,2,3)]
+          a,b=[statistics.median(samples[v]) for v in (156,157)]
+          print('COMPACT_MED_P95',samples,'median',a,b,'delta_pct',round((b/a-1)*100,1))
+          print('Paired changes:',[round((y/x-1)*100,1) for x,y in zip(samples[156],samples[157])])
           PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: gfx02-duncan-opt
+          name: gfx02-duncan-repeat
           path: /tmp/gfx02-qa/
           retention-days: 7
