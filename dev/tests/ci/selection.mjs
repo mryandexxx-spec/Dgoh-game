@@ -411,4 +411,25 @@ assert.equal(publish({...github,event_name:'push'}, {...ready,plan:{...ready.pla
 
 assert.equal(publish({...github,event_name:'pull_request'},ready,()=>false,approved),false);
 assert.equal(publish({...github,ref:'refs/heads/feature'},ready,()=>false,approved),false);
+// Pages is branch-backed in this repository (confirmed successful deployment of
+// the verified v143 root commit). After synchronizing exact tested files to main,
+// GitHub's independent Pages workflow deploys that commit. A second action
+// deployment from the same run races artifact discovery and leaves a false red.
+const workflow=fs.readFileSync(new URL('../../../.github/workflows/validate-pwa.yml',import.meta.url),'utf8');
+const publisher=workflow.slice(workflow.indexOf('\n  deploy-pages:\n'));
+assert.ok(publisher.startsWith('\n  deploy-pages:\n'),'publish job still exists');
+assert.match(publisher,/name: Synchronize published PWA in main without rerunning builds/,
+  'only validated files are synchronized to main');
+assert.match(publisher,/node dev\/tools\/ci-artifact\.mjs verify/,
+  'immutable artifact validation must precede publication');
+assert.match(publisher,/git push origin HEAD:main/,
+  'Pages branch source must receive exactly the validated root commit');
+assert.match(publisher,/url: https:\/\/mryandexxx-spec\.github\.io\/Dgoh-game\//,
+  'real Pages environment URL');
+assert.doesNotMatch(publisher,/uses:\s*actions\/(?:deploy-pages|upload-pages-artifact|configure-pages)@/,
+  'branch-backed Pages must not be deployed a second time');
+assert.doesNotMatch(publisher,/\n\s+pages: write|\n\s+id-token: write/,
+  'branch-backed publication job needs only contents:write');
+console.log('PASS Pages branch publication: verified main sync, automatic Pages deploy, no duplicate action race.');
+
 console.log('PASS publication condition: green main merge publishes validated artifact; manual remains opt-in; failures, bot, docs, PR, branch blocked.');
