@@ -48,3 +48,7 @@
 .pfr.fr-prophet::after { animation:none; inset:0; border:1px dashed #ffe6a7; }.pfr.fr-gold::after,.pfr.fr-house::after { content:""; position:absolute; inset:1px; border:1px dashed #ffe6a7; border-radius:50%; pointer-events:none; }
 
 .ui04-next-reward { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:4px 9px; }.ui04-next-reward>div:first-child { flex:1 1 145px; }.ui04-next-reward small { display:block;color:#d1b79b;font-size:10px; }.ui04-next-reward .ui04-reward { flex:1 1 150px; min-width:0; }
+
+/* Override the legacy landscape modal inset; safe areas belong to the inner dossier. */
+#overlay2 .detail.ui04-layer { position:fixed; inset:0; padding:0; place-items:stretch; }
+#overlay2 .ui04-layer > .ui04-profile { width:100%; height:100dvh; max-height:none; margin:0; }

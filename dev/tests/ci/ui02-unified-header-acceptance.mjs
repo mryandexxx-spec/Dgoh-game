@@ -89,8 +89,8 @@ try{
           bodyScroll:document.scrollingElement.scrollHeight-innerHeight};
       });
       const overview=await measureProfile();
-      assert.ok(Math.abs(overview.w-width)<2 && Math.abs(overview.h-height)<2,'profile fills viewport');
-      assert.ok(overview.scroll<=1 && overview.horizontal<=1,'no profile screen scroll');
+      assert.ok(Math.abs(overview.w-width)<2 && Math.abs(overview.h-height)<2,'profile fills viewport: '+JSON.stringify({width,height,overview}));
+      assert.ok(overview.scroll<=1 && overview.horizontal<=1,'no profile screen scroll: '+JSON.stringify(overview));
       assert.equal(overview.tab,'overview');
       assert.ok(overview.area>100 && overview.power,'account summary is visible');
       // Use DOM click for transient view-only controls, independent of the boot writer timing.
