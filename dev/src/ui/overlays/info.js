@@ -10,7 +10,9 @@ import { nextShards } from '../views/squad.js';
 import { enGet, getRes, prog } from '../../logic/progress.js';
 import { S, tickWater } from '../../core/state.js';
 import { CRAFT, FRAG_NEED, ITEMS, NODE_ITEMS, RAID_FRAGS, SHOP_FRAG, TIER_COL, TIER_NAME, gearPlan, nodeChance } from '../../logic/gear.js';
-import { unlockNeed } from '../../logic/relics.js';
+import { unlockNeed, sideName } from '../../logic/relics.js';
+import { unitPower, unitStats } from '../../logic/battle/stats.js';
+import { ptRound } from '../portrait.js';
 import { CANDLE_REFILL, CMAX, CRY_3STAR, CRY_JOURNEY, CRY_WIN, REFILL_AMT, REFILL_MAX, ROMAN, ROSTER_IDS, STAR_COST, WATER_SEC, WMAX, refillCost, refillN } from '../../logic/economy.js';
 import { JOURNEYS } from '../../data/journeys.js';
 import { NODES, NODE_SCENES, nodeCost, nodeEn, nodeOpen, nodeTitle } from '../../data/campaigns.js';
@@ -79,6 +81,24 @@ const RES_INFO = {
   ...Object.fromEntries(Object.entries(MEM_MATS).map(([k,v]) => [k, { n: v.n, d: v.family === 'artifact' ? 'Артефакт для Другой памяти. Добывается в Утилизаторе Икса через переработку снаряжения, в рейде или в Лавках.' : 'Сигнальные данные для Другой памяти. Добываются повторяемыми боями кампании и Хроник, в Джихаде и Лавках.' }])),
   frag: { n: 'Фрагменты снаряжения', d: 'Из фрагментов собираются предметы для шести ячеек снаряжения. Уровней снаряжения 13; чем выше уровень предмета, тем больше фрагментов нужно — от 2 на уровне I до 25 на уровне XIII. После XIII героя усиливает Другая память.' },
 };
+function openHeroDossier(id, d, p, rows) {
+  const s = unitStats(d, p.stars ? p : { ...p, stars: 1 });
+  const stats = [['Здоровье', fmt(s.maxHp)], ['Щит', s.maxShield ? fmt(s.maxShield) : 'нет'], ['Урон', fmt(s.dmg)], ['Скорость', s.spd], ['Броня', Math.round(s.arm * 100) + '%'], ['Крит', Math.round(s.crit * 100) + '%'], ['Уклонение', Math.round(s.eva * 100) + '%'], ['Эффективность', Math.round(s.pot * 100) + '%']];
+  $('#overlay2').innerHTML = `<div class="detail info-layer ui06-dossier-layer" data-iclose="1"><div class="sheet ui06-dossier" role="dialog" aria-modal="true" aria-labelledby="ui06-title">
+    <header class="ui06-dossier-head"><div><small>ДОСЬЕ ПЕРСОНАЖА</small><h3 id="ui06-title">${d.n}</h3></div><button type="button" data-iclose="1" aria-label="Закрыть">×</button></header>
+    <div class="ui06-dossier-body"><aside class="ui06-identity"><div class="ui06-portrait">${ptRound(d,p)}</div><strong>${d.n}</strong><span>${p.stars ? starStr(p.stars) : 'Не открыт'}</span><div class="ui06-power"><small>Мощь</small><b>${p.stars ? fmt(unitPower(d,p)) : '—'}</b></div></aside>
+    <section class="ui06-dossier-main"><div class="ui06-tabs" role="tablist" aria-label="Разделы досье">${[['bio','Биография'],['stats','Характеристики'],['sources','Источники']].map(([k,n],i)=>`<button type="button" role="tab" id="ui06-tab-${k}" aria-controls="ui06-pane-${k}" aria-selected="${i===0}" data-ui06-tab="${k}">${n}</button>`).join('')}</div>
+    <section class="ui06-pane" id="ui06-pane-bio" role="tabpanel" aria-labelledby="ui06-tab-bio"><h4>Личная история</h4><p>${BIOS[id] || 'Биография пока недоступна.'}</p><h4>Принадлежность</h4><p>${sideName(d)} · ${d.f.map(f=>FACTIONS[f].n).join(' · ')} · ${ROLES[d.role]}${d.prof ? ' · '+d.prof : ''}${d.leader ? ' · лидер' : ''}</p></section>
+    <section class="ui06-pane" id="ui06-pane-stats" role="tabpanel" aria-labelledby="ui06-tab-stats" hidden><h4>${p.stars ? 'Текущие характеристики' : 'Предпросмотр на 1★'}</h4><div class="ui06-statrows">${stats.map(([k,v])=>`<span>${k}</span><b>${v}</b>`).join('')}</div></section>
+    <section class="ui06-pane" id="ui06-pane-sources" role="tabpanel" aria-labelledby="ui06-tab-sources" hidden><h4>Где получить и использовать</h4><div class="srcs">${rows.join('')}</div></section>
+    </section></div><footer class="ui06-dossier-foot">${INFO_BACK ? `<button type="button" class="btn" data-ibk="1">‹ ${INFO_BACK.label}</button>` : ''}<button type="button" class="btn" data-iclose="1">К персонажу</button></footer></div></div>`;
+  const root = $('#overlay2 .ui06-dossier');
+  const select = key => {
+    root.querySelectorAll('[data-ui06-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.ui06Tab===key)));
+    root.querySelectorAll('.ui06-pane').forEach(el=>{el.hidden=el.id!=='ui06-pane-'+key;});
+  };
+  root.querySelectorAll('[data-ui06-tab]').forEach(b=>b.addEventListener('click',()=>select(b.dataset.ui06Tab)));
+}
 function openInfo(key, keepScroll) {
   infoKey = key;
   const [kind, id] = key.split(':');
@@ -91,6 +111,7 @@ function openInfo(key, keepScroll) {
     if (app.length) rows = [navRow(ic('folio'), 'В сюжете кампаний', `Появляется в диалогах: ${app.slice(0, 8).map(i => nodeTitle(i)).join('; ')}${app.length > 8 ? ' и других' : ''}.`, go('camp', 'К кампаниям'))];
     rows.push(navRow(ic('shard'), 'Сторона', d.side === 'light' ? 'Светлая сторона: воюет в светлой кампании и в Хрониках.' : d.side === 'dark' ? 'Тёмная сторона: воюет в тёмной кампании и в Хрониках.' : 'Мыслящие машины: Хроники, рейд, испытания и Джихад.', ''));
     rows.push(navRow(ic('shard'), 'Осколки', p.stars ? `${amt('shard', p.shards)} в запасе` : `${amt('shard', p.shards + '/' + unlockNeed(d))} до открытия`, `<button class="btn mini" data-iswitch="shard:${id}">Найти осколки</button>`));
+    openHeroDossier(id, d, p, rows); return;
   } else if (kind === 'shard' && id && CH[id]) {
     const d = CH[id], p = prog(id), need = p.stars ? nextShards(p) : unlockNeed(d);
     head = `<div class="ihead">${portrait(d, 72, p.stars ? TIER_COL[p.gear] : null)}<div><h3>Осколки: ${d.n}</h3><div class="crole">${p.stars ? starStr(p.stars) : 'Персонаж не открыт'}</div></div></div>`;

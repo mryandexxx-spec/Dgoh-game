@@ -76,6 +76,34 @@ try{
     }
     else assert.ok(measured.layout[1].top>measured.layout[0].bottom,'portrait resources below profile');
 
+    // UI-06: in-memory fixture only, no purchase/persistence; exercise both transition directions.
+    if(width>height){
+      const hero=await page.evaluate(()=>{
+        const id=(0,eval)('Object.keys(CH).find(k=>prog(k)?.stars>0)');
+        const p=(0,eval)('prog('+JSON.stringify(id)+')');
+        const old={gear:p.gear,relic:p.relic,eq:p.eq,stars:p.stars};
+        const open=()=>{(0,eval)('closeInfo(true);closeOverlay();openDetail('+JSON.stringify(id)+')');};
+        const slots=()=>document.querySelectorAll('#overlay .hc [data-slot]').length;
+        try{
+          p.gear=13;p.stars=7;p.eq=Array(6).fill(true);p.relic=0;open();
+          const before=slots(),pl=document.querySelector('#overlay .hcres').textContent,seal=!!document.querySelector('#overlay .hcmem .memory-art');
+          p.relic=3;(0,eval)('openDetail('+JSON.stringify(id)+')');const after=slots();
+          p.relic=7;(0,eval)('openDetail('+JSON.stringify(id)+')');const max=!!document.querySelector('#overlay .hc-max');
+          (0,eval)('openInfo('+JSON.stringify('bio:'+id)+')');
+          const root=document.querySelector('#overlay2 .ui06-dossier');
+          root.querySelector('[data-ui06-tab="stats"]').click();
+          const stats=!root.querySelector('#ui06-pane-stats').hidden;
+          const overflow=root.scrollHeight-root.clientHeight;
+          root.querySelector('[data-ui06-tab="sources"]').click();const sources=!root.querySelector('#ui06-pane-sources').hidden;
+          p.relic=0;open();const restored=slots();
+          return {before,after,restored,seal,max,stats,sources,overflow,resources:document.querySelectorAll('#overlay .hcres .amt').length};
+        }finally{Object.assign(p,old);(0,eval)('closeInfo(true);closeOverlay()');}
+      });
+      assert.deepEqual([hero.before,hero.after,hero.restored],[6,0,6],'UI-06 gear slots are view-only and restore on hero change');
+      assert.ok(hero.seal&&hero.max&&hero.stats&&hero.sources,'UI-06 seal, maximum, and dossier tabs');
+      assert.ok(hero.overflow<=1,'UI-06 dossier does not scroll as a screen');
+      assert.equal(hero.resources,1,'UI-06 only solari in hero header');
+    }
     // UI-04: verify the actual compiled dossier, not the standalone mockup.
     if(width>height){
       await page.evaluate(()=>(0,eval)('closeInfo(true);closeOverlay();openProfile()'));

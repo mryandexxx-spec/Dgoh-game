@@ -25,6 +25,8 @@ class HeroStage extends Stage3D {
     if (this.glow) {
       if (this.bg) this.glow.addExcludedMesh(this.bg);
       if (this.halo) this.glow.addExcludedMesh(this.halo);
+      // The podium is self-lit in the depth-tested main pass, not composited over the character.
+      if (this.ring) this.glow.addExcludedMesh(this.ring);
     }
   }
   constructor() {
@@ -50,8 +52,8 @@ class HeroStage extends Stage3D {
     CTX.shadows.filteringQuality = gfx(this.small).shadowQ === 'low' ? B3.ShadowGenerator.QUALITY_LOW : B3.ShadowGenerator.QUALITY_MEDIUM;
     // podium: sand-stone disc with glowing tier ring
     const stone = mat3('#79604b', { roughness: .8 }), top = mat3('#a08261', { roughness: .65 });
-    mk(bCyl(1.05, 1.15, .22, 48), stone, 0, -.11, 0, false); mk(bCyl(.98, .98, .02, 48), top, 0, .005, 0, false);
-    this.ring = mk(MB().CreateTorus('ring', { diameter: 2.04, thickness: .03, tessellation: 64 }, S), basic3('#e8913f'), 0, .01, 0, false);
+    mk(bCyl(1.05, 1.15, .22, 48), stone, 0, -.11, 0, false); const podiumTop = mk(bCyl(.98, .98, .02, 48), top, 0, -.01, 0, false); podiumTop.receiveShadows = true;
+    this.ring = mk(MB().CreateTorus('ring', { diameter: 2.04, thickness: .018, tessellation: 64 }, S), basic3('#e8913f'), 0, -.006, 0, false);
     tx = glowTex();
     const dust = new B3.ParticleSystem('motes', 160, S); dust.particleTexture = tx; dust.emitter = V3(0, 0, 0); dust.minEmitBox = V3(-1.6, 0, -1.2); dust.maxEmitBox = V3(1.6, 2.6, 1); dust.direction1 = V3(-.05, .05, -.05); dust.direction2 = V3(.05, .15, .05);
     dust.minLifeTime = 4; dust.maxLifeTime = 8; dust.minSize = .01; dust.maxSize = .03; dust.color1 = new B3.Color4(1, .85, .6, .7); dust.color2 = new B3.Color4(1, .7, .4, .5); dust.colorDead = new B3.Color4(1, .6, .3, 0); dust.emitRate = 20; dust.blendMode = B3.ParticleSystem.BLENDMODE_ADD; dust.preWarmCycles = 100; dust.start();
@@ -93,7 +95,7 @@ class HeroStage extends Stage3D {
     }
     const keep = new Set([def.id, ...this.want.map(d => d.id)]);
     for (const [id, o] of this.pool) if (!keep.has(id)) { this.dropHero(o); this.pool.delete(id); }
-    const tc = col3(TIER_COL[(prog0 || {}).gear || 1] || '#e8913f'); this.ring.material.emissiveColor = tc; this.rim.diffuse = def.side === 'dark' ? col3('#ff6a5a') : col3('#8fc0ff');
+    const tc = col3(TIER_COL[(prog0 || {}).gear || 1] || '#e8913f'); this.ring.material.emissiveColor = tc.scale(.65); this.rim.diffuse = def.side === 'dark' ? col3('#ff6a5a') : col3('#8fc0ff');
     // Meshy's textured armor is dark on its +Z (front) side. Reuse the
     // existing amber rim as a portrait fill for this one authored hero,
     // rather than raising the global key/hemi or adding a fifth GPU light.
@@ -159,7 +161,7 @@ class HeroStage extends Stage3D {
     this.camera.position.set(Math.sin(.25) * dist * (1.25 - .25 * e), H * .62 + .25 * (1 - e), Math.cos(.25) * dist * (1.25 - .25 * e)); this.camera.setTarget((this._tg || (this._tg = V3())).set(0, H * (portraitScale < 1 ? .44 : .52), 0)); this.camera.fov = .75;
     if (this.pipe.depthOfFieldEnabled) this.pipe.depthOfField.focusDistance = dist * 1000;
     const fk = this.flashT ? Math.max(0, 1 - (now - this.flashT) / 900) : 0;
-    this.key.intensity = 1.7 + fk * 2; this.ring.scaling.setAll(1 + fk * .15); if (this.glow) this.glow.intensity = .6 + fk;
+    this.key.intensity = 1.7 + fk * 2; this.ring.scaling.setAll(1); if (this.glow) this.glow.intensity = .6 + fk;
   }
   slashFX() {} muzzleFX() {} voiceFX() {} castFX() {}
   dustFX(o, where) { const H = o.h, r = o.root.rotation.y, off = where === 'shoulder' ? V3(.28, H * .74, .05) : where === 'cape' ? V3(-.1, H * .5, -.3) : V3(-.05, H * .66, .14); const c = Math.cos(r), s = Math.sin(r); this.dustP.emitter = V3(off.x * c + off.z * s, off.y, -off.x * s + off.z * c); this.dustP.manualEmitCount = where === 'cape' ? 140 : 40; }
