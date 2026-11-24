@@ -154,11 +154,13 @@ for (let c = 0; c < CYCLES; c++) {
             gearInControls:!!hc.querySelector('.hcpilot-controls .hcgear'),
             canvases:hc.querySelectorAll('.hcfig canvas').length,
             dpr:1/h.engine.getHardwareScalingLevel(),
-            expectedDpr:Math.min(window.devicePixelRatio||1,gfx(h.small).dpr.hero)*(h.pilot?gfx(h.small).heroPilotScale:1) };
+            expectedDpr:Math.min(window.devicePixelRatio||1,gfx(h.small).dpr.hero)*(h.pilot?gfx(h.small).heroPilotScale:1),
+            dof:h.pipe.depthOfFieldEnabled,
+            expectedDof:!!(gfx(h.small).dof === true || gfx(h.small).dof === 'hero') && !(h.pilot && h.small && gfx(h.small).level === 'med') };
         })()`));
         const expected = id === 'duncan';
         if (pilot.ui !== expected || pilot.stage !== expected || pilot.terrace !== expected ||
-            pilot.podium === expected || pilot.gearInControls !== expected || pilot.canvases !== 1 || Math.abs(pilot.dpr-pilot.expectedDpr)>.015)
+            pilot.podium === expected || pilot.gearInControls !== expected || pilot.canvases !== 1 || Math.abs(pilot.dpr-pilot.expectedDpr)>.015 || pilot.dof !== pilot.expectedDof)
           errors.push('GFX-02: pilot/legacy switch '+id+' '+JSON.stringify(pilot));
       }
       if (ok >= 0 && SHOTS && !['muaddib','jessica'].includes(id)) await page.screenshot({path:path.join(SHOTS,`ui10-${key}${PHONE ? '-phone' : ''}.png`)});
