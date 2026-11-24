@@ -415,8 +415,8 @@ assert.equal(publish({...github,ref:'refs/heads/feature'},ready,()=>false,approv
 // the verified v143 root commit). After synchronizing exact tested files to main,
 // GitHub's independent Pages workflow deploys that commit. A second action
 // deployment from the same run races artifact discovery and leaves a false red.
-const workflow=fs.readFileSync(new URL('../../../.github/workflows/validate-pwa.yml',import.meta.url),'utf8');
-const publisher=workflow.slice(workflow.indexOf('\n  deploy-pages:\n'));
+const pagesReleaseWorkflow=fs.readFileSync(new URL('../../../.github/workflows/validate-pwa.yml',import.meta.url),'utf8');
+const publisher=pagesReleaseWorkflow.slice(pagesReleaseWorkflow.indexOf('\n  deploy-pages:\n'));
 assert.ok(publisher.startsWith('\n  deploy-pages:\n'),'publish job still exists');
 assert.match(publisher,/name: Synchronize published PWA in main without rerunning builds/,
   'only validated files are synchronized to main');
