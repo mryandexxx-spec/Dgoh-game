@@ -59,8 +59,9 @@ try {
     assert.ok(result.heights.bar<=maxBar,'compact header saves vertical space: '+width+' '+result.heights.bar);
     if(width===667) {
       // Four resources form one row on narrow phones; extra balances still exist.
-      const rows=await page.$eval('.lobby .resbox > .hud-cell',els=>
-        [...new Set(els.map(e=>Math.round(e.getBoundingClientRect().top)))]);
+      const rows=await page.evaluate(()=>
+        [...new Set([...document.querySelectorAll('.lobby .resbox > .hud-cell')]
+          .map(e=>Math.round(e.getBoundingClientRect().top)))]);
       assert.equal(rows.length,1,'single resource row on narrow landscape');
       await page.evaluate(()=>document.querySelector('.lobby .resbox > [data-info="cry"]').click());
       assert.ok(await page.$('#overlay2 .infosheet'),'Visible resource opens the existing info sheet');
