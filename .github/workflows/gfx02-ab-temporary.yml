@@ -18,7 +18,7 @@ jobs:
         id: chrome
       - uses: actions/checkout@v4
         with:
-          ref: 4fe68f13213528fbe833ca5f929c0be8e3676bba
+          ref: 2259e90de78eb64dc2e413ee1938482d2f3ee344
           path: candidate
       - name: Build exact optimized candidate
         working-directory: candidate/dev
