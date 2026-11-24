@@ -14,7 +14,9 @@ const require = createRequire(import.meta.url);
 const puppeteer = require('puppeteer-core');
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2), opt = (k, d = null) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
-const VAL = new Set(['--out', '--babylon', '--chrome', '--gfx']);
+const VAL = new Set(['--out', '--babylon', '--chrome', '--gfx', '--hero', '--width', '--height']);
+const HERO = opt('--hero', 'paul'), ONLY_HERO = args.includes('--only-hero');
+if (!/^[a-z0-9_]+$/.test(HERO)) throw new Error('Invalid hero ID');
 const GFX = (opt('--gfx') || '').split(',');
 const [A, B] = args.filter((a, i) => !a.startsWith('--') && !VAL.has(args[i - 1]));
 const OUT = opt('--out', path.join(HERE, 'ab-out')), PHONE = args.includes('--phone');
@@ -30,7 +32,7 @@ async function shots(html, tag) {
   const old = /babylon\.min\.js/.test(fs.readFileSync(html, 'utf8').slice(0, 300000)), babylon = old && (opt('--babylon') || [path.join(path.dirname(path.resolve(html)), 'babylon.min.js'), path.join(HERE, '../../../babylon.min.js')].find(f => fs.existsSync(f)));
   if (old && !babylon) throw new Error(`${html}: старая сборка — нужен --babylon <babylon.min.js>`);
   const page = await browser.newPage();
-  await page.setViewport(PHONE ? { width: 844, height: 390, deviceScaleFactor: 1, isMobile: true, hasTouch: true, isLandscape: true } : { width: 960, height: 600, deviceScaleFactor: 1 });
+  await page.setViewport(PHONE ? { width: +opt('--width',844), height: +opt('--height',390), deviceScaleFactor: 1, isMobile: true, hasTouch: true, isLandscape: true } : { width: 960, height: 600, deviceScaleFactor: 1 });
   await page.setRequestInterception(true);
   page.on('request', r => { const u = r.url(); if (babylon && /babylon\.min\.js$/.test(u)) return r.respond({ status: 200, contentType: 'text/javascript', body: fs.readFileSync(babylon) }); if (/^(file|data|blob):|^http:\/\/127\.0\.0\.1:/.test(u)) return r.continue(); return r.abort(); });
   await page.evaluateOnNewDocument((save, gfx) => {
@@ -50,9 +52,13 @@ async function shots(html, tag) {
   const out = {};
   await sleep(2500); await run(`window.bakePortraits = () => {};`);
   await run(`closeInfo(true); closeOverlay(); view = 'lobby'; render();`); await tick(90);
-  out.camp = await page.screenshot();
-  await run(`openDetail('paul');`); await tick(90);
+  if (!ONLY_HERO) out.camp = await page.screenshot();
+  await run(`openDetail(${JSON.stringify(HERO)});`); await tick(90);
   out.hero = await page.screenshot();
+  if (ONLY_HERO) {
+    fs.writeFileSync(path.join(OUT, `hero-${tag}${PHONE ? '-phone' : ''}.png`), out.hero);
+    await page.close(); await srv.close(); return out;
+  }
   await run(`closeInfo(true); closeOverlay(); view = 'lobby'; render();`); await tick(10);
   await run(`{ const i = 0, n = NODES[i]; S.skipDlg = true; launch({ mode: 'camp', dlg: false, scene: NODE_SCENES[i], i, title: nodeTitle(i), desert: n.desert, squad: campSquad(i).filter(id => sideOk(n.camp, id) && prog(id).stars), enemy: n.enemy.map(id => enemyProg(id, n.lvl, n.m === 9)) }); clearTimeout(BT.timer); }`);
   await tick(90);
