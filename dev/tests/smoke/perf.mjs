@@ -11,12 +11,14 @@ const puppeteer = require('puppeteer-core');
 const { serve } = await import(path.join(DEV, 'tests/lib/serve.mjs'));
 const args = process.argv.slice(2), has = k => args.includes(k), opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
 const html = args.find(a => !a.startsWith('--') && a.endsWith('.html')), PHONE = has('--phone'), LOW = has('--low'), GFX = opt('--gfx', '');
+const HERO = opt('--hero','paul');
+if (!/^[a-z0-9_]+$/.test(HERO)) throw new Error('Invalid hero ID');
 const chrome = process.env.CHROME_PATH || ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'].find(f => fs.existsSync(f));
 const LATE = fs.readFileSync(path.join(DEV, 'tests/fixtures/saves/03-late.json'), 'utf8');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const browser = await puppeteer.launch({ executablePath: chrome, headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--font-render-hinting=none'] });
 const page = await browser.newPage(); page.on('console', m => { if (/bake|camp stage/.test(m.text())) console.log('console:', m.text()); }); page.on('pageerror', e => console.log('pageerror:', e.message));
-await page.setViewport(PHONE ? { width: 844, height: 390, deviceScaleFactor: +opt('--dpr', 1), isMobile: true, hasTouch: true, isLandscape: true } : { width: 960, height: 600, deviceScaleFactor: +opt('--dpr', 1) });
+await page.setViewport(PHONE ? { width: +opt('--width',844), height: +opt('--height',390), deviceScaleFactor: +opt('--dpr', 1), isMobile: true, hasTouch: true, isLandscape: true } : { width: 960, height: 600, deviceScaleFactor: +opt('--dpr', 1) });
 await page.setRequestInterception(true); page.on('request', r => /^(data|blob):|^http:\/\/127\.0\.0\.1:/.test(r.url()) ? r.continue() : r.abort());
 await page.evaluateOnNewDocument((save, low, gfx) => {
   // Installed before app boot so the baker never creates transient portrait
@@ -100,7 +102,7 @@ const cost = (stageExpr, ms = 4000) => page.evaluate(async (stageExpr, ms) => {
 const out = {};
 await run(LOBBY); await sleep(2500);
 out.camp = { cost: await cost('CAMP_STAGE'), vram: await vram(), bakeMs: await page.evaluate(() => CAMP_STAGE.bakeMs) };
-await run(`openDetail('paul');`); await sleep(3000); await page.evaluate(async () => { for (let i = 0; i < 100 && window.HERO_STAGE && HERO_STAGE.pfIdle && !HERO_STAGE.pfIdle(); i++) await new Promise(r => setTimeout(r, 50)); });   // пакет 5: после прогрева соседей
+await run(`openDetail(${JSON.stringify(HERO)});`); await sleep(3000); await page.evaluate(async () => { for (let i = 0; i < 100 && window.HERO_STAGE && HERO_STAGE.pfIdle && !HERO_STAGE.pfIdle(); i++) await new Promise(r => setTimeout(r, 50)); });   // пакет 5: после прогрева соседей
 out.hero = { cost: await cost('HERO_STAGE'), vram: await vram() };
 await run(`closeInfo(true); closeOverlay(); view = 'lobby';`);
 await run(BATTLE); await sleep(4000);
