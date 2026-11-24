@@ -112,6 +112,13 @@ export function commandsFor(plan) {
     'dev/tests/ci/ui03-choam-art-acceptance.mjs',
   ].includes(p)))
     add('tests/ci/ui03-choam-art-acceptance.mjs');
+  // UI-04: verify the same hashed Solari artwork in both production formats.
+  if (plan.paths.some(p => [
+    'dev/assets/img/solari-stack.webp', 'dev/src/core/format.js',
+    'dev/src/ui/calendar-icons.js','dev/tests/ci/ui04-solari-asset-acceptance.mjs',
+    'dev/tools/build.mjs',
+  ].includes(p))) for (const artifact of ARTIFACTS)
+    add('tests/ci/ui04-solari-asset-acceptance.mjs',[artifact]);
   // UI-01: run the actual Water WebP compiled-artifact contract only when
   // relevant source, asset, or its own acceptance was changed.
   const waterFiles = new Set([

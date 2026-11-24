@@ -1,5 +1,6 @@
 // UI-03 calendar-only collectible art. Editable SVG silhouettes, no remote assets.
 // Names/keys remain canonical: this module only renders a graphic.
+const SOLARI_ICON_SRC = '__SOL_ICON_URL__';
 const DEFINITIONS = '<defs>'
   + '<linearGradient id="`-gold" x1=".1" y1=".1" x2=".9" y2=".95"><stop stop-color="#fff1b9"/><stop offset=".26" stop-color="#e7b55a"/><stop offset=".59" stop-color="#a76a2e"/><stop offset="1" stop-color="#523018"/></linearGradient>'
   + '<linearGradient id="`-steel" x1=".1" y1=".05" x2=".9" y2=".94"><stop stop-color="#edf3ed"/><stop offset=".27" stop-color="#aeb5b4"/><stop offset=".61" stop-color="#5a6870"/><stop offset="1" stop-color="#28323b"/></linearGradient>'
@@ -11,15 +12,7 @@ const DEFINITIONS = '<defs>'
 
 // Hand-authored, original miniature object illustrations, optimized for 30–42px.
 const ART = Object.freeze({
-  sol: '<ellipse cx="24" cy="26" rx="20" ry="19" fill="url(#`-halo)"/>'
-    + '<circle cx="24" cy="25" r="18.1" fill="#4d2d17" stroke="#f6d18a" stroke-width="1.3"/>'
-    + '<circle cx="24" cy="23.3" r="16.6" fill="url(#`-gold)" stroke="#57351a" stroke-width="1.4"/>'
-    + '<circle cx="24" cy="23.3" r="13.3" fill="none" stroke="#ffe8a0" stroke-width="1.3" opacity=".9"/>'
-    + '<circle cx="24" cy="23.3" r="10.9" fill="none" stroke="#59391e" stroke-width="1.4"/>'
-    + '<path d="M24 12v4M24 31v4M12.7 23.3h4M31.3 23.3h4M15.7 15l2.9 2.9M29.4 28.7l2.9 2.9M32.3 15l-2.9 2.9M18.6 28.7l-2.9 2.9" stroke="#7c4e25" stroke-width="1.2" stroke-linecap="round"/>'
-    + '<path d="M26.6 18.2c-4.8-2.3-8.5 2.3-6.5 5.8 1.2 2.4 6.5 1.5 7.2 4.1.8 2.7-2.6 4.5-7.9 2.6M24 15.5v16" fill="none" stroke="#653b1c" stroke-width="2.2" stroke-linecap="round"/>'
-    + '<path d="M15 11.2a17 17 0 0 1 16.7-2.9" fill="none" stroke="#fff5cb" stroke-width="1.6" opacity=".9" stroke-linecap="round"/>'
-    + '<circle cx="35" cy="33" r="1.5" fill="#fff5cf"/>',
+  sol: '', // UI-04: real WebP artwork for calendar and daily rewards
   folio: '<ellipse cx="24" cy="26" rx="22" ry="18" fill="url(#`-halo)"/>'
     + '<path d="M5.8 12.5 22 15.8 25 16.9 42.2 12v26.2L25 42l-3.5-.6-15.7-3.6Z" fill="#3f261c" stroke="#b78650" stroke-width="2"/>'
     + '<path d="M8.6 9.8c5.8-1 11.6.7 15.4 4.6 4.4-3.8 10.3-5.6 15.4-4.6v25c-5.4-1-11.1.9-15.4 4.9-4.4-4-10.1-5.9-15.4-4.9Z" fill="url(#`-ivory)" stroke="#f4ddb1" stroke-width="1.2"/>'
@@ -164,6 +157,10 @@ function dailyQuestIcon(key) {
 }
 
 function defsFor(id) { return DEFINITIONS.replaceAll('`',id); }
+// One canonical WebP with the existing 48px SVG layout contract.
+function solariLootSvg(cssClass, uniqueId) {
+  return `<svg class="${cssClass}" viewBox="0 0 48 48" data-solari-art="${uniqueId}" aria-hidden="true" focusable="false"><image href="${SOLARI_ICON_SRC}" x="0" y="0" width="48" height="48" preserveAspectRatio="xMidYMid meet"/></svg>`;
+}
 // id is local to each day's SVG. Repeated icon types cannot collide with
 // another day's gradients when several month calendars are mounted in tests.
 function calendarRewardIcon(kind, day, portraitMarkup = '') {
@@ -171,13 +168,14 @@ function calendarRewardIcon(kind, day, portraitMarkup = '') {
   const safeKind = Object.hasOwn(ART,kind) || kind === 'shard' ? kind : 'sol';
   const id = 'u03-' + safeKind + '-' + safeDay;
   const illustration = (safeKind === 'shard' ? SHARD_ART : ART[safeKind]).replaceAll('`',id);
-  const svg = `<svg class="ui03-loot-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">${defsFor(id)}${illustration}</svg>`;
+  const svg = safeKind === "sol" ? solariLootSvg("ui03-loot-svg",id) : `<svg class="ui03-loot-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">${defsFor(id)}${illustration}</svg>`;
   return safeKind === 'shard' ? `<span class="ui03-shard-art">${svg}<span class="ui03-shard-face">${portraitMarkup}</span></span>` : svg;
 }
 // Shared miniature object art for daily rewards. Separate per-tile gradient IDs.
 function dailyRewardIcon(kind, scope = 'daily') {
   if (!Object.hasOwn(ART, kind)) return '';
   const id = 'u03-chip-' + kind + '-' + String(scope).replace(/[^a-z0-9_-]/gi, '').slice(0, 38);
+  if (kind === 'sol') return solariLootSvg('ui03-loot-svg ui03-daily-loot-svg',id);
   return '<svg class="ui03-loot-svg ui03-daily-loot-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">' +
     defsFor(id) + ART[kind].replaceAll(String.fromCharCode(96), id) + '</svg>';
 }
