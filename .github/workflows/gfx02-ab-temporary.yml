@@ -1,0 +1,59 @@
+name: GFX-02 isolated visual QA (temporary branch)
+on:
+  push:
+    branches: [qa/gfx02-duncan-ab]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+      - run: npm ci
+        working-directory: dev
+      - name: Download exact validated builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 45466003391 --name dune-validated-build --dir /tmp/gfx156
+          gh run download 45485047171 --name dune-validated-build --dir /tmp/gfx157
+      - name: Eight equivalent Duncan captures
+        working-directory: dev
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          mkdir -p /tmp/gfx02-qa
+          for profile in med low; do
+            for width in 844 667; do
+              height=390; if [ "$width" = 667 ]; then height=375; fi
+              for version in 156 157; do
+                name="$version-$profile-$width"
+                node tests/smoke/gfx02-ab-once.mjs "/tmp/gfx$version/pwa/index.html" --phone --dpr 1 --gfx "$profile" --width "$width" --height "$height" --shot "/tmp/gfx02-qa/$name.png" --out "/tmp/gfx02-qa/$name.json"
+              done
+            done
+          done
+      - name: Compare same-run samples (software rendering)
+        run: |
+          python3 - <<'PY'
+          import json, pathlib
+          for profile in ('med','low'):
+            for width in (844,667):
+              a,b=[json.loads(pathlib.Path(f'/tmp/gfx02-qa/{v}-{profile}-{width}.json').read_text()) for v in (156,157)]
+              def summary(x):
+                m=x['hero']['vram']; c=x['hero']['cost']; s=x['sample']
+                return {'draws':c['draws'],'pixels_M':c['mpx'],'rt_MB':round(sum(t['mb'] for t in m['rows'] if t['rt'])+m['depthMB']+m['backbufMB'],2),'texture_MB':round(sum(t['mb'] for t in m['rows'] if not t['rt']),2),'p95_interval_ms':s['p95Interval'],'canvas':m['canvas']}
+              print(profile,width,summary(a),'->',summary(b))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gfx02-duncan-ab
+          path: /tmp/gfx02-qa/
+          retention-days: 7
