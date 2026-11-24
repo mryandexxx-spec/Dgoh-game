@@ -100,15 +100,17 @@ try{
       assert.equal(collection.tab,'custom');
       if(width<=844)assert.ok(collection.areaScroll>collection.area,'avatar collection scrolls internally');
       else assert.ok(collection.area>100,'desktop collection remains usable');
-      const total=await page.$eval('#overlay2 .ui04-item',a=>a.length);
+      const total=await page.evaluate(()=>document.querySelectorAll('#overlay2 .ui04-item').length);
       const locked=await page.$('#overlay2 [data-ui04-locked]');
       if(locked){
         await page.evaluate(el=>el.click(),locked);
         assert.ok(await page.$eval('#overlay2 .ui04-hint',e=>!e.hidden&&!!e.textContent),'locked cosmetic explains requirement');
       }
       await clickLocal('[data-ui04-filter]');
-      assert.ok(await page.$eval('#overlay2 .ui04-item',a=>a.length)<=total,'owned filter');
-      assert.equal(await page.$eval('#overlay2 [data-ui04-locked]',a=>a.length),0,'owned filter hides locked');
+      const filtered=await page.evaluate(()=>({count:document.querySelectorAll('#overlay2 .ui04-item').length,active:document.querySelector('#overlay2 [data-ui04-filter]').getAttribute('aria-pressed')}));
+      assert.equal(filtered.active,'true','owned filter enabled');
+      assert.ok(filtered.count<=total && (!locked || filtered.count<total),'owned filter count: '+JSON.stringify({total,filtered}));
+      assert.equal(await page.evaluate(()=>document.querySelectorAll('#overlay2 [data-ui04-locked]').length),0,'owned filter hides locked');
       await clickLocal('[data-ui04-kind="frame"]');
       assert.ok(await page.$('#overlay2 [data-pframe]'),'frame choices');
       await clickLocal('[data-ui04-kind="title"]');
