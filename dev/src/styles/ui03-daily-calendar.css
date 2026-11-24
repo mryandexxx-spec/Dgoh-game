@@ -68,3 +68,8 @@ main#view:has(> .ui03-root.ui03-daily){width:100%;max-width:none;height:100dvh;m
   .ui03-quest .ui03-rewards .rwt.sm .rwa,.ui03-quest .ui03-rewards .rwt.sm .rwmed{width:11px;height:11px}
   .ui03-quest .ui03-rewards .rwt.sm .rwmed>.ico{width:10px;height:10px}
 }
+
+
+.ui03-hero.ready{border-color:#f8ce87;box-shadow:inset 0 1px #fff3c97a,0 0 0 1px #d6a15a44,0 6px 19px #0009}
+.ui03-hero.opened .ui03-art{opacity:.62}
+.ui03-hero.opened .ui03-pip{box-shadow:none}
