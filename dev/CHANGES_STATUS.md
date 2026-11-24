@@ -267,6 +267,8 @@
 
 ## v157 — GFX-02: первый Babylon-пилот Дункана (24.11.2026; кандидат)
 
+- A/B 45489355755: MED/LOW RT+depth+backbuffer +17.8–19.8%, texture memory unchanged; 3D canvas area +53–79%; no acceptance. Optimization candidate: per-profile .78 scale applied only to pilot DPR (HIGH unchanged), remove two duplicate pillars, 256² tiled stone, lower parapet, neutral fill. Notifications synchronized on hero open; DPR restoration assertion added. Repeat exact-fixture visual/budget comparison; no merge before evidence. Physical iPhone remains unverified.
+
 - Переиспользована карточка с существующими обработчиками, один canvas/EngineHost, D только для Дункана. Настоящий каменный пол и монолитные пропсы вместо подиума, PBR, прежний художественный дальний план и прохладный портретный свет. Старый UI и подиум остальных героев сохранены.
 - Добавлена адресная проверка переключений UI/террасы/подиума/холста в существующем 3D smoke; A/B и perf поддерживают выбор героя и размера. Результаты CI, кадры и замеры пока не подтверждены. Без изменений модели, экономики, сохранений, боевых правил или Web Locks.
 
