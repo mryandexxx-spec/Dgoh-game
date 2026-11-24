@@ -1,6 +1,7 @@
 // ui/hero-card.js — карточка героя (пакет 5, E1): каркас строится один раз; листание ‹ › и действия обновляют зоны точечно
 // (зона перерисовывается, только если её разметка изменилась), холст 3D остаётся на месте — меняется модель.
 import './overlays/detail.js'; // порядок исполнения
+import { renderNotes } from './notifications.js';
 import { SK_NAME, lvlAffordMax, lvlCost, skIcon, slotState } from './overlays/detail.js';
 import { hasCost, skCost } from '../logic/skill-up.js';
 import { nextShards, rosterList } from './views/squad.js';
@@ -185,6 +186,7 @@ function openDetail(id, stagedPreview = null) {
     });
   } else updLvl();
   mountHeroStage(id, near, stagedPreview ? { def: d, progress: p } : null);
+  renderNotes(); // synchronize overlay visibility without claiming rewards
   if (!stagedPreview) for (const f of HC_REFRESH) f(id);   // открытые окно умения / «Другая память» (пакет 6)
 }
 
