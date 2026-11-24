@@ -361,6 +361,18 @@
 @media(max-width:750px) {
   .detail .sheet.hc.gfx02-pilot { --pilot-panel:clamp(248px,46%,330px); }
   .hc.gfx02-pilot .hcpilot-controls { padding-right:6px; }
+  /* Six slots fit in one row at 667 px: 6×44 + 5×3 = 279 px.
+     Narrower safe-area layouts retain an independently scrollable panel. */
+  .hc.gfx02-pilot .hcgear { grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px; flex:none; }
+  .hc.gfx02-pilot .hcgl,.hc.gfx02-pilot .hcgr { grid-template-columns:repeat(3,minmax(0,1fr)); gap:3px; }
+  .hc.gfx02-pilot .hcgs .box { width:38px; height:38px; }
+  .hc.gfx02-pilot .hcpilot-controls { gap:4px; padding-top:5px; padding-bottom:4px; }
+  .hc.gfx02-pilot .hcleft { padding-top:3px; gap:3px; }
+  .hc.gfx02-pilot .hcsk:not(.gl) { min-height:59px; padding:1px; gap:1px; }
+  .hc.gfx02-pilot .hcski { width:38px;height:38px; }
+  .hc.gfx02-pilot .hcmem { min-height:44px; }
+  .hc.gfx02-pilot .hcgear { padding-top:3px; }
+}
+@media(max-width:620px) {
   .hc.gfx02-pilot .hcgear { grid-template-columns:1fr; }
-  .hc.gfx02-pilot .hcgl,.hc.gfx02-pilot .hcgr { grid-template-columns:repeat(3,1fr); }
 }
