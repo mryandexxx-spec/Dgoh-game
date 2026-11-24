@@ -9,7 +9,8 @@ import { loadSave, persist } from '../../core/save.js';
 import { todayKey } from '../../logic/economy.js';
 import { figureSVG, portrait } from '../../render2d/figures.js';
 import { CH } from '../../data/chars.js';
-import { fmt, ic } from '../../core/format.js';
+import { fmt } from '../../core/format.js';
+import { calendarRewardIcon } from '../calendar-icons.js';
 import { $ } from '../../core/dom.js';
 
 // ===== login calendar =====
@@ -96,15 +97,20 @@ function openCalendar() {
     hh = Math.floor(msLeft/3.6e6), mm = Math.floor(msLeft%3.6e6/6e4);
   const selected = Math.max(1,Math.min(days,L.n+(can?1:0)));
   const cells = Array.from({length:days},(_,i)=>{
-    const day=i+1,rw=loginReward(day,stamp),[k,q,id]=rw[0],
+    const day=i+1,rw=loginReward(day,stamp),
       st=day<=L.n?'got':day===today&&can?'now':'fut',
       big=rw.some(r=>['shard','wol','seal'].includes(r[0]));
-    return `<button class="ui03-cday ${st} ${big?'big':''} ${day===selected?'selected':''}" type="button"
+    // A few milestone days have TWO rewards. Show both rather than hiding
+    // the secondary seal/shard/Water-of-Life icon behind the preview text.
+    const art = rw.map(([k,n,id],index)=>`<span class="ui03-dayitem ${index?'secondary':'primary'}" data-ui03reward="${k}">
+      ${calendarRewardIcon(k,day,k==='shard'?portrait(CH[id],32):'')}</span>`).join('');
+    const quantities = rw.map(([,n],index)=>`<span class="${index?'secondary':''}">×${fmt(n)}</span>`).join('');
+    return `<button class="ui03-cday ${st} ${big?'big':''} ${rw.length>1?'multi':''} ${day===selected?'selected':''}" type="button"
       data-ui03day="${day}" aria-pressed="${day===selected}" title="${ui03RewardText(day,stamp)}"
       aria-label="Награда дня ${day}, ${ui03RewardText(day,stamp)}${st==='got'?', получена':st==='now'?', доступна':''}">
       <span class="ui03-daynum">${String(day).padStart(2,'0')}</span>
-      <span class="ui03-dayitem">${k==='shard'?portrait(CH[id],24):ic(k)}</span>
-      <span class="ui03-dayqty">×${fmt(q)}</span>${st==='got'?'<span class="ui03-daycheck">✓</span>':''}
+      <span class="ui03-dayitems">${art}</span>
+      <span class="ui03-dayqty">${quantities}</span>${st==='got'?'<span class="ui03-daycheck">✓</span>':''}
     </button>`;
   }).join('');
   $('#overlay2').innerHTML = `<div class="detail info-layer ui03-calendar-overlay" data-iclose="1">

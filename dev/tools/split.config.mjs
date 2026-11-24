@@ -246,6 +246,8 @@ export const SPLIT = [
   [3761, 'ui/rewards.js'],
 
   [3779, 'ui/views/daily.js'],
+  // UI-03b: icon art is evaluated before the importing calendar overlay.
+  [3826, 'ui/calendar-icons.js'],
 
   [3826, 'ui/overlays/calendar.js'],
 

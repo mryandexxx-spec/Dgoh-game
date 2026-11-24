@@ -130,6 +130,60 @@ try {
     assert.equal(cal.days,cal.expected,'calendar preserves month length');
     assert.equal(cal.overflow,'auto','calendar has internal scrolling');
     assert.equal(cal.claim,true,'verified login claim control exists');
+    // UI-03b: first-open portrait must stay strictly inside its artboard and
+    // keep the same geometry after a harmless view render (no claim/write).
+    // Every recurring calendar reward, including secondary milestone loot,
+    // gets a native-size handcrafted SVG, not the tiny generic 16px glyph.
+    const readArt=()=>page.evaluate(()=>{
+      const root=document.querySelector('#overlay2 .ui03-calendar-screen');
+      const portrait=root.querySelector('.ui03-portrait');
+      const fig=portrait?.querySelector('.biofig');
+      const svg=fig?.querySelector('svg');
+      const grid=root.querySelector('.ui03-calendar-grid');
+      const scroll=root.querySelector('.ui03-calendar-body .ui03-scroll');
+      const first=root.querySelector('[data-ui03day="1"] .ui03-loot-svg');
+      const firstReward=root.querySelector('[data-ui03day="1"] [data-ui03reward]');
+      const last=root.querySelectorAll('[data-ui03day]')[root.querySelectorAll('[data-ui03day]').length-1];
+      const box=el=>{const r=el.getBoundingClientRect();return {left:r.left,top:r.top,width:r.width,height:r.height,right:r.right,bottom:r.bottom}};
+      return {portrait:box(portrait),fig:box(fig),svg:box(svg),
+        cover:getComputedStyle(portrait).contain,
+        icon:box(first),
+        kinds:[...new Set([...root.querySelectorAll('[data-ui03reward]')].map(e=>e.dataset.ui03reward))].sort(),
+        svgCount:root.querySelectorAll('.ui03-loot-svg').length,
+        dayCount:root.querySelectorAll('[data-ui03day]').length,
+        day15:root.querySelectorAll('[data-ui03day="15"] [data-ui03reward]').length,
+        last: last.querySelectorAll('[data-ui03reward]').length,
+        gridHeight:grid.getBoundingClientRect().height,
+        scrollHeight:scroll.getBoundingClientRect().height,
+        rootHeight:root.getBoundingClientRect().height,
+        externalImages:root.querySelectorAll('.ui03-dayitems image[href^="http"]').length};
+    });
+    const initialArt=await readArt();
+    assert.ok(initialArt.portrait.height>30,'portrait reserves a stable visible artboard');
+    assert.ok(initialArt.fig.width>0 && initialArt.fig.height>0,'portrait has concrete size');
+    assert.ok(Math.abs(initialArt.fig.height-initialArt.portrait.height)<2,'portrait height is constrained');
+    assert.ok(initialArt.svg.left>=initialArt.portrait.left-2 &&
+      initialArt.svg.right<=initialArt.portrait.right+2 &&
+      initialArt.svg.top>=initialArt.portrait.top-2 &&
+      initialArt.svg.bottom<=initialArt.portrait.bottom+2,
+      'initial hero SVG stays within its panel');
+    assert.match(initialArt.cover,/size/,'portrait intrinsic SVG cannot grow the flex row');
+    assert.ok(initialArt.icon.height>=(width<=700?28:34),'premium rewards are legible at native phone size');
+    assert.deepEqual(initialArt.kinds,['cry','folio','pl','seal','shard','sol','teeth','water','wol'],
+      'all nine calendar reward kinds have illustrated art');
+    assert.equal(initialArt.day15,2,'day 15 shows both seal and shards');
+    assert.equal(initialArt.last,2,'month end shows shards and Water of Life');
+    assert.ok(initialArt.gridHeight>=initialArt.scrollHeight-3,'reward grid uses free vertical area');
+    assert.equal(initialArt.externalImages,0,'calendar SVG art is local and offline-ready');
+    await page.evaluate(()=>(0,eval)('openCalendar()'));
+    const redrawArt=await readArt();
+    assert.ok(Math.abs(redrawArt.svg.height-initialArt.svg.height)<2 &&
+      Math.abs(redrawArt.svg.width-initialArt.svg.width)<2 &&
+      Math.abs(redrawArt.portrait.height-initialArt.portrait.height)<2,
+      'hero portrait remains unchanged after calendar rerender');
+    console.log('PASS UI-03b calendar portrait and collectible art:',width+'x'+height,
+      initialArt.kinds.join(','),Math.round(initialArt.icon.height)+'px');
+
     await page.click('[data-ui03day="15"]');
     assert.match(await page.$eval('#ui03-selected-reward',el=>el.textContent),/День 15:/,
       'calendar day preview changes without claiming');

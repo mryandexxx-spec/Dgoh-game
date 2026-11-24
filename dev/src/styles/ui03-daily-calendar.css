@@ -77,3 +77,143 @@ main#view:has(> .ui03-root.ui03-daily){width:100%;max-width:none;height:100dvh;m
 /* Preserve original hero biography and shard-discovery navigation. */
 .ui03-hero-actions{display:flex;flex:none;gap:4px;min-width:0}
 .ui03-hero .ui03-hero-actions>.ui03-button{width:auto;min-width:0;flex:1;margin-top:0;padding:5px 3px;font-size:9px;overflow:hidden;text-overflow:ellipsis}
+
+
+/* UI-03b: portrait is a paint-only artboard, never an intrinsic flex height.
+   Previously .biofig had height:100% + width:auto inside a grid flex item;
+   initial SVG sizing could feed back into the grid and crop the character. */
+.ui03-portrait{
+  position:relative;
+  flex:1 1 0;
+  min-height:0;
+  min-width:0;
+  display:block;
+  contain:size layout paint;
+  overflow:hidden;
+}
+.ui03-portrait>.biofig{
+  position:absolute;
+  inset:0;
+  display:block;
+  box-sizing:border-box;
+  width:100%;
+  height:100%;
+  max-width:none;
+  max-height:none;
+  aspect-ratio:auto;
+  background:none;
+  border:0;
+  border-radius:0;
+  filter:none;
+}
+.ui03-portrait>.biofig>svg{
+  display:block;
+  width:100%;
+  height:100%;
+  max-width:100%;
+  max-height:100%;
+  filter:drop-shadow(0 7px 9px #0009);
+}
+/* Spend the previously empty calendar area on larger collectible art, while
+   keeping the page itself fixed and only the calendar grid scrollable. */
+.ui03-calendar-body .ui03-scroll{display:flex;flex-direction:column}
+.ui03-calendar-grid{
+  flex:1 0 auto;
+  min-height:100%;
+  grid-template-columns:repeat(10,minmax(0,1fr));
+  grid-auto-rows:minmax(66px,1fr);
+  align-content:stretch;
+  gap:6px;
+}
+.ui03-cday{
+  aspect-ratio:auto;
+  min-height:66px;
+  padding:11px 2px 4px;
+  gap:1px;
+  overflow:hidden;
+}
+.ui03-cday.got{opacity:.7}
+.ui03-daynum{top:4px;left:5px;font-size:9px}
+.ui03-daycheck{top:4px;right:5px;font-size:10px}
+.ui03-dayitems{
+  position:relative;
+  display:grid;
+  place-items:center;
+  flex:none;
+  width:42px;
+  height:40px;
+  max-width:100%;
+  margin:0 auto;
+}
+.ui03-dayitem{
+  display:grid;
+  place-items:center;
+  width:40px;
+  height:40px;
+  max-width:100%;
+  color:#e9c58b;
+}
+.ui03-dayitem .ui03-loot-svg{
+  display:block;
+  width:100%;
+  height:100%;
+  filter:drop-shadow(0 2px 2px #0804029c);
+}
+.ui03-dayqty{
+  display:flex;
+  justify-content:center;
+  align-items:baseline;
+  gap:2px;
+  max-width:100%;
+  font-size:11px;
+  font-weight:800;
+  line-height:1;
+  white-space:nowrap;
+  color:#fff0d5;
+  font-variant-numeric:tabular-nums;
+}
+.ui03-dayqty .secondary{font-size:9px;color:#e9c58b}
+.ui03-cday.multi .ui03-dayitem.secondary{
+  position:absolute;
+  right:-4px;
+  bottom:-4px;
+  width:23px;
+  height:23px;
+  border-radius:50%;
+  padding:1px;
+  border:1px solid #f5c478;
+  background:radial-gradient(circle at 35% 20%,#644329,#1e1710 75%);
+  box-shadow:0 2px 4px #000a;
+}
+.ui03-cday.multi .ui03-dayitem.primary{width:36px;height:36px}
+.ui03-shard-art{display:block;position:relative;width:100%;height:100%}
+.ui03-shard-art>.ui03-loot-svg{position:absolute;inset:0}
+.ui03-shard-face{position:absolute;inset:0;display:grid;place-items:center}
+.ui03-shard-face .pt{
+  display:block;
+  width:29px!important;
+  height:29px!important;
+  border:1px solid #e3ad60;
+  border-radius:50%;
+  overflow:hidden;
+  background:radial-gradient(circle at 50% 35%,#5d4c38,#2b2118);
+  box-shadow:0 1px 3px #000c,inset 0 0 0 1px #f0d2a866;
+}
+.ui03-shard-face .pt>svg{display:block;width:100%;height:100%}
+@media (orientation:landscape) and (max-width:700px){
+  .ui03-calendar-grid{
+    grid-template-columns:repeat(8,minmax(0,1fr));
+    grid-auto-rows:minmax(58px,1fr);
+    gap:4px;
+  }
+  .ui03-cday{min-height:58px;padding:10px 1px 2px}
+  .ui03-dayitems{width:34px;height:32px}
+  .ui03-dayitem{width:33px;height:33px}
+  .ui03-dayqty{font-size:9px}
+  .ui03-dayqty .secondary{font-size:7px}
+  .ui03-daynum{left:3px;top:2px;font-size:8px}
+  .ui03-daycheck{right:3px;top:2px;font-size:9px}
+  .ui03-shard-face .pt{width:24px!important;height:24px!important}
+  .ui03-cday.multi .ui03-dayitem.primary{width:30px;height:30px}
+  .ui03-cday.multi .ui03-dayitem.secondary{width:19px;height:19px;right:-3px;bottom:-3px}
+}
