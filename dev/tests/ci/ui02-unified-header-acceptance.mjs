@@ -117,7 +117,7 @@ try{
           const card=[...document.querySelectorAll('#overlay .hcsk svg.skill-art image')];
           const urls=card.map(e=>e.getAttribute('href'));
           const render=['basic','special','ult','passive'].map(k=>call('skillSvg(CH.duncan,'+JSON.stringify(k)+')').includes('skill-art'));
-          const other=call('Object.values(CH).find(d=>d.id!=="duncan")');
+          const other=call('Object.values(CH).find(d=>d.id!=="duncan"&&d.id!=="muaddib")');
           const fallback=!call('skillSvg(CH['+JSON.stringify(other.id)+'],"basic")').includes('skill-art');
           const plaque=document.querySelector('#overlay .memory-plaque')?.getAttribute('src');
           const loaded=await Promise.all([...urls,plaque].map(url=>new Promise(resolve=>{
@@ -137,6 +137,52 @@ try{
       assert.equal(art.rank,'5','UI-07 live rank value');
       assert.equal(art.materials,4,'UI-07 DP6 four-material fixture');
       assert.ok(art.fit&&art.screenScroll<=1,'UI-07 memory columns and controls fit: '+JSON.stringify({width,art}));
+    }
+    // UI-08: the actual six-icon card, both ultimate unlock states, fixed
+    // signature and memory rows, usable skill scrolling, and ordinary hero restoration.
+    if(width>height){
+      const legend=await page.evaluate(async()=>{
+        const call=s=>(0,eval)(s),p=call('prog("muaddib")');
+        const old={stars:p.stars,gear:p.gear,relic:p.relic,eq:p.eq,gl:p.gl};
+        const root=()=>document.querySelector('#overlay .hc');
+        const open=()=>call('openDetail("muaddib")');
+        const signature=()=>root().querySelector('.hcleft > .hcsk.gl');
+        const box=el=>{const b=el.getBoundingClientRect();return {top:b.top,bottom:b.bottom,left:b.left,right:b.right,width:b.width,height:b.height};};
+        try{
+          call('closeInfo(true);closeOverlay()');
+          p.stars=0;p.gl=false;open();
+          const unowned=signature()?.dataset.glState==='locked';
+          p.stars=7;p.gear=13;p.eq=Array(6).fill(true);p.relic=5;open();
+          const locked=signature()?.dataset.glState==='locked';
+          call('hcSkill("muaddib:gl")');
+          const canUnlock=!!document.querySelector('#overlay2 [data-glopen="muaddib"]');
+          call('closeInfo(true)');
+          p.gl=true;open();
+          const r=root(),left=r.querySelector('.hcleft'),list=r.querySelector('.hcsks'),mem=r.querySelector('.hcmem'),gl=signature();
+          const ordinary=[...list.querySelectorAll('[data-hcsk]')],all=[...left.querySelectorAll('[data-hcsk]')];
+          const urls=all.map(el=>el.querySelector('svg.skill-art image')?.getAttribute('href'));
+          const loaded=await Promise.all(urls.map(url=>new Promise(resolve=>{const i=new Image();i.onload=()=>resolve(i.naturalWidth===128&&i.naturalHeight===128);i.onerror=()=>resolve(false);if(url)i.src=url;else resolve(false);})));
+          const glBefore=box(gl),memBefore=box(mem),listBox=box(list),leftBox=box(left);
+          list.scrollTop=list.scrollHeight;
+          const last=box(ordinary.at(-1));
+          const visibleLast=last.bottom<=box(list).bottom+2&&last.top>=box(list).top-2;
+          const fixed=JSON.stringify(glBefore)===JSON.stringify(box(gl))&&JSON.stringify(memBefore)===JSON.stringify(box(mem));
+          const fit=glBefore.top>=leftBox.top-1&&glBefore.bottom<=listBox.top+1&&listBox.bottom<=memBefore.top+1&&memBefore.bottom<=leftBox.bottom+1;
+          const titlesFit=all.every(el=>{const t=el.querySelector('.hcskt b');return t.scrollHeight<=t.clientHeight+1&&t.scrollWidth<=t.clientWidth+1;});
+          call('hcSkill("muaddib:gl")');
+          const opened=gl.dataset.glState==='open'&&!document.querySelector('#overlay2 [data-glopen]')&&!!document.querySelector('#overlay2 .swhd svg.skill-art image');
+          call('closeInfo(true);openDetail("duncan")');
+          const ordinaryRestored=!root().classList.contains('has-ultimate')&&!root().querySelector('.hcleft > .hcsk.gl')&&root().querySelectorAll('.hcsks [data-hcsk]').length===4;
+          return {unowned,locked,canUnlock,opened,keys:all.map(el=>el.dataset.hcsk.split(':')[1]),count:ordinary.length,unique:new Set(urls).size,loaded,fit,fixed,visibleLast,titlesFit,listHeight:listBox.height,screenScroll:r.scrollHeight-r.clientHeight,ordinaryRestored};
+        }finally{Object.assign(p,old);call('closeInfo(true);closeOverlay()');}
+      });
+      assert.deepEqual(legend.keys,['gl','basic','special','ult','passive','leader'],'UI-08 no missing or duplicate skills');
+      assert.equal(legend.count,5,'UI-08 five ordinary skills');
+      assert.equal(legend.unique,6,'UI-08 six distinct artwork files');
+      assert.ok(legend.loaded.every(Boolean),'UI-08 shipped assets load');
+      assert.ok(legend.unowned&&legend.locked&&legend.canUnlock&&legend.opened,'UI-08 ultimate states and skill window');
+      assert.ok(legend.fit&&legend.fixed&&legend.visibleLast&&legend.titlesFit&&legend.listHeight>60&&legend.screenScroll<=1,'UI-08 no overlap or screen scroll: '+JSON.stringify({width,legend}));
+      assert.ok(legend.ordinaryRestored,'UI-08 ordinary hero layout restored on navigation');
     }
     // UI-04: verify the actual compiled dossier, not the standalone mockup.
     if(width>height){
