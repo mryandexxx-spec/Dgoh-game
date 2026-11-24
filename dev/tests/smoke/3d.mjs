@@ -159,7 +159,7 @@ for (let c = 0; c < CYCLES; c++) {
             pilot.podium === expected || pilot.gearInControls !== expected || pilot.canvases !== 1)
           errors.push('GFX-02: pilot/legacy switch '+id+' '+JSON.stringify(pilot));
       }
-      else if (SHOTS && !['muaddib','jessica'].includes(id)) await page.screenshot({path:path.join(SHOTS,`ui10-${key}${PHONE ? '-phone' : ''}.png`)});
+      if (ok >= 0 && SHOTS && !['muaddib','jessica'].includes(id)) await page.screenshot({path:path.join(SHOTS,`ui10-${key}${PHONE ? '-phone' : ''}.png`)});
     }
     // Two rapid changes must not allow an older texture to win the race.
     await run("openDetail('baron'); openDetail('mohiam'); openDetail('paul');");
