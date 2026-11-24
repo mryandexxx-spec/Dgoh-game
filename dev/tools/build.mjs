@@ -133,9 +133,13 @@ if (!waterIcon || code0.split('__WATER_ICON_URL__').length !== 2)
 const candleIcon = ASSETS.find(a => a.name === 'img/candle-glowglobe.webp');
 if (!candleIcon || code0.split('__CANDLE_ICON_URL__').length !== 2)
   throw new Error('UI-01 candle glowglobe missing from immutable asset map or source');
+const solariIcon = ASSETS.find(a => a.name === 'img/solari-stack.webp');
+if (!solariIcon || code0.split('__SOL_ICON_URL__').length !== 3)
+  throw new Error('UI-04 shared resource/calendar Solari artwork is missing');
 const code1 = code0.replace('__APP_VER__', () => APP_VER)
   .replace('__WATER_ICON_URL__', () => waterIcon.pwa)
-  .replace('__CANDLE_ICON_URL__', () => candleIcon.pwa);
+  .replace('__CANDLE_ICON_URL__', () => candleIcon.pwa)
+  .replaceAll('__SOL_ICON_URL__', () => solariIcon.pwa);
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(path.join(OUT, 'app.unmin.js'), withAssets(code1, 'pwa'));   // для tools/check-bundle.mjs (порядок модулей по комментариям-маркерам)
 console.log(`версия: ${APP_VER}`);

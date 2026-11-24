@@ -5,12 +5,13 @@ import '../logic/gear-sources.js'; // порядок исполнения
 // Keep the existing water key and all resource/save identifiers unchanged.
 const WATER_ICON_SRC = '__WATER_ICON_URL__';
 const CANDLE_ICON_SRC = '__CANDLE_ICON_URL__';
+const SOLARI_ICON_SRC = '__SOL_ICON_URL__';
 const fmt = n => n.toLocaleString('ru-RU');
 const ICONS_RES = {
   wring: '<circle cx="8" cy="9.2" r="5" fill="none" stroke="#9fd8e8" stroke-width="2.2"/><circle cx="8" cy="9.2" r="5" fill="none" stroke="#3a7a92" stroke-width=".7"/><path d="M8 .8c1.2 1.6 1.9 2.6 1.9 3.4a1.9 1.9 0 01-3.8 0c0-.8.7-1.8 1.9-3.4z" fill="#5fc0e0"/>',
   jt: '<path d="M8 1.2l1.7 3.4 3.8.6-2.7 2.7.6 3.8L8 10l-3.4 1.7.6-3.8L2.5 5.2l3.8-.6z" fill="#d8b45a"/><path d="M8 4.2l.9 1.9 2 .3-1.5 1.4.4 2L8 8.9l-1.8.9.4-2-1.5-1.4 2-.3z" fill="#7a3a1a"/><path d="M5 12.5h6l-.6 2.3H5.6z" fill="#a8742a"/>',
   water: '<path d="M8 1.5C10.2 5 12.5 7.4 12.5 10a4.5 4.5 0 01-9 0C3.5 7.4 5.8 5 8 1.5z" fill="#6fb3ea"/><path d="M6 10.5a2 2 0 002 2" stroke="#d6ecff" stroke-width="1.1" fill="none" stroke-linecap="round"/>',
-  sol: '<circle cx="8" cy="8" r="6.3" fill="#d4ab4c"/><circle cx="8" cy="8" r="4.2" fill="none" stroke="#8a6a1e" stroke-width="1.2"/><path d="M8 5.5v5" stroke="#8a6a1e" stroke-width="1.3"/>',
+  sol: '', // replaced in every ic('sol') by the approved stack of coins
   pl: '<path d="M8 1.6l5.6 3.2v6.4L8 14.4 2.4 11.2V4.8z" fill="#8f9bb0"/><path d="M8 1.6l5.6 3.2L8 8 2.4 4.8z" fill="#c4cedd"/><path d="M8 8v6.4" stroke="#5f6a7d" stroke-width=".8"/>',
   teeth: '<path d="M3 3.5c2-1.4 8-1.4 10 0-.4 3.2-1.4 4.6-2.2 5.6L9.6 14 8 9.8 6.4 14 5.2 9.1C4.4 8.1 3.4 6.7 3 3.5z" fill="#e8dcc0"/><path d="M8 4v4" stroke="#b9a988" stroke-width=".8"/>',
   shard: '<path d="M8 1.2l4 5.3L8 14.8 4 6.5z" fill="#e48a3c"/><path d="M8 1.2l4 5.3H4z" fill="#f6b97a"/>',
@@ -30,7 +31,7 @@ const ICONS_RES = {
   age_resonance: '<circle cx="8" cy="8" r="7" fill="none" stroke="#c8b3ec" stroke-width="2"/><circle cx="8" cy="8" r="4" fill="none" stroke="#826abc" stroke-width="2"/><circle cx="8" cy="8" r="1.5" fill="#fff1d3"/>',
   frag: '<path d="M2.5 4.5h4a1.6 1.6 0 113.2 0h3.8v3.8a1.6 1.6 0 110 3.2v3.8h-11z" fill="#b9c3d4"/><path d="M2.5 4.5h4a1.6 1.6 0 113.2 0h3.8v3.8" fill="none" stroke="#7f8aa0" stroke-width=".8"/>',
 };
-const ic = k => `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true">${k === 'water' ? `<image href="${WATER_ICON_SRC}" x="0" y="0" width="16" height="16" preserveAspectRatio="xMidYMid meet"/>` : k === 'candle' ? `<image href="${CANDLE_ICON_SRC}" x="0" y="0" width="16" height="16" preserveAspectRatio="xMidYMid meet"/>` : ICONS_RES[k]}</svg>`;
+const ic = k => `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true">${k === 'water' ? `<image href="${WATER_ICON_SRC}" x="0" y="0" width="16" height="16" preserveAspectRatio="xMidYMid meet"/>` : k === 'candle' ? `<image href="${CANDLE_ICON_SRC}" x="0" y="0" width="16" height="16" preserveAspectRatio="xMidYMid meet"/>` : k === 'sol' ? `<image href="${SOLARI_ICON_SRC}" x="0" y="0" width="16" height="16" preserveAspectRatio="xMidYMid meet"/>` : ICONS_RES[k]}</svg>`;
 const amt = (k, n, key) => `<span class="amt" data-info="${key || k}">${ic(k)}${typeof n === 'number' ? fmt(n) : n}</span>`;
 const fc = def => `var(--${def.f[0]})`;
 
