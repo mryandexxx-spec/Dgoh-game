@@ -10,8 +10,7 @@ import { todayKey } from '../../logic/economy.js';
 import { figureSVG, portrait } from '../../render2d/figures.js';
 import { CH } from '../../data/chars.js';
 import { fmt } from '../../core/format.js';
-import { calendarRewardIcon } from '../calendar-icons.js';
-import { choamMarkArt } from '../choam-art.js';
+import { calendarRewardIcon, choamMarkArt } from '../calendar-icons.js';
 import { $ } from '../../core/dom.js';
 
 // ===== login calendar =====

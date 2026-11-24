@@ -5,8 +5,7 @@ import { refreshAll } from '../overlays/sim.js';
 import { loadSave, persist } from '../../core/save.js';
 import { portrait } from '../../render2d/figures.js';
 import { CH } from '../../data/chars.js';
-import { dailyQuestIcon } from '../calendar-icons.js';
-import { choamSupplyArt, choamMarkArt } from '../choam-art.js';
+import { dailyQuestIcon, choamSupplyArt, choamMarkArt } from '../calendar-icons.js';
 import { $ } from '../../core/dom.js';
 import { CHEST_CRY, CHEST_NEED, CHEST_RW, DAILY, activeDaily, dailyGot, dly, qState } from '../../logic/daily.js';
 

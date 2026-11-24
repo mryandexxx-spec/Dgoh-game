@@ -1,8 +1,7 @@
 // UI-03d: focused presentation-only checks, independent of gameplay runtime.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { choamSupplyArt, choamMarkArt } from '../../src/ui/choam-art.js';
-import { dailyRewardIcon } from '../../src/ui/calendar-icons.js';
+import { choamSupplyArt, choamMarkArt, dailyRewardIcon } from '../../src/ui/calendar-icons.js';
 
 const source = path => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
 const daily = source('../../src/ui/views/daily.js');
