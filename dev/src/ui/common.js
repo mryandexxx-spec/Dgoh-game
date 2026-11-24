@@ -44,7 +44,7 @@ function renderRes() {
     energy('water', 'Вода', S.water, WMAX(), S.waterTs, WATER_SEC),
     energy('candle', 'Огни', S.candle, CMAX(), S.candleTs, CANDLE_SEC),
     money('sol', 'Солярии', S.solari),
-    money('cry', 'Кристаллы', S.cry),
+    money('cry', 'Камни су', S.cry),
   ];
   document.querySelectorAll('.resbox').forEach(el => {
     const old = el._rp;

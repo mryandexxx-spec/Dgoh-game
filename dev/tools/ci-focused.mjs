@@ -119,6 +119,13 @@ export function commandsFor(plan) {
     'dev/tools/build.mjs',
   ].includes(p))) for (const artifact of ARTIFACTS)
     add('tests/ci/ui04-solari-asset-acceptance.mjs',[artifact]);
+  // UI-05: identical approved Soostone WebP and display names in both builds.
+  if (plan.paths.some(p => [
+    'dev/assets/img/soostone.webp','dev/src/core/format.js','dev/src/ui/calendar-icons.js',
+    'dev/src/ui/common.js','dev/src/ui/reward-tiles.js','dev/src/ui/overlays/info.js',
+    'dev/src/logic/economy.js','dev/tests/ci/ui05-soostone-asset-acceptance.mjs','dev/tools/build.mjs',
+  ].includes(p))) for (const artifact of ARTIFACTS)
+    add('tests/ci/ui05-soostone-asset-acceptance.mjs',[artifact]);
   // UI-01: run the actual Water WebP compiled-artifact contract only when
   // relevant source, asset, or its own acceptance was changed.
   const waterFiles = new Set([

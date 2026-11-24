@@ -126,7 +126,7 @@ function simulationTiles(r, focusedKey) {
   };
   push(ic('sol'),'Солярии',r.sol,'sol');
   push(ic('pl'),'Пласталь',r.pl,'pl');
-  push(ic('cry'),'Кристаллы',r.cry,'cry');
+  push(ic('cry'),'Камни су',r.cry,'cry');
   push(ic('folio'),'Фолианты',r.folio,'folio');
   push(ic('rid'),'Ридулианские',r.rid,'rid');
   push(ic('seal'),'Печати',r.seal,'seal');
@@ -239,7 +239,7 @@ function simCore(i, k) {
   let sol = 0, pl = 0, folio = 0, seal = 0, rid = 0; const sh = {}, items = [], signals = {};
   for (let r = 0; r < k; r++) { const rw = campReward(i, 3); sol += rw.sol; pl += rw.pl; folio += rw.folio; seal += rw.seal; rid += rw.rid; if (rw.signals) signals[rw.signals] = (signals[rw.signals] || 0) + 1; items.push(...rw.items); for (const [id, q] of rw.drops) sh[id] = (sh[id] || 0) + q; }
   S.solari += sol; S.plast += pl; grantFrags(items); S.cry += CRY_WIN * k; S.folio += folio; S.seal += seal; S.rid += rid; for (const [key, n] of Object.entries(signals)) S[key] = (S[key] || 0) + n;
-  const lines = [`+${amt('sol', sol)} соляриев`, `+${amt('pl', pl)} пластали`, `+${amt('cry', CRY_WIN * k)} кристаллов`, `+${amt('folio', folio)} фолиантов`];
+  const lines = [`+${amt('sol', sol)} соляриев`, `+${amt('pl', pl)} пластали`, `+${amt('cry', CRY_WIN * k)} камней су`, `+${amt('folio', folio)} фолиантов`];
   if (rid) lines.push(`+${amt('rid', rid)} ридулианских кристаллов`);
   for (const [key, n] of Object.entries(signals)) lines.push(`+${amt(key, n)}`);
   if (seal) lines.push(`+${amt('seal', seal)} Печать Ландсраада!`);

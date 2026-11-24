@@ -78,7 +78,7 @@ function claimChest(expectedDay = null) {
     const D = dly(); if (D.chest || dailyGot() < CHEST_NEED) return;
     D.chest = true; const cry = CHEST_CRY[0] + Math.round(Math.random() * (CHEST_CRY[1] - CHEST_CRY[0]) / 10) * 10;
     const lines = giveRewards(CHEST_RW.map(r => r[0] === 'cry' ? ['cry', cry] : r)); persist(); refreshAll();
-    rewardWin('Имперская поставка', lines, { sub: `Выполнено ${CHEST_NEED} заданий · кристаллы: ${cry} из 50–300` });
+    rewardWin('Имперская поставка', lines, { sub: `Выполнено ${CHEST_NEED} заданий · камни су: ${cry} из 50–300` });
     return;
   }
   const stamp = dly.clock.snapshot(), day = claimDay(expectedDay, stamp);
@@ -99,7 +99,7 @@ function claimChest(expectedDay = null) {
   if (!tx.ok) return;
   refreshAll();
   rewardWin('Имперская поставка', tx.value.lines, {
-    sub: `Выполнено ${CHEST_NEED} заданий · кристаллы: ${tx.value.cry} из 50–300`
+    sub: `Выполнено ${CHEST_NEED} заданий · камни су: ${tx.value.cry} из 50–300`
   });
 }
 

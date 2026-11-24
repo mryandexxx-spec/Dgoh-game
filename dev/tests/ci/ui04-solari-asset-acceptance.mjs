@@ -30,6 +30,6 @@ assert.match(surfaces[0][1],/^<svg class="ico" viewBox="0 0 16 16"/);
 assert.match(surfaces[1][1],/data-solari-art="u03-sol-7"/);
 assert.match(surfaces[2][1],/ui03-daily-loot-svg/);
 assert.equal(g.get('dailyRewardIcon')('sol','row-a')===g.get('dailyRewardIcon')('sol','row-b'),false,'distinct slots');
-assert.ok(g.get('calendarRewardIcon')('cry',7).includes('<path '),'other calendar art preserved');
+assert.ok(g.get('calendarRewardIcon')('folio',7).includes('<path '),'other calendar art preserved');
 assert.ok(g.get('ic')('water').includes('water-literjon'),'other currency icon preserved');
 console.log('PASS UI-04:',html,matches[0],bytes.length,'bytes; all Solari surfaces consistent');

@@ -690,7 +690,7 @@ function finishLive() {
     if (won) {
       const first = !JP()[cfg.i]; JP()[cfg.i] = true;
       const lines = [];
-      if (first) { S.cry += CRY_JOURNEY; S.seal += 1; lines.push(`+${amt('cry', CRY_JOURNEY)} кристаллов`, `+${amt('seal', 1)} Печать Ландсраада`); if (cfg.i === 2 || cfg.i === 4) { S.wol += 1; lines.push(`+${amt('wol', 1)} Вода жизни!`); } const lk = JK(), un = grantShards(lk, t.sh); lines.push(`+${amt('shard', t.sh, 'shard:' + lk)} ${CH[lk].sn}${un ? ` — ${CH[lk].n} присоединяется к вам!` : ''}`); }
+      if (first) { S.cry += CRY_JOURNEY; S.seal += 1; lines.push(`+${amt('cry', CRY_JOURNEY)} камней су`, `+${amt('seal', 1)} Печать Ландсраада`); if (cfg.i === 2 || cfg.i === 4) { S.wol += 1; lines.push(`+${amt('wol', 1)} Вода жизни!`); } const lk = JK(), un = grantShards(lk, t.sh); lines.push(`+${amt('shard', t.sh, 'shard:' + lk)} ${CH[lk].sn}${un ? ` — ${CH[lk].n} присоединяется к вам!` : ''}`); }
       else { S.solari += 2000; lines.push(`+${amt('sol', 2000)} (повтор)`); }
       html = `<h3>Победа</h3><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul>`;
     } else html = `<h3>Поражение</h3><ul><li>Путь не пройден. Поднимите уровни героев пути или смените лидера.</li></ul>`;
@@ -704,7 +704,7 @@ function finishLive() {
       const { sol, pl, drops, items, folio, seal, rid, signals } = campReward(i, st); S.rid += rid; if (signals) S[signals] = (S[signals] || 0) + 1;
       S.solari += sol; S.plast += pl; S.cleared[i] = Math.max(S.cleared[i] || 0, st); grantFrags(items);
       let cry = CRY_WIN, sealT = seal; if (st === 3 && !S.cryClaim[i]) { S.cryClaim[i] = 1; cry += CRY_3STAR; } if (st === 3 && !S.sealClaim[i]) { S.sealClaim[i] = 1; sealT += 1; } S.cry += cry; S.folio += folio; S.seal += sealT;
-      const lines = [`+${amt('sol', sol)} соляриев`, `+${amt('pl', pl)} пластали`, `+${amt('cry', cry)} кристаллов${cry > CRY_WIN ? ' (первые 3★)' : ''}`];
+      const lines = [`+${amt('sol', sol)} соляриев`, `+${amt('pl', pl)} пластали`, `+${amt('cry', cry)} камней су${cry > CRY_WIN ? ' (первые 3★)' : ''}`];
       lines.push(`+${amt('folio', folio)} фолиантов`); if (rid) lines.push(`+${amt('rid', rid)} ридулианских кристаллов`); if (signals) lines.push(`+${amt(signals, 1)} сигнал памяти`); if (sealT) lines.push(`+${amt('seal', sealT)} Печать Ландсраада`);
       for (const [id, k] of drops) lines.push(`+${amt('shard', k, 'shard:' + id)} ${CH[id].sn}${grantShards(id, k) ? ' — персонаж открыт!' : ''}`);
       lines.push(...fragLines(items));
