@@ -1,14 +1,14 @@
-name: GFX-02 isolated visual QA (temporary branch)
+name: GFX-02 optimized Duncan A/B (temporary branch)
 on:
   push:
-    branches: [qa/gfx02-duncan-ab]
+    branches: [qa/gfx02-duncan-opt]
 permissions:
   contents: read
   actions: read
 jobs:
   compare:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,16 +16,25 @@ jobs:
           node-version: '22'
       - uses: browser-actions/setup-chrome@v1
         id: chrome
-      - run: npm ci
-        working-directory: dev
+      - uses: actions/checkout@v4
+        with:
+          ref: ba470f00c90f62f3b38aefa8528472f27a7735fd
+          path: candidate
+      - name: Build exact optimized candidate
+        working-directory: candidate/dev
+        run: |
+          npm ci
+          npm run build
+          cp ../../dev/tests/smoke/gfx02-ab-once.mjs tests/smoke/
+          mkdir -p /tmp/gfx157
+          cp -a dist/pwa /tmp/gfx157/pwa
       - name: Download exact validated builds
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh run download 45466003391 --name dune-validated-build --dir /tmp/gfx156
-          gh run download 45485047171 --name dune-validated-build --dir /tmp/gfx157
       - name: Eight equivalent Duncan captures
-        working-directory: dev
+        working-directory: candidate/dev
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: |
@@ -54,6 +63,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: gfx02-duncan-ab
+          name: gfx02-duncan-opt
           path: /tmp/gfx02-qa/
           retention-days: 7
