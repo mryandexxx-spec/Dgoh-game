@@ -84,14 +84,44 @@ try{
       assert.ok(await page.$('.profsheet'),'existing native profile dialog');
       await page.evaluate(()=>(0,eval)('closeInfo(true)'));
       await page.click('.ui02-calendar');
-      assert.ok(await page.$('.calsheet'),'existing native calendar dialog');
+      // UI-03 replaces the legacy calendar sheet with an approved full-screen
+      // dialog. Continue checking a real opened dialog, its days and verified
+      // claim control rather than silently dropping the old navigation guard.
+      const calendar = await page.evaluate(()=>{
+        const modern=document.querySelector('#overlay2 .ui03-calendar-screen');
+        if (!modern) return {legacy:!!document.querySelector('.calsheet')};
+        const box=modern.getBoundingClientRect();
+        return {modern:true,role:modern.getAttribute('role'),
+          height:box.height,days:modern.querySelectorAll('[data-ui03day]').length,
+          hasClaim:!!modern.querySelector('[data-calclaim]'),
+          hasClose:!!modern.querySelector('button[data-iclose]')};
+      });
+      if(calendar.modern){
+        assert.equal(calendar.role,'dialog','UI-03 calendar is a dialog');
+        assert.ok(Math.abs(calendar.height-height)<2,'UI-03 calendar fills the viewport');
+        assert.ok(calendar.days>=28 && calendar.days<=31,'calendar day count');
+        assert.ok(calendar.hasClaim && calendar.hasClose,'calendar claim/close controls');
+      }else assert.ok(calendar.legacy,'existing native calendar dialog');
       await page.evaluate(()=>(0,eval)('closeInfo(true)'));
       await page.click('.ui02-feats');
       await page.waitForSelector('.feats',{timeout:30000});
       await page.evaluate(()=>(0,eval)("set_view('lobby');render()"));
       await page.waitForSelector('.lobby .ui02-daily');
       await page.click('.ui02-daily');
-      await page.waitForSelector('.quests',{timeout:30000});
+      // The approved UI-03 daily screen replaces .quests with its one-screen
+      // root and independently scrolling list, without changing the HUD link.
+      await page.waitForSelector('.ui03-daily .ui03-quest, .quests',{timeout:30000});
+      const daily=await page.evaluate(()=>{
+        const root=document.querySelector('#view>.ui03-daily');
+        if(!root)return {legacy:!!document.querySelector('.quests')};
+        return {modern:true,quests:root.querySelectorAll('.ui03-quest').length,
+          hasChest:!!root.querySelector('[data-qchest]'),
+          hasClaimAll:!!root.querySelector('[data-qall]')};
+      });
+      if(daily.modern){
+        assert.ok(daily.quests>=8,'UI-03 daily tasks render');
+        assert.ok(daily.hasChest && daily.hasClaimAll,'daily reward actions retained');
+      }else assert.ok(daily.legacy,'existing daily quests view');
     }
     assert.deepEqual(errors,[],'no browser errors: '+width);
     console.log('PASS UI-02',path.basename(html),width+'x'+height,JSON.stringify({groups:measured.layout.map(x=>Math.round(x.width)),visibleResources:measured.visibleResources}));
