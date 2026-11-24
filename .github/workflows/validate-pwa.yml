@@ -1342,7 +1342,9 @@ jobs:
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      # Pages is configured to publish from main; verified root files are
+      # deployed by the independent pages-build-deployment workflow after push.
+      url: https://mryandexxx-spec.github.io/Dgoh-game/
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -1369,12 +1371,8 @@ jobs:
             git commit -m "Publish verified PWA from CI artifact"
             git push origin HEAD:main
           fi
-      - name: Prepare GitHub Pages
-        uses: actions/configure-pages@v5
-      - name: Upload exact tested PWA
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: dev/dist/pwa
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      # Do not also run deploy-pages here: GitHub Pages is branch-backed.
+      # A verified sync to main automatically starts "pages build and deployment".
+      # Double deployment races the auto-deploy and has intermittently returned
+      # "No artifacts named github-pages" after a successful artifact upload.
+      # See UI-03 release v143: main eb5c65d, Pages run 45326531015 SUCCESS.
