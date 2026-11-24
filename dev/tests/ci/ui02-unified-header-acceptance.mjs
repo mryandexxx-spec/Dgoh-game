@@ -104,6 +104,40 @@ try{
       assert.ok(hero.overflow<=1,'UI-06 dossier does not scroll as a screen');
       assert.equal(hero.resources,1,'UI-06 only solari in hero header');
     }
+    // UI-07: actual shipped image paths, hero/skill/battle renderer and
+    // memory layout under the 4-material DP5→DP6 purchase state.
+    if(width>height){
+      const art=await page.evaluate(async()=>{
+        const id='duncan',p=(0,eval)('prog("duncan")'),acc=(0,eval)('S.acc');
+        const old={gear:p.gear,relic:p.relic,eq:p.eq,stars:p.stars}, oldLevel=acc.lvl;
+        const call=s=>(0,eval)(s);
+        try{
+          p.gear=13;p.stars=7;p.eq=Array(6).fill(true);p.relic=5;acc.lvl=85;
+          call('closeInfo(true);closeOverlay();openDetail("duncan")');
+          const card=[...document.querySelectorAll('#overlay .hcsk svg.skill-art image')];
+          const urls=card.map(e=>e.getAttribute('href'));
+          const render=['basic','special','ult','passive'].map(k=>call('skillSvg(CH.duncan,'+JSON.stringify(k)+')').includes('skill-art'));
+          const other=call('Object.values(CH).find(d=>d.id!=="duncan")');
+          const fallback=!call('skillSvg(CH['+JSON.stringify(other.id)+'],"basic")').includes('skill-art');
+          const plaque=document.querySelector('#overlay .memory-plaque')?.getAttribute('src');
+          const loaded=await Promise.all([...urls,plaque].map(url=>new Promise(resolve=>{
+            const img=new Image();img.onload=()=>resolve(img.naturalWidth>0);img.onerror=()=>resolve(false);if(url)img.src=url;else resolve(false);
+          })));
+          call('hcMem("duncan")');
+          const root=document.querySelector('#overlay2 .memscr'),mid=root.querySelector('.memmid'),steps=root.querySelector('.memsteps'),table=root.querySelector('.memna'),buy=root.querySelector('.membuy');
+          const within=(inner,outer)=>{const a=inner.getBoundingClientRect(),b=outer.getBoundingClientRect();return a.left>=b.left-1&&a.right<=b.right+1&&a.top>=b.top-1&&a.bottom<=b.bottom+1;};
+          const fit=within(table,mid)&&within(buy,mid)&&mid.getBoundingClientRect().right<=steps.getBoundingClientRect().left+1&&[...buy.querySelectorAll('.swmat,.btn')].every(el=>within(el,mid));
+          const rank=root.querySelector('.mrc .memory-rank-value')?.textContent;
+          return {count:card.length,unique:new Set(urls).size,render,fallback,loaded,fit,rank,screenScroll:root.scrollHeight-root.clientHeight,materials:buy.querySelectorAll('.swmat').length};
+        }finally{Object.assign(p,old);acc.lvl=oldLevel;call('closeInfo(true);closeOverlay()');}
+      });
+      assert.equal(art.count,4,'UI-07 four Duncan card icons');
+      assert.equal(art.unique,4,'UI-07 distinct art files');
+      assert.ok(art.render.every(Boolean)&&art.fallback&&art.loaded.every(Boolean),'UI-07 shared art renderer, legacy fallback, and actual asset loading');
+      assert.equal(art.rank,'5','UI-07 live rank value');
+      assert.equal(art.materials,4,'UI-07 DP6 four-material fixture');
+      assert.ok(art.fit&&art.screenScroll<=1,'UI-07 memory columns and controls fit: '+JSON.stringify({width,art}));
+    }
     // UI-04: verify the actual compiled dossier, not the standalone mockup.
     if(width>height){
       await page.evaluate(()=>(0,eval)('closeInfo(true);closeOverlay();openProfile()'));
