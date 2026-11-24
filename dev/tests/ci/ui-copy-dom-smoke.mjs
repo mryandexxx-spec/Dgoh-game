@@ -135,9 +135,34 @@ try {
     const arts=await page.evaluate(()=>Object.keys((0,eval)('QUEST_ART')).sort());
     assert.deepEqual(arts,['camp','chron','craft','login','lvl','raid','shop','skill','ult','water'],
       'all ten authorized DAILY.k categories have original source art');
+    // Capture actual click interception on the standalone HTML artifact.
+    // On failure this reports the target and hit-test element rather than
+    // silently weakening the existing interaction assertion.
+    await page.evaluate(() => {
+      window.__ui03FilterTrace = [];
+      document.addEventListener('click', e => {
+        const hit = e.target;
+        if (document.querySelector('.ui03-daily'))
+          window.__ui03FilterTrace.push({
+            tag: hit.tagName, html: hit.outerHTML.slice(0, 150),
+            key: hit.closest('[data-ui03filter]')?.dataset.ui03filter || null
+          });
+      }, true);
+    });
     await page.click('[data-ui03filter="got"]');
-    assert.equal(await page.$eval('[data-ui03filter="got"]',el=>el.getAttribute('aria-pressed')),
-      'true','daily filter is interactive');
+    const pressed = await page.$eval('[data-ui03filter="got"]', el => el.getAttribute('aria-pressed'));
+    if (pressed !== 'true') {
+      const debug = await page.evaluate(() => {
+        const b = document.querySelector('[data-ui03filter="got"]'), r = b.getBoundingClientRect();
+        const mid = document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+        return { center: mid?.outerHTML.slice(0, 220),
+          button: b.outerHTML.slice(0, 200),
+          clicks: window.__ui03FilterTrace, 
+          view: document.querySelector('.ui03-daily')?.getBoundingClientRect().toJSON() };
+      });
+      console.log('UI-03 filter click diagnostic', JSON.stringify({debug, errors}));
+    }
+    assert.equal(pressed, 'true', 'daily filter is interactive');
     await page.click('[data-ui03filter="all"]');
     await page.click('.ui03-daily [data-cal]');
     const cal=await page.evaluate(()=>{

@@ -102,6 +102,16 @@ export function commandsFor(plan) {
   ].includes(p)))
     for (const artifact of ARTIFACTS)
       add('tests/ci/ui02-unified-header-acceptance.mjs',[artifact]);
+  // UI-03e: mandatory real raster + fallback check only when daily art or its
+  // two source files are touched. No broad 3D test suite for 2D props.
+  if (plan.paths.some(p => [
+    'dev/src/ui/views/daily.js', 'dev/src/ui/calendar-icons.js',
+    'dev/src/styles/ui03-daily-calendar.css',
+    'dev/assets/img/choam-supply-closed.webp',
+    'dev/assets/img/choam-supply-opened.webp',
+    'dev/tests/ci/ui03-choam-art-acceptance.mjs',
+  ].includes(p)))
+    add('tests/ci/ui03-choam-art-acceptance.mjs');
   // UI-01: run the actual Water WebP compiled-artifact contract only when
   // relevant source, asset, or its own acceptance was changed.
   const waterFiles = new Set([
