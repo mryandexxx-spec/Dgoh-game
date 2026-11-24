@@ -35,6 +35,7 @@ function heroThemeUrl(key) { return assetUrl('img/hero-factions/' + key + '.webp
 class HeroStage extends Stage3D {
   look(options = {}) {
     super.look(options);
+    this.applyPilotLook();
     // The background sphere and radial backdrop are already self-lit/soft.
     // Rendering them into GlowLayer adds
     // its light over the opaque hero on MED/LOW, where glowOnly deliberately
@@ -110,6 +111,16 @@ class HeroStage extends Stage3D {
     cv.addEventListener('pointermove', e => { if (!this.drag || !this.isCur()) return; const nx = this.yaw; this.yaw = this.drag.y0 + (e.clientX - this.drag.x) * .012; this.yawV = (this.yaw - nx) * 60; });
     const up = () => { if (this.drag) { this.drag = null; this.resumeT = performance.now() + 3000; } }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   }
+  // The distant matte plate already provides atmospheric depth. Avoid
+  // the extra depth/blur passes for this pilot on mobile MED, without
+  // changing the shared pipeline or the legacy/HIGH presentation.
+  applyPilotLook() {
+    if (!this.pipe) return;
+    const Q = gfx(this.small);
+    const dof = !!this._look?.dof && (Q.dof === true || Q.dof === 'hero');
+    const enabled = dof && !(this.pilot && this.small && Q.level === 'med');
+    if (this.pipe.depthOfFieldEnabled !== enabled) this.pipe.depthOfFieldEnabled = enabled;
+  }
   attach(host, first) {
     if (!host) return;
     const Q = gfx(this.small);
@@ -178,6 +189,7 @@ class HeroStage extends Stage3D {
     const pilot = def.id === 'duncan';
     if (this.pilot !== pilot) {
       this.pilot = pilot;
+      this.applyPilotLook();
       this.podiumMeshes.forEach(m => m.setEnabled(!pilot));
       this.terrace.forEach(m => m.setEnabled(pilot));
       this.motes.emitRate = pilot ? 0 : 20;
