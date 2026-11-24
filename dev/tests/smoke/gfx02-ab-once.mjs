@@ -111,13 +111,21 @@ try {
   await run("NOTES.length=0; renderNotes();"); // isolated fixture only, no reward claim
   const shot=opt('--shot','hero.png'), output=opt('--out','hero.json');
   fs.mkdirSync(path.dirname(shot),{recursive:true});
+  const layout = await page.evaluate(() => {
+    const panel=document.querySelector('.hcpilot-controls');
+    if (!document.querySelector('.hc.gfx02-pilot') || !panel) return null;
+    const p=panel.getBoundingClientRect(), slots=[...panel.querySelectorAll('.hcgs')];
+    return {slots:slots.length,visible:slots.filter(e=>{const r=e.getBoundingClientRect();return r.top>=p.top-1&&r.bottom<=p.bottom+1&&r.left>=p.left-1&&r.right<=p.right+1}).length, rows:new Set(slots.map(e=>Math.round(e.getBoundingClientRect().top))).size};
+  });
+  out.layout=layout;
   await page.screenshot({path:shot});
+  if(layout && (layout.slots!==6 || layout.visible!==6 || layout.rows!==1)) throw Error('Compact pilot gear layout: '+JSON.stringify(layout));
   out.hero={cost:await cost('HERO_STAGE'),vram:await vram()};
   out.sample=await page.evaluate(async () => {
     const h=HERO_STAGE, e=h.engine, gl=e._gl, ext=gl.getExtension('WEBGL_debug_renderer_info');
     const intervals=[]; let last=0;
     const obs=h.scene.onAfterRenderObservable.add(()=>{const t=performance.now();if(last)intervals.push(t-last);last=t;});
-    await new Promise(r=>setTimeout(r,4000));h.scene.onAfterRenderObservable.remove(obs);
+    await new Promise(r=>setTimeout(r,10000));h.scene.onAfterRenderObservable.remove(obs);
     intervals.sort((a,b)=>a-b);
     const rect=el=>{const a=el.getBoundingClientRect();return [a.x,a.y,a.width,a.height].map(Math.round)};
     return {renderer:ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),profile:gfx(h.small).level,frameIntervals:intervals.length,p95Interval:intervals[Math.ceil(intervals.length*.95)-1]??null,
