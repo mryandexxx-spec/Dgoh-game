@@ -3849,3 +3849,114 @@ main#view:has(> .ui03-root.ui03-daily){width:100%;max-width:none;height:100dvh;m
 .hc[data-hero-theme].hero-legend .hctop {
   border-bottom:1px solid #d5ae66;
 }
+
+/* GFX-02/D: one composition, initially Duncan only. Legacy DOM/controls
+   retain their original selectors and layout; no change to action routing. */
+.hcgear { display:contents; }
+.hcpilot-controls { display:none; }
+.detail .sheet.hc.gfx02-pilot {
+  --pilot-panel:clamp(286px,44%,420px);
+  --pilot-font:'Dune Inter',system-ui,sans-serif;
+  grid-template-columns:minmax(0,1fr) var(--pilot-panel);
+  grid-template-rows:44px minmax(0,1fr) 64px;
+  padding:max(0px,env(safe-area-inset-top)) max(0px,env(safe-area-inset-right)) max(0px,env(safe-area-inset-bottom)) max(0px,env(safe-area-inset-left));
+  background:#111b1c; font-family:var(--pilot-font); isolation:isolate;
+}
+.hc.gfx02-pilot .hctop { grid-column:1/-1; z-index:4; gap:4px; padding:0 10px; background:#111b1c; border:0; box-shadow:inset 0 -1px #9eb5ab40; }
+.hc.gfx02-pilot .hcib,.hc.gfx02-pilot .hcarr { width:44px;height:44px; background:#142222bb; border:0; border-radius:4px; color:#edf2ed; }
+.hc.gfx02-pilot .hcib svg { width:22px;height:22px; }
+.hc.gfx02-pilot .hcres { display:flex; margin-left:auto; }
+.hc.gfx02-pilot .hcres .amt { background:none;border:0; font:600 12px var(--pilot-font); }
+.hc.gfx02-pilot .hcnm {
+  position:absolute; left:max(12px,calc(env(safe-area-inset-left) + 8px)); top:calc(58px + env(safe-area-inset-top));
+  display:flex; flex-direction:column; align-items:flex-start; gap:7px; width:min(25%,172px);
+  pointer-events:none; z-index:4; text-shadow:0 2px 5px #000;
+}
+.hc.gfx02-pilot .hcnm h3 { font:720 clamp(20px,3.1vw,29px)/1.08 var(--pilot-font); color:#f2f4ee; -webkit-text-fill-color:#f2f4ee; white-space:normal; max-width:100%; overflow:visible; overflow-wrap:anywhere; letter-spacing:-.025em; }
+.hc.gfx02-pilot .hctags { flex:none; flex-wrap:wrap; gap:3px 6px; overflow:visible; mask-image:none; -webkit-mask-image:none; }
+.hc.gfx02-pilot .hctag { font:500 11px/1.15 var(--pilot-font); letter-spacing:0; text-transform:none; padding:0; border:0; background:none; }
+.hc.gfx02-pilot .hcstage { grid-column:1;grid-row:2/4; position:relative; background:var(--hero-art,none) center/cover no-repeat,#233b35; }
+.hc.gfx02-pilot .hcfig,.hc.gfx02-pilot .hcfig.has3d { inset:0; border-radius:0; }
+.hc.gfx02-pilot .hcstage::after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(90deg,#0a1418d9 0%,#0a141847 27%,transparent 49%,transparent 77%,#111b1c 100%); }
+.hc.gfx02-pilot .hcst { z-index:6; inset:8px 8px auto; background:#142020f7; max-height:calc(100% - 16px); overflow:auto; }
+.hc.gfx02-pilot.stat .hcnm,.hc.gfx02-pilot.stat .hcpwl { visibility:hidden; }
+.hc.gfx02-pilot .hcpilot-controls { grid-column:2;grid-row:2; display:flex; flex-direction:column; gap:7px; min-height:0; min-width:0; overflow:auto; overscroll-behavior:contain; padding:8px 12px 6px 6px; background:#111b1c; scrollbar-width:thin; }
+.hc.gfx02-pilot .hcpilot-controls .hcright { flex:none; display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start; padding:0; gap:8px; overflow:visible; background:none;border:0; }
+.hc.gfx02-pilot.locked .hcright { grid-template-columns:1fr; }
+.hc.gfx02-pilot .hcblk { min-width:0; padding:0; border:0; border-radius:0;background:none; gap:3px; box-shadow:none; }
+.hc.gfx02-pilot .hc-quickstats { display:none; }
+.hc.gfx02-pilot .hccap { font:650 11px/1.2 var(--pilot-font); letter-spacing:.04em; color:#c7d9d0; text-transform:none; }
+.hc.gfx02-pilot .hcbig { font:720 21px/1 var(--pilot-font); }
+.hc.gfx02-pilot .hcstars { font-size:clamp(13px,2vw,17px); }
+.hc.gfx02-pilot .hcstars i.on { color:#e1c08c; text-shadow:none; }
+.hc.gfx02-pilot .hcblk .btn { min-height:44px; min-width:0; padding:3px 4px; font:650 12px/1.12 var(--pilot-font); white-space:normal; text-transform:none; letter-spacing:0; border:1px solid #809b8b; background:#263d36; color:#e8f1e9; border-radius:4px; }
+.hc.gfx02-pilot .hcblk .btn.go:not(:disabled) { background:#c7d8b8;color:#14241d; }
+.hc.gfx02-pilot .hcblk .btn small { font:500 10px/1.1 var(--pilot-font); }
+.hc.gfx02-pilot .hclnk { min-height:44px; font:600 11px var(--pilot-font); text-decoration:none; }
+.hc.gfx02-pilot .hcleft { flex:none; min-width:0; padding:5px 0 0; background:none; border:0; border-top:1px solid #82978c55; gap:4px; }
+.hc.gfx02-pilot .hcsks { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; overflow:visible; flex:none; }
+.hc.gfx02-pilot .hcsk:not(.gl) { position:relative; display:grid; grid-template-columns:1fr; justify-items:center; min-width:0; min-height:65px; padding:2px; gap:2px; text-align:center; background:none; border:1px solid transparent; }
+.hc.gfx02-pilot .hcski { width:42px;height:42px; border-radius:4px; overflow:hidden; }
+.hc.gfx02-pilot .hcskt { width:100%; }
+.hc.gfx02-pilot .hcskt b { font:600 10px/1.1 var(--pilot-font); }
+.hc.gfx02-pilot .hcskt small { font:500 10px/1.1 var(--pilot-font); }
+.hc.gfx02-pilot .hcup { position:absolute; top:0;right:3px; }
+.hc.gfx02-pilot .hcmem { min-height:44px; padding:0; background:none;border:0; }
+.hc.gfx02-pilot .hcmem .memory-seal { width:40px;height:40px; }
+.hc.gfx02-pilot .hcgear { display:grid;grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; padding-top:5px; border-top:1px solid #82978c55; }
+.hc.gfx02-pilot .hcgear:empty,.hc.gfx02-pilot.locked .hcgear,.hc.gfx02-pilot.memory-awakened .hcgear { display:none; }
+.hc.gfx02-pilot .hcgl,.hc.gfx02-pilot .hcgr { position:static; width:auto; min-width:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:3px; align-items:start; pointer-events:auto; }
+.hc.gfx02-pilot .hcgs { min-width:44px;min-height:44px; }
+.hc.gfx02-pilot .hcgs .box { width:42px;height:42px; border-width:1px; border-radius:4px; background:linear-gradient(155deg,#34413e,#11191a); }
+.hc.gfx02-pilot .hcgs em { font:500 9px/1 var(--pilot-font); letter-spacing:0;text-transform:none; }
+.hc.gfx02-pilot .hcbot { display:contents; }
+.hc.gfx02-pilot .hcarr { position:absolute; bottom:calc(6px + env(safe-area-inset-bottom)); z-index:5; }
+.hc.gfx02-pilot .hcarr:first-child { left:calc(8px + env(safe-area-inset-left)); }
+.hc.gfx02-pilot .hcarr:last-child { right:calc(var(--pilot-panel) + env(safe-area-inset-right) + 4px); }
+.hc.gfx02-pilot .hcmid { grid-column:2;grid-row:3; min-width:0; align-content:center; padding:4px 12px 6px 6px; background:#111b1c; }
+.hc.gfx02-pilot .hcpwl { width:100%; justify-content:space-between; gap:4px; font:650 11px/1.1 var(--pilot-font); }
+.hc.gfx02-pilot .hcpw { position:absolute; left:max(12px,calc(env(safe-area-inset-left) + 8px)); bottom:calc(70px + env(safe-area-inset-bottom)); display:grid; gap:4px; font:600 11px/1 var(--pilot-font); color:#c7d9d0; text-shadow:0 2px 5px #000; z-index:4; }
+.hc.gfx02-pilot .hcpw b { font:750 clamp(23px,3.5vw,32px)/1 var(--pilot-font); color:#f1f2e8; }
+.hc.gfx02-pilot .hcbtn { width:100%; min-height:44px; padding:3px 8px; white-space:normal; border-radius:4px; font:720 13px/1.1 var(--pilot-font); }
+.hc.gfx02-pilot .hcbtn.go:not(:disabled),.hc.gfx02-pilot .hcbtn.buy:not(:disabled) { color:#eff5ec; background:linear-gradient(120deg,#375f4e,#254738); border:1px solid #b2c8ad; box-shadow:inset 3px 0 #bed5ab; }
+.hc.gfx02-pilot button:focus-visible { outline:2px solid #d0e5cc;outline-offset:-2px; }
+/* Keep equipment in a non-shrinking bottom row, above the fixed action.
+   Only the level/star group and skills list may scroll inside this panel.
+   Reserve a full 44px touch target plus label for every gear slot. */
+.hc.gfx02-pilot .hcpilot-controls {
+  overflow:hidden; gap:4px; padding-top:5px; padding-bottom:4px;
+  container-type:inline-size;
+}
+.hc.gfx02-pilot .hcpilot-controls .hcright {
+  flex:0 1 auto; min-height:0; max-height:44%; overflow:auto;
+  overscroll-behavior:contain; scrollbar-width:thin;
+}
+.hc.gfx02-pilot.locked .hcpilot-controls .hcright { max-height:60%; }
+.hc.gfx02-pilot .hcleft {
+  flex:1 1 auto; min-height:0; overflow:hidden; padding-top:3px; gap:3px;
+}
+.hc.gfx02-pilot .hc-capline { flex:none; }
+.hc.gfx02-pilot .hcsks {
+  flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden;
+  align-content:start; overscroll-behavior:contain;
+}
+.hc.gfx02-pilot .hcsk:not(.gl) { min-height:59px; padding:1px; gap:1px; }
+.hc.gfx02-pilot .hcski { width:38px; height:38px; }
+.hc.gfx02-pilot .hcmem { min-height:44px; }
+.hc.gfx02-pilot .hcgear {
+  flex:none; grid-template-columns:repeat(6,minmax(44px,1fr)); gap:3px;
+  padding:4px 2px 2px; min-width:0;
+}
+.hc.gfx02-pilot .hcgear .hcgl,.hc.gfx02-pilot .hcgear .hcgr { display:contents; }
+.hc.gfx02-pilot .hcgs { min-width:44px; min-height:44px; box-sizing:border-box; }
+.hc.gfx02-pilot .hcgs .box { width:38px; height:38px; }
+.hc.gfx02-pilot .hcgs em { max-width:100%; overflow-wrap:anywhere; }
+@media(max-width:750px) {
+  .detail .sheet.hc.gfx02-pilot { --pilot-panel:clamp(310px,47%,330px); }
+  .hc.gfx02-pilot .hcpilot-controls { padding-right:6px; }
+}
+/* At genuinely narrow content widths (including safe areas), use two
+   fully reachable rows rather than squeezing the 44px targets. */
+@container (max-width:282px) {
+  .hc.gfx02-pilot .hcgear { grid-template-columns:repeat(3,minmax(44px,1fr)); }
+}
