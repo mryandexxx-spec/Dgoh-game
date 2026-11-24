@@ -1,4 +1,4 @@
-// HUD-01 / UI-02: existing real resource bar, local Inter and seven visible currencies at all screen sizes.
+// HUD-01 / UI-02: compact four-resource bar, local Inter and unchanged saved balances.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,7 +16,7 @@ try {
   browser = await puppeteer.launch({executablePath:chrome,headless:true,args:
     ['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader',
      '--ignore-gpu-blocklist','--disable-background-networking']});
-  for(const [width,height,visible] of [[1280,720,7],[844,390,7],[667,375,7],[390,844,7]]) {
+  for(const [width,height,visible,maxBar] of [[1280,720,4,82],[844,390,4,76],[667,375,4,72],[390,844,4,60]]) {
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', e=>errors.push(e.message));
@@ -46,20 +46,23 @@ try {
         noCurrencyMutation:balances===after,
         meters:items.slice(0,2).every(x=>!!x.querySelector('.hud-meter > i')),
         hasTimers:items.slice(0,2).every(x=>!!x.querySelector('.hud-timer')),
-        details:!!root.querySelector('.hud-overflow summary'),
+        noOverflow:!root.querySelector('.hud-overflow, .hud-optional'),
+        last:items[items.length-1]?.dataset.info,
         heights:{bar:rect.height,window:innerHeight},
       };
     });
     assert.equal(result.count,visible,width+' visible currencies');
-    assert.deepEqual(result.keys,['water','candle','sol','pl','teeth','cry','rid']);
+    assert.deepEqual(result.keys,['water','candle','sol','cry']);
     assert.ok(result.visibleInside && result.inViewport,'No resource overflow: '+width+' '+JSON.stringify(result));
     assert.ok(result.fontFaces>=1&&result.cssFont.includes('Dune Inter'),'Local Inter font: '+width);
-    assert.ok(result.noCurrencyMutation&&result.meters&&result.hasTimers&&result.details,'HUD contract: '+width);
+    assert.ok(result.noCurrencyMutation&&result.meters&&result.hasTimers&&result.noOverflow&&result.last==='cry','HUD contract: '+width);
+    assert.ok(result.heights.bar<=maxBar,'compact header saves vertical space: '+width+' '+result.heights.bar);
     if(width===667) {
-      // UI-02: seven resources are fully visible in a real 4×2 layout.
-      // No hidden 3-currency overflow is required on the lobby.
-      assert.equal(await page.$eval('.lobby .hud-overflow',e=>getComputedStyle(e).display),'none');
-      await page.evaluate(()=>document.querySelector('.lobby .resbox > [data-info="rid"]').click());
+      // Four resources form one row on narrow phones; extra balances still exist.
+      const rows=await page.$eval('.lobby .resbox > .hud-cell',els=>
+        [...new Set(els.map(e=>Math.round(e.getBoundingClientRect().top)))]);
+      assert.equal(rows.length,1,'single resource row on narrow landscape');
+      await page.evaluate(()=>document.querySelector('.lobby .resbox > [data-info="cry"]').click());
       assert.ok(await page.$('#overlay2 .infosheet'),'Visible resource opens the existing info sheet');
     }
     assert.deepEqual(errors,[],'Browser errors: '+width);
