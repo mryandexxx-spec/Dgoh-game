@@ -12,7 +12,7 @@ import { S } from '../core/state.js';
 import { GEAR_UP_SOL, TIER_COL } from '../logic/gear.js';
 import { RELIC_MAX, relicReady, sideName, unlockNeed } from '../logic/relics.js';
 import { MAX_GEAR, MAX_LVL, ROMAN, STAR_COST } from '../logic/economy.js';
-import { mountHeroStage } from '../render3d/scenes/hero.js';
+import { mountHeroStage, heroThemeKey, heroThemeUrl } from '../render3d/scenes/hero.js';
 import { figureSVG } from '../render2d/figures.js';
 import { unitPower, unitStats } from '../logic/battle/stats.js';
 import { SK_KEYS, skMax } from '../logic/battle/skills.js';
@@ -153,7 +153,16 @@ function openDetail(id, stagedPreview = null) {
     const f = $('#overlay .hcfig'); if (!f.classList.contains('has3d')) f.innerHTML = figureSVG(d, true);   // 2D-фолбэк — смена фигуры
   }
   for (const k in Z) setZone(k, Z[k]);
-  const hc = $('#overlay .hc'); hc.dataset.cid = id; hc.classList.toggle('locked', !p.stars); hc.classList.toggle('memory-awakened', p.relic > 0); hc.classList.toggle('has-ultimate', !!d.gl);
+  const hc = $('#overlay .hc'); hc.dataset.cid = id;
+  const theme = heroThemeKey(d);
+  if (hc.dataset.heroTheme !== theme) {
+    hc.dataset.heroTheme = theme;
+    const url = heroThemeUrl(theme);
+    if (url) hc.style.setProperty('--hero-art', 'url("' + url + '")');
+    else hc.style.removeProperty('--hero-art');
+  }
+  hc.classList.toggle('hero-legend', !!(d.legendary || d.gl));
+  hc.classList.toggle('locked', !p.stars); hc.classList.toggle('memory-awakened', p.relic > 0); hc.classList.toggle('has-ultimate', !!d.gl);
   if (stagedPreview) {
     // Prevent preview-only controls from writing into a real player's roster.
     // Close/back and the stats toggle retain the same shared card behavior.

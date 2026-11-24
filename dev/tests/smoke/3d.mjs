@@ -137,6 +137,21 @@ for (let c = 0; c < CYCLES; c++) {
   { const h0 = (await probe()).link, hfx = await effKeys(), n = await page.evaluate(() => { try { return (0, eval)('heroNavList(detailCid).length'); } catch (e) { return 0; } }); let sw = 0;
     for (let k = 0; k < n; k++) { const a = (await probe()).link; await run(`detailNav(1);`); await sleep(300); sw += (await probe()).link - a; await until('HERO_STAGE.pfIdle()', 6000); }
     C.heroNav = await probe(); C.heroNavN = n; C.heroNavCompiles = sw; C.heroWarm = C.heroNav.link - h0 - sw; if (sw) C.heroNavEffects = await effKeys(hfx); }
+  // UI-10: real WebGL theme, art and DOM must switch together; verify
+  // all six factions and multi-faction/legend overrides once per run.
+  if (c === 0) {
+    const examples = [['stilgar','frem'],['baron','hark'],['duncan','atr'],['shaddam','cor'],['mohiam','bg'],['erasmus','mach'],['muaddib','frem'],['jessica','atr']];
+    for (const [id,key] of examples) {
+      await run(`openDetail('${id}');`);
+      const ok = await until(`HERO_STAGE && HERO_STAGE.def?.id === '${id}' && HERO_STAGE.themeKey === '${key}' && HERO_STAGE.backdrop.isEnabled() && HERO_STAGE.backdropTexture?.isReady() && document.querySelector('.hc')?.dataset.heroTheme === '${key}'`, 12000);
+      if (ok < 0) errors.push('UI-10: faction backdrop not ready: '+id+'/'+key);
+      else if (SHOTS && !['muaddib','jessica'].includes(id)) await page.screenshot({path:path.join(SHOTS,`ui10-${key}${PHONE ? '-phone' : ''}.png`)});
+    }
+    // Two rapid changes must not allow an older texture to win the race.
+    await run("openDetail('baron'); openDetail('mohiam'); openDetail('paul');");
+    const last = await until("HERO_STAGE?.themeKey === 'atr' && HERO_STAGE.backdrop.isEnabled() && HERO_STAGE.backdropTexture?.isReady() && document.querySelector('.hc')?.dataset.heroTheme === 'atr'",12000);
+    if (last < 0) errors.push('UI-10: stale theme after rapid navigation');
+  }
   // BH4: exercise the real authored Baron in Babylon, not merely the 2D
   // fallback. Run once so this assertion does not distort lifecycle budgets.
   if (c === 0) {
