@@ -98,6 +98,19 @@ try {
         questCount:quests.length,
         allButton:!!root.querySelector('[data-qall]'),
         chestButton:!!root.querySelector('[data-qchest]'),
+        // UI-03c: each daily row has a unique hand-authored collectible,
+        // not the old Unicode text badge or the generic 16px glyph.
+        symbols:[...root.querySelectorAll('.ui03-quest')].map(q=>{
+          const badge=q.querySelector('.ui03-qicon'),
+            art=badge?.querySelector('svg[data-ui03quest-art]'),
+            frame=art?.getBoundingClientRect();
+          return {key:badge?.dataset.ui03quest,art:art?.dataset.ui03questArt,
+            count:badge?.querySelectorAll('svg.ui03-quest-svg').length||0,
+            paths:art?.querySelectorAll('path').length||0,
+            gradients:art?.querySelectorAll('linearGradient, radialGradient').length||0,
+            pixels:frame?.width||0,visible:!!frame?.height,
+            glyph:badge?.textContent.trim()||''};
+        }),
         before};
     });
     if (!daily) break;
@@ -108,6 +121,20 @@ try {
     assert.ok(daily.scrollable,'quests list has independent vertical scroll');
     assert.ok(daily.questCount>=8 && daily.questCount<=10,'active daily quests preserved');
     assert.ok(daily.allButton && daily.chestButton,'claim controls preserved');
+    assert.equal(daily.symbols.length,daily.questCount,'every active quest has art');
+    assert.equal(new Set(daily.symbols.map(x=>x.key)).size,daily.questCount,
+      'mission badges are different for each quest');
+    for(const icon of daily.symbols){
+      assert.equal(icon.art,icon.key,'no generic quest icon fallback: '+icon.key);
+      assert.equal(icon.count,1,'one self-contained SVG per quest: '+icon.key);
+      assert.ok(icon.paths>=3 && icon.gradients>=4,'illustrated vector art: '+icon.key);
+      assert.ok(icon.pixels>=(width<=700?27:32),'badge legible on iPhone: '+icon.key);
+      assert.ok(icon.visible,'daily SVG is not clipped away: '+icon.key);
+      assert.equal(icon.glyph,'','no leftover Unicode placeholder: '+icon.key);
+    }
+    const arts=await page.evaluate(()=>Object.keys((0,eval)('QUEST_ART')).sort());
+    assert.deepEqual(arts,['camp','chron','craft','login','lvl','raid','shop','skill','ult','water'],
+      'all ten authorized DAILY.k categories have original source art');
     await page.click('[data-ui03filter="got"]');
     assert.equal(await page.$eval('[data-ui03filter="got"]',el=>el.getAttribute('aria-pressed')),
       'true','daily filter is interactive');

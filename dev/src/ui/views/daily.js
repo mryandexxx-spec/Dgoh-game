@@ -5,6 +5,7 @@ import { refreshAll } from '../overlays/sim.js';
 import { loadSave, persist } from '../../core/save.js';
 import { portrait } from '../../render2d/figures.js';
 import { CH } from '../../data/chars.js';
+import { dailyQuestIcon } from '../calendar-icons.js';
 import { $ } from '../../core/dom.js';
 import { CHEST_CRY, CHEST_NEED, CHEST_RW, DAILY, activeDaily, dailyGot, dly, qState } from '../../logic/daily.js';
 
@@ -102,7 +103,6 @@ function claimChest(expectedDay = null) {
 }
 
 let dailyUiFilter = 'all';
-const dailySymbols = {login:'✦',water:'◈',camp:'⚔',chron:'✥',shop:'◇',raid:'◎',ult:'✴',skill:'✧',craft:'▣',lvl:'⬡'};
 function setDailyUiFilter(next) {
   if (!['all','done','prog','got'].includes(next)) return;
   dailyUiFilter = next;
@@ -144,7 +144,7 @@ function renderDaily() {
           const c = Math.min(q.need,D.c[q.k]||0), alt=q.alt?Math.min(q.alt.need,D.c[q.alt.k]||0):0,
             ratio=q.alt?Math.max(c/q.need,alt/q.alt.need):c/q.need,
             progress=q.alt?`${c}/${q.need} или ${alt}/${q.alt.need}`:`${c}/${q.need}`;
-          return `<div class="ui03-quest ${st}"><div class="ui03-qicon" aria-hidden="true">${dailySymbols[q.k]||'✧'}</div>
+          return `<div class="ui03-quest ${st}"><div class="ui03-qicon" data-ui03quest="${q.k}" aria-hidden="true">${dailyQuestIcon(q.k)}</div>
             <div class="ui03-qcopy"><b title="${q.n}">${q.n}</b><div class="ui03-qstat"><span>${progress}</span><span class="ui03-mini-meter"><i style="width:${Math.min(100,ratio*100)}%"></i></span></div></div>
             <div class="ui03-rewards">${rewardsHtml(q.rw)}</div>
             ${st==='got'?'<span class="ui03-qaction">✓ Получено</span>':st==='done'?`<button class="ui03-qaction go" data-qclaim="${q.k}">Забрать</button>`:q.go?`<button class="ui03-qaction" data-goto="${q.go}">Перейти</button>`:'<span class="ui03-qaction">В процессе</span>'}
