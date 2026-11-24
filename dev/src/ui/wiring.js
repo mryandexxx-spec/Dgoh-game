@@ -616,10 +616,10 @@ function metaClick(d) {
   if (d.trmulti) { trialMulti(); return true; }
   if (d.featclaim) { featClaim(d.featclaim); return true; }
   if (d.profile) { openProfile(); return true; }
-  if (d.pava) { if (unlocked('ava', d.pava)) { S.profile.ava = d.pava; persist(); render(); openProfile(); } return true; }
-  if (d.pframe) { if (unlocked('frame', d.pframe)) { S.profile.frame = d.pframe; persist(); render(); openProfile(); } return true; }
-  if (d.ptitle) { if (unlocked('title', d.ptitle)) { S.profile.title = d.ptitle; persist(); render(); openProfile(); } return true; }
-  if (d.pnick) { const v = ($('#pnick').value || '').trim().slice(0, 20); if (v) { S.profile.nick = v; persist(); render(); openProfile(); toast('Никнейм сохранён'); } return true; }
+  if (d.pava) { if (unlocked('ava', d.pava)) { S.profile.ava = d.pava; persist(); render(); openProfile(true); } return true; }
+  if (d.pframe) { if (unlocked('frame', d.pframe)) { S.profile.frame = d.pframe; persist(); render(); openProfile(true); } return true; }
+  if (d.ptitle) { if (unlocked('title', d.ptitle)) { S.profile.title = d.ptitle; persist(); render(); openProfile(true); } return true; }
+  if (d.pnick) { const v = ($('#pnick').value || '').trim().slice(0, 20); if (v) { S.profile.nick = v; persist(); render(); openProfile(true); toast('Никнейм сохранён'); } return true; }
   if (d.cqarc) {
     try { showHistoryDialog(); }
     catch (e) { pendingSaveImport = null; toast('Архив Conquest недоступен без подтверждённого сохранения и Web Lock.'); }
