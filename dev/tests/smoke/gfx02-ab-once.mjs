@@ -14,7 +14,10 @@ const html = args.find(a => !a.startsWith('--') && a.endsWith('.html')), PHONE =
 const HERO = opt('--hero','paul');
 if (!/^[a-z0-9_]+$/.test(HERO)) throw new Error('Invalid hero ID');
 const chrome = process.env.CHROME_PATH || ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'].find(f => fs.existsSync(f));
-const LATE = fs.readFileSync(path.join(DEV, 'tests/fixtures/saves/03-late.json'), 'utf8');
+const fixture = JSON.parse(fs.readFileSync(path.join(DEV, 'tests/fixtures/saves/03-late.json'), 'utf8'));
+// Isolated test fixture: same unlocked G10 equipment state on both builds.
+fixture.roster.baron.relic = 0;
+const LATE = JSON.stringify(fixture);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const browser = await puppeteer.launch({ executablePath: chrome, headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--font-render-hinting=none'] });
 const page = await browser.newPage(); page.on('console', m => { if (/bake|camp stage/.test(m.text())) console.log('console:', m.text()); }); page.on('pageerror', e => console.log('pageerror:', e.message));
@@ -103,10 +106,10 @@ const cost = (stageExpr, ms = 4000) => page.evaluate(async (stageExpr, ms) => {
 const out = {};
 try {
   await run(LOBBY); await sleep(1800);
-  await run("openDetail('duncan');");
-  await page.waitForFunction(() => window.HERO_STAGE && HERO_STAGE.o?.def?.id === 'duncan' && !!HERO_STAGE.o.root._clipRest && HERO_STAGE.backdropTexture?.isReady() && HERO_STAGE.scene.getFrameId() > 10,{timeout:45000});
+  await run("openDetail('baron');");
+  await page.waitForFunction(() => window.HERO_STAGE && HERO_STAGE.o?.def?.id === 'baron' && !!HERO_STAGE.o.root._authored && HERO_STAGE.backdropTexture?.isReady() && HERO_STAGE.scene.getFrameId() > 10,{timeout:45000});
   await page.waitForFunction(() => HERO_STAGE.pfIdle(),{timeout:30000});
-  await run("HERO_STAGE.auto=false; HERO_STAGE.yaw=0; HERO_STAGE.yawV=0;");
+  await run("HERO_STAGE.auto=false; HERO_STAGE.yaw=-.35; HERO_STAGE.yawV=0;");
   await sleep(1500);
   await run("NOTES.length=0; renderNotes();"); // isolated fixture only, no reward claim
   const shot=opt('--shot','hero.png'), output=opt('--out','hero.json');
@@ -115,11 +118,12 @@ try {
     const panel=document.querySelector('.hcpilot-controls');
     if (!document.querySelector('.hc.gfx02-pilot') || !panel) return null;
     const p=panel.getBoundingClientRect(), slots=[...panel.querySelectorAll('.hcgs')];
-    return {slots:slots.length,visible:slots.filter(e=>{const r=e.getBoundingClientRect();return r.top>=p.top-1&&r.bottom<=p.bottom+1&&r.left>=p.left-1&&r.right<=p.right+1}).length, rows:new Set(slots.map(e=>Math.round(e.getBoundingClientRect().top))).size};
+    const skills=panel.querySelector('.hcsks'), sr=skills.getBoundingClientRect(), skillBtns=[...skills.querySelectorAll('[data-hcsk]')];
+    return {skillCount:skillBtns.length,skillVisible:skillBtns.filter(e=>{const r=e.getBoundingClientRect();return r.top>=sr.top-1&&r.bottom<=sr.bottom+1&&r.left>=sr.left-1&&r.right<=sr.right+1}).length,slots:slots.length,visible:slots.filter(e=>{const r=e.getBoundingClientRect();return r.top>=p.top-1&&r.bottom<=p.bottom+1&&r.left>=p.left-1&&r.right<=p.right+1}).length, rows:new Set(slots.map(e=>Math.round(e.getBoundingClientRect().top))).size};
   });
   out.layout=layout;
   await page.screenshot({path:shot});
-  if(layout && (layout.slots!==6 || layout.visible!==6 || layout.rows!==1)) throw Error('Compact pilot gear layout: '+JSON.stringify(layout));
+  if(layout && (layout.slots!==6 || layout.visible!==6 || layout.rows!==1 || layout.skillCount!==5 || layout.skillVisible!==5)) throw Error('Compact pilot gear layout: '+JSON.stringify(layout));
   out.hero={cost:await cost('HERO_STAGE'),vram:await vram()};
   out.sample=await page.evaluate(async () => {
     const h=HERO_STAGE, e=h.engine, gl=e._gl, ext=gl.getExtension('WEBGL_debug_renderer_info');
@@ -129,10 +133,10 @@ try {
     intervals.sort((a,b)=>a-b);
     const rect=el=>{const a=el.getBoundingClientRect();return [a.x,a.y,a.width,a.height].map(Math.round)};
     return {renderer:ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),profile:gfx(h.small).level,frameIntervals:intervals.length,p95Interval:intervals[Math.ceil(intervals.length*.95)-1]??null,
-      model:!!h.o.root._clipRest,hero:h.o.def.id,canvas:rect(h.cv),viewport:[innerWidth,innerHeight],
+      model:!!h.o.root._authored,hero:h.o.def.id,canvas:rect(h.cv),viewport:[innerWidth,innerHeight],
       controls:[...document.querySelectorAll('.hc button')].filter(b=>b.offsetWidth).map(b=>({name:b.getAttribute('aria-label')||b.innerText,rect:rect(b),disabled:b.disabled})),
       scroll:[...document.querySelectorAll('.hc .hcsks,.hc .hcright,.hc .hcpilot-controls')].map(e=>({class:e.className,visible:e.clientHeight,content:e.scrollHeight}))};
   });
-  if(out.sample.profile!==GFX || !out.sample.model || !out.sample.frameIntervals)throw Error('Invalid sample '+JSON.stringify(out.sample));
+  if(out.sample.profile!==GFX || out.sample.hero!=='baron' || !out.sample.model || !out.sample.frameIntervals)throw Error('Invalid sample '+JSON.stringify(out.sample));
   fs.writeFileSync(output,JSON.stringify(out,null,2));console.log(JSON.stringify({shot,output,cost:out.hero.cost,sample:out.sample}));
 } finally { await browser.close(); await SRV.close(); }
