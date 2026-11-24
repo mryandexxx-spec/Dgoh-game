@@ -152,11 +152,13 @@ for (let c = 0; c < CYCLES; c++) {
           return { ui:hc.classList.contains('gfx02-pilot'), stage:h.pilot,
             terrace:h.terrace.every(enabled), podium:h.podiumMeshes.every(enabled),
             gearInControls:!!hc.querySelector('.hcpilot-controls .hcgear'),
-            canvases:hc.querySelectorAll('.hcfig canvas').length };
+            canvases:hc.querySelectorAll('.hcfig canvas').length,
+            dpr:1/h.engine.getHardwareScalingLevel(),
+            expectedDpr:Math.min(window.devicePixelRatio||1,gfx(h.small).dpr.hero)*(h.pilot?gfx(h.small).heroPilotScale:1) };
         })()`));
         const expected = id === 'duncan';
         if (pilot.ui !== expected || pilot.stage !== expected || pilot.terrace !== expected ||
-            pilot.podium === expected || pilot.gearInControls !== expected || pilot.canvases !== 1)
+            pilot.podium === expected || pilot.gearInControls !== expected || pilot.canvases !== 1 || Math.abs(pilot.dpr-pilot.expectedDpr)>.015)
           errors.push('GFX-02: pilot/legacy switch '+id+' '+JSON.stringify(pilot));
       }
       if (ok >= 0 && SHOTS && !['muaddib','jessica'].includes(id)) await page.screenshot({path:path.join(SHOTS,`ui10-${key}${PHONE ? '-phone' : ''}.png`)});
