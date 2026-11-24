@@ -6,6 +6,7 @@ import { ITEMS, TIER_COL } from '../logic/gear.js';
 import { portrait } from '../render2d/figures.js';
 import { CH } from '../data/chars.js';
 import { RW_NAME } from '../logic/economy.js';
+import { dailyRewardIcon } from './calendar-icons.js';
 import { fmt, ic } from '../core/format.js';
 import { itemIcon } from './common.js';
 
@@ -18,7 +19,8 @@ function rwTile(k, q, id, o = {}) {
     return `<div class="rwt rk-shard${sm} ${o.unlock ? 'unl' : ''}" data-info="shard:${id}" style="--d:${o.i || 0}"><span class="rwa">${portrait(d, o.sm ? 34 : 54, p.stars ? TIER_COL[p.gear] : null)}<span class="rwbadge">${ic('shard')}</span></span><b class="rwq">×${qs}</b><span class="rwc">${d.sn}</span>${o.unlock ? '<span class="rwnew">Открыт!</span>' : ''}</div>`; }
   if (k === 'frag' && ITEMS[id]) { const it = ITEMS[id];
     return `<div class="rwt rk-frag t${it.t}${sm}" data-info="frag:${id}" style="--d:${o.i || 0}"><span class="rwa">${itemIcon(it, o.sm ? 30 : 46)}<span class="rwbadge">${ic('frag')}</span></span><b class="rwq">×${qs}</b><span class="rwc">${it.n}</span></div>`; }
-  return `<div class="rwt rk-res r-${RW_RARE[k] || 'com'}${sm}" data-info="${k}" style="--d:${o.i || 0}"><span class="rwa"><span class="rwmed">${ic(k)}</span></span><b class="rwq">${qs}</b><span class="rwc">${RW_TITLE[k] || RW_NAME[k] || k}</span></div>`;
+  const illustration = o.art ? dailyRewardIcon(k, `${o.artSeed || 'daily'}-${o.i || 0}`) : '';
+  return `<div class="rwt rk-res r-${RW_RARE[k] || 'com'}${sm}" data-info="${k}" style="--d:${o.i || 0}"><span class="rwa"><span class="rwmed ${illustration ? "ui03-artmed" : ""}">${illustration || ic(k)}</span></span><b class="rwq">${qs}</b><span class="rwc">${RW_TITLE[k] || RW_NAME[k] || k}</span></div>`;
 }
 const rwGrid = (list, o = {}) => `<div class="rwgrid${o.sm ? ' sm' : ''}">${list.map(([k, q, id], i) => rwTile(k, q, id, { ...o, i })).join('')}</div>`;
 // turn "+<amt> caption" result lines into tiles, keep other lines as text

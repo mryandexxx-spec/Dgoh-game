@@ -54,7 +54,7 @@ function giveRewards(list) {
 // UI-owned presentation bridge for staged payouts; existing named API and
 // static ESM graph remain unchanged (ARCH-01C3b2 1001-edge invariant).
 giveRewards.presentationHooks = rewardHooks;
-const rewardsHtml = list => rwGrid(list, { sm: 1 });
+const rewardsHtml = (list, options = {}) => rwGrid(list, { sm: 1, ...options });
 function accXP(n) { return accGain(n).map(L => `<b class="acclv">Уровень аккаунта ${L}!</b>`); }
 // Transient level-up presentation queue is not part of S; B5a must roll back
 // additions from a denied reward transaction without adding an ESM edge.

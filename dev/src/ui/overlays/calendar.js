@@ -10,7 +10,7 @@ import { todayKey } from '../../logic/economy.js';
 import { figureSVG, portrait } from '../../render2d/figures.js';
 import { CH } from '../../data/chars.js';
 import { fmt } from '../../core/format.js';
-import { calendarRewardIcon } from '../calendar-icons.js';
+import { calendarRewardIcon, choamMarkArt } from '../calendar-icons.js';
 import { $ } from '../../core/dom.js';
 
 // ===== login calendar =====
@@ -116,7 +116,7 @@ function openCalendar() {
   $('#overlay2').innerHTML = `<div class="detail info-layer ui03-calendar-overlay" data-iclose="1">
     <div class="ui03-root ui03-calendar-screen" role="dialog" aria-modal="true" aria-labelledby="ui03-cal-title">
       <div class="ui03-head">
-        <div class="ui03-brand"><span class="ui03-mark" aria-hidden="true">◆</span><div class="ui03-brand-copy"><small>ИМПЕРСКИЙ АРХИВ</small><strong id="ui03-cal-title">Календарь входа</strong></div></div>
+        <div class="ui03-brand"><span class="ui03-mark" aria-hidden="true">${choamMarkArt()}</span><div class="ui03-brand-copy"><small>ИМПЕРСКИЙ АРХИВ</small><strong id="ui03-cal-title">Календарь входа</strong></div></div>
         <nav class="ui03-tabs" aria-label="Задания и календарь"><button class="ui03-tab" data-ui03daily="1">Задания</button><button class="ui03-tab" aria-current="page">Календарь</button></nav>
         <div class="ui03-right"><div class="ui03-timer"><small>НОВЫЙ ДЕНЬ ЧЕРЕЗ</small><b>${hh} ч ${mm} мин</b></div><button class="ui03-close" data-iclose="1" aria-label="Закрыть календарь">×</button></div>
       </div>
