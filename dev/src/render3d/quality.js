@@ -21,6 +21,7 @@ const HIGH = {
   groundSeg: [170, 120],
   particles: 1,                     // множитель фоновых частиц окружения
   fps: { active: 60, idle: 30, idleLow: 20, static: 0 }, campIdle: 'idle',
+  heroPilotScale: 1, // GFX-02: scale actual DPR only for the wider pilot canvas
   heroIdle: 'active',               // пакет 5: окно героя в покое (после интро/вспышки/вращения): HIGH 60, MED idle 30, LOW idle 20
   bake: false,                      // запечь тени/AO статичных пропсов в землю и убрать их из карты теней
   glowSel: false,                   // glow только по светящимся мешам (без неба и фона)
@@ -35,7 +36,7 @@ const HIGH = {
 };
 const PROFILES = {
   high: HIGH,
-  med: { ...HIGH, dpr: { arena: [1.5, 1.25], hero: [1.75, 1.25], camp: [1.5, 1.25] }, msaa: 1, heroIdle: 'idle',
+  med: { ...HIGH, dpr: { arena: [1.5, 1.25], hero: [1.75, 1.25], camp: [1.5, 1.25] }, msaa: 1, heroPilotScale: .78, heroIdle: 'idle',
     grain: false, chromatic: false, sharpen: false, dof: 'hero', ssao: false, shadowSize: 1024, heroShadow: [1024, 512], bake: true, glowSel: true, campTotems: 'simple', campAccents: true, campAccentLights: false, wormSmall: .5, baronGL: { waves: 3, shots: 2, chairGlow: true, camera: .12, strikeSparks: 1 },
     battleCamera: HIGH.battleCamera },
 };
