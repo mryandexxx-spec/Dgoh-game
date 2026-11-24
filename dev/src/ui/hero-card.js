@@ -62,7 +62,7 @@ function hcSkills(id, d, p) {
     if (k === 'gl' && !locked && !p.gl && S.wol >= 1) up = true;
     if (up) available++;
     const ab = k === 'gl' ? d.gl : d[k];
-    return `<button class="hcsk${k === 'gl' ? ' gl' : k === 'leader' ? ' ldr' : ''}${locked ? ' dim' : ''}" data-hcsk="${id}:${k}"${k === 'gl' ? ` data-gl-state="${!locked && p.gl ? 'open' : 'locked'}"` : ''}><span class="hcski">${skIcon(d, k)}</span><span class="hcskt"><b>${ab.n}</b><small>${sub}</small></span>${up ? '<span class="hcup" aria-label="Можно улучшить">▲</span>' : ''}</button>`;
+    return `<button class="hcsk${k === 'gl' ? ' gl' : k === 'leader' ? ' ldr' : ''}${locked ? ' dim' : ''}" data-hcsk="${id}:${k}" aria-label="${ab.n}: ${sub}"${k === 'gl' ? ` data-gl-state="${!locked && p.gl ? 'open' : 'locked'}"` : ''}><span class="hcski">${skIcon(d, k)}</span><span class="hcskt"><b>${ab.n}</b><small>${sub}</small></span>${up ? '<span class="hcup" aria-label="Можно улучшить">▲</span>' : ''}</button>`;
   });
   // Keep the signature ability visible; only ordinary skills scroll.
   const signature = d.gl ? rows[0] : '';
@@ -147,13 +147,27 @@ function openDetail(id, stagedPreview = null) {
   if (!root) {
     $('#overlay').innerHTML = `<div class="detail hcwrap" data-close="1"><div class="sheet csheet hc${HC_STAT ? ' stat' : ''}" role="dialog" aria-modal="true" aria-labelledby="dt-name">
       <div class="hctop"></div><div class="hcleft"></div>
-      <div class="hcstage"><div class="cfig hcfig">${figureSVG(d, true)}</div><div class="hcgl"></div><div class="hcgr"></div><div class="hcst"></div></div>
-      <div class="hcbot"></div><div class="hcright"></div></div></div>`;
+      <div class="hcstage"><div class="cfig hcfig">${figureSVG(d, true)}</div><div class="hcgear"><div class="hcgl"></div><div class="hcgr"></div></div><div class="hcst"></div></div>
+      <div class="hcbot"></div><div class="hcright"></div><div class="hcpilot-controls"></div></div></div>`;
   } else if (root.dataset.cid !== id) {
     const f = $('#overlay .hcfig'); if (!f.classList.contains('has3d')) f.innerHTML = figureSVG(d, true);   // 2D-фолбэк — смена фигуры
   }
   for (const k in Z) setZone(k, Z[k]);
   const hc = $('#overlay .hc'); hc.dataset.cid = id;
+  // GFX-02 pilot: move existing zones, never copy controls or change handlers.
+  // Restore the legacy DOM order when leaving Duncan, retaining the same canvas.
+  const pilot = id === 'duncan' && !stagedPreview;
+  if (hc.classList.contains('gfx02-pilot') !== pilot) {
+    const controls = hc.querySelector('.hcpilot-controls'), stage = hc.querySelector('.hcstage');
+    const right = hc.querySelector('.hcright'), skills = hc.querySelector('.hcleft'), gear = hc.querySelector('.hcgear');
+    if (pilot) controls.append(right, skills, gear);
+    else {
+      hc.insertBefore(skills, stage);
+      stage.insertBefore(gear, stage.querySelector('.hcst'));
+      hc.insertBefore(right, controls);
+    }
+    hc.classList.toggle('gfx02-pilot', pilot);
+  }
   const theme = heroThemeKey(d);
   if (hc.dataset.heroTheme !== theme) {
     hc.dataset.heroTheme = theme;
