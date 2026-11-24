@@ -73,6 +73,78 @@ try {
   assert.equal(result.candle,result.candleAfter,'render did not spend candle energy');
   assert.ok(Number.isFinite(result.waterCount));
   assert.ok(result.pillText?.includes('/'),'energy balance is displayed');
+
+  // UI-03: when the approved daily-calendar layout exists, verify its real
+  // fixed viewport, independent scroll and preview-only interactions.
+  // No reward claim or persist is called, even on the synthetic v1 fixture.
+  for (const [width,height] of [[844,390],[667,375]]) {
+    await page.setViewport({width,height,deviceScaleFactor:1,
+      isMobile:true,hasTouch:true,isLandscape:true});
+    const daily=await page.evaluate(()=>{
+      const run=code=>(0,eval)(code);
+      run("closeInfo(true);closeOverlay();view='daily';render();");
+      const root=document.querySelector('#view>.ui03-daily');
+      if(!root)return null; // unchanged main / an unrelated UI-copy task
+      const sc=root.querySelector('.ui03-scroll');
+      const bounds=root.getBoundingClientRect();
+      const quests=[...root.querySelectorAll('.ui03-quest')];
+      const before=run('JSON.stringify([S.cry,S.solari,S.plast,S.seal,S.login,S.daily])');
+      return {rootHeight:bounds.height,bottom:bounds.bottom,width:bounds.width,
+        viewportHeight:window.innerHeight,
+        pageScroll:document.documentElement.scrollHeight>window.innerHeight+1 ||
+          document.body.scrollHeight>window.innerHeight+1,
+        scrolling:getComputedStyle(sc).overflowY,
+        scrollable:sc.scrollHeight>sc.clientHeight+15,
+        questCount:quests.length,
+        allButton:!!root.querySelector('[data-qall]'),
+        chestButton:!!root.querySelector('[data-qchest]'),
+        before};
+    });
+    if (!daily) break;
+    assert.equal(daily.rootHeight,height,'UI-03 daily viewport height');
+    assert.ok(Math.abs(daily.bottom-height)<2,'UI-03 daily bottom stays visible');
+    assert.equal(daily.pageScroll,false,'UI-03 daily must not scroll document');
+    assert.equal(daily.scrolling,'auto','quests have their own scrolling');
+    assert.ok(daily.scrollable,'quests list has independent vertical scroll');
+    assert.ok(daily.questCount>=8 && daily.questCount<=10,'active daily quests preserved');
+    assert.ok(daily.allButton && daily.chestButton,'claim controls preserved');
+    await page.click('[data-ui03filter="got"]');
+    assert.equal(await page.$eval('[data-ui03filter="got"]',el=>el.getAttribute('aria-pressed')),
+      'true','daily filter is interactive');
+    await page.click('[data-ui03filter="all"]');
+    await page.click('.ui03-daily [data-cal]');
+    const cal=await page.evaluate(()=>{
+      const root=document.querySelector('#overlay2 .ui03-calendar-screen');
+      if (!root)return null;
+      const sc=root.querySelector('.ui03-calendar-body .ui03-scroll');
+      const bounds=root.getBoundingClientRect();
+      return {rootHeight:bounds.height,bottom:bounds.bottom,
+        days:root.querySelectorAll('[data-ui03day]').length,
+        expected:(0,eval)('todayKey.clock.snapshot().daysInMonth'),
+        overflow:getComputedStyle(sc).overflowY,
+        claim:!!root.querySelector('[data-calclaim]')};
+    });
+    assert.ok(cal,'calendar opens from daily');
+    assert.equal(cal.rootHeight,height,'UI-03 calendar viewport height');
+    assert.ok(Math.abs(cal.bottom-height)<2,'UI-03 calendar bottom stays visible');
+    assert.equal(cal.days,cal.expected,'calendar preserves month length');
+    assert.equal(cal.overflow,'auto','calendar has internal scrolling');
+    assert.equal(cal.claim,true,'verified login claim control exists');
+    await page.click('[data-ui03day="15"]');
+    assert.match(await page.$eval('#ui03-selected-reward',el=>el.textContent),/День 15:/,
+      'calendar day preview changes without claiming');
+    await page.click('[data-ui03daily]');
+    const final=await page.evaluate(()=>{
+      const run=code=>(0,eval)(code);
+      return {back:!!document.querySelector('#view>.ui03-daily'),
+        overlayClear:!document.querySelector('#overlay2 .ui03-calendar-screen'),
+        balances:run('JSON.stringify([S.cry,S.solari,S.plast,S.seal,S.login,S.daily])')};
+    });
+    assert.ok(final.back && final.overlayClear,'calendar returns to daily');
+    assert.equal(final.balances,daily.before,'UI-03 navigation must not award or mutate saves');
+    console.log('PASS UI-03 real Chromium layout and actions:',width+'x'+height,html);
+  }
+
   assert.deepEqual(errors,[],'no page errors on guarded PWA boot');
   console.log('PASS CI-OPT-02 UI-copy DOM:',html,
     'native writer v1 boot, energy labels/description, no resource spending');

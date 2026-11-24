@@ -1,0 +1,79 @@
+
+/* UI-03: approved daily quest + login calendar, iPhone landscape one-screen shell.
+   Presentation only: no change to reward, clock, save, lock, or economy paths. */
+.ui03-root{--u-fg:#f6e8ce;--u-muted:#c7b094;--u-edge:#967246;--u-accent:#f3bc74;position:relative;isolation:isolate;box-sizing:border-box;width:100%;height:100%;min-height:0;overflow:hidden;display:grid;grid-template-rows:54px minmax(0,1fr) 46px;color:var(--u-fg);font-family:'Dune Inter',Inter,system-ui,sans-serif;background:radial-gradient(ellipse at 72% -15%,#76593a55,transparent 52%),radial-gradient(ellipse at 0 100%,#613e2444,transparent 45%),linear-gradient(140deg,#211914,#100e0e 55%,#211912)}
+.ui03-root *{box-sizing:border-box}
+.ui03-root button{font-family:inherit}
+.ui03-root button:focus-visible{outline:2px solid #9be3df;outline-offset:2px}
+.ui03-head{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:9px;padding:5px max(12px,env(safe-area-inset-right,0px)) 5px max(12px,env(safe-area-inset-left,0px));background:linear-gradient(#49341fec,#2c2119fa 60%,#1b1715f9);border-bottom:1px solid #bd915e;box-shadow:0 5px 16px #0009;z-index:2}
+.ui03-brand{display:flex;align-items:center;gap:9px;min-width:0}
+.ui03-mark{width:32px;height:32px;flex:none;display:grid;place-items:center;border:1px solid #e0b780;border-radius:9px 3px 9px 3px;background:radial-gradient(circle at 28% 20%,#8b633b,#2c1b13 80%);font-size:22px;color:#f5cd87;text-shadow:0 2px 3px #000}
+.ui03-brand-copy{min-width:0;display:grid;gap:1px}.ui03-brand-copy small{font-size:8px;letter-spacing:.15em;font-weight:800;color:#dbb787;white-space:nowrap}.ui03-brand-copy strong{font-size:16px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.02em}
+.ui03-tabs{display:flex;gap:3px;padding:3px;border:1px solid #77563b;border-radius:10px;background:#17130f;box-shadow:inset 0 2px 7px #0008}
+.ui03-tab{min-width:107px;padding:6px 9px;border:0;border-radius:7px;background:transparent;color:#c6b29a;font-size:11px;font-weight:750;white-space:nowrap}.ui03-tab[aria-current="page"]{color:#26170c;background:linear-gradient(#ffe0b0,#dfa362 56%,#bd7f40);box-shadow:inset 0 1px #fff6daaa,0 2px 9px #0007}
+.ui03-right{display:flex;align-items:center;justify-content:flex-end;gap:9px;min-width:0}.ui03-timer{display:grid;gap:1px;text-align:right;white-space:nowrap}.ui03-timer small{font-size:8px;letter-spacing:.07em;color:#bbab96}.ui03-timer b{font-size:12px;color:#ffe0ae;font-variant-numeric:tabular-nums}
+.ui03-close{flex:none;min-width:31px;height:31px;padding:0 6px;border-radius:8px;border:1px solid #ac8355;background:linear-gradient(#5c442d,#2d2017);box-shadow:inset 0 1px #f3d8a744,0 3px 7px #0007;color:#f8e4c5;font-size:21px;line-height:1}
+.ui03-main{min-height:0;display:grid;gap:10px;padding:10px max(12px,env(safe-area-inset-right,0px)) 8px max(12px,env(safe-area-inset-left,0px));position:relative}
+.ui03-main.daily{grid-template-columns:minmax(0,34fr) minmax(0,66fr)}.ui03-main.calendar{grid-template-columns:minmax(0,28fr) minmax(0,72fr)}
+.ui03-panel{min-width:0;min-height:0;position:relative;overflow:hidden;border:1px solid var(--u-edge);border-radius:11px;background:linear-gradient(145deg,#38291c,#211a15 58%,#171514);box-shadow:inset 0 1px #f3d3a03a,inset 0 -4px 18px #0006,0 6px 15px #0008}
+.ui03-eyebrow{color:#efc68c;font-size:9px;letter-spacing:.14em;font-weight:800;text-transform:uppercase}
+.ui03-title{font-size:18px;font-weight:800;line-height:1.05;letter-spacing:-.03em;color:#fff1d9;text-shadow:0 2px 5px #0007}
+.ui03-sub{color:#d4be9f;font-size:10px;line-height:1.32}
+.ui03-hero{padding:10px 12px;display:flex;flex-direction:column;gap:5px;background:radial-gradient(circle at 50% 51%,#9f784035,transparent 54%),linear-gradient(140deg,#553c24,#30251b 44%,#1b1614)}
+.ui03-art{position:relative;display:grid;place-items:center;flex:1;min-height:30px}.ui03-art:before{content:'';position:absolute;left:14%;right:14%;bottom:7%;height:25%;border-radius:50%;background:#ecc27433;filter:blur(15px)}.ui03-art svg{position:relative;max-width:92%;width:145px;max-height:100%;filter:drop-shadow(0 10px 7px #000a)}
+.ui03-progressline{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;color:#d8be9b}.ui03-progressline b{color:#fff0d1;font-size:15px}.ui03-pips{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.ui03-pip{height:7px;border-radius:6px;border:1px solid #705235;background:#1d160f;box-shadow:inset 0 2px 3px #0009}.ui03-pip.on{border-color:#f4c683;background:linear-gradient(#ffe4b0,#bb803c);box-shadow:0 0 7px #ffc46a55}
+.ui03-rewards{display:flex;gap:4px;flex-wrap:nowrap;min-width:0;overflow:hidden}.ui03-reward{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;font-weight:750;font-size:9px;color:#f5d5a1;padding:3px 5px;border-radius:5px;border:1px solid #785637;background:#17120cb3}.ui03-reward .ico{width:13px;height:13px}
+.ui03-button{border-radius:8px;padding:7px 11px;font-size:11px;font-weight:800;white-space:nowrap;border:1px solid #a17b50;background:linear-gradient(#54402e,#2d221b);color:#ffe8c5;box-shadow:inset 0 1px #e4b88733,0 3px 8px #0008}.ui03-button.go:not(:disabled){color:#2b190a;border-color:#f9d492;background:linear-gradient(#ffe4ad,#e3a85f 52%,#b77530);box-shadow:inset 0 1px #fff6d2ad,0 4px 10px #0008}.ui03-button:disabled{opacity:.57;cursor:default}
+.ui03-hero .ui03-button{width:100%;margin-top:auto}.ui03-panel-list{display:flex;flex-direction:column;gap:6px;padding:8px;background:linear-gradient(155deg,#32251d,#1b1816 65%)}
+.ui03-listhead{display:flex;align-items:center;justify-content:space-between;gap:7px;flex:none;min-height:23px}.ui03-listhead strong{font-size:12px;white-space:nowrap}.ui03-count{font-size:10px;color:#c7aa88}
+.ui03-filters{display:flex;gap:4px;max-width:100%;overflow-x:auto;scrollbar-width:none}.ui03-filter{border:1px solid #715239;border-radius:6px;padding:4px 7px;background:#241b14;color:#c8b49b;font-size:9px;white-space:nowrap;font-weight:700}.ui03-filter[aria-pressed="true"]{background:#67462a;border-color:#dba363;color:#ffe4bd}
+.ui03-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#896546 transparent;padding:2px 3px 3px 1px}
+.ui03-quest{display:grid;grid-template-columns:29px minmax(0,1fr) auto 82px;align-items:center;gap:7px;padding:6px 7px;min-height:54px;margin-bottom:5px;border:1px solid #755639;border-radius:8px;background:linear-gradient(155deg,#3d2c20,#241c17 64%,#1d1917);box-shadow:inset 0 1px #e9c18d26,0 3px 8px #0006}
+.ui03-quest.done{border-color:#e5b577;background:linear-gradient(110deg,#624027,#33241a 58%,#241a16);box-shadow:inset 0 1px #ffe3b25b,0 3px 10px #0008}.ui03-quest.got{opacity:.56}
+.ui03-qicon{display:grid;place-items:center;width:29px;height:29px;border:1px solid #957045;border-radius:8px;background:radial-gradient(circle at 32% 20%,#71502e,#2c2118 82%);color:#edbe82;font-size:17px;box-shadow:inset 0 1px #edd3a244,0 3px 6px #0009}
+.ui03-qcopy{min-width:0}.ui03-qcopy b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px;line-height:1.3}.ui03-qstat{display:flex;align-items:center;gap:7px;margin-top:4px;font-size:9px;color:#c8ad8b;font-variant-numeric:tabular-nums;white-space:nowrap}.ui03-mini-meter{display:block;flex:1;min-width:18px;max-width:110px;height:4px;border-radius:6px;background:#110d09;overflow:hidden}.ui03-mini-meter i{display:block;height:100%;background:linear-gradient(90deg,#b67534,#ffd48b)}
+.ui03-quest .ui03-rewards{justify-content:flex-end}.ui03-quest .ui03-reward{font-size:9px;padding:2px 4px}.ui03-qaction{width:82px;min-height:29px;padding:5px 4px;font-size:10px;border-radius:7px;border:1px solid #a47c4e;background:linear-gradient(#56402c,#2d221a);font-weight:800;white-space:nowrap}.ui03-qaction.go{border-color:#f1bf76;color:#271807;background:linear-gradient(#ffe0a2,#d68e45)}.ui03-qaction:disabled{opacity:.65}
+.ui03-foot{min-height:0;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px max(12px,env(safe-area-inset-right,0px)) 5px max(12px,env(safe-area-inset-left,0px));border-top:1px solid #987249;background:linear-gradient(#34261b,#1e1814);box-shadow:0 -4px 13px #0008;z-index:2}.ui03-footinfo{display:flex;align-items:center;gap:10px;min-width:0;font-size:10px;color:#c5ae8d}.ui03-footinfo strong{color:#ffdfac}.ui03-foot-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex:none}
+.ui03-portrait{position:relative;flex:1;min-height:0;display:grid;place-items:center;overflow:hidden}.ui03-portrait .biofig{width:auto;height:100%;max-height:100%;max-width:100%;aspect-ratio:60/106;border:0;background:none;filter:drop-shadow(0 7px 10px #000a)}.ui03-portrait .biofig svg{width:100%;height:100%;display:block}
+.ui03-cal-leftfoot{font-size:10px;color:#ccb494;display:grid;gap:6px}
+.ui03-calendar-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:5px;align-content:start}.ui03-cday{position:relative;aspect-ratio:1/1.03;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:1px solid #745436;border-radius:7px;background:linear-gradient(#3c2b1e,#201813);box-shadow:inset 0 1px #e9ba7833,0 2px 6px #0008;padding:4px 1px}.ui03-cday.big{border-color:#bb8d4e;background:linear-gradient(#634627,#302014)}.ui03-cday.now{border-color:#ffe0a0;box-shadow:inset 0 1px #ffedcc77,0 0 0 1px #f6ba7099,0 0 12px #e6ac5b55}.ui03-cday.got{opacity:.45}.ui03-cday.selected{outline:2px solid #9ddbd4;outline-offset:-2px}.ui03-daynum{position:absolute;left:4px;top:2px;color:#eacb9d;font-size:8px;font-weight:800}.ui03-dayitem{display:grid;place-items:center;width:19px;height:19px;color:#e9c58b}.ui03-dayitem .ico{width:18px;height:18px}.ui03-dayitem .pt{width:20px!important;height:20px!important}.ui03-dayqty{font-size:9px;font-weight:800;color:#f9e4c2;line-height:1}.ui03-daycheck{position:absolute;right:3px;top:2px;color:#b3dcab;font-size:9px}
+.ui03-calendar-body{display:flex;flex-direction:column;gap:6px;padding:8px}.ui03-calendar-body .ui03-listhead{flex:none}.ui03-calendar-body .ui03-scroll{min-height:0}.ui03-calfooter{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;min-height:36px;padding:5px 7px;background:#17130fb3;border-radius:7px;border:1px solid #694c30}.ui03-cal-selected{min-width:0;display:grid;gap:2px}.ui03-cal-selected strong{font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ui03-cal-selected small{font-size:9px;color:#c8af8d}
+body:has(#view > .ui03-root.ui03-daily){height:100dvh;margin:0;overflow:hidden}
+body:has(#view > .ui03-root.ui03-daily) > header.top{display:none}
+main#view:has(> .ui03-root.ui03-daily){width:100%;max-width:none;height:100dvh;min-height:0;margin:0;padding:0;overflow:hidden}
+#overlay2 .detail.ui03-calendar-overlay{position:fixed;inset:0;z-index:56;padding:0;background:#100e0d}
+#overlay2 .ui03-calendar-overlay>.ui03-root{height:100dvh;width:100vw}
+@media (orientation:landscape) and (max-width:700px){.ui03-root{grid-template-rows:48px minmax(0,1fr) 43px}.ui03-head{padding-inline:max(7px,env(safe-area-inset-left,0px)) max(7px,env(safe-area-inset-right,0px));gap:5px}.ui03-brand{gap:5px}.ui03-mark{width:27px;height:27px;font-size:18px}.ui03-brand-copy strong{font-size:13px}.ui03-brand-copy small{font-size:7px}.ui03-tab{min-width:81px;padding:5px 6px;font-size:10px}.ui03-timer small{font-size:7px}.ui03-timer b{font-size:10px}.ui03-main{gap:7px;padding:7px max(8px,env(safe-area-inset-left,0px)) 6px max(8px,env(safe-area-inset-right,0px))}.ui03-hero{padding:8px;gap:4px}.ui03-title{font-size:15px}.ui03-sub{font-size:9px}.ui03-art svg{width:125px}.ui03-panel-list{padding:6px;gap:4px}.ui03-quest{min-height:49px;gap:5px;padding:5px;grid-template-columns:24px minmax(0,1fr) auto 68px}.ui03-qicon{width:24px;height:24px;font-size:15px}.ui03-qcopy b{font-size:9px}.ui03-quest .ui03-reward{font-size:8px;padding:2px}.ui03-qaction{width:68px;min-height:27px;font-size:9px}.ui03-calendar-grid{grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}.ui03-cday{aspect-ratio:1/1;padding:2px 1px}.ui03-dayitem{width:16px;height:16px}.ui03-dayitem .ico{width:15px;height:15px}.ui03-dayqty{font-size:8px}.ui03-foot{padding:4px max(8px,env(safe-area-inset-right,0px)) 4px max(8px,env(safe-area-inset-left,0px))}.ui03-footinfo{font-size:9px}.ui03-button{font-size:10px;padding:6px 9px}}
+@media (prefers-reduced-motion:reduce){.ui03-root *, .ui03-root *::before, .ui03-root *::after{animation:none!important;transition:none!important}}
+
+
+/* Compact reward miniatures: reuse canonical clickable resource tiles. */
+.ui03-rewards>.rwgrid.sm{display:flex;align-items:center;flex-wrap:nowrap;justify-content:flex-start;gap:4px;margin:0;min-width:0;max-width:100%;overflow:hidden}
+.ui03-rewards .rwt.sm{min-width:0;width:auto;flex:none;display:flex;align-items:center;gap:4px;padding:3px 5px;background:#17120ca8;border:1px solid #765638;border-radius:5px;box-shadow:inset 0 1px #fff2cc17;animation:none}
+.ui03-rewards .rwt.sm .rwa{width:15px;height:15px;flex:none;display:grid;place-items:center;margin:0}
+.ui03-rewards .rwt.sm .rwmed{width:15px;height:15px;border:0;box-shadow:none;background:transparent}
+.ui03-rewards .rwt.sm .rwmed>.ico{width:14px;height:14px}
+.ui03-rewards .rwt.sm .rwq{font-size:10px;white-space:nowrap}
+.ui03-rewards .rwt.sm .rwc,.ui03-rewards .rwt.sm .rwbadge{display:none}
+.ui03-rewards .rwt.sm.rk-shard .pt{width:16px!important;height:16px!important}
+.ui03-quest>.ui03-rewards{overflow:hidden;max-width:145px}
+.ui03-quest .ui03-rewards .rwt.sm{padding:2px 3px;gap:2px}
+.ui03-quest .ui03-rewards .rwt.sm .rwq{font-size:9px}
+.ui03-quest .ui03-rewards .rwt.sm .rwa,.ui03-quest .ui03-rewards .rwt.sm .rwmed{width:13px;height:13px}
+.ui03-quest .ui03-rewards .rwt.sm .rwmed>.ico{width:12px;height:12px}
+@media (orientation:landscape) and (max-width:700px){
+  .ui03-quest>.ui03-rewards{max-width:95px}
+  .ui03-quest .ui03-rewards .rwt.sm{padding:2px;gap:1px}
+  .ui03-quest .ui03-rewards .rwt.sm .rwq{font-size:8px}
+  .ui03-quest .ui03-rewards .rwt.sm .rwa,.ui03-quest .ui03-rewards .rwt.sm .rwmed{width:11px;height:11px}
+  .ui03-quest .ui03-rewards .rwt.sm .rwmed>.ico{width:10px;height:10px}
+}
+
+
+.ui03-hero.ready{border-color:#f8ce87;box-shadow:inset 0 1px #fff3c97a,0 0 0 1px #d6a15a44,0 6px 19px #0009}
+.ui03-hero.opened .ui03-art{opacity:.62}
+.ui03-hero.opened .ui03-pip{box-shadow:none}
+
+/* Preserve original hero biography and shard-discovery navigation. */
+.ui03-hero-actions{display:flex;flex:none;gap:4px;min-width:0}
+.ui03-hero .ui03-hero-actions>.ui03-button{width:auto;min-width:0;flex:1;margin-top:0;padding:5px 3px;font-size:9px;overflow:hidden;text-overflow:ellipsis}

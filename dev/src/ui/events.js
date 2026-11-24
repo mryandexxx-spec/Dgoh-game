@@ -10,8 +10,8 @@ import { WORM_BADGE, detailNav, heroSnap } from './hero-window.js';
 import { buysToday, findShopItem, shopLeft } from './views/shop.js';
 import { raidPct, raidReward } from './views/raid.js';
 import { SQ, openSquadSel, renderSquadSel, set_SQ, sqArr, sqGo } from './overlays/squad-select.js';
-import { claimLogin, openCalendar } from './overlays/calendar.js';
-import { claimChest, claimQuest } from './views/daily.js';
+import { claimLogin, openCalendar, selectCalendarDay } from './overlays/calendar.js';
+import { claimChest, claimQuest, setDailyUiFilter } from './views/daily.js';
 import { fragLines, giveRewards, rewardWin } from './rewards.js';
 import { doRefill, doXSim, openSim, refreshAll, runSim, simCore, updSim } from './overlays/sim.js';
 import { RES_INFO, closeInfo, infoBack, infoKey, openInfo, set_INFO_BACK } from './overlays/info.js';
@@ -598,6 +598,9 @@ document.addEventListener('click', e => {
   if (d.glopen) { const p = prog(d.glopen); if (!p.stars) return toast('Сначала откройте персонажа'); if (S.wol < 1) return hcFind('wol'); S.wol -= 1; p.gl = true; persist(); toast('Ультимативная способность открыта!'); render(); return openDetail(d.glopen); }
   if (d.rotok) { try { sessionStorage.setItem('rotok', '1'); } catch (e) {} $('#rotate').hidden = true; return; }
   if (d.fullscr) { const el = document.documentElement; Promise.resolve(el.requestFullscreen && el.requestFullscreen()).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {}).finally(() => { $('#rotate').hidden = true; }); return; }
+  if (d.ui03filter !== undefined) return setDailyUiFilter(d.ui03filter);
+  if (d.ui03day !== undefined) return selectCalendarDay(Number(d.ui03day));
+  if (d.ui03daily !== undefined) { closeInfo(true); set_view('daily'); return render(); }
   if (d.cal) return openCalendar();
   if (d.calclaim) return claimLogin();
   if (d.qclaim) return claimQuest(d.qclaim, false, claimQuest.renderedDay);

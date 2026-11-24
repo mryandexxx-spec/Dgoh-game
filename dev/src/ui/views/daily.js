@@ -100,31 +100,62 @@ function claimChest(expectedDay = null) {
     sub: `Выполнено ${CHEST_NEED} заданий · кристаллы: ${tx.value.cry} из 50–300`
   });
 }
+
+let dailyUiFilter = 'all';
+const dailySymbols = {login:'✦',water:'◈',camp:'⚔',chron:'✥',shop:'◇',raid:'◎',ult:'✴',skill:'✧',craft:'▣',lvl:'⬡'};
+function setDailyUiFilter(next) {
+  if (!['all','done','prog','got'].includes(next)) return;
+  dailyUiFilter = next;
+  renderDaily();
+}
 function renderDaily() {
-  const stamp = dly.clock.snapshot(), D = dly(stamp),
-    got = dailyGot(stamp), ready = activeDaily().filter(q => qState(q, stamp) === 'done').length;
-  // The rendered day belongs to the existing handler, not the save or DOM.
-  // An old screen cannot claim a new day until it has been rendered anew.
-  claimQuest.renderedDay = D.d;
-  claimChest.renderedDay = D.d;
-  // Civil midnight from this one local Date snapshot (DST 23/25h safe).
-  const msLeft = Math.max(0, stamp.nextMidnight - stamp.now),
-    hh = Math.floor(msLeft / 3.6e6), mm = Math.floor(msLeft % 3.6e6 / 6e4);
-  $('#view').innerHTML = `<h2>Ежедневные задания</h2><p class="sub">Задания обновляются в полночь — осталось ${hh} ч ${mm} мин. Получите награды за ${CHEST_NEED} заданий, чтобы открыть Сундук дня: Печать Ландсраада и случайно от 50 до 300 кристаллов.</p>
-    <div class="chest ${D.chest ? 'opened' : got >= CHEST_NEED ? 'ready' : ''}">
-      <div class="chico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18v10H3z" fill="#7a4a22"/><path d="M3 10c0-4 4-6 9-6s9 2 9 6z" fill="#a8642a"/><rect x="10" y="9" width="4" height="5" rx="1" fill="#f0c860"/><path d="M3 14h18" stroke="#3a2210" stroke-width="1.4"/></svg></div>
-      <div class="chtx"><b>Сундук дня</b><div class="chbar"><i style="width:${Math.min(100, got / CHEST_NEED * 100)}%"></i></div><span class="mono">${Math.min(got, CHEST_NEED)}/${CHEST_NEED} заданий · ${rewardsHtml(CHEST_RW)}</span></div>
-      <button class="btn ${got >= CHEST_NEED && !D.chest ? 'go' : ''}" data-qchest="1" ${got >= CHEST_NEED && !D.chest ? '' : 'disabled'}>${D.chest ? 'Получено' : 'Открыть'}</button>
+  const stamp = dly.clock.snapshot(), D = dly(stamp), got = dailyGot(stamp),
+    all = activeDaily(), ready = all.filter(q => qState(q,stamp)==='done').length;
+  claimQuest.renderedDay = D.d; claimChest.renderedDay = D.d;
+  const msLeft = Math.max(0,stamp.nextMidnight-stamp.now),
+    hh = Math.floor(msLeft/3.6e6), mm = Math.floor(msLeft%3.6e6/6e4);
+  const order = {done:0,prog:1,got:2};
+  const tasks = all.map((q,i)=>({q,i,st:qState(q,stamp)}))
+    .sort((a,b)=>order[a.st]-order[b.st]||a.i-b.i)
+    .filter(x=>dailyUiFilter==='all'||x.st===dailyUiFilter);
+  const chestReady = got>=CHEST_NEED && !D.chest;
+  const chestArt = '<svg viewBox="0 0 190 133" role="img" aria-label="Имперский сундук"><defs><linearGradient id="ui03-lid" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#efcd90"/><stop offset=".38" stop-color="#a66f36"/><stop offset="1" stop-color="#593518"/></linearGradient><linearGradient id="ui03-front" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#b37a38"/><stop offset=".53" stop-color="#68411f"/><stop offset="1" stop-color="#2b1d13"/></linearGradient></defs><ellipse cx="97" cy="118" rx="70" ry="12" fill="#050402" opacity=".48"/><path d="M27 53L92 32L168 49L101 76Z" fill="url(#ui03-lid)" stroke="#f6d39a" stroke-width="2"/><path d="M27 53L101 76L101 113L28 89Z" fill="url(#ui03-front)" stroke="#e9b86d" stroke-width="2"/><path d="M101 76L168 49L166 88L101 113Z" fill="#50341d" stroke="#d69b53" stroke-width="2"/><path d="M26 63L101 87L168 60" fill="none" stroke="#e7be7e" stroke-width="6"/><path d="M42 56L103 39L152 50L100 69Z" fill="none" stroke="#46321f" stroke-width="3"/><path d="M57 50L100 40L137 49L100 61Z" fill="#c8a468"/><path d="M101 73L101 112" stroke="#edc384" stroke-width="7"/><path d="M36 60L36 86M156 65L155 93" stroke="#e6bc79" stroke-width="5"/><rect x="91" y="76" width="20" height="21" rx="3" fill="#e0b976" stroke="#fff1c1" stroke-width="2"/><path d="M101 81L106 87L101 93L96 87Z" fill="#61421f"/></svg>';
+  $('#view').innerHTML = `<div class="ui03-root ui03-daily">
+    <div class="ui03-head">
+      <div class="ui03-brand"><span class="ui03-mark" aria-hidden="true">◆</span><div class="ui03-brand-copy"><small>ИМПЕРСКИЙ АРХИВ</small><strong>Задания дня</strong></div></div>
+      <nav class="ui03-tabs" aria-label="Задания и календарь"><button class="ui03-tab" aria-current="page">Задания</button><button class="ui03-tab" data-cal="1">Календарь</button></nav>
+      <div class="ui03-right"><div class="ui03-timer"><small>ОБНОВЛЕНИЕ ЧЕРЕЗ</small><b>${hh} ч ${mm} мин</b></div><button class="ui03-close" data-v="lobby" aria-label="Вернуться в лагерь">×</button></div>
     </div>
-    <div class="qhead"><p class="chap" style="margin:18px 0 8px">Задания дня</p>${ready ? `<button class="btn go mini" data-qall="1">Забрать всё (${ready})</button>` : ''}</div>
-    <div class="quests">${activeDaily().map(q => { const st = qState(q, stamp), c = Math.min(q.need, D.c[q.k] || 0),
-        alternativeCount = q.alt ? Math.min(q.alt.need, D.c[q.alt.k] || 0) : 0,
-        progressRatio = q.alt ? Math.max(c / q.need, alternativeCount / q.alt.need) : c / q.need,
-        progressText = q.alt ? `${c}/${q.need} или ${alternativeCount}/${q.alt.need}` : `${c}/${q.need}`;
-      return `<div class="quest ${st}"><div class="qtx"><b>${q.n}</b><div class="qbar"><i style="width:${progressRatio * 100}%"></i></div><span class="mono">${progressText}</span></div>
-        <div class="qrw">${rewardsHtml(q.rw)}</div>
-        <div class="qbtn">${st === 'got' ? '<span class="qok">✓ Получено</span>' : st === 'done' ? `<button class="btn go mini" data-qclaim="${q.k}">Забрать</button>` : q.go ? `<button class="btn mini" data-goto="${q.go}">Перейти</button>` : ''}</div></div>`; }).join('')}</div>
-    <div class="calcard"><div>${portrait(CH[monthHero(stamp)], 56, '#e0a83a')}</div><div><b>Календарь входа</b><span>${MONTHS[stamp.monthIndex]} — месяц героя ${CH[monthHero(stamp)].n}. ${loginCan(stamp) ? 'Сегодняшняя награда ждёт!' : 'Сегодняшняя награда получена.'}</span></div><button class="btn ${loginCan(stamp) ? 'go' : ''}" data-cal="1">Открыть</button></div>`;
+    <div class="ui03-main daily">
+      <section class="ui03-panel ui03-hero ${D.chest?'opened':chestReady?'ready':''}" aria-labelledby="ui03-chest-title">
+        <div class="ui03-eyebrow">НАГРАДА ЗА ПОСТОЯНСТВО</div><div class="ui03-title" id="ui03-chest-title">Сундук дня</div>
+        <div class="ui03-sub">Завершите ${CHEST_NEED} заданий и получите имперские припасы.</div>
+        <div class="ui03-art">${chestArt}</div>
+        <div class="ui03-progressline"><span>Получено наград</span><b>${Math.min(got,CHEST_NEED)} / ${CHEST_NEED}</b></div>
+        <div class="ui03-pips" aria-label="Получено ${Math.min(got,CHEST_NEED)} из ${CHEST_NEED}">${Array.from({length:CHEST_NEED},(_,i)=>`<i class="ui03-pip ${i<got?'on':''}"></i>`).join('')}</div>
+        <div class="ui03-rewards">${rewardsHtml(CHEST_RW)}</div>
+        <button class="ui03-button ${chestReady?'go':''}" data-qchest="1" ${chestReady?'':'disabled'}>${D.chest?'Получено':chestReady?'Открыть сундук':`Нужно ещё ${Math.max(0,CHEST_NEED-got)} заданий`}</button>
+      </section>
+      <section class="ui03-panel ui03-panel-list" aria-labelledby="ui03-tasks-title">
+        <div class="ui03-listhead"><strong id="ui03-tasks-title">Оперативные задания <span class="ui03-count">${all.length}</span></strong>
+          <div class="ui03-filters" role="group" aria-label="Фильтр заданий">${[['all','Все'],['done',`Готово ${ready}`],['prog','В процессе'],['got','Получено']].map(([key,label])=>`<button class="ui03-filter" data-ui03filter="${key}" aria-pressed="${dailyUiFilter===key}">${label}</button>`).join('')}</div>
+        </div>
+        <div class="ui03-scroll" aria-label="Список ежедневных заданий">${tasks.map(({q,st})=>{
+          const c = Math.min(q.need,D.c[q.k]||0), alt=q.alt?Math.min(q.alt.need,D.c[q.alt.k]||0):0,
+            ratio=q.alt?Math.max(c/q.need,alt/q.alt.need):c/q.need,
+            progress=q.alt?`${c}/${q.need} или ${alt}/${q.alt.need}`:`${c}/${q.need}`;
+          return `<div class="ui03-quest ${st}"><div class="ui03-qicon" aria-hidden="true">${dailySymbols[q.k]||'✧'}</div>
+            <div class="ui03-qcopy"><b title="${q.n}">${q.n}</b><div class="ui03-qstat"><span>${progress}</span><span class="ui03-mini-meter"><i style="width:${Math.min(100,ratio*100)}%"></i></span></div></div>
+            <div class="ui03-rewards">${rewardsHtml(q.rw)}</div>
+            ${st==='got'?'<span class="ui03-qaction">✓ Получено</span>':st==='done'?`<button class="ui03-qaction go" data-qclaim="${q.k}">Забрать</button>`:q.go?`<button class="ui03-qaction" data-goto="${q.go}">Перейти</button>`:'<span class="ui03-qaction">В процессе</span>'}
+          </div>`;}).join('')||'<p class="ui03-sub">Заданий в этой категории пока нет.</p>'}</div>
+      </section>
+    </div>
+    <div class="ui03-foot"><div class="ui03-footinfo">День в Дюне: <strong>${got} / ${all.length}</strong> наград получено</div>
+      <div class="ui03-foot-actions"><button class="ui03-button" data-cal="1">Календарь входа</button><button class="ui03-button ${ready?'go':''}" data-qall="1" ${ready?'':'disabled'}>Забрать всё (${ready})</button></div>
+    </div>
+  </div>`;
 }
 
-export { claimQuest, claimChest, renderDaily };
+
+export { claimQuest, claimChest, renderDaily, setDailyUiFilter };
