@@ -6,7 +6,6 @@ import { fc, fmt, ic } from '../core/format.js';
 import { SPOT_ICONS } from './views/lobby.js';
 import { figureSVG } from '../render2d/figures.js';
 import { skillGlyph } from '../data/glyphs.js';
-import { assetUrl } from '../assets/models.js';
 import { IG, TIER_COL } from '../logic/gear.js';
 
 function toast(t) {
@@ -69,13 +68,13 @@ const thumb = (scene, n) => `<div class="thumb"><canvas data-scene="${scene}" wi
 // UI-07: one registry for all hero/skill/battle surfaces. The existing glyph
 // stays underneath the opaque center of the artwork as a no-network fallback.
 const SKILL_ART = Object.freeze({ duncan: Object.freeze({
-  basic: 'img/skill-duncan-basic.webp',
-  special: 'img/skill-duncan-special.webp',
-  ult: 'img/skill-duncan-ult.webp',
-  passive: 'img/skill-duncan-passive.webp'
+  basic: '__DUNCAN_BASIC_ICON_URL__',
+  special: '__DUNCAN_SPECIAL_ICON_URL__',
+  ult: '__DUNCAN_ULT_ICON_URL__',
+  passive: '__DUNCAN_PASSIVE_ICON_URL__'
 }) });
 const skillSvg = (def, key) => {
-  const art = SKILL_ART[def?.id]?.[key], url = art && assetUrl(art);
+  const art = SKILL_ART[def?.id]?.[key], url = art && !art.startsWith('__') ? art : null;
   return `<svg${url ? ' class="skill-art"' : ''} viewBox="0 0 24 24" aria-hidden="true">${skillGlyph(def, key)}${url ? `<image href="${url}" x="0" y="0" width="24" height="24" preserveAspectRatio="xMidYMid meet"/>` : ''}</svg>`;
 };
 function itemIcon(it, size = 40, extra = '') {
