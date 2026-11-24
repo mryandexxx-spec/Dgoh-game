@@ -120,7 +120,7 @@ try {
       const bounds=root.getBoundingClientRect();
       return {rootHeight:bounds.height,bottom:bounds.bottom,
         days:root.querySelectorAll('[data-ui03day]').length,
-        expected:(0,eval)('monthDays()'),
+        expected:(0,eval)('todayKey.clock.snapshot().daysInMonth'),
         overflow:getComputedStyle(sc).overflowY,
         claim:!!root.querySelector('[data-calclaim]')};
     });
