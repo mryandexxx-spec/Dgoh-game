@@ -6,7 +6,7 @@ import { gfx } from '../quality.js';
 import { ENV_HDR } from '../../assets/env-hdr.js';
 import { poseHuman } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
-import { MB, bBox, bCyl, bPlane, glowTex } from '../geometry.js';
+import { MB, bBox, bCyl, bPlane, glowTex, groundCanvas, dynTex } from '../geometry.js';
 import { V3, basic3, col3, mat3, mk } from '../materials.js';
 import { CTX, withCtx } from '../ctx.js';
 import { B3, HAS3D, HAS_GL, loadB3 } from '../base.js';
@@ -78,16 +78,18 @@ class HeroStage extends Stage3D {
     const podiumBase = mk(bCyl(1.05, 1.15, .22, 48), stone, 0, -.11, 0, false); const podiumTop = mk(bCyl(.98, .98, .02, 48), top, 0, -.01, 0, false); podiumTop.receiveShadows = true;
     this.ring = mk(MB().CreateTorus('ring', { diameter: 2.04, thickness: .018, tessellation: 64 }, S), basic3('#e8913f'), 0, -.006, 0, false);
     this.podiumMeshes = [podiumBase, podiumTop, this.ring];
-    // GFX-02: a scene-owned, compact physical terrace. All profiles use
-    // the same four static meshes and existing shadow/light budget.
+    // The plate already supplies the monolithic architecture. Two physical
+    // meshes supply the contact plane and low rear edge; avoid duplicate
+    // untextured columns across the painted silhouette.
     this.terrace = withCtx({ pbr:true, shadows:null }, () => {
-      const slate = mat3('#596763', { roughness:.72, noSheen:true });
-      const stone = mat3('#394a48', { roughness:.86, noSheen:true });
-      const floor = mk(bBox(6.8,.16,6.4), slate, 0,-.08,0,false);
-      const rail = mk(bBox(5.8,.48,.35), stone, 0,.24,-2.45,false);
-      const west = mk(bBox(.48,3.8,.75), stone,-2.35,1.9,-2.05,false);
-      const east = mk(bBox(.48,3.8,.75), stone,2.35,1.9,-2.05,false);
-      return [floor,rail,west,east];
+      const slate = mat3('#596361', { roughness:.78, noSheen:true });
+      const stone = mat3('#343f3e', { roughness:.86, noSheen:true });
+      // One scene-owned 256² tile atlas; keep fine seams at phone scale.
+      const tiles = dynTex(groundCanvas('tile'), 2, false);
+      slate.albedoTexture = tiles;
+      const floor = mk(bBox(8.4,.12,5.8), slate, 0,-.06,.85,false);
+      const rail = mk(bBox(8.4,.22,.28), stone, 0,.11,-2.04,false);
+      return [floor,rail];
     });
     this.terrace.forEach(m => m.setEnabled(false));
     tx = glowTex();
@@ -107,6 +109,16 @@ class HeroStage extends Stage3D {
     cv.addEventListener('pointerdown', e => { if (!this.isCur()) return; this.drag = { x: e.clientX, y0: this.yaw }; this.auto = false; cv.setPointerCapture && cv.setPointerCapture(e.pointerId); });
     cv.addEventListener('pointermove', e => { if (!this.drag || !this.isCur()) return; const nx = this.yaw; this.yaw = this.drag.y0 + (e.clientX - this.drag.x) * .012; this.yawV = (this.yaw - nx) * 60; });
     const up = () => { if (this.drag) { this.drag = null; this.resumeT = performance.now() + 3000; } }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  }
+  attach(host, first) {
+    if (!host) return;
+    const Q = gfx(this.small);
+    // Apply the pilot multiplier after clamping the device DPR. The normal
+    // EngineHost mount restores the unscaled DPR for other heroes/scenes.
+    const dpr = this.pilot
+      ? Math.min(window.devicePixelRatio || 1, Q.dpr.hero) * Q.heroPilotScale
+      : Q.dpr.hero;
+    this.wake(host, { cls: this.cls, dpr, first });
   }
   setTheme(def) {
     const k = heroThemeKey(def), t = HERO_THEMES[k];
@@ -191,7 +203,7 @@ class HeroStage extends Stage3D {
     if (def.id === 'duncan' && this.o?.root._clipRest) {
       this.rim2.position.set(2.5, 3.0, 3.0);
       this.rim2.direction.set(-.55, -.46, -.70);
-      this.rim2.diffuse.set(.91, .97, 1);
+      this.rim2.diffuse.set(.96, .98, 1);
       this.rim2.intensity = 3.4;
     } else {
       this.rim2.position.set(2.6, 2.6, -2.2);
@@ -253,7 +265,7 @@ class HeroStage extends Stage3D {
     this.backdrop.scaling.set(cover,cover,1);
     if (this.pipe.depthOfFieldEnabled) this.pipe.depthOfField.focusDistance = dist * 1000;
     const fk = this.flashT ? Math.max(0, 1 - (now - this.flashT) / 900) : 0;
-    this.key.intensity = (this.pilot ? 1.45 : 1.7) + fk * 2; this.ring.scaling.setAll(1); if (this.glow) this.glow.intensity = .6 + fk;
+    this.key.intensity = (this.pilot ? 1.65 : 1.7) + fk * 2; this.ring.scaling.setAll(1); if (this.glow) this.glow.intensity = .6 + fk;
   }
   slashFX() {} muzzleFX() {} voiceFX() {} castFX() {}
   dustFX(o, where) { const H = o.h, r = o.root.rotation.y, off = where === 'shoulder' ? V3(.28, H * .74, .05) : where === 'cape' ? V3(-.1, H * .5, -.3) : V3(-.05, H * .66, .14); const c = Math.cos(r), s = Math.sin(r); this.dustP.emitter = V3(off.x * c + off.z * s, off.y, -off.x * s + off.z * c); this.dustP.manualEmitCount = where === 'cape' ? 140 : 40; }
