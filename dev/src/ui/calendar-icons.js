@@ -165,4 +165,11 @@ function calendarRewardIcon(kind, day, portraitMarkup = '') {
   const svg = `<svg class="ui03-loot-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">${defsFor(id)}${illustration}</svg>`;
   return safeKind === 'shard' ? `<span class="ui03-shard-art">${svg}<span class="ui03-shard-face">${portraitMarkup}</span></span>` : svg;
 }
-export { calendarRewardIcon, dailyQuestIcon, ART, QUEST_ART };
+// Shared miniature object art for daily rewards. Separate per-tile gradient IDs.
+function dailyRewardIcon(kind, scope = 'daily') {
+  if (!Object.hasOwn(ART, kind)) return '';
+  const id = 'u03-chip-' + kind + '-' + String(scope).replace(/[^a-z0-9_-]/gi, '').slice(0, 38);
+  return '<svg class="ui03-loot-svg ui03-daily-loot-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">' +
+    defsFor(id) + ART[kind].replaceAll(String.fromCharCode(96), id) + '</svg>';
+}
+export { calendarRewardIcon, dailyQuestIcon, dailyRewardIcon, ART, QUEST_ART };
