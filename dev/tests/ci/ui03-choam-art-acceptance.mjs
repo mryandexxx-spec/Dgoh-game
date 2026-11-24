@@ -27,3 +27,15 @@ for (const key of ['sol', 'cry', 'seal', 'folio', 'water', 'pl', 'rid', 'teeth']
 assert.notEqual(dailyRewardIcon('sol', 'row-a'), dailyRewardIcon('sol', 'row-b'));
 assert.equal(dailyRewardIcon('unknown', 'row'), '');
 console.log('UI-03d: OK, two supply states, header icon, illustrated reward keys');
+
+// UI-03e: photo assets are real compressed WebPs, not vector stand-ins.
+for (const state of ['closed','opened']) {
+  const payload = fs.readFileSync(new URL('../../assets/img/choam-supply-' + state + '.webp', import.meta.url));
+  assert.equal(payload.toString('ascii', 0, 4), 'RIFF');
+  assert.equal(payload.toString('ascii', 8, 12), 'WEBP');
+  assert.ok(payload.length > 5000 && payload.length < 55000, state + ' should be detailed but phone-sized');
+}
+assert.match(daily, /assetUrl\('img\/choam-supply-/);
+assert.match(daily, /photo\.addEventListener\('load'/);
+assert.match(daily, /ui03-choam-picture/);
+console.log('UI-03e: photoreal WebP art present with SVG failure fallback');

@@ -7,6 +7,7 @@ import { portrait } from '../../render2d/figures.js';
 import { CH } from '../../data/chars.js';
 import { dailyQuestIcon, choamSupplyArt, choamMarkArt } from '../calendar-icons.js';
 import { $ } from '../../core/dom.js';
+import { assetUrl } from '../../assets/models.js';
 import { CHEST_CRY, CHEST_NEED, CHEST_RW, DAILY, activeDaily, dailyGot, dly, qState } from '../../logic/daily.js';
 
 // ===== daily quests =====
@@ -119,7 +120,16 @@ function renderDaily() {
     .sort((a,b)=>order[a.st]-order[b.st]||a.i-b.i)
     .filter(x=>dailyUiFilter==='all'||x.st===dailyUiFilter);
   const chestReady = got>=CHEST_NEED && !D.chest;
-  const chestArt = choamSupplyArt(Boolean(D.chest));
+  // Prefer the approved textured prop artwork. The legacy vector remains only
+  // as an offline/missing-image fallback, never drawn behind the loaded WebP.
+  const supplySrc = assetUrl('img/choam-supply-' + (D.chest ? 'opened' : 'closed') + '.webp');
+  const supplyLabel = D.chest ? 'Открытая имперская поставка КООАМ' : 'Закрытая имперская поставка КООАМ';
+  const chestArt = supplySrc
+    ? `<span class="ui03-choam-picture" role="img" aria-label="${supplyLabel}">
+         <span class="ui03-choam-fallback" aria-hidden="true">${choamSupplyArt(Boolean(D.chest))}</span>
+         <img class="ui03-choam-photo" src="${supplySrc}" alt="" decoding="async" draggable="false">
+       </span>`
+    : choamSupplyArt(Boolean(D.chest));
   $('#view').innerHTML = `<div class="ui03-root ui03-daily">
     <div class="ui03-head">
       <div class="ui03-brand"><span class="ui03-mark" aria-hidden="true">${choamMarkArt()}</span><div class="ui03-brand-copy"><small>ИМПЕРСКИЙ АРХИВ</small><strong>Задания дня</strong></div></div>
@@ -155,6 +165,15 @@ function renderDaily() {
       <div class="ui03-foot-actions"><button class="ui03-button" data-cal="1">Календарь входа</button><button class="ui03-button ${ready?'go':''}" data-qall="1" ${ready?'':'disabled'}>Забрать всё (${ready})</button></div>
     </div>
   </div>`;
+  // Image-load fallback: a failed or unavailable WebP leaves the old SVG.
+  // Hide the fallback only after the raster is fully decoded by the browser.
+  const picture = $('#view').querySelector('.ui03-choam-picture');
+  const photo = picture?.querySelector('.ui03-choam-photo');
+  if (photo) {
+    const reveal = () => { if (photo.naturalWidth) picture.classList.add('loaded'); };
+    if (photo.complete) reveal();
+    else photo.addEventListener('load', reveal, { once: true });
+  }
 }
 
 
