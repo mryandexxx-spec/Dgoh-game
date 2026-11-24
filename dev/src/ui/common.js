@@ -44,17 +44,7 @@ function renderRes() {
     energy('water', 'Вода', S.water, WMAX(), S.waterTs, WATER_SEC),
     energy('candle', 'Огни', S.candle, CMAX(), S.candleTs, CANDLE_SEC),
     money('sol', 'Солярии', S.solari),
-    money('pl', 'Пласталь', S.plast, 'hud-optional'),
-    money('teeth', 'Зубы червя', S.teeth, 'hud-optional'),
     money('cry', 'Кристаллы', S.cry),
-    money('rid', 'Ридулиан', S.rid, 'hud-optional'),
-    `<details class="hud-overflow"><summary aria-label="Остальные ресурсы" title="Остальные ресурсы">
-      <span aria-hidden="true">•••</span></summary>
-      <div class="hud-dropdown">
-        ${money('pl', 'Пласталь', S.plast)}
-        ${money('teeth', 'Зубы червя', S.teeth)}
-        ${money('rid', 'Ридулиан', S.rid)}
-      </div></details>`,
   ];
   document.querySelectorAll('.resbox').forEach(el => {
     const old = el._rp;

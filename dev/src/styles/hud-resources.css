@@ -13,10 +13,10 @@
   --hud-edge: rgba(220,173,107,.29);
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: 1.4fr 1.32fr 1.18fr 1fr 1.04fr 1fr 1fr;
+  grid-template-columns: minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1.2fr) minmax(0,1fr);
   width: 100%;
   min-width: 0;
-  min-height: 68px;
+  min-height: 54px;
   margin: 0;
   gap: 0;
   flex-wrap: nowrap;
@@ -36,8 +36,8 @@
   align-items: center;
   gap: 7px;
   min-width: 0;
-  min-height: 66px;
-  padding: 9px 9px 10px;
+  min-height: 52px;
+  padding: 6px 9px;
   text-align: left;
   border: 0;
   border-radius: 0;
@@ -48,7 +48,7 @@
   transition: background-color .12s ease;
 }
 .resbox > .hud-cell:first-child { border-radius: 12px 0 0 12px; }
-.resbox > .hud-cell:nth-child(7) { border-radius: 0 12px 12px 0; }
+.resbox > .hud-cell:last-child { border-radius: 0 12px 12px 0; }
 .resbox > .hud-cell:not(:first-child)::before {
   content: '';
   position: absolute;
@@ -57,7 +57,7 @@
   background: linear-gradient(180deg, transparent, rgba(224,184,126,.31), transparent);
 }
 .resbox .hud-cell:hover { background: rgba(255,221,168,.08); }
-.resbox .hud-cell:focus-visible, .hud-overflow summary:focus-visible {
+.resbox .hud-cell:focus-visible {
   outline: 2px solid #f0be83;
   outline-offset: -3px;
   z-index: 1;
@@ -139,7 +139,6 @@
 }
 .resbox .hud-candle .hud-meter i { background: linear-gradient(90deg, #9b6a36, #efbc76); }
 .resbox .hud-cry .hud-value { color: #ffe6d5; }
-.resbox .hud-overflow { display: none; }
 header.top .wrap { max-width: 1360px; }
 header.top .resbox { flex: 0 0 100%; order: -1; }
 header.top nav.tabs { order: 2; margin-top: 0; }
@@ -162,75 +161,30 @@ header.top nav.tabs { order: 2; margin-top: 0; }
   .resbox .hud-energy .hud-value { font-size: 16px; }
   .resbox .hud-title { font-size: 9px; }
   .resbox .hud-timer { font-size: 8px; }
-  .resbox, .resbox .hud-cell { min-height: 60px; }
+  .resbox, .resbox .hud-cell { min-height: 50px; }
 }
 @media (max-width: 760px) {
   .resbox {
-    grid-template-columns: minmax(0,1.28fr) minmax(0,1.2fr) minmax(0,1.03fr) minmax(0,.9fr) 42px;
+    grid-template-columns: minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1.2fr) minmax(0,1fr);
   }
-  .resbox > .hud-optional { display: none; }
   .resbox .hud-currency .hud-icon { width: 21px; height: 23px; }
   .resbox .hud-energy .hud-icon { width: 25px; height: 27px; }
   .resbox .hud-cell { gap: 4px; padding: 7px 5px; }
   .resbox .hud-energy .hud-value { font-size: 14px; }
   .resbox .hud-value { font-size: 12px; }
   .resbox .hud-timer { font-size: 7.5px; }
-  .resbox .hud-overflow {
-    display: block;
-    position: relative;
-    min-width: 0;
-    border-left: 1px solid rgba(224,184,126,.3);
-  }
-  .resbox .hud-overflow summary {
-    display: grid;
-    place-items: center;
-    height: 100%;
-    min-height: 60px;
-    list-style: none;
-    cursor: pointer;
-    font-size: 15px;
-    letter-spacing: 2px;
-    color: #e4c7a0;
-  }
-  .resbox .hud-overflow summary::-webkit-details-marker { display: none; }
-  .resbox .hud-overflow[open] summary { color: #ffe1b4; background: rgba(255,221,168,.08); }
-  .resbox .hud-dropdown {
-    position: absolute;
-    top: calc(100% + 6px);
-    right: -1px;
-    z-index: 150;
-    display: grid;
-    width: 202px;
-    padding: 4px;
-    border-radius: 9px;
-    border: 1px solid var(--hud-edge);
-    background: #241e19;
-    box-shadow: 0 14px 35px rgba(0,0,0,.6);
-  }
-  .resbox .hud-dropdown .hud-cell { min-height: 45px; border-radius: 5px; }
-  .resbox .hud-dropdown .hud-title { display: block; }
-  .resbox .hud-dropdown .hud-value { font-size: 14px; }
   header.top .brand { display: none; }
 }
 @media (max-width: 510px) {
   .resbox {
-    grid-template-columns: repeat(6, minmax(0,1fr));
-    grid-template-rows: 54px 44px;
-    min-height: 98px;
+    grid-template-columns: repeat(4,minmax(0,1fr));
+    grid-template-rows: minmax(0,1fr);
+    min-height: 54px;
   }
-  .resbox > .hud-energy { grid-row: 1; min-height: 54px; }
-  .resbox > .hud-water { grid-column: 1 / span 3; }
-  .resbox > .hud-candle { grid-column: 4 / span 3; }
-  .resbox > .hud-sol { grid-column: 1 / span 3; grid-row: 2; }
-  .resbox > .hud-cry { grid-column: 4 / span 2; grid-row: 2; }
-  .resbox > .hud-overflow { grid-column: 6; grid-row: 2; }
-  .resbox .hud-cell { min-height: 44px; }
-  .resbox .hud-energy .hud-value { font-size: 14px; }
-  .resbox .hud-energy .hud-title { font-size: 9px; }
-  .resbox .hud-timer { font-size: 8px; }
-  .resbox .hud-overflow summary { min-height: 44px; }
-  .resbox > .hud-sol, .resbox > .hud-cry, .resbox > .hud-overflow { border-top: 1px solid rgba(224,184,126,.16); }
-  .resbox .hud-dropdown { width: 190px; }
+  .resbox .hud-cell { min-height: 52px; padding: 5px 4px; gap: 3px; }
+  .resbox .hud-energy .hud-value { font-size: 12px; }
+  .resbox .hud-energy .hud-title { font-size: 8px; }
+  .resbox .hud-timer { font-size: 7px; }
   .lobby .ltop .pchip { max-width: 145px; }
   .lobby .ltop .topbtns { gap: 3px; }
 }
@@ -239,7 +193,6 @@ header.top nav.tabs { order: 2; margin-top: 0; }
   header.top .brand { display: none; }
   header.top .wrap { padding-top: 4px; }
   header.top .resbox, header.top .resbox .hud-cell { min-height: 46px; }
-  header.top .hud-overflow summary { min-height: 46px; }
   header.top .resbox .hud-cell { padding-block: 3px; }
   header.top .resbox .hud-content { gap: 3px; }
   header.top nav.tabs { gap: 6px; }

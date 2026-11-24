@@ -55,20 +55,25 @@ try{
     assert.ok(measured.power.includes(new Intl.NumberFormat('ru-RU').format(measured.expectedPower).replace(/\u00a0/g,' ')) ||
       measured.power.replace(/[^0-9]/g,'').includes(String(measured.expectedPower)),
       'actual squad power');
-    assert.deepEqual(measured.keys,['water','candle','sol','pl','teeth','cry','rid'],'seven original resource IDs');
-    assert.equal(measured.visibleResources,7,'all seven resources visible');
+    assert.deepEqual(measured.keys,['water','candle','sol','cry'],'four visible core resource IDs');
+    assert.equal(measured.visibleResources,4,'all four resources visible');
     assert.deepEqual(measured.actions,[{label:'Подвиги',view:'feats',cal:''},{label:'Задания',view:'daily',cal:''},{label:'Календарь',view:'',cal:'1'}]);
     assert.ok(measured.font.includes('Dune Inter'),'Inter locally available');
     for(const b of measured.layout){
       assert.ok(b.width>35&&b.height>=45,'responsive touch geometry: '+JSON.stringify({width,b}));
       assert.ok(b.left>=-1 && b.right<=width+1 && b.top>=-1,'header fits viewport: '+JSON.stringify({width,b}));
     }
+    const maxBar = width===390 ? 60 : width<=770 ? 72 : width<=1100 ? 76 : 82;
+    assert.ok(measured.layout[1].height<=maxBar,'compact resource strip: '+JSON.stringify({width,layout:measured.layout}));
     // The profile must fill its allocated HUD column: the previous chip
     // inherited justify-self:start, leaving a large empty gap at 667px.
     assert.ok(measured.layout[0].width >= (width<=510?150:width<=770?150:width<=1100?195:250),
       'profile card fills the approved layout: '+JSON.stringify({width,layout:measured.layout}));
     // In landscape the three groups share one line, portrait is the approved two-row layout.
-    if(width>510)assert.ok(Math.abs(measured.layout[0].top-measured.layout[1].top)<=2,'one unified HUD row: '+width);
+    if(width>510){
+      assert.ok(Math.abs(measured.layout[0].top-measured.layout[1].top)<=2,'one unified HUD row: '+width);
+      assert.ok(Math.abs(measured.layout[0].height-measured.layout[1].height)<=2,'profile and resources have equal height');
+    }
     else assert.ok(measured.layout[1].top>measured.layout[0].bottom,'portrait resources below profile');
     if(width===844){
       // The boot login calendar may appear asynchronously over the HUD.
