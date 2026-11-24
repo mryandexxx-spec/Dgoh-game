@@ -3650,3 +3650,69 @@ main#view:has(> .ui03-root.ui03-daily){width:100%;max-width:none;height:100dvh;m
 .ui06-dossier-foot button { min-height:40px; border-radius:7px; text-transform:none; letter-spacing:0; }
 @media (orientation:landscape) and (max-height:520px) { .detail .sheet.ui06-dossier { width:100%; height:100%; border:0; border-radius:0; } .hc .hcright .hcblk { padding:6px; } }
 @media (max-width:700px) { .hc .hcpwl { gap:4px; } .hc .hcarr { width:34px; } .hc .hcbtn { padding:4px 5px; font-size:11px; } .hc .hcbtn small { font-size:9px; } }
+
+/* UI-07: same approved artwork in the card, ability popup and both battle HUDs.
+   Keep the readiness borders and cooldown labels owned by the existing controls. */
+.hcski > svg.skill-art, .skico > svg.skill-art, .skico.big > svg.skill-art,
+.bski > svg.skill-art, .abpi > svg.skill-art, .abil > svg.skill-art {
+  width:100%; height:100%; display:block; pointer-events:none;
+}
+.hcski:has(> .skill-art), .skico:has(> .skill-art),
+.bski:has(> .skill-art), .abpi:has(> .skill-art) {
+  background:none; border-color:transparent; box-shadow:none;
+}
+/* The number is real text; the plaque is shared at all badge sizes. */
+.memory-seal .memory-rank, .hpt .mem .memory-rank, .memsteps .hx .memory-rank {
+  width:49%; min-width:0; height:45%; bottom:-1%; padding:0; border:0;
+  background:none; border-radius:0; isolation:isolate; color:#fff0cb;
+}
+.memory-rank::before {
+  content:""; position:absolute; inset:22% 18%; z-index:-1;
+  background:#372619; border-radius:30%;
+}
+.memory-rank .memory-plaque {
+  position:absolute; inset:0; width:100%; height:100%; object-fit:fill; z-index:-1;
+  pointer-events:none; user-select:none;
+}
+.memory-rank .memory-rank-value, .mrc .memory-rank .memory-rank-value {
+  font:inherit; color:inherit; line-height:1; display:grid; place-items:center;
+  text-shadow:0 1px 2px #150c07; position:relative;
+}
+.memory-seal.is-locked .memory-plaque { filter:grayscale(.75); }
+.memory-rank .memory-rank-value svg { width:.85em; height:.85em; }
+/* UI-07: the old flex footer's min-content width widened the middle grid
+   track beyond its allocation; contain both the comparison and the purchase
+   controls, even with four materials and a long localized price/action. */
+.detail.memwrap { padding:0; }
+.detail .sheet.memscr { box-sizing:border-box; max-width:none; }
+.memscr .membody { grid-template-columns:minmax(0,28fr) minmax(0,48fr) minmax(0,24fr); }
+.memscr .memring,.memscr .memmid,.memscr .memsteps { min-width:0; min-height:0; }
+.memscr .memring { overflow:auto; overscroll-behavior:contain; }
+.memscr .memmid { grid-template-columns:minmax(0,1fr); overflow:hidden; }
+.memscr .memna { min-width:0; min-height:0; grid-template-columns:minmax(0,1fr) max-content 10px max-content; column-gap:5px; padding:7px; }
+.memscr .memna.one { grid-template-columns:minmax(0,1fr) max-content; }
+.memscr .memna .hd2 { letter-spacing:.07em; }
+.memscr .memna b { white-space:nowrap; }
+.memscr .memna span { overflow-wrap:anywhere; }
+.memscr .membuy { min-width:0; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; padding:3px 0 3px; }
+.memscr .membuy .swmats { min-width:0; flex:1 1 100%; display:flex; gap:9px; flex-wrap:wrap; align-content:start; padding:5px 2px 14px; }
+.memscr .membuy .swmats .swcap { flex:0 0 100%; max-width:none; }
+.memscr .membuy .swmat { width:40px; height:40px; }
+.memscr .membuy .swmat.lack::after { right:-4px; }
+.memscr .membuy .btn { min-width:0; max-width:100%; min-height:40px; white-space:normal; padding:4px 9px; font-size:11px; letter-spacing:.02em; }
+.memscr .memsteps ol { min-width:0; }
+.memscr .memlore { min-width:0; overflow-wrap:anywhere; }
+@media (min-width:1050px) {
+  .memscr .membuy .swmats { flex:1 1 auto; }
+}
+@media (max-width:700px) {
+  .memscr .membody { grid-template-columns:minmax(0,24fr) minmax(0,53fr) minmax(0,23fr); }
+  .memscr .memmid { padding:5px 7px; gap:4px; }
+  .memscr .memring,.memscr .memsteps { padding:5px; }
+  .memscr .membuy .swmat { width:36px; height:36px; }
+  .memscr .memna { font-size:11px; }
+  .memscr .memna b { font-size:12px; }
+  .memscr .memcap { font-size:10px; }
+  .memscr .memsteps li { padding:3px 2px; gap:4px; }
+  .memscr .memsteps .r { font-size:9px; }
+}
