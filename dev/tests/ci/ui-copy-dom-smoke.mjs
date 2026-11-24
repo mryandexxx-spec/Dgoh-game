@@ -150,7 +150,22 @@ try {
       }, true);
     });
     await page.click('[data-ui03filter="got"]');
-    const pressed = await page.$eval('[data-ui03filter="got"]', el => el.getAttribute('aria-pressed'));
+    let pressed = await page.$eval('[data-ui03filter="got"]', el => el.getAttribute('aria-pressed'));
+    if (pressed !== 'true') {
+      // An asynchronous layout replacement can move the filter between Puppeteer's
+      // bounding-box calculation and pointerup. The previous diagnostic proved
+      // the click hit BODY, not the visible button. Recheck hit-testing then
+      // retry ONCE, without suppressing a genuine non-interactive filter.
+      await page.waitForFunction(() => {
+        const b = document.querySelector('[data-ui03filter="got"]');
+        if (!b) return false;
+        const r = b.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left+r.width/2, r.top+r.height/2);
+        return hit === b || b.contains(hit);
+      }, { timeout: 5000, polling: 80 });
+      await page.click('[data-ui03filter="got"]');
+      pressed = await page.$eval('[data-ui03filter="got"]', el => el.getAttribute('aria-pressed'));
+    }
     if (pressed !== 'true') {
       const debug = await page.evaluate(() => {
         const b = document.querySelector('[data-ui03filter="got"]'), r = b.getBoundingClientRect();
