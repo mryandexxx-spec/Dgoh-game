@@ -6,7 +6,7 @@ import { gfx } from '../quality.js';
 import { ENV_HDR } from '../../assets/env-hdr.js';
 import { poseHuman } from '../characters/pose-generic.js';
 import { makeHuman3 } from '../characters/procedural.js';
-import { MB, bCyl, bPlane, glowTex } from '../geometry.js';
+import { MB, bBox, bCyl, bPlane, glowTex, groundCanvas, dynTex } from '../geometry.js';
 import { V3, basic3, col3, mat3, mk } from '../materials.js';
 import { CTX, withCtx } from '../ctx.js';
 import { B3, HAS3D, HAS_GL, loadB3 } from '../base.js';
@@ -35,6 +35,7 @@ function heroThemeUrl(key) { return assetUrl('img/hero-factions/' + key + '.webp
 class HeroStage extends Stage3D {
   look(options = {}) {
     super.look(options);
+    this.applyPilotLook();
     // The background sphere and radial backdrop are already self-lit/soft.
     // Rendering them into GlowLayer adds
     // its light over the opaque hero on MED/LOW, where glowOnly deliberately
@@ -75,8 +76,23 @@ class HeroStage extends Stage3D {
     CTX.shadows.filteringQuality = gfx(this.small).shadowQ === 'low' ? B3.ShadowGenerator.QUALITY_LOW : B3.ShadowGenerator.QUALITY_MEDIUM;
     // podium: sand-stone disc with glowing tier ring
     const stone = this.podiumStone = mat3('#79604b', { roughness: .8 }), top = this.podiumTop = mat3('#a08261', { roughness: .65 });
-    mk(bCyl(1.05, 1.15, .22, 48), stone, 0, -.11, 0, false); const podiumTop = mk(bCyl(.98, .98, .02, 48), top, 0, -.01, 0, false); podiumTop.receiveShadows = true;
+    const podiumBase = mk(bCyl(1.05, 1.15, .22, 48), stone, 0, -.11, 0, false); const podiumTop = mk(bCyl(.98, .98, .02, 48), top, 0, -.01, 0, false); podiumTop.receiveShadows = true;
     this.ring = mk(MB().CreateTorus('ring', { diameter: 2.04, thickness: .018, tessellation: 64 }, S), basic3('#e8913f'), 0, -.006, 0, false);
+    this.podiumMeshes = [podiumBase, podiumTop, this.ring];
+    // The plate already supplies the monolithic architecture. Two physical
+    // meshes supply the contact plane and low rear edge; avoid duplicate
+    // untextured columns across the painted silhouette.
+    this.terrace = withCtx({ pbr:true, shadows:null }, () => {
+      const slate = mat3('#596361', { roughness:.78, noSheen:true });
+      const stone = mat3('#343f3e', { roughness:.86, noSheen:true });
+      // One scene-owned 256² tile atlas; keep fine seams at phone scale.
+      const tiles = dynTex(groundCanvas('tile'), 2, false);
+      slate.albedoTexture = tiles;
+      const floor = mk(bBox(8.4,.12,5.8), slate, 0,-.06,.85,false);
+      const rail = mk(bBox(8.4,.22,.28), stone, 0,.11,-2.04,false);
+      return [floor,rail];
+    });
+    this.terrace.forEach(m => m.setEnabled(false));
     tx = glowTex();
     const dust = this.motes = new B3.ParticleSystem('motes', 160, S); dust.particleTexture = tx; dust.emitter = V3(0, 0, 0); dust.minEmitBox = V3(-1.6, 0, -1.2); dust.maxEmitBox = V3(1.6, 2.6, 1); dust.direction1 = V3(-.05, .05, -.05); dust.direction2 = V3(.05, .15, .05);
     dust.minLifeTime = 4; dust.maxLifeTime = 8; dust.minSize = .01; dust.maxSize = .03; dust.color1 = new B3.Color4(1, .85, .6, .7); dust.color2 = new B3.Color4(1, .7, .4, .5); dust.colorDead = new B3.Color4(1, .6, .3, 0); dust.emitRate = 20; dust.blendMode = B3.ParticleSystem.BLENDMODE_ADD; dust.preWarmCycles = 100; dust.start();
@@ -94,6 +110,26 @@ class HeroStage extends Stage3D {
     cv.addEventListener('pointerdown', e => { if (!this.isCur()) return; this.drag = { x: e.clientX, y0: this.yaw }; this.auto = false; cv.setPointerCapture && cv.setPointerCapture(e.pointerId); });
     cv.addEventListener('pointermove', e => { if (!this.drag || !this.isCur()) return; const nx = this.yaw; this.yaw = this.drag.y0 + (e.clientX - this.drag.x) * .012; this.yawV = (this.yaw - nx) * 60; });
     const up = () => { if (this.drag) { this.drag = null; this.resumeT = performance.now() + 3000; } }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  }
+  // The distant matte plate already provides atmospheric depth. Avoid
+  // the extra depth/blur passes for this pilot on mobile MED, without
+  // changing the shared pipeline or the legacy/HIGH presentation.
+  applyPilotLook() {
+    if (!this.pipe) return;
+    const Q = gfx(this.small);
+    const dof = !!this._look?.dof && (Q.dof === true || Q.dof === 'hero');
+    const enabled = dof && !(this.pilot && this.small && Q.level === 'med');
+    if (this.pipe.depthOfFieldEnabled !== enabled) this.pipe.depthOfFieldEnabled = enabled;
+  }
+  attach(host, first) {
+    if (!host) return;
+    const Q = gfx(this.small);
+    // Apply the pilot multiplier after clamping the device DPR. The normal
+    // EngineHost mount restores the unscaled DPR for other heroes/scenes.
+    const dpr = this.pilot
+      ? Math.min(window.devicePixelRatio || 1, Q.dpr.hero) * Q.heroPilotScale
+      : Q.dpr.hero;
+    this.wake(host, { cls: this.cls, dpr, first });
   }
   setTheme(def) {
     const k = heroThemeKey(def), t = HERO_THEMES[k];
@@ -150,6 +186,14 @@ class HeroStage extends Stage3D {
   setHero(def, prog0, near) {
     this.pool = this.pool || new Map(); this.want = (near || []).filter(d => d && d !== def);
     this.setTheme(def);
+    const pilot = def.id === 'duncan';
+    if (this.pilot !== pilot) {
+      this.pilot = pilot;
+      this.applyPilotLook();
+      this.podiumMeshes.forEach(m => m.setEnabled(!pilot));
+      this.terrace.forEach(m => m.setEnabled(pilot));
+      this.motes.emitRate = pilot ? 0 : 20;
+    }
     if (this.def !== def || !this.o) {
       if (this.o) this.o.root.setEnabled(false);
       let o = this.pool.get(def.id); if (!o) { o = this.buildHero(def); this.pool.set(def.id, o); }
@@ -171,7 +215,7 @@ class HeroStage extends Stage3D {
     if (def.id === 'duncan' && this.o?.root._clipRest) {
       this.rim2.position.set(2.5, 3.0, 3.0);
       this.rim2.direction.set(-.55, -.46, -.70);
-      this.rim2.diffuse.set(1, .94, .88);
+      this.rim2.diffuse.set(.96, .98, 1);
       this.rim2.intensity = 3.4;
     } else {
       this.rim2.position.set(2.6, 2.6, -2.2);
@@ -233,7 +277,7 @@ class HeroStage extends Stage3D {
     this.backdrop.scaling.set(cover,cover,1);
     if (this.pipe.depthOfFieldEnabled) this.pipe.depthOfField.focusDistance = dist * 1000;
     const fk = this.flashT ? Math.max(0, 1 - (now - this.flashT) / 900) : 0;
-    this.key.intensity = 1.7 + fk * 2; this.ring.scaling.setAll(1); if (this.glow) this.glow.intensity = .6 + fk;
+    this.key.intensity = (this.pilot ? 1.65 : 1.7) + fk * 2; this.ring.scaling.setAll(1); if (this.glow) this.glow.intensity = .6 + fk;
   }
   slashFX() {} muzzleFX() {} voiceFX() {} castFX() {}
   dustFX(o, where) { const H = o.h, r = o.root.rotation.y, off = where === 'shoulder' ? V3(.28, H * .74, .05) : where === 'cape' ? V3(-.1, H * .5, -.3) : V3(-.05, H * .66, .14); const c = Math.cos(r), s = Math.sin(r); this.dustP.emitter = V3(off.x * c + off.z * s, off.y, -off.x * s + off.z * c); this.dustP.manualEmitCount = where === 'cape' ? 140 : 40; }

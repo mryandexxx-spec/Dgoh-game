@@ -145,7 +145,25 @@ for (let c = 0; c < CYCLES; c++) {
       await run(`openDetail('${id}');`);
       const ok = await until(`HERO_STAGE && HERO_STAGE.def?.id === '${id}' && HERO_STAGE.themeKey === '${key}' && HERO_STAGE.backdrop.isEnabled() && HERO_STAGE.backdropTexture?.isReady() && document.querySelector('.hc')?.dataset.heroTheme === '${key}'`, 12000);
       if (ok < 0) errors.push('UI-10: faction backdrop not ready: '+id+'/'+key);
-      else if (SHOTS && !['muaddib','jessica'].includes(id)) await page.screenshot({path:path.join(SHOTS,`ui10-${key}${PHONE ? '-phone' : ''}.png`)});
+      if (ok >= 0) {
+        const pilot = await page.evaluate(() => (0,eval)(`(() => {
+          const hc = document.querySelector('.hc'), h = HERO_STAGE;
+          const enabled = m => m.isEnabled();
+          return { ui:hc.classList.contains('gfx02-pilot'), stage:h.pilot,
+            terrace:h.terrace.every(enabled), podium:h.podiumMeshes.every(enabled),
+            gearInControls:!!hc.querySelector('.hcpilot-controls .hcgear'),
+            canvases:hc.querySelectorAll('.hcfig canvas').length,
+            dpr:1/h.engine.getHardwareScalingLevel(),
+            expectedDpr:Math.min(window.devicePixelRatio||1,gfx(h.small).dpr.hero)*(h.pilot?gfx(h.small).heroPilotScale:1),
+            dof:h.pipe.depthOfFieldEnabled,
+            expectedDof:!!(gfx(h.small).dof === true || gfx(h.small).dof === 'hero') && !(h.pilot && h.small && gfx(h.small).level === 'med') };
+        })()`));
+        const expected = id === 'duncan';
+        if (pilot.ui !== expected || pilot.stage !== expected || pilot.terrace !== expected ||
+            pilot.podium === expected || pilot.gearInControls !== expected || pilot.canvases !== 1 || Math.abs(pilot.dpr-pilot.expectedDpr)>.015 || pilot.dof !== pilot.expectedDof)
+          errors.push('GFX-02: pilot/legacy switch '+id+' '+JSON.stringify(pilot));
+      }
+      if (ok >= 0 && SHOTS && !['muaddib','jessica'].includes(id)) await page.screenshot({path:path.join(SHOTS,`ui10-${key}${PHONE ? '-phone' : ''}.png`)});
     }
     // Two rapid changes must not allow an older texture to win the race.
     await run("openDetail('baron'); openDetail('mohiam'); openDetail('paul');");
