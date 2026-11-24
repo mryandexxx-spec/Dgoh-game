@@ -62,24 +62,85 @@ function loginReward(day, stamp = todayKey.clock.snapshot()) {
   if (day === 10 || day === 20) return [['cry', 100]];
   return [[['sol', 3000]], [['folio', 3]], [['cry', 30]], [['pl', 5]], [['water', 60]], [['teeth', 50]]][(day - 1) % 6];
 }
+
+const ui03RewardNames = { shard:'Осколки героя',sol:'Солярии',folio:'Фолианты',cry:'Кристаллы',pl:'Пласт',water:'Вода',teeth:'Зубы червя',seal:'Печать Ландсраада',wol:'Вода жизни' };
+function ui03RewardText(day, stamp) {
+  return loginReward(day,stamp).map(([k,n]) => `${ui03RewardNames[k]||k} ×${n}`).join(' · ');
+}
+// Day selection is preview only, never a reward authorization.
+function selectCalendarDay(day) {
+  const root = document.querySelector('#overlay2 .ui03-calendar-screen');
+  const displayed = claimLogin.rendered, stamp = todayKey.clock.snapshot();
+  if (!root || !displayed || stamp.month !== displayed.month || !Number.isInteger(day) ||
+      day < 1 || day > stamp.daysInMonth) return;
+  root.querySelectorAll('[data-ui03day]').forEach(el=>{
+    const selected = Number(el.dataset.ui03day) === day;
+    el.classList.toggle('selected',selected);
+    el.setAttribute('aria-pressed',String(selected));
+  });
+  const title = root.querySelector('#ui03-selected-reward');
+  const state = root.querySelector('#ui03-selected-state');
+  if (title) title.textContent = `День ${day}: ${ui03RewardText(day,stamp)}`;
+  if (state) state.textContent = day <= displayed.n ? 'Уже получено' :
+    day === displayed.n+1 && displayed.can ? 'Награда доступна сегодня' : 'Предстоящая награда';
+}
 function openCalendar() {
   const stamp = todayKey.clock.snapshot();
   const L = loginState(stamp), h = CH[monthHero(stamp)], days = stamp.daysInMonth,
     can = loginCan(stamp), today = L.n + (can ? 1 : 0);
-  // The stamp belongs to the drawn modal (not the save and not DOM markup).
-  // A click from a previous day/month cannot claim a different calendar page.
-  claimLogin.rendered = { day: stamp.day, month: stamp.month, n: L.n, can };
-  const total = Array.from({ length: days }, (_, i) => loginReward(i + 1, stamp)).flat().filter(r => r[0] === 'shard').reduce((a, r) => a + r[1], 0);
-  const cells = Array.from({ length: days }, (_, i) => { const day = i + 1, rw = loginReward(day, stamp), [k, q, id] = rw[0], st = day <= L.n ? 'got' : day === today && can ? 'now' : 'fut', big = rw.some(r => r[0] === 'shard' || r[0] === 'wol' || r[0] === 'seal');
-    return `<div class="cday ${st} ${big ? 'big' : ''}"><span class="cdn">${day}</span><span class="cdi">${k === 'shard' ? portrait(CH[id], 34) : `<span class="cdico">${ic(k)}</span>`}</span><span class="cdq mono">${k === 'shard' ? '×' + q : fmt(q)}</span>${rw.length > 1 ? `<span class="cdplus">+${rw[1][0] === 'shard' ? '' : ''}${ic(rw[1][0])}</span>` : ''}${st === 'got' ? '<span class="cdok">✓</span>' : ''}</div>`; }).join('');
-  $('#overlay2').innerHTML = `<div class="detail info-layer" data-iclose="1"><div class="sheet calsheet" role="dialog" aria-modal="true" aria-labelledby="cal-h">
-    <div class="calhero"><span class="biofig">${figureSVG(h, true)}</span><div><span class="chap" style="margin:0">${MONTHS[stamp.monthIndex]} ${stamp.year}</span><h3 id="cal-h">Месяц героя: ${h.n}</h3><p class="sub" style="margin:4px 0 0">Заходите каждый день: награды идут по порядку. За месяц — ${total} осколков героя месяца, Печать Ландсраада и Вода жизни в последний день.</p>
-      <div class="acts" style="margin-top:8px"><button class="btn mini" data-bio="${h.id}">Биография</button><button class="btn mini" data-iswitch="shard:${h.id}">Осколки героя</button></div></div></div>
-    <div class="calgrid">${cells}</div>
-    <div class="acts"><span class="lockd">Получено дней: ${L.n} из ${days}</span><button class="btn ${can ? 'go' : ''}" data-calclaim="1" ${can ? '' : 'disabled'} style="margin-left:auto">${can ? `Забрать награду дня ${L.n + 1}` : 'Возвращайтесь завтра'}</button><button class="btn" data-iclose="1">Закрыть</button></div>
-  </div></div>`;
+  // Preserve the existing writer-bound day / month / sequence snapshot.
+  claimLogin.rendered = {day:stamp.day,month:stamp.month,n:L.n,can};
+  const total = Array.from({length:days},(_,i)=>loginReward(i+1,stamp))
+    .flat().filter(r=>r[0]==='shard').reduce((a,r)=>a+r[1],0);
+  const msLeft = Math.max(0,stamp.nextMidnight-stamp.now),
+    hh = Math.floor(msLeft/3.6e6), mm = Math.floor(msLeft%3.6e6/6e4);
+  const selected = Math.max(1,Math.min(days,L.n+(can?1:0)));
+  const cells = Array.from({length:days},(_,i)=>{
+    const day=i+1,rw=loginReward(day,stamp),[k,q,id]=rw[0],
+      st=day<=L.n?'got':day===today&&can?'now':'fut',
+      big=rw.some(r=>['shard','wol','seal'].includes(r[0]));
+    return `<button class="ui03-cday ${st} ${big?'big':''} ${day===selected?'selected':''}" type="button"
+      data-ui03day="${day}" aria-pressed="${day===selected}" title="${ui03RewardText(day,stamp)}"
+      aria-label="Награда дня ${day}, ${ui03RewardText(day,stamp)}${st==='got'?', получена':st==='now'?', доступна':''}">
+      <span class="ui03-daynum">${String(day).padStart(2,'0')}</span>
+      <span class="ui03-dayitem">${k==='shard'?portrait(CH[id],24):ic(k)}</span>
+      <span class="ui03-dayqty">×${fmt(q)}</span>${st==='got'?'<span class="ui03-daycheck">✓</span>':''}
+    </button>`;
+  }).join('');
+  $('#overlay2').innerHTML = `<div class="detail info-layer ui03-calendar-overlay" data-iclose="1">
+    <div class="ui03-root ui03-calendar-screen" role="dialog" aria-modal="true" aria-labelledby="ui03-cal-title">
+      <div class="ui03-head">
+        <div class="ui03-brand"><span class="ui03-mark" aria-hidden="true">◆</span><div class="ui03-brand-copy"><small>ИМПЕРСКИЙ АРХИВ</small><strong id="ui03-cal-title">Календарь входа</strong></div></div>
+        <nav class="ui03-tabs" aria-label="Задания и календарь"><button class="ui03-tab" data-ui03daily="1">Задания</button><button class="ui03-tab" aria-current="page">Календарь</button></nav>
+        <div class="ui03-right"><div class="ui03-timer"><small>НОВЫЙ ДЕНЬ ЧЕРЕЗ</small><b>${hh} ч ${mm} мин</b></div><button class="ui03-close" data-iclose="1" aria-label="Закрыть календарь">×</button></div>
+      </div>
+      <div class="ui03-main calendar">
+        <section class="ui03-panel ui03-hero" aria-label="Герой месяца">
+          <div class="ui03-eyebrow">${MONTHS[stamp.monthIndex]} ${stamp.year}</div>
+          <div class="ui03-title">Месяц героя</div>
+          <div class="ui03-sub">${h.n}</div>
+          <div class="ui03-portrait"><span class="biofig">${figureSVG(h,true)}</span></div>
+          <div class="ui03-cal-leftfoot"><div>Награды идут по порядку за входы. За месяц — ${total} осколков, Печать Ландсраада и Вода жизни.</div>
+            <div class="ui03-progressline"><span>Получено дней</span><b>${L.n} / ${days}</b></div>
+          </div>
+        </section>
+        <section class="ui03-panel ui03-calendar-body" aria-label="Награды за вход">
+          <div class="ui03-listhead"><strong>Награды за вход</strong><span class="ui03-count">${can?`День ${L.n+1} доступен`:'Сегодня получено'}</span></div>
+          <div class="ui03-scroll" aria-label="Календарь с внутренней прокруткой"><div class="ui03-calendar-grid">${cells}</div></div>
+          <div class="ui03-calfooter"><div class="ui03-cal-selected"><strong id="ui03-selected-reward">День ${selected}: ${ui03RewardText(selected,stamp)}</strong>
+            <small id="ui03-selected-state">${selected<=L.n?'Уже получено':can?'Награда доступна сегодня':'Предстоящая награда'}</small></div>
+            <button class="ui03-button ${can?'go':''}" data-calclaim="1" ${can?'':'disabled'}>${can?`Забрать день ${L.n+1}`:'Возвращайтесь завтра'}</button>
+          </div>
+        </section>
+      </div>
+      <div class="ui03-foot"><div class="ui03-footinfo">Награды открываются <strong>последовательно</strong></div>
+        <div class="ui03-foot-actions"><button class="ui03-button" data-ui03daily="1">К заданиям</button><button class="ui03-button" data-iclose="1">Закрыть</button></div>
+      </div>
+    </div>
+  </div>`;
   set_infoKey(null);
 }
+
 function claimLogin() {
   if (!loadSave.writer.state().gated) {
     // Forensic B0 mode: preserve the historical behavior, NOT a production
@@ -111,4 +172,4 @@ function claimLogin() {
   openCalendar();
 }
 
-export { MONTHS, MONTH_HEROES, monthKey, monthHero, monthDays, loginState, loginCan, loginReward, openCalendar, claimLogin };
+export { MONTHS, MONTH_HEROES, monthKey, monthHero, monthDays, loginState, loginCan, loginReward, openCalendar, claimLogin, selectCalendarDay };
