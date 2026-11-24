@@ -75,6 +75,54 @@ try{
       assert.ok(Math.abs(measured.layout[0].height-measured.layout[1].height)<=2,'profile and resources have equal height');
     }
     else assert.ok(measured.layout[1].top>measured.layout[0].bottom,'portrait resources below profile');
+
+    // UI-04: verify the actual compiled dossier, not the standalone mockup.
+    if(width>height){
+      await page.evaluate(()=>(0,eval)('closeInfo(true);closeOverlay();openProfile()'));
+      const measureProfile=()=>page.evaluate(()=>{
+        const root=document.querySelector('#overlay2 .ui04-profile'), area=root.querySelector('.ui04-scroll');
+        const b=root.getBoundingClientRect();
+        return {w:b.width,h:b.height,left:b.left,top:b.top,scroll:root.scrollHeight-root.clientHeight,
+          horizontal:root.scrollWidth-root.clientWidth,area:area.clientHeight,areaScroll:area.scrollHeight,
+          tab:root.querySelector('.ui04-tabs button.active').dataset.ui04Tab,
+          power:root.querySelector('.ui04-power strong').textContent,
+          bodyScroll:document.scrollingElement.scrollHeight-innerHeight};
+      });
+      const overview=await measureProfile();
+      assert.ok(Math.abs(overview.w-width)<2 && Math.abs(overview.h-height)<2,'profile fills viewport');
+      assert.ok(overview.scroll<=1 && overview.horizontal<=1,'no profile screen scroll');
+      assert.equal(overview.tab,'overview');
+      assert.ok(overview.area>100 && overview.power,'account summary is visible');
+      // Use DOM click for transient view-only controls, independent of the boot writer timing.
+      const clickLocal=selector=>page.evaluate(s=>document.querySelector('#overlay2 '+s).click(),selector);
+      await clickLocal('.ui04-edit');
+      const collection=await measureProfile();
+      assert.equal(collection.tab,'custom');
+      assert.ok(collection.areaScroll>collection.area,'avatar collection scrolls internally');
+      const total=await page.$eval('#overlay2 .ui04-item',a=>a.length);
+      const locked=await page.$('#overlay2 [data-ui04-locked]');
+      if(locked){
+        await page.evaluate(el=>el.click(),locked);
+        assert.ok(await page.$eval('#overlay2 .ui04-hint',e=>!e.hidden&&!!e.textContent),'locked cosmetic explains requirement');
+      }
+      await clickLocal('[data-ui04-filter]');
+      assert.ok(await page.$eval('#overlay2 .ui04-item',a=>a.length)<=total,'owned filter');
+      assert.equal(await page.$eval('#overlay2 [data-ui04-locked]',a=>a.length),0,'owned filter hides locked');
+      await clickLocal('[data-ui04-kind="frame"]');
+      assert.ok(await page.$('#overlay2 [data-pframe]'),'frame choices');
+      await clickLocal('[data-ui04-kind="title"]');
+      assert.ok(await page.$('#overlay2 [data-ptitle]'),'title choices');
+      await clickLocal('[data-ui04-kind="nick"]');
+      assert.ok(await page.$('#overlay2 #pnick'),'name field');
+      await clickLocal('[data-ui04-tab="save"]');
+      assert.ok(await page.$('#overlay2 [data-saveexp]') && await page.$('#overlay2 [data-saveimp]'),'existing safe transfer controls');
+      const art=await page.evaluate(()=>(0,eval)('JSON.stringify(["hawk","baron","eye","spice","lion","knife","sietch"].map(id=>avatarHtml("emb:"+id,"gold",76)))'));
+      for(const html of JSON.parse(art))assert.ok(html.includes('fr-gold') && html.includes('stroke=') && html.length>500,'layered vector heraldry');
+      assert.match(await page.evaluate(()=>(0,eval)('avatarHtml("emb:worm","basic")')),/<image href=/,'authored worm preserved');
+      await page.evaluate(()=>(0,eval)('closeInfo(true)'));
+      console.log('PASS UI-04 profile layout and navigation '+width+'x'+height);
+    }
+
     if(width===844){
       // The boot login calendar may appear asynchronously over the HUD.
       // Dismiss it only after the writer is ready; taps must hit our buttons.
