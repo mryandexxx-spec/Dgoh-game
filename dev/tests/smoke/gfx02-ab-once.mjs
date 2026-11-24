@@ -108,6 +108,7 @@ try {
   await page.waitForFunction(() => HERO_STAGE.pfIdle(),{timeout:30000});
   await run("HERO_STAGE.auto=false; HERO_STAGE.yaw=0; HERO_STAGE.yawV=0;");
   await sleep(1500);
+  await run("NOTES.length=0; renderNotes();"); // isolated fixture only, no reward claim
   const shot=opt('--shot','hero.png'), output=opt('--out','hero.json');
   fs.mkdirSync(path.dirname(shot),{recursive:true});
   await page.screenshot({path:shot});
