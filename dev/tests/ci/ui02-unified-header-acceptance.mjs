@@ -171,9 +171,10 @@ try{
           const titlesFit=all.every(el=>{const t=el.querySelector('.hcskt b');return t.scrollHeight<=t.clientHeight+1&&t.scrollWidth<=t.clientWidth+1;});
           call('hcSkill("muaddib:gl")');
           const opened=gl.dataset.glState==='open'&&!document.querySelector('#overlay2 [data-glopen]')&&!!document.querySelector('#overlay2 .swhd svg.skill-art image');
+          const screenScroll=r.scrollHeight-r.clientHeight;
           call('closeInfo(true);openDetail("duncan")');
           const ordinaryRestored=!root().classList.contains('has-ultimate')&&!root().querySelector('.hcleft > .hcsk.gl')&&root().querySelectorAll('.hcsks [data-hcsk]').length===4;
-          return {unowned,locked,canUnlock,opened,keys:all.map(el=>el.dataset.hcsk.split(':')[1]),count:ordinary.length,unique:new Set(urls).size,loaded,fit,fixed,visibleLast,titlesFit,listHeight:listBox.height,screenScroll:r.scrollHeight-r.clientHeight,ordinaryRestored};
+          return {unowned,locked,canUnlock,opened,keys:all.map(el=>el.dataset.hcsk.split(':')[1]),count:ordinary.length,unique:new Set(urls).size,loaded,fit,fixed,visibleLast,titlesFit,listHeight:listBox.height,screenScroll,ordinaryRestored};
         }finally{Object.assign(p,old);call('closeInfo(true);closeOverlay()');}
       });
       assert.deepEqual(legend.keys,['gl','basic','special','ult','passive','leader'],'UI-08 no missing or duplicate skills');
