@@ -245,9 +245,10 @@ export const SPLIT = [
 
   [3761, 'ui/rewards.js'],
 
+  // UI-03c: daily quests now use the shared art module directly, so esbuild
+  // evaluates its palette before both the daily screen and login calendar.
+  [3779, 'ui/calendar-icons.js'],
   [3779, 'ui/views/daily.js'],
-  // UI-03b: icon art is evaluated before the importing calendar overlay.
-  [3826, 'ui/calendar-icons.js'],
 
   [3826, 'ui/overlays/calendar.js'],
 
