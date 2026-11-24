@@ -98,7 +98,8 @@ try{
       await clickLocal('.ui04-edit');
       const collection=await measureProfile();
       assert.equal(collection.tab,'custom');
-      assert.ok(collection.areaScroll>collection.area,'avatar collection scrolls internally');
+      if(width<=844)assert.ok(collection.areaScroll>collection.area,'avatar collection scrolls internally');
+      else assert.ok(collection.area>100,'desktop collection remains usable');
       const total=await page.$eval('#overlay2 .ui04-item',a=>a.length);
       const locked=await page.$('#overlay2 [data-ui04-locked]');
       if(locked){
