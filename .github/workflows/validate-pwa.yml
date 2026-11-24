@@ -1338,8 +1338,6 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
-      pages: write
-      id-token: write
     environment:
       name: github-pages
       # Pages is configured to publish from main; verified root files are
