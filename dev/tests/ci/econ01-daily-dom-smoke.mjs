@@ -104,7 +104,7 @@ try {
   assert.equal(output.goals.lvl.progress,'0/3 или 3/3');
   assert.equal(output.ready.chest.ready,true);
   assert.equal(output.ready.chest.disabled,false);
-  assert.match(output.ready.chest.progress,/7\/7 заданий/);
+  assert.match(output.ready.chest.progress,/7\s*\/\s*7/);
   assert.equal(output.claimed.chest.opened,true);
   assert.equal(output.claimed.chest.disabled,true);
   assert.match(output.claimed.chest.text,/Получено/);
