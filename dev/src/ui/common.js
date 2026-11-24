@@ -72,6 +72,13 @@ const SKILL_ART = Object.freeze({ duncan: Object.freeze({
   special: '__DUNCAN_SPECIAL_ICON_URL__',
   ult: '__DUNCAN_ULT_ICON_URL__',
   passive: '__DUNCAN_PASSIVE_ICON_URL__'
+}), muaddib: Object.freeze({
+  basic: '__MUADDIB_BASIC_ICON_URL__',
+  special: '__MUADDIB_SPECIAL_ICON_URL__',
+  ult: '__MUADDIB_ULT_ICON_URL__',
+  passive: '__MUADDIB_PASSIVE_ICON_URL__',
+  leader: '__MUADDIB_LEADER_ICON_URL__',
+  gl: '__MUADDIB_GL_ICON_URL__'
 }) });
 const skillSvg = (def, key) => {
   const art = SKILL_ART[def?.id]?.[key], url = art && !art.startsWith('__') ? art : null;

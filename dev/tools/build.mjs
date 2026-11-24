@@ -139,12 +139,18 @@ if (!solariIcon || code0.split('__SOL_ICON_URL__').length !== 3)
 const soostoneIcon = ASSETS.find(a => a.name === 'img/soostone.webp');
 if (!soostoneIcon || code0.split('__SOOSTONE_ICON_URL__').length !== 3)
   throw new Error('UI-05 shared resource/calendar Soostone artwork is missing');
-const ui07Icons = {
+const uiArtwork = {
   __DUNCAN_BASIC_ICON_URL__: 'img/skill-duncan-basic.webp',
   __DUNCAN_SPECIAL_ICON_URL__: 'img/skill-duncan-special.webp',
   __DUNCAN_ULT_ICON_URL__: 'img/skill-duncan-ult.webp',
   __DUNCAN_PASSIVE_ICON_URL__: 'img/skill-duncan-passive.webp',
   __MEMORY_RANK_ICON_URL__: 'img/memory-rank-plaque.webp',
+  __MUADDIB_BASIC_ICON_URL__: 'img/skill-muaddib-basic.webp',
+  __MUADDIB_SPECIAL_ICON_URL__: 'img/skill-muaddib-special.webp',
+  __MUADDIB_ULT_ICON_URL__: 'img/skill-muaddib-ult.webp',
+  __MUADDIB_PASSIVE_ICON_URL__: 'img/skill-muaddib-passive.webp',
+  __MUADDIB_LEADER_ICON_URL__: 'img/skill-muaddib-leader.webp',
+  __MUADDIB_GL_ICON_URL__: 'img/skill-muaddib-gl.webp',
 };
 // Resolve UI-only assets at build time, preserving the approved ESM order.
 let code1 = code0.replace('__APP_VER__', () => APP_VER)
@@ -152,10 +158,10 @@ let code1 = code0.replace('__APP_VER__', () => APP_VER)
   .replace('__CANDLE_ICON_URL__', () => candleIcon.pwa)
   .replaceAll('__SOL_ICON_URL__', () => solariIcon.pwa)
   .replaceAll('__SOOSTONE_ICON_URL__', () => soostoneIcon.pwa);
-for (const [token, name] of Object.entries(ui07Icons)) {
+for (const [token, name] of Object.entries(uiArtwork)) {
   const asset = ASSETS.find(a => a.name === name);
   if (!asset || code1.split(token).length !== 2 || asset.pwa !== asset.art)
-    throw new Error('UI-07 immutable artwork missing or ambiguous: ' + name);
+    throw new Error('UI immutable artwork missing or ambiguous: ' + name);
   code1 = code1.replace(token, () => asset.pwa);
 }
 fs.mkdirSync(OUT, { recursive: true });

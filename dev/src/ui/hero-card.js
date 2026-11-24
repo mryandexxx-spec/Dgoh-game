@@ -57,16 +57,19 @@ function hcSkills(id, d, p) {
   let available = 0;
   const rows = skKeys(d).map(k => {
     let sub, up = false;
-    if (k === 'gl') sub = `${p.gl ? 'Открыта' : 'Закрыта'} (ультимативная)`;
-    else { const lv = p.sk[k] || 1, max = skMax(d, k); sub = locked ? SK_NAME[k] : `Ур. ${lv} (${SK_NAME[k]})`; up = !locked && lv < max && hasCost(skCost(lv + 1)); }
+    if (k === 'gl') sub = `Ульта · ${!locked && p.gl ? 'открыта' : 'закрыта'}`;
+    else { const lv = p.sk[k] || 1, max = skMax(d, k); sub = locked ? SK_NAME[k] : d.gl ? `Ур. ${lv} · ${SK_NAME[k]}` : `Ур. ${lv} (${SK_NAME[k]})`; up = !locked && lv < max && hasCost(skCost(lv + 1)); }
     if (k === 'gl' && !locked && !p.gl && S.wol >= 1) up = true;
     if (up) available++;
     const ab = k === 'gl' ? d.gl : d[k];
-    return `<button class="hcsk${k === 'gl' ? ' gl' : k === 'leader' ? ' ldr' : ''}${locked ? ' dim' : ''}" data-hcsk="${id}:${k}"><span class="hcski">${skIcon(d, k)}</span><span class="hcskt"><b>${ab.n}</b><small>${sub}</small></span>${up ? '<span class="hcup" aria-label="Можно улучшить">▲</span>' : ''}</button>`;
-  }).join('');
+    return `<button class="hcsk${k === 'gl' ? ' gl' : k === 'leader' ? ' ldr' : ''}${locked ? ' dim' : ''}" data-hcsk="${id}:${k}"${k === 'gl' ? ` data-gl-state="${!locked && p.gl ? 'open' : 'locked'}"` : ''}><span class="hcski">${skIcon(d, k)}</span><span class="hcskt"><b>${ab.n}</b><small>${sub}</small></span>${up ? '<span class="hcup" aria-label="Можно улучшить">▲</span>' : ''}</button>`;
+  });
+  // Keep the signature ability visible; only ordinary skills scroll.
+  const signature = d.gl ? rows[0] : '';
+  const ordinary = (d.gl ? rows.slice(1) : rows).join('');
   const rl = p.relic || 0, open = rl > 0 || (!locked && relicReady(p));
   const mem = `<button class="hcmem${p.gear >= MAX_GEAR ? ' next' : ''}" data-hcmem="${id}"${locked ? ' disabled' : ''} aria-label="Другая память — ${rl >= RELIC_MAX ? 'максимум' : open ? 'продолжить развитие героя' : 'условия открытия'}">${memoryBadge(rl, !open)}<span><b>Другая память ${p.gear >= MAX_GEAR ? '›' : ''}</b><small>${locked ? 'после открытия' : rl >= RELIC_MAX ? 'максимум' : rl ? `уровень ${rl} из ${RELIC_MAX}` : open ? 'следующий этап усиления' : p.gear >= MAX_GEAR ? 'нужно 7★ для пробуждения' : 'с 7★ и сн. XIII'}</small></span></button>`;
-  return `<div class="hc-capline"><span class="hccap">Умения</span>${available ? `<span class="hc-available">Доступно: ${available}</span>` : ''}</div><div class="hcsks">${rows}</div>${mem}`;
+  return `<div class="hc-capline"><span class="hccap">Умения</span>${available ? `<span class="hc-available">Доступно: ${available}</span>` : ''}</div>${signature}<div class="hcsks">${ordinary}</div>${mem}`;
 }
 
 function hcSlot(id, k) {
@@ -150,7 +153,7 @@ function openDetail(id, stagedPreview = null) {
     const f = $('#overlay .hcfig'); if (!f.classList.contains('has3d')) f.innerHTML = figureSVG(d, true);   // 2D-фолбэк — смена фигуры
   }
   for (const k in Z) setZone(k, Z[k]);
-  const hc = $('#overlay .hc'); hc.dataset.cid = id; hc.classList.toggle('locked', !p.stars); hc.classList.toggle('memory-awakened', p.relic > 0);
+  const hc = $('#overlay .hc'); hc.dataset.cid = id; hc.classList.toggle('locked', !p.stars); hc.classList.toggle('memory-awakened', p.relic > 0); hc.classList.toggle('has-ultimate', !!d.gl);
   if (stagedPreview) {
     // Prevent preview-only controls from writing into a real player's roster.
     // Close/back and the stats toggle retain the same shared card behavior.
