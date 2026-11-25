@@ -1,0 +1,28 @@
+name: GFX-05A Motion Lab
+on:
+  push:
+    branches: [gfx-05a-motion-lab]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: node tools/build.mjs
+      - run: node tests/smoke/gfx05-motion.mjs dist/pwa/index.html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gfx05a-motion-evidence
+          path: dev/gfx05-motion-out/
+          if-no-files-found: warn
