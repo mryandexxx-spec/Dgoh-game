@@ -400,7 +400,7 @@
 }
 
 /* GFX-02: identical action layout, industrial Harkonnen palette.
-   Only the young Baron opts in; no faction-wide rollout yet. */
+   The same industrial palette is used by the whole faction. */
 .hc.gfx02-pilot[data-hero-theme="hark"] {
   background:#15171b;
 }
@@ -450,3 +450,77 @@
 .hc.gfx02-pilot[data-hero-theme="hark"] button:focus-visible {
   outline-color:#e2e3e6;
 }
+
+
+/* GFX-03/FIX — the shared Cinematic Showcase, not just the two pilots.
+   Preserve accepted Kaladan/Giedi Prime panels and use the UI-10 palette
+   for the other four worlds. No extra overlay layers or moving CSS filters. */
+.hc.gfx02-pilot[data-hero-theme="frem"] { --showcase-panel:#211911; --showcase-shade:#100b07; --showcase-button:#35271a; }
+.hc.gfx02-pilot[data-hero-theme="cor"]  { --showcase-panel:#211922; --showcase-shade:#100b11; --showcase-button:#392a36; }
+.hc.gfx02-pilot[data-hero-theme="bg"]   { --showcase-panel:#191720; --showcase-shade:#0c0a12; --showcase-button:#2e273a; }
+.hc.gfx02-pilot[data-hero-theme="mach"] { --showcase-panel:#101d25; --showcase-shade:#071017; --showcase-button:#1b333d; }
+.detail .sheet.hc.gfx02-pilot:is([data-hero-theme="frem"],[data-hero-theme="cor"],[data-hero-theme="bg"],[data-hero-theme="mach"]) {
+  background:var(--showcase-panel);
+}
+.hc.gfx02-pilot:is([data-hero-theme="frem"],[data-hero-theme="cor"],[data-hero-theme="bg"],[data-hero-theme="mach"]) :is(.hctop,.hcpilot-controls,.hcmid) {
+  background:var(--showcase-panel);
+}
+.hc.gfx02-pilot:is([data-hero-theme="frem"],[data-hero-theme="cor"],[data-hero-theme="bg"],[data-hero-theme="mach"]) .hctop {
+  box-shadow:inset 0 -1px color-mix(in srgb,var(--hero-line) 55%,transparent);
+}
+.hc.gfx02-pilot:is([data-hero-theme="frem"],[data-hero-theme="cor"],[data-hero-theme="bg"],[data-hero-theme="mach"]) :is(.hcib,.hcarr) {
+  background:var(--showcase-button); color:var(--hero-accent);
+}
+.hc.gfx02-pilot:is([data-hero-theme="frem"],[data-hero-theme="cor"],[data-hero-theme="bg"],[data-hero-theme="mach"]) .hcstage {
+  background-color:var(--hero-panel);
+}
+.hc.gfx02-pilot:is([data-hero-theme="frem"],[data-hero-theme="cor"],[data-hero-theme="bg"],[data-hero-theme="mach"]) .hcstage::after {
+  background:linear-gradient(90deg,color-mix(in srgb,var(--showcase-shade) 85%,transparent) 0%,color-mix(in srgb,var(--showcase-shade) 28%,transparent) 27%,transparent 49%,transparent 77%,var(--showcase-panel) 100%);
+}
+.hc.gfx02-pilot:is([data-hero-theme="frem"],[data-hero-theme="cor"],[data-hero-theme="bg"],[data-hero-theme="mach"]) .hcst {
+  background:var(--showcase-panel);
+}
+.hc.gfx02-pilot:is([data-hero-theme="frem"],[data-hero-theme="cor"],[data-hero-theme="bg"],[data-hero-theme="mach"]) :is(.hccap,.hcpw) {
+  color:var(--hero-muted);
+}
+.hc.gfx02-pilot:is([data-hero-theme="frem"],[data-hero-theme="cor"],[data-hero-theme="bg"],[data-hero-theme="mach"]) :is(.hcleft,.hcgear) {
+  border-color:color-mix(in srgb,var(--hero-line) 48%,transparent);
+}
+.hc.gfx02-pilot:is([data-hero-theme="frem"],[data-hero-theme="cor"],[data-hero-theme="bg"],[data-hero-theme="mach"]) .hcblk .btn {
+  background:var(--showcase-button); border-color:var(--hero-line); color:#f1efeb;
+}
+.hc.gfx02-pilot:is([data-hero-theme="frem"],[data-hero-theme="cor"],[data-hero-theme="bg"],[data-hero-theme="mach"]) .hcblk .btn.go:not(:disabled) {
+  background:var(--hero-cta); color:var(--hero-ink);
+}
+.hc.gfx02-pilot:is([data-hero-theme="frem"],[data-hero-theme="cor"],[data-hero-theme="bg"],[data-hero-theme="mach"]) .hcbtn:is(.go,.buy):not(:disabled) {
+  background:linear-gradient(120deg,var(--hero-panel),var(--showcase-panel));border-color:var(--hero-line);
+  box-shadow:inset 3px 0 var(--hero-accent);color:#f3f0eb;
+}
+.hc.gfx02-pilot:is([data-hero-theme="frem"],[data-hero-theme="cor"],[data-hero-theme="bg"],[data-hero-theme="mach"]) .hcgs .box {
+  background:linear-gradient(155deg,var(--hero-panel),var(--showcase-panel));
+}
+.hc.gfx02-pilot .hcnm { width:min(27%,185px); }
+.hc.gfx02-pilot .hcnm h3 { font-size:clamp(19px,2.65vw,27px); }
+/* The count is character data, not a faction rule. The ultimate is a separate
+   non-scrolling row. Ordinary skills remain reachable within their own list. */
+.hc.gfx02-pilot[data-skill-count="4"] .hcsks { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.hc.gfx02-pilot[data-skill-count="5"] .hcsks { grid-template-columns:repeat(5,minmax(0,1fr)); }
+.hc.gfx02-pilot[data-skill-count="5"] .hcski { width:36px;height:36px; }
+.hc.gfx02-pilot .hcskt { min-width:0; }
+.hc.gfx02-pilot .hcsk:not(.gl) .hcskt b { overflow-wrap:anywhere; }
+.hc.gfx02-pilot.has-ultimate .hcleft > .hcsk.gl {
+  display:grid; grid-template-columns:38px minmax(0,1fr) auto; min-height:44px;
+  align-items:center; padding:2px 5px;
+}
+.hc.gfx02-pilot.has-ultimate .hcsk.gl .hcski { width:34px;height:34px; }
+.hc.gfx02-pilot.has-ultimate .hcpilot-controls .hcright { max-height:29%; }
+.hc.gfx02-pilot.has-ultimate .hcleft { min-height:108px; }
+.hc.gfx02-pilot.has-ultimate .hcmem { flex:none; min-height:44px; }
+.hc.gfx02-pilot.has-ultimate .hcsks { min-height:44px; }
+@media(max-height:400px) and (orientation:landscape) {
+  .hc.gfx02-pilot.has-ultimate .hcpilot-controls .hcright { max-height:23%; }
+  .hc.gfx02-pilot.has-ultimate .hcleft { min-height:110px; }
+}
+/* Only the development panel may scroll if safe areas leave insufficient
+   vertical space for the mandatory legend controls. The screen never scrolls. */
+.hc.gfx02-pilot.has-ultimate .hcpilot-controls { overflow-y:auto; overflow-x:hidden; }
