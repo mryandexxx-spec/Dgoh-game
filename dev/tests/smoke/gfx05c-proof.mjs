@@ -84,7 +84,13 @@ try {
       celebQueue(c);
      },{id,kind});
      await page.waitForSelector('#celeb');
-     await page.screenshot({path:path.join(out,prefix,'dialog-'+kind+'.png')});
+     // Wait for CSS/WAAPI animations to be instantiated. Sample the actual
+     // animation timeline at known times rather than capturing opacity zero.
+     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+     for(const ms of [150,350,650,900]){
+      await page.evaluate(ms=>{for(const anim of document.querySelector('#celeb').getAnimations({subtree:true})){anim.pause();anim.currentTime=ms;}},ms);
+      await page.screenshot({path:path.join(out,prefix,'dialog-'+kind+'-'+ms+'.png')});
+     }
      await page.evaluate(()=>document.querySelector('#celeb')?.remove());
     }
     await page.evaluate(()=>{const h=HERO_STAGE;h.update=h.__qaUpdate;delete h.__qaUpdate;closeInfo(true);closeOverlay();});
