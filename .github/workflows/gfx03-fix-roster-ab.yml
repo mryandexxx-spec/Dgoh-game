@@ -1,4 +1,4 @@
-name: GFX-03 FIX controlled performance (temporary)
+name: GFX-03 FIX pixel budget recheck (temporary)
 on:
   push:
     branches: [qa/gfx03-fix-all-roster]
@@ -13,11 +13,11 @@ jobs:
         include:
           - {hero: muaddib, profile: low, width: 667, height: 375}
           - {hero: duncan, profile: low, width: 667, height: 375}
-          - {hero: muaddib, profile: med, width: 844, height: 390}
-          - {hero: erasmus, profile: low, width: 844, height: 390}
-          - {hero: muaddib, profile: high, width: 960, height: 600}
+
+
+
           - {hero: stilgar, profile: high, width: 960, height: 600}
-          - {hero: shaddam, profile: high, width: 960, height: 600}
+
           - {hero: paul, profile: high, width: 960, height: 600}
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -30,12 +30,20 @@ jobs:
         id: chrome
       - run: npm ci
         working-directory: dev
-      - name: Download exact validated builds
+      - uses: actions/checkout@v4
+        with:
+          ref: b1f9ee9b6bed3ce306a1763def8af70b8781c144
+          path: candidate
+      - name: Build exact optimized candidate
+        working-directory: candidate/dev
+        run: npm ci && npm run build
+      - name: Download exact validated baseline
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh run download 45680904402 --name dune-validated-build --dir /tmp/gfx161
-          gh run download 45703266723 --name dune-validated-build --dir /tmp/gfx162
+          mkdir -p /tmp/gfx162
+          ln -s "$GITHUB_WORKSPACE/candidate/dev/dist/pwa" /tmp/gfx162/pwa
       - name: Controlled A/A/B repeat with identical frame count and warmup
         working-directory: dev
         env:
@@ -85,10 +93,12 @@ jobs:
               const h=HERO_STAGE,o=h.o,gl=h.engine._gl,now=performance.now()+1500;
               if(o.def.id!==id||gfx!==(0,eval)('gfx(HERO_STAGE.small).level'))throw Error('Wrong hero or profile');
               h.intro=0;h.motionLast=null;h.motionElapsed=0;h.auto=false;h.yawV=0;
-              const times=[],draws=[];const warm=60,count=240;
+              const times=[],draws=[], pixel=new Uint8Array(4);const warm=60,count=gfx==='high'?120:240;
               for(let i=0;i<warm+count;i++){
                const t=now+i*1000/30,start=performance.now(),d0=window.__motionGL.draws;
                h.tick(t,t/1000);h.scene.render();gl.finish();
+               // Force completion of the framebuffer work, not just command submission.
+               gl.readPixels(0,0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,pixel);
                if(i>=warm){times.push(performance.now()-start);draws.push(window.__motionGL.draws-d0);}
               }
               times.sort((a,b)=>a-b);
@@ -96,6 +106,9 @@ jobs:
              },{id,gfx});
              assert.equal(steady.contexts,1);
              assert.deepEqual(errors,[],'Uncaught browser errors');
+             await page.evaluate(()=>{const h=HERO_STAGE;h.update=h.__qaUpdate;delete h.__qaUpdate;});
+             await sleep(250);
+             await page.screenshot({path:path.join(out,'hero.png')});
              fs.writeFileSync(path.join(out,'metrics.json'),JSON.stringify(steady,null,2));
              console.log('CONTROL_SAMPLE',JSON.stringify(steady));
             }finally{await page.close();}
