@@ -23,12 +23,25 @@ jobs:
           git rev-parse HEAD
           python -m pip install 'numpy==1.26.4'
           python -m pip install 'torch==2.5.1+cpu' 'torchvision==0.20.1+cpu' --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install 'setuptools<81' wheel 'cmake<4' ninja 'scikit-build-core>=1.0' 'pybind11>=2.10'
+          python -m pip install 'setuptools<81' wheel 'cmake<4' ninja 'scikit-build-core==1.1.2' 'pybind11==3.1.0'
           export CMAKE_BUILD_PARALLEL_LEVEL=2
-          export CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$(python -c 'import torch; print(torch.utils.cmake_prefix_path)') -DCMAKE_CUDA_COMPILER=NOTFOUND"
+          PYBIND_DIR="$(python -m pybind11 --cmakedir)"
+          test -f "$PYBIND_DIR/pybind11Config.cmake"
+          export CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$(python -c 'import torch; print(torch.utils.cmake_prefix_path)') -Dpybind11_DIR=$PYBIND_DIR -DCMAKE_CUDA_COMPILER=NOTFOUND"
           python -m pip install --no-build-isolation 'git+https://github.com/tatsy/torchmcubes.git@a9ac95aa329957ba646e7bb057f825f5dfa77f38'
           python -m pip install 'omegaconf==2.3.0' 'Pillow==10.1.0' 'einops==0.7.0' 'transformers==4.35.0' 'trimesh==4.0.5' 'rembg[cpu]==2.0.57' 'huggingface-hub<1' 'imageio[ffmpeg]' 'xatlas==0.0.9' 'moderngl==5.10.0' 'numpy<2' scipy
-          python -c 'import torch, torchmcubes; print(torch.__version__, torchmcubes.__file__); assert not torch.cuda.is_available()'
+          python - <<'PY'
+          import torch, torchmcubes
+          assert not torch.cuda.is_available()
+          axis = torch.linspace(-1, 1, 16)
+          x, y, z = torch.meshgrid(axis, axis, axis, indexing="ij")
+          v, f = torchmcubes.marching_cubes(0.5-x*x-y*y-z*z, 0.0)
+          assert v.ndim == f.ndim == 2 and v.shape[1] == f.shape[1] == 3
+          assert len(v)>0 and len(f)>0 and torch.isfinite(v).all()
+          assert f.min()>=0 and f.max()<len(v)
+          print("CF03_CPU_NATIVE_OK", torch.__version__, len(v), len(f))
+          PY
+          python -m pip check
       - name: CPU inference on upstream reference (not Stilgar)
         run: |
           set -euxo pipefail
