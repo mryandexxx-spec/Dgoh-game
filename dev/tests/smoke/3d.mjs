@@ -140,8 +140,10 @@ for (let c = 0; c < CYCLES; c++) {
   // UI-10: real WebGL theme, art and DOM must switch together; verify
   // all six factions and multi-faction/legend overrides once per run.
   if (c === 0) {
-    const examples = [['stilgar','frem'],['baron','hark'],['duncan','atr'],['shaddam','cor'],['mohiam','bg'],['erasmus','mach'],['muaddib','frem'],['jessica','atr'],['baron_legend','hark'],['duncan','atr'],['paul','atr']];
+    const examples = [['stilgar','frem'],['baron','hark'],['duncan','atr'],['shaddam','cor'],['mohiam','bg'],['erasmus','mach'],['muaddib','frem'],['jessica','atr'],['feyd','hark'],['duncan','atr'],['paul','atr']];
     const worlds = {frem:[0,.90,'sand',false],hark:[.55,.48,'tile',true],atr:[0,.78,'tile',true],cor:[0,.42,'tile',true],bg:[0,.82,'rock',false],mach:[.60,.55,'tile',true]};
+    const legendTheme = await page.evaluate(() => (0,eval)("heroThemeKey({id:'baron_legend',f:['cor']})"));
+    if (legendTheme !== 'hark') errors.push('GFX-03: staged legendary Baron override');
     let owned = null, previous = null;
     for (const [id,key] of examples) {
       await run(`openDetail('${id}');`);
@@ -177,7 +179,7 @@ for (let c = 0; c < CYCLES; c++) {
         if (previous?.key===key && previous.plate!==p.plate) errors.push('GFX-03: same-world plate replaced '+id);
         owned = p.ownership; previous = {key,plate:p.plate};
       }
-      if (ok >= 0 && SHOTS && !['muaddib','jessica','baron_legend','paul'].includes(id)) await page.screenshot({path:path.join(SHOTS,`gfx03-${key}${PHONE ? '-phone' : ''}.png`)});
+      if (ok >= 0 && SHOTS && !['muaddib','jessica','feyd','paul'].includes(id)) await page.screenshot({path:path.join(SHOTS,`gfx03-${key}${PHONE ? '-phone' : ''}.png`)});
     }
     // Rapid transitions must not restore a stale world or plate.
     await run("openDetail('baron'); openDetail('mohiam'); openDetail('paul');");
