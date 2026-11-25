@@ -59,33 +59,40 @@ try {
         const h=HERO_STAGE, play=h.playCinematic;
         h.playCinematic=function(kind){
           const result=play.call(this,kind);
-          window.__gfxD.calls.push({kind,result,raw:localStorage.getItem(key)});
+          window.__gfxD.calls.push({kind,result,raw:localStorage.getItem(key),verifiedRaw:loadSave.writer.state().raw});
           return result;
         };
         const animate=Element.prototype.animate;
         Element.prototype.animate=function(frames,opts){
-          if(this.closest('#celeb') || this.closest('#overlay2')) window.__gfxD.accents.push({duration:opts?.duration,raw:localStorage.getItem(key)});
+          if(this.closest('#celeb') || this.closest('#overlay2')) window.__gfxD.accents.push({duration:opts?.duration,raw:localStorage.getItem(key),verifiedRaw:loadSave.writer.state().raw});
           return animate.call(this,frames,opts);
         };
       })()`);
-      const snapshot = () => ev(`(() => {const raw=localStorage.getItem(loadSave.writer.primaryKey);return {raw,hero:JSON.parse(raw).roster[${h}],live:prog(${h}),calls:window.__gfxD.calls.slice(),accents:window.__gfxD.accents.slice(),cinematic:HERO_STAGE?.cinematic?.kind||null}})()`);
+      const snapshotExpr = `(() => {const raw=localStorage.getItem(loadSave.writer.primaryKey);return {raw,hero:JSON.parse(raw).roster[${h}],live:prog(${h}),calls:window.__gfxD.calls.slice(),accents:window.__gfxD.accents.slice(),cinematic:HERO_STAGE?.cinematic?.kind||null}})()`;
+      const snapshot = () => ev(snapshotExpr);
+      // Observe the action and immediate readback in the same browser task.
+      const around = action => page.evaluate(({action,snapshotExpr})=>{const before=structuredClone((0,eval)(snapshotExpr));(0,eval)(action);const after=(0,eval)(snapshotExpr);return {before,after}}, {action,snapshotExpr});
+      const assertCommittedAtSignal = (name, event, before, after) => {
+        assert.equal(event.raw,event.verifiedRaw,name+' signal does not match verified writer bytes');
+        const stored = JSON.parse(event.raw).roster[id];
+        assert.notDeepEqual(stored,before.hero,name+' signal preceded hero mutation');
+        assert.deepEqual(stored,after.hero,name+' signal hero differs from committed result');
+      };
       const clear = () => ev("HERO_STAGE.cancelCinematic();window.__gfxD.calls.length=0;window.__gfxD.accents.length=0;");
       const accepted = async (name, action, verify, dialogDuration=null, motion=profile==='med') => {
         await clear();
-        const before = await snapshot();
-        await ev(action);
-        const after = await snapshot();
+        const {before,after} = await around(action);
         assert.notEqual(after.raw,before.raw,name+' did not commit');
         verify(before,after);
         assert.equal(after.live.lvl,after.hero.lvl,name+' live/save disagreement');
         assert(after.calls.length>0,name+' missing post-commit signal');
-        assert(after.calls.every(c=>c.raw===after.raw),name+' signal before verified storage');
+        for(const c of after.calls) assertCommittedAtSignal(name,c,before,after);
         if(dialogDuration===null) assert.equal(after.calls.some(c=>c.result),motion,name+' motion gate');
         if(dialogDuration!==null){
           await wait("!!document.querySelector('#celeb')");
           const overlay=await snapshot();
           assert.equal(overlay.accents.filter(a=>a.duration===dialogDuration).length,motion?1:0,name+' overlay accent count');
-          assert(overlay.accents.every(a=>a.raw===after.raw),name+' overlay before commit');
+          for(const a of overlay.accents) assertCommittedAtSignal(name,a,before,after);
           await page.screenshot({path:path.join(out,id+'-'+name+'.png')});
           await ev("celebClick({celebok:'1'});");
           await new Promise(r=>setTimeout(r,750));
@@ -94,13 +101,15 @@ try {
         reports.push({id,profile,width,name,committed:true,motion:after.calls.map(c=>c.result)});
       };
       const denied = async (name, action) => {
-        await clear(); const before=await snapshot(); await ev(action);
+        await clear(); const {before,after}=await around(action);
         await new Promise(r=>setTimeout(r,120));
-        const after=await snapshot();
+        const later=await snapshot();
         assert.equal(after.raw,before.raw,name+' changed storage');
         assert.deepEqual(after.live,before.live,name+' changed live hero');
         assert.equal(after.calls.length,0,name+' emitted cinematic');
         assert.equal(after.accents.length,0,name+' emitted overlay accent');
+        assert.equal(later.calls.length,0,name+' emitted delayed cinematic');
+        assert.equal(later.accents.length,0,name+' emitted delayed accent');
         assert.equal(await page.$('#celeb'),null,name+' emitted dialog');
         await ev("closeInfo(true);");
         reports.push({id,profile,width,name,denied:true});
