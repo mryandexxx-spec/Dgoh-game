@@ -3,8 +3,9 @@ import '../reward-tiles.js'; // порядок исполнения
 import { MOUSE_SVG } from '../mouse.js';
 import { renderNotes } from '../notifications.js';
 import { heroSnap } from '../hero-window.js';
-import { openDetail } from '../hero-card.js';
+import { openDetail, heroAccentElement } from '../hero-card.js';
 import { render } from '../router.js';
+import { heroMotionPilot } from '../../render3d/scenes/hero.js';
 import { prog } from '../../logic/progress.js';
 import { BT, set_view, view } from '../../core/state.js';
 import { ringCol, sideName } from '../../logic/relics.js';
@@ -41,7 +42,9 @@ function showCeleb() {
       <h3>${T[0]}</h3><p class="sub" style="margin:0"><b>${d.n}</b> · ${T[1]}</p>
       <div class="hustats">${row('Здоровье', s0.hp, s1.hp)}${s1.sh || s0.sh ? row('Щит', s0.sh, s1.sh) : ''}${row('Урон', s0.dmg, s1.dmg)}${row('Скорость', s0.spd, s1.spd)}${row('Мощь', s0.pw, s1.pw)}</div>
       <div class="acts" style="justify-content:center"><button class="btn go" data-celebok="1">Ура!</button></div></div>`;
-    document.body.appendChild(el); fireworks(el.querySelector('.cbox'), 4);
+    document.body.appendChild(el);
+    if (heroMotionPilot(c.id)) heroAccentElement(el.querySelector('.cport'), c.id, c.kind === 'relic' ? 'relic' : 'up');
+    else fireworks(el.querySelector('.cbox'), 4);
     return;
   }
   if (c.type === 'star') {
@@ -52,7 +55,9 @@ function showCeleb() {
       <h3>${d.n}</h3><p class="sub" style="margin:0">Звёздность повышена: <b>${c.from}★ → ${c.to}★</b></p>
       <div class="cgain mono">Мощь ${fmt(c.pw0)} → <b>${fmt(unitPower(d, p))}</b></div>
       <div class="acts" style="justify-content:center"><button class="btn go" data-celebok="1">Отлично!</button></div></div>`;
-    document.body.appendChild(el); fireworks(el.querySelector('.cbox'), 6);
+    document.body.appendChild(el);
+    if (heroMotionPilot(c.id)) heroAccentElement(el.querySelector('.cport'), c.id, 'star');
+    else fireworks(el.querySelector('.cbox'), 6);
   } else {
     el.className = 'celeb unlock';
     el.innerHTML = `<div class="ubar t"></div><div class="ubar b"></div><div class="ubeam"></div><div class="usand">${Array.from({ length: 30 }, (_, i) => `<i style="--x:${(i * 37) % 100}%;--dl:${(i % 10) * .12}s;--sz:${3 + (i * 7) % 6}px"></i>`).join('')}</div>

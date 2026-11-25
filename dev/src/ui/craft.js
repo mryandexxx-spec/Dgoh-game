@@ -2,7 +2,7 @@
 // Доступность проверяется на копиях инвентаря и валют.
 import './mouse.js'; // порядок исполнения
 import { slotState } from './overlays/detail.js';
-import { openDetail } from './hero-card.js';
+import { openDetail, heroUpgradeFeedback } from './hero-card.js';
 import { render } from './router.js';
 import { toast } from './common.js';
 import { prog } from '../logic/progress.js';
@@ -46,7 +46,7 @@ function craftAll(cid) {
     });
     if (!tx.ok) return; // no toast, equip state, quest or preview before commit
     toast(`${CH[cid].sn}: надето ${tx.value.length} — ${tx.value.join(', ')}`);
-    render(); openDetail(cid);
+    render(); openDetail(cid); heroUpgradeFeedback(cid);
     return;
   }
   const plan = craftAllPlan(cid), p = prog(cid);
