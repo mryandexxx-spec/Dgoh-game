@@ -15,8 +15,9 @@ const server=await serve(path.dirname(html));
 const browser=await puppeteer.launch({executablePath:chrome,headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
 const rows=[];
 const bench=process.argv.includes('--bench');
+const noise=process.argv.includes('--noise');
 try {
- for(const [width,height,gfx] of (bench?[[844,390,'med'],[844,390,'low'],[667,375,'low']]:[[844,390,'med'],[667,375,'med'],[844,390,'low'],[667,375,'low']])){
+ for(const [width,height,gfx] of (noise?[[667,375,'low'],[667,375,'med'],[844,390,'low']]:bench?[[844,390,'med'],[844,390,'low'],[667,375,'low']]:[[844,390,'med'],[667,375,'med'],[844,390,'low'],[667,375,'low']])){
   const page=await browser.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   try {
@@ -34,27 +35,28 @@ try {
    await page.evaluate(async()=>await loadB3());
    await sleep(2500);
    await page.evaluate(()=>{closeInfo(true);closeOverlay();view='lobby';render();});
-   for(const id of (bench?[gfx==='med'?'duncan':'muaddib']:['duncan','muaddib'])){
+   for(const id of (noise?[width===667&&gfx==='low'?'muaddib':'duncan']:bench?[gfx==='med'?'duncan':'muaddib']:['duncan','muaddib'])){
     await page.waitForFunction(id=>!!MODEL_DATA[id],{timeout:45000},id);
     await page.evaluate(id=>openDetail(id),id);
     await page.waitForFunction(id=>HERO_STAGE?.o?.def?.id===id&&HERO_STAGE.o.root._authored&&HERO_STAGE.backdropTexture?.isReady()&&HERO_STAGE.pfIdle(),{timeout:45000},id);
     await page.evaluate(async()=>{const h=HERO_STAGE;await h.scene.whenReadyAsync();h.__qaUpdate=h.update;h.update=()=>{};});
-    const steady=await page.evaluate(({id,gfx})=>{
+    const steady=await page.evaluate(({id,gfx,noise})=>{
      const h=HERO_STAGE,o=h.o,gl=h.engine._gl,now=performance.now()+1500;
      assertMotion();function assertMotion(){if(h.motionHero!==id)throw Error('Wrong authored motion: '+id);}
      h.intro=0;h.motionLast=null;h.motionElapsed=0;
      const times=[],draws=[];
-     for(let i=0;i<210;i++){
+     const warm=noise?120:30, count=noise?600:180;
+     for(let i=0;i<warm+count;i++){
       const t=now+i*1000/30,start=performance.now(),d0=window.__motionGL.draws;
       h.tick(t,t/1000);h.scene.render();gl.finish();
-      if(i>=30){times.push(performance.now()-start);draws.push(window.__motionGL.draws-d0);}
+      if(i>=warm){times.push(performance.now()-start);draws.push(window.__motionGL.draws-d0);}
      }
      times.sort((a,b)=>a-b);
      return {id,gfx,authored:!!o.root._authored,clip:o.root._lastClip,p95:times[Math.ceil(times.length*.95)-1],draws:draws.reduce((a,b)=>a+b,0)/draws.length,meshes:h.scene.meshes.length,textures:h.scene.textures.length,materials:h.scene.materials.length,contexts:B3.EngineStore.Instances.filter(e=>!e.isDisposed).length};
-    },{id,gfx});
+    },{id,gfx,noise});
     assert.equal(steady.contexts,1);
     const prefix=[id,width,gfx].join('-');
-    for(const kind of (bench?[]:['entry','up','star','relic'])){
+    for(const kind of ((bench||noise)?[]:['entry','up','star','relic'])){
      const folder=path.join(out,prefix,kind);fs.mkdirSync(folder,{recursive:true});
      const started=await page.evaluate(({id,kind,baseline})=>{
       const h=HERO_STAGE;
