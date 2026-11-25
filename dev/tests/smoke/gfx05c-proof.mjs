@@ -79,7 +79,7 @@ try {
     }
     // Actual existing result overlay, using a presentation fixture only;
     // no changes to roster, resources or the persistent writer.
-    for(const kind of (bench?[]:['star','relic'])){
+    for(const kind of ((bench||noise)?[]:['star','relic'])){
      await page.evaluate(({id,kind})=>{
       const p=prog(id);const s0=heroSnap(id);
       const c=kind==='star'?{type:'star',id,from:Math.max(1,p.stars-1),to:p.stars,pw0:s0.pw}:{type:'hup',kind:'relic',id,from:'ДП1',to:'ДП2',s0};
