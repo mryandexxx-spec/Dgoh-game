@@ -120,6 +120,8 @@ class HeroStage extends Stage3D {
     });
     this.look({ dof: { f: 85, stop: 2, d: 4200 }, exposure: 1.05, ssao: .35, bloomW: .35, bloomT: .85 });
     this.yaw = 0; this.yawV = 0; this.drag = null; this.auto = true; this.showcase = true;
+    this.motionPreference = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+    this.motionElapsed = 0; this.motionLast = null;
     const dp = this.dustP = new B3.ParticleSystem('dust', 260, S); dp.particleTexture = tx; dp.emitter = V3(0, 1.2, 0); dp.minEmitBox = V3(-.08, -.05, -.05); dp.maxEmitBox = V3(.08, .05, .05);
     dp.direction1 = V3(-.4, .2, -.3); dp.direction2 = V3(.4, .7, .5); dp.gravity = V3(0, -.6, 0); dp.minLifeTime = .7; dp.maxLifeTime = 1.6; dp.minSize = .02; dp.maxSize = .07; dp.minEmitPower = .2; dp.maxEmitPower = .6;
     dp.color1 = new B3.Color4(.78, .64, .46, .7); dp.color2 = new B3.Color4(.6, .48, .34, .55); dp.colorDead = new B3.Color4(.5, .4, .3, 0); dp.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD; dp.emitRate = 0; dp.manualEmitCount = 0; dp.start();
@@ -236,9 +238,15 @@ class HeroStage extends Stage3D {
     }
     this.setWorld(this.themeKey);
     if (this.def !== def || !this.o) {
+      this.restoreMotionHead();
       if (this.o) this.o.root.setEnabled(false);
       let o = this.pool.get(def.id); if (!o) { o = this.buildHero(def); this.pool.set(def.id, o); }
-      this.warmEnd(o); o.root.setEnabled(true); this.o = o; this.def = def; this.yaw = def.id === 'duncan' && o.root._clipRest ? 0 : -.35; this.auto = true; this.intro = performance.now();
+      this.warmEnd(o); o.root.setEnabled(true); const wasMotion = !!this.motionHero; this.o = o; this.def = def;
+      this.motionHero = o.root._clipRest && (def.id === 'duncan' && o.root._clips?.Long_Breathe_and_Look_Around || def.id === 'muaddib' && o.root._clips?.Idle_11) ? def.id : null;
+      this.motionElapsed = 0; this.motionLast = null;
+      this.yaw = this.motionHero === 'muaddib' ? .22 : def.id === 'duncan' && o.root._clipRest ? 0 : -.35;
+      this.auto = !this.motionHero; this.intro = performance.now();
+      if (wasMotion || this.motionHero) { this.drag = null; this.yawV = 0; this.resumeT = 0; }
     }
     const keep = new Set([def.id, ...this.want.map(d => d.id)]);
     for (const [id, o] of this.pool) if (!keep.has(id)) { this.dropHero(o); this.pool.delete(id); }
@@ -287,11 +295,34 @@ class HeroStage extends Stage3D {
   // пакет 5: в покое — профильная частота (MED idle 30, LOW idle 20); active — интро, вспышка, вращение пальцем и его инерция
   idleMode(now) { return this.quiet(now) && !this.warm ? gfx(this.small).heroIdle : 'active'; }
   celebrate(kind) { const b = this.burst; b.manualEmitCount = kind === 'star' ? 420 : 220; this.flashT = performance.now(); this.flashKind = kind; }
+  restoreMotionHead() {
+    const head = this.motionHead;
+    if (head?.rotationQuaternion && this.motionHeadRaw) head.rotationQuaternion.copyFrom(this.motionHeadRaw);
+    this.motionHead = null;
+  }
+  onSleep(options) { this.motionLast = null; this.restoreMotionHead(); super.onSleep(options); }
+  onWake() { this.motionLast = null; super.onWake(); }
   tick(now, t) {
     const o = this.o; if (!o) return; this.prefetch(now);
+    const motion = this.motionHero, reduced = !!(motion && this.motionPreference?.matches);
+    const fullMotion = motion && !reduced && gfx(this.small).heroCharacterMotion;
+    let sample = t;
+    if (motion) {
+      this.restoreMotionHead();
+      const dt = this.motionLast === null ? 0 : now - this.motionLast;
+      this.motionLast = now;
+      // Freeze across sleep/hold, drag and long suspension; no catch-up.
+      if (fullMotion && !this.drag && dt >= 0 && dt <= 1000) this.motionElapsed += dt / 1000;
+      sample = fullMotion ? this.motionElapsed * (motion === 'muaddib' ? .68 : 1) : 0;
+    }
     if (this.auto && !this.drag && (!this.resumeT || now > this.resumeT)) this.yaw += Math.sin(t * .35) * .0025;
-    if (!this.drag) { this.yaw += this.yawV / 60; this.yawV *= .92; }
-    poseHuman(this, o, now, t, 1);
+    if (!this.drag) {
+      if (reduced) this.yawV = 0;
+      else { this.yaw += this.yawV / 60; this.yawV *= .92; }
+    }
+    // Per-call override; never mutate the shared model map.
+    this.motionClip = motion === 'duncan' ? 'Long_Breathe_and_Look_Around' : null;
+    try { poseHuman(this, o, now, sample, 1); } finally { this.motionClip = null; }
     // Meshy's relaxed Idle_11 nods the head toward the floor. A small
     // additive head lift makes the original face texture visible at 667px
     // without modifying the source clip, combat poses or other heroes.
@@ -302,11 +333,24 @@ class HeroStage extends Stage3D {
         (this._duncanHeadLift = B3.Quaternion.RotationAxis(B3.Axis.X, -.24));
       o.head.rotationQuaternion.multiplyInPlace(lift);
     }
+    if (motion === 'muaddib' && o.head?.rotationQuaternion) {
+      const head = this.motionHead = o.head, rotation = head.rotationQuaternion;
+      const raw = this.motionHeadRaw || (this.motionHeadRaw = B3.Quaternion.Identity());
+      raw.copyFrom(rotation);
+      rotation.multiplyInPlace(this.motionLift || (this.motionLift = B3.Quaternion.RotationAxis(B3.Axis.X, -.17)));
+      const duration = o.root._clips.Idle_11.duration, phase = this.motionElapsed % 16;
+      if (fullMotion && phase < duration) {
+        const angle = .23 * Math.sin(Math.PI * phase / duration) ** 2;
+        const gaze = this.motionGaze || (this.motionGaze = B3.Quaternion.Identity());
+        gaze.copyFromFloats(0, Math.sin(angle / 2), 0, Math.cos(angle / 2));
+        rotation.multiplyInPlace(gaze);
+      }
+    }
     // The Meshy Idle_11 face is in the stage's native forward orientation.
     // Do not apply the COMBAT-specific yaw correction here; the shader's
     // fixed UV orientation now shows the actual face/armor in this view.
     o.root.rotation.y = this.yaw;
-    const H = o.h, ik = this.intro ? Math.min(1, (now - this.intro) / 1100) : 1, e = 1 - (1 - ik) ** 3;
+    const H = o.h, ik = !reduced && this.intro ? Math.min(1, Math.max(0, (now - this.intro) / 1100)) : 1, e = 1 - (1 - ik) ** 3;
     const asp = (this.w || 1) / (this.h || 1),
       // The single-piece Meshy skin is visibly slimmer in the portrait than
       // the other authored heroes. Only Duncan gets a small camera push-in.
@@ -330,7 +374,7 @@ class HeroStage extends Stage3D {
   dustFX(o, where) { const H = o.h, r = o.root.rotation.y, off = where === 'shoulder' ? V3(.28, H * .74, .05) : where === 'cape' ? V3(-.1, H * .5, -.3) : V3(-.05, H * .66, .14); const c = Math.cos(r), s = Math.sin(r); this.dustP.emitter = V3(off.x * c + off.z * s, off.y, -off.x * s + off.z * c); this.dustP.manualEmitCount = where === 'cape' ? 140 : 40; }
 }
 let HERO_STAGE = null, HERO_SNAP = null, HERO_HOLD = false;
-function heroHold(on) { HERO_HOLD = !!on; }
+function heroHold(on) { const next = !!on; if (next !== HERO_HOLD && HERO_STAGE) HERO_STAGE.motionLast = null; HERO_HOLD = next; }
 function mountHeroStage(id, near, staged = null) {
   const host = document.querySelector('#overlay .hcfig'); if (!host) return;
   if (!HAS3D) { if (HAS_GL) loadB3().then(ok => { if (ok && host.isConnected && host.closest('.hc')?.dataset.cid === id) mountHeroStage(id, near, staged); }); return; }   // фаза 4: пока грузится чанк — 2D-фигура

@@ -245,6 +245,11 @@ function poseModelClip(o, now, t, sp, stage) {
     u = ((t + (o.phase || 0)) % showcase.duration) / showcase.duration;
   }
   let clipName = names[name] || name;
+  if (name === 'Showcase' && stage?.showcase && o.def?.id === 'duncan' && stage.motionClip === 'Long_Breathe_and_Look_Around' && clips[stage.motionClip]) {
+    clipName = stage.motionClip;
+    const duration = clips[clipName].duration;
+    u = ((t + (o.phase || 0)) % duration) / duration;
+  }
   if (name === 'ult' && o.def.id === 'duncan' && o.root._clipRest) {
     const part = DUNCAN_COMBO.find(section => u < section.end) || DUNCAN_COMBO[2];
     clipName = part.clip;

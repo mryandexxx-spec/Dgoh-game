@@ -37,3 +37,6 @@ authored.js: DGM local-trs, _clipRest, _clipNames, poseModelClip, slerp, сбр�
 5. После принятия арта + green обязательного CI — PR merge, версия/журнал, Pages по действующим правилам. Не распространять на весь ростер.
 
 Ресурсы: действующие GLB/DGM, Blender headless (CPU), Node/Babylon 9.30, Puppeteer/существующий smoke, GitHub Actions; сначала без платных сервисов и без новых runtime-зависимостей. Возможность запуска Blender/получения доступных рендеров проверить отдельно; не заявлять выполненным. Skills: babylonjs, game-feel, create-game-assets, game-ui-ux, performance-optimization, новый cinematic-motion. Сохранения, бой, общий layout, Meshy, остальные герои вне объёма.
+
+## A — решение по лаборатории
+PR #310; 144 кадра первый проход отклонён, 168 второй проход, MP4 run 45658515635 (2 × 375 кадров). Владелец после видео: «Прикольно». Дункан — Long_Breathe_and_Look_Around, Муад’Диб — Watchful (yaw .22, lift -.17, speed .68, взгляд с паузой). Weapon-rest отклонён. LOW/reduced — settled pose. B — только runtime idle, C — события и переходы. Физическая проверка отдельно.

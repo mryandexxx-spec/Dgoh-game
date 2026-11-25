@@ -5,6 +5,7 @@ Seven general-purpose skills from [awesome-gamedev-agent-skills](https://github.
 ## Routing
 - Babylon.js 9.30 WebGL scenes, PBR, lighting, KTX2/DGM, hero animations and visual proof → `babylonjs` (combine with task-specific skills when appropriate).
 - UI, top navigation, roster, scaling and mobile accessibility → `game-ui-ux`.
+- Cinematic hero showcase / authored idle, gesture, transitions and real motion review → `cinematic-motion` + `babylonjs` + `game-feel`.
 - Animation, hit effects and interaction polish → `game-feel` (with `audio-design` for sound).
 - Portraits, 2D icons, 3D characters, textures, provenance → `create-game-assets`.
 - Kit/equipment/quests/progression → `rpg`.
