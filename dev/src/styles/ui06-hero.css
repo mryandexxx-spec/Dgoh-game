@@ -514,12 +514,12 @@
 }
 .hc.gfx02-pilot.has-ultimate .hcsk.gl .hcski { width:34px;height:34px; }
 .hc.gfx02-pilot.has-ultimate .hcpilot-controls .hcright { max-height:29%; }
-.hc.gfx02-pilot.has-ultimate .hcleft { min-height:108px; }
+.hc.gfx02-pilot.has-ultimate .hcleft { min-height:156px; }
 .hc.gfx02-pilot.has-ultimate .hcmem { flex:none; min-height:44px; }
 .hc.gfx02-pilot.has-ultimate .hcsks { min-height:44px; }
 @media(max-height:400px) and (orientation:landscape) {
   .hc.gfx02-pilot.has-ultimate .hcpilot-controls .hcright { max-height:23%; }
-  .hc.gfx02-pilot.has-ultimate .hcleft { min-height:110px; }
+  .hc.gfx02-pilot.has-ultimate .hcleft { min-height:156px; }
 }
 /* Only the development panel may scroll if safe areas leave insufficient
    vertical space for the mandatory legend controls. The screen never scrolls. */
