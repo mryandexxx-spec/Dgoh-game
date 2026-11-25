@@ -446,7 +446,7 @@ function verifiedUpgradeClick(d) {
     });
     if (!tx.ok) return true;
     celebQueue({ type: 'hup', kind: 'gear', id, from: ROMAN[tx.value.from], to: ROMAN[tx.value.to], s0 });
-    render(); openDetail(id);
+    render(); openDetail(id); heroUpgradeFeedback(id);
     return true;
   }
   if (d.relic !== undefined) {
@@ -463,7 +463,7 @@ function verifiedUpgradeClick(d) {
       return true;
     }
     celebQueue({ type: 'hup', kind: 'relic', id, from: MEM(tx.value - 1), to: MEM(tx.value), s0 });
-    render(); openDetail(id);
+    render(); openDetail(id); heroUpgradeFeedback(id, 'relic');
     return true;
   }
   if (d.lvlto !== undefined || d.lvl !== undefined || d.lvl5 !== undefined) {
@@ -518,6 +518,7 @@ function verifiedUpgradeClick(d) {
     toast(`${CH[id].sn}: ${tx.value.to}★`);
     setTimeout(() => celebQueue({ type: 'star', id, from: tx.value.from, to: tx.value.to, pw0 }), 0);
     if (infoKey) refreshAll(); else { render(); openDetail(id); }
+    heroUpgradeFeedback(id, 'star');
     return true;
   }
   if (d.gear !== undefined) {
