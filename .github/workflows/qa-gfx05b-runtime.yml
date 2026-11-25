@@ -6,17 +6,21 @@ on:
 permissions:
   contents: read
 jobs:
-  hero:
+  paired-bench:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
-          path: candidate
+          path: harness
       - uses: actions/checkout@v4
         with:
           ref: 561381377eb6526a5106c029bd97a86e3a36217e
           path: baseline
+      - uses: actions/checkout@v4
+        with:
+          ref: afc116aedd03252c730e3702e77788faa0e02e40
+          path: candidate
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -24,26 +28,37 @@ jobs:
         working-directory: baseline/dev
       - run: npm ci && node tools/build.mjs
         working-directory: candidate/dev
-      - name: Baseline authored hero evidence
-        working-directory: candidate/dev
-        run: node tests/smoke/gfx05-runtime.mjs "$GITHUB_WORKSPACE/baseline/dev/dist/pwa/index.html" gfx05-runtime-out/baseline --baseline
-      - name: Candidate authored hero and lifecycle checks
-        working-directory: candidate/dev
-        run: node tests/smoke/gfx05-runtime.mjs dist/pwa/index.html gfx05-runtime-out/candidate
-      - name: Comparative cost summary
-        working-directory: candidate/dev
+      - run: npm ci
+        working-directory: harness/dev
+      - name: Three paired repetitions, alternating order, 180 measured frames per scene
+        working-directory: harness/dev
+        run: |
+          for pair in 1 2 3; do
+            if [ "$pair" = 2 ]; then order="candidate baseline"; else order="baseline candidate"; fi
+            for side in $order; do
+              flag=""
+              if [ "$side" = baseline ]; then flag="--baseline"; fi
+              node tests/smoke/gfx05-runtime.mjs "$GITHUB_WORKSPACE/$side/dev/dist/pwa/index.html" "bench-out/$pair/$side" --bench $flag
+            done
+          done
+      - name: Paired median comparison (no automatic acceptance)
+        working-directory: harness/dev
         run: |
           node --input-type=module - <<'JS'
           import fs from 'node:fs';
-          const dir='gfx05-runtime-out';
-          const a=JSON.parse(fs.readFileSync(dir+'/baseline/metrics.json'));
-          const b=JSON.parse(fs.readFileSync(dir+'/candidate/metrics.json'));
-          const rows=b.map(x=>{const y=a.find(z=>z.id===x.id&&z.width===x.width&&z.gfx===x.gfx);return {id:x.id,width:x.width,gfx:x.gfx,p95Before:y.p95,p95After:x.p95,p95Change:Math.round((x.p95/y.p95-1)*1000)/10,drawsBefore:y.draws,drawsAfter:x.draws,meshesBefore:y.meshes,meshesAfter:x.meshes,texturesBefore:y.textures,texturesAfter:x.textures,materialsBefore:y.materials,materialsAfter:x.materials};});
-          console.table(rows);fs.writeFileSync(dir+'/comparison.json',JSON.stringify(rows,null,2));
+          const median=x=>[...x].sort((a,b)=>a-b)[Math.floor(x.length/2)];
+          const sets=[1,2,3].map(i=>Object.fromEntries(['baseline','candidate'].map(s=>[s,JSON.parse(fs.readFileSync('bench-out/'+i+'/'+s+'/metrics.json'))])));
+          const rows=sets[0].candidate.map(x=>{
+            const same=y=>y.id===x.id&&y.width===x.width&&y.gfx===x.gfx;
+            const pairs=sets.map(s=>({before:s.baseline.find(same),after:s.candidate.find(same)}));
+            const before=median(pairs.map(p=>p.before.p95)),after=median(pairs.map(p=>p.after.p95));
+            return {id:x.id,width:x.width,gfx:x.gfx,before,after,changePct:Math.round((after/before-1)*1000)/10,pairChangePct:pairs.map(p=>Math.round((p.after.p95/p.before.p95-1)*1000)/10),drawsBefore:median(pairs.map(p=>p.before.draws)),drawsAfter:median(pairs.map(p=>p.after.draws)),resourceStable:pairs.every(p=>['meshes','textures','materials','contexts'].every(k=>p.before[k]===p.after[k]))};
+          });
+          console.table(rows);fs.writeFileSync('bench-out/comparison.json',JSON.stringify(rows,null,2));
           JS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: gfx05b-runtime-proof
-          path: candidate/dev/gfx05-runtime-out/
+          name: gfx05b-paired-bench
+          path: harness/dev/bench-out/
           if-no-files-found: warn

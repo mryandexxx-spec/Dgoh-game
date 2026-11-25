@@ -14,6 +14,7 @@ fs.mkdirSync(out,{recursive:true});
 const server=await serve(path.dirname(html));
 const browser=await puppeteer.launch({executablePath:chrome,headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
 const rows=[];
+const bench=process.argv.includes('--bench');
 try{
  for(const [width,height,gfx] of [[844,390,'med'],[667,375,'med'],[844,390,'low'],[667,375,'low']]){
   const page=await browser.newPage(),errors=[];
@@ -38,7 +39,7 @@ try{
     await page.evaluate(id=>openDetail(id),id);
     await page.waitForFunction(id=>HERO_STAGE?.o?.def?.id===id&&HERO_STAGE.o.root._authored&&HERO_STAGE.backdropTexture?.isReady()&&HERO_STAGE.pfIdle(),{timeout:45000},id);
     await page.evaluate(async()=>{await HERO_STAGE.scene.whenReadyAsync();heroHold(true);});
-    const result=await page.evaluate(({id,gfx,baseline})=>{
+    const result=await page.evaluate(({id,gfx,baseline,bench})=>{
      const h=HERO_STAGE,o=h.o,gl=h.engine._gl;
      if(!baseline&&h.motionHero!==id)throw Error('Motion profile not selected: '+id);
      const now=performance.now()+1500;h.intro=0;h.motionLast=null;
@@ -63,17 +64,17 @@ try{
      }
      h.motionLast=null;if(!baseline)h.motionElapsed=0;h.yaw=yaw0;
      const durations=[],draws=[];
-     for(let i=0;i<25;i++){
+     for(let i=0;i<(bench?210:25);i++){
       const t=9+i/15,start=performance.now(),d0=window.__motionGL.draws;
-      step(t);if(i>=5){durations.push(performance.now()-start);draws.push(window.__motionGL.draws-d0);}
+      step(t);if(i>=(bench?30:5)){durations.push(performance.now()-start);draws.push(window.__motionGL.draws-d0);}
      }
      durations.sort((a,b)=>a-b);const p95=durations[Math.ceil(durations.length*.95)-1];
      return {id,authored:!!o.root._authored,clip:o.root._lastClip,renderer:gl.getParameter(gl.RENDERER),p95,draws:draws.reduce((a,b)=>a+b,0)/draws.length,meshes:h.scene.meshes.length,textures:h.scene.textures.length,materials:h.scene.materials.length,contexts:B3.EngineStore.Instances.filter(e=>!e.isDisposed).length};
-    },{id,gfx,baseline});
+    },{id,gfx,baseline,bench});
     assert.equal(result.contexts,1,'Engine count');
     // Capture exact ordered phases of the actual production tick; no clip-map or
     // quaternion override in the harness. Only time and settled camera controlled.
-    for(const [i,t] of [0,.5,1,1.5,2.5,5,8,11.2,11.4].entries()){
+    for(const [i,t] of (bench?[]:[0,.5,1,1.5,2.5,5,8,11.2,11.4]).entries()){
      await page.evaluate(t=>{
       const h=HERO_STAGE,now=performance.now()+1500;
       if(h.motionHero){h.motionElapsed=t;h.motionLast=now;}
