@@ -1,0 +1,72 @@
+name: GFX-03 faction environment A/B (temporary)
+on:
+  push:
+    branches: [qa/gfx03-worlds-ab]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare:
+    strategy:
+      fail-fast: false
+      matrix:
+        hero: [paul, feyd, stilgar, shaddam, mohiam, erasmus]
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+      - uses: actions/checkout@v4
+        with:
+          ref: 16d79bedd1dbc33f21c34a25f322472167b55fbd
+          path: candidate
+      - name: Build exact v159 candidate
+        working-directory: candidate/dev
+        run: |
+          npm ci
+          npm run build
+          cp ../../dev/tests/smoke/gfx03-ab-once.mjs tests/smoke/
+          mkdir -p /tmp/gfx159
+          cp -a dist/pwa /tmp/gfx159/pwa
+      - name: Download validated v158
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 45505592598 --name dune-validated-build --dir /tmp/gfx158
+      - name: Compare actual WebGL on both mobile profiles and sizes and desktop HIGH
+        working-directory: candidate/dev
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+          HERO: ${{ matrix.hero }}
+        run: |
+          mkdir -p /tmp/gfx03-qa
+          for spec in med:844:390 low:844:390 med:667:375 low:667:375 high:960:600; do
+            IFS=: read -r profile width height <<< "$spec"
+            phone=()
+            if [ "$profile" != high ]; then phone=(--phone --width "$width" --height "$height"); fi
+            for version in 158 159; do
+              name="$version-$profile-$width"
+              node tests/smoke/gfx03-ab-once.mjs "/tmp/gfx$version/pwa/index.html" "${phone[@]}" --hero "$HERO" --dpr 1 --gfx "$profile" --shot "/tmp/gfx03-qa/$name.png" --out "/tmp/gfx03-qa/$name.json"
+            done
+          done
+      - name: Report metrics (software renderer, not iPhone)
+        run: |
+          python3 - <<'PY'
+          import pathlib,json
+          p=pathlib.Path('/tmp/gfx03-qa')
+          for profile,width in [('med',844),('low',844),('med',667),('low',667),('high',960)]:
+              a,b=[json.loads((p/f'{v}-{profile}-{width}.json').read_text()) for v in (158,159)]
+              def summary(x):
+                  m=x['hero']['vram']; c=x['hero']['cost']; s=x['sample']
+                  return {'draws':c['draws'],'passes':c['passes'],'pixels_M':c['mpx'],'rt_MB':round(sum(t['mb'] for t in m['rows'] if t['rt'])+m['depthMB']+m['backbufMB'],2),'texture_MB':round(sum(t['mb'] for t in m['rows'] if not t['rt']),2),'p95_interval_ms':s['p95Interval'],'canvas':m['canvas']}
+              print('GFX03_AB',profile,width,summary(a),'->',summary(b))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gfx03-ab-${{ matrix.hero }}
+          path: /tmp/gfx03-qa/
+          retention-days: 7
