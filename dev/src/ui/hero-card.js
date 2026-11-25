@@ -13,7 +13,7 @@ import { S } from '../core/state.js';
 import { GEAR_UP_SOL, TIER_COL } from '../logic/gear.js';
 import { RELIC_MAX, relicReady, sideName, unlockNeed } from '../logic/relics.js';
 import { MAX_GEAR, MAX_LVL, ROMAN, STAR_COST } from '../logic/economy.js';
-import { mountHeroStage, heroThemeKey, heroThemeUrl, heroShowcasePilot, heroMotionPilot, heroFeedback } from '../render3d/scenes/hero.js';
+import { mountHeroStage, heroThemeKey, heroThemeUrl, heroShowcasePilot, heroFeedback } from '../render3d/scenes/hero.js';
 import { gfx } from '../render3d/quality.js';
 import { figureSVG } from '../render2d/figures.js';
 import { unitPower, unitStats } from '../logic/battle/stats.js';
@@ -29,10 +29,10 @@ import { ptShards, memoryBadge } from './portrait.js';
 // Overlay feedback uses only opacity/transform; no timers or replay queue.
 const heroAccent = new WeakMap();
 function heroAccentElement(el, id, kind) {
-  if (!el || !heroMotionPilot(id) || document.hidden || !gfx(Math.min(innerWidth, innerHeight) < 600).heroCharacterMotion || typeof el.animate !== 'function' || (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)) return false;
+  if (!el || !heroShowcasePilot(id) || document.hidden || !gfx(Math.min(innerWidth, innerHeight) < 600).heroCharacterMotion || typeof el.animate !== 'function' || (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)) return false;
   try {
     heroAccent.get(el)?.cancel();
-    const major = kind === 'star' || kind === 'relic', legend = id === 'muaddib';
+    const major = kind === 'star' || kind === 'relic', legend = !!CH[id]?.gl;
     const peak = kind === 'relic' ? 1.09 : kind === 'star' ? 1.06 : 1.025;
     const animation = el.animate([{ transform: 'scale(1)', opacity: .86 }, { transform: `scale(${peak})`, opacity: 1, offset: .35 }, { transform: 'scale(1)', opacity: 1 }], { duration: major ? (kind === 'relic' ? 600 : 420) : legend ? 220 : 180, easing: 'ease-out' });
     heroAccent.set(el, animation);
@@ -40,7 +40,7 @@ function heroAccentElement(el, id, kind) {
   } catch (_) { return false; } // visual feedback must not fail a committed operation
 }
 function heroUpgradeFeedback(id, kind = 'up') {
-  if (!heroMotionPilot(id) || document.hidden || document.querySelector('.hc')?.dataset.cid !== id) return;
+  if (!heroShowcasePilot(id) || document.hidden || document.querySelector('.hc')?.dataset.cid !== id) return;
   if (!heroFeedback(id, kind) && kind === 'up') {
     const overlay = document.querySelector('#overlay2 .sheet');
     if (overlay) heroAccentElement(overlay.querySelector('h3, h4, .swup'), id, kind);
@@ -177,9 +177,10 @@ function openDetail(id, stagedPreview = null) {
   }
   for (const k in Z) setZone(k, Z[k]);
   const hc = $('#overlay .hc'); hc.dataset.cid = id;
-  // GFX-02 pilot: move existing zones, never copy controls or change handlers.
-  // Restore the legacy DOM order when leaving Duncan, retaining the same canvas.
-  const pilot = heroShowcasePilot(id) && !stagedPreview;
+  // GFX-03/FIX: one shared composition, including locked/staged cards.
+  // Move existing zones; retain the same controls and canvas.
+  const pilot = heroShowcasePilot(id);
+  hc.dataset.skillCount = String(skKeys(d).length - (d.gl ? 1 : 0));
   if (hc.classList.contains('gfx02-pilot') !== pilot) {
     const controls = hc.querySelector('.hcpilot-controls'), stage = hc.querySelector('.hcstage');
     const right = hc.querySelector('.hcright'), skills = hc.querySelector('.hcleft'), gear = hc.querySelector('.hcgear');
