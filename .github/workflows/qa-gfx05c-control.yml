@@ -2,7 +2,7 @@ name: GFX-05C controlled noise and final budget
 on:
   push:
     branches: [gfx-05c-visual-proof]
-    paths: ['.github/workflows/qa-gfx05c-control.yml']
+    paths: ['.github/workflows/qa-gfx05c-control.yml', 'dev/tests/smoke/gfx05c-proof.mjs']
 permissions:
   contents: read
 jobs:
