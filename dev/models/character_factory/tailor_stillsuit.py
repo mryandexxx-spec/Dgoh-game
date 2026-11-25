@@ -26,11 +26,25 @@ for o in meshes:
     if n<300: continue
     bpy.ops.object.select_all(action="DESELECT")
     o.select_set(True);bpy.context.view_layer.objects.active=o
+    # Bake the current morph mix into this disposable export copy only.
+    # Keep the authoring source and rig; decimation requires a static topology.
+    if o.data.shape_keys:
+        mix=o.shape_key_add(name="CF baked appearance",from_mix=True)
+        coords=[v.co.copy() for v in mix.data]
+        o.shape_key_clear()
+        assert len(coords)==len(o.data.vertices)
+        for v,co in zip(o.data.vertices,coords):v.co=co
+        o.data.update()
+        assert o.data.shape_keys is None
     mod=o.modifiers.new("offline mobile reduction","DECIMATE")
     mod.decimate_type="COLLAPSE"
     mod.ratio=.38 if "suit" in o.name.lower() or "beard" in o.name.lower() else .46
-    bpy.ops.object.modifier_move_up(modifier=mod.name) if len(o.modifiers)>1 else None
+    bpy.ops.object.modifier_move_to_index(modifier=mod.name,index=0)
+    assert o.modifiers[0]==mod
     bpy.ops.object.modifier_apply(modifier=mod.name)
+    o.data.update()
+    assert count(o)>0
+    assert any(m.type=="ARMATURE" for m in o.modifiers) or not o.vertex_groups
 
 def mat(name,color,rough=.85):
     m=bpy.data.materials.new(name);m.use_nodes=True;m.diffuse_color=(*color,1)
