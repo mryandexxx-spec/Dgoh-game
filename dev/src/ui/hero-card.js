@@ -14,6 +14,7 @@ import { GEAR_UP_SOL, TIER_COL } from '../logic/gear.js';
 import { RELIC_MAX, relicReady, sideName, unlockNeed } from '../logic/relics.js';
 import { MAX_GEAR, MAX_LVL, ROMAN, STAR_COST } from '../logic/economy.js';
 import { mountHeroStage, heroThemeKey, heroThemeUrl, heroShowcasePilot, heroMotionPilot, heroFeedback } from '../render3d/scenes/hero.js';
+import { gfx } from '../render3d/quality.js';
 import { figureSVG } from '../render2d/figures.js';
 import { unitPower, unitStats } from '../logic/battle/stats.js';
 import { SK_KEYS, skMax } from '../logic/battle/skills.js';
@@ -28,7 +29,7 @@ import { ptShards, memoryBadge } from './portrait.js';
 // Overlay feedback uses only opacity/transform; no timers or replay queue.
 const heroAccent = new WeakMap();
 function heroAccentElement(el, id, kind) {
-  if (!el || !heroMotionPilot(id) || typeof el.animate !== 'function' || (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)) return false;
+  if (!el || !heroMotionPilot(id) || document.hidden || !gfx(Math.min(innerWidth, innerHeight) < 600).heroCharacterMotion || typeof el.animate !== 'function' || (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)) return false;
   try {
     heroAccent.get(el)?.cancel();
     const major = kind === 'star' || kind === 'relic', legend = id === 'muaddib';
