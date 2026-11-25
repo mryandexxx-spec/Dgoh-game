@@ -23,22 +23,17 @@ jobs:
           tar -xf blender.tar.xz
           BLENDER="$RUNNER_TEMP/blender-4.2.3-linux-x64/blender"
           "$BLENDER" --version
-          curl -fL --retry 2 'https://extensions.blender.org/api/v1/extensions/?blender_version=4.2.3&platform=linux-x64' -o extensions.json
-          python - <<'PY'
-          import json, urllib.parse, urllib.request, hashlib
-          data = json.load(open("extensions.json"))["data"]
-          candidates = [e for e in data if e["id"] == "mpfb" and e["version"] == "2.0.18"]
-          assert len(candidates) == 1, [(e["id"],e["version"]) for e in data if e["id"] == "mpfb"]
-          e = candidates[0]
-          url = urllib.parse.urljoin("https://extensions.blender.org/api/v1/extensions/", e["archive_url"])
-          assert urllib.parse.urlsplit(url).scheme == "https"
-          urllib.request.urlretrieve(url, "mpfb.zip")
-          actual = hashlib.sha256(open("mpfb.zip","rb").read()).hexdigest()
-          assert e["archive_hash"] == "sha256:" + actual, (e["archive_hash"],actual)
-          print("MPFB verified", e["version"], actual)
-          PY
-          sha256sum mpfb.zip blender.tar.xz
-          "$BLENDER" -b --command extension install-file -r user_default -e "$RUNNER_TEMP/mpfb.zip"
+          # Official upstream documents building the extension from src/mpfb.
+          git clone --depth 1 --branch v2.0.18 https://github.com/makehumancommunity/mpfb2.git mpfb-src
+          git -C mpfb-src rev-parse HEAD
+          test -f mpfb-src/src/mpfb/blender_manifest.toml
+          mkdir -p "$RUNNER_TEMP/mpfb-dist"
+          "$BLENDER" -b --command extension build --source-dir "$RUNNER_TEMP/mpfb-src/src/mpfb" --output-dir "$RUNNER_TEMP/mpfb-dist"
+          shopt -s nullglob
+          packages=("$RUNNER_TEMP"/mpfb-dist/*.zip)
+          test "${#packages[@]}" -eq 1
+          sha256sum "${packages[0]}" blender.tar.xz
+          "$BLENDER" -b --command extension install-file -r user_default -e "${packages[0]}"
           echo "BLENDER=$BLENDER" >> "$GITHUB_ENV"
       - name: Export base and report
         env:
