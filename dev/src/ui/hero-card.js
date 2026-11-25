@@ -33,7 +33,7 @@ function heroAccentElement(el, id, kind) {
   try {
     heroAccent.get(el)?.cancel();
     const major = kind === 'star' || kind === 'relic', legend = id === 'muaddib';
-    const peak = kind === 'relic' ? 1.045 : kind === 'star' ? 1.035 : 1.012;
+    const peak = kind === 'relic' ? 1.09 : kind === 'star' ? 1.06 : 1.025;
     const animation = el.animate([{ transform: 'scale(1)', opacity: .86 }, { transform: `scale(${peak})`, opacity: 1, offset: .35 }, { transform: 'scale(1)', opacity: 1 }], { duration: major ? (kind === 'relic' ? 600 : 420) : legend ? 220 : 180, easing: 'ease-out' });
     heroAccent.set(el, animation);
     return true;
