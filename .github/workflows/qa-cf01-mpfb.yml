@@ -1,4 +1,4 @@
-name: QA CF02 character visual probe (one-shot)
+name: QA CF03 TripoSR CPU feasibility (one-shot)
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -11,52 +11,37 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
-      - name: Install pinned Blender and MPFB
-        shell: bash
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install upstream CPU inference
         run: |
           set -euxo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq libgl1 libxi6 libxrender1 libxxf86vm1 libxfixes3 libxkbcommon0
-          cd "$RUNNER_TEMP"
-          curl -fL --retry 2 https://download.blender.org/release/Blender4.2/blender-4.2.3-linux-x64.tar.xz -o blender.tar.xz
-          tar -xf blender.tar.xz
-          BLENDER="$RUNNER_TEMP/blender-4.2.3-linux-x64/blender"
-          "$BLENDER" --version
-          # Official upstream documents building the extension from src/mpfb.
-          git clone --depth 1 --branch v2.0.18 https://github.com/makehumancommunity/mpfb2.git mpfb-src
-          git -C mpfb-src rev-parse HEAD
-          test -f mpfb-src/src/mpfb/blender_manifest.toml
-          mkdir -p "$RUNNER_TEMP/mpfb-dist"
-          "$BLENDER" -b --command extension build --source-dir "$RUNNER_TEMP/mpfb-src/src/mpfb" --output-dir "$RUNNER_TEMP/mpfb-dist"
-          shopt -s nullglob
-          packages=("$RUNNER_TEMP"/mpfb-dist/*.zip)
-          test "${#packages[@]}" -eq 1
-          sha256sum "${packages[0]}" blender.tar.xz
-          "$BLENDER" -b --command extension install-file -r user_default -e "${packages[0]}"
-          echo "BLENDER=$BLENDER" >> "$GITHUB_ENV"
-      - name: Fetch official CC0 system assets
+          git clone --depth 1 https://github.com/VAST-AI-Research/TripoSR.git "$RUNNER_TEMP/triposr"
+          cd "$RUNNER_TEMP/triposr"
+          git rev-parse HEAD
+          python -m pip install 'numpy<2' 'torch==2.5.1' 'torchvision==0.20.1' --extra-index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'setuptools<81' wheel 'cmake<4' ninja
+          python -m pip install --no-build-isolation 'git+https://github.com/tatsy/torchmcubes.git'
+          python -m pip install 'omegaconf==2.3.0' 'Pillow==10.1.0' 'einops==0.7.0' 'transformers==4.35.0' 'trimesh==4.0.5' 'rembg[cpu]==2.0.57' 'huggingface-hub<1' 'imageio[ffmpeg]' 'xatlas==0.0.9' 'moderngl==5.10.0' 'numpy<2' scipy
+      - name: CPU inference on upstream reference (not Stilgar)
         run: |
           set -euxo pipefail
-          cd "$RUNNER_TEMP"
-          curl -fL --retry 2 --max-time 180 https://files.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip -o system.zip || curl -fL --retry 2 --max-time 180 https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip -o system.zip
-          sha256sum system.zip
-          unzip -q system.zip -d system-assets
-          for pack in bodyparts05 suits02; do
-            curl -fL --retry 2 --max-time 180 "https://files.makehumancommunity.org/asset_packs/$pack/${pack}_cc0.zip" -o "$pack.zip"
-            sha256sum "$pack.zip"
-            unzip -q "$pack.zip" -d "system-assets/$pack"
-          done
-      - name: Assemble character and render exported GLB
-        env:
-          CF_OUT: ${{ runner.temp }}/cf02
-          CF_ASSETS: ${{ runner.temp }}/system-assets
-        run: |
-          "$BLENDER" -b --python-exit-code 1 --python dev/models/character_factory/probe_character.py
-          cat "$CF_OUT/candidate-report.json"
+          cd "$RUNNER_TEMP/triposr"
+          export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4
+          test -f examples/chair.png
+          /usr/bin/time -v python run.py examples/chair.png --device cpu --mc-resolution 128 --output-dir "$RUNNER_TEMP/cf03" --model-save-format glb
+          python - <<'PY'
+          import pathlib, trimesh, json
+          import os
+          p=next(pathlib.Path(os.environ["RUNNER_TEMP"]).glob("cf03/**/*.glb"))
+          scene=trimesh.load(p,force="scene")
+          print("CF03_REPORT",json.dumps({"bytes":p.stat().st_size,"triangles":sum(len(g.faces) for g in scene.geometry.values()),"input":"upstream chair example","status":"CPU feasibility only"}))
+          assert p.stat().st_size>1024
+          PY
       - uses: actions/upload-artifact@v4
         with:
-          name: cf02-character-and-visual-proof
-          path: ${{ runner.temp }}/cf02/
-          if-no-files-found: error
+          name: cf03-cpu-feasibility
+          path: ${{ runner.temp }}/cf03/
           retention-days: 7
+          if-no-files-found: error
