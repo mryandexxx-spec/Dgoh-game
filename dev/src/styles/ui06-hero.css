@@ -514,13 +514,23 @@
 }
 .hc.gfx02-pilot.has-ultimate .hcsk.gl .hcski { width:34px;height:34px; }
 .hc.gfx02-pilot.has-ultimate .hcpilot-controls .hcright { max-height:29%; }
-.hc.gfx02-pilot.has-ultimate .hcleft { min-height:156px; }
+.hc.gfx02-pilot.has-ultimate .hcleft { min-height:198px; }
 .hc.gfx02-pilot.has-ultimate .hcmem { flex:none; min-height:44px; }
-.hc.gfx02-pilot.has-ultimate .hcsks { min-height:44px; }
+.hc.gfx02-pilot.has-ultimate .hcsks { min-height:84px; flex:1 0 auto; }
+.hc.gfx02-pilot.has-ultimate .hcsks .hcsk:not(.gl) { min-height:68px; }
+.hc.gfx02-pilot.has-ultimate .hcleft { flex:1 0 auto; }
+.hc.gfx02-pilot.has-ultimate .hcpilot-controls .hcright { flex:none; }
 @media(max-height:400px) and (orientation:landscape) {
   .hc.gfx02-pilot.has-ultimate .hcpilot-controls .hcright { max-height:23%; }
-  .hc.gfx02-pilot.has-ultimate .hcleft { min-height:156px; }
+  .hc.gfx02-pilot.has-ultimate .hcleft { min-height:198px; }
 }
 /* Only the development panel may scroll if safe areas leave insufficient
    vertical space for the mandatory legend controls. The screen never scrolls. */
 .hc.gfx02-pilot.has-ultimate .hcpilot-controls { overflow-y:auto; overflow-x:hidden; }
+
+/* The fixed showcase owns the viewport. The old shell leaves the browser's
+   default body margin (8px) even on v161; lock only while this card is open.
+   Nested development/skill scrollports remain usable. */
+html:has(.hcwrap .hc.gfx02-pilot), body:has(.hcwrap .hc.gfx02-pilot) {
+  margin:0; overflow:hidden; overscroll-behavior:none;
+}
