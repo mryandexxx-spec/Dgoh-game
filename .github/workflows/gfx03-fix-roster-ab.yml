@@ -27,7 +27,7 @@ jobs:
         id: chrome
       - uses: actions/checkout@v4
         with:
-          ref: 638138bf88c4c527b7c065dbff38793690a05e1b
+          ref: e9fc580dd398c18102dca70ffb8e915fca0e9fe4
           path: candidate
       - name: Build exact candidate
         working-directory: candidate/dev
@@ -35,10 +35,14 @@ jobs:
           npm ci
           npm run build
           cp ../../dev/tests/smoke/gfx03-fix-sweep.mjs tests/smoke/
-      - name: Fetch validated baseline v161
+      - name: Reuse exact baseline capture from previous sweep
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh run download 45680904402 --name dune-validated-build --dir /tmp/gfx161
+        run: |
+          gh run download 45700719784 --name gfx03-fix-${{ matrix.profile }}-${{ matrix.width }} --dir /tmp/prior-sweep
+          mkdir -p /tmp/gfx03-fix
+          cp -a /tmp/prior-sweep/v161 /tmp/gfx03-fix/v161
+          test -s /tmp/gfx03-fix/v161/report.json
       - name: Actual WebGL roster sweep
         working-directory: candidate/dev
         env:
@@ -47,7 +51,6 @@ jobs:
           args=()
           if [ "${{ matrix.profile }}" != high ]; then args=(--phone --width "${{ matrix.width }}" --height "${{ matrix.height }}"); fi
           mkdir -p /tmp/gfx03-fix
-          node tests/smoke/gfx03-fix-sweep.mjs /tmp/gfx161/pwa/index.html "${args[@]}" --gfx "${{ matrix.profile }}" --shots /tmp/gfx03-fix/v161
           node tests/smoke/gfx03-fix-sweep.mjs dist/pwa/index.html "${args[@]}" --gfx "${{ matrix.profile }}" --candidate --shots /tmp/gfx03-fix/v162
       - name: Summarize per-character budget deltas
         if: always()
