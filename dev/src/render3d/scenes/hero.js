@@ -245,7 +245,7 @@ class HeroStage extends Stage3D {
       let o = this.pool.get(def.id); if (!o) { o = this.buildHero(def); this.pool.set(def.id, o); }
       this.warmEnd(o); o.root.setEnabled(true); const wasMotion = !!this.motionHero; this.o = o; this.def = def;
       this.motionHero = o.root._clipRest && (def.id === 'duncan' && o.root._clips?.Long_Breathe_and_Look_Around || def.id === 'muaddib' && o.root._clips?.Idle_11) ? def.id : null;
-      this.motionElapsed = 0; this.motionLast = null; this.motionSettled = null;
+      this.motionElapsed = 0; this.motionLast = null; this.motionSettled = null; this.settledCameraActor = null;
       this.yaw = this.motionHero === 'muaddib' ? .22 : def.id === 'duncan' && o.root._clipRest ? 0 : -.35;
       this.auto = !this.motionHero; this.intro = performance.now();
       if (wasMotion || this.motionHero) { this.drag = null; this.yawV = 0; this.resumeT = 0; }
@@ -314,7 +314,7 @@ class HeroStage extends Stage3D {
     c.last = now; c.elapsed += dt;
     const duration = c.kind === 'up' ? 220 : c.kind === 'star' ? 420 : 600;
     if (c.elapsed >= duration) { this.cinematic = null; return 0; }
-    return Math.sin(Math.PI * c.elapsed / duration) ** 2 * (c.kind === 'up' ? .16 : c.kind === 'star' ? .28 : .38);
+    return Math.sin(Math.PI * c.elapsed / duration) ** 2 * (c.kind === 'up' ? .24 : c.kind === 'star' ? .48 : .62);
   }
   celebrate(kind) { const b = this.burst; b.manualEmitCount = kind === 'star' ? 420 : 220; this.flashT = performance.now(); this.flashKind = kind; }
   restoreMotionHead() {
@@ -323,14 +323,14 @@ class HeroStage extends Stage3D {
     this.motionHead = null;
   }
   onSleep(options) { if (this.motionHero) this.cancelCinematic(); this.motionLast = null; this.motionSettled = null; this.restoreMotionHead(); super.onSleep(options); }
-  onWake() { if (this.motionHero) { this.cinematic = null; this.intro = performance.now(); } this.motionLast = null; this.motionSettled = null; super.onWake(); }
+  onWake() { this.settledCameraActor = null; if (this.motionHero) { this.cinematic = null; this.intro = performance.now(); } this.motionLast = null; this.motionSettled = null; super.onWake(); }
   tick(now, t) {
     const o = this.o; if (!o) return; this.prefetch(now);
     const motion = this.motionHero, reduced = !!(motion && this.motionPreference?.matches);
     const fullMotion = motion && !reduced && gfx(this.small).heroCharacterMotion;
     const settled = motion && !fullMotion && !o.act && !o.dead && !o.hitT && !o.rise;
     const reusePose = settled && this.motionSettled === o && o.root._lastClip === (motion === 'duncan' ? 'Long_Breathe_and_Look_Around' : 'Idle_11');
-    const pulse = this.cinematicPulse(now);
+    const pulse = this.cinematic ? this.cinematicPulse(now) : 0;
     let sample = t;
     if (motion) {
       const dt = this.motionLast === null ? 0 : now - this.motionLast;
@@ -362,7 +362,7 @@ class HeroStage extends Stage3D {
         o.head.rotationQuaternion.multiplyInPlace(lift);
         if (pulse) {
           const accent = this.motionAccent || (this.motionAccent = B3.Quaternion.Identity());
-          accent.copyFromFloats(-Math.sin(pulse * .12), 0, 0, Math.cos(pulse * .12));
+          accent.copyFromFloats(-Math.sin(pulse * .15), 0, 0, Math.cos(pulse * .15));
           o.head.rotationQuaternion.multiplyInPlace(accent);
         }
       }
@@ -373,7 +373,7 @@ class HeroStage extends Stage3D {
         rotation.multiplyInPlace(this.motionLift || (this.motionLift = B3.Quaternion.RotationAxis(B3.Axis.X, -.17)));
         if (pulse) {
           const accent = this.motionAccent || (this.motionAccent = B3.Quaternion.Identity());
-          accent.copyFromFloats(-Math.sin(pulse * .19), 0, 0, Math.cos(pulse * .19));
+          accent.copyFromFloats(-Math.sin(pulse * .21), 0, 0, Math.cos(pulse * .21));
           rotation.multiplyInPlace(accent);
         }
         const duration = o.root._clips.Idle_11.duration, phase = this.motionElapsed % 16;
@@ -390,7 +390,13 @@ class HeroStage extends Stage3D {
     // Do not apply the COMBAT-specific yaw correction here; the shader's
     // fixed UV orientation now shows the actual face/armor in this view.
     o.root.rotation.y = this.yaw;
-    if (motion && (!fullMotion || this.drag || document.hidden || (this.intro && (now - this.intro > 500 || document.querySelector('#overlay2 .sheet, #celeb, #lvlup'))))) this.intro = 0;
+    if (motion && this.intro && (!fullMotion || this.drag || document.hidden || now - this.intro > 500 || document.querySelector('#overlay2 .sheet, #celeb, #lvlup'))) this.intro = 0;
+    // The settled pilot camera and plate do not move with manual actor yaw.
+    // Skip identical transforms only after a complete settled frame; invalidate
+    // on actor, viewport, pipeline wake or a new entrance.
+    const fixedCamera = !!(settled && !this.intro);
+    const cameraReady = fixedCamera && this.settledCameraActor === o && this.settledCameraW === this.w && this.settledCameraH === this.h && this.settledCameraPipe === this.pipe;
+    if (!cameraReady) {
     const entrance = motion ? (motion === 'muaddib' ? 300 : 260) : 1100;
     const H = o.h, ik = !reduced && this.intro ? Math.min(1, Math.max(0, (now - this.intro) / entrance)) : 1, e = 1 - (1 - ik) ** 3;
     const push = motion ? .045 : .25, lift = motion ? .04 : .25;
@@ -410,6 +416,8 @@ class HeroStage extends Stage3D {
     const cover = 2*(len+depth)*Math.tan(this.camera.fov/2)*Math.max(1,asp)*1.035;
     this.backdrop.scaling.set(cover,cover,1);
     if (this.pipe.depthOfFieldEnabled) this.pipe.depthOfField.focusDistance = dist * 1000;
+    this.settledCameraActor = fixedCamera ? o : null; this.settledCameraW = this.w; this.settledCameraH = this.h; this.settledCameraPipe = this.pipe;
+    }
     const fk = motion ? 0 : this.flashT ? Math.max(0, 1 - (now - this.flashT) / 900) : 0;
     this.key.intensity = (o.def?.id === 'baron' ? 1.9 : this.pilot ? 1.65 : 1.7) + fk * 2 + pulse; this.ring.scaling.setAll(1); if (this.glow) this.glow.intensity = .6 + fk;
   }
