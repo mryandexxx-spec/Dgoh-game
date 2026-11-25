@@ -1,4 +1,4 @@
-name: GFX-03 FIX all-roster WebGL A-B (temporary)
+name: GFX-03 FIX controlled performance (temporary)
 on:
   push:
     branches: [qa/gfx03-fix-all-roster]
@@ -6,18 +6,21 @@ permissions:
   contents: read
   actions: read
 jobs:
-  sweep:
+  control:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {profile: med, width: 844, height: 390}
-          - {profile: low, width: 844, height: 390}
-          - {profile: med, width: 667, height: 375}
-          - {profile: low, width: 667, height: 375}
-          - {profile: high, width: 960, height: 600}
+          - {hero: muaddib, profile: low, width: 667, height: 375}
+          - {hero: duncan, profile: low, width: 667, height: 375}
+          - {hero: muaddib, profile: med, width: 844, height: 390}
+          - {hero: erasmus, profile: low, width: 844, height: 390}
+          - {hero: muaddib, profile: high, width: 960, height: 600}
+          - {hero: stilgar, profile: high, width: 960, height: 600}
+          - {hero: shaddam, profile: high, width: 960, height: 600}
+          - {hero: paul, profile: high, width: 960, height: 600}
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,51 +28,102 @@ jobs:
           node-version: '22'
       - uses: browser-actions/setup-chrome@v1
         id: chrome
-      - uses: actions/checkout@v4
-        with:
-          ref: e9fc580dd398c18102dca70ffb8e915fca0e9fe4
-          path: candidate
-      - name: Build exact candidate
-        working-directory: candidate/dev
-        run: |
-          npm ci
-          npm run build
-          cp ../../dev/tests/smoke/gfx03-fix-sweep.mjs tests/smoke/
-      - name: Reuse exact baseline capture from previous sweep
+      - run: npm ci
+        working-directory: dev
+      - name: Download exact validated builds
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh run download 45700719784 --name gfx03-fix-${{ matrix.profile }}-${{ matrix.width }} --dir /tmp/prior-sweep
-          mkdir -p /tmp/gfx03-fix
-          cp -a /tmp/prior-sweep/v161 /tmp/gfx03-fix/v161
-          test -s /tmp/gfx03-fix/v161/report.json
-      - name: Actual WebGL roster sweep
-        working-directory: candidate/dev
+          gh run download 45680904402 --name dune-validated-build --dir /tmp/gfx161
+          gh run download 45703266723 --name dune-validated-build --dir /tmp/gfx162
+      - name: Controlled A/A/B repeat with identical frame count and warmup
+        working-directory: dev
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: |
-          args=()
-          if [ "${{ matrix.profile }}" != high ]; then args=(--phone --width "${{ matrix.width }}" --height "${{ matrix.height }}"); fi
-          mkdir -p /tmp/gfx03-fix
-          node tests/smoke/gfx03-fix-sweep.mjs dist/pwa/index.html "${args[@]}" --gfx "${{ matrix.profile }}" --candidate --shots /tmp/gfx03-fix/v162
-      - name: Summarize per-character budget deltas
-        if: always()
+          cat > tests/smoke/gfx03-fix-control.mjs <<'JS'
+          // Isolated GFX-05/C evidence harness. Never shipped in runtime.
+          // Real production Babylon tick, deterministic frame sampling, synthetic visual-only events.
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import assert from 'node:assert/strict';
+          import {fileURLToPath} from 'node:url';
+          import puppeteer from 'puppeteer-core';
+          import {serve} from '../lib/serve.mjs';
+          const here=path.dirname(fileURLToPath(import.meta.url)),html=path.resolve(process.argv[2]),out=path.resolve(process.argv[3]),baseline=process.argv.includes('--baseline');
+          const save=fs.readFileSync(path.join(here,'../fixtures/saves/03-late.json'),'utf8');
+          const chrome=process.env.CHROME_PATH||['/usr/bin/google-chrome','/usr/bin/chromium'].find(p=>fs.existsSync(p));
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          fs.mkdirSync(out,{recursive:true});
+          const server=await serve(path.dirname(html));
+          const browser=await puppeteer.launch({executablePath:chrome,headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
+          const rows=[];
+          const id=process.argv[4],width=+process.argv[5],height=+process.argv[6],gfx=process.argv[7];
+          try {
+            const page=await browser.newPage(),errors=[];
+            page.on('pageerror',e=>errors.push(e.message));
+            try {
+             await page.setViewport({width,height,deviceScaleFactor:1,...(gfx==='high'?{}:{isMobile:true,hasTouch:true,isLandscape:true})});
+             await page.evaluateOnNewDocument((save,gfx)=>{
+              window.__DGOH_PERF_NO_BAKE__=true;
+              localStorage.clear();localStorage.setItem('dune-goh-v1',save);localStorage.setItem('dune-gfx',JSON.stringify({p:gfx,auto:0}));localStorage.setItem('dune-cine-off','true');
+              try{Object.defineProperty(navigator,'serviceWorker',{value:undefined})}catch{}
+              const stats=window.__motionGL={draws:0};
+              for(const P of [window.WebGLRenderingContext,window.WebGL2RenderingContext])if(P)for(const n of ['drawArrays','drawElements','drawArraysInstanced','drawElementsInstanced']){
+               const f=P.prototype[n];if(f)P.prototype[n]=function(...a){stats.draws++;return f.apply(this,a);};
+              }
+             },save,gfx);
+             await page.goto(server.url(path.basename(html)),{waitUntil:'load'});
+             await page.evaluate(async()=>await loadB3());
+             await sleep(2500);
+             await page.evaluate(()=>{closeInfo(true);closeOverlay();view='lobby';render();});
+             if(['duncan','muaddib'].includes(id))await page.waitForFunction(id=>!!MODEL_DATA[id],{timeout:45000},id);
+             await page.evaluate(id=>openDetail(id),id);
+             await page.waitForFunction(id=>HERO_STAGE?.o?.def?.id===id&&HERO_STAGE.backdropTexture?.isReady()&&HERO_STAGE.pfIdle()&&(!['duncan','muaddib'].includes(id)||HERO_STAGE.o.root._authored),{timeout:45000},id);
+             await page.evaluate(async()=>{const h=HERO_STAGE;await h.scene.whenReadyAsync();h.__qaUpdate=h.update;h.update=()=>{};});
+             const steady=await page.evaluate(({id,gfx})=>{
+              const h=HERO_STAGE,o=h.o,gl=h.engine._gl,now=performance.now()+1500;
+              if(o.def.id!==id||gfx!==(0,eval)('gfx(HERO_STAGE.small).level'))throw Error('Wrong hero or profile');
+              h.intro=0;h.motionLast=null;h.motionElapsed=0;h.auto=false;h.yawV=0;
+              const times=[],draws=[];const warm=60,count=240;
+              for(let i=0;i<warm+count;i++){
+               const t=now+i*1000/30,start=performance.now(),d0=window.__motionGL.draws;
+               h.tick(t,t/1000);h.scene.render();gl.finish();
+               if(i>=warm){times.push(performance.now()-start);draws.push(window.__motionGL.draws-d0);}
+              }
+              times.sort((a,b)=>a-b);
+              return {id,gfx,p95:times[Math.ceil(times.length*.95)-1],draws:draws.reduce((a,b)=>a+b,0)/draws.length,canvas:[h.cv.width,h.cv.height],meshes:h.scene.meshes.length,textures:h.scene.textures.length,materials:h.scene.materials.length,contexts:B3.EngineStore.Instances.filter(e=>!e.isDisposed).length};
+             },{id,gfx});
+             assert.equal(steady.contexts,1);
+             assert.deepEqual(errors,[],'Uncaught browser errors');
+             fs.writeFileSync(path.join(out,'metrics.json'),JSON.stringify(steady,null,2));
+             console.log('CONTROL_SAMPLE',JSON.stringify(steady));
+            }finally{await page.close();}
+          }finally{await browser.close();await server.close();}
+          JS
+          for trial in 1 2; do
+            order="a b c"; if [ "$trial" = 2 ]; then order="c b a"; fi
+            for side in $order; do
+              version=161; if [ "$side" = c ]; then version=162; fi
+              node tests/smoke/gfx03-fix-control.mjs "/tmp/gfx$version/pwa/index.html" "/tmp/gfx-control/$trial/$side" "${{ matrix.hero }}" "${{ matrix.width }}" "${{ matrix.height }}" "${{ matrix.profile }}"
+            done
+          done
+      - name: Report and enforce p95 budget
         run: |
           python3 - <<'PY'
-          import pathlib,json
-          root=pathlib.Path('/tmp/gfx03-fix')
-          a,b=[json.loads((root/v/'report.json').read_text()) for v in ('v161','v162')]
-          for id,v in b['out'].items():
-              if 'perf' not in v or id not in a['out']: continue
-              x,y=a['out'][id]['perf'],v['perf']
-              d={k:round(100*(y[k]/x[k]-1),2) for k in ('draws','pixels','rtMB','textureMB','p95') if x[k] and y[k] is not None}
-              print('GFX03_FIX_AB',id,d,x,y)
-          print('ROSTER',len(a['out']),len(b['out']),'layout failures',len(b['fail']))
-          assert len(a['out'])==len(b['out']) and not b['fail']
+          import json,pathlib,statistics
+          p=pathlib.Path('/tmp/gfx-control')
+          sets=[{s:json.loads((p/str(i)/s/'metrics.json').read_text()) for s in 'abc'} for i in (1,2)]
+          a=[t[s] for t in sets for s in 'ab']; b=[t['c'] for t in sets]
+          med=lambda rows,k:statistics.median(x[k] for x in rows)
+          before,after=med(a,'p95'),med(b,'p95')
+          delta=100*(after/before-1)
+          print('GFX03_CONTROL',json.dumps({'baseline':a,'candidate':b,'median_p95_before':before,'median_p95_after':after,'delta_pct':delta,'draws_before':med(a,'draws'),'draws_after':med(b,'draws'),'aa_spread_pct':[100*abs(t['a']['p95']-t['b']['p95'])/min(t['a']['p95'],t['b']['p95']) for t in sets]}))
+          assert delta <= 10, 'p95 regression > 10%'
           PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: gfx03-fix-${{ matrix.profile }}-${{ matrix.width }}
-          path: /tmp/gfx03-fix/
+          name: gfx03-control-${{ matrix.hero }}-${{ matrix.profile }}-${{ matrix.width }}
+          path: /tmp/gfx-control/
           retention-days: 7
