@@ -1,0 +1,101 @@
+name: GFX-05C Final Candidate Art and Budget
+on:
+  push:
+    branches: [gfx-05c-visual-proof]
+    paths: ['.github/workflows/qa-gfx05c-final.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/checkout@v4
+        with:
+          ref: e9d195aded30483d0fa38bba08f6d32fbb3effd1
+          path: baseline
+      - uses: actions/checkout@v4
+        with:
+          ref: 49851017ca034aeb78e15ec0166a757d2d2ab453
+          path: candidate
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci && node tools/build.mjs
+        working-directory: baseline/dev
+      - run: npm ci && node tools/build.mjs
+        working-directory: candidate/dev
+      - run: npm ci
+        working-directory: harness/dev
+      - name: Actual WebGL and overlay frames on the exact new candidate
+        working-directory: harness/dev
+        run: |
+          node tests/smoke/gfx05c-proof.mjs "$GITHUB_WORKSPACE/baseline/dev/dist/pwa/index.html" proof/baseline --baseline
+          node tests/smoke/gfx05c-proof.mjs "$GITHUB_WORKSPACE/candidate/dev/dist/pwa/index.html" proof/candidate
+      - name: Visual comparison strips from full-size crops and settled overlays
+        working-directory: harness/dev
+        run: |
+          python -m pip install --quiet pillow
+          python - <<'PY'
+          from PIL import Image,ImageDraw
+          from pathlib import Path
+          import io,base64
+          def emit(key,im):
+            buf=io.BytesIO();im.save(buf,format='JPEG',quality=72,optimize=True);enc=base64.b64encode(buf.getvalue()).decode()
+            for i in range(0,len(enc),8000):print(f'ART64 {key} {i//8000} {enc[i:i+8000]}')
+          for hero in ('duncan','muaddib'):
+            for width,gfx in ((844,'med'),(667,'low')):
+              for kind in ('entry','up','star','relic'):
+                sheet=Image.new('RGB',(920,440),'#171717');draw=ImageDraw.Draw(sheet)
+                indices=[0,4,9,18] if width==844 else [0,1,2,4]
+                for row,side in enumerate(('baseline','candidate')):
+                  draw.text((8,row*220+3),f'{hero} {width} {gfx} {kind} {side}',fill='white')
+                  for col,index in enumerate(indices):
+                    f=Path('proof')/side/f'{hero}-{width}-{gfx}'/kind/f'{index:03}.png'
+                    im=Image.open(f).convert('RGB')
+                    w,h=im.size
+                    im=im.crop((0 if hero=='duncan' else int(w*.24),int(h*.07),int(w*.53 if hero=='duncan' else w*.77),int(h*.94)))
+                    im.thumbnail((230,200));sheet.paste(im,(col*230,row*220+18))
+                emit(f'{hero}-{width}-{gfx}-{kind}',sheet)
+              for kind in ('star','relic'):
+                for side in ('baseline','candidate'):
+                  im=Image.open(Path('proof')/side/f'{hero}-{width}-{gfx}'/f'dialog-{kind}-900.png').convert('RGB')
+                  im.thumbnail((650,380));emit(f'{hero}-{width}-{gfx}-{side}-dialog-{kind}',im)
+          PY
+      - name: Paired budget repeat on previously noisy configurations
+        working-directory: harness/dev
+        run: |
+          for pair in 1 2 3; do
+            if [ "$pair" = 2 ]; then order="candidate baseline"; else order="baseline candidate"; fi
+            for side in $order; do
+              flag=""
+              if [ "$side" = baseline ]; then flag="--baseline"; fi
+              node tests/smoke/gfx05c-proof.mjs "$GITHUB_WORKSPACE/$side/dev/dist/pwa/index.html" "paired/$pair/$side" --bench $flag
+            done
+          done
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          const median=x=>[...x].sort((a,b)=>a-b)[Math.floor(x.length/2)];
+          const sets=[1,2,3].map(i=>Object.fromEntries(['baseline','candidate'].map(s=>[s,JSON.parse(fs.readFileSync('paired/'+i+'/'+s+'/metrics.json'))])));
+          const rows=sets[0].candidate.map(x=>{
+            const same=y=>y.id===x.id&&y.width===x.width&&y.gfx===x.gfx;
+            const pairs=sets.map(s=>({before:s.baseline.find(same),after:s.candidate.find(same)}));
+            const before=median(pairs.map(p=>p.before.p95)),after=median(pairs.map(p=>p.after.p95));
+            return {id:x.id,width:x.width,gfx:x.gfx,before,after,changePct:Math.round((after/before-1)*1000)/10,pairChangePct:pairs.map(p=>Math.round((p.after.p95/p.before.p95-1)*1000)/10),drawsBefore:median(pairs.map(p=>p.before.draws)),drawsAfter:median(pairs.map(p=>p.after.draws)),resourceStable:pairs.every(p=>['meshes','textures','materials','contexts'].every(k=>p.before[k]===p.after[k]))};
+          });
+          console.log('PAIRED_RESULT '+JSON.stringify(rows));fs.writeFileSync('paired/comparison.json',JSON.stringify(rows,null,2));
+          const base=JSON.parse(fs.readFileSync('proof/baseline/metrics.json')),after=JSON.parse(fs.readFileSync('proof/candidate/metrics.json'));
+          console.log('FULL_RESULT '+JSON.stringify(after.map(a=>{const b=base.find(x=>x.id===a.id&&x.width===a.width&&x.gfx===a.gfx);return {id:a.id,width:a.width,gfx:a.gfx,before:b.p95,after:a.p95,deltaPct:Math.round((a.p95/b.p95-1)*1000)/10,drawsBefore:b.draws,drawsAfter:a.draws,resourcesStable:['meshes','textures','materials','contexts'].every(k=>a[k]===b[k])};})));
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gfx05c-final-proof
+          path: |
+            harness/dev/proof/
+            harness/dev/paired/
+          if-no-files-found: warn
