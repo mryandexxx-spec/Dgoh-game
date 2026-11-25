@@ -4,6 +4,7 @@ The work suit is a fitting test, not approved Dune costume.
 """
 import bpy, os, json, math, importlib, base64
 import numpy as np
+import runpy
 from pathlib import Path
 from mathutils import Vector
 
@@ -27,7 +28,8 @@ bpy.ops.object.delete(use_global=False)
 macro = T.get_default_macro_info_dict()
 macro.update({"gender":1.0,"age":0.87,"muscle":0.65,"weight":0.49})
 body = H.create_human(macro_detail_dict=macro)
-H.set_character_skin(file("middleage_caucasian_male.mhmat"), body, skin_type="GAMEENGINE")
+old_skins=sorted(assets.rglob("old_caucasian_male.mhmat"))
+H.set_character_skin(str(old_skins[0]) if old_skins else file("middleage_caucasian_male.mhmat"), body, skin_type="GAMEENGINE")
 H.add_builtin_rig(body,"game_engine")
 for filename, kind in [("low-poly.mhclo","Eyes"),("eyebrow003.mhclo","Eyebrows"),("eyelashes01.mhclo","Eyelashes"),("short01.mhclo","Hair"),("wdg_scruffy_beard.mhclo","Clothes"),("culturalibre_hero_suit_2.mhclo","Clothes"),("shoes02.mhclo","Clothes")]:
     item = H.add_mhclo_asset(file(filename),body,asset_type=kind,material_type="GAMEENGINE",subdiv_levels=0)
@@ -37,7 +39,7 @@ for filename, kind in [("low-poly.mhclo","Eyes"),("eyebrow003.mhclo","Eyebrows")
         bsdf = next((n for n in mat.node_tree.nodes if n.type=="BSDF_PRINCIPLED"),None)
         if not bsdf: continue
         base = bsdf.inputs["Base Color"]
-        if "beard" in filename or kind=="Hair": palette=(.42,.37,.31); strength=.75
+        if "beard" in filename or kind=="Hair": palette=(.52,.49,.44); strength=.85
         elif "suit" in filename or "shoes" in filename: palette=(.16,.145,.12); strength=.9
         else: continue
         if base.is_linked and base.links[0].from_node.type=="TEX_IMAGE":
@@ -88,12 +90,15 @@ lo=Vector(np.percentile(a,.3,axis=0));hi=Vector(np.percentile(a,99.7,axis=0))
 center = (lo+hi)/2
 height = hi.z-lo.z
 assert height > .2
+# Dedicated tailoring pass, then export and reimport before proof.
+runpy.run_path(str(Path(__file__).with_name("tailor_stillsuit.py")), init_globals={"out":out,"center":center,"height":height,"lo":lo,"hi":hi})
+meshes = [o for o in bpy.context.scene.objects if o.type=="MESH"]
 triangles = 0
 for o in meshes:
     o.data.calc_loop_triangles()
     triangles += len(o.data.loop_triangles)
     for p in o.data.polygons: p.use_smooth = True
-report = {"triangles":triangles,"meshes":len(meshes),"materials":len({m.name for o in meshes for m in o.data.materials if m}),"height":height,"glb_bytes":(out/"candidate.glb").stat().st_size,"source":"MPFB 2.0.18 + system assets, WDG scruffy beard and culturalibre hero suit 2 (CC0)","status":"iteration 2; not artistic acceptance"}
+report = {"triangles":triangles,"meshes":len(meshes),"materials":len({m.name for o in meshes for m in o.data.materials if m}),"height":height,"glb_bytes":(out/"candidate.glb").stat().st_size,"source":"MPFB 2.0.18 + system assets, WDG scruffy beard and culturalibre hero suit 2 (CC0)","status":"iteration 3; bespoke costume and decimation trial; not artistic acceptance"}
 (out/"candidate-report.json").write_text(json.dumps(report,indent=2))
 print("CF02_REPORT",json.dumps(report),flush=True)
 scene=bpy.context.scene
