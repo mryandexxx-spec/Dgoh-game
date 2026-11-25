@@ -1,0 +1,66 @@
+name: GFX-05C controlled noise and final budget
+on:
+  push:
+    branches: [gfx-05c-visual-proof]
+    paths: ['.github/workflows/qa-gfx05c-control.yml']
+permissions:
+  contents: read
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/checkout@v4
+        with:
+          ref: e9d195aded30483d0fa38bba08f6d32fbb3effd1
+          path: baseline
+      - uses: actions/checkout@v4
+        with:
+          ref: 49851017ca034aeb78e15ec0166a757d2d2ab453
+          path: candidate
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci && node tools/build.mjs
+        working-directory: baseline/dev
+      - run: npm ci && node tools/build.mjs
+        working-directory: candidate/dev
+      - run: npm ci
+        working-directory: harness/dev
+      - name: Four alternating triplets with duplicate unchanged baseline
+        working-directory: harness/dev
+        run: |
+          for pair in 1 2 3 4; do
+            case "$pair" in
+              1) order="a b c";;
+              2) order="c a b";;
+              3) order="b c a";;
+              4) order="c b a";;
+            esac
+            for side in $order; do
+              build=baseline; flag="--baseline"
+              if [ "$side" = c ]; then build=candidate; flag=""; fi
+              node tests/smoke/gfx05c-proof.mjs "$GITHUB_WORKSPACE/$build/dev/dist/pwa/index.html" "control/$pair/$side" --noise $flag
+            done
+          done
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          const median=x=>{const a=[...x].sort((a,b)=>a-b);return (a[Math.floor((a.length-1)/2)]+a[Math.floor(a.length/2)])/2;};
+          const round=x=>Math.round(x*10)/10;
+          const sets=[1,2,3,4].map(i=>Object.fromEntries(['a','b','c'].map(s=>[s,JSON.parse(fs.readFileSync('control/'+i+'/'+s+'/metrics.json'))])));
+          const rows=sets[0].c.map(x=>{
+            const same=y=>y.id===x.id&&y.width===x.width&&y.gfx===x.gfx;
+            const triplets=sets.map(s=>Object.fromEntries(['a','b','c'].map(k=>[k,s[k].find(same)])));
+            const base=median(triplets.flatMap(p=>[p.a.p95,p.b.p95])),cand=median(triplets.map(p=>p.c.p95));
+            return {id:x.id,width:x.width,gfx:x.gfx,base,cand,deltaPct:round((cand/base-1)*100),triplets:triplets.map(p=>[p.a.p95,p.b.p95,p.c.p95].map(round)),aaSpreadPct:triplets.map(p=>round(Math.abs(p.a.p95-p.b.p95)/Math.min(p.a.p95,p.b.p95)*100)),abDeltaPct:triplets.map(p=>round((p.c.p95/((p.a.p95+p.b.p95)/2)-1)*100)),drawsBefore:median(triplets.flatMap(p=>[p.a.draws,p.b.draws])),drawsAfter:median(triplets.map(p=>p.c.draws)),stable:triplets.every(p=>['meshes','textures','materials','contexts'].every(k=>p.a[k]===p.b[k]&&p.a[k]===p.c[k]))};
+          });
+          console.log('CONTROL_RESULT '+JSON.stringify(rows));fs.writeFileSync('control/comparison.json',JSON.stringify(rows,null,2));
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gfx05c-control
+          path: harness/dev/control/
