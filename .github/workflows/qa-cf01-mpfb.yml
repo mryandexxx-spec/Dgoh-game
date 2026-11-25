@@ -18,7 +18,7 @@ jobs:
       - name: One public free-tier generation (no token, no paid fallback)
         run: |
           set -euo pipefail
-          python -m pip install 'gradio_client>=1.5,<3'
+          python -m pip install 'gradio_client==2.7.2'
           mkdir -p "$RUNNER_TEMP/cf04"
           base64 -d dev/models/character_factory/stilgar_control_reference.jpg.b64 > "$RUNNER_TEMP/cf04/reference.jpg"
           test "$(git hash-object "$RUNNER_TEMP/cf04/reference.jpg")" = ce5b07c4746fef3a3afa81848ae710f92f5f2438
@@ -32,6 +32,9 @@ jobs:
           endpoints=schema["named_endpoints"]
           print("CF04_ENDPOINTS",list(endpoints),flush=True)
           assert "/generate_and_extract_glb" in endpoints
+          assert "/start_session" in endpoints
+          client.predict(api_name="/start_session")
+          print("CF04_SESSION_INITIALIZED",flush=True)
           endpoint=endpoints["/generate_and_extract_glb"]
           print("CF04_PARAMETERS",[(p["parameter_name"],p.get("parameter_has_default")) for p in endpoint["parameters"]],flush=True)
           if "/preprocess_image" in endpoints:
@@ -48,6 +51,7 @@ jobs:
               if name in values:args[name]=values[name]
               elif not p.get("parameter_has_default"):raise RuntimeError("Unexpected required parameter: "+name)
           # Exactly one GPU request. Do not retry or rotate identity if quota is rejected.
+          print("CF04_SUBMIT_ONE_GPU_REQUEST",flush=True)
           result=client.predict(**args,api_name="/generate_and_extract_glb")
           def files(x):
               if isinstance(x,str) and x.lower().endswith(".glb") and pathlib.Path(x).is_file():yield x
