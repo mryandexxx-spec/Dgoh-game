@@ -29,8 +29,17 @@ function heroThemeKey(def) {
   if (def?.id === 'baron_legend') return 'hark';
   return (def?.f || []).find(f => Object.hasOwn(HERO_THEMES, f)) || 'frem';
 }
-// One allowlist for the real UI and scene; legendary Baron remains legacy.
+// GFX-02 layout/camera/DPR allowlist only. GFX-03 environments use all six themes.
 function heroShowcasePilot(id) { return id === 'duncan' || id === 'baron'; }
+// Physical floor/edge material and geometry, independent of UI layout.
+const HERO_WORLDS = Object.freeze({
+  atr:  { floor:'#596361', rough:.78, metal:0, edge:'#343f3e', edgeRough:.86, edgeMetal:0, atlas:'tile', trim:'rail' },
+  hark: { floor:'#4a4d52', rough:.48, metal:.55, edge:'#282c30', edgeRough:.62, edgeMetal:.35, atlas:'tile', trim:'rail' },
+  frem: { floor:'#a27a50', rough:.90, metal:0, edge:'#775333', edgeRough:.86, edgeMetal:0, atlas:'sand', trim:'none' },
+  cor:  { floor:'#716459', rough:.42, metal:0, edge:'#9e8053', edgeRough:.55, edgeMetal:.65, atlas:'tile', trim:'inlay' },
+  bg:   { floor:'#514b59', rough:.82, metal:0, edge:'#38333f', edgeRough:.86, edgeMetal:0, atlas:'rock', trim:'none' },
+  mach: { floor:'#3e5961', rough:.55, metal:.60, edge:'#274047', edgeRough:.50, edgeMetal:.70, atlas:'tile', trim:'inlay' },
+});
 function heroThemeUrl(key) { return assetUrl('img/hero-factions/' + key + '.webp'); }
 
 // ---------- hero showcase (character window) ----------
@@ -88,13 +97,19 @@ class HeroStage extends Stage3D {
       const slate = mat3('#596361', { roughness:.78, noSheen:true });
       const stone = mat3('#343f3e', { roughness:.86, noSheen:true });
       // One scene-owned 256² tile atlas; keep fine seams at phone scale.
+      const tileCanvas = groundCanvas('tile');
       const tiles = dynTex(groundCanvas('tile'), 2, false);
+      this.floorAtlas = tiles;
+      this.floorCanvases = new Map([['tile', tileCanvas]]);
+      this.floorAtlasKind = 'tile';
       slate.albedoTexture = tiles;
       const floor = mk(bBox(8.4,.12,5.8), slate, 0,-.06,.85,false);
       const rail = mk(bBox(8.4,.22,.28), stone, 0,.11,-2.04,false);
       return [floor,rail];
     });
     this.terrace.forEach(m => m.setEnabled(false));
+    // Legacy geometry is retained disabled in this migration for stable scene ownership.
+    this.podiumMeshes.forEach(m => m.setEnabled(false));
     tx = glowTex();
     const dust = this.motes = new B3.ParticleSystem('motes', 160, S); dust.particleTexture = tx; dust.emitter = V3(0, 0, 0); dust.minEmitBox = V3(-1.6, 0, -1.2); dust.maxEmitBox = V3(1.6, 2.6, 1); dust.direction1 = V3(-.05, .05, -.05); dust.direction2 = V3(.05, .15, .05);
     dust.minLifeTime = 4; dust.maxLifeTime = 8; dust.minSize = .01; dust.maxSize = .03; dust.color1 = new B3.Color4(1, .85, .6, .7); dust.color2 = new B3.Color4(1, .7, .4, .5); dust.colorDead = new B3.Color4(1, .6, .3, 0); dust.emitRate = 20; dust.blendMode = B3.ParticleSystem.BLENDMODE_ADD; dust.preWarmCycles = 100; dust.start();
@@ -185,6 +200,32 @@ class HeroStage extends Stage3D {
     for (const x of o.own.sks) if (S.skeletons.includes(x)) x.dispose();
     for (const x of o.own.tex) if (S.textures.includes(x)) x.dispose();
   }
+  setWorld(key) {
+    if (this.worldKey === key) return;
+    const w = HERO_WORLDS[key] || HERO_WORLDS.frem;
+    const [floor, edge] = this.terrace;
+    floor.material.albedoColor.copyFrom(col3(w.floor).toLinearSpace());
+    floor.material.metallic = w.metal; floor.material.roughness = w.rough;
+    edge.material.albedoColor.copyFrom(col3(w.edge).toLinearSpace());
+    edge.material.metallic = w.edgeMetal; edge.material.roughness = w.edgeRough;
+    // One mutable GPU atlas; at most three small CPU source canvases per scene.
+    // Never replace the material or texture on navigation, including same-world heroes.
+    if (this.floorAtlasKind !== w.atlas) {
+      let source = this.floorCanvases.get(w.atlas);
+      if (!source) { source = groundCanvas(w.atlas); this.floorCanvases.set(w.atlas, source); }
+      this.floorAtlas.getContext().drawImage(source, 0, 0);
+      this.floorAtlas.update(true);
+      this.floorAtlasKind = w.atlas;
+    }
+    floor.receiveShadows = true;
+    floor.setEnabled(true);
+    const inlay = w.trim === 'inlay';
+    edge.scaling.set(1, inlay ? .05 : 1, inlay ? .23 : 1);
+    edge.position.set(0, inlay ? .003 : .11, inlay ? -1.45 : -2.04);
+    edge.setEnabled(w.trim !== 'none');
+    this.motes.emitRate = 0;
+    this.worldKey = key;
+  }
   setHero(def, prog0, near) {
     this.pool = this.pool || new Map(); this.want = (near || []).filter(d => d && d !== def);
     this.setTheme(def);
@@ -192,21 +233,8 @@ class HeroStage extends Stage3D {
     if (this.pilot !== pilot) {
       this.pilot = pilot;
       this.applyPilotLook();
-      this.podiumMeshes.forEach(m => m.setEnabled(!pilot));
-      this.terrace.forEach(m => m.setEnabled(pilot));
-      this.motes.emitRate = pilot ? 0 : 20;
     }
-    // Reuse both physical meshes and the existing tile atlas. Update only
-    // on a world transition, including direct Duncan <-> Baron navigation.
-    if (pilot && this.pilotWorld !== this.themeKey) {
-      this.pilotWorld = this.themeKey;
-      const hark = this.themeKey === 'hark';
-      const floor = this.terrace[0].material, edge = this.terrace[1].material;
-      floor.albedoColor.copyFrom(col3(hark ? '#4a4d52' : '#596361').toLinearSpace());
-      floor.metallic = hark ? .55 : 0; floor.roughness = hark ? .48 : .78;
-      edge.albedoColor.copyFrom(col3(hark ? '#282c30' : '#343f3e').toLinearSpace());
-      edge.metallic = hark ? .35 : 0; edge.roughness = hark ? .62 : .86;
-    }
+    this.setWorld(this.themeKey);
     if (this.def !== def || !this.o) {
       if (this.o) this.o.root.setEnabled(false);
       let o = this.pool.get(def.id); if (!o) { o = this.buildHero(def); this.pool.set(def.id, o); }

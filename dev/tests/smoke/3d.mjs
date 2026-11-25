@@ -140,18 +140,25 @@ for (let c = 0; c < CYCLES; c++) {
   // UI-10: real WebGL theme, art and DOM must switch together; verify
   // all six factions and multi-faction/legend overrides once per run.
   if (c === 0) {
-    const examples = [['stilgar','frem'],['baron','hark'],['duncan','atr'],['shaddam','cor'],['mohiam','bg'],['erasmus','mach'],['muaddib','frem'],['jessica','atr']];
+    const examples = [['stilgar','frem'],['baron','hark'],['duncan','atr'],['shaddam','cor'],['mohiam','bg'],['erasmus','mach'],['muaddib','frem'],['jessica','atr'],['feyd','hark'],['duncan','atr'],['paul','atr']];
+    const worlds = {frem:[0,.90,'sand',false],hark:[.55,.48,'tile',true],atr:[0,.78,'tile',true],cor:[0,.42,'tile',true],bg:[0,.82,'rock',false],mach:[.60,.55,'tile',true]};
+    const legendTheme = await page.evaluate(() => (0,eval)("heroThemeKey({id:'baron_legend',f:['cor']})"));
+    if (legendTheme !== 'hark') errors.push('GFX-03: staged legendary Baron override');
+    let owned = null, previous = null;
     for (const [id,key] of examples) {
       await run(`openDetail('${id}');`);
       const ok = await until(`HERO_STAGE && HERO_STAGE.def?.id === '${id}' && HERO_STAGE.themeKey === '${key}' && HERO_STAGE.backdrop.isEnabled() && HERO_STAGE.backdropTexture?.isReady() && document.querySelector('.hc')?.dataset.heroTheme === '${key}'`, 12000);
-      if (ok < 0) errors.push('UI-10: faction backdrop not ready: '+id+'/'+key);
+      if (ok < 0) errors.push('GFX-03: faction backdrop not ready: '+id+'/'+key);
       if (ok >= 0) {
-        const pilot = await page.evaluate(() => (0,eval)(`(() => {
-          const hc = document.querySelector('.hc'), h = HERO_STAGE;
-          const enabled = m => m.isEnabled();
+        const p = await page.evaluate(() => (0,eval)(`(() => {
+          const hc = document.querySelector('.hc'), h = HERO_STAGE, [floor,edge] = h.terrace;
           return { ui:hc.classList.contains('gfx02-pilot'), stage:h.pilot,
-            terrace:h.terrace.every(enabled), podium:h.podiumMeshes.every(enabled),
-            world:h.pilotWorld, metallic:h.terrace[0].material.metallic,
+            floor:floor.isEnabled(), edge:edge.isEnabled(), podium:h.podiumMeshes.some(m=>m.isEnabled()),
+            world:h.worldKey, metallic:floor.material.metallic, roughness:floor.material.roughness,
+            atlas:h.floorAtlasKind, shadow:floor.receiveShadows, motes:h.motes.emitRate,
+            ownsAtlas:floor.material.albedoTexture===h.floorAtlas && h.scene.textures.includes(h.floorAtlas),
+            ownership:[floor.uniqueId,edge.uniqueId,floor.material.uniqueId,edge.material.uniqueId,h.floorAtlas.uniqueId],
+            plate:h.backdropTexture.uniqueId, cpuCanvases:h.floorCanvases.size,
             skills:hc.querySelectorAll('.hcsks [data-hcsk]').length,
             gearInControls:!!hc.querySelector('.hcpilot-controls .hcgear'),
             canvases:hc.querySelectorAll('.hcfig canvas').length,
@@ -161,16 +168,23 @@ for (let c = 0; c < CYCLES; c++) {
             expectedDof:!!(gfx(h.small).dof === true || gfx(h.small).dof === 'hero') && !(h.pilot && h.small && gfx(h.small).level === 'med') };
         })()`));
         const expected = id === 'duncan' || id === 'baron';
-        if (pilot.ui !== expected || pilot.stage !== expected || pilot.terrace !== expected ||
-            pilot.podium === expected || pilot.gearInControls !== expected || pilot.canvases !== 1 || Math.abs(pilot.dpr-pilot.expectedDpr)>.015 || pilot.dof !== pilot.expectedDof || (expected && (pilot.world !== key || Math.abs(pilot.metallic - (key === 'hark' ? .55 : 0)) > .001)) || (id === 'baron' && pilot.skills !== 5))
-          errors.push('GFX-02: pilot/legacy switch '+id+' '+JSON.stringify(pilot));
+        const [metal,rough,atlas,edge] = worlds[key];
+        if (p.ui !== expected || p.stage !== expected || p.gearInControls !== expected ||
+            !p.floor || p.edge !== edge || p.podium || p.world !== key || !p.shadow || p.motes !== 0 ||
+            Math.abs(p.metallic-metal)>.001 || Math.abs(p.roughness-rough)>.001 || p.atlas !== atlas ||
+            !p.ownsAtlas || p.cpuCanvases > 3 || p.canvases !== 1 ||
+            Math.abs(p.dpr-p.expectedDpr)>.015 || p.dof !== p.expectedDof || (id === 'baron' && p.skills !== 5))
+          errors.push('GFX-03: world/layout switch '+id+' '+JSON.stringify(p));
+        if (owned && JSON.stringify(owned)!==JSON.stringify(p.ownership)) errors.push('GFX-03: floor resources replaced '+id);
+        if (previous?.key===key && previous.plate!==p.plate) errors.push('GFX-03: same-world plate replaced '+id);
+        owned = p.ownership; previous = {key,plate:p.plate};
       }
-      if (ok >= 0 && SHOTS && !['muaddib','jessica'].includes(id)) await page.screenshot({path:path.join(SHOTS,`ui10-${key}${PHONE ? '-phone' : ''}.png`)});
+      if (ok >= 0 && SHOTS && !['muaddib','jessica','feyd','paul'].includes(id)) await page.screenshot({path:path.join(SHOTS,`gfx03-${key}${PHONE ? '-phone' : ''}.png`)});
     }
-    // Two rapid changes must not allow an older texture to win the race.
+    // Rapid transitions must not restore a stale world or plate.
     await run("openDetail('baron'); openDetail('mohiam'); openDetail('paul');");
-    const last = await until("HERO_STAGE?.themeKey === 'atr' && HERO_STAGE.backdrop.isEnabled() && HERO_STAGE.backdropTexture?.isReady() && document.querySelector('.hc')?.dataset.heroTheme === 'atr'",12000);
-    if (last < 0) errors.push('UI-10: stale theme after rapid navigation');
+    const last = await until("HERO_STAGE?.themeKey === 'atr' && HERO_STAGE.worldKey === 'atr' && HERO_STAGE.floorAtlasKind === 'tile' && HERO_STAGE.backdrop.isEnabled() && HERO_STAGE.backdropTexture?.isReady() && document.querySelector('.hc')?.dataset.heroTheme === 'atr'",12000);
+    if (last < 0) errors.push('GFX-03: stale theme after rapid navigation');
   }
   // BH4: exercise the real authored Baron in Babylon, not merely the 2D
   // fallback. Run once so this assertion does not distort lifecycle budgets.
