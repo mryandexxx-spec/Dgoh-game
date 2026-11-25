@@ -277,7 +277,15 @@ function poseModelClip(o, now, t, sp, stage) {
   }
   const time = u * clip.duration;
   for (const tr of clip.tracks) {
-    let i = 0; while (i < tr.times.length - 2 && time > tr.times[i + 1]) i++;
+    let i = 0;
+    if (name === 'Showcase' && clipName === 'Long_Breathe_and_Look_Around') {
+      let hi = Math.max(0, tr.times.length - 2);
+      while (i < hi) {
+        const mid = (i + hi) >>> 1;
+        if (time > tr.times[mid + 1]) i = mid + 1;
+        else hi = mid;
+      }
+    } else while (i < tr.times.length - 2 && time > tr.times[i + 1]) i++;
     const j = Math.min(i + 1, tr.times.length - 1), span = tr.times[j] - tr.times[i];
     const n = tr.node; if (!n) continue;
 

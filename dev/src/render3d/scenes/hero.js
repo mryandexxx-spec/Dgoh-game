@@ -243,7 +243,7 @@ class HeroStage extends Stage3D {
       let o = this.pool.get(def.id); if (!o) { o = this.buildHero(def); this.pool.set(def.id, o); }
       this.warmEnd(o); o.root.setEnabled(true); const wasMotion = !!this.motionHero; this.o = o; this.def = def;
       this.motionHero = o.root._clipRest && (def.id === 'duncan' && o.root._clips?.Long_Breathe_and_Look_Around || def.id === 'muaddib' && o.root._clips?.Idle_11) ? def.id : null;
-      this.motionElapsed = 0; this.motionLast = null;
+      this.motionElapsed = 0; this.motionLast = null; this.motionSettled = null;
       this.yaw = this.motionHero === 'muaddib' ? .22 : def.id === 'duncan' && o.root._clipRest ? 0 : -.35;
       this.auto = !this.motionHero; this.intro = performance.now();
       if (wasMotion || this.motionHero) { this.drag = null; this.yawV = 0; this.resumeT = 0; }
@@ -300,15 +300,16 @@ class HeroStage extends Stage3D {
     if (head?.rotationQuaternion && this.motionHeadRaw) head.rotationQuaternion.copyFrom(this.motionHeadRaw);
     this.motionHead = null;
   }
-  onSleep(options) { this.motionLast = null; this.restoreMotionHead(); super.onSleep(options); }
-  onWake() { this.motionLast = null; super.onWake(); }
+  onSleep(options) { this.motionLast = null; this.motionSettled = null; this.restoreMotionHead(); super.onSleep(options); }
+  onWake() { this.motionLast = null; this.motionSettled = null; super.onWake(); }
   tick(now, t) {
     const o = this.o; if (!o) return; this.prefetch(now);
     const motion = this.motionHero, reduced = !!(motion && this.motionPreference?.matches);
     const fullMotion = motion && !reduced && gfx(this.small).heroCharacterMotion;
+    const settled = motion && !fullMotion && !o.act && !o.dead && !o.hitT && !o.rise;
+    const reusePose = settled && this.motionSettled === o && o.root._lastClip === (motion === 'duncan' ? 'Long_Breathe_and_Look_Around' : 'Idle_11');
     let sample = t;
     if (motion) {
-      this.restoreMotionHead();
       const dt = this.motionLast === null ? 0 : now - this.motionLast;
       this.motionLast = now;
       // Freeze across sleep/hold, drag and long suspension; no catch-up.
@@ -320,31 +321,37 @@ class HeroStage extends Stage3D {
       if (reduced) this.yawV = 0;
       else { this.yaw += this.yawV / 60; this.yawV *= .92; }
     }
-    // Per-call override; never mutate the shared model map.
-    this.motionClip = motion === 'duncan' ? 'Long_Breathe_and_Look_Around' : null;
-    try { poseHuman(this, o, now, sample, 1); } finally { this.motionClip = null; }
-    // Meshy's relaxed Idle_11 nods the head toward the floor. A small
-    // additive head lift makes the original face texture visible at 667px
-    // without modifying the source clip, combat poses or other heroes.
-    // poseModelClip restores the source quaternion each tick, so this does
-    // not accumulate across frames.
-    if (o.def?.id === 'duncan' && o.root._clipRest && o.head?.rotationQuaternion) {
-      const lift = this._duncanHeadLift ||
-        (this._duncanHeadLift = B3.Quaternion.RotationAxis(B3.Axis.X, -.24));
-      o.head.rotationQuaternion.multiplyInPlace(lift);
-    }
-    if (motion === 'muaddib' && o.head?.rotationQuaternion) {
-      const head = this.motionHead = o.head, rotation = head.rotationQuaternion;
-      const raw = this.motionHeadRaw || (this.motionHeadRaw = B3.Quaternion.Identity());
-      raw.copyFrom(rotation);
-      rotation.multiplyInPlace(this.motionLift || (this.motionLift = B3.Quaternion.RotationAxis(B3.Axis.X, -.17)));
-      const duration = o.root._clips.Idle_11.duration, phase = this.motionElapsed % 16;
-      if (fullMotion && phase < duration) {
-        const angle = .23 * Math.sin(Math.PI * phase / duration) ** 2;
-        const gaze = this.motionGaze || (this.motionGaze = B3.Quaternion.Identity());
-        gaze.copyFromFloats(0, Math.sin(angle / 2), 0, Math.cos(angle / 2));
-        rotation.multiplyInPlace(gaze);
+    // Static LOW/reduced pose: do not resample the entire skeleton every frame.
+    // Invalidate on actor/profile/lifecycle change; yaw and camera still update.
+    if (!reusePose) {
+      this.restoreMotionHead();
+      // Per-call override; never mutate the shared model map.
+      this.motionClip = motion === 'duncan' ? 'Long_Breathe_and_Look_Around' : null;
+      try { poseHuman(this, o, now, sample, 1); } finally { this.motionClip = null; }
+      // Meshy's relaxed Idle_11 nods the head toward the floor. A small
+      // additive head lift makes the original face texture visible at 667px
+      // without modifying the source clip, combat poses or other heroes.
+      // poseModelClip restores the source quaternion each tick, so this does
+      // not accumulate across frames.
+      if (o.def?.id === 'duncan' && o.root._clipRest && o.head?.rotationQuaternion) {
+        const lift = this._duncanHeadLift ||
+          (this._duncanHeadLift = B3.Quaternion.RotationAxis(B3.Axis.X, -.24));
+        o.head.rotationQuaternion.multiplyInPlace(lift);
       }
+      if (motion === 'muaddib' && o.head?.rotationQuaternion) {
+        const head = this.motionHead = o.head, rotation = head.rotationQuaternion;
+        const raw = this.motionHeadRaw || (this.motionHeadRaw = B3.Quaternion.Identity());
+        raw.copyFrom(rotation);
+        rotation.multiplyInPlace(this.motionLift || (this.motionLift = B3.Quaternion.RotationAxis(B3.Axis.X, -.17)));
+        const duration = o.root._clips.Idle_11.duration, phase = this.motionElapsed % 16;
+        if (fullMotion && phase < duration) {
+          const angle = .23 * Math.sin(Math.PI * phase / duration) ** 2;
+          const gaze = this.motionGaze || (this.motionGaze = B3.Quaternion.Identity());
+          gaze.copyFromFloats(0, Math.sin(angle / 2), 0, Math.cos(angle / 2));
+          rotation.multiplyInPlace(gaze);
+        }
+      }
+      this.motionSettled = settled ? o : null;
     }
     // The Meshy Idle_11 face is in the stage's native forward orientation.
     // Do not apply the COMBAT-specific yaw correction here; the shader's
