@@ -88,6 +88,10 @@ try {
         await page.screenshot({type:'jpeg',quality:92,path:path.join(frames,String(i).padStart(5,'0')+'.jpg'),captureBeyondViewport:false});
        }
        execFileSync('ffmpeg',['-hide_banner','-loglevel','error','-y','-framerate',String(fps),'-i',path.join(frames,'%05d.jpg'),'-c:v','libx264','-crf','19','-pix_fmt','yuv420p','-movflags','+faststart',path.join(out,id+'-'+variant+'.mp4')],{stdio:'inherit'});
+      }catch(error){
+       const partial=path.join(out,id+'-'+variant+'-partial');
+       fs.renameSync(frames,partial);
+       throw error;
       }finally{fs.rmSync(frames,{recursive:true,force:true});}
      }else for(const [index,frac] of [0,.16,.33,.5,.66,.83,.99].entries()){
       const sec=period*frac;
