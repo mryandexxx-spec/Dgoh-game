@@ -167,7 +167,7 @@ for (let c = 0; c < CYCLES; c++) {
             gearInControls:!!hc.querySelector('.hcpilot-controls .hcgear'),
             canvases:hc.querySelectorAll('.hcfig canvas').length,
             dpr:1/h.engine.getHardwareScalingLevel(),
-            expectedDpr:Math.min(window.devicePixelRatio||1,gfx(h.small).dpr.hero)*(h.pilot?gfx(h.small).heroPilotScale:1),
+            expectedDpr:Math.min(window.devicePixelRatio||1,gfx(h.small).dpr.hero)*(h.pilot?(['duncan','baron'].includes(h.def.id)?gfx(h.small).heroPilotScale:gfx(h.small).heroShowcaseScale):1),
             dof:h.pipe.depthOfFieldEnabled,
             expectedDof:!!(gfx(h.small).dof === true || gfx(h.small).dof === 'hero') && !(h.pilot && h.small && gfx(h.small).level === 'med') };
         })()`));
