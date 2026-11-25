@@ -111,9 +111,12 @@ const reps=new Set(['duncan','baron','muaddib','stilgar','shaddam','mohiam','era
 fs.mkdirSync(shots,{recursive:true});
 try {
   await run(LOBBY); await sleep(1800);
-  const ids = await page.evaluate(() => (0,eval)('Object.keys(CH)'));
+  // Public roster is authoritative; CH also includes encounter-only entities.
+  const ids = await page.evaluate(() => (0,eval)('(() => { const v = rosterView(ROSTER_DEF); return [...v.open, ...v.locked]; })()'));
+  console.log('PUBLIC_ROSTER', JSON.stringify(ids));
   if(ids.length<25)throw Error('Unexpected roster '+JSON.stringify(ids));
   for(const id of ids){
+    console.log('OPEN_HERO',id);
     await run("closeInfo(true); openDetail("+JSON.stringify(id)+");");
     await page.waitForFunction(id=>window.HERO_STAGE&&HERO_STAGE.def?.id===id&&HERO_STAGE.backdropTexture?.isReady()&&HERO_STAGE.backdrop.isEnabled()&&document.querySelector('.hc')?.dataset.cid===id,{timeout:45000},id);
     await page.waitForFunction(()=>HERO_STAGE.pfIdle(),{timeout:45000});
