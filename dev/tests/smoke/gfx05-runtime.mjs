@@ -16,7 +16,7 @@ const browser=await puppeteer.launch({executablePath:chrome,headless:true,args:[
 const rows=[];
 const bench=process.argv.includes('--bench');
 try{
- for(const [width,height,gfx] of [[844,390,'med'],[667,375,'med'],[844,390,'low'],[667,375,'low']]){
+ for(const [width,height,gfx] of (bench?[[667,375,'med'],[844,390,'low']]:[[844,390,'med'],[667,375,'med'],[844,390,'low'],[667,375,'low']])){
   const page=await browser.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   try{
@@ -34,7 +34,7 @@ try{
    await page.evaluate(async()=>await loadB3());
    await sleep(2500);
    await page.evaluate(()=>{closeInfo(true);closeOverlay();view='lobby';render();});
-   for(const id of ['duncan','muaddib']){
+   for(const id of (bench?[gfx==='med'?'duncan':'muaddib']:['duncan','muaddib'])){
     await page.waitForFunction(id=>!!MODEL_DATA[id],{timeout:45000},id);
     await page.evaluate(id=>openDetail(id),id);
     await page.waitForFunction(id=>HERO_STAGE?.o?.def?.id===id&&HERO_STAGE.o.root._authored&&HERO_STAGE.backdropTexture?.isReady()&&HERO_STAGE.pfIdle(),{timeout:45000},id);
@@ -54,7 +54,7 @@ try{
       if(h.auto||Math.abs(h.yaw-yaw0)>1e-7)throw Error('Unexpected auto spin');
       if(id==='duncan'&&(o.root._lastClip!=='Long_Breathe_and_Look_Around'||o.root._clipNames.Showcase!=='Idle_11'))throw Error('Showcase mapping leaked');
       if(id==='muaddib'&&o.root._lastClip!=='Idle_11')throw Error('Wrong Muad clip');
-      if(gfx==='low'?(after!==before||dot(pose0,q())<.99999):after-before<.19)throw Error('Clock/profile mismatch');
+      if(gfx==='low'?(after!==before||dot(pose0,q())<.99999||h.motionSettled!==o):after-before<.19)throw Error('Clock/profile mismatch');
       h.drag={x:0,y0:h.yaw};step(.4);if(elapsed()!==after)throw Error('Drag advanced clock');h.drag=null;
       h.yaw=.4;step(.5);if(Math.abs(h.yaw-.4)>1e-5)throw Error('Manual yaw lost');h.yaw=yaw0;
       const frozen=elapsed();step(4);if(elapsed()!==frozen)throw Error('Suspension catchup');

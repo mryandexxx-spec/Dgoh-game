@@ -19,7 +19,7 @@ jobs:
           path: baseline
       - uses: actions/checkout@v4
         with:
-          ref: afc116aedd03252c730e3702e77788faa0e02e40
+          ref: 7b8ce581b07d7d85824eea7ff694e89bc21c8df8
           path: candidate
       - uses: actions/setup-node@v4
         with:
@@ -30,7 +30,10 @@ jobs:
         working-directory: candidate/dev
       - run: npm ci
         working-directory: harness/dev
-      - name: Three paired repetitions, alternating order, 180 measured frames per scene
+      - name: Full candidate visual and lifecycle smoke after optimization
+        working-directory: harness/dev
+        run: node tests/smoke/gfx05-runtime.mjs "$GITHUB_WORKSPACE/candidate/dev/dist/pwa/index.html" bench-out/visual
+      - name: Three paired repetitions of two previously over-budget scenes
         working-directory: harness/dev
         run: |
           for pair in 1 2 3; do
