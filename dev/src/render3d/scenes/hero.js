@@ -29,6 +29,8 @@ function heroThemeKey(def) {
   if (def?.id === 'baron_legend') return 'hark';
   return (def?.f || []).find(f => Object.hasOwn(HERO_THEMES, f)) || 'frem';
 }
+// One allowlist for the real UI and scene; legendary Baron remains legacy.
+function heroShowcasePilot(id) { return id === 'duncan' || id === 'baron'; }
 function heroThemeUrl(key) { return assetUrl('img/hero-factions/' + key + '.webp'); }
 
 // ---------- hero showcase (character window) ----------
@@ -186,13 +188,24 @@ class HeroStage extends Stage3D {
   setHero(def, prog0, near) {
     this.pool = this.pool || new Map(); this.want = (near || []).filter(d => d && d !== def);
     this.setTheme(def);
-    const pilot = def.id === 'duncan';
+    const pilot = heroShowcasePilot(def.id);
     if (this.pilot !== pilot) {
       this.pilot = pilot;
       this.applyPilotLook();
       this.podiumMeshes.forEach(m => m.setEnabled(!pilot));
       this.terrace.forEach(m => m.setEnabled(pilot));
       this.motes.emitRate = pilot ? 0 : 20;
+    }
+    // Reuse both physical meshes and the existing tile atlas. Update only
+    // on a world transition, including direct Duncan <-> Baron navigation.
+    if (pilot && this.pilotWorld !== this.themeKey) {
+      this.pilotWorld = this.themeKey;
+      const hark = this.themeKey === 'hark';
+      const floor = this.terrace[0].material, edge = this.terrace[1].material;
+      floor.albedoColor.copyFrom(col3(hark ? '#4a4d52' : '#596361').toLinearSpace());
+      floor.metallic = hark ? .55 : 0; floor.roughness = hark ? .48 : .78;
+      edge.albedoColor.copyFrom(col3(hark ? '#282c30' : '#343f3e').toLinearSpace());
+      edge.metallic = hark ? .35 : 0; edge.roughness = hark ? .62 : .86;
     }
     if (this.def !== def || !this.o) {
       if (this.o) this.o.root.setEnabled(false);
@@ -217,6 +230,12 @@ class HeroStage extends Stage3D {
       this.rim2.direction.set(-.55, -.46, -.70);
       this.rim2.diffuse.set(.96, .98, 1);
       this.rim2.intensity = 3.4;
+    } else if (def.id === 'baron') {
+      // Hard silver key + restrained red edge; no extra light or glow.
+      this.rim2.position.set(2.6, 2.6, -2.2);
+      this.rim2.direction.set(-.6, -.4, .6);
+      this.rim2.diffuse.copyFrom(col3('#c48079'));
+      this.rim2.intensity = .85;
     } else {
       this.rim2.position.set(2.6, 2.6, -2.2);
       this.rim2.direction.set(-.6, -.4, .6);
@@ -263,9 +282,9 @@ class HeroStage extends Stage3D {
     const asp = (this.w || 1) / (this.h || 1),
       // The single-piece Meshy skin is visibly slimmer in the portrait than
       // the other authored heroes. Only Duncan gets a small camera push-in.
-      portraitScale = o.def?.id === 'duncan' && o.root._clipRest ? .77 : 1,
+      portraitScale = o.def?.id === 'duncan' && o.root._clipRest ? .77 : o.def?.id === 'baron' && o.root._authored ? .86 : 1,
       dist = (H * 1.35 + .6) / Math.min(1, asp * 1.9) * 1.14 * portraitScale;   // пакет 5: холст шире — запас под подиум
-    this.camera.position.set(Math.sin(.25) * dist * (1.25 - .25 * e), H * .62 + .25 * (1 - e), Math.cos(.25) * dist * (1.25 - .25 * e)); this.camera.setTarget((this._tg || (this._tg = V3())).set(0, H * (portraitScale < 1 ? .44 : .52), 0)); this.camera.fov = .75;
+    this.camera.position.set(Math.sin(.25) * dist * (1.25 - .25 * e), H * .62 + .25 * (1 - e), Math.cos(.25) * dist * (1.25 - .25 * e)); this.camera.setTarget((this._tg || (this._tg = V3())).set(0, H * (o.def?.id === 'baron' ? .50 : portraitScale < 1 ? .44 : .52), 0)); this.camera.fov = .75;
     // Fit the square plate to the larger frustum dimension (cover, not
     // stretch). Existing camera/character composition and safe areas stay.
     // Reuse vectors/scalars; no new allocations or DOM reads per frame.
@@ -277,7 +296,7 @@ class HeroStage extends Stage3D {
     this.backdrop.scaling.set(cover,cover,1);
     if (this.pipe.depthOfFieldEnabled) this.pipe.depthOfField.focusDistance = dist * 1000;
     const fk = this.flashT ? Math.max(0, 1 - (now - this.flashT) / 900) : 0;
-    this.key.intensity = (this.pilot ? 1.65 : 1.7) + fk * 2; this.ring.scaling.setAll(1); if (this.glow) this.glow.intensity = .6 + fk;
+    this.key.intensity = (o.def?.id === 'baron' ? 1.9 : this.pilot ? 1.65 : 1.7) + fk * 2; this.ring.scaling.setAll(1); if (this.glow) this.glow.intensity = .6 + fk;
   }
   slashFX() {} muzzleFX() {} voiceFX() {} castFX() {}
   dustFX(o, where) { const H = o.h, r = o.root.rotation.y, off = where === 'shoulder' ? V3(.28, H * .74, .05) : where === 'cape' ? V3(-.1, H * .5, -.3) : V3(-.05, H * .66, .14); const c = Math.cos(r), s = Math.sin(r); this.dustP.emitter = V3(off.x * c + off.z * s, off.y, -off.x * s + off.z * c); this.dustP.manualEmitCount = where === 'cape' ? 140 : 40; }
@@ -300,4 +319,4 @@ function mountHeroStage(id, near, staged = null) {
 
 function set_HERO_STAGE(v) { return HERO_STAGE = v; }
 function set_HERO_SNAP(v) { return HERO_SNAP = v; }
-export { HeroStage, HERO_STAGE, HERO_SNAP, mountHeroStage, heroHold, set_HERO_STAGE, set_HERO_SNAP, heroThemeKey, heroThemeUrl };
+export { HeroStage, HERO_STAGE, HERO_SNAP, mountHeroStage, heroHold, set_HERO_STAGE, set_HERO_SNAP, heroThemeKey, heroThemeUrl, heroShowcasePilot };

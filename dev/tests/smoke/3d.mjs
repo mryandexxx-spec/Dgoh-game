@@ -151,6 +151,8 @@ for (let c = 0; c < CYCLES; c++) {
           const enabled = m => m.isEnabled();
           return { ui:hc.classList.contains('gfx02-pilot'), stage:h.pilot,
             terrace:h.terrace.every(enabled), podium:h.podiumMeshes.every(enabled),
+            world:h.pilotWorld, metallic:h.terrace[0].material.metallic,
+            skills:hc.querySelectorAll('.hcsks [data-hcsk]').length,
             gearInControls:!!hc.querySelector('.hcpilot-controls .hcgear'),
             canvases:hc.querySelectorAll('.hcfig canvas').length,
             dpr:1/h.engine.getHardwareScalingLevel(),
@@ -158,9 +160,9 @@ for (let c = 0; c < CYCLES; c++) {
             dof:h.pipe.depthOfFieldEnabled,
             expectedDof:!!(gfx(h.small).dof === true || gfx(h.small).dof === 'hero') && !(h.pilot && h.small && gfx(h.small).level === 'med') };
         })()`));
-        const expected = id === 'duncan';
+        const expected = id === 'duncan' || id === 'baron';
         if (pilot.ui !== expected || pilot.stage !== expected || pilot.terrace !== expected ||
-            pilot.podium === expected || pilot.gearInControls !== expected || pilot.canvases !== 1 || Math.abs(pilot.dpr-pilot.expectedDpr)>.015 || pilot.dof !== pilot.expectedDof)
+            pilot.podium === expected || pilot.gearInControls !== expected || pilot.canvases !== 1 || Math.abs(pilot.dpr-pilot.expectedDpr)>.015 || pilot.dof !== pilot.expectedDof || (expected && (pilot.world !== key || Math.abs(pilot.metallic - (key === 'hark' ? .55 : 0)) > .001)) || (id === 'baron' && pilot.skills !== 5))
           errors.push('GFX-02: pilot/legacy switch '+id+' '+JSON.stringify(pilot));
       }
       if (ok >= 0 && SHOTS && !['muaddib','jessica'].includes(id)) await page.screenshot({path:path.join(SHOTS,`ui10-${key}${PHONE ? '-phone' : ''}.png`)});

@@ -398,3 +398,55 @@
 @container (max-width:282px) {
   .hc.gfx02-pilot .hcgear { grid-template-columns:repeat(3,minmax(44px,1fr)); }
 }
+
+/* GFX-02: identical action layout, industrial Harkonnen palette.
+   Only the young Baron opts in; no faction-wide rollout yet. */
+.hc.gfx02-pilot[data-hero-theme="hark"] {
+  background:#15171b;
+}
+.hc.gfx02-pilot[data-hero-theme="hark"] :is(.hctop,.hcpilot-controls,.hcmid) {
+  background:#15171b;
+}
+.hc.gfx02-pilot[data-hero-theme="hark"] .hctop {
+  box-shadow:inset 0 -1px #9d64614d;
+}
+.hc.gfx02-pilot[data-hero-theme="hark"] :is(.hcib,.hcarr) {
+  background:#1f2329; color:#e5e7e9;
+}
+.hc.gfx02-pilot[data-hero-theme="hark"] .hcstage {
+  background-color:#292d32;
+}
+.hc.gfx02-pilot[data-hero-theme="hark"] .hcstage::after {
+  background:linear-gradient(90deg,#0c0d10d9 0%,#0c0d1047 27%,transparent 49%,transparent 77%,#15171b 100%);
+}
+.hc.gfx02-pilot[data-hero-theme="hark"] .hcnm {
+  width:min(28%,190px);
+}
+.hc.gfx02-pilot[data-hero-theme="hark"] .hcnm h3 {
+  font-size:clamp(19px,2.65vw,26px);
+}
+.hc.gfx02-pilot[data-hero-theme="hark"] .hcst { background:#191b20f7; }
+.hc.gfx02-pilot[data-hero-theme="hark"] :is(.hccap,.hcpw) { color:#c4c7cd; }
+.hc.gfx02-pilot[data-hero-theme="hark"] :is(.hcleft,.hcgear) { border-color:#85899155; }
+.hc.gfx02-pilot[data-hero-theme="hark"] .hcblk .btn {
+  background:#292d33; border-color:#858991; color:#e9e9ec;
+}
+.hc.gfx02-pilot[data-hero-theme="hark"] .hcblk .btn.go:not(:disabled) {
+  background:#d4d6da;color:#17191d;
+}
+.hc.gfx02-pilot[data-hero-theme="hark"] .hcbtn:is(.go,.buy):not(:disabled) {
+  background:linear-gradient(120deg,#474c53,#292d33);border-color:#a2a6ae;
+  box-shadow:inset 3px 0 #a75e59;color:#f0f1f3;
+}
+.hc.gfx02-pilot[data-hero-theme="hark"] .hcgs .box {
+  background:linear-gradient(155deg,#41444a,#17191d);
+}
+.hc.gfx02-pilot[data-hero-theme="hark"] .hcsks {
+  grid-template-columns:repeat(5,minmax(0,1fr)); gap:3px;
+}
+.hc.gfx02-pilot[data-hero-theme="hark"] .hcski {
+  width:36px;height:36px;
+}
+.hc.gfx02-pilot[data-hero-theme="hark"] button:focus-visible {
+  outline-color:#e2e3e6;
+}
