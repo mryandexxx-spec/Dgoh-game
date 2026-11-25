@@ -1,0 +1,93 @@
+name: GFX-05C Paired Budget and Art Review
+on:
+  push:
+    branches: [gfx-05c-visual-proof]
+    paths: ['.github/workflows/qa-gfx05c-paired.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidate
+      - uses: actions/checkout@v4
+        with:
+          ref: e9d195aded30483d0fa38bba08f6d32fbb3effd1
+          path: baseline
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: gfx05c-visual-proof
+          run-id: 45676717360
+          github-token: ${{ github.token }}
+          path: previous
+      - name: Compact visual evidence from exact candidate and baseline
+        run: |
+          python -m pip install --quiet pillow
+          python - <<'PY'
+          import base64, io
+          from PIL import Image, ImageDraw
+          from pathlib import Path
+          for hero in ('duncan','muaddib'):
+            for width,gfx in ((844,'med'),(667,'low')):
+              for kind in ('entry','up','star','relic'):
+                sheet=Image.new('RGB',(1000,540),'#161616'); draw=ImageDraw.Draw(sheet)
+                indices=[0,4,9,18] if width==844 else [0,1,2,4]
+                for row,side in enumerate(('baseline','candidate')):
+                  draw.text((8,row*270+4),f'{hero} {width} {gfx} {kind} {side}',fill='white')
+                  for col,index in enumerate(indices):
+                    f=Path('previous')/side/f'{hero}-{width}-{gfx}'/kind/f'{index:03}.png'
+                    im=Image.open(f).convert('RGB');im.thumbnail((250,230))
+                    sheet.paste(im,(col*250,row*270+26))
+                buf=io.BytesIO();sheet.save(buf,format='JPEG',quality=48,optimize=True)
+                enc=base64.b64encode(buf.getvalue()).decode()
+                key=f'{hero}-{width}-{gfx}-{kind}'
+                for i in range(0,len(enc),8000):
+                  print(f'ART64 {key} {i//8000} {enc[i:i+8000]}')
+              for side in ('baseline','candidate'):
+                for kind in ('star','relic'):
+                  im=Image.open(Path('previous')/side/f'{hero}-{width}-{gfx}'/f'dialog-{kind}.png').convert('RGB')
+                  im.thumbnail((650,380));buf=io.BytesIO();im.save(buf,format='JPEG',quality=55)
+                  enc=base64.b64encode(buf.getvalue()).decode();key=f'{hero}-{width}-{gfx}-{side}-dialog-{kind}'
+                  for i in range(0,len(enc),8000):print(f'ART64 {key} {i//8000} {enc[i:i+8000]}')
+          PY
+      - run: npm ci && node tools/build.mjs
+        working-directory: baseline/dev
+      - run: npm ci && node tools/build.mjs
+        working-directory: candidate/dev
+      - name: Paired 180-frame repetitions
+        working-directory: candidate/dev
+        run: |
+          for pair in 1 2 3; do
+            if [ "$pair" = 2 ]; then order="candidate baseline"; else order="baseline candidate"; fi
+            for side in $order; do
+              flag=""
+              if [ "$side" = baseline ]; then flag="--baseline"; fi
+              node tests/smoke/gfx05c-proof.mjs "$GITHUB_WORKSPACE/$side/dev/dist/pwa/index.html" "paired/$pair/$side" --bench $flag
+            done
+          done
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          const median=x=>[...x].sort((a,b)=>a-b)[Math.floor(x.length/2)];
+          const sets=[1,2,3].map(i=>Object.fromEntries(['baseline','candidate'].map(s=>[s,JSON.parse(fs.readFileSync('paired/'+i+'/'+s+'/metrics.json'))])));
+          const rows=sets[0].candidate.map(x=>{
+            const same=y=>y.id===x.id&&y.width===x.width&&y.gfx===x.gfx;
+            const pairs=sets.map(s=>({before:s.baseline.find(same),after:s.candidate.find(same)}));
+            const before=median(pairs.map(p=>p.before.p95)),after=median(pairs.map(p=>p.after.p95));
+            return {id:x.id,width:x.width,gfx:x.gfx,before,after,changePct:Math.round((after/before-1)*1000)/10,pairChangePct:pairs.map(p=>Math.round((p.after.p95/p.before.p95-1)*1000)/10),drawsBefore:median(pairs.map(p=>p.before.draws)),drawsAfter:median(pairs.map(p=>p.after.draws)),resourceStable:pairs.every(p=>['meshes','textures','materials','contexts'].every(k=>p.before[k]===p.after[k]))};
+          });
+          console.log('PAIRED_RESULT '+JSON.stringify(rows));fs.writeFileSync('paired/comparison.json',JSON.stringify(rows,null,2));
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gfx05c-paired-budget
+          path: candidate/dev/paired/
+          if-no-files-found: warn
