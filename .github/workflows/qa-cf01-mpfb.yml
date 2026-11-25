@@ -1,4 +1,4 @@
-name: QA CF01 MPFB (one-shot)
+name: QA CF02 character visual probe (one-shot)
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -9,7 +9,7 @@ jobs:
   probe:
     if: github.head_ref == 'qa/cf01-mpfb-probe'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Install pinned Blender and MPFB
@@ -35,15 +35,23 @@ jobs:
           sha256sum "${packages[0]}" blender.tar.xz
           "$BLENDER" -b --command extension install-file -r user_default -e "${packages[0]}"
           echo "BLENDER=$BLENDER" >> "$GITHUB_ENV"
-      - name: Export base and report
-        env:
-          CF_OUT: ${{ runner.temp }}/cf01
+      - name: Fetch official CC0 system assets
         run: |
-          "$BLENDER" -b --python-exit-code 1 --python dev/models/character_factory/probe_mpfb.py
-          cat "$CF_OUT/report.json"
+          set -euxo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fL --retry 2 --max-time 180 https://files.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip -o system.zip || curl -fL --retry 2 --max-time 180 https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip -o system.zip
+          sha256sum system.zip
+          unzip -q system.zip -d system-assets
+      - name: Assemble character and render exported GLB
+        env:
+          CF_OUT: ${{ runner.temp }}/cf02
+          CF_ASSETS: ${{ runner.temp }}/system-assets
+        run: |
+          "$BLENDER" -b --python-exit-code 1 --python dev/models/character_factory/probe_character.py
+          cat "$CF_OUT/candidate-report.json"
       - uses: actions/upload-artifact@v4
         with:
-          name: cf01-base-probe
-          path: ${{ runner.temp }}/cf01/
+          name: cf02-character-and-visual-proof
+          path: ${{ runner.temp }}/cf02/
           if-no-files-found: error
           retention-days: 7
