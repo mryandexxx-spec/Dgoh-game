@@ -1,23 +1,66 @@
-name: QA CF03 Stilgar corrected visual proof (one-shot)
+name: QA CF03 Stilgar high-resolution control (one-shot)
 on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches: [main]
 permissions:
   contents: read
-  actions: read
 jobs:
   probe:
     if: github.head_ref == 'qa/cf01-mpfb-probe'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          name: cf03-stilgar-glb-and-renders
-          run-id: 45632553541
-          github-token: ${{ github.token }}
-          path: ${{ runner.temp }}/cf03
+          python-version: '3.11'
+      - name: Install upstream CPU inference
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/VAST-AI-Research/TripoSR.git "$RUNNER_TEMP/triposr"
+          cd "$RUNNER_TEMP/triposr"
+          git checkout --detach 107cefdc244c39106fa830359024f6a2f1c78871
+          git rev-parse HEAD
+          python -m pip install 'numpy==1.26.4'
+          python -m pip install 'torch==2.5.1+cpu' 'torchvision==0.20.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'setuptools<81' wheel 'cmake<4' ninja 'scikit-build-core==1.1.2' 'pybind11==3.1.0'
+          export CMAKE_BUILD_PARALLEL_LEVEL=2
+          PYBIND_DIR="$(python -m pybind11 --cmakedir)"
+          test -f "$PYBIND_DIR/pybind11Config.cmake"
+          export CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$(python -c 'import torch; print(torch.utils.cmake_prefix_path)') -Dpybind11_DIR=$PYBIND_DIR -DCMAKE_CUDA_COMPILER=NOTFOUND"
+          python -m pip install --no-build-isolation 'git+https://github.com/tatsy/torchmcubes.git@a9ac95aa329957ba646e7bb057f825f5dfa77f38'
+          python -m pip install 'omegaconf==2.3.0' 'Pillow==10.1.0' 'einops==0.7.0' 'transformers==4.35.0' 'trimesh==4.0.5' 'rembg[cpu]==2.0.57' 'huggingface-hub<1' 'imageio[ffmpeg]' 'xatlas==0.0.9' 'moderngl==5.10.0' 'numpy<2' scipy
+          python - <<'PY'
+          import torch, torchmcubes
+          assert not torch.cuda.is_available()
+          axis = torch.linspace(-1, 1, 16)
+          x, y, z = torch.meshgrid(axis, axis, axis, indexing="ij")
+          v, f = torchmcubes.marching_cubes(0.5-x*x-y*y-z*z, 0.0)
+          assert v.ndim == f.ndim == 2 and v.shape[1] == f.shape[1] == 3
+          assert len(v)>0 and len(f)>0 and torch.isfinite(v).all()
+          assert f.min()>=0 and f.max()<len(v)
+          print("CF03_CPU_NATIVE_OK", torch.__version__, len(v), len(f))
+          PY
+          python -m pip check
+      - name: CPU inference on approved Stilgar reference
+        run: |
+          set -euxo pipefail
+          cd "$RUNNER_TEMP/triposr"
+          export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4
+          INPUT="$RUNNER_TEMP/stilgar-control.jpg"
+          base64 -d "$GITHUB_WORKSPACE/dev/models/character_factory/stilgar_control_reference.jpg.b64" > "$INPUT"
+          test "$(git hash-object "$INPUT")" = ce5b07c4746fef3a3afa81848ae710f92f5f2438
+          echo "CF03_INPUT=$INPUT"
+          /usr/bin/time -v python run.py "$INPUT" --device cpu --mc-resolution 256 --output-dir "$RUNNER_TEMP/cf03" --model-save-format glb
+          python - <<'PY'
+          import pathlib, trimesh, json
+          import os
+          p=next(pathlib.Path(os.environ["RUNNER_TEMP"]).glob("cf03/**/*.glb"))
+          scene=trimesh.load(p,force="scene")
+          print("CF03_REPORT",json.dumps({"bytes":p.stat().st_size,"triangles":sum(len(g.faces) for g in scene.geometry.values()),"input":"front A-like pose, original crop 346x596 padded/resampled to 1024x1024","status":"unrigged visual candidate"}))
+          assert p.stat().st_size>1024
+          PY
       - name: Render actual exported GLB from four angles (CPU)
         run: |
           set -euxo pipefail
@@ -65,16 +108,17 @@ jobs:
           for o in meshes:
               for p in o.data.polygons:p.use_smooth=True
           scene=bpy.context.scene
-          scene.render.engine="CYCLES";scene.cycles.device="CPU";scene.cycles.samples=20;scene.cycles.use_denoising=True
+          scene.render.engine="CYCLES";scene.cycles.device="CPU";scene.cycles.samples=32;scene.cycles.use_denoising=True
           scene.world.color=(.3,.3,.3)
-          scene.render.image_settings.file_format="JPEG";scene.render.image_settings.quality=85
+          scene.render.image_settings.file_format="JPEG";scene.render.image_settings.quality=88
+          scene.view_settings.view_transform="Standard"
           scene.render.resolution_percentage=100
           def aim(obj,target):obj.rotation_euler=(target-obj.location).to_track_quat("-Z","Y").to_euler()
           for loc,power,size in [((2,-4,4),220,3),((-3,-1,2),100,3),((1,3,3),180,2)]:
               d=bpy.data.lights.new("softbox","AREA");d.energy=power*h*h;d.shape="DISK";d.size=size*h/2
               o=bpy.data.objects.new("softbox",d);scene.collection.objects.link(o);o.location=c+Vector(loc)*h/2;aim(o,c)
           d=bpy.data.cameras.new("proof");cam=bpy.data.objects.new("proof",d);scene.collection.objects.link(cam);scene.camera=cam;d.type="ORTHO"
-          for label,angle,close in [("front",0,False),("threequarter",45,False),("back",180,False),("face",0,True),("left",90,False),("right",270,False),("face_back",180,True),("face_left",90,True),("face_right",270,True)]:
+          for label,angle,close in [("front",90,False),("threequarter",135,False),("back",270,False),("face",90,True),("left",180,False),("right",0,False),("face_back",270,True)]:
               target=c.copy()
               if close:target.z=hi.z-h*.10
               t=math.radians(angle);cam.location=target+Vector((math.sin(t),-math.cos(t),.04))*h*3;aim(cam,target)
@@ -88,7 +132,7 @@ jobs:
           "$RUNNER_TEMP/blender-4.2.3-linux-x64/blender" -b --python-exit-code 1 --python "$RUNNER_TEMP/cf03_render.py"
       - uses: actions/upload-artifact@v4
         with:
-          name: cf03-stilgar-corrected-proof
+          name: cf03-stilgar-highres-control
           path: ${{ runner.temp }}/cf03/
           retention-days: 7
           if-no-files-found: error
