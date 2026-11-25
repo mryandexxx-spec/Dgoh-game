@@ -1,0 +1,53 @@
+name: GFX-05C Visual Proof
+on:
+  push:
+    branches: [gfx-05c-visual-proof]
+    paths: ['.github/workflows/qa-gfx05c.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  visual-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidate
+      - uses: actions/checkout@v4
+        with:
+          ref: e9d195aded30483d0fa38bba08f6d32fbb3effd1
+          path: baseline
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci && node tools/build.mjs
+        working-directory: baseline/dev
+      - run: npm ci && node tools/build.mjs
+        working-directory: candidate/dev
+      - name: Baseline and candidate actual WebGL frames
+        working-directory: candidate/dev
+        run: |
+          node tests/smoke/gfx05c-proof.mjs "$GITHUB_WORKSPACE/baseline/dev/dist/pwa/index.html" proof/baseline --baseline
+          node tests/smoke/gfx05c-proof.mjs dist/pwa/index.html proof/candidate
+      - name: Assemble fixed-step 30Hz clips and compare resource budgets
+        working-directory: candidate/dev
+        run: |
+          if command -v ffmpeg >/dev/null; then
+            for d in proof/{baseline,candidate}/*-844-med/{entry,up,star,relic}; do
+              ffmpeg -loglevel error -y -framerate 30 -i "$d/%03d.png" -c:v libx264 -pix_fmt yuv420p -movflags +faststart "$d.mp4"
+            done
+          fi
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          const read=s=>JSON.parse(fs.readFileSync('proof/'+s+'/metrics.json'));
+          const base=read('baseline'),after=read('candidate');
+          const rows=after.map(a=>{const b=base.find(x=>x.id===a.id&&x.width===a.width&&x.gfx===a.gfx);return {id:a.id,width:a.width,gfx:a.gfx,before:b.p95,after:a.p95,deltaPct:Math.round((a.p95/b.p95-1)*1000)/10,drawsBefore:b.draws,drawsAfter:a.draws,resourcesStable:['meshes','textures','materials','contexts'].every(k=>a[k]===b[k])};});
+          console.table(rows);fs.writeFileSync('proof/comparison.json',JSON.stringify(rows,null,2));
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gfx05c-visual-proof
+          path: candidate/dev/proof/
+          if-no-files-found: warn
