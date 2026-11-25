@@ -1,4 +1,4 @@
-name: QA CF03 TripoSR CPU feasibility (one-shot)
+name: QA CF03 Stilgar TripoSR (one-shot)
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -42,26 +43,73 @@ jobs:
           print("CF03_CPU_NATIVE_OK", torch.__version__, len(v), len(f))
           PY
           python -m pip check
-      - name: CPU inference on upstream reference (not Stilgar)
+      - name: CPU inference on approved Stilgar reference
         run: |
           set -euxo pipefail
           cd "$RUNNER_TEMP/triposr"
           export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4
-          INPUT=$(find examples -type f \( -iname '*.png' -o -iname '*.jpg' \) | sort | head -n 1)
-          test -n "$INPUT" && test -f "$INPUT"
+          INPUT="$RUNNER_TEMP/stilgar.jpg"
+          base64 -d "$GITHUB_WORKSPACE/dev/models/character_factory/stilgar_reference.jpg.b64" > "$INPUT"
+          test "$(git hash-object "$INPUT")" = 80be3be6c295925b6a86dc26a6610b9a38e843d6
           echo "CF03_INPUT=$INPUT"
-          /usr/bin/time -v python run.py "$INPUT" --device cpu --mc-resolution 128 --output-dir "$RUNNER_TEMP/cf03" --model-save-format glb
+          /usr/bin/time -v python run.py "$INPUT" --device cpu --mc-resolution 192 --output-dir "$RUNNER_TEMP/cf03" --model-save-format glb
           python - <<'PY'
           import pathlib, trimesh, json
           import os
           p=next(pathlib.Path(os.environ["RUNNER_TEMP"]).glob("cf03/**/*.glb"))
           scene=trimesh.load(p,force="scene")
-          print("CF03_REPORT",json.dumps({"bytes":p.stat().st_size,"triangles":sum(len(g.faces) for g in scene.geometry.values()),"input":"upstream reference (see CF03_INPUT)","status":"CPU feasibility only"}))
+          print("CF03_REPORT",json.dumps({"bytes":p.stat().st_size,"triangles":sum(len(g.faces) for g in scene.geometry.values()),"input":"approved Stilgar concept, reduced JPEG (114x256)","status":"unrigged visual candidate"}))
           assert p.stat().st_size>1024
           PY
+      - name: Render actual exported GLB from four angles (CPU)
+        run: |
+          set -euxo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fL --retry 2 https://download.blender.org/release/Blender4.2/blender-4.2.3-linux-x64.tar.xz -o blender.tar.xz
+          tar -xf blender.tar.xz
+          cat > "$RUNNER_TEMP/cf03_render.py" <<'PY'
+          import bpy, math, os, base64
+          from pathlib import Path
+          from mathutils import Vector
+          out=Path(os.environ["RUNNER_TEMP"])/"cf03"
+          bpy.ops.object.select_all(action="SELECT");bpy.ops.object.delete(use_global=False)
+          bpy.ops.import_scene.gltf(filepath=str(next(out.glob("**/*.glb"))))
+          meshes=[o for o in bpy.context.scene.objects if o.type=="MESH"]
+          assert meshes
+          pts=[o.matrix_world@Vector(v) for o in meshes for v in o.bound_box]
+          lo=Vector(tuple(min(p[i] for p in pts) for i in range(3)))
+          hi=Vector(tuple(max(p[i] for p in pts) for i in range(3)))
+          c=(lo+hi)/2
+          h=hi.z-lo.z
+          print("CF03_BOUNDS",tuple(lo),tuple(hi),flush=True)
+          assert h>0
+          for o in meshes:
+              for p in o.data.polygons:p.use_smooth=True
+          scene=bpy.context.scene
+          scene.render.engine="CYCLES";scene.cycles.device="CPU";scene.cycles.samples=20;scene.cycles.use_denoising=True
+          scene.world.color=(.3,.3,.3)
+          scene.render.image_settings.file_format="JPEG";scene.render.image_settings.quality=85
+          scene.render.resolution_percentage=100
+          def aim(obj,target):obj.rotation_euler=(target-obj.location).to_track_quat("-Z","Y").to_euler()
+          for loc,power,size in [((2,-4,4),220,3),((-3,-1,2),100,3),((1,3,3),180,2)]:
+              d=bpy.data.lights.new("softbox","AREA");d.energy=power*h*h;d.shape="DISK";d.size=size*h/2
+              o=bpy.data.objects.new("softbox",d);scene.collection.objects.link(o);o.location=c+Vector(loc)*h/2;aim(o,c)
+          d=bpy.data.cameras.new("proof");cam=bpy.data.objects.new("proof",d);scene.collection.objects.link(cam);scene.camera=cam;d.type="ORTHO"
+          for label,angle,close in [("front",0,False),("threequarter",45,False),("back",180,False),("face",0,True)]:
+              target=c.copy()
+              if close:target.z=hi.z-h*.10
+              t=math.radians(angle);cam.location=target+Vector((math.sin(t),-math.cos(t),.04))*h*3;aim(cam,target)
+              d.ortho_scale=h*(.32 if close else 1.15)
+              scene.render.resolution_x=360 if close else 420;scene.render.resolution_y=440 if close else 480
+              p=out/(label+".jpg");scene.render.filepath=str(p);bpy.ops.render.render(write_still=True)
+              assert p.stat().st_size>1024
+              encoded=base64.b64encode(p.read_bytes()).decode()
+              for i in range(0,len(encoded),3000):print("CF03_JPEG",label,i//3000,encoded[i:i+3000],flush=True)
+          PY
+          "$RUNNER_TEMP/blender-4.2.3-linux-x64/blender" -b --python-exit-code 1 --python "$RUNNER_TEMP/cf03_render.py"
       - uses: actions/upload-artifact@v4
         with:
-          name: cf03-cpu-feasibility
+          name: cf03-stilgar-glb-and-renders
           path: ${{ runner.temp }}/cf03/
           retention-days: 7
           if-no-files-found: error
