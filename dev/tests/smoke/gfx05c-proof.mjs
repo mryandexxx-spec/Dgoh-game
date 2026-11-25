@@ -14,8 +14,9 @@ fs.mkdirSync(out,{recursive:true});
 const server=await serve(path.dirname(html));
 const browser=await puppeteer.launch({executablePath:chrome,headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
 const rows=[];
+const bench=process.argv.includes('--bench');
 try {
- for(const [width,height,gfx] of [[844,390,'med'],[667,375,'med'],[844,390,'low'],[667,375,'low']]){
+ for(const [width,height,gfx] of (bench?[[844,390,'med'],[844,390,'low'],[667,375,'low']]:[[844,390,'med'],[667,375,'med'],[844,390,'low'],[667,375,'low']])){
   const page=await browser.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   try {
@@ -33,7 +34,7 @@ try {
    await page.evaluate(async()=>await loadB3());
    await sleep(2500);
    await page.evaluate(()=>{closeInfo(true);closeOverlay();view='lobby';render();});
-   for(const id of ['duncan','muaddib']){
+   for(const id of (bench?[gfx==='med'?'duncan':'muaddib']:['duncan','muaddib'])){
     await page.waitForFunction(id=>!!MODEL_DATA[id],{timeout:45000},id);
     await page.evaluate(id=>openDetail(id),id);
     await page.waitForFunction(id=>HERO_STAGE?.o?.def?.id===id&&HERO_STAGE.o.root._authored&&HERO_STAGE.backdropTexture?.isReady()&&HERO_STAGE.pfIdle(),{timeout:45000},id);
@@ -53,7 +54,7 @@ try {
     },{id,gfx});
     assert.equal(steady.contexts,1);
     const prefix=[id,width,gfx].join('-');
-    for(const kind of ['entry','up','star','relic']){
+    for(const kind of (bench?[]:['entry','up','star','relic'])){
      const folder=path.join(out,prefix,kind);fs.mkdirSync(folder,{recursive:true});
      const started=await page.evaluate(({id,kind,baseline})=>{
       const h=HERO_STAGE;
@@ -76,7 +77,7 @@ try {
     }
     // Actual existing result overlay, using a presentation fixture only;
     // no changes to roster, resources or the persistent writer.
-    for(const kind of ['star','relic']){
+    for(const kind of (bench?[]:['star','relic'])){
      await page.evaluate(({id,kind})=>{
       const p=prog(id);const s0=heroSnap(id);
       const c=kind==='star'?{type:'star',id,from:Math.max(1,p.stars-1),to:p.stars,pw0:s0.pw}:{type:'hup',kind:'relic',id,from:'ДП1',to:'ДП2',s0};
