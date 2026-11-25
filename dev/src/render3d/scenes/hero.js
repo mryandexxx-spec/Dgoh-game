@@ -281,7 +281,7 @@ class HeroStage extends Stage3D {
       this.rim2.intensity = 1.1;
     }
   }
-  quiet(now) { return !(this.drag || Math.abs(this.yawV) > .02 || now - (this.intro || 0) < 1400 || (this.flashT && now - this.flashT < 1900) || this.cinematic); }
+  quiet(now) { return !(this.drag || Math.abs(this.yawV) > .02 || now - (this.intro || 0) < (this.motionHero ? 300 : 1400) || (this.flashT && now - this.flashT < 1900) || this.cinematic); }
   // прогрев соседа: два кадра на месте героя в масштабе 0,001 (тот же свет и тени → те же шейдеры, на экране не видно), затем выключить
   prefetch(now) {
     if (this.warm) { if (--this.warm.n <= 0) this.warmEnd(this.warm.o); return; }
@@ -330,6 +330,7 @@ class HeroStage extends Stage3D {
     const fullMotion = motion && !reduced && gfx(this.small).heroCharacterMotion;
     const settled = motion && !fullMotion && !o.act && !o.dead && !o.hitT && !o.rise;
     const reusePose = settled && this.motionSettled === o && o.root._lastClip === (motion === 'duncan' ? 'Long_Breathe_and_Look_Around' : 'Idle_11');
+    const pulse = this.cinematicPulse(now);
     let sample = t;
     if (motion) {
       const dt = this.motionLast === null ? 0 : now - this.motionLast;
@@ -359,12 +360,22 @@ class HeroStage extends Stage3D {
         const lift = this._duncanHeadLift ||
           (this._duncanHeadLift = B3.Quaternion.RotationAxis(B3.Axis.X, -.24));
         o.head.rotationQuaternion.multiplyInPlace(lift);
+        if (pulse) {
+          const accent = this.motionAccent || (this.motionAccent = B3.Quaternion.Identity());
+          accent.copyFromFloats(-Math.sin(pulse * .12), 0, 0, Math.cos(pulse * .12));
+          o.head.rotationQuaternion.multiplyInPlace(accent);
+        }
       }
       if (motion === 'muaddib' && o.head?.rotationQuaternion) {
         const head = this.motionHead = o.head, rotation = head.rotationQuaternion;
         const raw = this.motionHeadRaw || (this.motionHeadRaw = B3.Quaternion.Identity());
         raw.copyFrom(rotation);
         rotation.multiplyInPlace(this.motionLift || (this.motionLift = B3.Quaternion.RotationAxis(B3.Axis.X, -.17)));
+        if (pulse) {
+          const accent = this.motionAccent || (this.motionAccent = B3.Quaternion.Identity());
+          accent.copyFromFloats(-Math.sin(pulse * .19), 0, 0, Math.cos(pulse * .19));
+          rotation.multiplyInPlace(accent);
+        }
         const duration = o.root._clips.Idle_11.duration, phase = this.motionElapsed % 16;
         if (fullMotion && phase < duration) {
           const angle = .23 * Math.sin(Math.PI * phase / duration) ** 2;
@@ -379,8 +390,7 @@ class HeroStage extends Stage3D {
     // Do not apply the COMBAT-specific yaw correction here; the shader's
     // fixed UV orientation now shows the actual face/armor in this view.
     o.root.rotation.y = this.yaw;
-    const pulse = this.cinematicPulse(now);
-    if (motion && (!fullMotion || this.drag || document.hidden || (this.intro && now - this.intro > 500))) this.intro = 0;
+    if (motion && (!fullMotion || this.drag || document.hidden || (this.intro && (now - this.intro > 500 || document.querySelector('#overlay2 .sheet, #celeb, #lvlup'))))) this.intro = 0;
     const entrance = motion ? (motion === 'muaddib' ? 300 : 260) : 1100;
     const H = o.h, ik = !reduced && this.intro ? Math.min(1, Math.max(0, (now - this.intro) / entrance)) : 1, e = 1 - (1 - ik) ** 3;
     const push = motion ? .045 : .25, lift = motion ? .04 : .25;
