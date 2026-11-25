@@ -147,8 +147,9 @@ class HeroStage extends Stage3D {
     const Q = gfx(this.small);
     // Apply the pilot multiplier after clamping the device DPR. The normal
     // EngineHost mount restores the unscaled DPR for other heroes/scenes.
+    const reference = this.def?.id === 'duncan' || this.def?.id === 'baron';
     const dpr = this.pilot
-      ? Math.min(window.devicePixelRatio || 1, Q.dpr.hero) * Q.heroPilotScale
+      ? Math.min(window.devicePixelRatio || 1, Q.dpr.hero) * (reference ? Q.heroPilotScale : Q.heroShowcaseScale)
       : Q.dpr.hero;
     this.wake(host, { cls: this.cls, dpr, first });
   }
@@ -337,7 +338,7 @@ class HeroStage extends Stage3D {
     const o = this.o; if (!o) return; this.prefetch(now);
     const motion = this.motionHero, reduced = !!this.motionPreference?.matches;
     const cinematicMotion = this.pilot && !reduced && gfx(this.small).heroCharacterMotion;
-    const fullMotion = motion && !reduced && gfx(this.small).heroCharacterMotion;
+    const fullMotion = motion && cinematicMotion;
     const settled = motion && !fullMotion && !o.act && !o.dead && !o.hitT && !o.rise;
     const reusePose = settled && this.motionSettled === o && o.root._lastClip === (motion === 'duncan' ? 'Long_Breathe_and_Look_Around' : 'Idle_11');
     const pulse = this.cinematic ? this.cinematicPulse(now) : 0;
