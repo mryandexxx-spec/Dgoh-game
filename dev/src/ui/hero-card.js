@@ -13,7 +13,7 @@ import { S } from '../core/state.js';
 import { GEAR_UP_SOL, TIER_COL } from '../logic/gear.js';
 import { RELIC_MAX, relicReady, sideName, unlockNeed } from '../logic/relics.js';
 import { MAX_GEAR, MAX_LVL, ROMAN, STAR_COST } from '../logic/economy.js';
-import { mountHeroStage, heroThemeKey, heroThemeUrl, heroShowcasePilot } from '../render3d/scenes/hero.js';
+import { mountHeroStage, heroThemeKey, heroThemeUrl, heroShowcasePilot, heroMotionPilot, heroFeedback } from '../render3d/scenes/hero.js';
 import { figureSVG } from '../render2d/figures.js';
 import { unitPower, unitStats } from '../logic/battle/stats.js';
 import { SK_KEYS, skMax } from '../logic/battle/skills.js';
@@ -24,6 +24,27 @@ import { $ } from '../core/dom.js';
 import { itemIcon } from './common.js';
 import { ptShards, memoryBadge } from './portrait.js';
 
+// A verified post-commit presentation signal, never a progression observer.
+// Overlay feedback uses only opacity/transform; no timers or replay queue.
+const heroAccent = new WeakMap();
+function heroAccentElement(el, id, kind) {
+  if (!el || !heroMotionPilot(id) || typeof el.animate !== 'function' || (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)) return false;
+  try {
+    heroAccent.get(el)?.cancel();
+    const major = kind === 'star' || kind === 'relic', legend = id === 'muaddib';
+    const peak = kind === 'relic' ? 1.045 : kind === 'star' ? 1.035 : 1.012;
+    const animation = el.animate([{ transform: 'scale(1)', opacity: .86 }, { transform: `scale(${peak})`, opacity: 1, offset: .35 }, { transform: 'scale(1)', opacity: 1 }], { duration: major ? (kind === 'relic' ? 600 : 420) : legend ? 220 : 180, easing: 'ease-out' });
+    heroAccent.set(el, animation);
+    return true;
+  } catch (_) { return false; } // visual feedback must not fail a committed operation
+}
+function heroUpgradeFeedback(id, kind = 'up') {
+  if (!heroMotionPilot(id) || document.hidden || document.querySelector('.hc')?.dataset.cid !== id) return;
+  if (!heroFeedback(id, kind) && kind === 'up') {
+    const overlay = document.querySelector('#overlay2 .sheet');
+    if (overlay) heroAccentElement(overlay.querySelector('h3, h4, .swup'), id, kind);
+  }
+}
 let detailCid = null;
 let detailSk = 'basic';
 let HC_STAT = false;
@@ -198,4 +219,4 @@ function hcStat() { HC_STAT = !HC_STAT; const hc = $('#overlay .hc'); if (!hc) r
 // Internal opt-in staging entry point. It is deliberately not wired into the
 // roster, Legends navigation, route handling or public save schema.
 function set_detailSk(v) { return detailSk = v; }
-export { detailCid, detailSk, heroNavList, openDetail, updLvl, hcStat, set_detailSk, HC_REFRESH, skKeys };
+export { detailCid, detailSk, heroNavList, openDetail, updLvl, hcStat, set_detailSk, HC_REFRESH, skKeys, heroUpgradeFeedback, heroAccentElement };
