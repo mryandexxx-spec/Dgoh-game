@@ -1,66 +1,23 @@
-name: QA CF03 Stilgar TripoSR (one-shot)
+name: QA CF03 Stilgar corrected visual proof (one-shot)
 on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches: [main]
 permissions:
   contents: read
+  actions: read
 jobs:
   probe:
     if: github.head_ref == 'qa/cf01-mpfb-probe'
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/download-artifact@v4
         with:
-          python-version: '3.11'
-      - name: Install upstream CPU inference
-        run: |
-          set -euxo pipefail
-          git clone https://github.com/VAST-AI-Research/TripoSR.git "$RUNNER_TEMP/triposr"
-          cd "$RUNNER_TEMP/triposr"
-          git checkout --detach 107cefdc244c39106fa830359024f6a2f1c78871
-          git rev-parse HEAD
-          python -m pip install 'numpy==1.26.4'
-          python -m pip install 'torch==2.5.1+cpu' 'torchvision==0.20.1+cpu' --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install 'setuptools<81' wheel 'cmake<4' ninja 'scikit-build-core==1.1.2' 'pybind11==3.1.0'
-          export CMAKE_BUILD_PARALLEL_LEVEL=2
-          PYBIND_DIR="$(python -m pybind11 --cmakedir)"
-          test -f "$PYBIND_DIR/pybind11Config.cmake"
-          export CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$(python -c 'import torch; print(torch.utils.cmake_prefix_path)') -Dpybind11_DIR=$PYBIND_DIR -DCMAKE_CUDA_COMPILER=NOTFOUND"
-          python -m pip install --no-build-isolation 'git+https://github.com/tatsy/torchmcubes.git@a9ac95aa329957ba646e7bb057f825f5dfa77f38'
-          python -m pip install 'omegaconf==2.3.0' 'Pillow==10.1.0' 'einops==0.7.0' 'transformers==4.35.0' 'trimesh==4.0.5' 'rembg[cpu]==2.0.57' 'huggingface-hub<1' 'imageio[ffmpeg]' 'xatlas==0.0.9' 'moderngl==5.10.0' 'numpy<2' scipy
-          python - <<'PY'
-          import torch, torchmcubes
-          assert not torch.cuda.is_available()
-          axis = torch.linspace(-1, 1, 16)
-          x, y, z = torch.meshgrid(axis, axis, axis, indexing="ij")
-          v, f = torchmcubes.marching_cubes(0.5-x*x-y*y-z*z, 0.0)
-          assert v.ndim == f.ndim == 2 and v.shape[1] == f.shape[1] == 3
-          assert len(v)>0 and len(f)>0 and torch.isfinite(v).all()
-          assert f.min()>=0 and f.max()<len(v)
-          print("CF03_CPU_NATIVE_OK", torch.__version__, len(v), len(f))
-          PY
-          python -m pip check
-      - name: CPU inference on approved Stilgar reference
-        run: |
-          set -euxo pipefail
-          cd "$RUNNER_TEMP/triposr"
-          export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4
-          INPUT="$RUNNER_TEMP/stilgar.jpg"
-          base64 -d "$GITHUB_WORKSPACE/dev/models/character_factory/stilgar_reference.jpg.b64" > "$INPUT"
-          test "$(git hash-object "$INPUT")" = 80be3be6c295925b6a86dc26a6610b9a38e843d6
-          echo "CF03_INPUT=$INPUT"
-          /usr/bin/time -v python run.py "$INPUT" --device cpu --mc-resolution 192 --output-dir "$RUNNER_TEMP/cf03" --model-save-format glb
-          python - <<'PY'
-          import pathlib, trimesh, json
-          import os
-          p=next(pathlib.Path(os.environ["RUNNER_TEMP"]).glob("cf03/**/*.glb"))
-          scene=trimesh.load(p,force="scene")
-          print("CF03_REPORT",json.dumps({"bytes":p.stat().st_size,"triangles":sum(len(g.faces) for g in scene.geometry.values()),"input":"approved Stilgar concept, reduced JPEG (114x256)","status":"unrigged visual candidate"}))
-          assert p.stat().st_size>1024
-          PY
+          name: cf03-stilgar-glb-and-renders
+          run-id: 45632553541
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/cf03
       - name: Render actual exported GLB from four angles (CPU)
         run: |
           set -euxo pipefail
@@ -68,21 +25,43 @@ jobs:
           curl -fL --retry 2 https://download.blender.org/release/Blender4.2/blender-4.2.3-linux-x64.tar.xz -o blender.tar.xz
           tar -xf blender.tar.xz
           cat > "$RUNNER_TEMP/cf03_render.py" <<'PY'
-          import bpy, math, os, base64
+          import bpy, math, os, base64, json, struct
           from pathlib import Path
-          from mathutils import Vector
+          from mathutils import Vector, Matrix
           out=Path(os.environ["RUNNER_TEMP"])/"cf03"
           bpy.ops.object.select_all(action="SELECT");bpy.ops.object.delete(use_global=False)
-          bpy.ops.import_scene.gltf(filepath=str(next(out.glob("**/*.glb"))))
+          p=next(out.glob("**/*.glb"))
+          raw=p.read_bytes()
+          length,kind=struct.unpack_from("<II",raw,12)
+          assert kind==0x4E4F534A
+          doc=json.loads(raw[20:20+length])
+          print("CF03_GLB_ATTRIBUTES",json.dumps([q["attributes"] for m in doc["meshes"] for q in m["primitives"]]),flush=True)
+          bpy.ops.import_scene.gltf(filepath=str(p))
           meshes=[o for o in bpy.context.scene.objects if o.type=="MESH"]
           assert meshes
+          # TripoSR native mesh is Z-up; raw trimesh GLB export is interpreted as Y-up.
+          # Undo the importer axis conversion on the diagnostic copy, never the source artifact.
+          transform=Matrix.Rotation(-math.pi/2,4,"X")
+          for o in meshes:
+              o.matrix_world=transform @ o.matrix_world
+              attrs=list(o.data.color_attributes)
+              print("CF03_COLOR",o.name,[(a.name,a.domain,a.data_type,len(a.data)) for a in attrs],flush=True)
+              if attrs:
+                  mat=bpy.data.materials.new("Generated vertex color");mat.use_nodes=True
+                  nt=mat.node_tree;bs=nt.nodes.get("Principled BSDF")
+                  node=nt.nodes.new("ShaderNodeVertexColor");node.layer_name=attrs[0].name
+                  nt.links.new(node.outputs["Color"],bs.inputs["Base Color"])
+                  bs.inputs["Roughness"].default_value=.8
+                  o.data.materials.clear();o.data.materials.append(mat)
+                  for poly in o.data.polygons:poly.material_index=0
+          bpy.context.view_layer.update()
           pts=[o.matrix_world@Vector(v) for o in meshes for v in o.bound_box]
           lo=Vector(tuple(min(p[i] for p in pts) for i in range(3)))
           hi=Vector(tuple(max(p[i] for p in pts) for i in range(3)))
           c=(lo+hi)/2
           h=hi.z-lo.z
           print("CF03_BOUNDS",tuple(lo),tuple(hi),flush=True)
-          assert h>0
+          assert h>0 and h>max(hi.x-lo.x,hi.y-lo.y), "not upright"
           for o in meshes:
               for p in o.data.polygons:p.use_smooth=True
           scene=bpy.context.scene
@@ -95,7 +74,7 @@ jobs:
               d=bpy.data.lights.new("softbox","AREA");d.energy=power*h*h;d.shape="DISK";d.size=size*h/2
               o=bpy.data.objects.new("softbox",d);scene.collection.objects.link(o);o.location=c+Vector(loc)*h/2;aim(o,c)
           d=bpy.data.cameras.new("proof");cam=bpy.data.objects.new("proof",d);scene.collection.objects.link(cam);scene.camera=cam;d.type="ORTHO"
-          for label,angle,close in [("front",0,False),("threequarter",45,False),("back",180,False),("face",0,True)]:
+          for label,angle,close in [("front",0,False),("threequarter",45,False),("back",180,False),("face",0,True),("left",90,False),("right",270,False),("face_back",180,True),("face_left",90,True),("face_right",270,True)]:
               target=c.copy()
               if close:target.z=hi.z-h*.10
               t=math.radians(angle);cam.location=target+Vector((math.sin(t),-math.cos(t),.04))*h*3;aim(cam,target)
@@ -109,7 +88,7 @@ jobs:
           "$RUNNER_TEMP/blender-4.2.3-linux-x64/blender" -b --python-exit-code 1 --python "$RUNNER_TEMP/cf03_render.py"
       - uses: actions/upload-artifact@v4
         with:
-          name: cf03-stilgar-glb-and-renders
+          name: cf03-stilgar-corrected-proof
           path: ${{ runner.temp }}/cf03/
           retention-days: 7
           if-no-files-found: error
