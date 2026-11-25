@@ -4,7 +4,6 @@ import json
 import math
 import os
 from pathlib import Path
-import sys
 import bpy
 
 out = Path(os.environ["CF_OUT"]).resolve()
@@ -13,19 +12,18 @@ bpy.ops.object.select_all(action="SELECT")
 bpy.ops.object.delete(use_global=False)
 
 def service(suffix, name):
-    matches = [m for m in sys.modules if m.endswith(suffix)]
-    if len(matches) != 1:
-        raise RuntimeError(f"Expected one enabled MPFB service {suffix}, got {matches}")
-    return getattr(importlib.import_module(matches[0]), name)
+    addons = [a.module for a in bpy.context.preferences.addons if a.module.split(".")[-1] == "mpfb"]
+    if len(addons) != 1:
+        raise RuntimeError(f"Expected one enabled MPFB extension, got {addons}")
+    module = addons[0] + suffix[len("mpfb"):]
+    return getattr(importlib.import_module(module), name)
 
 # Use public scripting API documented by MPFB.
 human_service = service("mpfb.services.humanservice", "HumanService")
 target_service = service("mpfb.services.targetservice", "TargetService")
-props = service("mpfb.entities.objectproperties", "HumanObjectProperties")
-body = human_service.create_human()
-for name, value in {"gender": 1.0, "age": 0.65, "muscle": 0.65, "weight": 0.5}.items():
-    props.set_value(name, value, entity_reference=body)
-target_service.reapply_macro_details(body)
+macro = target_service.get_default_macro_info_dict()
+macro.update({"gender": 1.0, "age": 0.65, "muscle": 0.65, "weight": 0.5})
+body = human_service.create_human(macro_detail_dict=macro)
 rig = human_service.add_builtin_rig(body, "game_engine")
 assert rig.type == "ARMATURE" and len(rig.data.bones) > 10
 assert body.type == "MESH" and len(body.data.vertices) > 1000
