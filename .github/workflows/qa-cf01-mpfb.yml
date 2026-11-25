@@ -17,26 +17,33 @@ jobs:
       - name: Install upstream CPU inference
         run: |
           set -euxo pipefail
-          git clone --depth 1 https://github.com/VAST-AI-Research/TripoSR.git "$RUNNER_TEMP/triposr"
+          git clone https://github.com/VAST-AI-Research/TripoSR.git "$RUNNER_TEMP/triposr"
           cd "$RUNNER_TEMP/triposr"
+          git checkout --detach 107cefdc244c39106fa830359024f6a2f1c78871
           git rev-parse HEAD
-          python -m pip install 'numpy<2' 'torch==2.5.1' 'torchvision==0.20.1' --extra-index-url https://download.pytorch.org/whl/cpu
-          python -m pip install 'setuptools<81' wheel 'cmake<4' ninja
-          python -m pip install --no-build-isolation 'git+https://github.com/tatsy/torchmcubes.git'
+          python -m pip install 'numpy==1.26.4'
+          python -m pip install 'torch==2.5.1+cpu' 'torchvision==0.20.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'setuptools<81' wheel 'cmake<4' ninja 'scikit-build-core>=1.0' 'pybind11>=2.10'
+          export CMAKE_BUILD_PARALLEL_LEVEL=2
+          export CMAKE_ARGS="-DCMAKE_PREFIX_PATH=$(python -c 'import torch; print(torch.utils.cmake_prefix_path)') -DCMAKE_CUDA_COMPILER=NOTFOUND"
+          python -m pip install --no-build-isolation 'git+https://github.com/tatsy/torchmcubes.git@a9ac95aa329957ba646e7bb057f825f5dfa77f38'
           python -m pip install 'omegaconf==2.3.0' 'Pillow==10.1.0' 'einops==0.7.0' 'transformers==4.35.0' 'trimesh==4.0.5' 'rembg[cpu]==2.0.57' 'huggingface-hub<1' 'imageio[ffmpeg]' 'xatlas==0.0.9' 'moderngl==5.10.0' 'numpy<2' scipy
+          python -c 'import torch, torchmcubes; print(torch.__version__, torchmcubes.__file__); assert not torch.cuda.is_available()'
       - name: CPU inference on upstream reference (not Stilgar)
         run: |
           set -euxo pipefail
           cd "$RUNNER_TEMP/triposr"
           export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4
-          test -f examples/chair.png
-          /usr/bin/time -v python run.py examples/chair.png --device cpu --mc-resolution 128 --output-dir "$RUNNER_TEMP/cf03" --model-save-format glb
+          INPUT=$(find examples -type f \( -iname '*.png' -o -iname '*.jpg' \) | sort | head -n 1)
+          test -n "$INPUT" && test -f "$INPUT"
+          echo "CF03_INPUT=$INPUT"
+          /usr/bin/time -v python run.py "$INPUT" --device cpu --mc-resolution 128 --output-dir "$RUNNER_TEMP/cf03" --model-save-format glb
           python - <<'PY'
           import pathlib, trimesh, json
           import os
           p=next(pathlib.Path(os.environ["RUNNER_TEMP"]).glob("cf03/**/*.glb"))
           scene=trimesh.load(p,force="scene")
-          print("CF03_REPORT",json.dumps({"bytes":p.stat().st_size,"triangles":sum(len(g.faces) for g in scene.geometry.values()),"input":"upstream chair example","status":"CPU feasibility only"}))
+          print("CF03_REPORT",json.dumps({"bytes":p.stat().st_size,"triangles":sum(len(g.faces) for g in scene.geometry.values()),"input":"upstream reference (see CF03_INPUT)","status":"CPU feasibility only"}))
           assert p.stat().st_size>1024
           PY
       - uses: actions/upload-artifact@v4
