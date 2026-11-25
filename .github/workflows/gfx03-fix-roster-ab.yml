@@ -1,0 +1,72 @@
+name: GFX-03 FIX all-roster WebGL A-B (temporary)
+on:
+  push:
+    branches: [qa/gfx03-fix-all-roster]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  sweep:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {profile: med, width: 844, height: 390}
+          - {profile: low, width: 844, height: 390}
+          - {profile: med, width: 667, height: 375}
+          - {profile: low, width: 667, height: 375}
+          - {profile: high, width: 960, height: 600}
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+      - uses: actions/checkout@v4
+        with:
+          ref: 638138bf88c4c527b7c065dbff38793690a05e1b
+          path: candidate
+      - name: Build exact candidate
+        working-directory: candidate/dev
+        run: |
+          npm ci
+          npm run build
+          cp ../../dev/tests/smoke/gfx03-fix-sweep.mjs tests/smoke/
+      - name: Fetch validated baseline v161
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 45680904402 --name dune-validated-build --dir /tmp/gfx161
+      - name: Actual WebGL roster sweep
+        working-directory: candidate/dev
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          args=()
+          if [ "${{ matrix.profile }}" != high ]; then args=(--phone --width "${{ matrix.width }}" --height "${{ matrix.height }}"); fi
+          mkdir -p /tmp/gfx03-fix
+          node tests/smoke/gfx03-fix-sweep.mjs /tmp/gfx161/pwa/index.html "${args[@]}" --gfx "${{ matrix.profile }}" --shots /tmp/gfx03-fix/v161
+          node tests/smoke/gfx03-fix-sweep.mjs dist/pwa/index.html "${args[@]}" --gfx "${{ matrix.profile }}" --candidate --shots /tmp/gfx03-fix/v162
+      - name: Summarize per-character budget deltas
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import pathlib,json
+          root=pathlib.Path('/tmp/gfx03-fix')
+          a,b=[json.loads((root/v/'report.json').read_text()) for v in ('v161','v162')]
+          for id,v in b['out'].items():
+              if 'perf' not in v or id not in a['out']: continue
+              x,y=a['out'][id]['perf'],v['perf']
+              d={k:round(100*(y[k]/x[k]-1),2) for k in ('draws','pixels','rtMB','textureMB','p95') if x[k] and y[k] is not None}
+              print('GFX03_FIX_AB',id,d,x,y)
+          print('ROSTER',len(a['out']),len(b['out']),'layout failures',len(b['fail']))
+          assert len(a['out'])==len(b['out']) and not b['fail']
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gfx03-fix-${{ matrix.profile }}-${{ matrix.width }}
+          path: /tmp/gfx03-fix/
+          retention-days: 7
