@@ -10,7 +10,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        hero: [paul, feyd, stilgar, shaddam, mohiam, erasmus]
+        include:
+          - hero: stilgar
+            profile: low
+            width: 667
+            height: 375
+          - hero: mohiam
+            profile: med
+            width: 667
+            height: 375
+          - hero: shaddam
+            profile: low
+            width: 844
+            height: 390
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -43,30 +55,29 @@ jobs:
           HERO: ${{ matrix.hero }}
         run: |
           mkdir -p /tmp/gfx03-qa
-          for spec in med:844:390 low:844:390 med:667:375 low:667:375 high:960:600; do
-            IFS=: read -r profile width height <<< "$spec"
-            phone=()
-            if [ "$profile" != high ]; then phone=(--phone --width "$width" --height "$height"); fi
-            for version in 158 159; do
-              name="$version-$profile-$width"
-              node tests/smoke/gfx03-ab-once.mjs "/tmp/gfx$version/pwa/index.html" "${phone[@]}" --hero "$HERO" --dpr 1 --gfx "$profile" --shot "/tmp/gfx03-qa/$name.png" --out "/tmp/gfx03-qa/$name.json"
+          profile="${{ matrix.profile }}"
+          width="${{ matrix.width }}"
+          height="${{ matrix.height }}"
+          for trial in 1 2 3; do
+            versions="158 159"; if [ "$trial" = 2 ]; then versions="159 158"; fi
+            for version in $versions; do
+              name="$version-$trial"
+              node tests/smoke/gfx03-ab-once.mjs "/tmp/gfx$version/pwa/index.html" --phone --width "$width" --height "$height" --hero "$HERO" --dpr 1 --gfx "$profile" --shot "/tmp/gfx03-qa/$name.png" --out "/tmp/gfx03-qa/$name.json"
             done
           done
-      - name: Report metrics (software renderer, not iPhone)
+      - name: Median paired p95 comparison
         run: |
           python3 - <<'PY'
-          import pathlib,json
+          import pathlib,json,statistics
           p=pathlib.Path('/tmp/gfx03-qa')
-          for profile,width in [('med',844),('low',844),('med',667),('low',667),('high',960)]:
-              a,b=[json.loads((p/f'{v}-{profile}-{width}.json').read_text()) for v in (158,159)]
-              def summary(x):
-                  m=x['hero']['vram']; c=x['hero']['cost']; s=x['sample']
-                  return {'draws':c['draws'],'passes':c['passes'],'pixels_M':c['mpx'],'rt_MB':round(sum(t['mb'] for t in m['rows'] if t['rt'])+m['depthMB']+m['backbufMB'],2),'texture_MB':round(sum(t['mb'] for t in m['rows'] if not t['rt']),2),'p95_interval_ms':s['p95Interval'],'canvas':m['canvas']}
-              print('GFX03_AB',profile,width,summary(a),'->',summary(b))
+          values={v:[json.loads((p/f'{v}-{i}.json').read_text())['sample']['p95Interval'] for i in (1,2,3)] for v in (158,159)}
+          a,b=(statistics.median(values[v]) for v in (158,159))
+          print('GFX03_REPEAT', values, 'median',a,b,'delta_pct',round((b/a-1)*100,2))
+          assert b <= a*1.1, 'p95 regression > 10%'
           PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: gfx03-ab-${{ matrix.hero }}
+          name: gfx03-repeat-${{ matrix.hero }}
           path: /tmp/gfx03-qa/
           retention-days: 7
