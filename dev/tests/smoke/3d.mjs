@@ -186,6 +186,46 @@ for (let c = 0; c < CYCLES; c++) {
     const last = await until("HERO_STAGE?.themeKey === 'atr' && HERO_STAGE.worldKey === 'atr' && HERO_STAGE.floorAtlasKind === 'tile' && HERO_STAGE.backdrop.isEnabled() && HERO_STAGE.backdropTexture?.isReady() && document.querySelector('.hc')?.dataset.heroTheme === 'atr'",12000);
     if (last < 0) errors.push('GFX-03: stale theme after rapid navigation');
   }
+  // GFX-05/C: exercise the existing authored scene, without changing the save.
+  if (c === 0) {
+    for (const id of ['duncan','muaddib']) {
+      await run("closeInfo(true); openDetail('" + id + "');");
+      const ready = await until("HERO_STAGE?.motionHero === '" + id + "' && HERO_STAGE.awake && HERO_STAGE.isCur()", 12000);
+      if (ready < 0) { errors.push('GFX-05/C: authored motion unavailable '+id); continue; }
+      const result = await page.evaluate(id => (0,eval)(`(() => {
+        const h = HERO_STAGE, id = '${id}', enabled = gfx(h.small).heroCharacterMotion && !h.motionPreference?.matches;
+        const started = heroFeedback(id, 'up');
+        const last = h.cinematic?.last;
+        const pulse = started ? h.cinematicPulse(last + 100) : 0;
+        const wrong = heroFeedback('paul', 'star');
+        heroHold(true); const cancelled = !h.cinematic && !heroFeedback(id, 'relic');
+        heroHold(false); const notReplayed = !h.cinematic;
+        const repeated = heroFeedback(id, 'star');
+        const replaced = heroFeedback(id, 'relic');
+        const single = enabled ? h.cinematic?.kind === 'relic' : !h.cinematic;
+        if (replaced) h.cinematicPulse(h.cinematic.last + 251);
+        const suspended = !h.cinematic;
+        heroFeedback(id,'up'); h.drag = { x: 0, y0: h.yaw };
+        if (h.cinematic) h.cinematicPulse(h.cinematic.last + 1);
+        const dragCancelled = !h.cinematic; h.drag = null;
+        // Rendering a synthetic older presentation snapshot must not emit a reward.
+        set_HERO_SNAP({id, stars: -1, gear: -1, eq: -1, lvl: -1, sk: ''});
+        openDetail(id); const noSnapshotReplay = !h.cinematic;
+        return { enabled, started, pulse, wrong, cancelled, notReplayed, repeated, replaced, single, suspended, dragCancelled, noSnapshotReplay };
+      })()`), id);
+      if (result.started !== result.enabled || result.repeated !== result.enabled || result.replaced !== result.enabled ||
+          (result.enabled && !(result.pulse > 0)) || result.wrong || !result.cancelled || !result.notReplayed ||
+          !result.single || !result.suspended || !result.dragCancelled || !result.noSnapshotReplay)
+        errors.push('GFX-05/C: feedback lifecycle '+id+' '+JSON.stringify(result));
+      await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
+      const reduced = await page.evaluate(id => (0,eval)("!heroFeedback('"+id+"','up') && !HERO_STAGE.cinematic"),id);
+      if (!reduced) errors.push('GFX-05/C: reduced motion '+id);
+      await page.emulateMediaFeatures([]);
+      await run("heroFeedback('"+id+"','star'); openDetail('paul');");
+      if (!await page.evaluate(() => (0,eval)('!HERO_STAGE.cinematic'))) errors.push('GFX-05/C: navigation replay '+id);
+      if (SHOTS) { await run("openDetail('"+id+"');"); await sleep(500); await page.screenshot({path:path.join(SHOTS,'gfx05c-'+id+(PHONE?'-phone':'')+'.png')}); }
+    }
+  }
   // BH4: exercise the real authored Baron in Babylon, not merely the 2D
   // fallback. Run once so this assertion does not distort lifecycle budgets.
   if (c === 0) {
