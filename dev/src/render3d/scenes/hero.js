@@ -29,8 +29,9 @@ function heroThemeKey(def) {
   if (def?.id === 'baron_legend') return 'hark';
   return (def?.f || []).find(f => Object.hasOwn(HERO_THEMES, f)) || 'frem';
 }
-// GFX-02 layout/camera/DPR allowlist only. GFX-03 environments use all six themes.
-function heroShowcasePilot(id) { return id === 'duncan' || id === 'baron'; }
+// GFX-03/FIX: every published character and staged legend uses the shared showcase.
+// Keep the historical exported name for existing UI/QA consumers.
+function heroShowcasePilot(id) { return !!CH[id] || id === 'baron_legend'; }
 function heroMotionPilot(id) { return id === 'duncan' || id === 'muaddib'; }
 // Physical floor/edge material and geometry, independent of UI layout.
 const HERO_WORLDS = Object.freeze({
@@ -127,7 +128,7 @@ class HeroStage extends Stage3D {
     dp.direction1 = V3(-.4, .2, -.3); dp.direction2 = V3(.4, .7, .5); dp.gravity = V3(0, -.6, 0); dp.minLifeTime = .7; dp.maxLifeTime = 1.6; dp.minSize = .02; dp.maxSize = .07; dp.minEmitPower = .2; dp.maxEmitPower = .6;
     dp.color1 = new B3.Color4(.78, .64, .46, .7); dp.color2 = new B3.Color4(.6, .48, .34, .55); dp.colorDead = new B3.Color4(.5, .4, .3, 0); dp.blendMode = B3.ParticleSystem.BLENDMODE_STANDARD; dp.emitRate = 0; dp.manualEmitCount = 0; dp.start();
     const cv = this.cv;
-    cv.addEventListener('pointerdown', e => { if (!this.isCur()) return; if (this.motionHero) this.cancelCinematic(); this.drag = { x: e.clientX, y0: this.yaw }; this.auto = false; cv.setPointerCapture && cv.setPointerCapture(e.pointerId); });
+    cv.addEventListener('pointerdown', e => { if (!this.isCur()) return; if (this.pilot) this.cancelCinematic(); this.drag = { x: e.clientX, y0: this.yaw }; this.auto = false; cv.setPointerCapture && cv.setPointerCapture(e.pointerId); });
     cv.addEventListener('pointermove', e => { if (!this.drag || !this.isCur()) return; const nx = this.yaw; this.yaw = this.drag.y0 + (e.clientX - this.drag.x) * .012; this.yawV = (this.yaw - nx) * 60; });
     const up = () => { if (this.drag) { this.drag = null; this.resumeT = performance.now() + 3000; } }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   }
@@ -239,16 +240,16 @@ class HeroStage extends Stage3D {
     }
     this.setWorld(this.themeKey);
     if (this.def !== def || !this.o) {
-      if (this.motionHero) this.cancelCinematic();
+      if (this.pilot) this.cancelCinematic();
       this.restoreMotionHead();
       if (this.o) this.o.root.setEnabled(false);
       let o = this.pool.get(def.id); if (!o) { o = this.buildHero(def); this.pool.set(def.id, o); }
-      this.warmEnd(o); o.root.setEnabled(true); const wasMotion = !!this.motionHero; this.o = o; this.def = def;
+      this.warmEnd(o); o.root.setEnabled(true); this.o = o; this.def = def;
       this.motionHero = o.root._clipRest && (def.id === 'duncan' && o.root._clips?.Long_Breathe_and_Look_Around || def.id === 'muaddib' && o.root._clips?.Idle_11) ? def.id : null;
       this.motionElapsed = 0; this.motionLast = null; this.motionSettled = null; this.settledCameraActor = null;
       this.yaw = this.motionHero === 'muaddib' ? .22 : def.id === 'duncan' && o.root._clipRest ? 0 : -.35;
       this.auto = !this.motionHero; this.intro = performance.now();
-      if (wasMotion || this.motionHero) { this.drag = null; this.yawV = 0; this.resumeT = 0; }
+      this.drag = null; this.yawV = 0; this.resumeT = 0; this.flashT = 0;
     }
     const keep = new Set([def.id, ...this.want.map(d => d.id)]);
     for (const [id, o] of this.pool) if (!keep.has(id)) { this.dropHero(o); this.pool.delete(id); }
@@ -268,20 +269,28 @@ class HeroStage extends Stage3D {
       this.rim2.direction.set(-.55, -.46, -.70);
       this.rim2.diffuse.set(.96, .98, 1);
       this.rim2.intensity = 3.4;
-    } else if (def.id === 'baron') {
+    } else if (this.themeKey === 'hark') {
       // Hard silver key + restrained red edge; no extra light or glow.
       this.rim2.position.set(2.6, 2.6, -2.2);
       this.rim2.direction.set(-.6, -.4, .6);
       this.rim2.diffuse.copyFrom(col3('#c48079'));
       this.rim2.intensity = .85;
-    } else {
+    } else if (def.id === 'muaddib') {
+      // Preserve the accepted authored motion reference lighting.
       this.rim2.position.set(2.6, 2.6, -2.2);
       this.rim2.direction.set(-.6, -.4, .6);
       this.rim2.diffuse.copyFrom(col3(HERO_THEMES[this.themeKey].fill));
       this.rim2.intensity = 1.1;
+    } else {
+      // Reuse the fourth light as a soft front fill: retain the faction rim
+      // and key hue without obscuring eyes or dark cloth on procedural models.
+      this.rim2.position.set(2.5, 3.0, 3.0);
+      this.rim2.direction.set(-.55, -.46, -.70);
+      this.rim2.diffuse.copyFrom(col3(HERO_THEMES[this.themeKey].fill));
+      this.rim2.intensity = this.themeKey === 'bg' ? 1.25 : 1.5;
     }
   }
-  quiet(now) { return !(this.drag || Math.abs(this.yawV) > .02 || now - (this.intro || 0) < (this.motionHero ? 300 : 1400) || (this.flashT && now - this.flashT < 1900) || this.cinematic); }
+  quiet(now) { return !(this.drag || Math.abs(this.yawV) > .02 || now - (this.intro || 0) < (this.pilot ? 300 : 1400) || (this.flashT && now - this.flashT < 1900) || this.cinematic); }
   // прогрев соседа: два кадра на месте героя в масштабе 0,001 (тот же свет и тени → те же шейдеры, на экране не видно), затем выключить
   prefetch(now) {
     if (this.warm) { if (--this.warm.n <= 0) this.warmEnd(this.warm.o); return; }
@@ -299,7 +308,7 @@ class HeroStage extends Stage3D {
   cancelCinematic() {
     this.cinematic = null; this.intro = 0;
   }
-  cinematicAllowed() { return !!(this.motionHero && gfx(this.small).heroCharacterMotion && !this.motionPreference?.matches && !this.drag && !HERO_HOLD && this.awake && this.isCur()); }
+  cinematicAllowed() { return !!(this.pilot && gfx(this.small).heroCharacterMotion && !this.motionPreference?.matches && !this.drag && !HERO_HOLD && this.awake && this.isCur()); }
   playCinematic(kind) {
     if (!this.cinematicAllowed() || !['up','star','relic'].includes(kind) || document.hidden || document.querySelector('#overlay2 .sheet, #celeb, #lvlup')) return false;
     this.intro = 0;
@@ -322,16 +331,17 @@ class HeroStage extends Stage3D {
     if (head?.rotationQuaternion && this.motionHeadRaw) head.rotationQuaternion.copyFrom(this.motionHeadRaw);
     this.motionHead = null;
   }
-  onSleep(options) { if (this.motionHero) this.cancelCinematic(); this.motionLast = null; this.motionSettled = null; this.restoreMotionHead(); super.onSleep(options); }
-  onWake() { this.settledCameraActor = null; if (this.motionHero) { this.cinematic = null; this.intro = performance.now(); } this.motionLast = null; this.motionSettled = null; super.onWake(); }
+  onSleep(options) { if (this.pilot) this.cancelCinematic(); this.motionLast = null; this.motionSettled = null; this.restoreMotionHead(); super.onSleep(options); }
+  onWake() { this.settledCameraActor = null; if (this.pilot) { this.cinematic = null; this.intro = performance.now(); } this.motionLast = null; this.motionSettled = null; super.onWake(); }
   tick(now, t) {
     const o = this.o; if (!o) return; this.prefetch(now);
-    const motion = this.motionHero, reduced = !!(motion && this.motionPreference?.matches);
+    const motion = this.motionHero, reduced = !!this.motionPreference?.matches;
+    const cinematicMotion = this.pilot && !reduced && gfx(this.small).heroCharacterMotion;
     const fullMotion = motion && !reduced && gfx(this.small).heroCharacterMotion;
     const settled = motion && !fullMotion && !o.act && !o.dead && !o.hitT && !o.rise;
     const reusePose = settled && this.motionSettled === o && o.root._lastClip === (motion === 'duncan' ? 'Long_Breathe_and_Look_Around' : 'Idle_11');
     const pulse = this.cinematic ? this.cinematicPulse(now) : 0;
-    let sample = t;
+    let sample = cinematicMotion ? t : 0;
     if (motion) {
       const dt = this.motionLast === null ? 0 : now - this.motionLast;
       this.motionLast = now;
@@ -339,7 +349,7 @@ class HeroStage extends Stage3D {
       if (fullMotion && !this.drag && dt >= 0 && dt <= 1000) this.motionElapsed += dt / 1000;
       sample = fullMotion ? this.motionElapsed * (motion === 'muaddib' ? .68 : 1) : 0;
     }
-    if (this.auto && !this.drag && (!this.resumeT || now > this.resumeT)) this.yaw += Math.sin(t * .35) * .0025;
+    if (cinematicMotion && this.auto && !this.drag && (!this.resumeT || now > this.resumeT)) this.yaw += Math.sin(t * .35) * .0025;
     if (!this.drag) {
       if (reduced) this.yawV = 0;
       else { this.yaw += this.yawV / 60; this.yawV *= .92; }
@@ -390,22 +400,22 @@ class HeroStage extends Stage3D {
     // Do not apply the COMBAT-specific yaw correction here; the shader's
     // fixed UV orientation now shows the actual face/armor in this view.
     o.root.rotation.y = this.yaw;
-    if (motion && this.intro && (!fullMotion || this.drag || document.hidden || now - this.intro > 500 || document.querySelector('#overlay2 .sheet, #celeb, #lvlup'))) this.intro = 0;
+    if (this.pilot && this.intro && (!cinematicMotion || this.drag || document.hidden || now - this.intro > 500 || document.querySelector('#overlay2 .sheet, #celeb, #lvlup'))) this.intro = 0;
     // The settled pilot camera and plate do not move with manual actor yaw.
     // Skip identical transforms only after a complete settled frame; invalidate
     // on actor, viewport, pipeline wake or a new entrance.
-    const fixedCamera = !!(settled && !this.intro);
+    const fixedCamera = !!(this.pilot && !this.intro);
     const cameraReady = fixedCamera && this.settledCameraActor === o && this.settledCameraW === this.w && this.settledCameraH === this.h && this.settledCameraPipe === this.pipe;
     if (!cameraReady) {
-    const entrance = motion ? (motion === 'muaddib' ? 300 : 260) : 1100;
+    const entrance = motion === 'muaddib' ? 300 : 260;
     const H = o.h, ik = !reduced && this.intro ? Math.min(1, Math.max(0, (now - this.intro) / entrance)) : 1, e = 1 - (1 - ik) ** 3;
-    const push = motion ? .045 : .25, lift = motion ? .04 : .25;
+    const push = .045, lift = .04;
     const asp = (this.w || 1) / (this.h || 1),
       // The single-piece Meshy skin is visibly slimmer in the portrait than
       // the other authored heroes. Only Duncan gets a small camera push-in.
-      portraitScale = o.def?.id === 'duncan' && o.root._clipRest ? .77 : o.def?.id === 'baron' && o.root._authored ? .86 : 1,
+      portraitScale = o.def?.id === 'duncan' && o.root._clipRest ? .77 : o.def?.id === 'baron' && o.root._authored ? .86 : o.def?.id === 'muaddib' ? 1 : this.themeKey === 'mach' ? .95 : .86,
       dist = (H * 1.35 + .6) / Math.min(1, asp * 1.9) * 1.14 * portraitScale;   // пакет 5: холст шире — запас под подиум
-    this.camera.position.set(Math.sin(.25) * dist * (1 + push * (1 - e)), H * .62 + lift * (1 - e), Math.cos(.25) * dist * (1 + push * (1 - e))); this.camera.setTarget((this._tg || (this._tg = V3())).set(0, H * (o.def?.id === 'baron' ? .50 : portraitScale < 1 ? .44 : .52), 0)); this.camera.fov = .75;
+    this.camera.position.set(Math.sin(.25) * dist * (1 + push * (1 - e)), H * .62 + lift * (1 - e), Math.cos(.25) * dist * (1 + push * (1 - e))); this.camera.setTarget((this._tg || (this._tg = V3())).set(0, H * (o.def?.id === 'duncan' && o.root._clipRest ? .44 : o.def?.id === 'muaddib' ? .52 : .50), 0)); this.camera.fov = .75;
     // Fit the square plate to the larger frustum dimension (cover, not
     // stretch). Existing camera/character composition and safe areas stay.
     // Reuse vectors/scalars; no new allocations or DOM reads per frame.
@@ -418,15 +428,15 @@ class HeroStage extends Stage3D {
     if (this.pipe.depthOfFieldEnabled) this.pipe.depthOfField.focusDistance = dist * 1000;
     this.settledCameraActor = fixedCamera ? o : null; this.settledCameraW = this.w; this.settledCameraH = this.h; this.settledCameraPipe = this.pipe;
     }
-    const fk = motion ? 0 : this.flashT ? Math.max(0, 1 - (now - this.flashT) / 900) : 0;
-    this.key.intensity = (o.def?.id === 'baron' ? 1.9 : this.pilot ? 1.65 : 1.7) + fk * 2 + pulse; this.ring.scaling.setAll(1); if (this.glow) this.glow.intensity = .6 + fk;
+    const fk = this.pilot ? 0 : this.flashT ? Math.max(0, 1 - (now - this.flashT) / 900) : 0;
+    this.key.intensity = (this.themeKey === 'hark' ? 1.9 : o.def?.id === 'muaddib' ? 1.7 : 1.65) + fk * 2 + pulse; this.ring.scaling.setAll(1); if (this.glow) this.glow.intensity = .6 + fk;
   }
   slashFX() {} muzzleFX() {} voiceFX() {} castFX() {}
   dustFX(o, where) { const H = o.h, r = o.root.rotation.y, off = where === 'shoulder' ? V3(.28, H * .74, .05) : where === 'cape' ? V3(-.1, H * .5, -.3) : V3(-.05, H * .66, .14); const c = Math.cos(r), s = Math.sin(r); this.dustP.emitter = V3(off.x * c + off.z * s, off.y, -off.x * s + off.z * c); this.dustP.manualEmitCount = where === 'cape' ? 140 : 40; }
 }
 let HERO_STAGE = null, HERO_SNAP = null, HERO_HOLD = false;
-function heroHold(on) { const next = !!on; if (next !== HERO_HOLD && HERO_STAGE) { HERO_STAGE.motionLast = null; if (next && HERO_STAGE.motionHero) HERO_STAGE.cancelCinematic(); } HERO_HOLD = next; }
-function heroFeedback(id, kind) { return !!(heroMotionPilot(id) && HERO_STAGE?.def?.id === id && HERO_STAGE.playCinematic(kind)); }
+function heroHold(on) { const next = !!on; if (next !== HERO_HOLD && HERO_STAGE) { HERO_STAGE.motionLast = null; if (next && HERO_STAGE.pilot) HERO_STAGE.cancelCinematic(); } HERO_HOLD = next; }
+function heroFeedback(id, kind) { return !!(heroShowcasePilot(id) && HERO_STAGE?.def?.id === id && HERO_STAGE.playCinematic(kind)); }
 function mountHeroStage(id, near, staged = null) {
   const host = document.querySelector('#overlay .hcfig'); if (!host) return;
   if (!HAS3D) { if (HAS_GL) loadB3().then(ok => { if (ok && host.isConnected && host.closest('.hc')?.dataset.cid === id) mountHeroStage(id, near, staged); }); return; }   // фаза 4: пока грузится чанк — 2D-фигура
@@ -435,7 +445,7 @@ function mountHeroStage(id, near, staged = null) {
     const p = staged?.progress || prog(id), d = staged?.def || CH[id];
     host.classList.add('has3d'); HERO_STAGE.setHero(d, p, (near || []).map(x => CH[x])); HERO_STAGE.attach(host);
     const snap = { id, stars: p.stars, gear: p.gear, eq: p.eq.filter(Boolean).length, lvl: p.lvl, sk: JSON.stringify(p.sk) };
-    if (!heroMotionPilot(id) && HERO_SNAP && HERO_SNAP.id === id) { if (snap.stars > HERO_SNAP.stars || snap.gear > HERO_SNAP.gear) HERO_STAGE.celebrate('star'); else if (snap.eq > HERO_SNAP.eq || snap.lvl > HERO_SNAP.lvl || snap.sk !== HERO_SNAP.sk) HERO_STAGE.celebrate('up'); }
+    if (!heroShowcasePilot(id) && HERO_SNAP && HERO_SNAP.id === id) { if (snap.stars > HERO_SNAP.stars || snap.gear > HERO_SNAP.gear) HERO_STAGE.celebrate('star'); else if (snap.eq > HERO_SNAP.eq || snap.lvl > HERO_SNAP.lvl || snap.sk !== HERO_SNAP.sk) HERO_STAGE.celebrate('up'); }
     HERO_SNAP = snap;
   } catch (e) { console.warn('hero stage', e); }
 }
