@@ -18,7 +18,7 @@ import { RES_INFO, closeInfo, infoBack, infoKey, openInfo, set_INFO_BACK } from 
 import { DETAIL_BACK, closeOverlay, itemCtx, lvlCost, openItem, set_DETAIL_BACK, slotState } from './overlays/detail.js';
 import { lackKey, skCost } from '../logic/skill-up.js';
 import { craftAndEquip, buildPart } from '../logic/gear-crafting.js';
-import { detailSk, hcStat, openDetail, set_detailSk, updLvl } from './hero-card.js';
+import { detailSk, hcStat, openDetail, set_detailSk, updLvl, heroUpgradeFeedback } from './hero-card.js';
 import { hcFind, hcSkill, skTab } from './skill-window.js';
 import { hcMem } from './memory-screen.js';
 import { recyclerClick } from './recycler-screen.js';
@@ -375,7 +375,7 @@ function verifiedUpgradeClick(d) {
       return true;
     });
     if (!tx.ok) { if (tx.status === 'cancelled' && tx.value === 'wol') hcFind('wol'); return true; }
-    toast('Ультимативная способность открыта!'); render(); openDetail(id);
+    toast('Ультимативная способность открыта!'); render(); openDetail(id); heroUpgradeFeedback(id);
     return true;
   }
   if (d.skup !== undefined) {
@@ -399,7 +399,7 @@ function verifiedUpgradeClick(d) {
       return true;
     }
     toast(`${CH[id].sn}: умение повышено до ${tx.value.level}`);
-    render(); openDetail(id);
+    render(); openDetail(id); heroUpgradeFeedback(id);
     return true;
   }
   if (d.buildpart !== undefined || d.craft !== undefined) {
@@ -428,6 +428,7 @@ function verifiedUpgradeClick(d) {
     toast(partId === null ? `${tx.value.name} надет: ${CH[cid].sn}` : 'Компонент создан');
     if (partId === null && $('#overlay2 .isheet')) closeInfo(true);
     render(); openItem(cid, k);
+    if (partId === null) heroUpgradeFeedback(cid);
     return true;
   }
   if (d.gup !== undefined) {
@@ -493,7 +494,7 @@ function verifiedUpgradeClick(d) {
       return true;
     }
     if (slider) celebQueue({ type: 'hup', kind: 'lvl', id, from: tx.value.from, to: tx.value.to, s0 });
-    render(); openDetail(id);
+    render(); openDetail(id); if (!slider) heroUpgradeFeedback(id);
     return true;
   }
   if (d.star !== undefined) {
@@ -528,7 +529,7 @@ function verifiedUpgradeClick(d) {
         return { commit: false, value: 'locked' };
       S.solari -= c.sol; S.plast -= c.pl; p.gear++;
     });
-    if (tx.ok) { render(); openDetail(id); }
+    if (tx.ok) { render(); openDetail(id); heroUpgradeFeedback(id); }
     return true;
   }
   return false;
