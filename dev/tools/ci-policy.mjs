@@ -49,7 +49,7 @@ export function systemsForPaths(paths) {
     if (/^dev\/tests\/ci\/arch02d-/.test(p)) {add('clock','storage');continue;}
     if (/^dev\/tests\/ci\/arch02(?:b|c-b[123])/.test(p)) {add('storage');continue;}
     if (/^dev\/tests\/ci\/arch02c-b[56]/.test(p)) {add('progression');continue;}
-    if (/^dev\/tests\/smoke\/(?:3d|ab|perf|baron|muad|young-baron|bh9|md-ult1|arena-animation)/.test(p)) {add('render3d');continue;}
+    if (p === 'dev/tests/smoke/gfx05-runtime.mjs' || /^dev\/tests\/smoke\/(?:3d|ab|perf|baron|muad|young-baron|bh9|md-ult1|arena-animation)/.test(p)) {add('render3d');continue;}
     if (/^dev\/tests\/smoke\/sw\.mjs$/.test(p)) {add('pwa');continue;}
     if (/^dev\/tests\/(?:golden\/|dom\/|smoke\/|ci\/(?:ui-copy-dom-smoke|ui01-|hud01-|ui02-))/.test(p)) {add('ui');continue;}
     if (/^dev\/tests\//.test(p)) {add('ci');continue;}
@@ -125,7 +125,7 @@ const ECONOMY_PATHS = new Set([
 ]);
 const isEconomy = p => ECONOMY_PATHS.has(p);
 export const isDoc = p => /^(?:README\.md|docs\/AI_WORKFLOW\.md|dev\/(?:README|ARCHITECTURE|CHANGES_STATUS)\.md)$/.test(p)
-  || /^\.agents\/skills\/(?:README\.md|(?:game-ui-ux|game-feel|create-game-assets|rpg|performance-optimization|ai-behavior-trees-utility-ai|audio-design)\/SKILL\.md)$/.test(p)
+  || /^\.agents\/skills\/(?:README\.md|(?:game-ui-ux|game-feel|create-game-assets|rpg|performance-optimization|ai-behavior-trees-utility-ai|audio-design|cinematic-motion)\/SKILL\.md)$/.test(p)
   // Only approved Babylon Markdown references are docs; executable/unknown files fail closed.
   || /^\.agents\/skills\/babylonjs\/(?:SKILL\.md|references\/(?:rendering-and-assets|visual-proof)\.md)$/.test(p)
   || /^dev\/docs\/.+\.(?:md|txt|html|png|jpg|jpeg|webp|svg)$/.test(p)

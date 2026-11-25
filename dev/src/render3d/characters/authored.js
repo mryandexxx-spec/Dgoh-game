@@ -245,6 +245,11 @@ function poseModelClip(o, now, t, sp, stage) {
     u = ((t + (o.phase || 0)) % showcase.duration) / showcase.duration;
   }
   let clipName = names[name] || name;
+  if (name === 'Showcase' && stage?.showcase && o.def?.id === 'duncan' && stage.motionClip === 'Long_Breathe_and_Look_Around' && clips[stage.motionClip]) {
+    clipName = stage.motionClip;
+    const duration = clips[clipName].duration;
+    u = ((t + (o.phase || 0)) % duration) / duration;
+  }
   if (name === 'ult' && o.def.id === 'duncan' && o.root._clipRest) {
     const part = DUNCAN_COMBO.find(section => u < section.end) || DUNCAN_COMBO[2];
     clipName = part.clip;
@@ -272,7 +277,15 @@ function poseModelClip(o, now, t, sp, stage) {
   }
   const time = u * clip.duration;
   for (const tr of clip.tracks) {
-    let i = 0; while (i < tr.times.length - 2 && time > tr.times[i + 1]) i++;
+    let i = 0;
+    if (name === 'Showcase' && clipName === 'Long_Breathe_and_Look_Around') {
+      let hi = Math.max(0, tr.times.length - 2);
+      while (i < hi) {
+        const mid = (i + hi) >>> 1;
+        if (time > tr.times[mid + 1]) i = mid + 1;
+        else hi = mid;
+      }
+    } else while (i < tr.times.length - 2 && time > tr.times[i + 1]) i++;
     const j = Math.min(i + 1, tr.times.length - 1), span = tr.times[j] - tr.times[i];
     const n = tr.node; if (!n) continue;
 
