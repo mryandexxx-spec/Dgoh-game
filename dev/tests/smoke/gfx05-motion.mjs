@@ -2,6 +2,8 @@
 // cd dev && node tests/smoke/gfx05-motion.mjs dist/pwa/index.html
 import fs from 'node:fs';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
+import os from 'node:os';
 import {fileURLToPath} from 'node:url';
 import puppeteer from 'puppeteer-core';
 import {serve} from '../lib/serve.mjs';
@@ -15,8 +17,9 @@ fs.mkdirSync(out,{recursive:true});
 const server=await serve(path.dirname(html));
 const browser=await puppeteer.launch({executablePath:chrome,headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
 const report=[];
+const video=process.env.GFX05_VIDEO==='1', fps=30, length=12.5;
 try {
- for(const [width,height] of [[844,390],[667,375]]) for(const gfx of ['med','low']){
+ for(const [width,height] of (video?[[844,390]]:[[844,390],[667,375]])) for(const gfx of (video?['med']:['med','low'])){
   const page=await browser.newPage();
   try{
    await page.setViewport({width,height,deviceScaleFactor:1,isMobile:true,hasTouch:true,isLandscape:true});
@@ -38,7 +41,7 @@ try {
      return {id:o.def.id,authored:!!o.root._authored,clipNames:o.root._clipNames||{},clips:Object.entries(o.root._clips||{}).map(([name,c])=>({name,duration:c.duration,tracks:c.tracks.map(t=>({node:t.node?.name,path:t.path||'rotation',keys:t.times.length}))})),head:o.head?.name,rest:Object.keys(o.root._clipRest||{}),renderer:gl?.getParameter(gl.RENDERER),meshes:h.scene.meshes.length};
     });
     if(!inventory.clips.length)throw new Error(id+' has no authored clips; cannot approve motion');
-    const variants=id==='duncan'?['baseline','long-look','weapon-rest']:['baseline','composed','watchful'];
+    const variants=video?(id==='duncan'?['long-look']:['watchful']):(id==='duncan'?['baseline','long-look','weapon-rest']:['baseline','composed','watchful']);
     for(const variant of variants){
      const duration=await page.evaluate(({variant,id})=>{
       const h=HERO_STAGE,o=h.o,root=o.root,names=root._clipNames;
@@ -72,7 +75,21 @@ try {
      // Sample exact normalized clip phases, not wall-clock guesses. For
      // slowed Muad'Dib clips use a full rescaled period.
      const period=duration/(variant==='watchful'?.68:variant==='composed'?.8:1);
-     for(const [index,frac] of [0,.16,.33,.5,.66,.83,.99].entries()){
+     if(video){
+      // Real WebGL frames sampled at 30 Hz of animation time, independent of
+      // software renderer throughput. The resulting MP4 is a motion preview,
+      // not a measurement of device FPS. Includes Duncan's loop seam.
+      const frames=fs.mkdtempSync(path.join(os.tmpdir(),'gfx05-frames-'));
+      try{
+       for(let i=0;i<Math.ceil(length*fps);i++){
+        const sec=i/fps;
+        await page.evaluate(t=>HERO_STAGE.__labSample(t),sec);
+        await page.waitForFunction(t=>HERO_STAGE.__labRendered(t),{timeout:15000},sec);
+        await page.screenshot({type:'jpeg',quality:92,path:path.join(frames,String(i).padStart(5,'0')+'.jpg'),captureBeyondViewport:false});
+       }
+       execFileSync('ffmpeg',['-hide_banner','-loglevel','error','-y','-framerate',String(fps),'-i',path.join(frames,'%05d.jpg'),'-c:v','libx264','-crf','19','-pix_fmt','yuv420p','-movflags','+faststart',path.join(out,id+'-'+variant+'.mp4')],{stdio:'inherit'});
+      }finally{fs.rmSync(frames,{recursive:true,force:true});}
+     }else for(const [index,frac] of [0,.16,.33,.5,.66,.83,.99].entries()){
       const sec=period*frac;
       await page.evaluate(t=>HERO_STAGE.__labSample(t),sec);
       await page.waitForFunction(t=>HERO_STAGE.__labRendered(t),{timeout:15000},sec);

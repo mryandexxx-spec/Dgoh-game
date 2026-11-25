@@ -8,7 +8,7 @@ permissions:
 jobs:
   capture:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: dev
@@ -19,10 +19,13 @@ jobs:
           node-version: 22
       - run: npm ci
       - run: node tools/build.mjs
+      - run: ffmpeg -version
       - run: node tests/smoke/gfx05-motion.mjs dist/pwa/index.html
+        env:
+          GFX05_VIDEO: '1'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: gfx05a-motion-evidence
+          name: gfx05a-motion-video
           path: dev/gfx05-motion-out/
           if-no-files-found: warn
