@@ -1,0 +1,49 @@
+name: GFX-05B Runtime Visual Proof
+on:
+  push:
+    branches: [gfx-05b-visual-proof]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  hero:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidate
+      - uses: actions/checkout@v4
+        with:
+          ref: 561381377eb6526a5106c029bd97a86e3a36217e
+          path: baseline
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci && node tools/build.mjs
+        working-directory: baseline/dev
+      - run: npm ci && node tools/build.mjs
+        working-directory: candidate/dev
+      - name: Baseline authored hero evidence
+        working-directory: candidate/dev
+        run: node tests/smoke/gfx05-runtime.mjs "$GITHUB_WORKSPACE/baseline/dev/dist/pwa/index.html" gfx05-runtime-out/baseline --baseline
+      - name: Candidate authored hero and lifecycle checks
+        working-directory: candidate/dev
+        run: node tests/smoke/gfx05-runtime.mjs dist/pwa/index.html gfx05-runtime-out/candidate
+      - name: Comparative cost summary
+        working-directory: candidate/dev
+        run: |
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          const dir='gfx05-runtime-out';
+          const a=JSON.parse(fs.readFileSync(dir+'/baseline/metrics.json'));
+          const b=JSON.parse(fs.readFileSync(dir+'/candidate/metrics.json'));
+          const rows=b.map(x=>{const y=a.find(z=>z.id===x.id&&z.width===x.width&&z.gfx===x.gfx);return {id:x.id,width:x.width,gfx:x.gfx,p95Before:y.p95,p95After:x.p95,p95Change:Math.round((x.p95/y.p95-1)*1000)/10,drawsBefore:y.draws,drawsAfter:x.draws,meshesBefore:y.meshes,meshesAfter:x.meshes,texturesBefore:y.textures,texturesAfter:x.textures,materialsBefore:y.materials,materialsAfter:x.materials};});
+          console.table(rows);fs.writeFileSync(dir+'/comparison.json',JSON.stringify(rows,null,2));
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gfx05b-runtime-proof
+          path: candidate/dev/gfx05-runtime-out/
+          if-no-files-found: warn
