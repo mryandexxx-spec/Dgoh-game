@@ -12,7 +12,7 @@ def material(name,h,metal,rough,hybrid=False):
  n=m.node_tree.nodes;l=m.node_tree.links;p=n.get("Principled BSDF")
  p.inputs["Base Color"].default_value=color(h);p.inputs["Metallic"].default_value=metal;p.inputs["Roughness"].default_value=rough
  if hybrid:
-  tx=n.new("ShaderNodeTexImage");tx.image=bpy.data.images.load(str(sample),check_existing=True);tx.image.colorspace_settings.name="Non-Color";tx.extension="REPEAT"
+  tx=n.new("ShaderNodeTexImage");tx.image=bpy.data.images.load(str(sample),check_existing=True);tx.image.colorspace_settings.name="Non-Color";tx.image.pack();tx.extension="REPEAT"
   tc=n.new("ShaderNodeTexCoord");l.new(tc.outputs["Generated"],tx.inputs["Vector"])
  else:
   tx=n.new("ShaderNodeTexNoise");tx.inputs["Scale"].default_value=105;tx.inputs["Detail"].default_value=2;tx.inputs["Roughness"].default_value=.55
@@ -41,7 +41,7 @@ for W in (993,801):
   for state in ("normal","pressed","disabled"):
    bpy.ops.wm.read_factory_settings(use_empty=True)
    scene=bpy.context.scene
-   scene.render.engine="CYCLES";scene.cycles.samples=24;scene.cycles.use_denoising=True
+   scene.render.engine="CYCLES";scene.cycles.samples=96;scene.cycles.use_denoising=False
    scene.render.resolution_x=W;scene.render.resolution_y=132;scene.render.resolution_percentage=100
    scene.render.film_transparent=True;scene.render.image_settings.file_format="PNG";scene.render.image_settings.color_mode="RGBA"
    scene.world=bpy.data.worlds.new("Neutral studio");scene.world.use_nodes=True;scene.world.node_tree.nodes["Background"].inputs[0].default_value=(.24,.24,.24,1);scene.world.node_tree.nodes["Background"].inputs[1].default_value=.55
@@ -61,3 +61,11 @@ for W in (993,801):
    if W==993 and state=="normal": bpy.ops.wm.save_as_mainfile(filepath=str(out/f"{variant}.blend"))
    print("C3_RENDER",variant,W,state,path.name,flush=True)
 (out/"receipt.json").write_text(json.dumps({"blender":bpy.app.version_string,"sizes":[[993,132],[801,132]],"variants":["blender","hybrid"],"states":["normal","pressed","disabled"],"hybrid_source":"ImageGen brass interior grayscale high-pass sample, 48x16; not a true measured height map","runtime":False},indent=2))
+
+# Inline visual witnesses for remote independent review; PNGs remain unmodified.
+for w in (993,801):
+ for variant in ("blender","hybrid"):
+  p=out/f"{variant}-{w}-normal.png"
+  data=base64.b64encode(p.read_bytes()).decode()
+  for i in range(0,len(data),3000):
+   print(f"C3_WITNESS {variant}-{w} {i//3000:04d} {data[i:i+3000]}",flush=True)
