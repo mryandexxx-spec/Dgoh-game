@@ -142,8 +142,28 @@ try{
     // #338: exercise every visible page in every live market, not just
     // the initial page. Verify independent title/price/quantity geometry,
     // gold-band clearance, pagination hit zones and full selected title.
+    // Every disk offered by the weekly rotation must have its own raster;
+    // check the entire eligible pool even if not selected by this week's RNG.
+    const allArt=await page.evaluate(async()=>{
+      const keys=(0,eval)("['ix_plate','holtz_conductor','wol','legacy_thread','age_resonance','teeth','rid','wring','jt','med','med3',...Object.keys(CQ_DISKS).filter(k=>['r','l'].includes(CQ_DISKS[k].r)).map(k=>'disk-'+k)]");
+      return Promise.all(keys.map(async k=>{
+        const src=(0,eval)('postObjectSrc('+JSON.stringify(k)+')');
+        if(!src)return {k,src,ok:false};
+        const img=new Image();img.src=src;
+        try{await img.decode()}catch{return {k,src,ok:false}}
+        const canvas=document.createElement('canvas');canvas.width=canvas.height=256;
+        const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);
+        const alpha=ctx.getImageData(0,0,256,256).data;
+        return {k,src,ok:img.naturalWidth===256&&img.naturalHeight===256&&alpha[3]===0&&alpha.some((v,i)=>i%4===3&&v===255)};
+      }));
+    });
+    assert.equal(allArt.length,26);
+    assert.ok(allArt.every(x=>x.ok),JSON.stringify(allArt));
+    assert.equal(new Set(allArt.map(x=>x.src)).size,allArt.length);
     const auditPage=async(tab,index)=>{
-      const result=await page.evaluate(()=>{
+      const result=await page.evaluate(async()=>{
+        await document.fonts.ready;
+        await Promise.all([...document.querySelectorAll('.shop-art img[data-shop-art]')].map(i=>i.decode()));
         const rect=e=>e.getBoundingClientRect();
         const bad=[];
         for(const c of document.querySelectorAll('.sa-card')){
@@ -153,12 +173,14 @@ try{
           const inside=x=>x.left>=b.left-1&&x.right<=b.right+1&&x.top>=b.top-1&&x.bottom<=b.bottom+1;
           if(![n,p,q,a,l].every(inside)||overlap(n,p)||overlap(n,q)||overlap(a,n)||overlap(l,q)||n.bottom>b.bottom-b.height*.19+1||name.scrollHeight>name.clientHeight+1||name.scrollWidth>name.clientWidth+1)bad.push({name:name.textContent,card:b.toJSON(),title:n.toJSON(),price:p.toJSON(),qty:q.toJSON(),art:a.toJSON(),limit:l.toJSON(),scrollHeight:name.scrollHeight,clientHeight:name.clientHeight});
         }
+        const invalidArt=[...document.querySelectorAll('.shop-art img[data-shop-art]')].filter(i=>!i.complete||!i.naturalWidth).map(i=>i.dataset.shopArt);
         const rail=document.querySelector('.sa-pager'),foot=document.querySelector('.sa-cat-foot');
         const targets=[...rail.querySelectorAll('button')].map(e=>{const b=rect(e);return {w:b.width,h:b.height,hit:e.disabled||e.contains(document.elementFromPoint(b.x+b.width/2,b.y+b.height/2))}});
         const fr=rect(foot),rr=rect(rail);
         const other=[...foot.children].filter(e=>e!==rail).map(rect);
-        return {bad,targets,railFits:rr.left>=fr.left-1&&rr.right<=fr.right+1&&rr.top>=fr.top-1&&rr.bottom<=fr.bottom+1&&other.every(b=>b.right<=rr.left+1||b.left>=rr.right-1)};
+        return {bad,invalidArt,targets,railFits:rr.left>=fr.left-1&&rr.right<=fr.right+1&&rr.top>=fr.top-1&&rr.bottom<=fr.bottom+1&&other.every(b=>b.right<=rr.left+1||b.left>=rr.right-1)};
       });
+      assert.deepEqual(result.invalidArt,[]);
       assert.deepEqual(result.bad,[],tab+' page '+index+' '+JSON.stringify(result.bad));
       assert.ok(result.railFits&&result.targets.every(t=>t.w>=36&&t.h>=36&&t.hit),JSON.stringify(result));
       for(const key of await page.$eval('.sa-card',a=>a.map(e=>e.dataset.postselect))){
