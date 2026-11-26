@@ -4257,3 +4257,46 @@ body:has(#view .shop-art)>.toast{top:max(4px,env(safe-area-inset-top));bottom:au
 
 /* Release acceptance: no decorative transitions for reduced-motion users. */
 @media(prefers-reduced-motion:reduce){.shop-art *,.shop-art *:before,.shop-art *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+
+/* SHOP-POSTRELEASE #338: A3 artwork is immutable. Reserve its lower gold
+   band independently of the title; never place quantity in the title area. */
+.shop-art .sa-card{--price-band:22%;--title-size:12px;--card-inset:8px;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) auto var(--price-band);column-gap:4px;padding:5px var(--card-inset) 0}
+.shop-art .sa-card .sa-art,.shop-art .sa-card.long .sa-art{position:relative;grid-area:1/1;inset:auto;width:100%;height:100%;min-height:0;align-self:stretch}
+.shop-art .sa-card .sa-limit{position:relative;grid-area:1/2;inset:auto;align-self:start;justify-self:end;max-width:none;text-align:right}
+.shop-art .sa-card .sa-qty,.shop-art .sa-card.bigqty .sa-qty{position:relative;grid-area:1/2;inset:auto;align-self:start;justify-self:end;margin-top:18px;font-size:clamp(10px,1.45vw,13px)}
+.shop-art .sa-card.bigqty .sa-qty{font-size:10px}
+.shop-art .sa-card .sa-name{position:relative;grid-area:2/1/3/3;inset:auto;align-self:end;margin:2px 0 4px;line-height:1.12;font-size:var(--title-size);max-height:2.24em;overflow-wrap:normal;word-break:normal;hyphens:none}
+.shop-art .sa-card .sa-price{position:relative;grid-area:3/1/4/3;inset:auto;justify-self:end;align-self:center;line-height:1;font-size:13px}
+.shop-art .sa-card .sa-price .ico{flex:none}
+.shop-art[data-market=jihad] .sa-limit:has(.cqrar){max-width:none;right:auto}
+.shop-art[data-market=jihad] .sa-card.sold .sa-qty{margin-top:27px}
+/* Compact B1 page control: bounded brass rail, separate end stops and
+   central current-page readout. Preserve existing delegated page actions. */
+.shop-art .sa-catalog{grid-template-rows:35px minmax(0,1fr) 46px}
+.shop-art .sa-cat-foot{margin-top:3px;gap:4px}
+.shop-art .sa-pager{display:grid;grid-template-columns:40px minmax(34px,auto) 40px;align-items:center;gap:0;flex:none;height:40px;box-sizing:border-box;border:1px solid #806a47;border-radius:4px;background:linear-gradient(180deg,#383126,#211e19);box-shadow:inset 0 1px #e6c99722,0 1px 3px #0005}
+.shop-art .sa-pager button{height:38px;min-width:40px;font-size:23px;line-height:1;background:linear-gradient(180deg,#55473166,#29241c88);color:#f3d9a6}
+.shop-art .sa-pager button:first-child{border-right:1px solid #806a4777;border-radius:3px 0 0 3px}
+.shop-art .sa-pager button:last-child{border-left:1px solid #806a4777;border-radius:0 3px 3px 0}
+.shop-art .sa-pager button:active:not(:disabled){background:#806a47}
+.shop-art .sa-pager button:disabled{opacity:.42;background:none}
+.shop-art .sa-pager span{text-align:center;color:#f3d9a6;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;padding:0 5px}
+@media(max-width:740px){.shop-art .sa-card{--title-size:11px;--card-inset:6px;--price-band:23%}.shop-art .sa-card .sa-price{font-size:12px}.shop-art .sa-pager{grid-template-columns:36px minmax(30px,auto) 36px}.shop-art .sa-pager button{min-width:36px}}
+@media(max-height:350px) and (orientation:landscape){.shop-art .sa-catalog{grid-template-rows:30px minmax(0,1fr) 40px}.shop-art .sa-card{--title-size:10px}.shop-art .sa-pager{height:34px}.shop-art .sa-pager button{height:32px}.shop-art .sa-card .sa-price{font-size:11px}}
+
+/* Fragment catalog: physical part artwork, original tier frame and info target. */
+.shop-art .sa-frag-scroll .sa-part{display:inline-grid;place-items:center;overflow:hidden}
+.shop-art .sa-frag-scroll .sa-part img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.shop-art .sa-frag-scroll .amt img{object-fit:contain}
+
+/* Disabled A3 has a dark gold band. Retain the artwork, but keep the price legible. */
+.shop-art .sa-card.sold .sa-price,.shop-art .sa-card.poor .sa-price{color:#e1cba5}
+.shop-art .sa-card:is(.sold,.poor)[aria-pressed=true]{outline:1px solid #d5b47c;outline-offset:-3px}
+
+/* Screenshot review #338: rarity length must not determine disk thumbnail size.
+   Both tiers share an equal metadata rail; use compact typography only here. */
+.shop-art[data-market=jihad] .sa-card:has(.cqrar){grid-template-columns:minmax(0,1fr) 56px}
+.shop-art[data-market=jihad] .sa-card .sa-limit:has(.cqrar){width:100%;min-width:0}
+.shop-art[data-market=jihad] .sa-card .sa-limit .cqrar{display:block;box-sizing:border-box;width:100%;letter-spacing:0;font-size:8px;padding:2px 1px;text-align:center}
+@media(max-width:740px){.shop-art[data-market=jihad] .sa-card .sa-limit .cqrar{font-size:7.5px}}
