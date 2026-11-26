@@ -1,0 +1,8 @@
+# ART-PROD-03/OBJECTS — catalog correction (2026-11-26)
+Owner feedback: scene acceptable in principle if product layout is corrected; premium currency icon must be original. Prior #327 passed CI 45833356352 and merged at 2de72cd8ca3856b7d4cf32295e21eed9f5e1cfa6.
+
+Offline master only: six visible cards changed from 2 columns x 3 rows to 3 columns x 2 rows, separated stock, quantity, image, name and price; sold state retains an explicit label. Main scene, stage, header markup, other artwork and all 58 fixture lots unchanged. Original `dev/assets/img/soostone.webp` retrieved from main (Git blob 95edbe868593e592207516a0f102d6640acd8b08), exact bytes retained in sources; lossless decoded RGBA PNG verified pixel-identical and reused for all premium currency references. No new generation, paid tools, game code or deployment changes.
+
+QA: 14/14 Chromium native renders at 844x390 and 667x375, text bounds and pairwise text collision checks in all six cards, no viewport overflow, no page errors, identical cancellation frame; 2/2 Inkscape exports. Nine other named layers XML-identical, only cry.png asset changed, fixtures byte-identical. Static design states only, no live transaction or physical iPhone test.
+
+Library: /Dune GoH ART-PROD/ART-PROD-CATALOG-review.zip, 23868774 bytes, SHA256 58e715a4111a564175d7ae006117eb492489342b4fd1e0325d09947a19b84bbe, ZIP integrity passed. Includes editable SVGs, all state screenshots, original icon, scripts and comparison sheets. Await owner approval of corrected design before runtime integration. Prior independent plastal generation limitation remains; remaining shop art and functional integration not delivered. No further cosmetic rounds planned.
