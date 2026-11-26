@@ -15,7 +15,6 @@ import { CH } from '../../data/chars.js';
 import { amt, ic, fmt } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
 import { sRng } from '../../core/rng.js';
-import { itemIcon } from '../common.js';
 import { marketOffers, jihadOffers, catalogPage, captureIntent, revalidateIntent } from './shop-catalog.js';
 import { assetUrl } from '../../assets/models.js';
 
@@ -79,7 +78,7 @@ function shopFragsHtml() {
         const key = partFragId(it, part), required = index ? Math.floor(FRAG_NEED[it.t] / 2) : Math.ceil(FRAG_NEED[it.t] / 2);
         const have = S.inv[key] || 0, legacy = S.inv[id] || 0;
         const title = {core:'Сердечник',lens:'Линза',frame:'Каркас',fitting:'Крепление',lining:'Подкладка',seal:'Печать'}[part] || part;
-        return `<div class="item">${itemIcon(it, 40)}<div class="t">${it.n} · ${title}</div><div class="s">${who.join(', ')} · ${amt('frag', have + '/' + required)} · старых универсальных: ${legacy}</div><button class="btn" data-fbuy="${key}:1" ${S.teeth >= SHOP_FRAG[it.t] ? '' : 'disabled'}>1 за ${postAmount('teeth', SHOP_FRAG[it.t])}</button></div>`;
+        return `<div class="item">${postPartIcon(it,part)}<div class="t">${it.n} · ${title}</div><div class="s">${who.join(', ')} · ${postAmount('frag', have + '/' + required)} · старых универсальных: ${legacy}</div><button class="btn" data-fbuy="${key}:1" ${S.teeth >= SHOP_FRAG[it.t] ? '' : 'disabled'}>1 за ${postAmount('teeth', SHOP_FRAG[it.t])}</button></div>`;
       });
     }).join('')}</div>`
       : `<p class="sub">Сейчас героям отряда не нужны предметы VI–XIII.</p>`);
@@ -134,13 +133,14 @@ const postTitle = it => it.route==='cqjbuy'?it.n:it.kind === 'sh' ? CH[it.id].sn
 const postDescription = it => it.route==='cqjbuy'?it.d:it.kind==='pl'?'Материал снаряжения':it.kind==='sh'?it.subtitle:RES_INFO[it.kind]?.n || 'Материалы';
 // Scope new artwork to the market. Existing gameplay resource IDs, global
 // icons, formatting, price metadata and purchase intents are unchanged.
-const POST_ART_RES=new Set(['ix_plate','holtz_conductor','wol','legacy_thread','age_resonance','teeth','rid','wring','jt']);
+const POST_ART_RES=new Set(['ix_plate','holtz_conductor','wol','legacy_thread','age_resonance','teeth','rid','wring','jt','frag']);
 const postObjectSrc = k => postSkin('postrelease/'+k+'.webp');
 const postObjectImg = (k,cls='') => {
   const src=postObjectSrc(k);
   if(!src)throw new Error('Missing shop artwork: '+k);
   return `<img ${cls?'class="'+cls+'" ':''}src="${src}" data-shop-art="${k}" alt="" draggable="false">`;
 };
+const postPartIcon = (it,part) => `<span class="itm sa-part" data-info="frag:${it.id}" style="--tc:${TIER_COL[it.t]};width:40px;height:40px">${postObjectImg('part-'+part)}</span>`;
 const postIcon = k => POST_ART_RES.has(k)?postObjectImg(k,'ico'):ic(k);
 const postAmount = (k,n,key) => POST_ART_RES.has(k)
   ? `<span class="amt" data-info="${key||k}">${postIcon(k)}${typeof n==='number'?fmt(n):n}</span>`

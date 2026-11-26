@@ -145,7 +145,7 @@ try{
     // Every disk offered by the weekly rotation must have its own raster;
     // check the entire eligible pool even if not selected by this week's RNG.
     const allArt=await page.evaluate(async()=>{
-      const keys=(0,eval)("['ix_plate','holtz_conductor','wol','legacy_thread','age_resonance','teeth','rid','wring','jt','med','med3',...Object.keys(CQ_DISKS).filter(k=>['r','l'].includes(CQ_DISKS[k].r)).map(k=>'disk-'+k)]");
+      const keys=(0,eval)("['ix_plate','holtz_conductor','wol','legacy_thread','age_resonance','teeth','rid','wring','jt','med','med3','frag',...new Set(Object.values(PARTS_BY_KIND).flat().map(k=>'part-'+k)),...Object.keys(CQ_DISKS).filter(k=>['r','l'].includes(CQ_DISKS[k].r)).map(k=>'disk-'+k)]");
       return Promise.all(keys.map(async k=>{
         const src=(0,eval)('postObjectSrc('+JSON.stringify(k)+')');
         if(!src)return {k,src,ok:false};
@@ -157,7 +157,7 @@ try{
         return {k,src,ok:img.naturalWidth===256&&img.naturalHeight===256&&alpha[3]===0&&alpha.some((v,i)=>i%4===3&&v===255)};
       }));
     });
-    assert.equal(allArt.length,26);
+    assert.equal(allArt.length,33);
     assert.ok(allArt.every(x=>x.ok),JSON.stringify(allArt));
     assert.equal(new Set(allArt.map(x=>x.src)).size,allArt.length);
     const auditPage=async(tab,index)=>{
@@ -183,7 +183,7 @@ try{
       assert.deepEqual(result.invalidArt,[]);
       assert.deepEqual(result.bad,[],tab+' page '+index+' '+JSON.stringify(result.bad));
       assert.ok(result.railFits&&result.targets.every(t=>t.w>=36&&t.h>=36&&t.hit),JSON.stringify(result));
-      for(const key of await page.$eval('.sa-card',a=>a.map(e=>e.dataset.postselect))){
+      for(const key of await page.evaluate(()=>Array.from(document.querySelectorAll('.sa-card'),e=>e.dataset.postselect))){
         const selector='.sa-card[data-postselect="'+key+'"]';
         const title=await page.$eval(selector+' .sa-name',e=>e.textContent);
         await click(selector);
@@ -230,6 +230,8 @@ try{
       await shot(tab+'-receipt');await click('[data-postclose]');
       if(tab==='sietch'){
         await click('[data-postfrags]');assert.ok(await page.$('.sa-fragments .sa-frag-scroll'));
+        await page.evaluate(async()=>{for(const i of document.querySelectorAll('.sa-frag-scroll img[data-shop-art]'))await i.decode()});
+        assert.equal(await page.evaluate(()=>[...document.querySelectorAll('.sa-frag-scroll [data-fbuy]')].every(b=>b.closest('.item').querySelector('.sa-part img[data-shop-art]')?.naturalWidth===256)),true);
         await shot('sietch-fragments');
         const fragment=await page.$('.sa-frag-scroll [data-fbuy]:not(:disabled)');
         if(fragment){
