@@ -22,3 +22,6 @@ CI 45863530637 stopped before build: documentation JSON has no registered scope.
 
 ## D — first runtime post skin
 Post alone uses original A3/C3 textures and B1 navigation, 3×2 page grid, real prices/stock/portraits and native filters. Existing global header is replaced only while this screen is visible; back and other four shops remain accessible. Ix remains a clearly labeled action until separate relocation. Existing water/solari/candle/Su artwork remains authoritative. Confirmation consumes a one-shot ephemeral quote and validates offer/day/funds inside existing writer; receipt only after verified commit. Legacy routes unchanged. CSS scoped to .shop-art; fallback font Georgia when EB Garamond is unavailable (no new font binary). Pending compiled and browser acceptance; no merge yet.
+
+## D1 — runtime acceptance
+Previous D CI 45866054295 green. Browser acceptance runs against both built formats at 844×390 and 667×375 with real writer, native clicks, source artwork decoding, no root overflow, local Inter, cancellation, exactly-once token, sold-out/poor, wallet info, legacy tabs and Ix access. Captures normal/confirm/receipt/sold/poor screenshots outside production dist; separate CI evidence upload. Fixed wallet delegation, modal inert background and transient confirmation reset on view leave. Physical Safari and artistic review still pending.

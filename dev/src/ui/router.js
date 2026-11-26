@@ -5,7 +5,7 @@ import { renderFeats } from './views/feats.js';
 import { renderTrials } from './views/trials.js';
 import { renderRules } from './views/rules.js';
 import { renderLobby } from './views/lobby.js';
-import { renderShop, renderRecycler } from './views/shop.js';
+import { renderShop, renderRecycler, clearPostTransient } from './views/shop.js';
 import { renderLegend } from './views/legend.js';
 import { renderRaid } from './views/raid.js';
 import { renderDaily } from './views/daily.js';
@@ -21,6 +21,7 @@ function registerBaronView(renderer) { baronViewRenderer=renderer; }
 function registerStoryView(renderer) { storyViewRenderer=renderer; }
 const VIEW_NAMES = { camp: 'Кампания', raid: 'Рейд', legend: 'Легенды', baron_journey: 'Восхождение Барона', story_events: 'Сюжетные события', squad: 'Персонажи', shop: 'Лавки', recycler: 'Утилизатор Икса', trials: 'Испытания', conq: 'Джихад', feats: 'Подвиги', daily: 'Задания', rules: 'Правила боя' };
 function render() {
+  if (view !== 'shop') clearPostTransient();
   renderRes();
   { const vn = document.getElementById('vname'); if (vn) vn.textContent = VIEW_NAMES[view] || ''; }
   document.body.classList.toggle('lobby-on', view === 'lobby');

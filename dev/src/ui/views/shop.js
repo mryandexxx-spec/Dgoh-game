@@ -129,11 +129,13 @@ function takePostQuote(key,token) {
 function postQuoteCurrent(intent,item) {
   return !!item && !!revalidateIntent(intent,marketOffers([item],shopLeft,getRes),postEpoch());
 }
+function clearPostTransient() { postUi.quote=null; postUi.receipt=null; }
 function postPurchaseReceipt(item) {
   if(postActive())postUi.receipt={...item};
 }
 function shopPostAction(d) {
   if(!postActive())return false;
+  if((postUi.quote||postUi.receipt) && d.postclose===undefined) return false;
   if(d.postfilter!==undefined && ['all','resources','shards'].includes(d.postfilter)){
     postUi.filter=d.postfilter;postUi.page=0;postUi.selected=null;
   } else if(d.postpage!==undefined && ['-1','1'].includes(d.postpage)){
@@ -160,7 +162,7 @@ function renderPostArt(msLeft) {
   if(quote&&!q)postUi.quote=null;
   const receipt=postUi.receipt;
   const modal=receipt?`<div class="sa-modal"><section class="sa-dialog" role="dialog" aria-modal="true" aria-label="Покупка завершена"><small>НАГРАДА ПОЛУЧЕНА</small><h2>Покупка завершена</h2><div class="sa-reward">${postArt(receipt,true)}</div><b>${postTitle(receipt)} ×${fmt(receipt.qty)}</b><button class="sa-buy" data-postclose="1">Забрать</button></section></div>`:q?`<div class="sa-modal"><section class="sa-dialog" role="dialog" aria-modal="true" aria-label="Подтверждение покупки"><small>ТОРГОВЫЙ ПОСТ</small><h2>Подтвердите покупку</h2><div class="sa-quote-art">${postArt(q,true)}<b>${postTitle(q)} ×${fmt(q.qty)}</b></div><div class="sa-stock"><span>Стоимость</span>${amt(q.cur,q.price)}</div><div class="sa-stock"><span>После покупки</span>${amt(q.cur,q.balance-q.price)}</div><div class="sa-actions"><button data-postclose="1">Отмена</button><button class="sa-buy" data-buy="${q.key}" data-shopquote="${quote.token}">Купить</button></div></section></div>`:'';
-  $('#view').innerHTML=`<section class="shop-art" style="${vars}"><header class="sa-header"><button class="sa-back" data-v="lobby" aria-label="В лагерь">‹</button><h1>Атриум</h1><span class="sa-subtitle">Торговый пост</span><div class="sa-wallets">${wallet}</div></header><nav class="sa-nav" aria-label="Лавки">${tabs.map(([k,n])=>`<button data-shoptab="${k}" ${k==='post'?'aria-current="page"':''}>${n}</button>`).join('')}</nav><div class="sa-layout"><section class="sa-stage" aria-label="Выбранный товар">${feature}</section><section class="sa-catalog"><div class="sa-cat-head"><strong>Ассортимент</strong><div class="sa-filters">${[['all','Все'],['resources','Ресурсы'],['shards','Осколки']].map(([k,n])=>`<button data-postfilter="${k}" aria-pressed="${postUi.filter===k}">${n}</button>`).join('')}</div></div><div class="sa-grid">${cards}</div><div class="sa-cat-foot"><span>Обновление ${Math.max(0,Math.floor(msLeft/3.6e6))} ч ${Math.max(0,Math.floor(msLeft%3.6e6/6e4))} мин</span><div class="sa-pager"><button data-postpage="-1" aria-label="Предыдущая страница" ${pg.index===0?'disabled':''}>‹</button><span>${pg.index+1}/${pg.pages}</span><button data-postpage="1" aria-label="Следующая страница" ${pg.index+1>=pg.pages?'disabled':''}>›</button></div><button class="sa-ix" data-ixenter="1">Утилизатор Икса</button></div></section></div>${modal}</section>`;
+  $('#view').innerHTML=`<section class="shop-art" style="${vars}"><header class="sa-header" ${modal?'inert':''}><button class="sa-back" data-v="lobby" aria-label="В лагерь">‹</button><h1>Атриум</h1><span class="sa-subtitle">Торговый пост</span><div class="sa-wallets">${wallet}</div></header><nav class="sa-nav" aria-label="Лавки" ${modal?'inert':''}>${tabs.map(([k,n])=>`<button data-shoptab="${k}" ${k==='post'?'aria-current="page"':''}>${n}</button>`).join('')}</nav><div class="sa-layout" ${modal?'inert':''}><section class="sa-stage" aria-label="Выбранный товар">${feature}</section><section class="sa-catalog"><div class="sa-cat-head"><strong>Ассортимент</strong><div class="sa-filters">${[['all','Все'],['resources','Ресурсы'],['shards','Осколки']].map(([k,n])=>`<button data-postfilter="${k}" aria-pressed="${postUi.filter===k}">${n}</button>`).join('')}</div></div><div class="sa-grid">${cards}</div><div class="sa-cat-foot"><span>Обновление ${Math.max(0,Math.floor(msLeft/3.6e6))} ч ${Math.max(0,Math.floor(msLeft%3.6e6/6e4))} мин</span><div class="sa-pager"><button data-postpage="-1" aria-label="Предыдущая страница" ${pg.index===0?'disabled':''}>‹</button><span>${pg.index+1}/${pg.pages}</span><button data-postpage="1" aria-label="Следующая страница" ${pg.index+1>=pg.pages?'disabled':''}>›</button></div><button class="sa-ix" data-ixenter="1">Утилизатор Икса</button></div></section></div>${modal}</section>`;
 }
 
 function renderShop() {
@@ -178,4 +180,4 @@ function renderShop() {
 }
 
 
-export { SHOPS, buysToday, shopLeft, dailyHeroes, shopItems, findShopItem, shopFragsHtml, shopCatalog, renderShop, renderRecycler, shopPostAction, takePostQuote, postQuoteCurrent, postPurchaseReceipt };
+export { SHOPS, buysToday, shopLeft, dailyHeroes, shopItems, findShopItem, shopFragsHtml, shopCatalog, renderShop, renderRecycler, shopPostAction, takePostQuote, postQuoteCurrent, postPurchaseReceipt, clearPostTransient };

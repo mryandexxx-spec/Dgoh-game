@@ -557,7 +557,7 @@ document.addEventListener('click', e => {
   const sl = e.target.closest('[data-sqlead]'); if (sl) { const a = sqArr(), k = +sl.dataset.sqlead, id = a[k]; a.splice(k, 1); a.unshift(id); persist(); return renderSquadSel(); }
   const sr = e.target.closest('[data-sqrm]'); if (sr) { sqArr().splice(+sr.dataset.sqrm, 1); persist(); return renderSquadSel(); }
   const inf = e.target.closest('[data-info]');
-  if (inf && (inf.matches('button.hud-cell') || !inf.closest('button')) && !(BT && BT.B && !BT.done)) { openInfo(inf.dataset.info); return; }
+  if (inf && (inf.matches('button.hud-cell, button.sa-wallet') || !inf.closest('button')) && !(BT && BT.B && !BT.done)) { openInfo(inf.dataset.info); return; }
   if (BT && BT.lpFired) { BT.lpFired = false; e.preventDefault(); e.stopPropagation(); return; }
   if (e.target.closest('#bpop') && (!e.target.closest('.bpopbox') || e.target.closest('[data-bpopx]'))) return bPopClose();
   if (e.target.closest('#bpop')) { const b = e.target.closest('button'); if (b) meta2Click(b.dataset); return; }
