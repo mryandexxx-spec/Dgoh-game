@@ -35,3 +35,8 @@ Existing repo skills: game-ui-art-pipeline, create-game-assets, game-ui-ux, figm
 | ART-PROD-06 | Owner acceptance, bounded runtime integration and verified release | Existing state/purchase functions reused, no changes to economy or saves, short smoke + touched subsystem CI; merge after green, Pages verification, physical Safari separately. |
 
 No paid request has been submitted as of this handoff. First task in next chat: ART-PROD-01, recover media and read skills, verify fal price and use at most one bounded technical test within previously permitted scope. Do not buy credits; do not make a new concept in lieu of the requested experiment. If provider unavailable, clearly record evidence and proceed with deterministic fallback only where it proves a useful result.
+
+## SHOP-INTEGRATION — release candidate (2026-11-26)
+- ART-PROD-03/04: use the frozen backup approved in #335; MATERIAL-LAB rejected (#336). Original Library archive unchanged.
+- ART-PROD-05: functional integration for all five shops in PR #337, real daily/weekly catalogs and squad-dependent fragments, existing currency/stock/grant rules. E2a CI 45892520702 passed all required checks; 64 real screenshots, artifact 15152108399. Final E3 polish pending CI. See GFX_06_SHOP_INTEGRATION_A.md for evidence and limitations.
+- ART-PROD-06: after final green and acceptance, merge #337 and verify Pages. Physical iPhone Safari remains a separate check. No new art production cycle required for this release.

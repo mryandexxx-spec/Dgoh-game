@@ -88,6 +88,17 @@ try{
     assert.equal(await page.$eval('.sa-title h2',e=>e.textContent),'Пласталь');
     assert.match(await page.$eval('.sa-cat-head strong',e=>e.textContent),/ЛОТЫ\s+11/);
     await shot('normal');
+    // Normal (non-modal) notifications must not occupy the catalog or footer.
+    await run("toast('Лишние осколки героев 7★ обменены: '+amt('wring',10))");
+    const toastBox=await page.evaluate(()=>{
+      const toast=document.querySelector('body>.toast');
+      const b=toast.getBoundingClientRect(),nav=document.querySelector('.sa-nav').getBoundingClientRect();
+      return {bottom:b.bottom,navBottom:nav.bottom,pointer:getComputedStyle(toast).pointerEvents};
+    });
+    assert.ok(toastBox.bottom<=toastBox.navBottom+1&&toastBox.pointer==='none',JSON.stringify(toastBox));
+    await click('[data-postpage="1"]');
+    await click('[data-postpage="-1"]');
+    assert.equal(await page.$eval('.sa-pager span',e=>e.textContent),'1/2');
     await click('[data-postpage="1"]');assert.equal(await page.$eval('.sa-pager span',e=>e.textContent),'2/2');assert.equal(await page.$$eval('.sa-card',a=>a.length),5);
     await click('[data-postfilter="shards"]');assert.equal(await page.$$eval('.sa-card',a=>a.length),4);
     await click('[data-postfilter="all"]');await click('[data-postselect="post:pl"]');
