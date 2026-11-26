@@ -139,6 +139,72 @@ try{
     await shot('poor');
     await click('.sa-wallet[data-info="cry"]');assert.ok(await page.$('#overlay2 .infosheet'));
     await run('closeInfo(true);closeOverlay()');
+    // #338: exercise every visible page in every live market, not just
+    // the initial page. Verify independent title/price/quantity geometry,
+    // gold-band clearance, pagination hit zones and full selected title.
+    // Every disk offered by the weekly rotation must have its own raster;
+    // check the entire eligible pool even if not selected by this week's RNG.
+    const allArt=await page.evaluate(async()=>{
+      const keys=(0,eval)("['ix_plate','holtz_conductor','wol','legacy_thread','age_resonance','teeth','rid','wring','jt','med','med3','frag',...new Set(Object.values(PARTS_BY_KIND).flat().map(k=>'part-'+k)),...Object.keys(CQ_DISKS).filter(k=>['r','l'].includes(CQ_DISKS[k].r)).map(k=>'disk-'+k)]");
+      return Promise.all(keys.map(async k=>{
+        const src=(0,eval)('postObjectSrc('+JSON.stringify(k)+')');
+        if(!src)return {k,src,ok:false};
+        const img=new Image();img.src=src;
+        try{await img.decode()}catch{return {k,src,ok:false}}
+        const canvas=document.createElement('canvas');canvas.width=canvas.height=256;
+        const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);
+        const alpha=ctx.getImageData(0,0,256,256).data;
+        return {k,src,ok:img.naturalWidth===256&&img.naturalHeight===256&&alpha[3]===0&&alpha.some((v,i)=>i%4===3&&v===255)};
+      }));
+    });
+    assert.equal(allArt.length,33);
+    assert.ok(allArt.every(x=>x.ok),JSON.stringify(allArt));
+    assert.equal(new Set(allArt.map(x=>x.src)).size,allArt.length);
+    const auditPage=async(tab,index)=>{
+      const result=await page.evaluate(async()=>{
+        await document.fonts.ready;
+        await Promise.all([...document.querySelectorAll('.shop-art img[data-shop-art]')].map(i=>i.decode()));
+        const rect=e=>e.getBoundingClientRect();
+        const bad=[];
+        for(const c of document.querySelectorAll('.sa-card')){
+          const name=c.querySelector('.sa-name'),price=c.querySelector('.sa-price'),qty=c.querySelector('.sa-qty'),art=c.querySelector('.sa-art'),limit=c.querySelector('.sa-limit');
+          const [b,n,p,q,a,l]=[c,name,price,qty,art,limit].map(rect);
+          const overlap=(x,y)=>Math.min(x.right,y.right)-Math.max(x.left,y.left)>1&&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>1;
+          const rarity=limit.querySelector('.cqrar');
+          if(rarity&&(a.width<38||rarity.scrollWidth>rarity.clientWidth+1||overlap(a,rect(rarity))))bad.push({name:name.textContent,artWidth:a.width,rarity:rect(rarity).toJSON(),rarityScroll:rarity.scrollWidth,rarityClient:rarity.clientWidth});
+          const priceColor=getComputedStyle(price).color;
+          if(c.matches('.sold,.poor')&&priceColor!=='rgb(225, 203, 165)')bad.push({name:name.textContent,priceColor});
+          const inside=x=>x.left>=b.left-1&&x.right<=b.right+1&&x.top>=b.top-1&&x.bottom<=b.bottom+1;
+          if(![n,p,q,a,l].every(inside)||overlap(n,p)||overlap(n,q)||overlap(a,n)||overlap(l,q)||n.bottom>b.bottom-b.height*.19+1||name.scrollHeight>name.clientHeight+1||name.scrollWidth>name.clientWidth+1)bad.push({name:name.textContent,card:b.toJSON(),title:n.toJSON(),price:p.toJSON(),qty:q.toJSON(),art:a.toJSON(),limit:l.toJSON(),scrollHeight:name.scrollHeight,clientHeight:name.clientHeight});
+        }
+        const invalidArt=[...document.querySelectorAll('.shop-art img[data-shop-art]')].filter(i=>!i.complete||!i.naturalWidth).map(i=>i.dataset.shopArt);
+        const rail=document.querySelector('.sa-pager'),foot=document.querySelector('.sa-cat-foot');
+        const targets=[...rail.querySelectorAll('button')].map(e=>{const b=rect(e);return {w:b.width,h:b.height,hit:e.disabled||e.contains(document.elementFromPoint(b.x+b.width/2,b.y+b.height/2))}});
+        const fr=rect(foot),rr=rect(rail);
+        const other=[...foot.children].filter(e=>e!==rail).map(rect);
+        return {bad,invalidArt,targets,railFits:rr.left>=fr.left-1&&rr.right<=fr.right+1&&rr.top>=fr.top-1&&rr.bottom<=fr.bottom+1&&other.every(b=>b.right<=rr.left+1||b.left>=rr.right-1)};
+      });
+      assert.deepEqual(result.invalidArt,[]);
+      assert.deepEqual(result.bad,[],tab+' page '+index+' '+JSON.stringify(result.bad));
+      assert.ok(result.railFits&&result.targets.every(t=>t.w>=36&&t.h>=36&&t.hit),JSON.stringify(result));
+      for(const key of await page.evaluate(()=>Array.from(document.querySelectorAll('.sa-card'),e=>e.dataset.postselect))){
+        const selector='.sa-card[data-postselect="'+key+'"]';
+        const title=await page.$eval(selector+' .sa-name',e=>e.textContent);
+        await click(selector);
+        assert.equal(await page.$eval('.sa-title h2',e=>e.textContent),title);
+      }
+      await shot(tab+'-page-'+index);
+    };
+    for(const tab of ['post','sietch','chron','ring','jihad']){
+      if(!await page.$('.shop-art[data-market="'+tab+'"]'))await click('.sa-nav [data-shoptab="'+tab+'"]');
+      await click('[data-postfilter="all"]');
+      let index=1;
+      while(true){
+        await auditPage(tab,index++);
+        if(await page.$('[data-postpage="1"]:disabled'))break;
+        await click('[data-postpage="1"]');
+      }
+    }
     // Other daily markets: same rendering and one-shot quote, actual balances.
     await run('S.teeth=10000;S.rid=10000;S.wring=10000;persist()');
     for(const [tab,cur,key,field,price,qty] of [
@@ -168,6 +234,8 @@ try{
       await shot(tab+'-receipt');await click('[data-postclose]');
       if(tab==='sietch'){
         await click('[data-postfrags]');assert.ok(await page.$('.sa-fragments .sa-frag-scroll'));
+        await page.evaluate(async()=>{for(const i of document.querySelectorAll('.sa-frag-scroll img[data-shop-art]'))await i.decode()});
+        assert.equal(await page.evaluate(()=>[...document.querySelectorAll('.sa-frag-scroll [data-fbuy]')].every(b=>b.closest('.item').querySelector('.sa-part img[data-shop-art]')?.naturalWidth===256)),true);
         await shot('sietch-fragments');
         const fragment=await page.$('.sa-frag-scroll [data-fbuy]:not(:disabled)');
         if(fragment){
