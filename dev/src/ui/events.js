@@ -7,7 +7,7 @@ import { renderNotes } from './notifications.js';
 import { gearCap, heroCap } from '../logic/account-rules.js';
 import { metaClick } from './wiring.js';
 import { WORM_BADGE, detailNav, heroSnap } from './hero-window.js';
-import { buysToday, findShopItem, shopLeft, shopPostAction, takePostQuote, postQuoteCurrent, postPurchaseReceipt } from './views/shop.js';
+import { buysToday, findShopItem, shopLeft, shopPostAction, takePostQuote, postQuoteCurrent, postPurchaseReceipt, jihadQuoteCurrent, marketRows } from './views/shop.js';
 import { raidPct, raidReward } from './views/raid.js';
 import { SQ, openSquadSel, renderSquadSel, set_SQ, sqArr, sqGo } from './overlays/squad-select.js';
 import { claimLogin, openCalendar, selectCalendarDay } from './overlays/calendar.js';
@@ -170,7 +170,7 @@ function cqVerifiedEconomyClick(d) {
   if (d.cqnode === undefined && d.cqsec === undefined && d.cqbuy === undefined &&
       d.cqjbuy === undefined && d.cqmed === undefined && d.cqrf === undefined &&
       d.cqdon === undefined && d.cqdoff === undefined) return false;
-  if (!loadSave.writer.state().gated) return false; // historical B0 characterization
+  if (!loadSave.writer.state().gated) return d.cqjbuy !== undefined && d.shopquote !== undefined; // B0 remains legacy-only
   const r = openSquadSel.conquestClaimRules();
   const run = stage => {
     const before = r.notes.length;
@@ -253,8 +253,11 @@ function cqVerifiedEconomyClick(d) {
   }
   if (d.cqjbuy !== undefined) {
     const key = String(d.cqjbuy);
+    const intent = d.shopquote !== undefined ? takePostQuote(key,String(d.shopquote),'cqjbuy') : null;
+    if(d.shopquote !== undefined && !intent)return true;
     const tx = run(() => {
       const item = r.cqShopOffer().find(x => x.key === key);
+      if(intent && !jihadQuoteCurrent(intent,item))return {commit:false,value:'stale-quote'};
       if (!item || item.sold) return { commit: false, value: 'sold' };
       if ((S.jt || 0) < item.price)
         return { commit: false, value: 'short-trophies' };
@@ -281,11 +284,15 @@ function cqVerifiedEconomyClick(d) {
       return notice;
     });
     if (!tx.ok) {
+      if(intent){render();toast('Предложение изменилось или недоступно');return true;}
       if (tx.status === 'cancelled' && tx.value === 'short-trophies')
         toast('Не хватает трофеев Джихада');
       return true;
     }
-    toast(tx.value);
+    if(intent){
+      const receipt=marketRows('jihad').find(o=>o.key===key);
+      if(receipt)postPurchaseReceipt(receipt);else toast(tx.value);
+    }else toast(tx.value);
     render();
     return true;
   }

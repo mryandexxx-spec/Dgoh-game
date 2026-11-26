@@ -163,8 +163,45 @@ try{
         await click('.sa-fragments [data-postclose]');
       }
     }
-    await click('.sa-nav [data-shoptab="jihad"]');assert.ok(await page.$('.ctab.on[data-shoptab="jihad"]'));
-    await click('.ctab[data-shoptab="post"]');assert.ok(await page.$('.shop-art'));
+    // E2: live weekly shop with the existing atomic Conquest purchase route.
+    await run('S.jt=10000;persist()');
+    await click('.sa-nav [data-shoptab="jihad"]');
+    assert.ok(await page.$('.shop-art[data-market="jihad"]'));
+    assert.ok(await page.$('.sa-wallet[data-info="jt"]'));
+    await shot('jihad-normal');
+    await click('[data-postfilter="med"]');
+    assert.equal(await page.$$eval('.sa-card',a=>a.length),2);
+    await click('[data-postselect="med3"]');
+    const medState=()=>page.evaluate(()=>{const s=JSON.parse(localStorage.getItem('dune-goh-v1'));return [s.jt,s.cqMed||0]});
+    const oldMed=await medState();
+    await click('[data-postquote="med3"]');await click('[data-postclose]');
+    assert.deepEqual(await medState(),oldMed);
+    await click('[data-postquote="med3"]');
+    const medToken=await page.$eval('[data-shopquote]',e=>e.dataset.shopquote);
+    await click('[data-cqjbuy="med3"][data-shopquote]');
+    assert.ok(await page.$('.sa-dialog[aria-label="Покупка завершена"]'));
+    assert.deepEqual(await medState(),[oldMed[0]-80,oldMed[1]+3]);
+    await shot('jihad-med-receipt');
+    await page.evaluate(token=>{const b=document.createElement('button');b.dataset.cqjbuy='med3';b.dataset.shopquote=token;document.body.append(b);b.click();b.remove()},medToken);
+    assert.deepEqual(await medState(),[oldMed[0]-80,oldMed[1]+3]);
+    await click('[data-postclose]');
+    await click('[data-postfilter="disks"]');
+    assert.equal(await page.$$eval('.sa-card',a=>a.length),5);
+    const disk=await run("JSON.stringify(cqShopItems().find(x=>x.key.startsWith('d:')&&!x.sold))");
+    assert.ok(disk,'fixture has a purchasable weekly disk');
+    const offer=JSON.parse(disk);
+    await click('[data-postselect="'+offer.key+'"]');
+    await shot('jihad-disk');
+    const beforeDisk=await medState();
+    await click('[data-postquote="'+offer.key+'"]');
+    await click('[data-cqjbuy][data-shopquote]');
+    assert.ok(await page.$('.sa-dialog[aria-label="Покупка завершена"]'));
+    assert.deepEqual(await medState(),[beforeDisk[0]-offer.price,beforeDisk[1]]);
+    assert.equal(await page.evaluate(k=>{const s=JSON.parse(localStorage.getItem('dune-goh-v1'));return s.conq.disks.filter(x=>x.k===k.slice(2)).length},offer.key),1);
+    await click('[data-postclose]');
+    assert.ok(await page.$('[data-postquote="'+offer.key+'"]:disabled'));
+    await shot('jihad-sold');
+    await click('.sa-nav [data-shoptab="post"]');assert.ok(await page.$('.shop-art[data-market="post"]'));
     await click('.sa-ix');assert.equal(await run('view'),'recycler');
     assert.equal(await page.$('.shop-art'),null);
     assert.deepEqual(errors,[]);

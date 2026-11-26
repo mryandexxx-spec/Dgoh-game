@@ -149,3 +149,9 @@ body:has(#view .shop-art)>.appver{display:none}
    confirmation controls; don't discard or delay the underlying notice. */
 body:has(#view .shop-art)>.toast,body:has(#view .shop-art)>.toast *{pointer-events:none}
 body:has(#view .shop-art .sa-modal)>.toast{top:max(4px,env(safe-area-inset-top));bottom:auto;left:50%;right:auto;transform:translateX(-50%);max-width:90vw;font-size:11px;line-height:1.2;padding:5px 10px}
+
+/* E2: weekly shop rarity and existing disk/medkit icon artwork. */
+.shop-art .sa-card .cqrar{font-size:8px;white-space:nowrap;line-height:1.1;padding:2px 3px}
+.shop-art .sa-feature .cqrar{display:inline-block;font-size:9px}
+.shop-art[data-market=jihad] .sa-limit:has(.cqrar){max-width:60%;right:5px}
+.shop-art[data-market=jihad] .sa-card.sold .sa-limit:after{content:' • Куплено';display:block;text-align:right;font-size:8px}

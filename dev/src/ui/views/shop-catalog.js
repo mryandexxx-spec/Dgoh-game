@@ -15,7 +15,7 @@ export function jihadOffers(items, balance) {
 }
 
 export function catalogPage(offers, {filter='all',page=0,selected=null}={}) {
-  const rows=offers.filter(o=>filter==='all'||(filter==='shards'?o.kind==='sh':filter==='resources'?o.kind!=='sh':true));
+  const rows=offers.filter(o=>filter==='all'||(filter==='shards'?o.kind==='sh':filter==='resources'?o.kind!=='sh':filter==='med'?o.kind==='med':filter==='disks'?o.kind==='disk':true));
   const pages=Math.max(1,Math.ceil(rows.length/6));
   const index=Math.max(0,Math.min(pages-1,Number.isInteger(page)?page:0));
   const visible=rows.slice(index*6,index*6+6);

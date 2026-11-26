@@ -43,3 +43,6 @@ D2 run 45886053590 green; reviewed all 20 real screenshots from artifact 1515014
 
 ## E1a — non-blocking status messages
 Run 45888167257 passed all extended market scenarios in PWA 844/667 and HTML 844. HTML 667 failed because a real automatic excess-shard conversion toast intercepted the confirmation cancel pointer. Scope pointer-transparent status notifications to the art market (including nested icons); keep their visible message at the top during modal presentation. Add deterministic real toast regression during native cancellation, assert both outer and nested pointer transparency and unchanged save. No purchase/transaction changes; no weakened hit tests. Pending CI.
+
+## E2 — weekly market
+E1a green (45889111707). Extend the same daily art renderer to the weekly Jihad catalog via jihadOffers(cqShopItems()), preserving actual availability, rarity, medkit stock, trophies, weekly rotation, existing conquest icon artwork. Quote route and weekly epoch are validated against the existing logic-owned cqShopOffer inside the detached writer transaction; no new grant/debit path. Confirmation token is consumed once and receipt shown only after verified commit. Added real-browser tests for medkit cancel/commit/replay and unique disk purchase/ownership/sold status. Existing direct legacy handler kept for other callers. Pending CI and visual acceptance.
