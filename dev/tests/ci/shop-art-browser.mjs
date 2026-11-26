@@ -115,7 +115,50 @@ try{
     await shot('poor');
     await click('.sa-wallet[data-info="cry"]');assert.ok(await page.$('#overlay2 .infosheet'));
     await run('closeInfo(true);closeOverlay()');
-    await click('.sa-nav [data-shoptab="sietch"]');assert.ok(await page.$('.ctab.on[data-shoptab="sietch"]'));
+    // Other daily markets: same rendering and one-shot quote, actual balances.
+    await run('S.teeth=10000;S.rid=10000;S.wring=10000;persist()');
+    for(const [tab,cur,key,field,price,qty] of [
+      ['sietch','teeth','sietch:pl','plast',80,5],
+      ['chron','rid','chron:folio','folio',40,5],
+      ['ring','wring','ring:pl','plast',80,10]
+    ]){
+      await click('.sa-nav [data-shoptab="'+tab+'"]');
+      assert.ok(await page.$('.shop-art[data-market="'+tab+'"]'));
+      assert.ok(await page.$('.sa-wallet[data-info="'+cur+'"]'));
+      assert.equal(await page.$eval('.sa-nav [aria-current]',e=>e.dataset.shoptab),tab);
+      assert.equal(await page.$eval('.sa-pager span',e=>e.textContent.split('/')[0]),'1');
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1&&document.documentElement.scrollWidth<=innerWidth+1),true);
+      await shot(tab+'-normal');
+      await click('[data-postfilter="resources"]');
+      await click('[data-postselect="'+key+'"]');
+      const read=()=>page.evaluate(([c,f])=>{const x=JSON.parse(localStorage.getItem('dune-goh-v1'));return [x[c],x[f]]},[cur,field]);
+      const old=await read();
+      await click('[data-postquote="'+key+'"]');
+      await click('[data-postclose]');assert.deepEqual(await read(),old);
+      await click('[data-postquote="'+key+'"]');await click('[data-shopquote]');
+      assert.ok(await page.$('.sa-dialog[aria-label="Покупка завершена"]'));
+      assert.deepEqual(await read(),[old[0]-price,old[1]+qty]);
+      await shot(tab+'-receipt');await click('[data-postclose]');
+      if(tab==='sietch'){
+        await click('[data-postfrags]');assert.ok(await page.$('.sa-fragments .sa-frag-scroll'));
+        await shot('sietch-fragments');
+        const fragment=await page.$('.sa-frag-scroll [data-fbuy]:not(:disabled)');
+        if(fragment){
+          const key=await fragment.evaluate(e=>e.dataset.fbuy);
+          const id=key.split(':').slice(0,-1).join(':');
+          const snapFrag=()=>page.evaluate(id=>{const x=JSON.parse(localStorage.getItem('dune-goh-v1'));return [x.teeth,x.inv[id]||0]},id);
+          const old=await snapFrag();
+          const selector='.sa-frag-scroll [data-fbuy="'+key+'"]';
+          await page.$eval(selector,e=>e.scrollIntoView({block:'center',inline:'nearest'}));
+          await click(selector);
+          const after=await snapFrag();
+          assert.ok(after[0]<old[0]);assert.equal(after[1],old[1]+1);
+          assert.ok(await page.$('.sa-fragments'));
+        }
+        await click('.sa-fragments [data-postclose]');
+      }
+    }
+    await click('.sa-nav [data-shoptab="jihad"]');assert.ok(await page.$('.ctab.on[data-shoptab="jihad"]'));
     await click('.ctab[data-shoptab="post"]');assert.ok(await page.$('.shop-art'));
     await click('.sa-ix');assert.equal(await run('view'),'recycler');
     assert.equal(await page.$('.shop-art'),null);
