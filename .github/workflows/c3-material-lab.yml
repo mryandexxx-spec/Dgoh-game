@@ -1,0 +1,45 @@
+name: C3 material lab (offline)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dev/docs/material-lab/**'
+      - '.github/workflows/c3-material-lab.yml'
+permissions:
+  contents: read
+jobs:
+  render:
+    if: github.head_ref == 'art-prod-04-material-lab'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install open-source Blender
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender
+          blender --version | head -n 2
+      - name: Render isolated C3 components
+        run: blender -b --python-exit-code 1 --python dev/docs/material-lab/render_c3.py
+      - name: Verify render outputs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import struct,json
+          p=Path('material-output')
+          for variant in ('blender','hybrid'):
+            for w in (993,801):
+              for state in ('normal','pressed','disabled'):
+                f=p/f'{variant}-{w}-{state}.png'
+                b=f.read_bytes()
+                assert b[:8]==b'\x89PNG\r\n\x1a\n'
+                assert struct.unpack('>II',b[16:24])==(w,132)
+                assert b[25]==6, f
+          assert all((p/f'{x}.blend').stat().st_size>10000 for x in ('blender','hybrid'))
+          print((p/'receipt.json').read_text())
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c3-material-renders
+          path: material-output/
+          retention-days: 1
