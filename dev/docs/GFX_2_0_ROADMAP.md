@@ -119,3 +119,19 @@ B слит [PR #311](https://github.com/mryandexxx-spec/Dgoh-game/pull/311). C �
 
 ### GFX-06 — ART-PROD reset (26.11.2026)
 [ART-PROD production handoff](GFX_06_ART_PROD.md) — актуальная последовательность после неудачной художественной серии R13/A-Art1–5. Art4 — функциональный прототип, Art5 отклонён. PIPELINE-01 merged #320. Следующий шаг ART-PROD-01: контролируемый fal layer decomposition test, затем исправление импорта Figma и мастер до переноса в HTML. Источники и архивы сохранены в Библиотеке, ссылки/хеши в handoff. UI-IX-01 #321 — мастерская из лагеря, отдельно. Runtime не изменён.
+
+
+### GFX-06/GLOBAL — rollout approved 27.11.2026
+Owner accepted SHOP-POSTRELEASE (#339, #338) with minor visual imperfections: «Чуть криво, но пойдёт. На все остальные элементы игры давай внедрять». Main release e6328d36; verified CI 45907498942 and Pages 45907650915. Transfer the approved shop language, not its literal layout, across the game. Existing faction-specific hero scenes, 3D campaign maps, original semantic colors, save/economy and one-screen mobile rule are mandatory. The request covers all elements including lobby; do not replace the 3D maps or character environments with a flat backdrop. Use screen-specific functional composition, no global CSS blanket or mandatory gold border everywhere.
+
+| Package | Scope | Gate |
+|---|---|---|
+| GLOBAL-01 | Common resource art in HUD amounts, reward tiles, calendar, daily rewards, info and upgrade costs; reuse approved shop assets, existing four currencies unchanged | exact asset parity; actual screens at 844/667; focused CI |
+| GLOBAL-02 | Shared physical UI components, action buttons, tabs, selectors, dialogs and pagination; establish variants incl disabled/focus | screen-specific layouts, actual touch/keyboard and long text |
+| GLOBAL-03 | Roster and character detail, skills, equipment, memory; preserve faction environments and 3D | actual hero/locked/legend states, no slot/action regressions |
+| GLOBAL-04 | Daily quests, calendar, profile, feats, rewards, inbox | actual claim/locked states; no economic changes |
+| GLOBAL-05 | Campaign navigation, chapter and mission UI, raid, Jihad and events; preserve 3D maps | actual flows, map and HUD safety |
+| GLOBAL-06 | Battle UI, battle result and squad selection; no changes to simulation | real combat checks and readability |
+| GLOBAL-07 | Lobby and remaining utilities/recycler/settings; unified visual acceptance | all screens at two landscape sizes, PWA offline, physical iPhone acceptance separately |
+
+GLOBAL-01 candidate reuses 14 shop artworks globally and unifies the calendar's water/glowglobe with existing art. All six rendering surfaces checked for each of 16 keys; approved Solari/Soostone retained. Missing art (core, tleilax_matrix, null_cell, shard, other equipment and quest/skill/nav symbols) remains explicitly pending; do not substitute unrelated imagery. No original files changed. Subsequent packages require own visual QA and green CI before merge.

@@ -2,6 +2,24 @@
 // Names/keys remain canonical: this module only renders a graphic.
 const SOLARI_ICON_SRC = '__SOL_ICON_URL__';
 const SOOSTONE_ICON_SRC = '__SOOSTONE_ICON_URL__';
+const GFX_CALENDAR_ART = Object.freeze({
+  pl: '__GFX_RES_PL_URL__',
+  folio: '__GFX_RES_FOLIO_URL__',
+  seal: '__GFX_RES_SEAL_URL__',
+  blood_echo: '__GFX_RES_BLOOD_ECHO_URL__',
+  ix_plate: '__GFX_RES_IX_PLATE_URL__',
+  holtz_conductor: '__GFX_RES_HOLTZ_CONDUCTOR_URL__',
+  wol: '__GFX_RES_WOL_URL__',
+  legacy_thread: '__GFX_RES_LEGACY_THREAD_URL__',
+  age_resonance: '__GFX_RES_AGE_RESONANCE_URL__',
+  teeth: '__GFX_RES_TEETH_URL__',
+  rid: '__GFX_RES_RID_URL__',
+  wring: '__GFX_RES_WRING_URL__',
+  jt: '__GFX_RES_JT_URL__',
+  frag: '__GFX_RES_FRAG_URL__',
+  water: '__GFX_RES_WATER_URL__',
+  candle: '__GFX_RES_CANDLE_URL__',
+});
 const DEFINITIONS = '<defs>'
   + '<linearGradient id="`-gold" x1=".1" y1=".1" x2=".9" y2=".95"><stop stop-color="#fff1b9"/><stop offset=".26" stop-color="#e7b55a"/><stop offset=".59" stop-color="#a76a2e"/><stop offset="1" stop-color="#523018"/></linearGradient>'
   + '<linearGradient id="`-steel" x1=".1" y1=".05" x2=".9" y2=".94"><stop stop-color="#edf3ed"/><stop offset=".27" stop-color="#aeb5b4"/><stop offset=".61" stop-color="#5a6870"/><stop offset="1" stop-color="#28323b"/></linearGradient>'
@@ -159,20 +177,24 @@ function soostoneLootSvg(cssClass, uniqueId) {
 }
 // id is local to each day's SVG. Repeated icon types cannot collide with
 // another day's gradients when several month calendars are mounted in tests.
+function gfxCalendarArtSvg(kind, cssClass, id) {
+  return `<svg class="${cssClass}" viewBox="0 0 48 48" data-resource-art="${id}" aria-hidden="true" focusable="false"><image href="${GFX_CALENDAR_ART[kind]}" x="0" y="0" width="48" height="48" preserveAspectRatio="xMidYMid meet"/></svg>`;
+}
 function calendarRewardIcon(kind, day, portraitMarkup = '') {
   const safeDay = Number.isInteger(day) && day >= 1 && day <= 31 ? day : 0;
-  const safeKind = Object.hasOwn(ART,kind) || kind === 'shard' ? kind : 'sol';
+  const safeKind = Object.hasOwn(ART,kind) || Object.hasOwn(GFX_CALENDAR_ART,kind) || kind === 'shard' ? kind : 'sol';
   const id = 'u03-' + safeKind + '-' + safeDay;
-  const illustration = (safeKind === 'shard' ? SHARD_ART : ART[safeKind]).replaceAll('`',id);
-  const svg = safeKind === "sol" ? solariLootSvg("ui03-loot-svg",id) : safeKind === "cry" ? soostoneLootSvg("ui03-loot-svg",id) : `<svg class="ui03-loot-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">${defsFor(id)}${illustration}</svg>`;
+  const illustration = (safeKind === 'shard' ? SHARD_ART : ART[safeKind] || '').replaceAll('`',id);
+  const svg = safeKind === "sol" ? solariLootSvg("ui03-loot-svg",id) : safeKind === "cry" ? soostoneLootSvg("ui03-loot-svg",id) : Object.hasOwn(GFX_CALENDAR_ART,safeKind) ? gfxCalendarArtSvg(safeKind,"ui03-loot-svg",id) : `<svg class="ui03-loot-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">${defsFor(id)}${illustration}</svg>`;
   return safeKind === 'shard' ? `<span class="ui03-shard-art">${svg}<span class="ui03-shard-face">${portraitMarkup}</span></span>` : svg;
 }
 // Shared miniature object art for daily rewards. Separate per-tile gradient IDs.
 function dailyRewardIcon(kind, scope = 'daily') {
-  if (!Object.hasOwn(ART, kind)) return '';
+  if (!Object.hasOwn(ART, kind) && !Object.hasOwn(GFX_CALENDAR_ART,kind)) return '';
   const id = 'u03-chip-' + kind + '-' + String(scope).replace(/[^a-z0-9_-]/gi, '').slice(0, 38);
   if (kind === 'sol') return solariLootSvg('ui03-loot-svg ui03-daily-loot-svg',id);
   if (kind === 'cry') return soostoneLootSvg('ui03-loot-svg ui03-daily-loot-svg',id);
+  if (Object.hasOwn(GFX_CALENDAR_ART,kind)) return gfxCalendarArtSvg(kind,'ui03-loot-svg ui03-daily-loot-svg',id);
   return '<svg class="ui03-loot-svg ui03-daily-loot-svg" viewBox="0 0 48 48" aria-hidden="true" focusable="false">' +
     defsFor(id) + ART[kind].replaceAll(String.fromCharCode(96), id) + '</svg>';
 }

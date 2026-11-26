@@ -7,6 +7,22 @@ const WATER_ICON_SRC = '__WATER_ICON_URL__';
 const CANDLE_ICON_SRC = '__CANDLE_ICON_URL__';
 const SOLARI_ICON_SRC = '__SOL_ICON_URL__';
 const SOOSTONE_ICON_SRC = '__SOOSTONE_ICON_URL__';
+const GFX_RESOURCE_ART = Object.freeze({
+  pl: '__GFX_RES_PL_URL__',
+  folio: '__GFX_RES_FOLIO_URL__',
+  seal: '__GFX_RES_SEAL_URL__',
+  blood_echo: '__GFX_RES_BLOOD_ECHO_URL__',
+  ix_plate: '__GFX_RES_IX_PLATE_URL__',
+  holtz_conductor: '__GFX_RES_HOLTZ_CONDUCTOR_URL__',
+  wol: '__GFX_RES_WOL_URL__',
+  legacy_thread: '__GFX_RES_LEGACY_THREAD_URL__',
+  age_resonance: '__GFX_RES_AGE_RESONANCE_URL__',
+  teeth: '__GFX_RES_TEETH_URL__',
+  rid: '__GFX_RES_RID_URL__',
+  wring: '__GFX_RES_WRING_URL__',
+  jt: '__GFX_RES_JT_URL__',
+  frag: '__GFX_RES_FRAG_URL__',
+});
 const fmt = n => n.toLocaleString('ru-RU');
 const ICONS_RES = {
   wring: '<circle cx="8" cy="9.2" r="5" fill="none" stroke="#9fd8e8" stroke-width="2.2"/><circle cx="8" cy="9.2" r="5" fill="none" stroke="#3a7a92" stroke-width=".7"/><path d="M8 .8c1.2 1.6 1.9 2.6 1.9 3.4a1.9 1.9 0 01-3.8 0c0-.8.7-1.8 1.9-3.4z" fill="#5fc0e0"/>',
@@ -32,7 +48,7 @@ const ICONS_RES = {
   age_resonance: '<circle cx="8" cy="8" r="7" fill="none" stroke="#c8b3ec" stroke-width="2"/><circle cx="8" cy="8" r="4" fill="none" stroke="#826abc" stroke-width="2"/><circle cx="8" cy="8" r="1.5" fill="#fff1d3"/>',
   frag: '<path d="M2.5 4.5h4a1.6 1.6 0 113.2 0h3.8v3.8a1.6 1.6 0 110 3.2v3.8h-11z" fill="#b9c3d4"/><path d="M2.5 4.5h4a1.6 1.6 0 113.2 0h3.8v3.8" fill="none" stroke="#7f8aa0" stroke-width=".8"/>',
 };
-const ic = k => `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true">${k === 'water' ? `<image href="${WATER_ICON_SRC}" x="0" y="0" width="16" height="16" preserveAspectRatio="xMidYMid meet"/>` : k === 'candle' ? `<image href="${CANDLE_ICON_SRC}" x="0" y="0" width="16" height="16" preserveAspectRatio="xMidYMid meet"/>` : k === 'sol' ? `<image href="${SOLARI_ICON_SRC}" x="0" y="0" width="16" height="16" preserveAspectRatio="xMidYMid meet"/>` : k === 'cry' ? `<image href="${SOOSTONE_ICON_SRC}" x="0" y="0" width="16" height="16" preserveAspectRatio="xMidYMid meet"/>` : ICONS_RES[k]}</svg>`;
+const ic = k => `<svg class="ico" viewBox="0 0 16 16" aria-hidden="true">${k === 'water' ? `<image href="${WATER_ICON_SRC}" x="0" y="0" width="16" height="16" preserveAspectRatio="xMidYMid meet"/>` : k === 'candle' ? `<image href="${CANDLE_ICON_SRC}" x="0" y="0" width="16" height="16" preserveAspectRatio="xMidYMid meet"/>` : k === 'sol' ? `<image href="${SOLARI_ICON_SRC}" x="0" y="0" width="16" height="16" preserveAspectRatio="xMidYMid meet"/>` : k === 'cry' ? `<image href="${SOOSTONE_ICON_SRC}" x="0" y="0" width="16" height="16" preserveAspectRatio="xMidYMid meet"/>` : Object.hasOwn(GFX_RESOURCE_ART,k) ? `<image href="${GFX_RESOURCE_ART[k]}" x="0" y="0" width="16" height="16" preserveAspectRatio="xMidYMid meet"/>` : ICONS_RES[k]}</svg>`;
 const amt = (k, n, key) => `<span class="amt" data-info="${key || k}">${ic(k)}${typeof n === 'number' ? fmt(n) : n}</span>`;
 const fc = def => `var(--${def.f[0]})`;
 

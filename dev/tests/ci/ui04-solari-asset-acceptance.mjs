@@ -30,6 +30,47 @@ assert.match(surfaces[0][1],/^<svg class="ico" viewBox="0 0 16 16"/);
 assert.match(surfaces[1][1],/data-solari-art="u03-sol-7"/);
 assert.match(surfaces[2][1],/ui03-daily-loot-svg/);
 assert.equal(g.get('dailyRewardIcon')('sol','row-a')===g.get('dailyRewardIcon')('sol','row-b'),false,'distinct slots');
-assert.ok(g.get('calendarRewardIcon')('folio',7).includes('<path '),'other calendar art preserved');
+assert.match(g.get('calendarRewardIcon')('folio',7),/<image href="assets\/ui\/shop\/folio\.[0-9a-f]{8}\.png"/,'folio now uses accepted shop art');
 assert.ok(g.get('ic')('water').includes('water-literjon'),'other currency icon preserved');
 console.log('PASS UI-04:',html,matches[0],bytes.length,'bytes; all Solari surfaces consistent');
+
+// GLOBAL-01: check exact canonical immutable URL and original bytes in both builds.
+const sharedArt={
+  "pl": "ui/shop/pl.png",
+  "folio": "ui/shop/folio.png",
+  "seal": "ui/shop/seal.png",
+  "blood_echo": "ui/shop/blood_echo.png",
+  "ix_plate": "ui/shop/postrelease/ix_plate.webp",
+  "holtz_conductor": "ui/shop/postrelease/holtz_conductor.webp",
+  "wol": "ui/shop/postrelease/wol.webp",
+  "legacy_thread": "ui/shop/postrelease/legacy_thread.webp",
+  "age_resonance": "ui/shop/postrelease/age_resonance.webp",
+  "teeth": "ui/shop/postrelease/teeth.webp",
+  "rid": "ui/shop/postrelease/rid.webp",
+  "wring": "ui/shop/postrelease/wring.webp",
+  "jt": "ui/shop/postrelease/jt.webp",
+  "frag": "ui/shop/postrelease/frag.webp",
+  "water": "img/water-literjon.webp",
+  "candle": "img/candle-glowglobe.webp"
+};
+for(const [key,original] of Object.entries(sharedArt)){
+  const folder=path.join(path.dirname(html),'assets',path.dirname(original));
+  const ext=path.extname(original),stem=path.basename(original,ext);
+  const names=fs.readdirSync(folder).filter(n=>n.startsWith(stem+'.')&&n.endsWith(ext)&&n.length===stem.length+9+ext.length);
+  assert.equal(names.length,1,key+' unique shipped asset');
+  const expected='assets/'+path.dirname(original)+'/'+names[0];
+  const actual=fs.readFileSync(path.join(folder,names[0]));
+  const sourceBytes=fs.readFileSync(new URL('../../assets/'+original,import.meta.url));
+  assert.deepEqual(actual,sourceBytes,key+' exact accepted bytes');
+  for(const [surface,markup] of [
+    ['icon',g.get('ic')(key)],['amount',g.get('amt')(key,13)],
+    ['calendar',g.get('calendarRewardIcon')(key,7)],['daily',g.get('dailyRewardIcon')(key,'test')],
+    ['reward',g.get('rwTile')(key,13)],['daily tile',g.get('rwTile')(key,13,null,{art:true})]
+  ]){
+    assert.ok(markup.includes('<image href="'+expected+'"'),key+' '+surface+' uses approved asset');
+    assert.doesNotMatch(markup,/__GFX_RES_|<path |<circle /,key+' '+surface+' no old glyph');
+  }
+  assert.match(g.get('amt')(key,13),new RegExp('data-info="'+key+'"'));
+}
+assert.match(g.get('ic')('core'),/<path /,'unapproved resource fallback retained');
+console.log('PASS GLOBAL-01: 16 shared resources × 6 rendering surfaces, original asset bytes');
