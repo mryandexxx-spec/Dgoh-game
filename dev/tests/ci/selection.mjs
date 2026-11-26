@@ -8,10 +8,18 @@ import { checkGate } from '../../tools/ci-gate.mjs';
 
 assert.equal(classify(['dev/docs/a.md','README.md']).mode,'docs');
 // Explicit allowlist: only selected skill Markdown is docs; unknown/JS remains fail-closed.
-for (const name of ['game-ui-ux','game-feel','create-game-assets','rpg','performance-optimization','ai-behavior-trees-utility-ai','audio-design','cinematic-motion']) {
+for (const name of ['game-ui-ux','game-feel','create-game-assets','rpg','performance-optimization','ai-behavior-trees-utility-ai','audio-design','cinematic-motion','game-ui-art-pipeline','figma-ui-transfer','game-ui-visual-review']) {
   assert.equal(classify([`.agents/skills/${name}/SKILL.md`]).mode,'docs');
 }
 assert.equal(classify(['.agents/skills/README.md']).mode,'docs');
+for (const skill of ['game-ui-art-pipeline','figma-ui-transfer','game-ui-visual-review']) {
+  const base = '.agents/skills/'+skill;
+  assert.equal(classify([base+'/SKILL.md'],{focused:true}).mode,'docs');
+  assert.deepEqual(classify([base+'/SKILL.md','dev/src/styles/shop.css'],{focused:true}).systems,['ui']);
+  assert.throws(()=>classify([base+'/helper.js'],{focused:true}),/No safe CI subsystem mapping/);
+  assert.throws(()=>classify([base+'/unreviewed.md'],{focused:true}),/No safe CI subsystem mapping/);
+}
+assert.deepEqual(classify(['dev/tools/ui-art/compare.py','dev/tools/ui-art/test_compare.py','dev/tools/ui-art/requirements.txt'],{focused:true}).systems,['ci']);
 const motionSkill = '.agents/skills/cinematic-motion/SKILL.md';
 const motionSmoke = 'dev/tests/smoke/gfx05-runtime.mjs';
 assert.equal(classify([motionSkill],{focused:true}).mode,'docs');
