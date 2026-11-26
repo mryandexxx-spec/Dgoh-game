@@ -31,12 +31,20 @@ try{
     const run=code=>page.evaluate(c=>(0,eval)(c),code);
     // Assert a genuine pointer hit, not a click on a different stacked screen.
     const click=async selector=>{
-      await page.waitForSelector(selector,{visible:true,timeout:10000});
-      const hit=await page.$eval(selector,el=>{
+      // Resolve and measure the CURRENT connected element in one browser
+      // evaluation. Never retain a handle across a render. Wait only for
+      // mounting/layout, not for a covering overlay or a disabled purchase.
+      const probe=await page.waitForFunction(sel=>{
+        const el=document.querySelector(sel);
+        if(!el||!el.isConnected)return false;
         const r=el.getBoundingClientRect();
-        const top=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
-        return {ok:!!top&&el.contains(top)&&!el.disabled,x:r.left+r.width/2,y:r.top+r.height/2,top:top?.outerHTML.slice(0,320),target:el.outerHTML.slice(0,320)};
-      });
+        if(r.width<=0||r.height<=0)return false;
+        const x=r.left+r.width/2,y=r.top+r.height/2;
+        const top=document.elementFromPoint(x,y);
+        return {ok:!!top&&el.contains(top)&&!el.disabled,x,y,top:top?.outerHTML.slice(0,320),target:el.outerHTML.slice(0,320)};
+      },{timeout:10000,polling:'raf'},selector);
+      const hit=await probe.jsonValue();
+      await probe.dispose();
       assert.ok(hit.ok,'Pointer blocked for '+selector+': '+JSON.stringify(hit));
       // Use the verified viewport point directly. Puppeteer's ElementHandle.click
       // performs a second layout/scroll/handle lookup; that handle may detach
@@ -139,7 +147,10 @@ try{
       const read=()=>page.evaluate(([c,f])=>{const x=JSON.parse(localStorage.getItem('dune-goh-v1'));return [x[c],x[f]]},[cur,field]);
       const old=await read();
       await click('[data-postquote="'+key+'"]');
-      await click('[data-postclose]');assert.deepEqual(await read(),old);
+      assert.ok(await page.$('.sa-dialog[aria-label="Подтверждение покупки"]'));
+      await click('[data-postclose]');
+      assert.equal(await page.$('.sa-dialog'),null);
+      assert.deepEqual(await read(),old);
       await click('[data-postquote="'+key+'"]');await click('[data-shopquote]');
       assert.ok(await page.$('.sa-dialog[aria-label="Покупка завершена"]'));
       assert.deepEqual(await read(),[old[0]-price,old[1]+qty]);
