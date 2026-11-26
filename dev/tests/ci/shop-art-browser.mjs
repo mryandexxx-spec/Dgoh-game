@@ -29,6 +29,24 @@ try{
     await page.goto(server.url(path.basename(html)),{waitUntil:'load',timeout:75000});
     await page.waitForFunction(()=>!!document.querySelector('.lobby .resbox .hud-water'),{timeout:35000});
     const run=code=>page.evaluate(c=>(0,eval)(c),code);
+    // Assert a genuine pointer hit, not a click on a different stacked screen.
+    const click=async selector=>{
+      await page.waitForSelector(selector,{visible:true,timeout:10000});
+      const hit=await page.$eval(selector,el=>{
+        const r=el.getBoundingClientRect();
+        const top=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+        return {ok:!!top&&el.contains(top),top:top?.outerHTML.slice(0,320),target:el.outerHTML.slice(0,320)};
+      });
+      assert.ok(hit.ok,'Pointer blocked for '+selector+': '+JSON.stringify(hit));
+      await page.click(selector);
+    };
+    // Startup auto-calendar is an actual overlay, even if the shop DOM exists
+    // underneath. Let ordinary boot finish, then dismiss via its real button.
+    await page.waitForFunction(()=>{try{const s=(0,eval)('start.writerLifecycle()');return s.armed&&!s.blocked&&s.writer.status==='owned'}catch{return false}},{timeout:35000});
+    if(await page.$('.ui03-close[data-iclose]')) await click('.ui03-close[data-iclose]');
+    // Close any old info/detail presentation before routing, just like shoptab.
+    await run('closeInfo(true);closeOverlay()');
+
     await run("S.solari=1000000;S.cry=5000;S.buys={d:todayKey(),n:{}};persist();S.shopTab='post';set_view('shop');render()");
     assert.equal(await run('loadSave.writer.state().status'),'owned');
     const snap=()=>page.evaluate(()=>{const s=JSON.parse(localStorage.getItem('dune-goh-v1'));return {solari:s.solari,plast:s.plast,buys:s.buys.n['post:pl']||0}});
@@ -45,36 +63,38 @@ try{
     assert.ok(layout.inView&&!layout.rootScroll,JSON.stringify(layout));
     assert.ok(layout.loaded.every(Boolean)&&layout.files.some(s=>s.includes('a3-'+width)),JSON.stringify(layout));
     assert.ok(layout.fonts>=1);
+    assert.equal(await page.$eval('#overlay2',e=>e.innerHTML.trim()),'','no calendar or info sheet covering shop');
+    assert.equal(await page.$eval('#overlay',e=>e.innerHTML.trim()),'','no detail overlay covering shop');
     await shot('normal');
-    await page.click('[data-postpage="1"]');assert.equal(await page.$$eval('.sa-card',a=>a.length),5);
-    await page.click('[data-postfilter="shards"]');assert.equal(await page.$$eval('.sa-card',a=>a.length),4);
-    await page.click('[data-postfilter="all"]');await page.click('[data-postselect="post:pl"]');
+    await click('[data-postpage="1"]');assert.equal(await page.$eval('.sa-pager span',e=>e.textContent),'2/2');assert.equal(await page.$eval('.sa-card',a=>a.length),5);
+    await click('[data-postfilter="shards"]');assert.equal(await page.$$eval('.sa-card',a=>a.length),4);
+    await click('[data-postfilter="all"]');await click('[data-postselect="post:pl"]');
     const old=await snap();
-    await page.click('[data-postquote="post:pl"]');
+    await click('[data-postquote="post:pl"]');
     assert.ok(await page.$('.sa-dialog[aria-label="Подтверждение покупки"]'));
     assert.equal(await page.$eval('.sa-layout',e=>e.inert),true);
     await shot('confirm');
-    await page.click('[data-postclose]');assert.deepEqual(await snap(),old);
-    await page.click('[data-postquote="post:pl"]');
+    await click('[data-postclose]');assert.deepEqual(await snap(),old);
+    await click('[data-postquote="post:pl"]');
     const token=await page.$eval('[data-shopquote]',e=>e.dataset.shopquote);
-    await page.click('[data-shopquote]');
+    await click('[data-shopquote]');
     assert.ok(await page.$('.sa-dialog[aria-label="Покупка завершена"]'));
     const next=await snap();assert.deepEqual(next,{solari:old.solari-6000,plast:old.plast+5,buys:old.buys+1});
     await shot('receipt');
     await page.evaluate(token=>{const b=document.createElement('button');b.dataset.buy='post:pl';b.dataset.shopquote=token;document.body.append(b);b.click();b.remove()},token);
     assert.deepEqual(await snap(),next);
-    await page.click('[data-postclose]');
-    for(let i=0;i<2;i++){await page.click('[data-postquote="post:pl"]');await page.click('[data-shopquote]');await page.click('[data-postclose]')}
+    await click('[data-postclose]');
+    for(let i=0;i<2;i++){await click('[data-postquote="post:pl"]');await click('[data-shopquote]');await click('[data-postclose]')}
     assert.ok(await page.$('[data-postquote="post:pl"]:disabled'));
     await shot('sold');
-    await run('S.solari=0;persist();render()');await page.click('[data-postselect="post:folio"]');
+    await run('S.solari=0;persist();render()');await click('[data-postselect="post:folio"]');
     assert.ok(await page.$('[data-postquote="post:folio"]:disabled'));
     await shot('poor');
-    await page.click('.sa-wallet[data-info="cry"]');assert.ok(await page.$('#overlay2 .infosheet'));
+    await click('.sa-wallet[data-info="cry"]');assert.ok(await page.$('#overlay2 .infosheet'));
     await run('closeInfo(true);closeOverlay()');
-    await page.click('.sa-nav [data-shoptab="sietch"]');assert.ok(await page.$('.ctab.on[data-shoptab="sietch"]'));
-    await page.click('.ctab[data-shoptab="post"]');assert.ok(await page.$('.shop-art'));
-    await page.click('.sa-ix');assert.equal(await run('view'),'recycler');
+    await click('.sa-nav [data-shoptab="sietch"]');assert.ok(await page.$('.ctab.on[data-shoptab="sietch"]'));
+    await click('.ctab[data-shoptab="post"]');assert.ok(await page.$('.shop-art'));
+    await click('.sa-ix');assert.equal(await run('view'),'recycler');
     assert.equal(await page.$('.shop-art'),null);
     assert.deepEqual(errors,[]);
     await page.close();
