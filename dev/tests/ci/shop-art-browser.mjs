@@ -88,6 +88,11 @@ try{
     assert.ok(await page.$('.sa-dialog[aria-label="Подтверждение покупки"]'));
     assert.equal(await page.$eval('.sa-layout',e=>e.inert),true);
     await shot('confirm');
+    // Real status toast (including nested resource icon) cannot steal input.
+    await run("toast('Лишние осколки героев 7★ обменены: '+amt('wring',10))");
+    assert.ok(await page.$('body>.toast[role="status"]'));
+    assert.equal(await page.$eval('body>.toast',e=>getComputedStyle(e).pointerEvents),'none');
+    assert.equal(await page.$eval('body>.toast .amt',e=>getComputedStyle(e).pointerEvents),'none');
     await click('[data-postclose]');assert.deepEqual(await snap(),old);
     await click('[data-postquote="post:pl"]');
     const token=await page.$eval('[data-shopquote]',e=>e.dataset.shopquote);

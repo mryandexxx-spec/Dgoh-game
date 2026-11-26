@@ -143,3 +143,9 @@ body:has(#view .shop-art)>.appver{display:none}
 .shop-art .sa-title h2{font-size:clamp(20px,3.2vw,29px);min-width:0}
 .shop-art .sa-feature{min-width:0}
 @media(max-width:740px){.shop-art .sa-filters button{font-size:9px;padding:0 4px}.shop-art .sa-frag-scroll .shop{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* E1a: status messages must never intercept shop input, including their
+   resource-info descendants. Keep the message visible without covering the
+   confirmation controls; don't discard or delay the underlying notice. */
+body:has(#view .shop-art)>.toast,body:has(#view .shop-art)>.toast *{pointer-events:none}
+body:has(#view .shop-art .sa-modal)>.toast{top:max(4px,env(safe-area-inset-top));bottom:auto;left:50%;right:auto;transform:translateX(-50%);max-width:90vw;font-size:11px;line-height:1.2;padding:5px 10px}
