@@ -82,3 +82,24 @@ body:has(#view .shop-art)>header.top{display:none}
 
 /* Keep queued corner notifications for the next screen: no panel may cover catalog controls. */
 body:has(#view .shop-art) #notes{display:none}
+
+/* D1d — artwork is a bounded decorative layer, never a hit target.
+   Definite image boxes avoid intrinsic replaced-element/grid minimum sizing
+   leaking out of the selected-product region on mobile. */
+.shop-art .sa-stage{grid-template-rows:auto minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr)}
+.shop-art .sa-feature,.shop-art .sa-foot{position:relative;z-index:2;min-width:0}
+.shop-art .sa-object{min-width:0;min-height:0;overflow:hidden;pointer-events:none;--stand-h:clamp(42px,23%,66px)}
+.shop-art .sa-pedestal{bottom:2px;left:8%;width:84%;height:var(--stand-h);z-index:0}
+.shop-art .sa-object:after{bottom:calc(var(--stand-h) - 8px);height:12px;z-index:1}
+.shop-art .sa-hero{position:absolute;inset:2px 20% calc(var(--stand-h) - 4px);width:auto;height:auto;display:block;min-width:0;min-height:0;overflow:hidden;z-index:2}
+.shop-art .sa-hero>img,.shop-art .sa-hero>.ico{position:absolute;inset:0;width:100%;height:100%;max-width:100%;max-height:100%;min-width:0;min-height:0;object-fit:contain;object-position:center bottom;display:block}
+.shop-art .sa-hero>.pt{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:100%!important;height:100%!important;max-width:130px;max-height:130px;display:grid;place-items:center;overflow:hidden}
+.shop-art .sa-hero>.pt>svg,.shop-art .sa-hero>.pt>img{width:100%;height:100%;object-fit:contain}
+.shop-art .sa-art{display:block;overflow:hidden;pointer-events:none}
+.shop-art .sa-art>img,.shop-art .sa-art>.ico{position:absolute;inset:0;display:block;width:100%;height:100%;min-width:0;min-height:0;max-width:100%;max-height:100%;object-fit:contain}
+.shop-art .sa-art>.pt{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:100%;max-height:100%;overflow:hidden}
+.shop-art .sa-name{line-height:1.12;max-height:2.24em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.shop-art .sa-price{font-variant-numeric:tabular-nums}
+.shop-art .sa-dialog{min-width:0;max-width:100%}
+.shop-art .sa-reward{position:relative;overflow:hidden;display:block}
+.shop-art .sa-reward>img,.shop-art .sa-reward>.ico,.shop-art .sa-reward>.pt{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100px;height:83px;max-width:100%;max-height:100%;object-fit:contain}

@@ -65,6 +65,15 @@ try{
     assert.ok(layout.fonts>=1);
     assert.equal(await page.$eval('#overlay2',e=>e.innerHTML.trim()),'','no calendar or info sheet covering shop');
     assert.equal(await page.$eval('#overlay',e=>e.innerHTML.trim()),'','no detail overlay covering shop');
+    const stageBounds=await page.evaluate(()=>{
+      const box=s=>document.querySelector(s).getBoundingClientRect();
+      const art=box('.sa-hero img'),region=box('.sa-object'),pedestal=box('.sa-pedestal'),buy=box('.sa-foot .sa-buy');
+      return {contained:art.top>=region.top-1&&art.bottom<=region.bottom+1&&art.left>=region.left-1&&art.right<=region.right+1,
+        standVisible:pedestal.height>=40&&art.bottom<=pedestal.top+8,
+        noOverlap:art.bottom<=buy.top&&region.bottom<=buy.top,
+        artHeight:art.height,regionHeight:region.height};
+    });
+    assert.ok(stageBounds.contained&&stageBounds.standVisible&&stageBounds.noOverlap&&stageBounds.artHeight>20,JSON.stringify(stageBounds));
     await shot('normal');
     await click('[data-postpage="1"]');assert.equal(await page.$eval('.sa-pager span',e=>e.textContent),'2/2');assert.equal(await page.$$eval('.sa-card',a=>a.length),5);
     await click('[data-postfilter="shards"]');assert.equal(await page.$$eval('.sa-card',a=>a.length),4);
