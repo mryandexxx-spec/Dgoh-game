@@ -1,3 +1,8 @@
+# SHOP — approved art asset manifest
+
+Canonical original archive and byte-level checksums. Machine-readable JSON is embedded in the fenced block for acceptance checks.
+
+```json
 {
   "source": "Library /Dune GoH ART-PROD/ART-PROD-SHOP-BASELINE-fallback.zip",
   "sourceSha256": "15c0ded6b340dd6bffda1b37e6eda701b002b17ce9224af24c1f2e25d7b4cfdf",
@@ -161,3 +166,4 @@
     }
   ]
 }
+```

@@ -2,6 +2,7 @@
 // Execute against actual compiled PWA AND standalone HTML (no source mocks).
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadGame } from '../lib/load.mjs';
@@ -299,5 +300,22 @@ function prepareRecycler(g) {
   assert.deepEqual(disk(g),ram(g));
   pass('B617','live catalog mirrors actual offers, stock and inventory; read-only before purchase'); release(g);
 }
-assert.equal(passed.length, 17);
+// B618: immutable art source manifest is checked rather than merely documented.
+{
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+  const doc = fs.readFileSync(path.join(root,'docs/SHOP_ART_ASSET_MANIFEST.md'),'utf8');
+  const block = doc.match(/```json\n([\s\S]*?)\n```/);
+  assert.ok(block,'machine-readable manifest');
+  const manifest = JSON.parse(block[1]);
+  assert.equal(manifest.files.length,26);
+  const dir = path.join(root,'assets/ui/shop');
+  assert.deepEqual(fs.readdirSync(dir).sort(),manifest.files.map(x=>x.name).sort());
+  for(const entry of manifest.files){
+    const bytes=fs.readFileSync(path.join(dir,entry.name));
+    assert.equal(bytes.length,entry.size,entry.name);
+    assert.equal(createHash('sha256').update(bytes).digest('hex'),entry.sha256,entry.name);
+  }
+  pass('B618','all 26 approved art assets match original SHA-256 manifest');
+}
+assert.equal(passed.length, 18);
 console.log(`ARCH-02C-B6a ${passed.length} verified market/recycler scenarios PASS: ${html}`);
