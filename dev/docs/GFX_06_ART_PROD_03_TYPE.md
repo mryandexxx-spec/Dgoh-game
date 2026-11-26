@@ -1,0 +1,10 @@
+# ART-PROD-03/TYPE — offline typography review (2026-11-26)
+Status: review candidate; no runtime changes. Owner approved typography exploration. Previous #328 passed CI 45835053752, merged at 7a805c17a949ce7b91313ecc2ea9d8bb5a0597bd.
+
+## Design
+Separate display, body, label, action and number roles; serif location/item titles, light functional labels, tabular lining figures, stronger prices, added price/icon separation, warm neutral palette, short tracked uppercase section labels/actions, thin active navigation underline instead of filled rectangle. Existing six-lot 3x2 grid, scene, pedestal and independent art unchanged. The actual original Su icon and all 58 fixture lots preserved. Reusable role specification in typography-tokens.json. Current preview uses locally installed EB Garamond 08 and Inter; Cormorant Garamond and Golos Text could not be downloaded (DNS/remote fetch unavailable), not evaluated. Font files not included; editable SVG needs matching locally installed fonts for identical results. No paid services.
+
+## Evidence
+14 native Chromium captures at 844x390 and 667x375, all text in viewport, no intra-layer/card text overlaps or page errors, cancel-return exact equality. Initial heading/description overlap corrected and all states rerun. Actual glyph families checked with Chrome DevTools CSS.getPlatformFontsForNode (EB Garamond 08, Inter Medium, Inter SemiBold). Two Inkscape exports with verified dimensions. All original art asset bytes and fixture bytes identical; environment, pedestal, selected-object layers XML-identical across states. Static screenshots, not functional or physical Safari tests.
+
+Library /Dune GoH ART-PROD/ART-PROD-TYPE-review.zip, 23853097 bytes, SHA256 428a2bb9bb04a4a64205362b58afcb1778a67e630c796c85c5141789c0f13baa, ZIP integrity checked. Contains editable SVGs, all state previews, A/B sheets, source generator, verification and typography tokens. Rebuild baseline from earlier catalog archive for comparison. Prior plastal provenance limitation remains. Await owner approval of typography and font decision before runtime integration; no game code, deployment or save changes.
