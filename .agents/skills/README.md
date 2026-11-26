@@ -3,6 +3,9 @@
 Seven general-purpose skills from [awesome-gamedev-agent-skills](https://github.com/gamedev-skills/awesome-gamedev-agent-skills) (Apache-2.0), plus one Babylon.js 9.30 engine skill adapted using TerminalSkills, Curiosity AI and Godogen references. Source paths are linked in each skill. These are tailored instructions **not** copies of engine-dependent snippets; they do not add runtime code, assets, npm dependencies, CI jobs or changes to game logic. The original upstream copyright/license remains with its authors.
 
 ## Routing
+- Premium game UI, approved reference decomposition, artistic nine-slice, layer assets → `game-ui-art-pipeline` + `create-game-assets` + `game-ui-ux`.
+- Editable UI master and reference-faithful transfer → `figma-ui-transfer` (load actual Figma plugin skills before calls).
+- Independent artistic acceptance and real browser comparison → `game-ui-visual-review` (mandatory for GFX-06); [pipeline](../../dev/docs/GFX_06_UI_PIPELINE.md).
 - Babylon.js 9.30 WebGL scenes, PBR, lighting, KTX2/DGM, hero animations and visual proof → `babylonjs` (combine with task-specific skills when appropriate).
 - UI, top navigation, roster, scaling and mobile accessibility → `game-ui-ux`.
 - Cinematic hero showcase / authored idle, gesture, transitions and real motion review → `cinematic-motion` + `babylonjs` + `game-feel`.
