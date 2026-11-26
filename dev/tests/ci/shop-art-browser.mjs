@@ -169,6 +169,8 @@ try{
         for(const c of document.querySelectorAll('.sa-card')){
           const name=c.querySelector('.sa-name'),price=c.querySelector('.sa-price'),qty=c.querySelector('.sa-qty'),art=c.querySelector('.sa-art'),limit=c.querySelector('.sa-limit');
           const [b,n,p,q,a,l]=[c,name,price,qty,art,limit].map(rect);
+          const rarity=limit.querySelector('.cqrar');
+          if(rarity&&(a.width<38||rarity.scrollWidth>rarity.clientWidth+1||overlap(a,rect(rarity))))bad.push({name:name.textContent,artWidth:a.width,rarity:rect(rarity).toJSON(),rarityScroll:rarity.scrollWidth,rarityClient:rarity.clientWidth});
           const priceColor=getComputedStyle(price).color;
           if(c.matches('.sold,.poor')&&priceColor!=='rgb(225, 203, 165)')bad.push({name:name.textContent,priceColor});
           const overlap=(x,y)=>Math.min(x.right,y.right)-Math.max(x.left,y.left)>1&&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>1;

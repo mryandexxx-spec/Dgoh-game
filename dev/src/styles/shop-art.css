@@ -194,3 +194,10 @@ body:has(#view .shop-art)>.toast{top:max(4px,env(safe-area-inset-top));bottom:au
 /* Disabled A3 has a dark gold band. Retain the artwork, but keep the price legible. */
 .shop-art .sa-card.sold .sa-price,.shop-art .sa-card.poor .sa-price{color:#e1cba5}
 .shop-art .sa-card:is(.sold,.poor)[aria-pressed=true]{outline:1px solid #d5b47c;outline-offset:-3px}
+
+/* Screenshot review #338: rarity length must not determine disk thumbnail size.
+   Both tiers share an equal metadata rail; use compact typography only here. */
+.shop-art[data-market=jihad] .sa-card:has(.cqrar){grid-template-columns:minmax(0,1fr) 56px}
+.shop-art[data-market=jihad] .sa-card .sa-limit:has(.cqrar){width:100%;min-width:0}
+.shop-art[data-market=jihad] .sa-card .sa-limit .cqrar{display:block;box-sizing:border-box;width:100%;letter-spacing:0;font-size:8px;padding:2px 1px;text-align:center}
+@media(max-width:740px){.shop-art[data-market=jihad] .sa-card .sa-limit .cqrar{font-size:7.5px}}
