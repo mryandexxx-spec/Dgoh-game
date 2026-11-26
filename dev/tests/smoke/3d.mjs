@@ -160,20 +160,25 @@ for (let c = 0; c < CYCLES; c++) {
             ownership:[floor.uniqueId,edge.uniqueId,floor.material.uniqueId,edge.material.uniqueId,h.floorAtlas.uniqueId],
             plate:h.backdropTexture.uniqueId, cpuCanvases:h.floorCanvases.size,
             skills:hc.querySelectorAll('.hcsks [data-hcsk]').length,
+            expectedSkills:skKeys(h.def).length - (h.def.gl ? 1 : 0),
+            signature:hc.querySelectorAll('.hcleft > .hcsk.gl').length, expectedSignature:h.def.gl ? 1 : 0,
+            palette:getComputedStyle(hc.querySelector('.hcpilot-controls')).backgroundColor,
+            motion:h.motionHero,
             gearInControls:!!hc.querySelector('.hcpilot-controls .hcgear'),
             canvases:hc.querySelectorAll('.hcfig canvas').length,
             dpr:1/h.engine.getHardwareScalingLevel(),
-            expectedDpr:Math.min(window.devicePixelRatio||1,gfx(h.small).dpr.hero)*(h.pilot?gfx(h.small).heroPilotScale:1),
+            expectedDpr:Math.min(window.devicePixelRatio||1,gfx(h.small).dpr.hero)*(h.pilot?(['duncan','baron'].includes(h.def.id)?gfx(h.small).heroPilotScale:gfx(h.small).heroShowcaseScale):1),
             dof:h.pipe.depthOfFieldEnabled,
             expectedDof:!!(gfx(h.small).dof === true || gfx(h.small).dof === 'hero') && !(h.pilot && h.small && gfx(h.small).level === 'med') };
         })()`));
-        const expected = id === 'duncan' || id === 'baron';
+        const expected = true;
         const [metal,rough,atlas,edge] = worlds[key];
         if (p.ui !== expected || p.stage !== expected || p.gearInControls !== expected ||
             !p.floor || p.edge !== edge || p.podium || p.world !== key || !p.shadow || p.motes !== 0 ||
             Math.abs(p.metallic-metal)>.001 || Math.abs(p.roughness-rough)>.001 || p.atlas !== atlas ||
             !p.ownsAtlas || p.cpuCanvases > 3 || p.canvases !== 1 ||
-            Math.abs(p.dpr-p.expectedDpr)>.015 || p.dof !== p.expectedDof || (id === 'baron' && p.skills !== 5))
+            Math.abs(p.dpr-p.expectedDpr)>.015 || p.dof !== p.expectedDof || p.skills !== p.expectedSkills || p.signature !== p.expectedSignature ||
+            (id !== 'duncan' && id !== 'muaddib' && p.motion !== null))
           errors.push('GFX-03: world/layout switch '+id+' '+JSON.stringify(p));
         if (owned && JSON.stringify(owned)!==JSON.stringify(p.ownership)) errors.push('GFX-03: floor resources replaced '+id);
         if (previous?.key===key && previous.plate!==p.plate) errors.push('GFX-03: same-world plate replaced '+id);
@@ -188,9 +193,9 @@ for (let c = 0; c < CYCLES; c++) {
   }
   // GFX-05/C: exercise the existing authored scene, without changing the save.
   if (c === 0) {
-    for (const id of ['duncan','muaddib']) {
+    for (const id of ['duncan','muaddib','stilgar','mohiam']) {
       await run("closeInfo(true); openDetail('" + id + "');");
-      const ready = await until("HERO_STAGE?.motionHero === '" + id + "' && HERO_STAGE.awake && HERO_STAGE.isCur()", 12000);
+      const ready = await until("HERO_STAGE?.def?.id === '" + id + "' && HERO_STAGE.pilot && HERO_STAGE.awake && HERO_STAGE.isCur()", 12000);
       if (ready < 0) { errors.push('GFX-05/C: authored motion unavailable '+id); continue; }
       const result = await page.evaluate(id => (0,eval)(`(() => {
         const h = HERO_STAGE, id = '${id}', enabled = gfx(h.small).heroCharacterMotion && !h.motionPreference?.matches;

@@ -21,7 +21,8 @@ const HIGH = {
   groundSeg: [170, 120],
   particles: 1,                     // множитель фоновых частиц окружения
   fps: { active: 60, idle: 30, idleLow: 20, static: 0 }, campIdle: 'idle',
-  heroPilotScale: 1, // GFX-02: scale actual DPR only for the wider pilot canvas
+  heroPilotScale: 1, // Original GFX-02 reference cards (Duncan/young Baron)
+  heroShowcaseScale: .80, // GFX-03/FIX: pixel budget for expanded high-profile viewport
   heroCharacterMotion: true, // GFX-05: authored showcase motion; LOW uses settled pose
   heroIdle: 'active',               // пакет 5: окно героя в покое (после интро/вспышки/вращения): HIGH 60, MED idle 30, LOW idle 20
   bake: false,                      // запечь тени/AO статичных пропсов в землю и убрать их из карты теней
@@ -37,12 +38,12 @@ const HIGH = {
 };
 const PROFILES = {
   high: HIGH,
-  med: { ...HIGH, dpr: { arena: [1.5, 1.25], hero: [1.75, 1.25], camp: [1.5, 1.25] }, msaa: 1, heroPilotScale: .78, heroIdle: 'idle',
+  med: { ...HIGH, dpr: { arena: [1.5, 1.25], hero: [1.75, 1.25], camp: [1.5, 1.25] }, msaa: 1, heroPilotScale: .78, heroShowcaseScale: .78, heroIdle: 'idle',
     grain: false, chromatic: false, sharpen: false, dof: 'hero', ssao: false, shadowSize: 1024, heroShadow: [1024, 512], bake: true, glowSel: true, campTotems: 'simple', campAccents: true, campAccentLights: false, wormSmall: .5, baronGL: { waves: 3, shots: 2, chairGlow: true, camera: .12, strikeSparks: 1 },
     battleCamera: HIGH.battleCamera },
 };
 // шаг 5: LOW — от MED вниз: без DoF и bloom, glow дешевле, тени 512 (PCF low), ниже dpr, пробники, сетка земли, частицы, кадр в покое
-PROFILES.low = { ...PROFILES.med, heroCharacterMotion: false, dpr: { arena: 1.25, hero: [1.5, 1], camp: 1.25 }, dof: false, bloom: false,
+PROFILES.low = { ...PROFILES.med, heroPilotScale: .72, heroShowcaseScale: .72, heroCharacterMotion: false, dpr: { arena: 1.25, hero: [1.5, 1], camp: 1.25 }, dof: false, bloom: false,
   glowRatio: [.35, .25], glowKernel: 16, shadowSize: 512, heroShadow: [512, 256], shadowQ: 'low',
   probe: { arena: 32, hero: 32, camp: 32 }, groundSeg: [100, 80], particles: .5,
   fps: { active: 60, idle: 20, idleLow: 15, static: 0 }, campIdle: 'idleLow', campTotems: 'low', campAccents: false, campAccentLights: false, wormSmall: 0, baronGL: { waves: 1, shots: 1, chairGlow: false, camera: 0, strikeSparks: 0 },
