@@ -35,10 +35,13 @@ try{
       const hit=await page.$eval(selector,el=>{
         const r=el.getBoundingClientRect();
         const top=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
-        return {ok:!!top&&el.contains(top),top:top?.outerHTML.slice(0,320),target:el.outerHTML.slice(0,320)};
+        return {ok:!!top&&el.contains(top)&&!el.disabled,x:r.left+r.width/2,y:r.top+r.height/2,top:top?.outerHTML.slice(0,320),target:el.outerHTML.slice(0,320)};
       });
       assert.ok(hit.ok,'Pointer blocked for '+selector+': '+JSON.stringify(hit));
-      await page.click(selector);
+      // Use the verified viewport point directly. Puppeteer's ElementHandle.click
+      // performs a second layout/scroll/handle lookup; that handle may detach
+      // on a normal render. One native tap only; never retry a purchase.
+      await page.mouse.click(hit.x,hit.y);
     };
     // Startup auto-calendar is an actual overlay, even if the shop DOM exists
     // underneath. Let ordinary boot finish, then dismiss via its real button.
@@ -93,7 +96,16 @@ try{
     await page.evaluate(token=>{const b=document.createElement('button');b.dataset.buy='post:pl';b.dataset.shopquote=token;document.body.append(b);b.click();b.remove()},token);
     assert.deepEqual(await snap(),next);
     await click('[data-postclose]');
-    for(let i=0;i<2;i++){await click('[data-postquote="post:pl"]');await click('[data-shopquote]');await click('[data-postclose]')}
+    for(let i=0;i<2;i++){
+      const prior=await snap();
+      await click('[data-postquote="post:pl"]');
+      assert.ok(await page.$('.sa-dialog[aria-label="Подтверждение покупки"]'),'repeat quote '+i);
+      await click('[data-shopquote]');
+      assert.ok(await page.$('.sa-dialog[aria-label="Покупка завершена"]'),'repeat receipt '+i);
+      assert.deepEqual(await snap(),{solari:prior.solari-6000,plast:prior.plast+5,buys:prior.buys+1},'repeat exact debit '+i);
+      await click('[data-postclose]');
+      assert.equal(await page.$('.sa-dialog'),null,'receipt closed '+i);
+    }
     assert.ok(await page.$('[data-postquote="post:pl"]:disabled'));
     await shot('sold');
     await run('S.solari=0;persist();render()');await click('[data-postselect="post:folio"]');
