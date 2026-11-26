@@ -19,3 +19,6 @@ The original archive SHA256 was rechecked, and all 26 assets matched its ZIP ent
 
 ## C1 — CI classification correction
 CI 45863530637 stopped before build: documentation JSON has no registered scope. Keep the identical manifest as a fenced JSON block in supported Markdown and verify every file's size and SHA-256 in the existing B6a acceptance (B618). No scope-policy exception or skipped check. All art files unchanged.
+
+## D — first runtime post skin
+Post alone uses original A3/C3 textures and B1 navigation, 3×2 page grid, real prices/stock/portraits and native filters. Existing global header is replaced only while this screen is visible; back and other four shops remain accessible. Ix remains a clearly labeled action until separate relocation. Existing water/solari/candle/Su artwork remains authoritative. Confirmation consumes a one-shot ephemeral quote and validates offer/day/funds inside existing writer; receipt only after verified commit. Legacy routes unchanged. CSS scoped to .shop-art; fallback font Georgia when EB Garamond is unavailable (no new font binary). Pending compiled and browser acceptance; no merge yet.

@@ -317,5 +317,20 @@ function prepareRecycler(g) {
   }
   pass('B618','all 26 approved art assets match original SHA-256 manifest');
 }
-assert.equal(passed.length, 18);
+// B619: quoted purchase revalidates exact offer and day; invalid token cannot charge.
+{
+  const g=await boot();money(g);
+  const before=g.store.get(KEY),old=ram(g),writes=spy(g);
+  g.run("set_view('shop');S.shopTab='post'"); // tab/view is transient for this test
+  const q=JSON.parse(g.run("JSON.stringify(postMakeQuote('post:pl'))"));
+  assert.ok(q.intent);
+  assert.equal(g.run("postQuoteCurrent("+JSON.stringify(q.intent)+",findShopItem('post:pl'))"),true);
+  assert.equal(g.run("postQuoteCurrent("+JSON.stringify({...q.intent,epoch:'expired'})+",findShopItem('post:pl'))"),false);
+  assert.equal(g.run("postQuoteCurrent("+JSON.stringify({...q.intent,price:1})+",findShopItem('post:pl'))"),false);
+  assert.equal(g.run("takePostQuote('post:pl','invalid')"),null);
+  assert.equal(g.store.get(KEY),before);assert.equal(writes.length,0);
+  assert.equal(ram(g).solari,old.solari);
+  pass('B619','post quote rejects stale price/day and forged token without save writes');release(g);
+}
+assert.equal(passed.length, 19);
 console.log(`ARCH-02C-B6a ${passed.length} verified market/recycler scenarios PASS: ${html}`);

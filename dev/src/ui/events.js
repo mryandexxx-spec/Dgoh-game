@@ -7,7 +7,7 @@ import { renderNotes } from './notifications.js';
 import { gearCap, heroCap } from '../logic/account-rules.js';
 import { metaClick } from './wiring.js';
 import { WORM_BADGE, detailNav, heroSnap } from './hero-window.js';
-import { buysToday, findShopItem, shopLeft } from './views/shop.js';
+import { buysToday, findShopItem, shopLeft, shopPostAction, takePostQuote, postQuoteCurrent, postPurchaseReceipt } from './views/shop.js';
 import { raidPct, raidReward } from './views/raid.js';
 import { SQ, openSquadSel, renderSquadSel, set_SQ, sqArr, sqGo } from './overlays/squad-select.js';
 import { claimLogin, openCalendar, selectCalendarDay } from './overlays/calendar.js';
@@ -630,6 +630,7 @@ document.addEventListener('click', e => {
   if (d.jkey) { S.jKey = d.jkey; persist(); closeInfo(true); closeOverlay(); set_view('legend'); render(); return; }
   if (d.ctab) { campaign20Legacy(); S.campTab = d.ctab; set_campSel(null); closeInfo(true); closeOverlay(); set_view('camp'); render(); return; }
   if (d.cch !== undefined) { S.campCh[S.campTab] = +d.cch; set_campSel(null); render(); return; }
+  if (shopPostAction(d)) return;
   if (d.shoptab) { S.shopTab = d.shoptab; closeInfo(true); closeOverlay(); set_view('shop'); render(); return; }
   if (d.goto === 'chron') { S.campTab = 'C'; set_campSel(null); closeInfo(true); closeOverlay(); set_view('camp'); render(); return; }
   if (d.node !== undefined) { closeInfo(true); if (BT && BT.B) leaveBattle(); return openSquadSel('camp', +d.node); }
@@ -765,11 +766,14 @@ document.addEventListener('click', e => {
   if (d.jgo) return openSquadSel('journey', +d.jgo);
   if (false) { const i = 0, t = JR().tiers[i]; return launch({ mode: 'journey', scene: JR().scenes[i], i, title: `Легенда ${i + 1}. ${t.n}`, desert: t.desert, squad: S.jPicks[JK()].slice(), enemy: t.enemy.map(id => ({ id, lvl: t.el, stars: t.stars, gear: Math.min(5, 1 + Math.floor(t.el / 7)) })) }); }
   if (d.buy) {
+    const postIntent = d.shopquote !== undefined ? takePostQuote(String(d.buy),String(d.shopquote)) : null;
+    if (d.shopquote !== undefined && !postIntent) return;
     if (loadSave.writer.state().gated) {
       const tx = loadSave.writer.transact(() => {
         // Resolve today's actual offer, price and daily stock under writer
         // authority; the clicked UI may be stale by the time it is handled.
         const item = findShopItem(String(d.buy));
+        if (postIntent && !postQuoteCurrent(postIntent,item)) return { commit: false, value: { status: 'stale' } };
         if (!item || shopLeft(item) === 0)
           return { commit: false, value: { status: 'unavailable' } };
         if (getRes(item.cur) < item.price)
@@ -782,6 +786,7 @@ document.addEventListener('click', e => {
         return { item, unlocked };
       }, giveRewards.presentationHooks);
       if (!tx.ok) {
+        if (postIntent) { render(); if (tx.status === 'cancelled') toast('Предложение изменилось или недоступно'); return; }
         if (tx.status === 'cancelled' && tx.value?.status === 'funds') {
           const cur = tx.value.currency;
           toast(`Не хватает: ${RES_INFO[cur] ? RES_INFO[cur].n : 'соляриев'}`);
@@ -790,12 +795,13 @@ document.addEventListener('click', e => {
         return;
       }
       const { item, unlocked } = tx.value;
+      if (postIntent) postPurchaseReceipt(item);
       if (item.kind === 'sh') toast(`+${amt('shard', item.qty, 'shard:' + item.id)} ${CH[item.id].sn}${unlocked ? ' — открыт!' : ''}`);
       else toast(`+${amt(item.kind, item.qty)} ${RW_NAME[item.kind]}`);
       refreshAll();
       return;
     }
-    const it = findShopItem(d.buy); if (!it) return; const left = shopLeft(it); if (left === 0) return; if (getRes(it.cur) < it.price) { toast(`Не хватает: ${RES_INFO[it.cur] ? RES_INFO[it.cur].n : 'соляриев'}`); return openInfo(it.cur); }
+    const it = findShopItem(d.buy); if (postIntent && !postQuoteCurrent(postIntent,it)) { render(); return; } if (!it) return; const left = shopLeft(it); if (left === 0) return; if (getRes(it.cur) < it.price) { toast(`Не хватает: ${RES_INFO[it.cur] ? RES_INFO[it.cur].n : 'соляриев'}`); return openInfo(it.cur); }
     addRes(it.cur, -it.price); if (it.lim) { buysToday(); S.buys.n[it.key] = (S.buys.n[it.key] || 0) + 1; } quest('shop');
     if (it.kind === 'sh') { const un = grantShards(it.id, it.qty); toast(`+${amt('shard', it.qty, 'shard:' + it.id)} ${CH[it.id].sn}${un ? ' — открыт!' : ''}`); } else { addRes(it.kind, it.qty); toast(`+${amt(it.kind, it.qty)} ${RW_NAME[it.kind]}`); }
     persist(); refreshAll(); return;
