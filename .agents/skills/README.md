@@ -3,6 +3,7 @@
 Seven general-purpose skills from [awesome-gamedev-agent-skills](https://github.com/gamedev-skills/awesome-gamedev-agent-skills) (Apache-2.0), plus one Babylon.js 9.30 engine skill adapted using TerminalSkills, Curiosity AI and Godogen references. Source paths are linked in each skill. These are tailored instructions **not** copies of engine-dependent snippets; they do not add runtime code, assets, npm dependencies, CI jobs or changes to game logic. The original upstream copyright/license remains with its authors.
 
 ## Routing
+- GFX-06 ART-PROD production reset → [current handoff and stage-specific installed plugin skills](../../dev/docs/GFX_06_ART_PROD.md). Load fal-media / fal-models-catalog for one controlled decomposition experiment; fal-workflow and fal-gamedev only when applicable. Load Figma plugin skills for the exact operation, not just local adaptations. No new HTML art iteration before master acceptance.
 - Premium game UI, approved reference decomposition, artistic nine-slice, layer assets → `game-ui-art-pipeline` + `create-game-assets` + `game-ui-ux`.
 - Editable UI master and reference-faithful transfer → `figma-ui-transfer` (load actual Figma plugin skills before calls).
 - Independent artistic acceptance and real browser comparison → `game-ui-visual-review` (mandatory for GFX-06); [pipeline](../../dev/docs/GFX_06_UI_PIPELINE.md).
