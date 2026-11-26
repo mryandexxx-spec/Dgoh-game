@@ -10,7 +10,7 @@
 
 ## Открыто
 
-- GFX-03/FIX / v162: владелец отклонил v159 по качеству масштабирования (issue #315). Кандидат общего Cinematic Showcase: D layout, фракционные палитры, камера, fill/rim и общий confirmed feedback для всех героев. Индивидуальные idle/жесты GFX-05 остаются только у двух эталонов. CI, all-roster WebGL A/B и физическая приёмка не подтверждены; не сливать до визуальной проверки и бюджетов.
+- GFX-03/FIX / v162: PR #316 слит; все обязательные проверки и визуальный sweep пройдены. Открыты физический iPhone и подтверждение публикации; GFX-04 остаётся отдельной задачей.
 
 - GFX-05/C / кандидат v161: Дункан и Муад’Диб, короткий вход, подтверждённый visual feedback, отмена и уменьшенный motion. Точная CI, реальный WebGL A/B, видео/художественная оценка и физический iPhone открыты; до приёмки не публиковать.
 
@@ -273,10 +273,11 @@
 
 ## Записи
 
-## v162 — GFX-03/FIX: распространение Cinematic Showcase (25.11.2026; кандидат)
+## v162 — GFX-03/FIX: распространение Cinematic Showcase (26.11.2026)
 
 - Все герои используют общий каркас D, включая легенд, закрытых и ДП; шесть палитр, крупный кадр, мотивированный свет, короткий вход и confirmed visual feedback. Авторские клипы Дункана и Муад’Диба сохранены отдельно. Новых моделей, ассетов, проходов или lights нет. Сейвы, экономика, бой и лагерь не меняются.
-- CI и реальный WebGL sweep/A/B предстоят. На iPhone проверить весь ростер, ульту, все кнопки, скролл внутри, читаемость и MED/LOW. Не считать GFX-03 закрытым до приёмки.
+- PR #316 merged 26.11.2026 (`76503fe4`). Exact-head CI #45710695949 SUCCESS; all-roster QA #45703273600: 27 × 5, 0 layout failures. Final DPR-only optimization HIGH .80 for newly rolled-out cards, LOW .72 for all, MED unchanged. Synchronized A/A/B #45710722385: Paul HIGH −26.7%, Stilgar HIGH −22.4%, Duncan LOW667 −10.9%, Muad LOW667 −10.6% p95, unchanged draws. Actual final screenshots independently reviewed; lower render resolution visibly softens HIGH, procedural model fidelity remains GFX-04. Physical iPhone and deployment confirmation open.
+- На iPhone проверить весь ростер, ульту, все кнопки, скролл внутри, читаемость и MED/LOW. Не считать GFX-03 закрытым до приёмки.
 
 
 ## v161 — GFX-05/C Cinematic Transitions (25.11.2026, кандидат)
