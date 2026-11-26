@@ -139,6 +139,46 @@ try{
     await shot('poor');
     await click('.sa-wallet[data-info="cry"]');assert.ok(await page.$('#overlay2 .infosheet'));
     await run('closeInfo(true);closeOverlay()');
+    // #338: exercise every visible page in every live market, not just
+    // the initial page. Verify independent title/price/quantity geometry,
+    // gold-band clearance, pagination hit zones and full selected title.
+    const auditPage=async(tab,index)=>{
+      const result=await page.evaluate(()=>{
+        const rect=e=>e.getBoundingClientRect();
+        const bad=[];
+        for(const c of document.querySelectorAll('.sa-card')){
+          const name=c.querySelector('.sa-name'),price=c.querySelector('.sa-price'),qty=c.querySelector('.sa-qty'),art=c.querySelector('.sa-art'),limit=c.querySelector('.sa-limit');
+          const [b,n,p,q,a,l]=[c,name,price,qty,art,limit].map(rect);
+          const overlap=(x,y)=>Math.min(x.right,y.right)-Math.max(x.left,y.left)>1&&Math.min(x.bottom,y.bottom)-Math.max(x.top,y.top)>1;
+          const inside=x=>x.left>=b.left-1&&x.right<=b.right+1&&x.top>=b.top-1&&x.bottom<=b.bottom+1;
+          if(![n,p,q,a,l].every(inside)||overlap(n,p)||overlap(n,q)||overlap(a,n)||overlap(l,q)||n.bottom>b.bottom-b.height*.19+1||name.scrollHeight>name.clientHeight+1||name.scrollWidth>name.clientWidth+1)bad.push({name:name.textContent,card:b.toJSON(),title:n.toJSON(),price:p.toJSON(),qty:q.toJSON(),art:a.toJSON(),limit:l.toJSON(),scrollHeight:name.scrollHeight,clientHeight:name.clientHeight});
+        }
+        const rail=document.querySelector('.sa-pager'),foot=document.querySelector('.sa-cat-foot');
+        const targets=[...rail.querySelectorAll('button')].map(e=>{const b=rect(e);return {w:b.width,h:b.height,hit:e.disabled||e.contains(document.elementFromPoint(b.x+b.width/2,b.y+b.height/2))}});
+        const fr=rect(foot),rr=rect(rail);
+        const other=[...foot.children].filter(e=>e!==rail).map(rect);
+        return {bad,targets,railFits:rr.left>=fr.left-1&&rr.right<=fr.right+1&&rr.top>=fr.top-1&&rr.bottom<=fr.bottom+1&&other.every(b=>b.right<=rr.left+1||b.left>=rr.right-1)};
+      });
+      assert.deepEqual(result.bad,[],tab+' page '+index+' '+JSON.stringify(result.bad));
+      assert.ok(result.railFits&&result.targets.every(t=>t.w>=36&&t.h>=36&&t.hit),JSON.stringify(result));
+      for(const key of await page.$eval('.sa-card',a=>a.map(e=>e.dataset.postselect))){
+        const selector='.sa-card[data-postselect="'+key+'"]';
+        const title=await page.$eval(selector+' .sa-name',e=>e.textContent);
+        await click(selector);
+        assert.equal(await page.$eval('.sa-title h2',e=>e.textContent),title);
+      }
+      await shot(tab+'-page-'+index);
+    };
+    for(const tab of ['post','sietch','chron','ring','jihad']){
+      if(!await page.$('.shop-art[data-market="'+tab+'"]'))await click('.sa-nav [data-shoptab="'+tab+'"]');
+      await click('[data-postfilter="all"]');
+      let index=1;
+      while(true){
+        await auditPage(tab,index++);
+        if(await page.$('[data-postpage="1"]:disabled'))break;
+        await click('[data-postpage="1"]');
+      }
+    }
     // Other daily markets: same rendering and one-shot quote, actual balances.
     await run('S.teeth=10000;S.rid=10000;S.wring=10000;persist()');
     for(const [tab,cur,key,field,price,qty] of [
