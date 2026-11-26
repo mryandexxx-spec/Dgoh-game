@@ -796,7 +796,7 @@ document.addEventListener('click', e => {
       }
       const { item, unlocked } = tx.value;
       if (postIntent) postPurchaseReceipt(item);
-      if (item.kind === 'sh') toast(`+${amt('shard', item.qty, 'shard:' + item.id)} ${CH[item.id].sn}${unlocked ? ' — открыт!' : ''}`);
+      else if (item.kind === 'sh') toast(`+${amt('shard', item.qty, 'shard:' + item.id)} ${CH[item.id].sn}${unlocked ? ' — открыт!' : ''}`);
       else toast(`+${amt(item.kind, item.qty)} ${RW_NAME[item.kind]}`);
       refreshAll();
       return;

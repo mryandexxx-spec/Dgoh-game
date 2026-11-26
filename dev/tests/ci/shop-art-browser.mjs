@@ -72,11 +72,13 @@ try{
       const box=s=>document.querySelector(s).getBoundingClientRect();
       const art=box('.sa-hero img'),region=box('.sa-object'),pedestal=box('.sa-pedestal'),buy=box('.sa-foot .sa-buy');
       return {contained:art.top>=region.top-1&&art.bottom<=region.bottom+1&&art.left>=region.left-1&&art.right<=region.right+1,
-        standVisible:pedestal.height>=40&&art.bottom<=pedestal.top+8,
+        standVisible:pedestal.height>=region.height*.55&&art.bottom>=pedestal.top&&art.bottom<=pedestal.top+pedestal.height*.55,
         noOverlap:art.bottom<=buy.top&&region.bottom<=buy.top,
         artHeight:art.height,regionHeight:region.height};
     });
     assert.ok(stageBounds.contained&&stageBounds.standVisible&&stageBounds.noOverlap&&stageBounds.artHeight>20,JSON.stringify(stageBounds));
+    assert.equal(await page.$eval('.sa-title h2',e=>e.textContent),'Пласталь');
+    assert.match(await page.$eval('.sa-cat-head strong',e=>e.textContent),/ЛОТЫ\s+11/);
     await shot('normal');
     await click('[data-postpage="1"]');assert.equal(await page.$eval('.sa-pager span',e=>e.textContent),'2/2');assert.equal(await page.$$eval('.sa-card',a=>a.length),5);
     await click('[data-postfilter="shards"]');assert.equal(await page.$$eval('.sa-card',a=>a.length),4);

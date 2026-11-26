@@ -103,3 +103,23 @@ body:has(#view .shop-art) #notes{display:none}
 .shop-art .sa-dialog{min-width:0;max-width:100%}
 .shop-art .sa-reward{position:relative;overflow:hidden;display:block}
 .shop-art .sa-reward>img,.shop-art .sa-reward>.ico,.shop-art .sa-reward>.pt{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100px;height:83px;max-width:100%;max-height:100%;object-fit:contain}
+
+/* D2: matched the frozen master composition using the actual shipped artwork.
+   The pedestal occupies the lower stage, object overlaps only its top surface. */
+.shop-art .sa-object{--stand-h:62%}
+.shop-art .sa-pedestal{bottom:2px;left:8%;width:84%;height:var(--stand-h)}
+.shop-art .sa-object:after{bottom:34%;height:10px;left:27%;width:46%}
+.shop-art .sa-hero{inset:2px 27% 35%}
+.shop-art .sa-card .sa-name{font-weight:500;line-height:1.12}
+.shop-art .sa-buy{padding-left:22px;letter-spacing:.5px}
+.shop-art .sa-feature p{color:#e5ded2;font-size:12px;line-height:1.2}
+.shop-art .sa-title h2{font-size:29px;line-height:1.05}
+.shop-art .sa-feature small{font-size:9px;letter-spacing:1px}
+.shop-art .sa-card .sa-limit{font-size:9px}
+.shop-art .sa-cat-head strong{font-size:12px;letter-spacing:1px}
+@media(max-width:740px){.shop-art .sa-title h2{font-size:25px}.shop-art .sa-feature p{font-size:11px}}
+.shop-art .sa-actions .sa-buy,.shop-art .sa-dialog>.sa-buy{background:var(--primary) center/100% 100% no-repeat;color:#211d16;letter-spacing:0;text-transform:none;font-size:13px;font-weight:650}
+.shop-art .sa-dialog{border-color:#bba06c;min-height:0;padding:16px 19px 12px;gap:8px}
+.shop-art .sa-dialog .sa-quote-art b{font:400 20px/1.1 'EB Garamond',Georgia,serif}
+.shop-art .sa-reward+ b{font:400 20px/1.1 'EB Garamond',Georgia,serif}
+.shop-art .sa-reward>img{width:125px;height:95px}
