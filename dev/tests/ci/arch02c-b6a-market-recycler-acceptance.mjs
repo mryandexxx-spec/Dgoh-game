@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadGame } from '../lib/load.mjs';
+import './shop-catalog.mjs';
 
 const html = process.argv[2] || 'dist/pwa/index.html';
 const KEY = 'dune-goh-v1', BACKUP = KEY + '.backup';
@@ -270,5 +271,33 @@ function prepareRecycler(g) {
   assert.equal(writes.length, 0); assert.equal(blocked(g), true);
   pass('B616', 'retired Web Locks lease refuses purchases, refills and recycling');
 }
-assert.equal(passed.length, 16);
+// B617: the actual UI catalog reflects source offers, currency, day ledger,
+// existing art and live inventory without staging a save or a fake fixture.
+{
+  const g = await boot(); money(g);
+  const before = g.store.get(KEY), old = ram(g), writes = spy(g);
+  for (const tab of ['post','sietch','chron','ring']) {
+    const projected = JSON.parse(g.run('JSON.stringify(shopCatalog('+JSON.stringify(tab)+'))'));
+    const raw = JSON.parse(g.run('JSON.stringify(shopItems('+JSON.stringify(tab)+'))'));
+    assert.equal(projected.length, raw.length);
+    for (const [i,row] of projected.entries()) {
+      const offer = raw[i];
+      for(const field of ['key','kind','qty','cur','price']) assert.equal(row[field],offer[field],tab+':'+field);
+      assert.equal(row.limit,offer.lim);
+      assert.equal(row.id,offer.id ?? null);
+      assert.equal(row.route,'buy');
+      assert.equal(row.left,g.run('shopLeft(findShopItem('+JSON.stringify(row.key)+'))'));
+      assert.equal(row.balance,g.run('getRes('+JSON.stringify(row.cur)+')'));
+      assert.ok(row.title && row.subtitle && row.art && row.priceHtml);
+    }
+  }
+  assert.deepEqual(ram(g),old); assert.equal(g.store.get(KEY),before); assert.equal(writes.length,0);
+  for(let i=0;i<3;i++) click(g,'buy','post:pl');
+  const row=JSON.parse(g.run("JSON.stringify(shopCatalog('post').find(x=>x.key==='post:pl'))"));
+  assert.equal(row.left,0); assert.equal(row.sold,true); assert.equal(row.affordable,false);
+  assert.equal(row.balance,old.solari-18000); assert.equal(row.owned,old.plast+15);
+  assert.deepEqual(disk(g),ram(g));
+  pass('B617','live catalog mirrors actual offers, stock and inventory; read-only before purchase'); release(g);
+}
+assert.equal(passed.length, 17);
 console.log(`ARCH-02C-B6a ${passed.length} verified market/recycler scenarios PASS: ${html}`);

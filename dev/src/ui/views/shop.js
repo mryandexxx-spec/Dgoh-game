@@ -15,6 +15,7 @@ import { amt, ic } from '../../core/format.js';
 import { $ } from '../../core/dom.js';
 import { sRng } from '../../core/rng.js';
 import { itemIcon } from '../common.js';
+import { marketOffers } from './shop-catalog.js';
 
 const SHOPS = {
   post: { n: 'Торговый пост', d: 'Обычный магазин Империума: солярии и камни су. Ассортимент осколков обновляется каждый день.' },
@@ -81,6 +82,24 @@ function shopFragsHtml() {
     }).join('')}</div>`
       : `<p class="sub">Сейчас героям отряда не нужны предметы VI–XIII.</p>`);
 }
+// The live catalog is a read-only projection of the actual daily offers.
+// Keep the presentation and purchase route separate; the existing writer
+// resolves the offer again when the player commits a purchase.
+function shopCatalog(sk) {
+  if (!Object.prototype.hasOwnProperty.call(SHOPS, sk)) return [];
+  return marketOffers(shopItems(sk), shopLeft, getRes).map(it => {
+    const hero = it.kind === 'sh', p = hero ? prog(it.id) : null, sold = it.left === 0;
+    const title = hero ? `${amt('shard', it.qty, 'shard:' + it.id)} ${CH[it.id].sn}` : `${amt(it.kind, it.qty)} ${RW_NAME[it.kind]}`;
+    const subtitle = (hero ? (p.stars ? `${p.stars}★ · есть ${p.shards}` : `закрыт · ${p.shards}/10`) : RES_INFO[it.kind] ? RES_INFO[it.kind].n : 'материалы') + (it.limit ? ` · ${sold ? 'раскуплено' : `осталось ${it.left}`}` : '');
+    return {
+      ...it, title, subtitle, sold, affordable: it.balance >= it.price && !sold,
+      owned: hero ? p.shards : getRes(it.kind),
+      side: hero ? CH[it.id].side : null,
+      art: hero ? portrait(CH[it.id], 44, p.stars ? TIER_COL[p.gear] : null) : `<span class="bigico sm">${ic(it.kind)}</span>`,
+      priceHtml: amt(it.cur, it.price),
+    };
+  });
+}
 function renderShop() {
   if (S.shopTab === 'jihad') return cqShopView();
   const sk = SHOPS[S.shopTab] ? S.shopTab : 'post', cur = { post: ['sol', 'cry'], sietch: ['teeth'], chron: ['rid'], ring: ['wring'] }[sk];
@@ -89,12 +108,9 @@ function renderShop() {
     <div class="panel" style="display:flex;align-items:center;gap:12px;margin:4px 0 10px;padding:8px 12px"><span class="bigico sm">${ic('ix_plate')}</span><div style="flex:1"><b>Утилизатор Икса</b><div class="sub" style="margin:0">Отдельная мастерская переработки снаряжения в артефакты Другой памяти</div></div><button class="btn go" data-ixenter="1">В мастерскую</button></div>
     <div class="ctabs">${Object.entries(SHOPS).map(([k, v]) => `<button class="ctab ${k === sk ? 'on' : ''}" data-shoptab="${k}">${v.n}<small>${{ post: ic('sol') + ic('cry'), sietch: ic('teeth'), chron: ic('rid'), ring: ic('wring') }[k]}</small></button>`).join('')}<button class="ctab" data-shoptab="jihad">Джихад<small>${ic('jt')}</small></button></div>
     <p class="sub">${SHOPS[sk].d} У вас: ${cur.map(c => amt(c, getRes(c))).join(' ')}. Лимиты обновятся через ${Math.floor(msLeft / 3.6e6)} ч ${Math.floor(msLeft % 3.6e6 / 6e4)} мин.</p>
-    <div class="shop">${shopItems(sk).map(it => { const left = shopLeft(it), sold = left === 0, can = getRes(it.cur) >= it.price && !sold;
-      const t = it.kind === 'sh' ? `${amt('shard', it.qty, 'shard:' + it.id)} ${CH[it.id].sn}` : `${amt(it.kind, it.qty)} ${RW_NAME[it.kind]}`;
-      const sub = (it.kind === 'sh' ? (prog(it.id).stars ? `${prog(it.id).stars}★ · есть ${prog(it.id).shards}` : `закрыт · ${prog(it.id).shards}/10`) : RES_INFO[it.kind] ? RES_INFO[it.kind].n : 'материалы') + (it.lim ? ` · ${sold ? 'раскуплено' : `осталось ${left}`}` : '');
-      return `<div class="item ${sold ? 'sold' : ''} ${it.kind === 'sh' ? 'side-' + CH[it.id].side : ''}">${it.kind === 'sh' ? portrait(CH[it.id], 44, prog(it.id).stars ? TIER_COL[prog(it.id).gear] : null) : `<span class="bigico sm">${ic(it.kind)}</span>`}<div class="t">${t}</div><div class="s">${sub}</div><button class="btn ${can ? '' : 'dim'}" data-buy="${it.key}" ${sold ? 'disabled' : ''}>${amt(it.cur, it.price)}</button></div>`; }).join('')}</div>
+    <div class="shop">${shopCatalog(sk).map(it => `<div class="item ${it.sold ? 'sold' : ''} ${it.side ? 'side-' + it.side : ''}">${it.art}<div class="t">${it.title}</div><div class="s">${it.subtitle}</div><button class="btn ${it.affordable ? '' : 'dim'}" data-buy="${it.key}" ${it.sold ? 'disabled' : ''}>${it.priceHtml}</button></div>`).join('')}</div>
     ${sk === 'sietch' ? shopFragsHtml() : ''}`;
 }
 
 
-export { SHOPS, buysToday, shopLeft, dailyHeroes, shopItems, findShopItem, shopFragsHtml, renderShop, renderRecycler };
+export { SHOPS, buysToday, shopLeft, dailyHeroes, shopItems, findShopItem, shopFragsHtml, shopCatalog, renderShop, renderRecycler };
