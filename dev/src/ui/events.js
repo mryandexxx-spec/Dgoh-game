@@ -7,7 +7,7 @@ import { renderNotes } from './notifications.js';
 import { gearCap, heroCap } from '../logic/account-rules.js';
 import { metaClick } from './wiring.js';
 import { WORM_BADGE, detailNav, heroSnap } from './hero-window.js';
-import { buysToday, findShopItem, shopLeft } from './views/shop.js';
+import { buysToday, findShopItem, shopLeft, shopPostAction, takePostQuote, postQuoteCurrent, postPurchaseReceipt, jihadQuoteCurrent, marketRows } from './views/shop.js';
 import { raidPct, raidReward } from './views/raid.js';
 import { SQ, openSquadSel, renderSquadSel, set_SQ, sqArr, sqGo } from './overlays/squad-select.js';
 import { claimLogin, openCalendar, selectCalendarDay } from './overlays/calendar.js';
@@ -170,7 +170,7 @@ function cqVerifiedEconomyClick(d) {
   if (d.cqnode === undefined && d.cqsec === undefined && d.cqbuy === undefined &&
       d.cqjbuy === undefined && d.cqmed === undefined && d.cqrf === undefined &&
       d.cqdon === undefined && d.cqdoff === undefined) return false;
-  if (!loadSave.writer.state().gated) return false; // historical B0 characterization
+  if (!loadSave.writer.state().gated) return d.cqjbuy !== undefined && d.shopquote !== undefined; // B0 remains legacy-only
   const r = openSquadSel.conquestClaimRules();
   const run = stage => {
     const before = r.notes.length;
@@ -253,8 +253,11 @@ function cqVerifiedEconomyClick(d) {
   }
   if (d.cqjbuy !== undefined) {
     const key = String(d.cqjbuy);
+    const intent = d.shopquote !== undefined ? takePostQuote(key,String(d.shopquote),'cqjbuy') : null;
+    if(d.shopquote !== undefined && !intent)return true;
     const tx = run(() => {
       const item = r.cqShopOffer().find(x => x.key === key);
+      if(intent && !jihadQuoteCurrent(intent,item))return {commit:false,value:'stale-quote'};
       if (!item || item.sold) return { commit: false, value: 'sold' };
       if ((S.jt || 0) < item.price)
         return { commit: false, value: 'short-trophies' };
@@ -281,11 +284,15 @@ function cqVerifiedEconomyClick(d) {
       return notice;
     });
     if (!tx.ok) {
+      if(intent){render();toast('Предложение изменилось или недоступно');return true;}
       if (tx.status === 'cancelled' && tx.value === 'short-trophies')
         toast('Не хватает трофеев Джихада');
       return true;
     }
-    toast(tx.value);
+    if(intent){
+      const receipt=marketRows('jihad').find(o=>o.key===key);
+      if(receipt)postPurchaseReceipt(receipt);else toast(tx.value);
+    }else toast(tx.value);
     render();
     return true;
   }
@@ -557,7 +564,7 @@ document.addEventListener('click', e => {
   const sl = e.target.closest('[data-sqlead]'); if (sl) { const a = sqArr(), k = +sl.dataset.sqlead, id = a[k]; a.splice(k, 1); a.unshift(id); persist(); return renderSquadSel(); }
   const sr = e.target.closest('[data-sqrm]'); if (sr) { sqArr().splice(+sr.dataset.sqrm, 1); persist(); return renderSquadSel(); }
   const inf = e.target.closest('[data-info]');
-  if (inf && (inf.matches('button.hud-cell') || !inf.closest('button')) && !(BT && BT.B && !BT.done)) { openInfo(inf.dataset.info); return; }
+  if (inf && (inf.matches('button.hud-cell, button.sa-wallet') || !inf.closest('button')) && !(BT && BT.B && !BT.done)) { openInfo(inf.dataset.info); return; }
   if (BT && BT.lpFired) { BT.lpFired = false; e.preventDefault(); e.stopPropagation(); return; }
   if (e.target.closest('#bpop') && (!e.target.closest('.bpopbox') || e.target.closest('[data-bpopx]'))) return bPopClose();
   if (e.target.closest('#bpop')) { const b = e.target.closest('button'); if (b) meta2Click(b.dataset); return; }
@@ -630,6 +637,7 @@ document.addEventListener('click', e => {
   if (d.jkey) { S.jKey = d.jkey; persist(); closeInfo(true); closeOverlay(); set_view('legend'); render(); return; }
   if (d.ctab) { campaign20Legacy(); S.campTab = d.ctab; set_campSel(null); closeInfo(true); closeOverlay(); set_view('camp'); render(); return; }
   if (d.cch !== undefined) { S.campCh[S.campTab] = +d.cch; set_campSel(null); render(); return; }
+  if (shopPostAction(d)) return;
   if (d.shoptab) { S.shopTab = d.shoptab; closeInfo(true); closeOverlay(); set_view('shop'); render(); return; }
   if (d.goto === 'chron') { S.campTab = 'C'; set_campSel(null); closeInfo(true); closeOverlay(); set_view('camp'); render(); return; }
   if (d.node !== undefined) { closeInfo(true); if (BT && BT.B) leaveBattle(); return openSquadSel('camp', +d.node); }
@@ -765,11 +773,14 @@ document.addEventListener('click', e => {
   if (d.jgo) return openSquadSel('journey', +d.jgo);
   if (false) { const i = 0, t = JR().tiers[i]; return launch({ mode: 'journey', scene: JR().scenes[i], i, title: `Легенда ${i + 1}. ${t.n}`, desert: t.desert, squad: S.jPicks[JK()].slice(), enemy: t.enemy.map(id => ({ id, lvl: t.el, stars: t.stars, gear: Math.min(5, 1 + Math.floor(t.el / 7)) })) }); }
   if (d.buy) {
+    const postIntent = d.shopquote !== undefined ? takePostQuote(String(d.buy),String(d.shopquote)) : null;
+    if (d.shopquote !== undefined && !postIntent) return;
     if (loadSave.writer.state().gated) {
       const tx = loadSave.writer.transact(() => {
         // Resolve today's actual offer, price and daily stock under writer
         // authority; the clicked UI may be stale by the time it is handled.
         const item = findShopItem(String(d.buy));
+        if (postIntent && !postQuoteCurrent(postIntent,item)) return { commit: false, value: { status: 'stale' } };
         if (!item || shopLeft(item) === 0)
           return { commit: false, value: { status: 'unavailable' } };
         if (getRes(item.cur) < item.price)
@@ -782,6 +793,7 @@ document.addEventListener('click', e => {
         return { item, unlocked };
       }, giveRewards.presentationHooks);
       if (!tx.ok) {
+        if (postIntent) { render(); if (tx.status === 'cancelled') toast('Предложение изменилось или недоступно'); return; }
         if (tx.status === 'cancelled' && tx.value?.status === 'funds') {
           const cur = tx.value.currency;
           toast(`Не хватает: ${RES_INFO[cur] ? RES_INFO[cur].n : 'соляриев'}`);
@@ -790,12 +802,13 @@ document.addEventListener('click', e => {
         return;
       }
       const { item, unlocked } = tx.value;
-      if (item.kind === 'sh') toast(`+${amt('shard', item.qty, 'shard:' + item.id)} ${CH[item.id].sn}${unlocked ? ' — открыт!' : ''}`);
+      if (postIntent) postPurchaseReceipt(item);
+      else if (item.kind === 'sh') toast(`+${amt('shard', item.qty, 'shard:' + item.id)} ${CH[item.id].sn}${unlocked ? ' — открыт!' : ''}`);
       else toast(`+${amt(item.kind, item.qty)} ${RW_NAME[item.kind]}`);
       refreshAll();
       return;
     }
-    const it = findShopItem(d.buy); if (!it) return; const left = shopLeft(it); if (left === 0) return; if (getRes(it.cur) < it.price) { toast(`Не хватает: ${RES_INFO[it.cur] ? RES_INFO[it.cur].n : 'соляриев'}`); return openInfo(it.cur); }
+    const it = findShopItem(d.buy); if (postIntent && !postQuoteCurrent(postIntent,it)) { render(); return; } if (!it) return; const left = shopLeft(it); if (left === 0) return; if (getRes(it.cur) < it.price) { toast(`Не хватает: ${RES_INFO[it.cur] ? RES_INFO[it.cur].n : 'соляриев'}`); return openInfo(it.cur); }
     addRes(it.cur, -it.price); if (it.lim) { buysToday(); S.buys.n[it.key] = (S.buys.n[it.key] || 0) + 1; } quest('shop');
     if (it.kind === 'sh') { const un = grantShards(it.id, it.qty); toast(`+${amt('shard', it.qty, 'shard:' + it.id)} ${CH[it.id].sn}${un ? ' — открыт!' : ''}`); } else { addRes(it.kind, it.qty); toast(`+${amt(it.kind, it.qty)} ${RW_NAME[it.kind]}`); }
     persist(); refreshAll(); return;

@@ -500,6 +500,13 @@ jobs:
           node tests/ci/arch02c-b3-b1c-b3-mandatory-boot-acceptance.mjs dist/artifact.html
           node tests/golden/saves.mjs dist/pwa/index.html
           node tests/golden/saves.mjs dist/artifact.html
+      - name: Upload SHOP runtime visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dune-shop-art-${{ github.run_number }}
+          path: dev/shop-art-shots/
+          if-no-files-found: ignore
       - name: Upload the only production build
         uses: actions/upload-artifact@v4
         with:

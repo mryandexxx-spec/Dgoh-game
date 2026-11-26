@@ -93,6 +93,13 @@ export function commandsFor(plan) {
   if (plan.systems.includes('ui') && uiHudAcceptanceForPaths(plan.paths))
     for (const artifact of ARTIFACTS)
       add('tests/ci/hud01-resource-acceptance.mjs',[artifact]);
+  // SHOP: native DOM + real writer transactions, only when shop or its art changes.
+  if(plan.paths.some(p=>p.startsWith('dev/assets/ui/shop/') || [
+    'dev/src/ui/views/shop.js','dev/src/ui/views/shop-catalog.js',
+    'dev/src/ui/events.js','dev/src/ui/router.js','dev/src/styles/shop-art.css',
+    'dev/tests/ci/shop-art-browser.mjs'
+  ].includes(p)))
+    for(const artifact of ARTIFACTS)add('tests/ci/shop-art-browser.mjs',[artifact]);
   // UI-02: cover the assembled profile + HUD + existing buttons in Chromium,
   // only when its source, presentation or acceptance is touched.
   if (plan.paths.some(p=>[

@@ -269,6 +269,9 @@ export const SPLIT = [
 
   [4020, 'ui/recycler-screen.js'],
 
+  // SHOP-INTEGRATION: pure presentation helpers, immediately before their sole importer.
+  [4020, 'ui/views/shop-catalog.js'],
+
   [4020, 'ui/views/shop.js'],
 
   [4072, 'ui/views/lobby.js'],

@@ -2,9 +2,11 @@
 // Execute against actual compiled PWA AND standalone HTML (no source mocks).
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadGame } from '../lib/load.mjs';
+import './shop-catalog.mjs';
 
 const html = process.argv[2] || 'dist/pwa/index.html';
 const KEY = 'dune-goh-v1', BACKUP = KEY + '.backup';
@@ -270,5 +272,65 @@ function prepareRecycler(g) {
   assert.equal(writes.length, 0); assert.equal(blocked(g), true);
   pass('B616', 'retired Web Locks lease refuses purchases, refills and recycling');
 }
-assert.equal(passed.length, 16);
+// B617: the actual UI catalog reflects source offers, currency, day ledger,
+// existing art and live inventory without staging a save or a fake fixture.
+{
+  const g = await boot(); money(g);
+  const before = g.store.get(KEY), old = ram(g), writes = spy(g);
+  for (const tab of ['post','sietch','chron','ring']) {
+    const projected = JSON.parse(g.run('JSON.stringify(shopCatalog('+JSON.stringify(tab)+'))'));
+    const raw = JSON.parse(g.run('JSON.stringify(shopItems('+JSON.stringify(tab)+'))'));
+    assert.equal(projected.length, raw.length);
+    for (const [i,row] of projected.entries()) {
+      const offer = raw[i];
+      for(const field of ['key','kind','qty','cur','price']) assert.equal(row[field],offer[field],tab+':'+field);
+      assert.equal(row.limit,offer.lim);
+      assert.equal(row.id,offer.id ?? null);
+      assert.equal(row.route,'buy');
+      assert.equal(row.left,g.run('shopLeft(findShopItem('+JSON.stringify(row.key)+'))'));
+      assert.equal(row.balance,g.run('getRes('+JSON.stringify(row.cur)+')'));
+      assert.ok(row.title && row.subtitle && row.art && row.priceHtml);
+    }
+  }
+  assert.deepEqual(ram(g),old); assert.equal(g.store.get(KEY),before); assert.equal(writes.length,0);
+  for(let i=0;i<3;i++) click(g,'buy','post:pl');
+  const row=JSON.parse(g.run("JSON.stringify(shopCatalog('post').find(x=>x.key==='post:pl'))"));
+  assert.equal(row.left,0); assert.equal(row.sold,true); assert.equal(row.affordable,false);
+  assert.equal(row.balance,old.solari-18000); assert.equal(row.owned,old.plast+15);
+  assert.deepEqual(disk(g),ram(g));
+  pass('B617','live catalog mirrors actual offers, stock and inventory; read-only before purchase'); release(g);
+}
+// B618: immutable art source manifest is checked rather than merely documented.
+{
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+  const doc = fs.readFileSync(path.join(root,'docs/SHOP_ART_ASSET_MANIFEST.md'),'utf8');
+  const block = doc.match(/```json\n([\s\S]*?)\n```/);
+  assert.ok(block,'machine-readable manifest');
+  const manifest = JSON.parse(block[1]);
+  assert.equal(manifest.files.length,26);
+  const dir = path.join(root,'assets/ui/shop');
+  assert.deepEqual(fs.readdirSync(dir).sort(),manifest.files.map(x=>x.name).sort());
+  for(const entry of manifest.files){
+    const bytes=fs.readFileSync(path.join(dir,entry.name));
+    assert.equal(bytes.length,entry.size,entry.name);
+    assert.equal(createHash('sha256').update(bytes).digest('hex'),entry.sha256,entry.name);
+  }
+  pass('B618','all 26 approved art assets match original SHA-256 manifest');
+}
+// B619: quoted purchase revalidates exact offer and day; invalid token cannot charge.
+{
+  const g=await boot();money(g);
+  const before=g.store.get(KEY),old=ram(g),writes=spy(g);
+  g.run("set_view('shop');S.shopTab='post'"); // tab/view is transient for this test
+  const q=JSON.parse(g.run("JSON.stringify(postMakeQuote('post:pl'))"));
+  assert.ok(q.intent);
+  assert.equal(g.run("postQuoteCurrent("+JSON.stringify(q.intent)+",findShopItem('post:pl'))"),true);
+  assert.equal(g.run("postQuoteCurrent("+JSON.stringify({...q.intent,epoch:'expired'})+",findShopItem('post:pl'))"),false);
+  assert.equal(g.run("postQuoteCurrent("+JSON.stringify({...q.intent,price:1})+",findShopItem('post:pl'))"),false);
+  assert.equal(g.run("takePostQuote('post:pl','invalid')"),null);
+  assert.equal(g.store.get(KEY),before);assert.equal(writes.length,0);
+  assert.equal(ram(g).solari,old.solari);
+  pass('B619','post quote rejects stale price/day and forged token without save writes');release(g);
+}
+assert.equal(passed.length, 19);
 console.log(`ARCH-02C-B6a ${passed.length} verified market/recycler scenarios PASS: ${html}`);
