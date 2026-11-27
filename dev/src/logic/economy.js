@@ -129,12 +129,17 @@ function signalDrop(n) {
   S.signalPity[key] = got ? 0 : misses + 1;
   return got ? key : null;
 }
+// Guaranteed victory amounts: read-only projection used by the campaign console.
+function campRewardBase(i, st) {
+  const n = NODES[i], ch = n.camp === 'C', L = n.lvl;
+  return { sol: ch ? 300 + L * 60 : 400 + L * 110, pl: 1 + (st === 3 ? 1 : 0) + (L >= 14 ? 1 : 0), folio: ch ? 2 + (L >= 20 ? 1 : 0) : 1 + (L >= 14 ? 1 : 0) };
+}
 function campReward(i, st, preview = false) {
   const n = NODES[i], ch = n.camp === 'C', L = n.lvl;
-  return { sol: ch ? 300 + L * 60 : 400 + L * 110, pl: 1 + (st === 3 ? 1 : 0) + (L >= 14 ? 1 : 0), folio: ch ? 2 + (L >= 20 ? 1 : 0) : 1 + (L >= 14 ? 1 : 0),
+  return { ...campRewardBase(i,st),
     seal: Math.random() < (ch ? .08 : L >= 8 ? .04 : 0) ? 1 : 0, rid: ch ? 8 + Math.floor(Math.random() * 8) : 0,
     core: 0, signals: preview ? null : signalDrop(n), drops: rollShards(n, ch), items: rollItems(i) };
 }
 
 
-export { RAID_REWARD, REFILL_AMT, REFILL_MAX, CRY_WIN, CRY_3STAR, CRY_JOURNEY, refillPrice, todayKey, refillN, refillCost, SHOP, ROSTER_IDS, RAID_SCENES, enemyProg, SHARDS_NEXT, STAR_COST, LVL_COST, GEAR_COST, MAX_LVL, MAX_GEAR, WATER_BASE, WATER_SEC, BATTLE_WATER, CANDLE_BASE, CANDLE_SEC, CANDLE_COST, CANDLE_REFILL, enCapStep, WMAX, CMAX, ROMAN, RW_NAME, rollShards, campReward };
+export { RAID_REWARD, REFILL_AMT, REFILL_MAX, CRY_WIN, CRY_3STAR, CRY_JOURNEY, refillPrice, todayKey, refillN, refillCost, SHOP, ROSTER_IDS, RAID_SCENES, enemyProg, SHARDS_NEXT, STAR_COST, LVL_COST, GEAR_COST, MAX_LVL, MAX_GEAR, WATER_BASE, WATER_SEC, BATTLE_WATER, CANDLE_BASE, CANDLE_SEC, CANDLE_COST, CANDLE_REFILL, enCapStep, WMAX, CMAX, ROMAN, RW_NAME, rollShards, campReward, campRewardBase };

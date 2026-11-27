@@ -694,16 +694,56 @@ try{
     };
     await run("campaign20Start();S.campTab='L';S.campCh.L=0;set_view('camp');render()");
     await expeditionShot('campaign-home','.c20-home');
+    const assertCampaignRoot=async()=>{
+      const geometry=await page.$eval('.c31-root',root=>{
+        const r=root.getBoundingClientRect(),s=getComputedStyle(root);
+        return {x:r.x,y:r.y,w:r.width,h:r.height,opacity:s.opacity,position:s.position,viewport:[innerWidth,innerHeight],scroll:root.scrollHeight>root.clientHeight+1,docHeight:document.documentElement.scrollHeight,bodyHeight:document.body.scrollHeight,scrollY:window.scrollY,legacyHeader:getComputedStyle(document.querySelector('header.top')).display};
+      });
+      assert.ok(Math.abs(geometry.x)<=1&&Math.abs(geometry.y)<=1&&Math.abs(geometry.w-geometry.viewport[0])<=1&&Math.abs(geometry.h-geometry.viewport[1])<=1&&geometry.opacity==='1'&&geometry.position==='fixed'&&!geometry.scroll&&geometry.docHeight<=geometry.viewport[1]+1&&geometry.bodyHeight<=geometry.viewport[1]+1&&geometry.scrollY===0&&geometry.legacyHeader==='none','campaign full viewport '+JSON.stringify(geometry));
+    };
+    await assertCampaignRoot();
+    const beforeCampaign=await run('JSON.stringify(S.cleared)');
+    const r31Audit=await page.evaluate(async()=>{
+      const root=document.querySelector('.c31-root'),style=getComputedStyle(root);
+      const keys=['chapter','console','dossier','frame','pin-boss','pin-locked','pin-next','pin-passed','pin-selected','portal-L','portal-D','portal-C','reward-seat'];
+      const decoded=await Promise.all(keys.map(async k=>{
+        const url=style.getPropertyValue('--c31-'+k).trim().match(/^url\(["']?(.*?)["']?\)$/)?.[1];
+        if(!url)return false;
+        const img=new Image();img.src=url;try{await img.decode();return img.naturalWidth>0}catch{return false}
+      }));
+      return {decoded,portalCount:root.querySelectorAll('.c20-cover').length,wallet:root.querySelectorAll('.c31-wallet button').length};
+    });
+    assert.equal(r31Audit.portalCount,3);
+    assert.equal(r31Audit.wallet,4);
+    assert.ok(r31Audit.decoded.every(Boolean),'all approved R3.1 assets decode: '+JSON.stringify(r31Audit));
+    // The guaranteed reward preview must not consume RNG or duplicate the
+    // victory formula; validate all 210 IDs against the existing function.
+    assert.equal(await run(`(()=>{const original=Math.random;try{Math.random=()=>.5;const expected=NODES.map((_,i)=>{const {sol,pl,folio}=campReward(i,3,true);return {sol,pl,folio}});Math.random=()=>{throw Error('preview consumed RNG')};return JSON.stringify(expected)===JSON.stringify(NODES.map((_,i)=>campRewardBase(i,3)))}finally{Math.random=original}})()`),true);
     const covers=await page.evaluate(async()=>{
-      const images=[...document.querySelectorAll('.c20-cover')].map(e=>getComputedStyle(e).backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1]);
+      const images=[...document.querySelectorAll('.c31-cover-art')].map(e=>getComputedStyle(e).backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1]);
       return Promise.all(images.map(async src=>{if(!src)return false;const i=new Image();i.src=src;try{await i.decode();return i.naturalWidth>0}catch{return false}}));
     });
-    assert.deepEqual(covers,[true,true],'both immutable cover artworks decode');
+    assert.deepEqual(covers,[true,true,true],'three immutable cover artworks decode');
+    await click('[data-c20="dark"]');
+    await page.waitForSelector('.campaign20-canvas',{visible:true,timeout:35000});
+    assert.equal(await run('S.campTab'),'D');
+    await assertCampaignRoot();
+    await click('[data-c20="home"]');
     await click('[data-c20="story"]');
     await page.waitForSelector('.campaign20-canvas',{visible:true,timeout:35000});
     await page.waitForFunction(()=>document.querySelector('#c20world')?.classList.contains('campaign20-3d-ready'),{timeout:35000});
     await page.evaluate(()=>{window.__gfx05Canvas=document.querySelector('.campaign20-canvas')});
     await expeditionShot('light-map','.c20-map');
+    await assertCampaignRoot();
+    const campaignLayout=await page.evaluate(()=>{
+      const root=document.querySelector('.c31-root'),world=root.querySelector('.c20-world'),card=root.querySelector('.c20-card');
+      const fit=e=>{const r=e.getBoundingClientRect();return r.left>=-1&&r.right<=innerWidth+1&&r.top>=-1&&r.bottom<=innerHeight+1};
+      const controls=[...root.querySelectorAll('.c20-head button,.c20-chapbar button,.c20-card button')];
+      const pins=[...world.querySelectorAll('.c20-pin')].filter(e=>getComputedStyle(e).visibility==='visible');
+      const w=world.getBoundingClientRect(),c=card.getBoundingClientRect();
+      return {fits:controls.every(fit),targets:controls.every(e=>e.getBoundingClientRect().height>=39),wide:w.width>=innerWidth*.85,joined:Math.abs(w.bottom-c.top)<=2,rewardCount:card.querySelectorAll('.c31-reward').length,pins:pins.length,pinArt:pins.every(e=>getComputedStyle(e).backgroundImage.includes('pin-')),scroll:document.documentElement.scrollHeight<=innerHeight+1};
+    });
+    assert.ok(campaignLayout.fits&&campaignLayout.targets&&campaignLayout.wide&&campaignLayout.joined&&campaignLayout.rewardCount===4&&campaignLayout.pins>0&&campaignLayout.pinArt&&campaignLayout.scroll,JSON.stringify(campaignLayout));
     await click('[data-c20="chapters"]');
     await expeditionShot('chapter-picker','.c20-picker');
     await click('[data-c20chapter="0"]');
@@ -727,8 +767,10 @@ try{
     await page.waitForSelector('.campaign20-canvas',{visible:true,timeout:35000});
     await expeditionShot('chron-map','.c20-map');
     await click('[data-c20="home"]');
+    assert.equal(await run('JSON.stringify(S.cleared)'),beforeCampaign,'campaign navigation must not mutate progress');
     await click('.c20-head [data-v="lobby"]');
     await run("set_view('raid');render()");
+    assert.notEqual(await page.$eval('header.top',e=>getComputedStyle(e).display),'none','campaign shell isolation must release on exit');
     await expeditionShot('raid','#view[data-gfx-view="raid"]');
     await run("set_view('legend');render()");
     await expeditionShot('legend','#view[data-gfx-view="legend"]');

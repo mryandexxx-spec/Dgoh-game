@@ -3,12 +3,12 @@
 import { S } from '../../core/state.js';
 import { CAMP_DEF, CAMP_KEYS, NODES, ROM7, campNodes, chapNodes, nodeOpen, nodeCost, nodeEn } from '../../data/campaigns.js';
 import { chapterMap, nextCampaignNode } from '../../logic/campaign-map.js';
-import { campReward, enemyProg, CRY_WIN } from '../../logic/economy.js';
-import { reqText, enGet, nodePower, campSquad, prog, sideOk } from '../../logic/progress.js';
+import { campReward, campRewardBase, enemyProg, CRY_WIN } from '../../logic/economy.js';
+import { reqText, enGet, nodePower, campSquad, prog, sideOk, getRes } from '../../logic/progress.js';
 import { ITEMS, NODE_ITEMS, COMPLETE_NODE_ITEMS, COMPLETE_RATE, TIER_COL } from '../../logic/gear.js';
 import { unitPower } from '../../logic/battle/stats.js';
 import { CH } from '../../data/chars.js';
-import { fmt, amt } from '../../core/format.js';
+import { fmt, amt, ic } from '../../core/format.js';
 import { portrait } from '../../render2d/figures.js';
 import { starStr, itemIcon } from '../common.js';
 import { mountCampaignMap, focusCampaignNode, closeCampaignMap } from '../../render3d/scenes/campaign-map.js';
@@ -20,8 +20,7 @@ const esc = x => String(x ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&l
 export function campaign20Action(d) {
   if (d.c20legacy) { legacy=true;return true; }
   if (d.c20 === 'home') { page='home'; detail=false;chapterPicker=false; return true; }
-  if (d.c20 === 'story') { page='map';S.campTab=S.campTab==='D'?'D':'L';detail=false;return true; }
-  if (d.c20 === 'chron') { page='map';S.campTab='C';detail=false;return true; }
+  if (['story','dark','chron'].includes(d.c20)) { page='map';S.campTab=({story:'L',dark:'D',chron:'C'})[d.c20];selected=null;detail=false;chapterPicker=false;return true; }
   if (d.c20 === 'back') { detail=false;chapterPicker=false;return true; }
   if (d.c20 === 'detail') { detail=true;tab='story';rewardPage=0;storyPage=0;return true; }
   if (d.c20 === 'chapters') { chapterPicker=!chapterPicker;return true; }
@@ -36,17 +35,22 @@ export function campaign20Action(d) {
 }
 export function campaign20Start() { closeCampaignMap(); page='home';legacy=false;selected=null;detail=false;chapterPicker=false; }
 export function campaign20Legacy() { closeCampaignMap(); legacy=true;detail=false;chapterPicker=false; }
+// R3.1 presentation only: exact approved material assets, immutable asset URLs.
+const resourceHeader=()=>`<div class="c31-wallet">${[['water','Вода',enGet('water')],['candle','Огни хроник',enGet('candle')],['sol','Солярии',getRes('sol')],['cry','Камни Су',getRes('cry')]].map(([k,n,v])=>`<button data-info="${k}" aria-label="${n}: ${fmt(v)}">${ic(k)}<span><small>${n}</small><b>${fmt(v)}</b></span></button>`).join('')}</div>`;
+const campaignHead=home=>`<div class="c20-head"><button class="c20-back" ${home?'data-v="lobby"':'data-c20="home"'} aria-label="${home?'В лагерь':'К выбору кампании'}">‹</button><h1>Кампания</h1>${resourceHeader()}</div>`;
+const sideTabs=ck=>`<div class="c20-sides" role="group" aria-label="Направление кампании">${[['L','Светлые','light'],['D','Тёмные','dark'],['C','Хроники','chron']].map(([key,label,cls])=>`<button data-c20side="${key}" aria-pressed="${ck===key}" class="${ck===key?'on '+cls:''}">${label}</button>`).join('')}</div>`;
 function homeHtml(){
   const completed=ck=>campNodes(ck).filter(i=>!!S.cleared[i]).length;
-  return `<div class="c20 c20-home">
-    <div class="c20-head"><button data-v="lobby">‹ Лагерь</button><span class="c20-crumb">АРХИВ ИМПЕРИУМА / КАМПАНИИ</span></div>
-    <div class="c20-choices">
-      <button class="c20-cover c20-cover-story" data-c20="story" aria-label="Открыть сюжет">
-        <span class="c20-art c20-sun">✦</span><span class="c20-copy"><strong>СЮЖЕТ</strong><span>Путь Атрейдесов и интриги Харконненов</span><small>Светлые / Тёмные · вода · ${completed('L')+completed('D')}/140 миссий</small></span>
-      </button>
-      <button class="c20-cover c20-cover-chron" data-c20="chron" aria-label="Открыть хроники">
-        <span class="c20-art c20-moon">✧</span><span class="c20-copy"><strong>ХРОНИКИ</strong><span>Забытые эпохи и великие войны</span><small>Все герои · Огни Хроник · ${completed('C')}/70 миссий</small></span>
-      </button>
+  return `<div class="c20 c31-root c20-home">${campaignHead(true)}
+    <div class="c31-home-nav" role="heading" aria-level="2">Кампании</div>
+    <div class="c20-choices">${[
+      ['L','story','Светлая сторона','Путь Дома Атрейдесов','water'],
+      ['D','dark','Тёмная сторона','Интриги Харконненов','water'],
+      ['C','chron','Хроники','Забытые эпохи и великие войны','candle']
+    ].map(([ck,action,title,subtitle,en])=>`<button class="c20-cover c20-cover-${action}" data-cover="${ck}" data-c20="${action}" aria-label="${title}">
+      <span class="c31-cover-art" aria-hidden="true"></span><span class="c20-copy"><strong>${title}</strong><span>${subtitle}</span>
+      <span class="c31-cover-progress"><span style="width:${completed(ck)/70*100}%"></span></span>
+      <small><span>${ic(en)} ${completed(ck)}/70 миссий</span><b>Открыть ›</b></small></span></button>`).join('')}
     </div>
   </div>`;
 }
@@ -119,23 +123,25 @@ function mapHtml(setSel){
   const chosen=nodes.includes(selected)?selected:map?(nextCampaignNode(map)?.id??nodes[0]):(nodes.find(i=>!S.cleared[i])??nodes.at(-1));
   selected=chosen;
   const n=NODES[chosen],stars=S.cleared[chosen]||0,open=nodeOpen(chosen),cost=nodeCost(chosen),en=nodeEn(chosen);
-  const side=ck!=='C'?`<span class="c20-sides"><button class="${ck==='L'?'on light':''}" data-c20side="L">Светлые</button><button class="${ck==='D'?'on dark':''}" data-c20side="D">Тёмные</button></span>`:'';
-  const picker=chapterPicker?`<div class="c20-picker">${chapters.map((ch,j)=>`<button data-c20chapter="${j}" ${nodeOpen(chapNodes(ck,j)[0])?'':'disabled'} class="${j===c?'on':''}">${ROM7[j]} · ${esc(ch.t)}</button>`).join('')}</div>`:'';
+  const side=sideTabs(ck);
+  const picker=chapterPicker?`<div class="c20-picker" role="group" aria-label="Выбор главы">${chapters.map((ch,j)=>`<button data-c20chapter="${j}" ${nodeOpen(chapNodes(ck,j)[0])?'':'disabled'} class="${j===c?'on':''}">${ROM7[j]} · ${esc(ch.t)}</button>`).join('')}</div>`:'';
   const markers=map?map.nodes.map(p=>`<button class="c20-pin ${p.open?'':'locked'} ${p.boss?'boss':''} ${p.stars?'passed':''} ${p.id===selected?'on':''}"
-    style="--px:${map.preset.theme==='broken-seal'?(p.x+72)/144*100:map.preset.theme==='shield-wall-scar'?(p.x+80)/160*100:map.preset.theme==='imperial-salt'?(p.x+74)/152*100:map.preset.theme==='empty-harvest'?(p.x+70)/148*100:map.preset.theme==='sietch-water'?(p.x+65)/145*100:map.preset.theme==='escape-rift'?(p.x+66)/132*100:map.preset.theme==='sandworms-rebirth'?(p.x+62)/120*100:map.preset.theme==='corrin-siege'?(p.x+68)/140*100:map.preset.theme==='machine-crusade'?(p.x+72)/144*100:map.preset.theme==='butlerian-jihad'?(p.x+63)/128*100:map.preset.theme==='corrino-chronicles'?(p.x+57)/114*100:(p.x+28)/56*100}%;--py:${map.preset.theme==='broken-seal'?(p.z+34)/69*100:map.preset.theme==='shield-wall-scar'?(p.z+41)/88*100:map.preset.theme==='imperial-salt'?(p.z+32)/73*100:map.preset.theme==='empty-harvest'?(p.z+38)/74*100:map.preset.theme==='sietch-water'?(p.z+38)/70*100:map.preset.theme==='escape-rift'?(p.z+27)/60*100:map.preset.theme==='sandworms-rebirth'?(p.z+40)/82*100:map.preset.theme==='corrin-siege'?(p.z+30)/72*100:map.preset.theme==='machine-crusade'?(p.z+25)/57*100:map.preset.theme==='butlerian-jihad'?(p.z+25)/58*100:map.preset.theme==='corrino-chronicles'?(p.z+27)/59*100:(p.z+18)/36*100}%"
+    aria-pressed="${p.id===selected}" style="--px:${map.preset.theme==='broken-seal'?(p.x+72)/144*100:map.preset.theme==='shield-wall-scar'?(p.x+80)/160*100:map.preset.theme==='imperial-salt'?(p.x+74)/152*100:map.preset.theme==='empty-harvest'?(p.x+70)/148*100:map.preset.theme==='sietch-water'?(p.x+65)/145*100:map.preset.theme==='escape-rift'?(p.x+66)/132*100:map.preset.theme==='sandworms-rebirth'?(p.x+62)/120*100:map.preset.theme==='corrin-siege'?(p.x+68)/140*100:map.preset.theme==='machine-crusade'?(p.x+72)/144*100:map.preset.theme==='butlerian-jihad'?(p.x+63)/128*100:map.preset.theme==='corrino-chronicles'?(p.x+57)/114*100:(p.x+28)/56*100}%;--py:${map.preset.theme==='broken-seal'?(p.z+34)/69*100:map.preset.theme==='shield-wall-scar'?(p.z+41)/88*100:map.preset.theme==='imperial-salt'?(p.z+32)/73*100:map.preset.theme==='empty-harvest'?(p.z+38)/74*100:map.preset.theme==='sietch-water'?(p.z+38)/70*100:map.preset.theme==='escape-rift'?(p.z+27)/60*100:map.preset.theme==='sandworms-rebirth'?(p.z+40)/82*100:map.preset.theme==='corrin-siege'?(p.z+30)/72*100:map.preset.theme==='machine-crusade'?(p.z+25)/57*100:map.preset.theme==='butlerian-jihad'?(p.z+25)/58*100:map.preset.theme==='corrino-chronicles'?(p.z+27)/59*100:(p.z+18)/36*100}%"
     data-c20node="${p.id}" title="${esc(p.title)}" aria-label="Миссия ${p.number}: ${esc(p.title)}">
     <b>${p.number}</b><small>${p.stars?'★'.repeat(p.stars):p.open?'◆':'⌑'}</small></button>`).join(''):'';
   const old=map?'':`<p class="c20-pending">3D-карта этой главы пока готовится. Можно продолжать играть через прежнюю кампанию.</p><button class="btn" data-c20legacy="1">Открыть классическую карту</button>`;
   const enough=enGet(en)>=cost;
+  const reward=campRewardBase(chosen,3);
+  const rewardTiles=[['sol',reward.sol,'Солярии'],['pl',reward.pl,'Пласталь'],['folio',reward.folio,'Фолианты'],...(ck==='C'?[['rid','8–15','Ридулиан']]:[]),['cry',CRY_WIN,'Камни Су']].map(([key,value,label])=>`<span class="c31-reward" data-info="${key}" title="${label}">${ic(key)}<b>${typeof value==='number'?fmt(value):value}</b></span>`).join('');
   const actions=open?`<button class="btn go ${enough?'':'lack'}" data-node="${chosen}">В бой <small>${amt(en,cost)}</small></button>
     ${stars===3?`<button class="btn ${enough?'':'lack'}" data-sim="${chosen}">Симуляция <small>${amt(en,cost)}</small></button>`:'<span class="c20-locked">Симуляция после 3★</span>'}`:
     '<span class="c20-locked">Сначала пройдите предыдущую миссию</span>';
-  const html=`<div class="c20 c20-map">
-    <div class="c20-head"><button class="c20-back" data-c20="home">‹ ${ck==='C'?'Хроники':'Сюжет'}</button>${side}<span class="c20-progress">★ ${nodes.reduce((a,i)=>a+(S.cleared[i]||0),0)}/30</span></div>
-    <div class="c20-chapbar"><button data-c20dir="-1" aria-label="Предыдущая глава">‹</button><button data-c20="chapters">ГЛАВА ${ROM7[c]} · ${esc(chapters[c].t)} ⌄</button><button data-c20dir="1" aria-label="Следующая глава">›</button></div>
+  const html=`<div class="c20 c31-root c20-map">
+    ${campaignHead(false)}
+    <div class="c20-chapbar">${side}<div class="c31-chapters"><button data-c20dir="-1" aria-label="Предыдущая глава" ${c===0?'disabled':''}>‹</button><button data-c20="chapters"><span><small>Глава ${ROM7[c]}</small><strong>${esc(chapters[c].t)}</strong></span><b>★ ${nodes.reduce((a,i)=>a+(S.cleared[i]||0),0)}/30 ⌄</b></button><button data-c20dir="1" aria-label="Следующая глава" ${c===6||!nodeOpen(chapNodes(ck,c+1)[0])?'disabled':''}>›</button></div></div>
     ${picker}
     <div class="c20-world ${map?map.preset.theme:'no-map'}" id="c20world">${markers}${old}${map?'<button class="c20-recenter" data-c20focus="1" aria-label="Центрировать текущую миссию" title="К текущей миссии">◎</button>':''}</div>
-    <div class="c20-card"><div><strong>${n.m+1}. ${esc(n.n)}</strong><small>Ур. ${n.lvl} · ${starStr(stars,3)}</small></div><button class="btn" data-c20="detail">Подробнее</button><div class="c20-card-actions">${actions}</div></div>
+    <div class="c20-card"><div class="c31-mission"><small>Миссия ${ROM7[c]}–${n.m+1} · Ур. ${n.lvl}</small><div class="c31-title"><strong>${esc(n.n)}</strong><button class="btn" data-c20="detail" aria-label="Подробнее о миссии">Подробнее</button></div><small>${starStr(stars,3)} · ${open?(stars?'Пройдена':'Доступна'):'Закрыта'}</small></div><div class="c31-rewards"><small>За победу на 3★</small><div>${rewardTiles}</div></div><div class="c20-card-actions">${actions}</div></div>
     ${modalHtml(ck,n,chosen)}
   </div>`;
   return {html,map,chosen};
@@ -161,8 +167,9 @@ export function renderCampaign20(setSel) {
     const oldSelection=current.querySelector('.c20-pin.on')?.dataset.c20node;
     for(const selector of ['.c20-head','.c20-chapbar','.c20-card','.c20-picker','.c20-modal'])
       replacePart(current,fresh,selector);
-    for(const pin of current.querySelectorAll('.c20-pin'))
-      pin.classList.toggle('on',Number(pin.dataset.c20node)===chosen);
+    for(const pin of current.querySelectorAll('.c20-pin')) {
+      const on=Number(pin.dataset.c20node)===chosen;pin.classList.toggle('on',on);pin.setAttribute('aria-pressed',String(on));
+    }
     if(Number(oldSelection)!==chosen)focusCampaignNode(chosen);
     return true;
   }

@@ -248,3 +248,139 @@ body:has(.c20) #notes{display:none!important;}
   clip-path:polygon(0 30%,16% 35%,25% 5%,31% 65%,40% 20%,52% 76%,61% 15%,75% 56%,100% 12%,100% 100%,0 100%);
   pointer-events:none
 }
+
+
+/* GLOBAL-REWORK/CAMPAIGN — approved R3.1. Presentation only.
+   Keep the real canvas, camera, projection, mission IDs and dispatch attributes. */
+/* The fixed campaign owns its header. Remove the hidden legacy shell from
+   document flow (main's default block padding and sticky header can overflow
+   the viewport). Scope to the mounted R3.1 root so other modes are untouched. */
+html:has(body > #view > .c31-root),body:has(> #view > .c31-root){height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
+body:has(> #view > .c31-root)>header.top,body:has(> #view > .c31-root)>.appver{display:none}
+#view:has(>.c31-root){box-sizing:border-box;width:100%;height:100dvh;min-height:0;max-width:none;padding:0;margin:0;overflow:hidden}
+.c20.c31-root{background:#201e19;color:#f7f1e8;font:400 12px 'Dune Inter',Inter,Arial,sans-serif;gap:0;padding:max(0px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+.c20.c31-root *,.c20.c31-root *:before,.c20.c31-root *:after{box-sizing:border-box}
+.c20.c31-root button{font-family:inherit;min-width:0;cursor:pointer}
+.c20.c31-root button:disabled{opacity:.42;cursor:default}
+.c20.c31-root .c20-head{flex:0 0 44px;gap:8px;min-width:0;padding:0 5px;background:linear-gradient(90deg,#22231e,#2e2a21);border-bottom:1px solid #806a47}
+.c20.c31-root .c20-head h1{font:400 25px/1 Georgia,serif;color:#f3e4ca;white-space:nowrap;margin:0}
+.c20.c31-root .c20-head>.c20-back{flex:0 0 44px;width:44px;height:40px;padding:0;margin:0;border:1px solid #806a47;background:#27251e;box-shadow:none;border-radius:3px;font:400 28px/1 Georgia,serif}
+.c20.c31-root .c31-wallet{display:flex;align-items:center;margin-left:auto;justify-content:flex-end;gap:10px;min-width:0}
+.c20.c31-root .c31-wallet button{display:flex;align-items:center;gap:3px;background:none;border:0;box-shadow:none;text-align:left;padding:0 2px;height:44px;color:#f7f1e8}
+.c20.c31-root .c31-wallet .ico{width:24px;height:24px;flex:none}
+.c20.c31-root .c31-wallet small{display:block;color:#bdb4a4;font-size:9px;white-space:nowrap}
+.c20.c31-root .c31-wallet b{font-size:13px;font-weight:650;white-space:nowrap;font-variant-numeric:tabular-nums}
+.c20.c31-root .c31-home-nav{height:44px;display:grid;place-items:center;flex:none;border-bottom:1px solid #806a4777;background:#282820;color:#e8c99a;font-size:13px;font-weight:650;position:relative}
+.c20.c31-root .c31-home-nav:after{content:'';position:absolute;bottom:0;width:90px;height:3px;background:#d7b57d;clip-path:polygon(0 34%,44% 34%,50% 0,56% 34%,100% 34%,100% 100%,0 100%)}
+.c20.c31-root .c20-choices{padding:9px 7px 4px;gap:12px;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
+.c20.c31-root .c20-cover{position:relative;display:block;min-width:0;min-height:0;overflow:visible;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;isolation:isolate;text-align:left}
+.c20.c31-root .c31-cover-art{position:absolute;inset:5px 12px 52px;background:var(--c31-cover-L) center/cover no-repeat;clip-path:polygon(0 26%,5% 13%,15% 5%,32% 0,68% 0,85% 5%,95% 13%,100% 26%,100% 100%,0 100%);filter:saturate(.87) contrast(1.05);z-index:0}
+.c20.c31-root .c20-cover[data-cover=D] .c31-cover-art{background-image:var(--c31-cover-D);clip-path:polygon(0 15%,9% 0,91% 0,100% 15%,100% 100%,0 100%);filter:saturate(.88) contrast(1.09)}
+.c20.c31-root .c20-cover[data-cover=C] .c31-cover-art{background-image:var(--c31-cover-C);clip-path:polygon(0 12%,8% 0,92% 0,100% 12%,100% 100%,0 100%)}
+.c20.c31-root .c20-cover:before{content:'';position:absolute;inset:0 0 42px;border:0;opacity:1;background:var(--c31-portal-L) center/100% 100% no-repeat;z-index:1;pointer-events:none;filter:drop-shadow(3px 4px 3px #000b)}
+.c20.c31-root .c20-cover[data-cover=D]:before{background-image:var(--c31-portal-D)}
+.c20.c31-root .c20-cover[data-cover=C]:before{background-image:var(--c31-portal-C)}
+.c20.c31-root .c20-cover:after{content:'';position:absolute;inset:auto 2px 0;height:12px;background:var(--c31-base) center/100% 100% no-repeat;z-index:3;pointer-events:none;filter:drop-shadow(0 3px 3px #0008)}
+.c20.c31-root .c20-cover .c20-copy{position:absolute;z-index:2;inset:auto 2px 8px;max-width:none;display:grid;gap:4px;padding:8px 12px 10px;background:linear-gradient(180deg,#302c23,#24221c 16%,#201e19 88%,#171611);box-shadow:0 -4px 7px #0008,inset 0 1px #8a79594d;text-shadow:none}
+.c20.c31-root .c20-cover .c20-copy:before{content:'';position:absolute;inset:-3px 0 auto;height:6px;background:var(--c31-base) center/100% 100% no-repeat}
+.c20.c31-root .c20-cover[data-cover=D] .c20-copy{background:linear-gradient(180deg,#34332e,#262521 18%,#201e19 90%)}
+.c20.c31-root .c20-cover .c20-copy strong{font:400 23px/1.05 Georgia,serif;color:#f3e4ca;letter-spacing:0;white-space:normal;overflow-wrap:anywhere}
+.c20.c31-root .c20-copy>span:not(.c31-cover-progress){font:400 10px/1.2 'Dune Inter',Inter,Arial,sans-serif;color:#c7bcaa}
+.c20.c31-root .c20-copy small{display:flex;align-items:center;justify-content:space-between;gap:3px;font:400 11px/1 'Dune Inter',Inter,Arial,sans-serif;letter-spacing:0;color:#e8c99a}
+.c20.c31-root .c20-copy small>span{display:flex;align-items:center;gap:2px;white-space:nowrap;font-size:10px}
+.c20.c31-root .c20-copy small .ico{width:16px;height:16px}
+.c20.c31-root .c20-copy small>b{font-weight:650;white-space:nowrap}
+.c20.c31-root .c31-cover-progress{height:4px;background:#13120f;box-shadow:inset 0 1px 2px #000;overflow:hidden}
+.c20.c31-root .c31-cover-progress>span{height:100%;display:block;background:#bfa16b}
+.c20.c31-root .c20-cover:active .c31-cover-art{filter:brightness(.85)}
+/* One combined navigation tier, as in R3.1. */
+.c20.c31-root .c20-chapbar{display:flex;align-items:stretch;flex:0 0 44px;min-height:0;gap:3px;padding:0 2px;border-bottom:1px solid #806a4777;background:#282820}
+.c20.c31-root .c20-sides{display:flex;flex:0 0 42%;min-width:0;gap:0;align-items:stretch}
+.c20.c31-root .c20-sides button{position:relative;flex:1;min-width:0;border:0;border-radius:0;box-shadow:none;background:none;padding:0 3px;font-size:12px;font-weight:500;letter-spacing:0;color:#c4beb2}
+.c20.c31-root .c20-sides button.on{font-weight:650;color:#f4e8d1;background:none}
+.c20.c31-root .c20-sides button.on:after{content:'';position:absolute;bottom:0;left:15%;right:15%;height:3px;background:#d7b57d;clip-path:polygon(0 34%,44% 34%,50% 0,56% 34%,100% 34%,100% 100%,0 100%)}
+.c20.c31-root .c20-sides button.on.light:after{background:#79b9e8}
+.c20.c31-root .c20-sides button.on.dark:after{background:#cf7061}
+.c20.c31-root .c31-chapters{flex:1;min-width:0;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:2px;padding:0 0 0 4px}
+.c20.c31-root .c31-chapters>button{height:44px;border:0;border-radius:0;background:var(--c31-slab) center/100% 100% no-repeat;font-size:24px;padding:0;box-shadow:none}
+.c20.c31-root .c31-chapters>button[data-c20=chapters]{display:flex;justify-content:space-between;align-items:center;gap:5px;padding:0 8px;background:var(--c31-chapter) center/100% 100% no-repeat;color:#f3e4ca;text-align:left}
+.c20.c31-root .c31-chapters>button[data-c20=chapters]>span{display:flex;flex-direction:column;min-width:0;line-height:1.04}
+.c20.c31-root .c31-chapters strong{font:400 18px/1.05 Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c20.c31-root .c31-chapters small{font-size:9px;color:#c8b798}
+.c20.c31-root .c31-chapters b{flex:none;font-size:12px;color:#e6c997}
+.c20.c31-root .c20-picker{top:calc(max(0px,env(safe-area-inset-top)) + 89px);left:15%;right:15%;grid-template-columns:repeat(2,minmax(0,1fr));max-height:calc(100% - 115px);overflow-y:auto;overscroll-behavior:contain;border:8px solid transparent;border-image:var(--c31-dossier) 24 fill / 8px / 0 stretch;background:#24221c;border-radius:0;gap:4px;padding:5px}
+.c20.c31-root .c20-picker button{min-height:44px;border:0;border-radius:0;background:var(--c31-slab) center/100% 100% no-repeat;box-shadow:none;white-space:normal;line-height:1.15;padding:5px}
+.c20.c31-root .c20-picker button.on{color:#f3e4ca;box-shadow:inset 0 -2px #d7b57d}
+.c20.c31-root .c20-world{margin:4px 0 0;border:5px solid transparent;border-image:var(--c31-frame) 23 / 5px / 0 stretch;border-radius:0;min-height:0;box-shadow:inset 0 0 8px #0008}
+/* Keep the renderer's original 50/60px collision diameters. Artwork is painted
+   inside the actual label bounds, not a second map or unprojected overlay. */
+.c20.c31-root .c20-world .c20-pin{background:var(--c31-pin-next) center/100% 100% no-repeat;border:0;border-radius:0;box-shadow:none;filter:drop-shadow(1px 3px 2px #000a);width:50px;height:50px;gap:1px}
+.c20.c31-root .c20-world .c20-pin.passed{background-image:var(--c31-pin-passed)}
+.c20.c31-root .c20-world .c20-pin.locked{background-image:var(--c31-pin-locked)}
+.c20.c31-root .c20-world .c20-pin.boss{width:60px;height:60px;background-image:var(--c31-pin-boss)}
+.c20.c31-root .c20-world .c20-pin.on:not(.locked):not(.boss){background-image:var(--c31-pin-selected)}
+.c20.c31-root .c20-world .c20-pin.on{filter:drop-shadow(0 0 3px #d9c393) drop-shadow(1px 3px 2px #000a)}
+.c20.c31-root .c20-world .c20-pin.locked.boss{filter:grayscale(.85) drop-shadow(1px 3px 2px #000a)}
+.c20.c31-root .c20-world .c20-pin.locked.boss.on{filter:grayscale(.85) drop-shadow(0 0 3px #d9c393)}
+.c20.c31-root .c20-pin b{font:600 19px/1 Georgia,serif;color:#f8eed5;text-shadow:0 2px 1px #000}
+.c20.c31-root .c20-pin small{font:500 9px/1 'Dune Inter',Inter,Arial,sans-serif;color:#e3c180;text-shadow:0 1px 1px #000}
+.c20.c31-root .c20-pin.locked :is(b,small){color:#c1bdb1}
+.c20.c31-root .c20-recenter{width:44px;height:44px;border:0;border-radius:0;background:var(--c31-slab) center/100% 100% no-repeat;color:#f7f1e8;box-shadow:0 2px 5px #0008}
+/* The exact R3.1 console joins the map's lower rim. */
+.c20.c31-root .c20-card{position:relative;isolation:isolate;flex:0 0 91px;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1.23fr);grid-template-rows:minmax(0,1fr);align-items:stretch;gap:7px;padding:12px 10px 10px;border:0;border-radius:0;background:var(--c31-console) center/100% 100% no-repeat;box-shadow:0 3px 5px #0008;min-height:0}
+.c20.c31-root .c31-mission{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:2px;min-width:0;padding-left:4px}
+.c20.c31-root .c31-mission>small{font:400 10px/1.1 'Dune Inter',Inter,Arial,sans-serif;color:#d4be98}
+.c20.c31-root .c31-title{display:flex;align-items:center;gap:5px;min-width:0;min-height:0}
+.c20.c31-root .c31-title strong{flex:1;min-width:0;font:400 19px/1.03 Georgia,serif;letter-spacing:0;color:#fff0d6;white-space:normal;overflow-wrap:anywhere;overflow:visible}
+.c20.c31-root .c31-title button{min-height:44px;flex:none;padding:0 5px;font-size:10px}
+.c20.c31-root .c31-rewards{display:flex;flex-direction:column;justify-content:center;min-width:0;min-height:0;padding:0 5px;background:linear-gradient(180deg,#191915,#2b2921 63%,#171711);box-shadow:inset 0 2px 6px #000a,inset 0 0 0 1px #76634588;clip-path:polygon(3% 0,97% 0,100% 9%,100% 91%,97% 100%,3% 100%,0 91%,0 9%)}
+.c20.c31-root .c31-rewards>small{font-size:9px;text-align:center;color:#ddc8a4;font-weight:600;white-space:nowrap}
+.c20.c31-root .c31-rewards>div{display:flex;align-items:end;justify-content:center;gap:1px;min-width:0}
+.c20.c31-root .c31-reward{position:relative;isolation:isolate;display:grid;justify-items:center;grid-template-rows:35px auto;flex:1;min-width:0}
+.c20.c31-root .c31-reward:before{content:'';position:absolute;inset:10px 0 9px;background:var(--c31-reward-seat) center bottom/100% 100% no-repeat;z-index:-1}
+.c20.c31-root .c31-reward .ico{width:35px;height:35px;max-width:100%;filter:drop-shadow(0 3px 2px #000d)}
+.c20.c31-root .c31-reward b{font-size:11px;line-height:1.1;white-space:nowrap;color:#f7efdf;text-shadow:0 1px 2px #000}
+.c20.c31-root .c20-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-column:auto;align-content:center;align-items:center;gap:4px;min-width:0}
+.c20.c31-root .c20-card-actions:has(>.c20-locked:only-child){grid-template-columns:1fr}
+.c20.c31-root .c20-card .btn{min-width:0;min-height:44px;padding:0 4px;border:0;border-radius:0;box-shadow:none;background:var(--c31-slab) center/100% 100% no-repeat;color:#f7f1e8;white-space:nowrap;font-size:11px;line-height:1.1}
+.c20.c31-root .c20-card .btn.go:not(.lack){background:var(--c31-primary) center/100% 100% no-repeat;color:#211d16;font-weight:650}
+.c20.c31-root .c20-card .btn[data-sim]:not(.lack){color:#b8d5cf}
+.c20.c31-root .c20-card .btn.lack{color:#e5a89a}
+.c20.c31-root .c20-card-actions .btn small{display:block;color:inherit;font-size:10px;line-height:1.1}
+.c20.c31-root .c20-card-actions .btn .amt{display:inline-flex;align-items:center;gap:2px;white-space:nowrap}
+.c20.c31-root .c20-card-actions .btn .ico{width:17px;height:17px}
+.c20.c31-root .c20-locked{max-width:none;line-height:1.2;font-size:11px;text-align:center;color:#cbbba2;overflow-wrap:anywhere}
+/* Dossier: real reward/foe/plot content and existing actions, not demo markup. */
+.c20.c31-root .c20-dialog{display:grid;width:min(580px,97%);height:min(294px,100%);grid-template-rows:44px 44px minmax(0,1fr);gap:0;padding:2px 6px 6px;border:8px solid transparent;border-image:var(--c31-dossier) 24 fill / 8px / 0 stretch;border-radius:0;background:#292720;box-shadow:0 12px 30px #000d}
+.c20.c31-root .c20-dialog header{min-width:0;padding:0 3px 0 8px;background:linear-gradient(180deg,#40392a66,#27241d22);box-shadow:inset 0 -2px 0 #1615118f;border-bottom:1px solid #8e765a}
+.c20.c31-root .c20-dialog header strong{font:400 21px/1.1 Georgia,serif;color:#f3e4ca}
+.c20.c31-root .c20-dialog header .btn{width:44px;height:44px;padding:0;border:0;border-radius:0;background:var(--c31-slab) center/100% 100% no-repeat;box-shadow:none}
+.c20.c31-root .c20-dialog nav{display:flex;gap:0;background:#24221c9c;box-shadow:inset 0 -1px 0 #75634588}
+.c20.c31-root .c20-dialog nav button{border:0;border-radius:0;box-shadow:none;background:transparent;min-height:44px;font-size:12px;position:relative}
+.c20.c31-root .c20-dialog nav button.on{background:linear-gradient(180deg,transparent,#72604333);color:#fff1d7;box-shadow:inset 0 -2px #d7b57d}
+.c20.c31-root .c20-dialog section{padding:6px 8px;gap:4px;min-height:0;overflow-y:auto;overscroll-behavior:contain;background:linear-gradient(130deg,#17171144,transparent 70%);box-shadow:inset 0 1px 5px #0006}
+.c20.c31-root .c20-storytext{flex:1 0 auto;overflow:visible;max-height:none;font-size:13px;line-height:1.35}
+.c20.c31-root .c20-dialog .c20-inlineactions{margin-top:0;min-height:44px}
+.c20.c31-root .c20-dialog .c20-pages{flex:none;height:34px}
+.c20.c31-root .c20-dialog .c20-pages button,.c20.c31-root .c20-dialog .mini{min-height:34px;border:0;border-radius:0;background:var(--c31-slab) center/100% 100% no-repeat;box-shadow:none}
+.c20.c31-root .c20-dialog .c20-foes{flex:1 0 auto;align-items:stretch;min-height:90px}
+.c20.c31-root .c20-foes>div{padding:8px 3px;justify-content:center;max-width:100px;background:var(--c31-niche) center/100% 100% no-repeat}
+.c20.c31-root .c20-foes>div span{white-space:normal;overflow-wrap:anywhere}
+.c20.c31-root .c20-loot{flex:1 0 auto;min-height:90px}
+.c20.c31-root .c20-lootrow{justify-content:center;gap:3px;border:0;border-radius:0;background:var(--c31-niche) center/100% 100% no-repeat;padding:5px 4px;overflow:visible}
+.c20.c31-root .c20-looticon{min-height:34px;background:var(--c31-reward-seat) center bottom/100% 55% no-repeat;filter:drop-shadow(0 2px 2px #0008)}
+.c20.c31-root .c20-lootrow>span:nth-child(2){font-size:11px;white-space:normal;overflow-wrap:anywhere}
+.c20.c31-root .c20-earn{line-height:1.25;font-size:11px}
+@media(max-width:740px){
+ .c20.c31-root .c20-head h1{font-size:22px}.c20.c31-root .c31-wallet{gap:4px}.c20.c31-root .c31-wallet .ico{width:20px;height:20px}.c20.c31-root .c31-wallet b{font-size:12px}
+ .c20.c31-root .c20-choices{gap:7px;padding:8px 2px 3px}.c20.c31-root .c20-cover .c20-copy{padding:7px 8px 8px}.c20.c31-root .c20-cover .c20-copy strong{font-size:20px}.c20.c31-root .c20-copy small{font-size:10px}
+ .c20.c31-root .c20-sides{flex-basis:40%}.c20.c31-root .c20-sides button{font-size:10px}.c20.c31-root .c31-chapters{padding-left:0;gap:0}.c20.c31-root .c31-chapters strong{font-size:16px}.c20.c31-root .c31-chapters b{font-size:10px}.c20.c31-root .c31-chapters>button[data-c20=chapters]{padding:0 5px}
+ .c20.c31-root .c20-card{flex-basis:89px;gap:4px;padding:11px 6px 9px;grid-template-columns:minmax(0,1.24fr) minmax(0,1fr) minmax(0,1.18fr)}
+ .c20.c31-root .c31-mission{padding-left:2px}.c20.c31-root .c31-title{gap:3px}.c20.c31-root .c31-title strong{font-size:15px}.c20.c31-root .c31-title button{font-size:9px;padding:0 3px}.c20.c31-root .c31-mission>small{font-size:9px}
+ .c20.c31-root .c31-reward{grid-template-rows:29px auto}.c20.c31-root .c31-reward .ico{width:29px;height:29px}.c20.c31-root .c31-reward b{font-size:10px}.c20.c31-root .c31-rewards{padding:0 3px}.c20.c31-root .c31-rewards>small{font-size:8px}.c20.c31-root .c31-reward:before{inset:8px 0 8px}
+ .c20.c31-root .c20-card .btn{font-size:10px;padding:0 3px}.c20.c31-root .c20-card-actions .btn small{font-size:9px}.c20.c31-root .c20-card-actions{gap:3px}
+ .c20.c31-root .c20-dialog{height:min(278px,100%)}.c20.c31-root .c20-dialog header strong{font-size:19px}.c20.c31-root .c20-picker{left:6%;right:6%}
+}
+
+/* R3.1 immutable asset bindings: resolve at build, without a new runtime import. */
+.c20.c31-root{--c31-chapter:url('__CAMPAIGN_R31_CHAPTER__');--c31-console:url('__CAMPAIGN_R31_CONSOLE__');--c31-dossier:url('__CAMPAIGN_R31_DOSSIER__');--c31-frame:url('__CAMPAIGN_R31_FRAME__');--c31-pin-boss:url('__CAMPAIGN_R31_PIN_BOSS__');--c31-pin-locked:url('__CAMPAIGN_R31_PIN_LOCKED__');--c31-pin-next:url('__CAMPAIGN_R31_PIN_NEXT__');--c31-pin-passed:url('__CAMPAIGN_R31_PIN_PASSED__');--c31-pin-selected:url('__CAMPAIGN_R31_PIN_SELECTED__');--c31-portal-L:url('__CAMPAIGN_R31_PORTAL_L__');--c31-portal-D:url('__CAMPAIGN_R31_PORTAL_D__');--c31-portal-C:url('__CAMPAIGN_R31_PORTAL_C__');--c31-reward-seat:url('__CAMPAIGN_R31_REWARD_SEAT__');--c31-base:url('__CAMPAIGN_R31_BASE__');--c31-niche:url('__CAMPAIGN_R31_NICHE__');--c31-slab:url('__CAMPAIGN_R31_SLAB__');--c31-primary:url('__CAMPAIGN_R31_PRIMARY__');--c31-cover-L:url('__CAMPAIGN_R31_COVER_L__');--c31-cover-D:url('__CAMPAIGN_R31_COVER_D__');--c31-cover-C:url('__CAMPAIGN_R31_COVER_C__')}
