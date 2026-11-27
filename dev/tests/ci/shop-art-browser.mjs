@@ -109,6 +109,27 @@ try{
     await sharedShot('resource-info','#overlay2 .infosheet',1);
     assert.equal(await page.$eval('#overlay2 .infosheet',e=>getComputedStyle(e).borderTopColor),'rgb(128, 106, 71)');
     await run('closeInfo(true);closeOverlay()');
+    // Real mounted adapters. Do not claim or start a fight during visual QA.
+    for(const [view,selector] of [['feats','.feats button.btn'],['trials','.trhead button.btn,.trtier button.btn:not(.sim)']]){
+      await run("set_view("+JSON.stringify(view)+");render()");
+      await page.waitForSelector(selector,{timeout:10000});
+      const audit=await page.evaluate(async(selector)=>{
+        await document.fonts.ready;
+        const buttons=[...document.querySelectorAll(selector)];
+        const primary=buttons.filter(e=>e.classList.contains('go')&&!e.disabled);
+        const disabled=buttons.filter(e=>e.disabled);
+        const secondary=buttons.filter(e=>!e.disabled&&!e.classList.contains('go'));
+        const url=getComputedStyle(document.documentElement).getPropertyValue('--gfx-action-primary').trim().match(/url\(["']?(.*?)["']?\)/)?.[1];
+        const image=new Image();image.src=url;let loaded=true;try{await image.decode()}catch{loaded=false}
+        const style=e=>getComputedStyle(e);
+        return {count:buttons.length,loaded,
+          primary:primary.every(e=>style(e).backgroundImage.includes('button-primary.')&&style(e).color==='rgb(33, 29, 22)'),
+          disabled:disabled.every(e=>style(e).cursor==='not-allowed'&&style(e).color==='rgb(189, 176, 155)'),
+          secondary:secondary.every(e=>style(e).borderTopColor==='rgb(128, 106, 71)')};
+      },selector);
+      assert.ok(audit.count>0&&audit.loaded&&audit.primary&&audit.disabled&&audit.secondary,view+' '+JSON.stringify(audit));
+      await page.screenshot({path:path.join(shots,width+'-global02-'+view+'.png')});
+    }
 
     await run("S.solari=1000000;S.cry=5000;S.buys={d:todayKey(),n:{}};persist();S.shopTab='post';set_view('shop');render()");
     assert.equal(await run('loadSave.writer.state().status'),'owned');
