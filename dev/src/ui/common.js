@@ -18,6 +18,10 @@ function toast(t) {
     : document.querySelector('#view > .ui03-daily') ? 'daily'
     : document.querySelector('#view .feats') ? 'feats' : '';
   if (archive) el.dataset.archiveOrigin = archive;
+  // Conquest receipts produced by a dialog must remain distinct from
+  // a disk/route receipt on the underlying screen.
+  const cqDialog = document.querySelector('#overlay .cqdbox,#overlay .cqcbox');
+  if (cqDialog) el.dataset.cqDialogOrigin = cqDialog.classList.contains('cqdbox') ? 'disks' : 'details';
   document.body.appendChild(el); setTimeout(() => el.remove(), 2200);
 }
 

@@ -565,6 +565,104 @@ try{
     assert.ok(inboxLayout.cards>0&&inboxLayout.cards<=2&&inboxLayout.fit&&inboxLayout.inView,JSON.stringify(inboxLayout));
     await click('[data-ntx="gfx04-test-note"]');
     assert.equal(await run('NOTES.some(n=>n.id==="gfx04-test-note")'),false);
+    // GLOBAL-05: navigation and actual map canvas, not mock screenshots.
+    const expeditionShot=async(label,selector)=>{
+      await page.waitForSelector(selector,{visible:true,timeout:15000});
+      await page.evaluate(async()=>{await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))});
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'page horizontal overflow '+label);
+      if(await page.$('#view[data-gfx-view="raid"],#view[data-gfx-view="legend"],#view[data-gfx-view="baron_journey"],#view[data-gfx-view="story_events"],#view[data-gfx-view="conq"]')){
+        const hud=await page.evaluate(()=>{
+          const h=document.querySelector('header.top').getBoundingClientRect(),v=document.querySelector('#view').getBoundingClientRect();
+          return {top:h.top,bottom:h.bottom,viewTop:v.top,viewBottom:v.bottom,scrollY:window.scrollY,doc:document.documentElement.scrollHeight,height:innerHeight};
+        });
+        assert.ok(hud.top>=-1&&hud.viewTop>=hud.bottom-1&&hud.viewBottom<=hud.height+1&&hud.scrollY===0&&hud.doc<=hud.height+1,'expedition HUD '+label+' '+JSON.stringify(hud));
+      }
+      await page.screenshot({path:path.join(shots,width+'-global05-'+label+'.png')});
+    };
+    const scrollTap=async selector=>{
+      await page.$eval(selector,e=>e.scrollIntoView({block:'center',inline:'center'}));
+      await click(selector);
+    };
+    await run("campaign20Start();S.campTab='L';S.campCh.L=0;set_view('camp');render()");
+    await expeditionShot('campaign-home','.c20-home');
+    const covers=await page.evaluate(async()=>{
+      const images=[...document.querySelectorAll('.c20-cover')].map(e=>getComputedStyle(e).backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1]);
+      return Promise.all(images.map(async src=>{if(!src)return false;const i=new Image();i.src=src;try{await i.decode();return i.naturalWidth>0}catch{return false}}));
+    });
+    assert.deepEqual(covers,[true,true],'both immutable cover artworks decode');
+    await click('[data-c20="story"]');
+    await page.waitForSelector('.campaign20-canvas',{visible:true,timeout:35000});
+    await page.waitForFunction(()=>document.querySelector('#c20world')?.classList.contains('campaign20-3d-ready'),{timeout:35000});
+    await page.evaluate(()=>{window.__gfx05Canvas=document.querySelector('.campaign20-canvas')});
+    await expeditionShot('light-map','.c20-map');
+    await click('[data-c20="chapters"]');
+    await expeditionShot('chapter-picker','.c20-picker');
+    await click('[data-c20chapter="0"]');
+    await click('[data-c20="detail"]');
+    await expeditionShot('mission-story','.c20-dialog');
+    await click('[data-c20tab="foes"]');
+    await expeditionShot('mission-foes','.c20-dialog');
+    await click('[data-c20tab="rewards"]');
+    await expeditionShot('mission-rewards','.c20-dialog');
+    if(await page.$('.c20-pages button:not(:disabled)')){
+      await click('.c20-pages button:not(:disabled)');
+      await expeditionShot('mission-rewards-page','.c20-dialog');
+    }
+    await click('[data-c20="back"]');
+    assert.ok(await page.evaluate(()=>window.__gfx05Canvas===document.querySelector('.campaign20-canvas')),'same map canvas across mission tabs');
+    await click('[data-c20side="D"]');
+    await page.waitForSelector('.campaign20-canvas',{visible:true,timeout:35000});
+    await expeditionShot('dark-map','.c20-map');
+    await click('[data-c20="home"]');
+    await click('[data-c20="chron"]');
+    await page.waitForSelector('.campaign20-canvas',{visible:true,timeout:35000});
+    await expeditionShot('chron-map','.c20-map');
+    await click('[data-c20="home"]');
+    await click('.c20-head [data-v="lobby"]');
+    await run("set_view('raid');render()");
+    await expeditionShot('raid','#view[data-gfx-view="raid"]');
+    await run("set_view('legend');render()");
+    await expeditionShot('legend','#view[data-gfx-view="legend"]');
+    await scrollTap('[data-v="baron_journey"]');
+    await expeditionShot('baron','.bh9journey');
+    await scrollTap('[data-bh9-stage="1"]');
+    assert.equal(await page.$eval('[data-bh9-stage="1"]',e=>e.getAttribute('aria-pressed')),'true');
+    await expeditionShot('baron-stage','.bh9journey');
+    await scrollTap('.bh9journey [data-v="legend"]');
+    await scrollTap('[data-v="story_events"]');
+    await expeditionShot('story-event','.storyev');
+    await scrollTap('[data-story-stage="1"]');
+    assert.equal(await page.$eval('[data-story-stage="1"]',e=>e.getAttribute('aria-pressed')),'true');
+    await expeditionShot('story-stage','.storyev');
+    await run("set_view('conq');render()");
+    await expeditionShot('jihad','#view[data-gfx-view="conq"]');
+    if(await page.$('[data-cqdiff="easy"]:not(:disabled)')){
+      await scrollTap('[data-cqdiff="easy"]');
+      await expeditionShot('jihad-start','#view[data-gfx-view="conq"]');
+      assert.equal(await run('cq().diff'),'easy');
+      if(await page.$('[data-cqdisk]')){
+        await scrollTap('[data-cqdisk]');
+        assert.equal(await run('!!cq().pick'),false);
+        // Keep the real disk receipt alive while opening the next dialog.
+        // This is the visual overlap seen on both landscape sizes.
+        assert.ok(await page.$eval('.toast',e=>e.textContent.includes('диск')));
+        await page.$eval('#view',e=>e.scrollTop=0);
+        await scrollTap('[data-cqres]');
+        const receipt=await page.evaluate(()=>[...document.querySelectorAll('.toast')].map(e=>({visibility:getComputedStyle(e).visibility,pointer:getComputedStyle(e).pointerEvents})));
+        assert.ok(receipt.length>0&&receipt.every(x=>x.visibility==='hidden'&&x.pointer==='none'),'stale disk receipt must not obscure the energy modal: '+JSON.stringify(receipt));
+        await expeditionShot('jihad-energy-after-disk','.cqcbox');
+        await scrollTap('.cqcbox .btn[data-close="1"]');
+      }
+    }
+    if(await page.$('[data-cqres]')){
+      await page.$eval('#view',e=>e.scrollTop=0);
+      await expeditionShot('jihad-active','#view[data-gfx-view="conq"]');
+      await page.$eval('.cqmap',e=>e.scrollIntoView({block:'center'}));
+      await expeditionShot('jihad-map','.cqmap');
+      await scrollTap('[data-cqres]');
+      await expeditionShot('jihad-energy','.cqcbox');
+      await scrollTap('.cqcbox .btn[data-close="1"]');
+    }
     assert.deepEqual(errors,[]);
     await page.close();
     console.log('PASS SHOP-ART',path.basename(html),width+'x'+height,JSON.stringify(layout));
