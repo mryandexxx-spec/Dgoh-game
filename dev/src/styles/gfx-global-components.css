@@ -222,3 +222,33 @@
 #overlay2 .memscr .memsteps li.next {
   background:var(--gfx-action-down);border-color:var(--gfx-brass-light);
 }
+
+/* GLOBAL-03 visual gate: roster is a selection screen, never obscure its
+   portraits or popup with the queued corner reward card. CSS only: queue
+   and claim state are untouched; ordinary notifications return on exit. */
+body:has(#view .ros) > #notes {display:none}
+
+/* Legends have one extra signature row. Reserve the equipment row and
+   fixed footer first, then let only the level and ordinary skills scroll.
+   The signature and memory entry remain fixed within the controls panel. */
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcpilot-controls {
+  overflow:hidden;gap:3px;
+}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcpilot-controls .hcright {
+  flex:0 1 auto;min-height:36px;max-height:56px;
+}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcleft {
+  flex:1 1 0;min-height:0;gap:2px;padding-top:2px;
+}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks {
+  flex:1 1 0;min-height:0;align-content:start;
+}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcsk:not(.gl) {
+  min-height:56px;gap:1px;
+}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcski {width:30px;height:30px}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcskt :is(b,small) {
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;
+}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcskt small {font-size:9px}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcgear {flex:none}

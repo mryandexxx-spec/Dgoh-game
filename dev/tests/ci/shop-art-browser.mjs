@@ -144,6 +144,8 @@ try{
       await page.screenshot({path:path.join(shots,width+'-global03-'+label+'.png')});
     };
     assert.equal(await page.$eval('.ros .rdd',e=>getComputedStyle(e).borderTopColor),'rgb(128, 106, 71)');
+    const queuedNotes=await run('NOTES.length');
+    assert.equal(await page.$eval('#notes',e=>getComputedStyle(e).display),'none','queued notifications must not cover roster');
     await page.screenshot({path:path.join(shots,width+'-global03-roster.png')});
     await click('.ros [data-rdd="f"]');
     await heroShot('roster-filter','.ros #rpop-f');
@@ -160,6 +162,7 @@ try{
     await page.$eval('.ros #rpop-f',e=>e.scrollTop=0);
     await click('.ros #rpop-f [data-rf="all"]');
     assert.equal(await page.$eval('.ros #rpop-f',e=>e.hidden),true);
+    assert.equal(await run('NOTES.length'),queuedNotes,'roster does not dismiss reward notifications');
     assert.ok(await run('loadB3()'),'hero WebGL available');
     await run("openDetail('duncan')");
     await page.waitForFunction(()=>{try{return !!document.querySelector('.hcfig canvas')&&(0,eval)('HERO_STAGE?.awake && HERO_STAGE.isCur()')}catch{return false}},{timeout:60000});
@@ -192,6 +195,18 @@ try{
     await heroShot('dossier-stats','#overlay2 .ui06-dossier');
     await run("closeInfo(true);closeOverlay();openDetail('muaddib')");
     await page.waitForFunction(()=>{try{return (0,eval)("HERO_STAGE?.motionHero==='muaddib' && HERO_STAGE.awake && HERO_STAGE.isCur()")}catch{return false}},{timeout:60000});
+    // Real clipping/hit check BEFORE any scroll: gear must be visible above
+    // fixed footer, not merely present somewhere in the DOM.
+    const legendLayout=await page.evaluate(()=>{
+      const root=document.querySelector('#overlay .hc.has-ultimate');
+      const panel=root.querySelector('.hcpilot-controls').getBoundingClientRect();
+      const footer=root.querySelector('.hcmid').getBoundingClientRect();
+      const gear=[...root.querySelectorAll('.hcgs')];
+      const check=e=>{const b=e.getBoundingClientRect();return b.width>=44&&b.height>=44&&b.top>=panel.top-1&&b.bottom<=Math.min(panel.bottom,footer.top)+1&&e.contains(document.elementFromPoint(b.left+b.width/2,b.top+b.height/2))};
+      const pinned=[root.querySelector('.hcleft > .hcsk.gl'),root.querySelector('.hcmem')];
+      return {gear:gear.length,slots:gear.map(check),pinned:pinned.map(check),skills:root.querySelector('.hcsks').clientHeight};
+    });
+    assert.ok(legendLayout.gear===6&&legendLayout.slots.every(Boolean)&&legendLayout.pinned.every(Boolean)&&legendLayout.skills>=40,JSON.stringify(legendLayout));
     await heroShot('legend','#overlay .hc.has-ultimate');
     assert.ok(await page.$('#overlay .hcleft > .hcsk.gl'),'legend ultimate retained');
     await heroClick('#overlay .hcsk.gl');
