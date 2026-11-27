@@ -855,3 +855,22 @@ body:has(#view:is([data-gfx-view="rules"],[data-gfx-view="recycler"])) #notes {d
   #view[data-gfx-view="recycler"] .ixsubmit {grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);align-items:center}
   #view[data-gfx-view="recycler"] .ixsubmit button {white-space:normal;line-height:1.15;padding-inline:5px}
 }
+
+/* GLOBAL-07 R3: the basket is the principal editable content, not a hidden
+   tail of a long quote. Pin compact quote and actions around its own list. */
+#view[data-gfx-view="recycler"] .ixpage .ixsummary {flex:none;gap:3px}
+#view[data-gfx-view="recycler"] .ixpage .ixbasket {gap:4px}
+#view[data-gfx-view="recycler"] .ixpage .ixbasket-scroll {flex:1 1 0;min-height:0;border-top:1px solid #806a4755;padding-top:4px}
+#view[data-gfx-view="recycler"] .ixbasket-heading {display:block;color:#f3d9a6;font-size:12px;line-height:1.2}
+#view[data-gfx-view="recycler"] .ixbasket-scroll .ixitem {padding:3px 0;gap:4px;grid-template-columns:minmax(0,1fr) auto;font-size:12px}
+#view[data-gfx-view="recycler"] .ixbasket-scroll .ixitem button {min-height:30px}
+#view[data-gfx-view="recycler"] .ixbasket-tools {display:flex;flex:none;gap:4px}
+#view[data-gfx-view="recycler"] .ixbasket-tools .btn {padding:4px 7px;min-height:30px;font-size:11px}
+#view[data-gfx-view="recycler"] .ixsubmit {padding-top:4px}
+@media (orientation:landscape) and (max-height:520px) {
+  #view[data-gfx-view="recycler"] .ixpage .ixsummary .ixsmall {font-size:10px;line-height:1.2}
+  #view[data-gfx-view="recycler"] .ixpage .ixsummary h3 {font-size:14px}
+  #view[data-gfx-view="recycler"] .ixpage .ixbasket {padding:6px;gap:3px}
+  #view[data-gfx-view="recycler"] .ixpage .ixsubmit {grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
+  #view[data-gfx-view="recycler"] .ixsubmit .ixnum {font-size:13px}
+}
