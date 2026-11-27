@@ -24,6 +24,8 @@ try{
     await page.evaluateOnNewDocument(raw=>{
       localStorage.setItem('dune-goh-v1',raw);
       localStorage.setItem('dune-cine-off','true');
+      // Each viewport starts with the same roster UI preferences, not the previous page's faction.
+      localStorage.removeItem('dune-roster');
       try{Object.defineProperty(navigator,'serviceWorker',{value:undefined,configurable:true});}catch{}
     },fixture);
     await page.goto(server.url(path.basename(html)),{waitUntil:'load',timeout:75000});
@@ -151,20 +153,53 @@ try{
     await heroShot('roster-filter','.ros #rpop-f');
     // The final faction must remain reachable through the menu's own scroll,
     // even on the compact phone. Restore All through the real filter buttons.
-    const lastFaction=await page.$eval('.ros #rpop-f .ropts:last-child .ropt:last-child',e=>{
-      const menu=e.closest('.rpop');
-      menu.scrollTop=menu.scrollHeight;
-      return e.getAttribute('data-rf');
-    });
-    await click('.ros #rpop-f [data-rf="'+lastFaction+'"]');
-    assert.equal(await page.$eval('.ros #rpop-f [data-rf="'+lastFaction+'"]',e=>e.getAttribute('aria-pressed')),'true');
-    await click('.ros [data-rdd="f"]');
-    await page.$eval('.ros #rpop-f',e=>e.scrollTop=0);
-    await click('.ros #rpop-f [data-rf="all"]');
+    const lastFaction=await page.$eval('#roster-faction',e=>e.options[e.options.length-1].value);
+    const rosterBefore=await run('JSON.stringify(S.roster)');
+    await page.select('#roster-faction',lastFaction);
+    assert.equal(await page.$eval('#roster-faction',e=>e.value),lastFaction);
+    assert.ok(await page.$eval('#roster-active',e=>e.textContent.length>0));
+    assert.equal(await page.$eval('.ros .rdd',e=>getComputedStyle(e).borderTopColor),'rgb(178, 155, 110)','active filter bronze highlight');
+    await click('.ros .rfilter-actions [data-rreset="1"]');
+    assert.equal(await page.$eval('#roster-faction',e=>e.value),'all');
+    await page.keyboard.press('Escape');
     assert.equal(await page.$eval('.ros #rpop-f',e=>e.hidden),true);
+    assert.equal(await page.$eval('.ros [data-rdd="f"]',e=>e.getAttribute('aria-expanded')),'false');
+    assert.equal(await page.$eval('.ros .rdd',e=>getComputedStyle(e).borderTopColor),'rgb(128, 106, 71)','reset returns inactive edge');
+    const registry=await page.evaluate(async()=>{
+      const root=document.querySelector('.roster-art'),grid=root.querySelector('.rgrid');
+      const cards=[...grid.querySelectorAll('button.hc:not([hidden])')],bounds=grid.getBoundingClientRect();
+      const fits=(e)=>{const b=e.getBoundingClientRect();return b.width>0&&b.height>0&&b.left>=bounds.left-1&&b.right<=bounds.right+1&&b.top>=bounds.top-1&&b.bottom<=bounds.bottom+1};
+      const images=[getComputedStyle(cards[0]).backgroundImage,getComputedStyle(cards[0].querySelector('.ring')).backgroundImage,getComputedStyle(root).getPropertyValue('--r5-legend'),getComputedStyle(root).getPropertyValue('--r5-pillar'),getComputedStyle(root).getPropertyValue('--r5-base')];
+      const bad=[];for(const value of images){const url=value.match(/url\(["']?(.*?)["']?\)/)?.[1];if(!url){bad.push(value.slice(0,80));continue}const im=new Image();im.src=url;try{await im.decode()}catch{bad.push(url.slice(0,80))}}
+      const noOverlap=cards.every(e=>{const n=e.querySelector('.nm').getBoundingClientRect(),p=e.querySelector('.hsh,.hmax').getBoundingClientRect();return n.bottom<=p.top+1});
+      return {ids:cards.map(e=>e.dataset.hc),fit:cards.every(e=>fits(e)&&fits(e.querySelector('.ring'))&&fits(e.querySelector('.nm'))),noOverlap,bad,overflow:document.documentElement.scrollHeight>innerHeight+1||document.documentElement.scrollWidth>innerWidth+1};
+    });
+    assert.equal(registry.ids.length,width===844?14:12);
+    assert.ok(registry.fit&&registry.noOverlap&&!registry.overflow&&registry.bad.length===0,JSON.stringify(registry));
+    await click('.ros [data-rpage="1"]');
+    const page2=await page.$$eval('.ros .rgrid > button.hc:not([hidden])',els=>els.map(e=>e.dataset.hc));
+    assert.ok(page2.length>0&&page2.every(id=>!registry.ids.includes(id)),'distinct page');
+    await click('.ros [data-rpage="-1"]');
+    assert.deepEqual(await page.$$eval('.ros .rgrid > button.hc:not([hidden])',els=>els.map(e=>e.dataset.hc)),registry.ids);
+    await page.select('#rdd-s','nm');
+    assert.equal(await page.$eval('#rdd-s',e=>e.value),'nm');
+    await page.select('#rdd-s','pw');
+    await click('.ros [data-rdd="f"]');
+    await click('.ros [data-rstatus="locked"]');
+    await click('.ros .rfilter-done');
+    assert.ok(await page.$$eval('.ros .rgrid > button.hc:not([hidden])',els=>els.length>0&&els.every(e=>e.classList.contains('lockd'))));
+    await page.screenshot({path:path.join(shots,width+'-roster-r55-locked.png')});
+    await click('.ros .rreset');
+    assert.equal(await run('JSON.stringify(S.roster)'),rosterBefore,'filter/page never change progression');
+    const ranks=await run("Array.from({length:7},(_,i)=>ptRound(CH.duncan,{...prog('duncan'),stars:7,relic:i+1},{registry:true}))");
+    for(let i=0;i<7;i++){assert.ok(ranks[i].includes('class="mem r-memory"')&&ranks[i].includes('Другая память: '+(i+1))&&ranks[i].includes('<b>'+(i+1)+'</b>'))}
     assert.equal(await run('NOTES.length'),queuedNotes,'roster does not dismiss reward notifications');
     assert.ok(await run('loadB3()'),'hero WebGL available');
-    await run("openDetail('duncan')");
+    // Real native tap from the registry opens the existing hero route.
+    await click('.ros [data-rdd="f"]');
+    await page.select('#roster-faction','atr');
+    await click('.ros .rfilter-done');
+    await click('.ros [data-hc="duncan"]:not([hidden])');
     await page.waitForFunction(()=>{try{return !!document.querySelector('.hcfig canvas')&&(0,eval)('HERO_STAGE?.awake && HERO_STAGE.isCur()')}catch{return false}},{timeout:60000});
     await heroShot('hero-duncan','#overlay .hc');
     assert.equal(await page.$$eval('#overlay .hcgs',els=>els.length),6,'six gear slots');

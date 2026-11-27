@@ -242,16 +242,30 @@ body:has(#view .ros) > #notes {display:none}
 }
 .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks {
   flex:1 1 0;min-height:0;align-content:start;
-  grid-auto-rows:50px;
+  grid-auto-rows:58px;
 }
 .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcsk:not(.gl) {
-  box-sizing:border-box;height:50px;min-height:50px;padding:1px;gap:0;
-  grid-template-rows:26px minmax(0,1fr);
+  box-sizing:border-box;height:58px;min-height:58px;padding:1px;gap:0;
+  grid-template-rows:22px minmax(0,1fr);
 }
-.hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcski {width:26px;height:26px}
-.hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcskt :is(b,small) {
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcski {width:22px;height:22px}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcskt b {
+  white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;
   font-size:9px;line-height:1;
+}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcskt small {
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:9px;line-height:1;
+}
+/* Use available desktop height for larger skill artwork and readable names,
+   without taking space from the pinned ultimate, memory or equipment. */
+@media (min-height:521px) {
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks {grid-auto-rows:70px}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcsk:not(.gl) {
+    height:70px;min-height:70px;grid-template-rows:30px minmax(0,1fr);
+  }
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcski {width:30px;height:30px}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcskt b {font-size:11px;line-height:1.05}
 }
 .hc.gfx02-pilot.has-ultimate:not(.locked) .hcgear {flex:none;padding-top:2px}
 @media (max-height:400px) and (orientation:landscape) {
@@ -268,11 +282,11 @@ body:has(#view .ros) > #notes {display:none}
   .hc.gfx02-pilot.has-ultimate:not(.locked) .hcright .hccap {font-size:10px;line-height:1.05}
   .hc.gfx02-pilot.has-ultimate:not(.locked) .hcright .hcbig {font-size:18px}
   .hc.gfx02-pilot.has-ultimate:not(.locked) .hcright .hcnote {font-size:9px;line-height:1}
-  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks {grid-auto-rows:48px}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks {grid-auto-rows:58px}
   .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcsk:not(.gl) {
-    height:48px;min-height:48px;grid-template-rows:24px minmax(0,1fr);
+    height:58px;min-height:58px;grid-template-rows:20px minmax(0,1fr);
   }
-  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcski {width:24px;height:24px}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcski {width:20px;height:20px}
 }
 
 /* GLOBAL-04 — Imperial archive. Reuse the approved shop's material rail,
