@@ -744,3 +744,17 @@ body:has(#overlay #battle) > .toast[data-combat-origin="battle"] {bottom:auto;to
   .result:is(.won,.lost) .acts .btn {min-height:38px}
   .result:is(.won,.lost) .acts .btn.go small {white-space:normal;line-height:1.2}
 }
+
+/* GLOBAL-06 R3: two independent settings groups share a landscape row.
+   Retain internal scroll fallback for smaller or enlarged-text viewports. */
+@media (orientation:landscape) and (max-height:520px) and (min-width:620px) {
+  .battle .bset {grid-template-columns:repeat(6,minmax(0,1fr));align-items:stretch}
+  .battle .bset > .bsb {grid-column:span 2;min-width:0}
+  .battle .bset > .bsgfx {grid-column:span 3;min-width:0;align-content:start}
+  .battle .bset > .bsgfx:first-of-type {grid-column:1 / span 3}
+  .battle .bsgfx .bsgh {flex-wrap:wrap;gap:2px 6px}
+  .battle .bsgfx .bsseg:has([data-bsfps]) {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .battle .bsgfx .bsseg .btn {white-space:normal;overflow-wrap:anywhere;line-height:1.15}
+  .battle .bpopbox:has(.bset) .acts {justify-content:flex-start}
+  .result.lost .box > ul {grid-template-columns:minmax(0,1fr)}
+}

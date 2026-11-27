@@ -718,11 +718,17 @@ try{
     }
     await click('[data-bset]');
     await combatShot('settings','.bpopbox');
+    const settingsFit=await page.evaluate(()=>{
+      const box=document.querySelector('.bpopbox'),b=box.getBoundingClientRect();
+      const buttons=[...box.querySelectorAll('.acts button,[data-bsgfx],[data-bsfps]')];
+      return {scroll:box.scrollHeight-box.clientHeight,fit:buttons.every(e=>{const r=e.getBoundingClientRect();return r.top>=b.top&&r.bottom<=b.bottom&&r.left>=b.left&&r.right<=b.right}),count:buttons.length};
+    });
+    assert.ok(settingsFit.fit&&settingsFit.scroll<=1&&settingsFit.count>=9,'settings actions must fit without scroll '+JSON.stringify(settingsFit));
     await page.$eval('[data-bsfps="30"]',e=>e.scrollIntoView({block:'center'}));
     await combatShot('settings-fps','.bpopbox');
     await scrollTap('[data-bsfps="30"]');
     assert.equal(await page.$eval('[data-bsfps="30"]',e=>e.getAttribute('aria-checked')),'true');
-    await scrollTap('[data-bsquit]');
+    await click('[data-bsquit]');
     await combatShot('defeat','.result.lost .box');
     assert.equal(await run('loadSave.writer.state().status'),'owned');
     await scrollTap('.result [data-tocamp]');
