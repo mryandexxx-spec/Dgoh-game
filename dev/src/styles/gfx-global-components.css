@@ -438,3 +438,14 @@ body:has(#view > .ui03-daily,#view .feats) > #notes {display:none}
    Keep the status visible/announced and the ordinary toast behavior elsewhere. */
 body:has(#overlay2 .ui04-profile) > .toast,
 body:has(#overlay2 .ui04-profile) > .toast * {pointer-events:none}
+
+/* GLOBAL-04 visual gate: stale feedback is never painted over a different
+   archive. Same-screen status remains available for its original duration. */
+body:has(#overlay2 .ui04-profile) > .toast:not([data-archive-origin="profile"]),
+body:has(#overlay2 .ui03-calendar-screen) > .toast:not([data-archive-origin="calendar"]),
+body:has(#view > .ui03-daily):not(:has(#overlay2 .ui03-calendar-screen,#overlay2 .ui04-profile)) > .toast:not([data-archive-origin="daily"]),
+body:has(#view .feats):not(:has(#overlay2 .ui03-calendar-screen,#overlay2 .ui04-profile)) > .toast:not([data-archive-origin="feats"]) {visibility:hidden;pointer-events:none}
+body:has(#overlay2 .ui03-calendar-screen,#view > .ui03-daily,#view .feats) > .toast {pointer-events:none}
+#rwwin.rwwin:not(.ge2-result) > .box {width:min(480px,100%);max-width:100%}
+#notes .nt-tx > b {overflow-wrap:anywhere}
+#notes .nt-more {pointer-events:none}

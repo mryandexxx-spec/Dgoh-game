@@ -519,8 +519,10 @@ try{
     assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('dune-goh-v1')).login.n),1);
     assert.equal(await page.$eval('[data-calclaim]',e=>e.disabled),true);
     await archiveShot('calendar-claimed','.ui03-calendar-screen');
+    assert.equal(await page.$eval('.toast',e=>e.dataset.archiveOrigin),'calendar','calendar receipt ownership');
     await click('.ui03-calendar-screen .ui03-close');
     await run('openProfile()');
+    assert.ok(await page.evaluate(()=>[...document.querySelectorAll('.toast')].every(e=>getComputedStyle(e).visibility==='hidden')),'stale calendar receipt visually hidden in profile');
     await archiveShot('profile','.ui04-profile');
     await click('.ui04-tabs [data-ui04-tab="custom"]');
     await archiveShot('profile-cosmetics','.ui04-profile');
@@ -554,7 +556,13 @@ try{
     const noteCount=await run('NOTES.length');
     await run("set_view('lobby');render();renderNotes()");
     assert.equal(await run('NOTES.length'),noteCount);
+    await page.evaluate(async()=>{await Promise.all(document.querySelectorAll('#notes .nt').length?[...document.querySelectorAll('#notes .nt')].flatMap(e=>e.getAnimations().map(a=>a.finished.catch(()=>{}))):[])});
     await archiveShot('inbox','#notes');
+    const inboxLayout=await page.$eval('#notes',e=>{
+      const b=e.getBoundingClientRect(),cards=[...e.querySelectorAll('.nt')];
+      return {cards:cards.length,fit:cards.every(c=>{const r=c.getBoundingClientRect();return r.top>=b.top-1&&r.bottom<=b.bottom+1}),inView:b.top>=0&&b.bottom<=innerHeight+1};
+    });
+    assert.ok(inboxLayout.cards>0&&inboxLayout.cards<=2&&inboxLayout.fit&&inboxLayout.inView,JSON.stringify(inboxLayout));
     await click('[data-ntx="gfx04-test-note"]');
     assert.equal(await run('NOTES.some(n=>n.id==="gfx04-test-note")'),false);
     assert.deepEqual(errors,[]);

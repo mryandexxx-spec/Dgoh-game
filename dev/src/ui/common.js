@@ -11,6 +11,13 @@ import { IG, TIER_COL } from '../logic/gear.js';
 function toast(t) {
   document.querySelectorAll('.toast').forEach(x => x.remove());
   const el = document.createElement('div'); el.className = 'toast'; el.innerHTML = t; el.setAttribute('role', 'status');
+  // A receipt belongs to the archive surface that produced it; it must
+  // not visually cover a different archive after immediate navigation.
+  const archive = document.querySelector('#overlay2 .ui03-calendar-screen') ? 'calendar'
+    : document.querySelector('#overlay2 .ui04-profile') ? 'profile'
+    : document.querySelector('#view > .ui03-daily') ? 'daily'
+    : document.querySelector('#view .feats') ? 'feats' : '';
+  if (archive) el.dataset.archiveOrigin = archive;
   document.body.appendChild(el); setTimeout(() => el.remove(), 2200);
 }
 
