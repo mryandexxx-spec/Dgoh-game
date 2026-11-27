@@ -27,7 +27,7 @@ body:has(#view > .roster-art)>.toast{pointer-events:none}
 .roster-art .rregistry::before{left:0}.roster-art .rregistry::after{right:0;transform:scaleX(-1)}
 .roster-art :is(button,select){font:inherit;touch-action:manipulation;cursor:pointer}.roster-art button:disabled{opacity:.42;cursor:default}.roster-art :is(button,select):focus-visible{outline:2px solid #fff0bf;outline-offset:-3px}
 .roster-art .rhead{display:flex;flex-wrap:nowrap;align-items:center;min-width:0;gap:7px;margin:0;padding:0 6px;border:0;box-shadow:none;background:none;z-index:3}
-.roster-art .rpw{display:flex;align-items:center;gap:18px;white-space:nowrap;flex:none}
+.roster-art .rpw{display:flex;flex-direction:row;align-items:center;gap:18px;white-space:nowrap;flex:none}
 .roster-art .rmetric{display:grid;gap:2px;align-content:center}
 .roster-art .rpw strong{font:700 19px/1.05 'Dune Inter',Arial,sans-serif;color:#f3e4ca;letter-spacing:0;font-variant-numeric:tabular-nums}
 .roster-art .rpw small{font:550 11px/1.1 'Dune Inter',Arial,sans-serif;color:#ded0ba;letter-spacing:0}

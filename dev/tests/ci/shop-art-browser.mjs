@@ -183,12 +183,22 @@ try{
         overflow:document.documentElement.scrollHeight>innerHeight+1||document.documentElement.scrollWidth>innerWidth+1,
         scrollable:grid.scrollHeight>grid.clientHeight,overflowY:getComputedStyle(grid).overflowY,background:getComputedStyle(root).backgroundImage,subtitle:getComputedStyle(document.querySelector('header.top .vname'),'::after').content,
         statSize:parseFloat(getComputedStyle(document.querySelector('#roster-count')).fontSize),
+        statsFit:(()=>{
+          const header=root.querySelector('.rhead').getBoundingClientRect();
+          const metrics=[...root.querySelectorAll('.rmetric')];
+          const boxes=metrics.map(e=>e.getBoundingClientRect());
+          const all=metrics.flatMap(e=>[...e.children]).every(e=>{
+            const b=e.getBoundingClientRect();
+            return b.width>0&&b.height>0&&b.top>=header.top&&b.bottom<=header.bottom&&b.left>=header.left&&b.right<=header.right&&e.scrollWidth<=e.clientWidth+1;
+          });
+          return all&&boxes.length===2&&boxes[0].right<=boxes[1].left&&boxes[1].right<=root.querySelector('.rdd').getBoundingClientRect().left;
+        })(),
         noPager:!root.querySelector('[data-rpage],.rpages,.rfoot'),
         initialRows:cards.filter(e=>e.getBoundingClientRect().bottom<=bounds.bottom+1).length};
     });
     assert.equal(registry.ids.length,expectedRoster.count);
     assert.equal(new Set(registry.ids).size,expectedRoster.count);
-    assert.ok(registry.fit&&registry.noOverlap&&!registry.overflow&&registry.bad.length===0&&registry.scrollable&&registry.overflowY==='auto'&&registry.background==='none'&&registry.subtitle==='none'&&registry.noPager&&registry.statSize>=17&&registry.initialRows>=(width===844?14:12),JSON.stringify(registry));
+    assert.ok(registry.fit&&registry.noOverlap&&!registry.overflow&&registry.bad.length===0&&registry.scrollable&&registry.overflowY==='auto'&&registry.background==='none'&&registry.subtitle==='none'&&registry.noPager&&registry.statSize>=17&&registry.statsFit&&registry.initialRows>=(width===844?14:12),JSON.stringify(registry));
     const scrollLayout=()=>page.evaluate(()=>{
       const g=document.querySelector('#rgrid'),h=document.querySelector('header.top'),bar=document.querySelector('.ros .rhead');
       const box=e=>{const b=e.getBoundingClientRect();return {x:b.x,y:b.y,w:b.width,h:b.height}};
