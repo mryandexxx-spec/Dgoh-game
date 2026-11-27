@@ -24,6 +24,8 @@ try{
     await page.evaluateOnNewDocument(raw=>{
       localStorage.setItem('dune-goh-v1',raw);
       localStorage.setItem('dune-cine-off','true');
+      // Each viewport starts with the same roster UI preferences, not the previous page's faction.
+      localStorage.removeItem('dune-roster');
       try{Object.defineProperty(navigator,'serviceWorker',{value:undefined,configurable:true});}catch{}
     },fixture);
     await page.goto(server.url(path.basename(html)),{waitUntil:'load',timeout:75000});
@@ -156,11 +158,13 @@ try{
     await page.select('#roster-faction',lastFaction);
     assert.equal(await page.$eval('#roster-faction',e=>e.value),lastFaction);
     assert.ok(await page.$eval('#roster-active',e=>e.textContent.length>0));
+    assert.equal(await page.$eval('.ros .rdd',e=>getComputedStyle(e).borderTopColor),'rgb(178, 155, 110)','active filter bronze highlight');
     await click('.ros .rfilter-actions [data-rreset="1"]');
     assert.equal(await page.$eval('#roster-faction',e=>e.value),'all');
     await page.keyboard.press('Escape');
     assert.equal(await page.$eval('.ros #rpop-f',e=>e.hidden),true);
     assert.equal(await page.$eval('.ros [data-rdd="f"]',e=>e.getAttribute('aria-expanded')),'false');
+    assert.equal(await page.$eval('.ros .rdd',e=>getComputedStyle(e).borderTopColor),'rgb(128, 106, 71)','reset returns inactive edge');
     const registry=await page.evaluate(async()=>{
       const root=document.querySelector('.roster-art'),grid=root.querySelector('.rgrid');
       const cards=[...grid.querySelectorAll('button.hc:not([hidden])')],bounds=grid.getBoundingClientRect();
