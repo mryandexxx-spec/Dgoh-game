@@ -673,7 +673,8 @@ try{
       assert.ok(bounds.x>=-1&&bounds.y>=-1&&bounds.right<=bounds.w+1&&bounds.bottom<=bounds.h+1,'combat viewport '+label+' '+JSON.stringify(bounds));
       await page.screenshot({path:path.join(shots,width+'-global06-'+label+'.png')});
     };
-    await run("closeInfo(true);closeOverlay();S.skipDlg=true;set_view('camp');render();openSquadSel('camp',0)");
+    await run("closeInfo(true);closeOverlay();S.skipDlg=true;set_view('camp');render();toast('GLOBAL-06 previous screen receipt');openSquadSel('camp',0)");
+    assert.ok(await page.$eval('.toast',e=>getComputedStyle(e).visibility==='hidden'&&getComputedStyle(e).pointerEvents==='none'),'previous screen receipt must not obscure squad');
     await combatShot('squad-ready','.sqsel');
     const chosen=await run('sqArr().slice()');
     assert.ok(chosen.length,'late fixture has selected allies');
@@ -705,10 +706,20 @@ try{
     if(await page.$('.pkg9-dtoggle')){
       await click('.pkg9-dtoggle');
       await combatShot('drawer','.pkg9-drawer');
+      const drawerGeometry=await page.evaluate(()=>{
+        const h=document.querySelector('.pkg9-dhead').getBoundingClientRect();
+        const c=document.querySelector('.pkg9-control').getBoundingClientRect();
+        const d=document.querySelector('.pkg9-drawer').getBoundingClientRect();
+        const toggle=document.querySelector('.pkg9-dtoggle').getBoundingClientRect();
+        return h.top>=c.bottom&&d.bottom<=toggle.top+1;
+      });
+      assert.ok(drawerGeometry,'drawer must clear fixed HUD controls');
       await click('.pkg9-dhead [data-bdrawer]');
     }
     await click('[data-bset]');
     await combatShot('settings','.bpopbox');
+    await page.$eval('[data-bsfps="30"]',e=>e.scrollIntoView({block:'center'}));
+    await combatShot('settings-fps','.bpopbox');
     await scrollTap('[data-bsfps="30"]');
     assert.equal(await page.$eval('[data-bsfps="30"]',e=>e.getAttribute('aria-checked')),'true');
     await scrollTap('[data-bsquit]');
@@ -725,6 +736,12 @@ try{
     await click('[data-auto]');
     await page.waitForSelector('.result.won .box',{visible:true,timeout:90000});
     await combatShot('victory','.result.won .box');
+    assert.ok(await page.evaluate(()=>{
+      const box=document.querySelector('.result.won .box');
+      const actions=box.querySelector('.acts');
+      const list=box.querySelector('ul');
+      return getComputedStyle(actions).position==='static'&&(!list||list.getBoundingClientRect().bottom<=actions.getBoundingClientRect().top+1);
+    }),'result actions must not overlay reward lines');
     assert.equal(await run('loadSave.writer.state().status'),'owned');
     await scrollTap('.result [data-tocamp]');
     assert.equal(await page.$('#battle'),null);

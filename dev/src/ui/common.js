@@ -22,6 +22,9 @@ function toast(t) {
   // a disk/route receipt on the underlying screen.
   const cqDialog = document.querySelector('#overlay .cqdbox,#overlay .cqcbox');
   if (cqDialog) el.dataset.cqDialogOrigin = cqDialog.classList.contains('cqdbox') ? 'disks' : 'details';
+  // Prevent a receipt from a different screen covering the combat controls.
+  const combat = document.querySelector('#overlay .sqsel') ? 'squad' : document.querySelector('#overlay #battle') ? 'battle' : '';
+  if (combat) el.dataset.combatOrigin = combat;
   document.body.appendChild(el); setTimeout(() => el.remove(), 2200);
 }
 

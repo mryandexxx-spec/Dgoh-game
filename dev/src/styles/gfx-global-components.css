@@ -712,3 +712,35 @@ body:has(#overlay .cqdbox) > .toast:not([data-cq-dialog-origin="disks"]) {visibi
   .result:is(.won,.lost) .acts {bottom:-12px;padding:6px 0 3px}
   .result:is(.won,.lost) .acts .btn {min-height:34px;padding:5px 9px;font-size:12px}
 }
+
+/* GLOBAL-06 frame review: prevent unrelated receipts and fixed controls from
+   obscuring the command deck. Keep same-surface status and scrollable logs. */
+body:has(#overlay .sqsel) > .toast:not([data-combat-origin="squad"]),
+body:has(#overlay #battle) > .toast:not([data-combat-origin="battle"]) {visibility:hidden}
+body:has(#overlay :is(.sqsel,#battle)) > .toast {pointer-events:none}
+body:has(#overlay .sqsel) > .toast[data-combat-origin="squad"] {bottom:auto;top:max(54px,env(safe-area-inset-top,0px));max-width:70vw}
+body:has(#overlay #battle) > .toast[data-combat-origin="battle"] {bottom:auto;top:max(62px,env(safe-area-inset-top,0px));max-width:70vw}
+.battle.pkg9 .pkg9-drawer {top:calc(max(8px,env(safe-area-inset-top,0px)) + 49px);bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 49px);padding:8px 10px;border:1px solid #ae9267;border-left:0;border-radius:0 4px 4px 0;background:linear-gradient(155deg,#39342bf9,#211f1bf9)}
+.battle.pkg9 .pkg9-dhead {gap:5px;margin-bottom:6px;line-height:1.15}
+.battle.pkg9 .pkg9-dhead button {flex:none}
+.result:is(.won,.lost) .acts {position:static;margin-top:3px;background:none;padding:6px 0 0;border-top:1px solid #806a4755}
+.result:is(.won,.lost) .acts .btn.go {min-width:112px;padding-inline:14px}
+.result:is(.won,.lost) .acts .btn.go[data-cnext] {min-width:152px}
+@media (orientation:landscape) and (max-height:520px) {
+  .battle .bpopbox:has(.bset) {padding:8px 12px;scrollbar-width:thin}
+  .battle .bpopbox:has(.bset) .bph {margin-bottom:5px}
+  .battle .bset {gap:5px;margin:3px 0 5px}
+  .battle .bset .bsb {padding:5px 8px;gap:1px;font-size:12px}
+  .battle .bset .bsb small {font-size:10px;line-height:1.15}
+  .battle .bsgfx {gap:3px;padding:5px 8px;border-radius:4px}
+  .battle .bsgfx > small,.battle .bsgh small {font-size:10px;line-height:1.15}
+  .battle .bsseg .btn {padding:4px 2px;min-height:28px}
+  .battle .bpopbox:has(.bset) .acts {margin-top:5px;gap:5px}
+  .battle .bpopbox:has(.bset) .acts .btn {padding:5px 9px;min-height:34px}
+  .result:is(.won,.lost) .mousewrap {height:48px;margin:0}
+  .result:is(.won,.lost) .mousewrap .mouse {height:54px;width:66px}
+  .result:is(.won,.lost) .box {gap:6px;align-content:start}
+  .result:is(.won,.lost) .stars {font-size:22px;line-height:1}
+  .result:is(.won,.lost) .acts .btn {min-height:38px}
+  .result:is(.won,.lost) .acts .btn.go small {white-space:normal;line-height:1.2}
+}
