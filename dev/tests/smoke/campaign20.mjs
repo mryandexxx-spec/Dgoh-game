@@ -51,7 +51,7 @@ try {
     assert.equal(calendarClosed,true,'boot calendar must be dismissed before campaign navigation');
     await page.evaluate(()=>document.querySelector('[data-v="camp"]').click());
     await page.waitForSelector('.c20-home',{timeout:5000});
-    assert.equal(await page.$$eval('.c20-cover',a=>a.length),2,'two campaign covers');
+    assert.equal(await page.$$eval('.c20-cover',a=>a.length),3,'three campaign covers');
     await page.screenshot({path:path.join(shots,`hub-${w}.png`)});
     await page.locator('[data-c20="story"]').click();
     await page.waitForSelector('.c20-map',{timeout:8000}).catch(async e=>{
@@ -352,7 +352,7 @@ try {
       JSON.stringify({conspiracyLast,conspiracyFirst}));
 
     // C4.4: five distinct historical districts, original ten C:0 missions.
-    // Side switch is owned by the Chronicles cover, not the story-side buttons.
+    // Chronicles may be entered via its cover or the combined direction rail.
     await page.evaluate(()=>document.querySelector('[data-c20="home"]')?.click());
     await page.waitForSelector('.c20-home',{timeout:7000});
     await page.evaluate(()=>document.querySelector('[data-c20="chron"]')?.click());
