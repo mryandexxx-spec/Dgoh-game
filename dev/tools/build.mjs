@@ -120,7 +120,11 @@ if (!interFont) throw new Error('HUD-01 local Inter font is missing');
 const stylesSource = css();
 if (stylesSource.split('__HUD_INTER_FONT_URL__').length !== 2)
   throw new Error('HUD-01 font URL placeholder must occur exactly once');
-const styles = stylesSource.replace('__HUD_INTER_FONT_URL__', () => interFont.pwa);
+const gfxPrimary=ASSETS.find(a=>a.name==='ui/shop/button-primary.png');
+if(!gfxPrimary||gfxPrimary.pwa!==gfxPrimary.art||stylesSource.split('__GFX_ACTION_PRIMARY_URL__').length!==2)
+  throw new Error('GLOBAL-02 approved button texture missing or ambiguous');
+const styles = stylesSource.replace('__HUD_INTER_FONT_URL__', () => interFont.pwa)
+  .replace('__GFX_ACTION_PRIMARY_URL__',()=>gfxPrimary.pwa.replace(/^assets\//,'assets/'));
 const { code: code0, meta } = await js(), b3 = await babylonChunk();
 // номер версии: dev/version.json (правится вручную при выкатке) + хеш сборки (он же версия кэша SW); выводится в лобби (ui/views/lobby.js APP_VER)
 const VNUM = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8')).v;

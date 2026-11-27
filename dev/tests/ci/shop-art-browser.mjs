@@ -78,11 +78,58 @@ try{
     };
     await run("set_view('daily');render()");
     await sharedShot('daily','.ui03-daily',2);
+    // GLOBAL-02: actual control state and retained geometry, before touching any purchase.
+    const componentAudit=await page.evaluate(()=>{
+      const root=document.querySelector('.ui03-daily');
+      const tabs=[...root.querySelectorAll('button.ui03-tab')];
+      const filters=[...root.querySelectorAll('button.ui03-filter')];
+      const selected=tabs.find(e=>e.getAttribute('aria-current')==='page');
+      const active=filters.find(e=>e.getAttribute('aria-pressed')==='true');
+      const style=e=>getComputedStyle(e);
+      return {tabs:tabs.length,filters:filters.length,
+        selected:style(selected).boxShadow,active:style(active).borderTopColor,
+        visible:[...tabs,...filters].every(e=>{const b=e.getBoundingClientRect();return b.width>0&&b.height>=15&&b.left>=-1&&b.right<=innerWidth+1&&b.top>=-1&&b.bottom<=innerHeight+1}),
+        cssToken:style(root).getPropertyValue('--gfx-action-primary').trim()};
+    });
+    assert.equal(componentAudit.tabs,2);
+    assert.equal(componentAudit.filters,4);
+    assert.ok(componentAudit.visible&&componentAudit.selected!=='none'&&componentAudit.active==='rgb(215, 181, 125)',JSON.stringify(componentAudit));
+    assert.match(componentAudit.cssToken,/button-primary\.[0-9a-f]{8}\.png/);
+    await click('.ui03-daily button[data-ui03filter="prog"]');
+    assert.equal(await page.$eval('.ui03-daily button[data-ui03filter="prog"]',e=>e.getAttribute('aria-pressed')),'true');
+    await click('.ui03-daily button[data-ui03filter="all"]');
+    await page.evaluate(()=>document.querySelector('.ui03-daily button[data-ui03filter="all"]').focus());
+    await page.keyboard.press('Tab');
+    assert.ok(await page.evaluate(()=>{const e=document.activeElement;return e instanceof HTMLButtonElement&&e.matches(':focus-visible')&&getComputedStyle(e).outlineStyle==='solid'}),'visible keyboard focus');
+    await page.evaluate(()=>document.activeElement?.blur());
+
     await run('openCalendar()');
     await sharedShot('calendar','.ui03-calendar-screen',5);
     await run('closeInfo(true);closeOverlay();openInfo("ix_plate")');
     await sharedShot('resource-info','#overlay2 .infosheet',1);
+    assert.equal(await page.$eval('#overlay2 .infosheet',e=>getComputedStyle(e).borderTopColor),'rgb(128, 106, 71)');
     await run('closeInfo(true);closeOverlay()');
+    // Real mounted adapters. Do not claim or start a fight during visual QA.
+    for(const [view,selector] of [['feats','.feats button.btn'],['trials','.trhead button.btn,.trtier button.btn:not(.sim)']]){
+      await run("set_view("+JSON.stringify(view)+");render()");
+      await page.waitForSelector(selector,{timeout:10000});
+      const audit=await page.evaluate(async(selector)=>{
+        await document.fonts.ready;
+        const buttons=[...document.querySelectorAll(selector)];
+        const primary=buttons.filter(e=>e.classList.contains('go')&&!e.disabled);
+        const disabled=buttons.filter(e=>e.disabled);
+        const secondary=buttons.filter(e=>!e.disabled&&!e.classList.contains('go'));
+        const url=getComputedStyle(document.documentElement).getPropertyValue('--gfx-action-primary').trim().match(/url\(["']?(.*?)["']?\)/)?.[1];
+        const image=new Image();image.src=url;let loaded=true;try{await image.decode()}catch{loaded=false}
+        const style=e=>getComputedStyle(e);
+        return {count:buttons.length,loaded,
+          primary:primary.every(e=>style(e).backgroundImage.includes('button-primary.')&&style(e).color==='rgb(33, 29, 22)'),
+          disabled:disabled.every(e=>style(e).cursor==='not-allowed'&&style(e).color==='rgb(189, 176, 155)'),
+          secondary:secondary.every(e=>style(e).borderTopColor==='rgb(128, 106, 71)')};
+      },selector);
+      assert.ok(audit.count>0&&audit.loaded&&audit.primary&&audit.disabled&&audit.secondary,view+' '+JSON.stringify(audit));
+      await page.screenshot({path:path.join(shots,width+'-global02-'+view+'.png')});
+    }
 
     await run("S.solari=1000000;S.cry=5000;S.buys={d:todayKey(),n:{}};persist();S.shopTab='post';set_view('shop');render()");
     assert.equal(await run('loadSave.writer.state().status'),'owned');
