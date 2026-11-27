@@ -131,6 +131,21 @@ for (const [token,name] of gfx05Covers) {
   if (!asset || asset.pwa!==asset.art || styles.split(token).length!==2) throw new Error('GLOBAL-05 cover art missing: '+name);
   styles=styles.replace(token,()=>asset.pwa);
 }
+// R5.5: approved architecture art. SVG frames are inline on both targets
+// because artifact hosting serves raw SVG as .txt.
+for(const [token,name] of [
+  ['__ROSTER_ATRIUM__','ui/shop/atrium-plate.jpeg'],
+  ['__ROSTER_NICHE__','ui/roster/r5-niche.png'],
+  ['__ROSTER_PILLAR__','ui/roster/r5-pillar.png'],
+  ['__ROSTER_BASE__','ui/roster/r5-base.png'],
+  ['__ROSTER_H_FRAME__','ui/roster/frame-H.svg'],
+  ['__ROSTER_LEGEND_FRAME__','ui/roster/frame-legend.svg'],
+]){
+  const asset=ASSETS.find(a=>a.name===name);
+  if(!asset||styles.split(token).length!==2||(!name.endsWith('.svg')&&asset.pwa!==asset.art))
+    throw new Error('R5.5 artwork missing or ambiguous: '+name);
+  styles=styles.replace(token,()=>name.endsWith('.svg')?'data:image/svg+xml;base64,'+asset.bytes.toString('base64'):asset.pwa);
+}
 const { code: code0, meta } = await js(), b3 = await babylonChunk();
 // номер версии: dev/version.json (правится вручную при выкатке) + хеш сборки (он же версия кэша SW); выводится в лобби (ui/views/lobby.js APP_VER)
 const VNUM = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8')).v;

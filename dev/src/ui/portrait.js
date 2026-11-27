@@ -29,7 +29,9 @@ function ptRound(d, p, o = {}) {
   else {
     let st = ''; for (let i = 0; i < 7; i++) st += i < p.stars ? '<i class="on">★</i>' : '<i>★</i>';
     h += `<span class="stars">${st}</span><span class="gear">${p.gear}</span><span class="lvl">${p.lvl}</span>`;
-    if (p.relic) h += `<span class="mem">${memoryBadge(p.relic)}</span>`;
+    if (p.relic) h += o.registry
+      ? `<span class="mem r-memory" role="img" aria-label="Другая память: ${p.relic}"><svg class="r-dp-eye" viewBox="0 0 20 12" aria-hidden="true"><path d="M1 6Q10 -3 19 6Q10 15 1 6Z" fill="none" stroke="currentColor" stroke-width="1.7"/><ellipse cx="10" cy="6" rx="2.3" ry="3.4" fill="currentColor"/></svg><b>${p.relic}</b></span>`
+      : `<span class="mem">${memoryBadge(p.relic)}</span>`;
   }
   if (canPromote(p)) h += '<span class="promo">!</span>';
   if (o.lead) h += '<span class="lead"><b>Л</b></span>';
