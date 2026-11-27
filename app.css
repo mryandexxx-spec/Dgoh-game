@@ -4931,3 +4931,133 @@ body:has(#view[data-gfx-view="conq"]) > .toast,
 body:has(#view[data-gfx-view="conq"]) > .toast * {pointer-events:none}
 body:has(#overlay .cqcbox) > .toast:not([data-cq-dialog-origin="details"]),
 body:has(#overlay .cqdbox) > .toast:not([data-cq-dialog-origin="disks"]) {visibility:hidden}
+
+/* GLOBAL-06 — battle command deck. Scoped to existing combat surfaces;
+   do not touch world labels, targeting, skill icons, ability meters,
+   cinematic layers, or the simulation. Green/red remain action semantics. */
+.sqsel {background:#24221d}
+.sqsel .sqbg {filter:blur(2px) brightness(.42) saturate(.72)}
+.sqsel .sqhd h3 {font-family:var(--f-body);font-weight:650;letter-spacing:.015em}
+.sqsel .sqhd > div:not(.sqres) {min-width:0}
+.sqsel .sqhd .sub {color:#d8cbb5}
+.sqsel :is(.sqpow,.sqfoe) {background:linear-gradient(155deg,#40392fef,#26231feb);border-color:#806a4799;border-radius:4px;box-shadow:var(--gfx-action-shadow)}
+.sqsel .sqfoe {border-left:3px solid #ad685d}
+.sqsel .sqfoe .lbl {color:#f0a392;letter-spacing:.08em}
+.sqsel .sqpow b {color:#f3d9a6}
+.sqsel .sqwarn {background:#3d2824e8;border-color:#ad685d;border-radius:4px;line-height:1.2}
+.sqsel .filters {gap:4px;margin-bottom:0}
+.sqsel .filters button {border-radius:4px;border-color:#806a4777;background:var(--gfx-action-surface);color:var(--gfx-action-muted);padding:4px 8px;white-space:nowrap}
+.sqsel .filters button[aria-pressed="true"] {background:var(--gfx-action-down);border-color:var(--fc,var(--gfx-brass-light));color:var(--gfx-action-ink);box-shadow:inset 0 -2px var(--fc,var(--gfx-brass-light))}
+.sqsel .sqcard:not(.legend) {border-color:#806a4777;background:linear-gradient(155deg,#40392f,#26231e);border-radius:5px}
+.sqsel .sqcard.on:not(.legend) {border-color:var(--gfx-brass-light);background:linear-gradient(155deg,#5b4a32,#352c20);box-shadow:inset 0 0 0 1px #d7b57d}
+.sqsel .sqcard .sqcnm {max-width:100%;overflow-wrap:anywhere;line-height:1.1}
+.sqsel .sqnum {background:#dfc18d;color:#211d16}
+.sqsel .sqslot:not(.legend,.empty) {background:radial-gradient(ellipse at 50% 75%,color-mix(in srgb,var(--fc,#806a47) 32%,transparent),transparent 72%),linear-gradient(165deg,#413a30,#24221e);border-color:#806a47}
+.sqsel .sqslot.lead:not(.legend) {border-color:#d7b57d;box-shadow:inset 0 0 0 1px #d7b57d55}
+.sqsel .sqslot.empty {background:#25231ed9;border-color:#806a4788}
+.sqsel .sqhint {color:#c4beb2;text-align:center;padding:0 3px}
+.sqsel .sqname {font-family:var(--f-body);font-weight:650;font-size:13px;text-align:center;max-width:100%;overflow-wrap:anywhere;line-height:1.12;margin-top:0}
+.sqsel .sqmk {background:#302b24;border-color:var(--gfx-brass-edge);color:#f3d9a6;border-radius:4px}
+.sqsel :is(.sqback,[data-sqclear]) {background:var(--gfx-action-surface);border-color:var(--gfx-brass-edge);color:var(--gfx-action-ink);box-shadow:var(--gfx-action-shadow);border-radius:4px}
+.sqsel .sqgo:not(:disabled) {background:linear-gradient(180deg,#c1d5a5,#80a36b 55%,#5f8052)!important;border-color:#c4dba7!important;color:#172514!important;border-radius:4px;box-shadow:inset 0 1px #efffd066,0 2px 6px #0005;text-shadow:none}
+.sqsel .sqgo:disabled,.sqsel [data-sqclear]:disabled {background:#302c25!important;border-color:#574e40!important;color:#bdb09b!important;opacity:1;cursor:not-allowed}
+.sqsel :is(button,[role="button"]):focus-visible {outline:2px solid #e8c995;outline-offset:-2px}
+/* Compact HUD controls retain all their original dimensions and placement. */
+.battle :is(.pkg9-control,.pkg9-dtoggle,.bctl .btn,.pkg9-dhead button) {background:var(--gfx-action-surface);border-color:#ae9267;color:#f3d9a6;box-shadow:var(--gfx-action-shadow);text-shadow:none}
+.battle :is(.pkg9-control,.bctl .btn)[aria-pressed="true"],.battle :is(.pkg9-control,.bctl .btn).on,.battle .pkg9-dtoggle[aria-expanded="true"] {background:var(--gfx-action-down);border-color:#e4c28d;color:#ffe4b2;box-shadow:inset 0 -2px #d7b57d}
+.battle :is(.pkg9-target,.pkg9-enemy,.bbot .who,.logpop) {background:linear-gradient(155deg,#3b352ced,#201e1ae8);border-color:#806a47bb;box-shadow:var(--gfx-action-shadow)}
+.battle .pkg9-drawer {background:linear-gradient(155deg,#39342bf9,#211f1bf9);border-color:#ae9267}
+.battle .pkg9-dhead {color:#f3d9a6;letter-spacing:.035em;font-family:var(--f-body)}
+.battle .abil:not(.gl) {background:radial-gradient(circle at 35% 22%,#62513b,#28241f 67%,#1d1b18);border-color:#b89a6b}
+.battle .abil.basic {border-color:#e4c28d}
+.battle .abil.off:not(.gl) {border-color:#746b5c}
+.battle .abil .cd {font-family:var(--f-body);font-weight:650;font-variant-numeric:tabular-nums}
+.battle .bpopbox,.battle .dlgbox {background:linear-gradient(155deg,#423a2e,#25231e 78%);border-color:#ae9267;border-radius:5px;box-shadow:0 16px 48px #0009,inset 0 1px #e6c99722}
+.battle .bpopbox h3 {font-family:var(--f-body);font-weight:650;overflow-wrap:anywhere}
+.battle .bpopbox :is(.bsb,.bsseg .btn,.acts .btn:not(.go,.danger),.bpopx),.battle .dlgact .btn:not(.go) {background:var(--gfx-action-surface);border-color:var(--gfx-brass-edge);color:var(--gfx-action-ink);box-shadow:var(--gfx-action-shadow);border-radius:4px}
+.battle .bpopbox .bsseg .btn[aria-checked="true"] {background:var(--gfx-action-down);border-color:var(--gfx-brass-light);color:#ffe4b2;box-shadow:inset 0 -2px var(--gfx-brass-light)}
+.battle :is(.bpopbox,.dlgact) .btn.go:not(:disabled) {background:var(--gfx-action-primary) center / 100% 100% no-repeat;border-color:var(--gfx-brass-light);color:#211d16;text-shadow:none}
+.battle .bpopbox .btn.danger {background:linear-gradient(#704239,#3c2724);border-color:#b96c5d;color:#ffdbd1}
+.battle :is(.bctl,.bbot,.bpopbox) button:focus-visible {outline:2px solid #e8c995;outline-offset:-2px}
+/* Only settled battles; ordinary receipts and simulation screens are excluded. */
+.result:is(.won,.lost) .box {background:linear-gradient(155deg,#40392f,#25231e 78%);border:1px solid #ae9267;border-radius:5px;box-shadow:0 16px 48px #0009,inset 0 1px #e6c99733}
+.result.won .box {border-top:3px solid #bca36d}
+.result.lost .box {border-top:3px solid #ad685d}
+.result:is(.won,.lost) h3 {font-family:var(--f-body);font-weight:650;letter-spacing:.035em;font-size:clamp(22px,4vw,32px);line-height:1.15;background:none;color:#f3d9a6}
+.result.lost h3 {color:#f0b3a5}
+.result:is(.won,.lost) .acts {background:linear-gradient(180deg,transparent,#25231e 26%);gap:6px}
+.result:is(.won,.lost) .acts .btn:not(.go,.danger) {background:var(--gfx-action-surface);border-color:var(--gfx-brass-edge);color:var(--gfx-action-ink);border-radius:4px;box-shadow:var(--gfx-action-shadow)}
+.result:is(.won,.lost) .acts .btn.go:not(:disabled) {background:var(--gfx-action-primary) center / 100% 100% no-repeat;border-color:var(--gfx-brass-light);color:#211d16;text-shadow:none;border-radius:4px}
+.result:is(.won,.lost) .acts .btn.go:not(:disabled) small {color:inherit}
+@media (orientation:landscape) and (max-height:520px) {
+  .sqsel .sqwrap {gap:5px}
+  .sqsel .sqhd {flex-wrap:nowrap;gap:7px}
+  .sqsel .sqhd h3 {font-size:15px;line-height:1.15;overflow-wrap:anywhere}
+  .sqsel .sqbody {grid-template-columns:minmax(200px,36%) minmax(0,1fr)!important;gap:7px}
+  .sqsel :is(.sqleft,.sqright) {gap:5px;min-width:0}
+  .sqsel .filters {flex-wrap:nowrap;overflow-x:auto;overscroll-behavior:contain;scrollbar-width:thin;flex:none}
+  .sqsel .filters button {flex:none;font-size:11px;min-height:27px}
+  .sqsel .sqwarn {font-size:10px;padding:4px 6px}
+  .sqsel .sqpow {gap:4px;line-height:1.15}
+  .sqsel .sqpow > span {min-width:0;overflow-wrap:anywhere}
+  .sqsel .sqpow b {flex:none}
+  .sqsel .sqslots {gap:4px}
+  .sqsel .sqslot {min-width:0}
+  .sqsel .sqtop {left:2px;right:2px}
+  .sqsel .sqtop .stars {font-size:9px;letter-spacing:0}
+  .sqsel .sqname {font-size:11px}
+  .sqsel .sqmk {max-width:100%;padding:2px 4px;min-height:23px}
+  .sqsel .sqhint {font-size:10px;overflow-wrap:anywhere}
+  .sqsel .sqfoot {flex:none}
+  .sqsel .sqbtns .btn {min-height:37px}
+  .result:is(.won,.lost) {padding:8px max(8px,env(safe-area-inset-right,0px)) 8px max(8px,env(safe-area-inset-left,0px))}
+  .result:is(.won,.lost) .box {width:min(590px,100%);max-height:calc(100dvh - 16px);padding:12px;gap:8px;overscroll-behavior:contain}
+  .result:is(.won,.lost) .acts {bottom:-12px;padding:6px 0 3px}
+  .result:is(.won,.lost) .acts .btn {min-height:34px;padding:5px 9px;font-size:12px}
+}
+
+/* GLOBAL-06 frame review: prevent unrelated receipts and fixed controls from
+   obscuring the command deck. Keep same-surface status and scrollable logs. */
+body:has(#overlay .sqsel) > .toast:not([data-combat-origin="squad"]),
+body:has(#overlay #battle) > .toast:not([data-combat-origin="battle"]) {visibility:hidden}
+body:has(#overlay :is(.sqsel,#battle)) > .toast {pointer-events:none}
+body:has(#overlay .sqsel) > .toast[data-combat-origin="squad"] {bottom:auto;top:max(54px,env(safe-area-inset-top,0px));max-width:70vw}
+body:has(#overlay #battle) > .toast[data-combat-origin="battle"] {bottom:auto;top:max(62px,env(safe-area-inset-top,0px));max-width:70vw}
+.battle.pkg9 .pkg9-drawer {top:calc(max(8px,env(safe-area-inset-top,0px)) + 49px);bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 49px);padding:8px 10px;border:1px solid #ae9267;border-left:0;border-radius:0 4px 4px 0;background:linear-gradient(155deg,#39342bf9,#211f1bf9)}
+.battle.pkg9 .pkg9-dhead {gap:5px;margin-bottom:6px;line-height:1.15}
+.battle.pkg9 .pkg9-dhead button {flex:none}
+.result:is(.won,.lost) .acts {position:static;margin-top:3px;background:none;padding:6px 0 0;border-top:1px solid #806a4755}
+.result:is(.won,.lost) .acts .btn.go {min-width:112px;padding-inline:14px}
+.result:is(.won,.lost) .acts .btn.go[data-cnext] {min-width:152px}
+@media (orientation:landscape) and (max-height:520px) {
+  .battle .bpopbox:has(.bset) {padding:8px 12px;scrollbar-width:thin}
+  .battle .bpopbox:has(.bset) .bph {margin-bottom:5px}
+  .battle .bset {gap:5px;margin:3px 0 5px}
+  .battle .bset .bsb {padding:5px 8px;gap:1px;font-size:12px}
+  .battle .bset .bsb small {font-size:10px;line-height:1.15}
+  .battle .bsgfx {gap:3px;padding:5px 8px;border-radius:4px}
+  .battle .bsgfx > small,.battle .bsgh small {font-size:10px;line-height:1.15}
+  .battle .bsseg .btn {padding:4px 2px;min-height:28px}
+  .battle .bpopbox:has(.bset) .acts {margin-top:5px;gap:5px}
+  .battle .bpopbox:has(.bset) .acts .btn {padding:5px 9px;min-height:34px}
+  .result:is(.won,.lost) .mousewrap {height:48px;margin:0}
+  .result:is(.won,.lost) .mousewrap .mouse {height:54px;width:66px}
+  .result:is(.won,.lost) .box {gap:6px;align-content:start}
+  .result:is(.won,.lost) .stars {font-size:22px;line-height:1}
+  .result:is(.won,.lost) .acts .btn {min-height:38px}
+  .result:is(.won,.lost) .acts .btn.go small {white-space:normal;line-height:1.2}
+}
+
+/* GLOBAL-06 R3: two independent settings groups share a landscape row.
+   Retain internal scroll fallback for smaller or enlarged-text viewports. */
+@media (orientation:landscape) and (max-height:520px) and (min-width:620px) {
+  .battle .bset {grid-template-columns:repeat(6,minmax(0,1fr));align-items:stretch}
+  .battle .bset > .bsb {grid-column:span 2;min-width:0}
+  .battle .bset > .bsgfx {grid-column:span 3;min-width:0;align-content:start}
+  .battle .bset > .bsgfx:first-of-type {grid-column:1 / span 3}
+  .battle .bsgfx .bsgh {flex-wrap:wrap;gap:2px 6px}
+  .battle .bsgfx .bsseg:has([data-bsfps]) {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .battle .bsgfx .bsseg .btn {white-space:normal;overflow-wrap:anywhere;line-height:1.15}
+  .battle .bpopbox:has(.bset) .acts {justify-content:flex-start}
+  .result.lost .box > ul {grid-template-columns:minmax(0,1fr)}
+}
