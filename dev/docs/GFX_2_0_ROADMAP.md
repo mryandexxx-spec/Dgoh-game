@@ -122,7 +122,7 @@ B слит [PR #311](https://github.com/mryandexxx-spec/Dgoh-game/pull/311). C �
 
 
 ### GFX-06/GLOBAL — rollout approved 27.11.2026
-Owner accepted SHOP-POSTRELEASE (#339, #338) with minor visual imperfections: «Чуть криво, но пойдёт. На все остальные элементы игры давай внедрять». Main release e6328d36; verified CI 45907498942 and Pages 45907650915. Transfer the approved shop language, not its literal layout, across the game. Existing faction-specific hero scenes, 3D campaign maps, original semantic colors, save/economy and one-screen mobile rule are mandatory. The request covers all elements including lobby; do not replace the 3D maps or character environments with a flat backdrop. Use screen-specific functional composition, no global CSS blanket or mandatory gold border everywhere.
+Owner accepted SHOP-POSTRELEASE (#339, #338) with minor visual imperfections: «Чуть криво, но пойдёт. На все остальные элементы игры давай внедрять». Main release e6328d36; verified CI 45907498942 and Pages 45907650915. Transfer the approved shop language, not its literal layout, across the game. Existing faction-specific hero scenes, 3D campaign maps, original semantic colors, save/economy and one-screen mobile rule are mandatory. The original request covered all elements; owner explicitly excluded lobby on 27.11.2026 at GLOBAL-07 start (separate design gate); do not replace the 3D maps or character environments with a flat backdrop. Use screen-specific functional composition, no global CSS blanket or mandatory gold border everywhere.
 
 | Package | Scope | Gate |
 |---|---|---|
@@ -132,7 +132,8 @@ Owner accepted SHOP-POSTRELEASE (#339, #338) with minor visual imperfections: «
 | GLOBAL-04 | Daily quests, calendar, profile, feats, rewards, inbox | actual claim/locked states; no economic changes |
 | GLOBAL-05 | Campaign navigation, chapter and mission UI, raid, Jihad and events; preserve 3D maps | actual flows, map and HUD safety |
 | GLOBAL-06 | Battle UI, battle result and squad selection; no changes to simulation | real combat checks and readability |
-| GLOBAL-07 | Lobby and remaining utilities/recycler/settings; unified visual acceptance | all screens at two landscape sizes, PWA offline, physical iPhone acceptance separately |
+| GLOBAL-07 | Remaining utilities: Ix recycler, rules, save/transfer surfaces; no lobby changes | actual two-size frames and native controls; focused CI, physical iPhone separately |
+| GLOBAL-08/LOBBY | Separate lobby/camp UX and art design, including review of workshop placement | functional alternatives and owner-approved mockup before runtime; preserve 3D and access to all rooms |
 
 GLOBAL-01 candidate reuses 14 shop artworks globally and unifies the calendar's water/glowglobe with existing art. All six rendering surfaces checked for each of 16 keys; approved Solari/Soostone retained. Missing art (core, tleilax_matrix, null_cell, shard, other equipment and quest/skill/nav symbols) remains explicitly pending; do not substitute unrelated imagery. No original files changed. Subsequent packages require own visual QA and green CI before merge.
 
@@ -169,3 +170,7 @@ GLOBAL-05 merged [#344](https://github.com/mryandexxx-spec/Dgoh-game/pull/344), 
 - GLOBAL-06 first candidate exact-head CI [45988785549](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/45988785549) SUCCESS, 28 actual frames across index and standalone reviewed. Rejected stale disk receipt on selector, overlapping drawer heading/fixed HUD and result action overlap. Scope status by combat surface, reserve drawer bounds between fixed HUD controls, keep result actions in flow and compact settings on landscape. Added explicit geometry/status checks and settings FPS capture. Fresh exact-head CI and actual frame review required.
 
 - GLOBAL-06 R2 exact-head CI [45991227828](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/45991227828) SUCCESS. Reviewed all 32 native frames, both formats/sizes: old receipt absent, drawer clear, results separated. Remaining: initial settings footer partly below internal scroll viewport. R3 places graphics and FPS groups side by side at landscape widths ≥620px, preserves all controls and internal scroll fallback; assert all action and radio buttons fully visible without scroll at 844/667. Separate raid/fallback and physical iPhone evidence remain open. No new art or simulation changes.
+
+
+### GLOBAL-07 candidate — utilities (lobby explicitly excluded)
+GLOBAL-06 merged [#345](https://github.com/mryandexxx-spec/Dgoh-game/pull/345) at f421e953, exact-head CI [45993937862](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/45993937862) SUCCESS. GLOBAL-07 adapts Ix workshop, rates, inventory, rules and profile save/transfer surfaces. A separate scrollport keeps the recycle CTA in view; no change to conversion rates, inventory protection, verified save/transfer, entry routes or lobby. No new art claimed. Both build formats and both landscape sizes: actual native quantity/confirmation cancellation, disabled state, tabs, verified export/import entry and rules scrolling. Candidate only until green exact-head CI and actual frame review. GLOBAL-08/LOBBY is a separate design-first stage by owner request; do not implement lobby or relocate Ix before approval. Final global acceptance, offline and physical iPhone evidence remain open.
