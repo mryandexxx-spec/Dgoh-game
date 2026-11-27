@@ -252,6 +252,12 @@ body:has(.c20) #notes{display:none!important;}
 
 /* GLOBAL-REWORK/CAMPAIGN — approved R3.1. Presentation only.
    Keep the real canvas, camera, projection, mission IDs and dispatch attributes. */
+/* The fixed campaign owns its header. Remove the hidden legacy shell from
+   document flow (main's default block padding and sticky header can overflow
+   the viewport). Scope to the mounted R3.1 root so other modes are untouched. */
+html:has(body > #view > .c31-root),body:has(> #view > .c31-root){height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
+body:has(> #view > .c31-root)>header.top,body:has(> #view > .c31-root)>.appver{display:none}
+#view:has(>.c31-root){box-sizing:border-box;width:100%;height:100dvh;min-height:0;max-width:none;padding:0;margin:0;overflow:hidden}
 .c20.c31-root{background:#201e19;color:#f7f1e8;font:400 12px 'Dune Inter',Inter,Arial,sans-serif;gap:0;padding:max(0px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
 .c20.c31-root *,.c20.c31-root *:before,.c20.c31-root *:after{box-sizing:border-box}
 .c20.c31-root button{font-family:inherit;min-width:0;cursor:pointer}

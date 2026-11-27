@@ -697,9 +697,9 @@ try{
     const assertCampaignRoot=async()=>{
       const geometry=await page.$eval('.c31-root',root=>{
         const r=root.getBoundingClientRect(),s=getComputedStyle(root);
-        return {x:r.x,y:r.y,w:r.width,h:r.height,opacity:s.opacity,position:s.position,viewport:[innerWidth,innerHeight],scroll:root.scrollHeight>root.clientHeight+1};
+        return {x:r.x,y:r.y,w:r.width,h:r.height,opacity:s.opacity,position:s.position,viewport:[innerWidth,innerHeight],scroll:root.scrollHeight>root.clientHeight+1,docHeight:document.documentElement.scrollHeight,bodyHeight:document.body.scrollHeight,scrollY:window.scrollY,legacyHeader:getComputedStyle(document.querySelector('header.top')).display};
       });
-      assert.ok(Math.abs(geometry.x)<=1&&Math.abs(geometry.y)<=1&&Math.abs(geometry.w-geometry.viewport[0])<=1&&Math.abs(geometry.h-geometry.viewport[1])<=1&&geometry.opacity==='1'&&geometry.position==='fixed'&&!geometry.scroll,'campaign full viewport '+JSON.stringify(geometry));
+      assert.ok(Math.abs(geometry.x)<=1&&Math.abs(geometry.y)<=1&&Math.abs(geometry.w-geometry.viewport[0])<=1&&Math.abs(geometry.h-geometry.viewport[1])<=1&&geometry.opacity==='1'&&geometry.position==='fixed'&&!geometry.scroll&&geometry.docHeight<=geometry.viewport[1]+1&&geometry.bodyHeight<=geometry.viewport[1]+1&&geometry.scrollY===0&&geometry.legacyHeader==='none','campaign full viewport '+JSON.stringify(geometry));
     };
     await assertCampaignRoot();
     const beforeCampaign=await run('JSON.stringify(S.cleared)');
@@ -770,6 +770,7 @@ try{
     assert.equal(await run('JSON.stringify(S.cleared)'),beforeCampaign,'campaign navigation must not mutate progress');
     await click('.c20-head [data-v="lobby"]');
     await run("set_view('raid');render()");
+    assert.notEqual(await page.$eval('header.top',e=>getComputedStyle(e).display),'none','campaign shell isolation must release on exit');
     await expeditionShot('raid','#view[data-gfx-view="raid"]');
     await run("set_view('legend');render()");
     await expeditionShot('legend','#view[data-gfx-view="legend"]');
