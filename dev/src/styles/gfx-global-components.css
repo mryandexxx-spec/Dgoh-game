@@ -117,6 +117,11 @@
   box-shadow:inset 0 -2px var(--gfx-brass-light);
 }
 .ros .rpop {
+  box-sizing:border-box;
+  max-height:var(--roster-pop-height,calc(100dvh - 16px));
+  overflow-y:auto;overscroll-behavior:contain;
+  align-content:start;scrollbar-width:thin;
+  grid-auto-rows:max-content;
   border-radius:var(--gfx-action-radius);
   border-color:var(--gfx-brass-edge);
   background:linear-gradient(155deg,#383126,#211e19 72%);

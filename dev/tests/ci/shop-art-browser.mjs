@@ -147,6 +147,17 @@ try{
     await page.screenshot({path:path.join(shots,width+'-global03-roster.png')});
     await click('.ros [data-rdd="f"]');
     await heroShot('roster-filter','.ros #rpop-f');
+    // The final faction must remain reachable through the menu's own scroll,
+    // even on the compact phone. Restore All through the real filter buttons.
+    const lastFaction=await page.$eval('.ros #rpop-f .ropts:last-child .ropt:last-child',e=>{
+      const menu=e.closest('.rpop');
+      menu.scrollTop=menu.scrollHeight;
+      return e.getAttribute('data-rf');
+    });
+    await click('.ros #rpop-f [data-rf="'+lastFaction+'"]');
+    assert.equal(await page.$eval('.ros #rpop-f [data-rf="'+lastFaction+'"]',e=>e.getAttribute('aria-pressed')),'true');
+    await click('.ros [data-rdd="f"]');
+    await page.$eval('.ros #rpop-f',e=>e.scrollTop=0);
     await click('.ros #rpop-f [data-rf="all"]');
     assert.equal(await page.$eval('.ros #rpop-f',e=>e.hidden),true);
     assert.ok(await run('loadB3()'),'hero WebGL available');
