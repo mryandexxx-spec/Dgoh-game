@@ -32,6 +32,9 @@ const SIDE_N = { light: 'Светлые', dark: 'Тёмные', mach: 'Маши�
 const fName = f => f === 'all' ? 'Все' : SIDE_N[f] || (FACTIONS[f] && FACTIONS[f].n) || f;
 const rName = r => r === 'all' ? 'Все' : ROLES[r] || r;
 const heroes = () => CHARS.filter(c => !c.npc);
+// Display-only labels, matching the approved registry's compact nameplates.
+const REGISTRY_NAMES = Object.freeze({leto:'Герцог Лето',baron:'Молодой Барон',trooper:'Солдат',shaddam:'Шаддам IV',bashar:'Башар',legion:'Легионер',mohiam:'Мать Мохиам',fenring:'Граф Фенринг',robot:'Боевой робот',erasmus:'Эразм',margot:'Леди Марго',yue:'Доктор Юэ',baron_legend:'Барон Владимир'});
+const registryName = d => REGISTRY_NAMES[d.id] || d.n;
 
 let rosterPage = 0;
 const rosterPageSize = () => {
@@ -53,7 +56,7 @@ function renderSquad() {
     </div><div class="rgrid" id="rgrid" aria-label="Герои">`;
   for(const d of all){
     const p=prog(d.id),inSq=S.squad.includes(d.id);
-    h+=`<button class="hc${p.stars?'':' lockd'}" data-open="${d.id}" data-hc="${d.id}" title="${d.n}">${ptRound(d,p,{lead:d.id===lead,registry:true})}<span class="nm">${inSq?'<i class="sq"></i>':''}${d.n}</span>${ptShards(d,p)}</button>`;
+    h+=`<button class="hc${p.stars?'':' lockd'}" data-open="${d.id}" data-hc="${d.id}" title="${d.n}">${ptRound(d,p,{lead:d.id===lead,registry:true})}<span class="nm">${inSq?'<i class="sq"></i>':''}${registryName(d)}</span>${ptShards(d,p)}</button>`;
   }
   h+=`<div class="rempty" id="rempty" hidden>Нет героев с такими условиями <button class="btn mini" data-rreset="1">Сбросить</button></div></div>
     <footer class="rfoot"><span class="rdiv" id="rdiv">Не открыты · <span id="rdiv-n"></span></span><div class="rpages" aria-label="Страницы реестра"><button data-rpage="-1" aria-label="Предыдущая страница">‹</button><b id="roster-page" aria-live="polite"></b><button data-rpage="1" aria-label="Следующая страница">›</button></div><button class="rreset" data-rreset="1">Сброс</button></footer></div>
