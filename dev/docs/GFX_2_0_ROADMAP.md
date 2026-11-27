@@ -2,6 +2,24 @@
 
 **Статус:** план одобрен владельцем 24.11.2026 («План нравится. Давай по нему начнем работать в новом чате»). GFX-01 — [Art Bible](GFX_01_ART_BIBLE.md), закрыт: [PR #297](https://github.com/mryandexxx-spec/Dgoh-game/pull/297), [CI SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/45477692140), merge cc141e17. GFX-02 — [интерактивный HTML-прототип D](gfx_02_showcase_d.html) утверждён владельцем («Ок, делаем», 24.11.2026); первый runtime-пилот Дункана (D) принят и слит в main как v157 ([PR #299](https://github.com/mryandexxx-spec/Dgoh-game/pull/299), merge 991cf825). Второй пилот молодого Барона слит как v158 ([PR #301](https://github.com/mryandexxx-spec/Dgoh-game/pull/301), merge 533338f3, [CI SUCCESS](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/45505592598)). Владелец 25.11.2026 инициировал GFX-03; физические MED/LOW замеры, отдельная оценка кнопок и финальная художественная приёмка не подтверждены. Конкретные макеты и визуальные решения проходят отдельное согласование. База аудита: v156, main 9f04fed6, [UI-10](UI10_FACTION_SHOWCASE.md), [PR #295](https://github.com/mryandexxx-spec/Dgoh-game/pull/295), [CI](https://github.com/mryandexxx-spec/Dgoh-game/actions/runs/45466003391).
 
+## Актуальный статус экранов — обязательный приоритет (28.11.2026)
+
+**Решение владельца:** карточка героя — исходная точка всего графического реворка, а не следующий этап. Календарь и ежедневные задания тоже уже переработаны. Не предлагать заново их художественное проектирование. Этот реестр имеет приоритет над прежними handoff, предложениями ассистента, историческими кандидатами и комментариями в Issues #319/#350.
+
+| Экран | Статус | Основание |
+|---|---|---|
+| Карточка героя (3D, развитие, окружения) | ЗАКРЫТ ДЛЯ ПОВТОРНОГО РЕВОРКА | GFX-02/03/05, GLOBAL-03 #342; подтверждение владельца 28.11 |
+| Календарь | ЗАКРЫТ ДЛЯ ПОВТОРНОГО РЕВОРКА | GLOBAL-04 #343, подтверждение владельца 28.11 |
+| Ежедневные задания | ЗАКРЫТ ДЛЯ ПОВТОРНОГО РЕВОРКА | GLOBAL-04 #343, подтверждение владельца 28.11 |
+| Лавки | Принятый художественный референс | #339 |
+| Ростер | Закрыт, физическая приёмка R5.6 | #349 / #319 |
+| Кампания | R3.1 интегрирован, v164 опубликована | #351 / #350; физическая приёмка ещё открыта |
+| 3D-карты кампании | Отдельный отложенный этап | Решение владельца; не смешивать с UI |
+| Лагерь | Отдельный design gate | GLOBAL-08/LOBBY, восстановить фактическое состояние перед продолжением |
+| Прочие режимы GLOBAL-05–07 | Техническая унификация выполнена; не считать автоматически художественно принятыми | #344–346; выбирать следующий ещё не принятый экран по актуальным решениям владельца |
+
+Закрытие для повторного реворка не означает, что все технические сценарии/физические замеры проверены. Допускаются адресные исправления подтверждённых дефектов и отдельно утверждённые работы с моделями/3D. Не открывать закрытые экраны из-за нового референса или старого handoff. Перед рекомендацией следующего этапа сверить этот реестр, свежие решения владельца и открытые Issues/PR; не назначать HERO-CARD, CALENDAR или DAILY повторно без явного запроса владельца.
+
 ## 1. Диагноз
 Владелец после UI-10: «В целом, да, все получилось. Но не покидает ощущение 2д сайтика на адоб флеше из 2002 года». Индивидуальность фракций — удачное решение, сохраняем; проблема в композиции, а не отсутствии картинок. Аудит кода, качественная экспертная оценка, не замер визуального качества. Свежего скриншота v156 с устройства в аудите не было; физические MED/LOW замеры не подтверждены.
 
@@ -186,5 +204,7 @@ Owner approved R5.5 (issue #319): frame H, separate legend crown, octagonal Othe
 Owner accepted the released R5.5 frames and Other Memory seal on physical iPhone, with five required corrections: remove room backdrop, replace pagination with a single native internal scrollport, enlarge collection metrics, display actual unlocked/total independently of filtered results, and remove the decorative Imperial Registry subtitle. R5.6 keeps original niche/frame/legend assets, portrait semantics, fixed resource header and filter dialog. It preserves scroll when returning from detail, resets on filter/sort, and writes no game data. Browser acceptance uses native touch swipe + bottom tap, fixed header/filter geometry, real count/power and locked filter checks in both landscape sizes and builds. Publish only after required green CI; physical reacceptance remains pending. Bump v163 to distinguish release from earlier v162. No lobby or hero-card redesign here.
 
 
-### GLOBAL-REWORK/CAMPAIGN — R3.1 integration candidate
+### GLOBAL-REWORK/CAMPAIGN — R3.1 integration complete / v164
 Owner approved R3.1 and explicitly deferred map art improvement (Issue #350). Separate branch integrates exact approved 13 PNGs, existing shop/roster assets, three portals, combined direction/chapter rail, full-width original Babylon canvas, low console and native dossier. Actual camp gating, node IDs, energy costs, loot, battle/sim dispatch and save schemas retained; guaranteed reward amounts extracted from the existing reward formula to avoid random draws during rendering. No changes to camera, meshes, lighting or 3D presets. Requires green exact-head CI and actual game screenshot review (both landscape sizes and build formats), and physical Safari separately. No publication before those gates. Evidence design archive in Library /Dune/GLOBAL-REWORK/CAMPAIGN/Dune-Campaign-R3.1-evidence.zip.
+
+**Релиз v164:** PR #351 merged 10d40709, exact-head CI 46071778090 SUCCESS, main CI 46073340094 SUCCESS, публикация fdc50bce, Pages 46073518603 SUCCESS. Реальные кадры 844/667 обеих сборок приняты ассистентом; физический iPhone ещё не подтверждён. Ранее предложенный следующий HERO-CARD отменён владельцем; см. актуальный реестр выше.
