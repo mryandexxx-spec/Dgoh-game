@@ -164,7 +164,7 @@ try{
     await run("openDetail('duncan')");
     await page.waitForFunction(()=>{try{return !!document.querySelector('.hcfig canvas')&&(0,eval)('HERO_STAGE?.awake && HERO_STAGE.isCur()')}catch{return false}},{timeout:60000});
     await heroShot('hero-duncan','#overlay .hc');
-    assert.equal(await page.$eval('#overlay .hcgs',els=>els.length),6,'six gear slots');
+    assert.equal(await page.$$eval('#overlay .hcgs',els=>els.length),6,'six gear slots');
     assert.equal(await page.$eval('#overlay .hc',e=>e.dataset.heroTheme),'atr');
     assert.equal(await page.$eval('#overlay .hc .hcib',e=>getComputedStyle(e).borderTopWidth),'1px');
     // Scroll a nested list only when required; then use native pointer input.
@@ -203,7 +203,7 @@ try{
     try{
       await run("Object.assign(prog('duncan'),{stars:0,relic:0});openDetail('duncan')");
       await heroShot('locked','#overlay .hc.locked');
-      assert.equal(await page.$eval('#overlay .hcgs',els=>els.length),0);
+      assert.equal(await page.$$eval('#overlay .hcgs',els=>els.length),0);
       assert.equal(await page.$eval('#overlay .hcmem',e=>e.disabled),true);
     }finally{
       await run('closeInfo(true);closeOverlay();Object.assign(prog("duncan"),'+JSON.stringify(savedHero)+')');
