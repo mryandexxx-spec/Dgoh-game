@@ -123,8 +123,14 @@ if (stylesSource.split('__HUD_INTER_FONT_URL__').length !== 2)
 const gfxPrimary=ASSETS.find(a=>a.name==='ui/shop/button-primary.png');
 if(!gfxPrimary||gfxPrimary.pwa!==gfxPrimary.art||stylesSource.split('__GFX_ACTION_PRIMARY_URL__').length!==2)
   throw new Error('GLOBAL-02 approved button texture missing or ambiguous');
-const styles = stylesSource.replace('__HUD_INTER_FONT_URL__', () => interFont.pwa)
+const gfx05Covers = [['__GFX05_COVER_STORY__','img/hero-factions/atr.webp'],['__GFX05_COVER_CHRON__','img/hero-factions/mach.webp']];
+let styles = stylesSource.replace('__HUD_INTER_FONT_URL__', () => interFont.pwa)
   .replace('__GFX_ACTION_PRIMARY_URL__',()=>gfxPrimary.pwa.replace(/^assets\//,'assets/'));
+for (const [token,name] of gfx05Covers) {
+  const asset = ASSETS.find(a=>a.name===name);
+  if (!asset || asset.pwa!==asset.art || styles.split(token).length!==2) throw new Error('GLOBAL-05 cover art missing: '+name);
+  styles=styles.replace(token,()=>asset.pwa);
+}
 const { code: code0, meta } = await js(), b3 = await babylonChunk();
 // номер версии: dev/version.json (правится вручную при выкатке) + хеш сборки (он же версия кэша SW); выводится в лобби (ui/views/lobby.js APP_VER)
 const VNUM = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8')).v;

@@ -25,8 +25,10 @@ function render() {
   renderRes();
   { const vn = document.getElementById('vname'); if (vn) vn.textContent = VIEW_NAMES[view] || ''; }
   document.body.classList.toggle('lobby-on', view === 'lobby');
-  document.getElementById('view').dataset.gfxView = view;
+  const gfxRoot = document.getElementById('view'), gfxChanged = gfxRoot.dataset.gfxView !== view;
+  gfxRoot.dataset.gfxView = view;
   ({ daily: renderDaily, lobby: renderLobby, camp: renderCamp, squad: renderSquad, raid: renderRaid, legend: renderLegend, baron_journey: () => { if(baronViewRenderer) baronViewRenderer(S); }, story_events: () => { if(storyViewRenderer) storyViewRenderer(S); }, shop: renderShop, recycler: renderRecycler, rules: renderRules, trials: renderTrials, feats: renderFeats, conq: renderConq })[view]();
+  if (gfxChanged) gfxRoot.scrollTop = 0;
   document.querySelectorAll('#view canvas[data-scene]').forEach(sceneThumb);
   if (typeof notePoll === 'function' && S) setTimeout(() => notePoll(), 0);
 }
