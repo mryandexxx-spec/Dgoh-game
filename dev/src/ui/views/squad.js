@@ -21,7 +21,7 @@ let RO = (() => { try { const o = JSON.parse(localStorage.getItem(RKEY) || 'null
 const roSave = () => { try { localStorage.setItem(RKEY, JSON.stringify(RO)); } catch (e) {} };
 
 // порядок героев на экране (и для листания в карточке героя)
-// The page is presentation only: detail navigation keeps the complete filtered order.
+// The scrollport is presentation only: detail navigation keeps the complete filtered order.
 function rosterResult() {
   const v=rosterView(RO);
   return {open:RO.status==='locked'?[]:v.open,locked:RO.status==='open'?[]:v.locked};
@@ -36,32 +36,30 @@ const heroes = () => CHARS.filter(c => !c.npc);
 const REGISTRY_NAMES = Object.freeze({leto:'Герцог Лето',baron:'Молодой Барон',trooper:'Солдат',shaddam:'Шаддам IV',bashar:'Башар',legion:'Легионер',mohiam:'Мать Мохиам',fenring:'Граф Фенринг',robot:'Боевой робот',erasmus:'Эразм',margot:'Леди Марго',yue:'Доктор Юэ',baron_legend:'Барон Владимир'});
 const registryName = d => REGISTRY_NAMES[d.id] || d.n;
 
-let rosterPage = 0;
-const rosterPageSize = () => {
-  const w = document.documentElement.clientWidth || window.innerWidth || 844;
-  return w <= 500 ? 6 : w <= 740 ? 12 : 14;
-};
+// In-memory only; keep the gallery position when returning from a hero card.
+let rosterScrollTop = 0;
 const RSTATUS = { all: 'Все', open: 'Открытые', locked: 'Не открыты' };
 const rosterOptions = (items, selected) => items.map(([k,n]) => `<option value="${k}"${k === selected ? ' selected' : ''}>${n}</option>`).join('');
 const rosterFilters = () => [RO.status && RO.status !== 'all' ? RSTATUS[RO.status] : '', RO.f !== 'all' ? fName(RO.f) : '', RO.r !== 'all' ? rName(RO.r) : ''].filter(Boolean);
 function renderSquad() {
+  const previous=$('#rgrid'); if(previous)rosterScrollTop=previous.scrollTop;
   const all=heroes(), open=all.filter(c=>prog(c.id).stars), lead=S.squad[0];
   const total=open.reduce((s,c)=>s+unitPower(c,prog(c.id)),0);
   const factions=[['all','Все фракции'],...ROSTER_SIDES.map(s=>[s,SIDE_N[s]]),...Object.entries(FACTIONS).map(([k,v])=>[k,v.n])];
   const roles=[['all','Все роли'],...Object.entries(ROLES)];
-  let h=`<section class="ros roster-art" aria-label="Имперский реестр"><div class="rregistry"><div class="rhead">
-    <span class="rpw"><strong id="roster-count"></strong><small>Мощь ${fmt(total)} · открыто ${open.length}/${all.length}</small></span><span class="ractive" id="roster-active" aria-live="polite"></span>
+  let h=`<section class="ros roster-art" aria-label="Персонажи"><div class="rregistry"><div class="rhead">
+    <span class="rpw"><span class="rmetric"><small>Открыто героев</small><strong id="roster-count">${open.length} / ${all.length}</strong></span><span class="rmetric"><small>Общая мощь</small><strong id="roster-power">${fmt(total)}</strong></span></span><span class="ractive" id="roster-active" aria-live="polite"></span>
     <button class="rdd" data-rdd="f" aria-haspopup="dialog" aria-expanded="false" aria-controls="rpop-f"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4-2v-4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Фильтры <span id="roster-filter-count" hidden></span></button>
     <label class="rsort"><span>Сортировка</span><select id="rdd-s" aria-label="Сортировка">${rosterOptions(Object.entries(ROSTER_SORTS),RO.s)}</select></label>
-    </div><div class="rgrid" id="rgrid" aria-label="Герои">`;
+    </div><div class="rgrid" id="rgrid" role="region" aria-label="Список героев" tabindex="0">`;
   for(const d of all){
     const p=prog(d.id),inSq=S.squad.includes(d.id);
     h+=`<button class="hc${p.stars?'':' lockd'}" data-open="${d.id}" data-hc="${d.id}" title="${d.n}">${ptRound(d,p,{lead:d.id===lead,registry:true})}<span class="nm">${inSq?'<i class="sq"></i>':''}${registryName(d)}</span>${ptShards(d,p)}</button>`;
   }
   h+=`<div class="rempty" id="rempty" hidden>Нет героев с такими условиями <button class="btn mini" data-rreset="1">Сбросить</button></div></div>
-    <footer class="rfoot"><span class="rdiv" id="rdiv">Не открыты · <span id="rdiv-n"></span></span><div class="rpages" aria-label="Страницы реестра"><button data-rpage="-1" aria-label="Предыдущая страница">‹</button><b id="roster-page" aria-live="polite"></b><button data-rpage="1" aria-label="Следующая страница">›</button></div><button class="rreset" data-rreset="1">Сброс</button></footer></div>
+    </div>
     <div class="rfilter-overlay" hidden><button class="rscrim" data-rdd="0" aria-label="Закрыть фильтры" tabindex="-1"></button><section class="rpop" id="rpop-f" role="dialog" aria-modal="true" aria-labelledby="roster-filter-title" hidden>
-    <div class="rfilter-head"><div><small>ИМПЕРСКИЙ РЕЕСТР</small><h2 id="roster-filter-title">Фильтры</h2></div><button data-rdd="0" aria-label="Закрыть фильтры">×</button></div>
+    <div class="rfilter-head"><div><h2 id="roster-filter-title">Фильтры</h2></div><button data-rdd="0" aria-label="Закрыть фильтры">×</button></div>
     <div class="rstatus">${Object.entries(RSTATUS).map(([k,n])=>`<button class="ropt" data-rstatus="${k}" aria-pressed="${(RO.status||'all')===k}">${n}</button>`).join('')}</div>
     <div class="rfilter-fields"><label>Сторона / фракция<select id="roster-faction" aria-label="Сторона или фракция">${rosterOptions(factions,RO.f)}</select></label><label>Роль<select id="roster-role" aria-label="Роль">${rosterOptions(roles,RO.r)}</select></label></div>
     <div class="rfilter-actions"><button data-rreset="1">Сбросить фильтры</button><button class="rfilter-done" data-rdd="0">Показать героев <b id="roster-filter-result"></b></button></div></section></div></section>`;
@@ -69,35 +67,35 @@ function renderSquad() {
   $('#rdd-s').addEventListener('change',e=>rosterSet('s',e.target.value));
   $('#roster-faction').addEventListener('change',e=>rosterSet('f',e.target.value));
   $('#roster-role').addEventListener('change',e=>rosterSet('r',e.target.value));
+  const grid=$('#rgrid');
+  grid.addEventListener('scroll',()=>{if(grid.isConnected)rosterScrollTop=grid.scrollTop},{passive:true});
   rosterApply();
 }
-// Page and filters are presentation-only. Never write game progress or the wallet.
-function rosterApply(){
+// Filters only reorder mounted DOM. Never write game progress or the wallet.
+function rosterApply(resetScroll=false){
   const g=$('#rgrid');if(!g)return;
-  const v=rosterResult(),ids=[...v.open,...v.locked],size=rosterPageSize(),pages=Math.max(1,Math.ceil(ids.length/size));
-  rosterPage=Math.max(0,Math.min(rosterPage,pages-1));
-  const shown=ids.slice(rosterPage*size,(rosterPage+1)*size),show=new Set(shown),nodes={};
+  const v=rosterResult(),ids=[...v.open,...v.locked],show=new Set(ids),nodes={};
   for(const el of g.querySelectorAll('[data-hc]')){nodes[el.dataset.hc]=el;el.hidden=!show.has(el.dataset.hc);}
-  const emp=$('#rempty');g.append(...shown.map(id=>nodes[id]),emp);emp.hidden=ids.length>0;
-  $('#rdiv').hidden=!v.locked.length;$('#rdiv-n').textContent=v.locked.length;
-  $('#roster-count').textContent='ГЕРОИ · '+ids.length+' / '+heroes().length;
-  $('#roster-page').textContent=(rosterPage+1)+'/'+pages;$('#roster-filter-result').textContent=ids.length;
-  document.querySelector('.ros [data-rpage="-1"]').disabled=rosterPage===0;
-  document.querySelector('.ros [data-rpage="1"]').disabled=rosterPage>=pages-1;
+  const emp=$('#rempty');g.append(...ids.map(id=>nodes[id]),emp);emp.hidden=ids.length>0;
+  $('#roster-filter-result').textContent=ids.length;
+  g.scrollTop=resetScroll?0:rosterScrollTop;rosterScrollTop=g.scrollTop;
   const active=rosterFilters(),chips=$('#roster-active');
-  chips.replaceChildren(...active.map(n=>{const el=document.createElement('span');el.textContent=n;return el}));
+  chips.replaceChildren();
+  if(active.length){
+    const found=document.createElement('span');found.className='rfound';found.textContent='Найдено: '+ids.length;chips.append(found);
+    for(const n of active){const el=document.createElement('span');el.textContent=n;chips.append(el);}
+  }
   const count=$('#roster-filter-count');count.hidden=!active.length;count.textContent=active.length;
   document.querySelector('.ros [data-rdd="f"]').classList.toggle('on',!!active.length);
   for(const b of document.querySelectorAll('.ros [data-rstatus]'))b.setAttribute('aria-pressed',String(b.dataset.rstatus===(RO.status||'all')));
   $('#roster-faction').value=RO.f;$('#roster-role').value=RO.r;$('#rdd-s').value=RO.s;
 }
-window.addEventListener('resize',()=>{if($('#rgrid'))rosterApply()});
 function rosterPop(k){
   const overlay=document.querySelector('.ros .rfilter-overlay'),popup=$('#rpop-f'),trigger=document.querySelector('.ros [data-rdd="f"]');
   if(!overlay||!popup||!trigger)return;
   const open=k==='f',wasOpen=!overlay.hidden;overlay.hidden=!open;popup.hidden=!open;
   trigger.setAttribute('aria-expanded',String(open));trigger.classList.toggle('open',open);
-  for(const el of document.querySelectorAll('.ros .rhead,.ros .rgrid,.ros .rfoot'))el.inert=open;
+  for(const el of document.querySelectorAll('.ros .rhead,.ros .rgrid'))el.inert=open;
   if(open)popup.querySelector('button').focus();else if(wasOpen)trigger.focus();
 }
 document.addEventListener('keydown',e=>{
@@ -113,7 +111,7 @@ function rosterSet(k,v){
   if(k==='s'&&!Object.hasOwn(ROSTER_SORTS,v))return;
   if(k==='f'&&v!=='all'&&!ROSTER_SIDES.includes(v)&&!Object.hasOwn(FACTIONS,v))return;
   if(k==='r'&&v!=='all'&&!Object.hasOwn(ROLES,v))return;
-  RO={...RO,[k]:v};roSave();rosterPage=0;rosterApply();
+  RO={...RO,[k]:v};roSave();rosterApply(true);
 }
 function rosterClick(d){
   if(d.rdd!==undefined){const popup=$('#rpop-f');rosterPop(d.rdd==='f'&&popup?.hidden?'f':null);return true;}
@@ -121,8 +119,7 @@ function rosterClick(d){
   if(d.rr){rosterSet('r',d.rr);return true;}
   if(d.rs){rosterSet('s',d.rs);return true;}
   if(d.rstatus){rosterSet('status',d.rstatus);return true;}
-  if(d.rreset){RO={...RO,f:'all',r:'all',status:'all'};roSave();rosterPage=0;rosterApply();return true;}
-  if(d.rpage==='1'||d.rpage==='-1'){rosterPage+=Number(d.rpage);rosterApply();return true;}
+  if(d.rreset){RO={...RO,f:'all',r:'all',status:'all'};roSave();rosterApply(true);return true;}
   return false;
 }
 
