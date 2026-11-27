@@ -827,3 +827,31 @@ body:has(#view:is([data-gfx-view="rules"],[data-gfx-view="recycler"])) #notes {d
   #overlay2 .infosheet:has(#savecode) .savebox {min-height:70px;height:80px}
   #overlay2 .infosheet:has(#savecode) .acts .btn {min-height:34px}
 }
+
+/* GLOBAL-07 R2 — actual screenshot critique: table row must not collapse,
+   output quantity and submit action must remain visible together. */
+#view[data-gfx-view="rules"] .gfx07-rules .rules {grid-auto-rows:max-content;align-items:start}
+#view[data-gfx-view="rules"] .rules .tbl {min-height:max-content}
+#view[data-gfx-view="recycler"] .ixpage .ixnavigation {display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px;flex:none}
+#view[data-gfx-view="recycler"] .ixnavigation .ixhead {flex:1 1 auto;min-width:0}
+#view[data-gfx-view="recycler"] .ixnavigation .ixhead .sub {display:none}
+#view[data-gfx-view="recycler"] .ixnavigation .ixtabs {flex:none}
+#view[data-gfx-view="recycler"] .ixsubmit {display:grid;grid-template-columns:minmax(0,1fr);gap:4px;padding-top:5px}
+#view[data-gfx-view="recycler"] .ixsubmit .ixnum {font-size:15px;line-height:1.2}
+#view[data-gfx-view="recycler"] .ixsummary .ixbadge {padding:3px 6px}
+#view[data-gfx-view="recycler"] .ixsummary .ixsmall {font-size:11px}
+#view[data-gfx-view="recycler"] .ixsummary h3 {font-size:15px;line-height:1.15}
+#view[data-gfx-view="recycler"] .ixrates {grid-auto-rows:max-content}
+#view[data-gfx-view="recycler"] .ixrate p {margin:5px 0}
+#view[data-gfx-view="recycler"] .ixrate .btn {min-height:32px}
+@media (orientation:landscape) and (max-height:520px) {
+  #view[data-gfx-view="recycler"] .ixnavigation .ixhead h2 {font-size:16px}
+  #view[data-gfx-view="recycler"] .ixnavigation .ixtabs .btn {padding:4px 8px}
+  #view[data-gfx-view="recycler"] .ixpage {gap:4px}
+  #view[data-gfx-view="recycler"] .ixkinds {padding:0 0 3px}
+  #view[data-gfx-view="recycler"] .ixsummary {gap:3px}
+  #view[data-gfx-view="recycler"] .ixsummary .ixactions {gap:4px}
+  #view[data-gfx-view="recycler"] .ixsummary .ixactions button {padding:3px 6px;font-size:11px}
+  #view[data-gfx-view="recycler"] .ixsubmit {grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);align-items:center}
+  #view[data-gfx-view="recycler"] .ixsubmit button {white-space:normal;line-height:1.15;padding-inline:5px}
+}

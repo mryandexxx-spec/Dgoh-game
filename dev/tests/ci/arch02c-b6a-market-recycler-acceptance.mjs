@@ -525,7 +525,7 @@ function prepareRecycler(g) {
     assert.equal(bytes.length,entry.size,entry.name);
     assert.equal(createHash('sha256').update(bytes).digest('hex'),entry.sha256,entry.name);
   }
-  pass('B618','original 26 assets and 32 postrelease additions match approved hashes');
+  pass('B618','original 26 assets and 33 postrelease additions match approved hashes');
 }
 // B619: quoted purchase revalidates exact offer and day; invalid token cannot charge.
 {

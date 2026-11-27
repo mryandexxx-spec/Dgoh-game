@@ -763,7 +763,9 @@ try{
     await run("closeInfo(true);closeOverlay();set_view('shop');render()");
     await click('.sa-ix');
     await run("(function(){const it=Object.values(ITEMS).find(x=>scrapPoint('ix_plate',x.id)>0);S.squad=[];S.squadD=[];S.squadC=[];S.raidPick=[];S.inv[it.id]=Math.ceil(SCRAP.ix_plate.threshold/scrapPoint('ix_plate',it.id))+5;S.scrapLocks={};S.scrapCarry={};persist();render();return it.id})()");
+    const ixOutputFit=()=>page.$eval('.ixsubmit',e=>{const p=e.closest('.ixbasket').getBoundingClientRect();return [...e.children].every(c=>{const r=c.getBoundingClientRect();return r.height>0&&r.top>=p.top&&r.bottom<=p.bottom+1&&r.left>=p.left&&r.right<=p.right+1&&document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)&&c.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2))})});
     await utilityShot('workshop','.ixpage');
+    assert.ok(await ixOutputFit(),'output and submit visible together even when empty');
     assert.equal(await page.$eval('[data-ixconfirm]',e=>e.disabled),true);
     await click('[data-ixtab="rates"]');
     assert.equal(await page.$eval('[data-ixtab="rates"]',e=>e.getAttribute('aria-pressed')),'true');
@@ -781,6 +783,7 @@ try{
     await scrollTap(ixSelector);
     await click('.ixmodal [data-ixadd]:last-child');
     await utilityShot('basket','.ixpage');
+    assert.ok(await ixOutputFit(),'output and submit visible together when selected');
     assert.ok(await page.$eval('[data-ixconfirm]',e=>{const r=e.getBoundingClientRect(),p=e.closest('.ixbasket').getBoundingClientRect();return !e.disabled&&r.bottom<=p.bottom+1&&r.top>=p.top}),'submit always visible outside scrollport');
     await click('[data-ixconfirm]');
     await utilityShot('confirm','.ixmodal .panel');
@@ -805,6 +808,8 @@ try{
     await click('.infosheet .acts [data-iclose]');
     await run("set_view('rules');render()");
     await utilityShot('rules','.gfx07-rules');
+    const tableGeometry=await page.$eval('.gfx07-rules .tbl',e=>{const b=e.getBoundingClientRect(),t=e.querySelector('table').getBoundingClientRect(),h=e.querySelector('thead').getBoundingClientRect(),p=e.closest('.rules').getBoundingClientRect();return {table:t.height,box:b.height,rows:e.querySelectorAll('tbody tr').length,headerVisible:h.height>0&&h.top>=p.top-1&&h.bottom<=p.bottom+1}});
+    assert.ok(tableGeometry.rows===4&&tableGeometry.table>80&&tableGeometry.box>=tableGeometry.table&&tableGeometry.headerVisible,'damage table must not collapse '+JSON.stringify(tableGeometry));
     assert.ok(await page.$eval('.gfx07-rules .rules',e=>e.scrollHeight>e.clientHeight),'rules have a dedicated scrollport');
     await page.$eval('.gfx07-rules .rules',e=>e.scrollTop=e.scrollHeight);
     await utilityShot('rules-bottom','.gfx07-rules');
