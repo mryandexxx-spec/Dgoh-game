@@ -620,3 +620,11 @@ body:has(#view:is([data-gfx-view="raid"],[data-gfx-view="legend"],[data-gfx-view
   html:has(body > #view:is([data-gfx-view="raid"],[data-gfx-view="legend"],[data-gfx-view="baron_journey"],[data-gfx-view="story_events"],[data-gfx-view="conq"])) {height:100%;overflow:hidden;overscroll-behavior:none}
   body:has(> #view:is([data-gfx-view="raid"],[data-gfx-view="legend"],[data-gfx-view="baron_journey"],[data-gfx-view="story_events"],[data-gfx-view="conq"])) {margin:0;max-height:100dvh;overflow:hidden}
 }
+
+/* GLOBAL-05 status ownership: a route/disk receipt must not obscure the
+   controls of a subsequently opened Conquest modal. Feedback generated
+   within that modal still appears, but cannot intercept native taps. */
+body:has(#view[data-gfx-view="conq"]) > .toast,
+body:has(#view[data-gfx-view="conq"]) > .toast * {pointer-events:none}
+body:has(#overlay .cqcbox) > .toast:not([data-cq-dialog-origin="details"]),
+body:has(#overlay .cqdbox) > .toast:not([data-cq-dialog-origin="disks"]) {visibility:hidden}

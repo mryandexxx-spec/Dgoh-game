@@ -643,6 +643,15 @@ try{
       if(await page.$('[data-cqdisk]')){
         await scrollTap('[data-cqdisk]');
         assert.equal(await run('!!cq().pick'),false);
+        // Keep the real disk receipt alive while opening the next dialog.
+        // This is the visual overlap seen on both landscape sizes.
+        assert.ok(await page.$eval('.toast',e=>e.textContent.includes('диск')));
+        await page.$eval('#view',e=>e.scrollTop=0);
+        await scrollTap('[data-cqres]');
+        const receipt=await page.evaluate(()=>[...document.querySelectorAll('.toast')].map(e=>({visibility:getComputedStyle(e).visibility,pointer:getComputedStyle(e).pointerEvents})));
+        assert.ok(receipt.length>0&&receipt.every(x=>x.visibility==='hidden'&&x.pointer==='none'),'stale disk receipt must not obscure the energy modal: '+JSON.stringify(receipt));
+        await expeditionShot('jihad-energy-after-disk','.cqcbox');
+        await scrollTap('.cqcbox .btn[data-close="1"]');
       }
     }
     if(await page.$('[data-cqres]')){
