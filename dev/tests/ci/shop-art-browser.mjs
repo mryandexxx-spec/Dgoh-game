@@ -58,6 +58,32 @@ try{
     // Close any old info/detail presentation before routing, just like shoptab.
     await run('closeInfo(true);closeOverlay()');
 
+    // GFX-06 GLOBAL-01: actual mounted shared-art surfaces before the shop
+    // transaction fixture changes. Do not claim or modify rewards.
+    const sharedShot=async(label,selector,min)=>{
+      await page.waitForSelector(selector,{visible:true,timeout:10000});
+      const result=await page.evaluate(async(selector)=>{
+        await document.fonts.ready;
+        const root=document.querySelector(selector);
+        const icons=[...root.querySelectorAll('svg image')].filter(el=>/assets\/(ui\/shop\/|img\/(water-literjon|candle-glowglobe|solari-stack|soostone))/.test(el.getAttribute('href')||''));
+        const bad=[];
+        for(const href of new Set(icons.map(el=>el.getAttribute('href')))){
+          const img=new Image();img.src=href;try{await img.decode()}catch{bad.push(href)}
+        }
+        const rect=root.getBoundingClientRect();
+        return {count:icons.length,bad,fit:rect.left>=-1&&rect.top>=-1&&rect.right<=innerWidth+1&&rect.bottom<=innerHeight+1};
+      },selector);
+      assert.ok(result.count>=min&&result.bad.length===0&&result.fit,label+' '+JSON.stringify(result));
+      await page.screenshot({path:path.join(shots,width+'-global01-'+label+'.png')});
+    };
+    await run("set_view('daily');render()");
+    await sharedShot('daily','.ui03-daily',2);
+    await run('openCalendar()');
+    await sharedShot('calendar','.ui03-calendar-screen',5);
+    await run('closeInfo(true);closeOverlay();openInfo("ix_plate")');
+    await sharedShot('resource-info','#overlay2 .infosheet',1);
+    await run('closeInfo(true);closeOverlay()');
+
     await run("S.solari=1000000;S.cry=5000;S.buys={d:todayKey(),n:{}};persist();S.shopTab='post';set_view('shop');render()");
     assert.equal(await run('loadSave.writer.state().status'),'owned');
     const snap=()=>page.evaluate(()=>{const s=JSON.parse(localStorage.getItem('dune-goh-v1'));return {solari:s.solari,plast:s.plast,buys:s.buys.n['post:pl']||0}});

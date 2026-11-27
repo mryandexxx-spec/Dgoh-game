@@ -41,6 +41,6 @@ assert.equal(g.get('RW_NAME').rid,'ридулианских кристаллов
 assert.match(surfaces[3][1],/Камни су/);
 assert.match(surfaces[4][1],/Камни су/);
 assert.ok(g.get('ic')('sol').includes('solari-stack'));
-assert.ok(g.get('ic')('rid').includes('<path '));
-assert.ok(g.get('calendarRewardIcon')('folio',7).includes('<path '));
+assert.match(g.get('ic')('rid'),/<image href="assets\/ui\/shop\/postrelease\/rid\.[0-9a-f]{8}\.webp"/);
+assert.match(g.get('calendarRewardIcon')('folio',7),/<image href="assets\/ui\/shop\/folio\.[0-9a-f]{8}\.png"/);
 console.log('PASS UI-05:',html,matches[0],bytes.length,'bytes; stable cry key, identical artwork and new name');

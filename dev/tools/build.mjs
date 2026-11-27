@@ -169,6 +169,30 @@ for (const [token, name] of Object.entries(uiArtwork)) {
     throw new Error('UI immutable artwork missing or ambiguous: ' + name);
   code1 = code1.replace(token, () => asset.pwa);
 }
+// GFX-06 GLOBAL-01: share the shipped art bytes without adding network dependencies.
+for (const [token,name,count] of [
+  ['__GFX_RES_PL_URL__','ui/shop/pl.png',2],
+  ['__GFX_RES_FOLIO_URL__','ui/shop/folio.png',2],
+  ['__GFX_RES_SEAL_URL__','ui/shop/seal.png',2],
+  ['__GFX_RES_BLOOD_ECHO_URL__','ui/shop/blood_echo.png',2],
+  ['__GFX_RES_IX_PLATE_URL__','ui/shop/postrelease/ix_plate.webp',2],
+  ['__GFX_RES_HOLTZ_CONDUCTOR_URL__','ui/shop/postrelease/holtz_conductor.webp',2],
+  ['__GFX_RES_WOL_URL__','ui/shop/postrelease/wol.webp',2],
+  ['__GFX_RES_LEGACY_THREAD_URL__','ui/shop/postrelease/legacy_thread.webp',2],
+  ['__GFX_RES_AGE_RESONANCE_URL__','ui/shop/postrelease/age_resonance.webp',2],
+  ['__GFX_RES_TEETH_URL__','ui/shop/postrelease/teeth.webp',2],
+  ['__GFX_RES_RID_URL__','ui/shop/postrelease/rid.webp',2],
+  ['__GFX_RES_WRING_URL__','ui/shop/postrelease/wring.webp',2],
+  ['__GFX_RES_JT_URL__','ui/shop/postrelease/jt.webp',2],
+  ['__GFX_RES_FRAG_URL__','ui/shop/postrelease/frag.webp',2],
+  ['__GFX_RES_WATER_URL__','img/water-literjon.webp',1],
+  ['__GFX_RES_CANDLE_URL__','img/candle-glowglobe.webp',1],
+]) {
+  const asset = ASSETS.find(a => a.name === name);
+  if (!asset || code1.split(token).length !== count+1 || asset.pwa !== asset.art)
+    throw new Error('Shared resource artwork missing or ambiguous: '+name);
+  code1=code1.replaceAll(token,()=>asset.pwa);
+}
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(path.join(OUT, 'app.unmin.js'), withAssets(code1, 'pwa'));   // для tools/check-bundle.mjs (порядок модулей по комментариям-маркерам)
 console.log(`версия: ${APP_VER}`);
