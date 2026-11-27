@@ -198,15 +198,39 @@ try{
     // Real native Chromium touch swipe, not an assignment to scrollTop.
     const cdp=await page.createCDPSession();
     const x=Math.round(beforeScroll.grid.x+beforeScroll.grid.w/2),y=Math.round(beforeScroll.grid.y+beforeScroll.grid.h-28);
-    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
-    for(let i=1;i<=7;i++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x,y:y-i*18}]});await new Promise(r=>setTimeout(r,25))}
-    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-    await page.waitForFunction(()=>document.querySelector('#rgrid').scrollTop>20);
-    await cdp.detach();
-    await page.mouse.move(x,Math.round(beforeScroll.grid.y+beforeScroll.grid.h/2));
-    await page.mouse.wheel({deltaY:4000});
-    await page.waitForFunction(()=>{const g=document.querySelector('#rgrid');return g.scrollTop>=g.scrollHeight-g.clientHeight-2});
+    const distance=Math.floor(beforeScroll.grid.h-56);
+    // Keep the entire gesture within the gallery, including the final point.
+    // On touch viewports Chromium may suppress wheel events after a touch fling.
+    // Reach the end by additional native swipes instead of using mouse.wheel
+    // or programmatically assigning scrollTop. Bound retries and require progress.
+    const swipeGallery=async()=>{
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+      for(let i=1;i<=12;i++){
+        await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x,y:Math.round(y-distance*i/12)}]});
+        await new Promise(r=>setTimeout(r,35));
+      }
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+      // Let the compositor finish any inertial motion before the next gesture.
+      let prev=-1,stable=0;
+      for(let i=0;i<30&&stable<3;i++){
+        await new Promise(r=>setTimeout(r,100));
+        const now=(await scrollLayout()).top;
+        stable=Math.abs(now-prev)<0.5?stable+1:0;prev=now;
+      }
+    };
+    try{
+      await swipeGallery();
+      assert.ok((await scrollLayout()).top>20,'native touch swipe moves gallery');
+      for(let attempt=0;attempt<8;attempt++){
+        const current=await scrollLayout();
+        if(current.top>=current.max-2)break;
+        await swipeGallery();
+        const next=await scrollLayout();
+        assert.ok(next.top>current.top||next.top>=next.max-2,'native swipe must advance: '+JSON.stringify({width,current,next}));
+      }
+    }finally{await cdp.detach()}
     const afterScroll=await scrollLayout();
+    assert.ok(afterScroll.top>=afterScroll.max-2,'native touch reaches last row: '+JSON.stringify({width,afterScroll}));
     assert.deepEqual(afterScroll.header,beforeScroll.header,'fixed HUD while scrolling');
     assert.deepEqual(afterScroll.bar,beforeScroll.bar,'fixed filters and collection metrics while scrolling');
     assert.equal(afterScroll.document,0);assert.equal(afterScroll.view,0);
