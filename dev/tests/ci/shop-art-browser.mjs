@@ -131,6 +131,102 @@ try{
       await page.screenshot({path:path.join(shots,width+'-global02-'+view+'.png')});
     }
 
+
+    // GLOBAL-03: actual roster/detail progression surfaces; no progression
+    // action is executed. All screenshots are of mounted runtime DOM/WebGL.
+    await run("closeInfo(true);closeOverlay();set_view('squad');render()");
+    await page.waitForSelector('.ros .rgrid > button.hc:not([hidden])',{visible:true});
+    const heroShot=async(label,selector)=>{
+      await page.waitForSelector(selector,{visible:true,timeout:15000});
+      await page.evaluate(async()=>{await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))});
+      const geometry=await page.$eval(selector,e=>{const b=e.getBoundingClientRect();return {w:b.width,h:b.height,left:b.left,top:b.top,right:b.right,bottom:b.bottom}});
+      assert.ok(geometry.w>0&&geometry.h>0&&geometry.left>=-1&&geometry.top>=-1&&geometry.right<=width+1&&geometry.bottom<=height+1,label+' '+JSON.stringify(geometry));
+      await page.screenshot({path:path.join(shots,width+'-global03-'+label+'.png')});
+    };
+    assert.equal(await page.$eval('.ros .rdd',e=>getComputedStyle(e).borderTopColor),'rgb(128, 106, 71)');
+    const queuedNotes=await run('NOTES.length');
+    assert.equal(await page.$eval('#notes',e=>getComputedStyle(e).display),'none','queued notifications must not cover roster');
+    await page.screenshot({path:path.join(shots,width+'-global03-roster.png')});
+    await click('.ros [data-rdd="f"]');
+    await heroShot('roster-filter','.ros #rpop-f');
+    // The final faction must remain reachable through the menu's own scroll,
+    // even on the compact phone. Restore All through the real filter buttons.
+    const lastFaction=await page.$eval('.ros #rpop-f .ropts:last-child .ropt:last-child',e=>{
+      const menu=e.closest('.rpop');
+      menu.scrollTop=menu.scrollHeight;
+      return e.getAttribute('data-rf');
+    });
+    await click('.ros #rpop-f [data-rf="'+lastFaction+'"]');
+    assert.equal(await page.$eval('.ros #rpop-f [data-rf="'+lastFaction+'"]',e=>e.getAttribute('aria-pressed')),'true');
+    await click('.ros [data-rdd="f"]');
+    await page.$eval('.ros #rpop-f',e=>e.scrollTop=0);
+    await click('.ros #rpop-f [data-rf="all"]');
+    assert.equal(await page.$eval('.ros #rpop-f',e=>e.hidden),true);
+    assert.equal(await run('NOTES.length'),queuedNotes,'roster does not dismiss reward notifications');
+    assert.ok(await run('loadB3()'),'hero WebGL available');
+    await run("openDetail('duncan')");
+    await page.waitForFunction(()=>{try{return !!document.querySelector('.hcfig canvas')&&(0,eval)('HERO_STAGE?.awake && HERO_STAGE.isCur()')}catch{return false}},{timeout:60000});
+    await heroShot('hero-duncan','#overlay .hc');
+    assert.equal(await page.$$eval('#overlay .hcgs',els=>els.length),6,'six gear slots');
+    assert.equal(await page.$eval('#overlay .hc',e=>e.dataset.heroTheme),'atr');
+    assert.equal(await page.$eval('#overlay .hc .hcib',e=>getComputedStyle(e).borderTopWidth),'1px');
+    // Scroll a nested list only when required; then use native pointer input.
+    const heroClick=async selector=>{
+      await page.$eval(selector,e=>e.scrollIntoView({block:'nearest',inline:'nearest'}));
+      await click(selector);
+    };
+    await heroClick('#overlay .hcsk:not(.gl)');
+    await heroShot('skill','#overlay2 .swin');
+    assert.ok(await page.$('#overlay2 .swtabs button[aria-selected="true"]'));
+    await heroClick('#overlay2 .swtabs button[data-skt="1"]');
+    assert.equal(await page.$eval('#overlay2 .swtabs button[data-skt="1"]',e=>e.getAttribute('aria-selected')),'true');
+    await heroShot('skill-level','#overlay2 .swin');
+    await run('closeInfo(true)');
+    await heroClick('#overlay .hcgs');
+    await heroShot('equipment','#overlay2 .e3sheet');
+    await run('closeInfo(true)');
+    await heroClick('#overlay .hcmem');
+    await heroShot('memory','#overlay2 .memscr');
+    await run('closeInfo(true)');
+    await heroClick('#overlay [data-bio]');
+    await heroShot('dossier','#overlay2 .ui06-dossier');
+    await heroClick('#overlay2 [data-ui06-tab="stats"]');
+    assert.equal(await page.$eval('#overlay2 [data-ui06-tab="stats"]',e=>e.getAttribute('aria-selected')),'true');
+    await heroShot('dossier-stats','#overlay2 .ui06-dossier');
+    await run("closeInfo(true);closeOverlay();openDetail('muaddib')");
+    await page.waitForFunction(()=>{try{return (0,eval)("HERO_STAGE?.motionHero==='muaddib' && HERO_STAGE.awake && HERO_STAGE.isCur()")}catch{return false}},{timeout:60000});
+    // Real clipping/hit check BEFORE any scroll: gear must be visible above
+    // fixed footer, not merely present somewhere in the DOM.
+    await heroShot('legend','#overlay .hc.has-ultimate');
+    const legendLayout=await page.evaluate(()=>{
+      const root=document.querySelector('#overlay .hc.has-ultimate');
+      const panel=root.querySelector('.hcpilot-controls').getBoundingClientRect();
+      const footer=root.querySelector('.hcmid').getBoundingClientRect();
+      const gear=[...root.querySelectorAll('.hcgs')];
+      const check=e=>{const b=e.getBoundingClientRect();return b.width>=44&&b.height>=44&&b.top>=panel.top-1&&b.bottom<=Math.min(panel.bottom,footer.top)+1&&e.contains(document.elementFromPoint(b.left+b.width/2,b.top+b.height/2))};
+      const pinned=[root.querySelector('.hcleft > .hcsk.gl'),root.querySelector('.hcmem')];
+      const skillList=root.querySelector('.hcsks'),skillBounds=skillList.getBoundingClientRect();
+      const ordinary=[...skillList.querySelectorAll('.hcsk')].map(e=>{const b=e.getBoundingClientRect();return b.height>=44&&b.top>=skillBounds.top-1&&b.bottom<=skillBounds.bottom+1&&e.contains(document.elementFromPoint(b.left+b.width/2,b.top+b.height/2))});
+      return {gear:gear.length,slots:gear.map(check),pinned:pinned.map(check),skills:skillList.clientHeight,ordinary,rects:Object.fromEntries(['.hcpilot-controls','.hcright','.hcleft','.hc-capline','.hcsk.gl','.hcsks','.hcsks .hcsk','.hcmem','.hcgear','.hcmid'].map(s=>{const e=root.querySelector(s),b=e.getBoundingClientRect();return [s,{y:b.y,h:b.height,scroll:e.scrollHeight,client:e.clientHeight}]}))};
+    });
+    console.log('GLOBAL-03 legend geometry',width,height,JSON.stringify(legendLayout));
+    assert.ok(legendLayout.gear===6&&legendLayout.slots.every(Boolean)&&legendLayout.pinned.every(Boolean)&&legendLayout.skills>=44&&legendLayout.ordinary.length>0&&legendLayout.ordinary.every(Boolean),JSON.stringify(legendLayout));
+    assert.ok(await page.$('#overlay .hcleft > .hcsk.gl'),'legend ultimate retained');
+    await heroClick('#overlay .hcsk.gl');
+    await heroShot('ultimate','#overlay2 .swin');
+    await run('closeInfo(true);closeOverlay()');
+    // Locked view: use the real roster definition and an isolated fixture
+    // override, restoring the original progress before shop assertions.
+    const savedHero=await run("structuredClone(prog('duncan'))");
+    try{
+      await run("Object.assign(prog('duncan'),{stars:0,relic:0});openDetail('duncan')");
+      await heroShot('locked','#overlay .hc.locked');
+      assert.equal(await page.$$eval('#overlay .hcgs',els=>els.length),0);
+      assert.equal(await page.$eval('#overlay .hcmem',e=>e.disabled),true);
+    }finally{
+      await run('closeInfo(true);closeOverlay();Object.assign(prog("duncan"),'+JSON.stringify(savedHero)+')');
+    }
+
     await run("S.solari=1000000;S.cry=5000;S.buys={d:todayKey(),n:{}};persist();S.shopTab='post';set_view('shop');render()");
     assert.equal(await run('loadSave.writer.state().status'),'owned');
     const snap=()=>page.evaluate(()=>{const s=JSON.parse(localStorage.getItem('dune-goh-v1'));return {solari:s.solari,plast:s.plast,buys:s.buys.n['post:pl']||0}});

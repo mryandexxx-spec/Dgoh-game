@@ -65,10 +65,20 @@ function rosterApply() {
   emp.hidden = show.size > 0;
 }
 
+// The menu is a separate scrollport; constrain it to the remaining actual
+// viewport rather than letting the last faction disappear below the screen.
+function rosterFitPopup() {
+  const p = document.querySelector('.ros .rpop:not([hidden])');
+  if (!p) return;
+  const bottom = Math.min(window.innerHeight, $('#view').getBoundingClientRect().bottom);
+  p.style.setProperty('--roster-pop-height', Math.max(0, Math.floor(bottom - p.getBoundingClientRect().top - 8)) + 'px');
+}
+window.addEventListener('resize', rosterFitPopup);
 function rosterPop(k) {
   for (const x of ['f', 'r', 's']) { const p = $('#rpop-' + x); if (p) p.hidden = x !== k; }
   for (const b of document.querySelectorAll('.rdd')) b.classList.toggle('open', b.dataset.rdd === k);
   const sc = document.querySelector('.rscrim'); if (sc) sc.hidden = !['f', 'r', 's'].includes(k);
+  rosterFitPopup();
 }
 
 function rosterSet(k, v) {

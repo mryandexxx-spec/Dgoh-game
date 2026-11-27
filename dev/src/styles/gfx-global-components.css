@@ -94,3 +94,183 @@
   #view:has(.trcards) :is(.trhead,.trtier) button.btn,
   #overlay2 .infosheet button.btn {transition:none;animation:none}
 }
+
+/* GLOBAL-03 — roster, hero controls and their development windows.
+   The shop's material vocabulary is translated into each world's own metal;
+   no gold wash of faction/gear/DP/ultimate colors, no changes to 3D surfaces. */
+.ros .rhead {
+  border-bottom-color:var(--gfx-brass-edge);
+  box-shadow:0 1px #e6c99716;
+}
+.ros .rpw b {color:var(--gfx-action-ink);font-variant-numeric:tabular-nums}
+.ros :is(.rdd,.ropt) {
+  border-radius:var(--gfx-action-radius);
+  background:var(--gfx-action-surface);
+  border-color:var(--gfx-brass-edge);
+  color:var(--gfx-action-muted);
+  box-shadow:var(--gfx-action-shadow);
+}
+.ros :is(.rdd.on,.rdd.open,.ropt[aria-pressed="true"]) {
+  background:var(--gfx-action-down);
+  border-color:var(--gfx-brass-light);
+  color:var(--gfx-action-ink);
+  box-shadow:inset 0 -2px var(--gfx-brass-light);
+}
+.ros .rpop {
+  box-sizing:border-box;
+  max-height:var(--roster-pop-height,calc(100dvh - 16px));
+  overflow-y:auto;overscroll-behavior:contain;
+  align-content:start;scrollbar-width:thin;
+  grid-auto-rows:max-content;
+  border-radius:var(--gfx-action-radius);
+  border-color:var(--gfx-brass-edge);
+  background:linear-gradient(155deg,#383126,#211e19 72%);
+  box-shadow:inset 0 1px #e6c99722,0 12px 30px #0008;
+}
+.ros .rgrid > button.hc .nm {font-family:'Dune Inter',system-ui,sans-serif;font-weight:650;text-shadow:none}
+.ros .rgrid > button.hc .hsh {border-radius:3px;border-color:#66553d;background:#211e19}
+.ros .rdiv {color:var(--gfx-action-muted)}
+.ros .rdiv::before,.ros .rdiv::after {background:#806a4770}
+.ros :is(.rdd,.ropt,.rgrid > button.hc):focus-visible {
+  outline:2px solid var(--gfx-brass-light);outline-offset:-2px;
+}
+
+/* Showcase: reuse the tactile edge, with the existing palette per faction.
+   Do not touch the camera, stage, slot size, portrait or legend treatment. */
+.detail .sheet.hc.gfx02-pilot[data-hero-theme] {
+  --gfx-hero-metal:linear-gradient(155deg,var(--hero-panel),var(--hero-surface));
+  --gfx-hero-edge:color-mix(in srgb,var(--hero-line) 75%,transparent);
+  --gfx-hero-bevel:inset 0 1px color-mix(in srgb,var(--hero-accent) 15%,transparent),0 1px 3px #0005;
+}
+.hc.gfx02-pilot[data-hero-theme] :is(.hcib,.hcarr) {
+  background:var(--gfx-hero-metal);border:1px solid var(--gfx-hero-edge);
+  box-shadow:var(--gfx-hero-bevel);border-radius:var(--gfx-action-radius);
+}
+.hc.gfx02-pilot[data-hero-theme] .hcib.on {
+  box-shadow:inset 0 -2px var(--hero-accent);
+}
+.hc.gfx02-pilot[data-hero-theme] .hcsk:not(.gl) {
+  background:linear-gradient(180deg,var(--hero-surface),transparent);
+  border-color:var(--gfx-hero-edge);
+  border-radius:var(--gfx-action-radius);
+}
+.hc.gfx02-pilot[data-hero-theme] .hcmem {
+  background:var(--gfx-hero-metal);border:1px solid var(--gfx-hero-edge);
+  border-radius:var(--gfx-action-radius);box-shadow:var(--gfx-hero-bevel);
+}
+.hc.gfx02-pilot[data-hero-theme] .hcgs .box {
+  box-shadow:var(--gfx-hero-bevel);
+}
+.hc.gfx02-pilot[data-hero-theme] .hcblk .btn:not(.go,.buy,.lack):not(:disabled) {
+  background:var(--gfx-hero-metal);border-color:var(--hero-line);
+  box-shadow:var(--gfx-hero-bevel);color:var(--hero-accent);
+}
+.hc.gfx02-pilot[data-hero-theme] .hcblk .btn.go:not(.buy,.lack):not(:disabled) {
+  background:linear-gradient(180deg,color-mix(in srgb,var(--hero-cta) 82%,white),var(--hero-cta));
+  color:var(--hero-ink);border-color:var(--hero-cta);box-shadow:var(--gfx-hero-bevel);
+}
+.hc.gfx02-pilot[data-hero-theme] .hcbtn:is(.go,.buy):not(:disabled) {
+  box-shadow:inset 3px 0 var(--hero-accent),var(--gfx-hero-bevel);
+}
+.hc.gfx02-pilot[data-hero-theme] :is(.hcblk .btn,.hcbtn):disabled {
+  background:var(--hero-surface);color:var(--hero-muted);border-color:var(--gfx-hero-edge);
+  box-shadow:none;cursor:not-allowed;opacity:1;
+}
+.hc.gfx02-pilot[data-hero-theme] :is(.hcib,.hcarr,.hcsk,.hcmem,.hcgs,.hcbtn,.hcblk .btn):focus-visible {
+  outline:2px solid var(--hero-accent);outline-offset:-2px;
+}
+
+/* Neutral development windows use the actual shop button texture for
+   acknowledgements only. Buy/lack/upgrade and tier semantics are untouched. */
+#overlay2 .detail .sheet:is(.swin,.e3sheet,.ui06-dossier) {
+  background:linear-gradient(155deg,#383126,#211e19 72%);
+  border-color:var(--gfx-brass-edge);
+  box-shadow:inset 0 1px #e6c99722,0 12px 30px #0008;
+}
+#overlay2 .detail .sheet.memscr {
+  background:radial-gradient(ellipse at 16% 55%,#5a352540,transparent 58%),linear-gradient(155deg,#30271e,#1b1814 72%);
+}
+#overlay2 :is(.swhd,.swft,.memtop,.ui06-dossier-head,.ui06-dossier-foot) {
+  border-color:#806a4770;
+}
+#overlay2 :is(.swin,.memscr,.e3sheet,.ui06-dossier) :is(.hcib,.memchip,.e3mat,.ibk,.ui06-dossier-head button,.ui06-dossier-foot .btn) {
+  background:var(--gfx-action-surface);border-color:var(--gfx-brass-edge);
+  border-radius:var(--gfx-action-radius);color:var(--gfx-action-ink);
+  box-shadow:var(--gfx-action-shadow);
+}
+#overlay2 :is(.swtabs,.ui06-tabs) {
+  gap:0;background:#211e19;border-radius:var(--gfx-action-radius);
+  box-shadow:inset 0 0 0 1px #806a4770;
+}
+#overlay2 :is(.swtabs,.ui06-tabs) button {
+  border-radius:2px;background:transparent;box-shadow:none;
+}
+#overlay2 .swtabs button[aria-selected="true"],
+#overlay2 .ui06-tabs button[aria-selected="true"] {
+  background:var(--gfx-action-down);border-color:var(--gfx-brass-light);
+  color:var(--gfx-action-ink);box-shadow:inset 0 -2px var(--gfx-brass-light);
+}
+#overlay2 :is(.swok.go,.memscr .membuy > .btn.go[data-iclose],.ui06-dossier-foot .btn[data-iclose]):not(:disabled) {
+  background:var(--gfx-action-primary) center / 100% 100% no-repeat;
+  color:#211d16;border-color:var(--gfx-brass-light);box-shadow:var(--gfx-action-shadow);
+  border-radius:var(--gfx-action-radius);text-shadow:none;
+}
+#overlay2 :is(.swin,.memscr,.e3sheet,.ui06-dossier) button:focus-visible {
+  outline:2px solid var(--gfx-brass-light);outline-offset:-2px;
+}
+#overlay2 .memscr .memna,#overlay2 .swin .swtbl {background:#1b1814}
+#overlay2 .memscr .memsteps li.next {
+  background:var(--gfx-action-down);border-color:var(--gfx-brass-light);
+}
+
+/* GLOBAL-03 visual gate: roster is a selection screen, never obscure its
+   portraits or popup with the queued corner reward card. CSS only: queue
+   and claim state are untouched; ordinary notifications return on exit. */
+body:has(#view .ros) > #notes {display:none}
+
+/* Legend development is an explicit vertical budget, not an overflowing
+   flex column. Reserve the signature, memory, full gear row and footer.
+   The level/star and ordinary skill areas remain independent scrollports. */
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcpilot-controls {
+  overflow:hidden;gap:2px;padding-top:3px;padding-bottom:3px;
+}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcpilot-controls .hcright {
+  flex:0 1 auto;min-height:36px;max-height:52px;
+}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcleft {
+  flex:1 1 0;min-height:0;gap:1px;padding-top:1px;
+}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks {
+  flex:1 1 0;min-height:0;align-content:start;
+  grid-auto-rows:50px;
+}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcsk:not(.gl) {
+  box-sizing:border-box;height:50px;min-height:50px;padding:1px;gap:0;
+  grid-template-rows:26px minmax(0,1fr);
+}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcski {width:26px;height:26px}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcskt :is(b,small) {
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;
+  font-size:9px;line-height:1;
+}
+.hc.gfx02-pilot.has-ultimate:not(.locked) .hcgear {flex:none;padding-top:2px}
+@media (max-height:400px) and (orientation:landscape) {
+  .detail .sheet.hc.gfx02-pilot.has-ultimate:not(.locked) {
+    grid-template-rows:44px minmax(0,1fr) 60px;
+  }
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcmid {padding-top:2px;padding-bottom:2px;gap:1px}
+}
+@media (max-width:750px) and (max-height:400px) and (orientation:landscape) {
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcpilot-controls .hcright {
+    min-height:36px;max-height:38px;
+  }
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcright .hcblk {gap:1px}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcright .hccap {font-size:10px;line-height:1.05}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcright .hcbig {font-size:18px}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcright .hcnote {font-size:9px;line-height:1}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks {grid-auto-rows:48px}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcsk:not(.gl) {
+    height:48px;min-height:48px;grid-template-rows:24px minmax(0,1fr);
+  }
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcski {width:24px;height:24px}
+}
