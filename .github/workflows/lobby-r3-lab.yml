@@ -1,0 +1,41 @@
+name: Lobby R3 isolated art lab
+on:
+  push:
+    branches: [lab/global-08-r3-b-art]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  visual-lab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - run: cd dev && npm ci --ignore-scripts --no-audit --no-fund
+      - name: Local HTTP and isolated WebGL test
+        env:
+          LAB_OUT: /tmp/lobby-r3
+        run: |
+          python3 -m http.server 8765 > /tmp/lobby-http.log 2>&1 &
+          sleep 2
+          node dev/docs/lobby-r3-b-art-test.mjs
+      - name: Upload real browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lobby-r3-webgl-evidence
+          path: /tmp/lobby-r3/
+      - name: Portable lab (no game boot or save access)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lobby-r3-standalone
+          path: |
+            dev/docs/lobby-r3-b-art.html
+            babylon3d.js
+            assets/
