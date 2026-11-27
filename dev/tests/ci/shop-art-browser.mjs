@@ -197,6 +197,7 @@ try{
     await page.waitForFunction(()=>{try{return (0,eval)("HERO_STAGE?.motionHero==='muaddib' && HERO_STAGE.awake && HERO_STAGE.isCur()")}catch{return false}},{timeout:60000});
     // Real clipping/hit check BEFORE any scroll: gear must be visible above
     // fixed footer, not merely present somewhere in the DOM.
+    await heroShot('legend','#overlay .hc.has-ultimate');
     const legendLayout=await page.evaluate(()=>{
       const root=document.querySelector('#overlay .hc.has-ultimate');
       const panel=root.querySelector('.hcpilot-controls').getBoundingClientRect();
@@ -206,9 +207,9 @@ try{
       const pinned=[root.querySelector('.hcleft > .hcsk.gl'),root.querySelector('.hcmem')];
       const skillList=root.querySelector('.hcsks'),skillBounds=skillList.getBoundingClientRect();
       const ordinary=[...skillList.querySelectorAll('.hcsk')].map(e=>{const b=e.getBoundingClientRect();return b.height>=44&&b.top>=skillBounds.top-1&&b.bottom<=skillBounds.bottom+1&&e.contains(document.elementFromPoint(b.left+b.width/2,b.top+b.height/2))});
-      return {gear:gear.length,slots:gear.map(check),pinned:pinned.map(check),skills:skillList.clientHeight,ordinary};
+      return {gear:gear.length,slots:gear.map(check),pinned:pinned.map(check),skills:skillList.clientHeight,ordinary,rects:Object.fromEntries(['.hcpilot-controls','.hcright','.hcleft','.hc-capline','.hcsk.gl','.hcsks','.hcsks .hcsk','.hcmem','.hcgear','.hcmid'].map(s=>{const e=root.querySelector(s),b=e.getBoundingClientRect();return [s,{y:b.y,h:b.height,scroll:e.scrollHeight,client:e.clientHeight}]}))};
     });
-    await heroShot('legend','#overlay .hc.has-ultimate');
+    console.log('GLOBAL-03 legend geometry',width,height,JSON.stringify(legendLayout));
     assert.ok(legendLayout.gear===6&&legendLayout.slots.every(Boolean)&&legendLayout.pinned.every(Boolean)&&legendLayout.skills>=44&&legendLayout.ordinary.length>0&&legendLayout.ordinary.every(Boolean),JSON.stringify(legendLayout));
     assert.ok(await page.$('#overlay .hcleft > .hcsk.gl'),'legend ultimate retained');
     await heroClick('#overlay .hcsk.gl');
