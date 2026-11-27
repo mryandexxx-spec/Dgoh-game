@@ -154,10 +154,17 @@ try{
     // The final faction must remain reachable through the menu's own scroll,
     // even on the compact phone. Restore All through the real filter buttons.
     const lastFaction=await page.$eval('#roster-faction',e=>e.options[e.options.length-1].value);
-    const rosterBefore=await run('JSON.stringify(S.roster)');
+    const rosterBefore=await run("JSON.stringify(CHARS.filter(c=>!c.npc).map(c=>prog(c.id)))");
+    const expectedRoster=await run("({count:CHARS.filter(c=>!c.npc).length,opened:CHARS.filter(c=>!c.npc&&prog(c.id).stars>0).length,power:fmt(CHARS.filter(c=>!c.npc&&prog(c.id).stars>0).reduce((n,c)=>n+unitPower(c,prog(c.id)),0))})");
+    const collection=()=>page.$eval('#roster-count',e=>e.textContent);
+    assert.equal(await collection(),expectedRoster.opened+' / '+expectedRoster.count);
+    assert.equal(await page.$eval('#roster-power',e=>e.textContent),expectedRoster.power);
     await page.select('#roster-faction',lastFaction);
     assert.equal(await page.$eval('#roster-faction',e=>e.value),lastFaction);
     assert.ok(await page.$eval('#roster-active',e=>e.textContent.length>0));
+    const filteredCount=await page.$$eval('.ros .rgrid > button.hc:not([hidden])',els=>els.length);
+    assert.equal(await page.$eval('#roster-active .rfound',e=>e.textContent),'Найдено: '+filteredCount);
+    assert.equal(await collection(),expectedRoster.opened+' / '+expectedRoster.count,'collection is independent of filters');
     assert.equal(await page.$eval('.ros .rdd',e=>getComputedStyle(e).borderTopColor),'rgb(178, 155, 110)','active filter bronze highlight');
     await click('.ros .rfilter-actions [data-rreset="1"]');
     assert.equal(await page.$eval('#roster-faction',e=>e.value),'all');
@@ -168,20 +175,49 @@ try{
     const registry=await page.evaluate(async()=>{
       const root=document.querySelector('.roster-art'),grid=root.querySelector('.rgrid');
       const cards=[...grid.querySelectorAll('button.hc:not([hidden])')],bounds=grid.getBoundingClientRect();
-      const fits=(e)=>{const b=e.getBoundingClientRect();return b.width>0&&b.height>0&&b.left>=bounds.left-1&&b.right<=bounds.right+1&&b.top>=bounds.top-1&&b.bottom<=bounds.bottom+1};
+      const fits=(e,card)=>{const b=e.getBoundingClientRect(),c=card.getBoundingClientRect();return b.width>0&&b.height>0&&b.left>=c.left-1&&b.right<=c.right+1&&b.top>=c.top-1&&b.bottom<=c.bottom+1&&c.left>=bounds.left-1&&c.right<=bounds.right+1};
       const images=[getComputedStyle(cards[0]).backgroundImage,getComputedStyle(cards[0].querySelector('.ring')).backgroundImage,getComputedStyle(root).getPropertyValue('--r5-legend'),getComputedStyle(root).getPropertyValue('--r5-pillar'),getComputedStyle(root).getPropertyValue('--r5-base')];
       const bad=[];for(const value of images){const url=value.match(/url\(["']?(.*?)["']?\)/)?.[1];if(!url){bad.push(value.slice(0,80));continue}const im=new Image();im.src=url;try{await im.decode()}catch{bad.push(url.slice(0,80))}}
       const noOverlap=cards.every(e=>{const n=e.querySelector('.nm').getBoundingClientRect(),p=e.querySelector('.hsh,.hmax').getBoundingClientRect();return n.bottom<=p.top+1});
-      return {ids:cards.map(e=>e.dataset.hc),fit:cards.every(e=>fits(e)&&fits(e.querySelector('.ring'))&&fits(e.querySelector('.nm'))),noOverlap,bad,overflow:document.documentElement.scrollHeight>innerHeight+1||document.documentElement.scrollWidth>innerWidth+1};
+      return {ids:cards.map(e=>e.dataset.hc),fit:cards.every(e=>fits(e,e)&&fits(e.querySelector('.ring'),e)&&fits(e.querySelector('.nm'),e)),noOverlap,bad,
+        overflow:document.documentElement.scrollHeight>innerHeight+1||document.documentElement.scrollWidth>innerWidth+1,
+        scrollable:grid.scrollHeight>grid.clientHeight,overflowY:getComputedStyle(grid).overflowY,background:getComputedStyle(root).backgroundImage,subtitle:getComputedStyle(document.querySelector('header.top .vname'),'::after').content,
+        statSize:parseFloat(getComputedStyle(document.querySelector('#roster-count')).fontSize),
+        noPager:!root.querySelector('[data-rpage],.rpages,.rfoot'),
+        initialRows:cards.filter(e=>e.getBoundingClientRect().bottom<=bounds.bottom+1).length};
     });
-    assert.equal(registry.ids.length,width===844?14:12);
-    assert.ok(registry.fit&&registry.noOverlap&&!registry.overflow&&registry.bad.length===0,JSON.stringify(registry));
-    await click('.ros [data-rpage="1"]');
-    const page2=await page.$$eval('.ros .rgrid > button.hc:not([hidden])',els=>els.map(e=>e.dataset.hc));
-    assert.ok(page2.length>0&&page2.every(id=>!registry.ids.includes(id)),'distinct page');
-    await click('.ros [data-rpage="-1"]');
-    assert.deepEqual(await page.$$eval('.ros .rgrid > button.hc:not([hidden])',els=>els.map(e=>e.dataset.hc)),registry.ids);
+    assert.equal(registry.ids.length,expectedRoster.count);
+    assert.equal(new Set(registry.ids).size,expectedRoster.count);
+    assert.ok(registry.fit&&registry.noOverlap&&!registry.overflow&&registry.bad.length===0&&registry.scrollable&&registry.overflowY==='auto'&&registry.background==='none'&&registry.subtitle==='none'&&registry.noPager&&registry.statSize>=17&&registry.initialRows>=(width===844?14:12),JSON.stringify(registry));
+    const scrollLayout=()=>page.evaluate(()=>{
+      const g=document.querySelector('#rgrid'),h=document.querySelector('header.top'),bar=document.querySelector('.ros .rhead');
+      const box=e=>{const b=e.getBoundingClientRect();return {x:b.x,y:b.y,w:b.width,h:b.height}};
+      return {grid:box(g),header:box(h),bar:box(bar),top:g.scrollTop,max:g.scrollHeight-g.clientHeight,document:window.scrollY,view:document.querySelector('#view').scrollTop};
+    });
+    const beforeScroll=await scrollLayout();
+    // Real native Chromium touch swipe, not an assignment to scrollTop.
+    const cdp=await page.createCDPSession();
+    const x=Math.round(beforeScroll.grid.x+beforeScroll.grid.w/2),y=Math.round(beforeScroll.grid.y+beforeScroll.grid.h-28);
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+    for(let i=1;i<=7;i++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x,y:y-i*18}]});await new Promise(r=>setTimeout(r,25))}
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    await page.waitForFunction(()=>document.querySelector('#rgrid').scrollTop>20);
+    await cdp.detach();
+    await page.mouse.move(x,Math.round(beforeScroll.grid.y+beforeScroll.grid.h/2));
+    await page.mouse.wheel({deltaY:4000});
+    await page.waitForFunction(()=>{const g=document.querySelector('#rgrid');return g.scrollTop>=g.scrollHeight-g.clientHeight-2});
+    const afterScroll=await scrollLayout();
+    assert.deepEqual(afterScroll.header,beforeScroll.header,'fixed HUD while scrolling');
+    assert.deepEqual(afterScroll.bar,beforeScroll.bar,'fixed filters and collection metrics while scrolling');
+    assert.equal(afterScroll.document,0);assert.equal(afterScroll.view,0);
+    const lastId=registry.ids.at(-1),lastSelector='.ros [data-hc="'+lastId+'"]';
+    await page.screenshot({path:path.join(shots,width+'-roster-r56-bottom.png')});
+    await click(lastSelector);
+    assert.ok(await page.$('#overlay .hc'),'last hero opens from scrollport');
+    await run('closeInfo(true);closeOverlay();render()');
+    assert.ok(Math.abs((await scrollLayout()).top-afterScroll.top)<=2,'return to roster preserves scroll');
     await page.select('#rdd-s','nm');
+    assert.equal((await scrollLayout()).top,0,'sorting resets scroll');
     assert.equal(await page.$eval('#rdd-s',e=>e.value),'nm');
     await page.select('#rdd-s','pw');
     await click('.ros [data-rdd="f"]');
@@ -189,8 +225,12 @@ try{
     await click('.ros .rfilter-done');
     assert.ok(await page.$$eval('.ros .rgrid > button.hc:not([hidden])',els=>els.length>0&&els.every(e=>e.classList.contains('lockd'))));
     await page.screenshot({path:path.join(shots,width+'-roster-r55-locked.png')});
-    await click('.ros .rreset');
-    assert.equal(await run('JSON.stringify(S.roster)'),rosterBefore,'filter/page never change progression');
+    assert.equal(await collection(),expectedRoster.opened+' / '+expectedRoster.count);
+    assert.equal(await page.$eval('#roster-active .rfound',e=>e.textContent),'Найдено: '+(expectedRoster.count-expectedRoster.opened));
+    await click('.ros [data-rdd="f"]');
+    await click('.ros .rfilter-actions [data-rreset="1"]');
+    await click('.ros .rfilter-done');
+    assert.equal(await run("JSON.stringify(CHARS.filter(c=>!c.npc).map(c=>prog(c.id)))"),rosterBefore,'filters and scrolling never change progression');
     const ranks=await run("Array.from({length:7},(_,i)=>ptRound(CH.duncan,{...prog('duncan'),stars:7,relic:i+1},{registry:true}))");
     for(let i=0;i<7;i++){assert.ok(ranks[i].includes('class="mem r-memory"')&&ranks[i].includes('Другая память: '+(i+1))&&ranks[i].includes('<b>'+(i+1)+'</b>'))}
     assert.equal(await run('NOTES.length'),queuedNotes,'roster does not dismiss reward notifications');

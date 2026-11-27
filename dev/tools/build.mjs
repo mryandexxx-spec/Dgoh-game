@@ -134,7 +134,6 @@ for (const [token,name] of gfx05Covers) {
 // R5.5: approved architecture art. SVG frames are inline on both targets
 // because artifact hosting serves raw SVG as .txt.
 for(const [token,name] of [
-  ['__ROSTER_ATRIUM__','ui/shop/atrium-plate.jpeg'],
   ['__ROSTER_NICHE__','ui/roster/r5-niche.png'],
   ['__ROSTER_PILLAR__','ui/roster/r5-pillar.png'],
   ['__ROSTER_BASE__','ui/roster/r5-base.png'],
