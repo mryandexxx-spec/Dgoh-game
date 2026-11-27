@@ -204,10 +204,12 @@ try{
       const gear=[...root.querySelectorAll('.hcgs')];
       const check=e=>{const b=e.getBoundingClientRect();return b.width>=44&&b.height>=44&&b.top>=panel.top-1&&b.bottom<=Math.min(panel.bottom,footer.top)+1&&e.contains(document.elementFromPoint(b.left+b.width/2,b.top+b.height/2))};
       const pinned=[root.querySelector('.hcleft > .hcsk.gl'),root.querySelector('.hcmem')];
-      return {gear:gear.length,slots:gear.map(check),pinned:pinned.map(check),skills:root.querySelector('.hcsks').clientHeight};
+      const skillList=root.querySelector('.hcsks'),skillBounds=skillList.getBoundingClientRect();
+      const ordinary=[...skillList.querySelectorAll('.hcsk')].map(e=>{const b=e.getBoundingClientRect();return b.height>=44&&b.top>=skillBounds.top-1&&b.bottom<=skillBounds.bottom+1&&e.contains(document.elementFromPoint(b.left+b.width/2,b.top+b.height/2))});
+      return {gear:gear.length,slots:gear.map(check),pinned:pinned.map(check),skills:skillList.clientHeight,ordinary};
     });
-    assert.ok(legendLayout.gear===6&&legendLayout.slots.every(Boolean)&&legendLayout.pinned.every(Boolean)&&legendLayout.skills>=40,JSON.stringify(legendLayout));
     await heroShot('legend','#overlay .hc.has-ultimate');
+    assert.ok(legendLayout.gear===6&&legendLayout.slots.every(Boolean)&&legendLayout.pinned.every(Boolean)&&legendLayout.skills>=44&&legendLayout.ordinary.length>0&&legendLayout.ordinary.every(Boolean),JSON.stringify(legendLayout));
     assert.ok(await page.$('#overlay .hcleft > .hcsk.gl'),'legend ultimate retained');
     await heroClick('#overlay .hcsk.gl');
     await heroShot('ultimate','#overlay2 .swin');

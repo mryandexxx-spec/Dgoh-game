@@ -252,3 +252,23 @@ body:has(#view .ros) > #notes {display:none}
 }
 .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcskt small {font-size:9px}
 .hc.gfx02-pilot.has-ultimate:not(.locked) .hcgear {flex:none}
+
+/* Compact legend: recover one complete ordinary-skill row at 667x375.
+   The level/star group is still its own scrollport for longer progress states.
+   Keep the main 44px action and gear targets, and all signature/memory controls. */
+@media (max-width:750px) and (max-height:400px) and (orientation:landscape) {
+  .detail .sheet.hc.gfx02-pilot.has-ultimate:not(.locked) {
+    grid-template-rows:44px minmax(0,1fr) 60px;
+  }
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcmid {padding-top:2px;padding-bottom:2px;gap:1px}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcpilot-controls .hcright {
+    min-height:36px;max-height:40px;
+  }
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcright .hcblk {gap:1px}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcright .hccap {font-size:10px;line-height:1.05}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcright .hcbig {font-size:18px}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcright .hcnote {font-size:9px;line-height:1}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcsk:not(.gl) {min-height:44px;padding:1px;gap:0}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcski {width:24px;height:24px}
+  .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcskt :is(b,small) {font-size:9px;line-height:1}
+}
