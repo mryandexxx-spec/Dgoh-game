@@ -1,4 +1,4 @@
-import puppeteer from '../node_modules/puppeteer-core/lib/esm/puppeteer/puppeteer-core.js';
+import puppeteer from 'puppeteer-core';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 const out = process.env.LAB_OUT || '/tmp/lobby-r3';
