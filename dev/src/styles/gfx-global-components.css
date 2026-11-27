@@ -758,3 +758,119 @@ body:has(#overlay #battle) > .toast[data-combat-origin="battle"] {bottom:auto;to
   .battle .bpopbox:has(.bset) .acts {justify-content:flex-start}
   .result.lost .box > ul {grid-template-columns:minmax(0,1fr)}
 }
+
+/* GLOBAL-07 — independent utility rooms, not the lobby or its navigation.
+   The Ix workshop uses a restrained metal surface; purchase/scrap semantics
+   and save/recovery confirmation colors are deliberately not repurposed. */
+#view[data-gfx-view="recycler"] .ixpage {color:#eee1cc;gap:6px}
+#view[data-gfx-view="recycler"] .ixhead h2 {font:650 clamp(17px,2.7vw,23px)/1.15 var(--f-body);letter-spacing:.015em;color:#f3d9a6}
+#view[data-gfx-view="recycler"] .ixhead .sub {font-size:11px;color:var(--gfx-action-muted)}
+#view[data-gfx-view="recycler"] .ixpage :is(.ixpanel,.ixrate) {background:linear-gradient(155deg,#37332b,#25231e 78%);border:1px solid #806a477d;border-radius:4px;box-shadow:inset 0 1px #e6c99716;overscroll-behavior:contain;scrollbar-width:thin}
+#view[data-gfx-view="recycler"] .ixpanel > b {font-weight:650;color:#f3d9a6}
+#view[data-gfx-view="recycler"] .ixpage :is(.ixsmall,.ixitem small) {color:#c4beb2;line-height:1.35}
+#view[data-gfx-view="recycler"] .ixpage :is(.ixhead .btn,.ixactions .btn,.ixitem .btn,.ixrate .btn,.ixkinds button,.ixtabs .btn),
+#overlay2 .ixmodal .btn:not(.go) {background:var(--gfx-action-surface);border:1px solid var(--gfx-brass-edge);border-radius:4px;color:var(--gfx-action-ink);box-shadow:var(--gfx-action-shadow);text-shadow:none}
+#view[data-gfx-view="recycler"] .ixpage :is(.ixtabs .btn.go,.ixkinds button.on) {background:var(--gfx-action-down);border-color:var(--gfx-brass-light);color:#ffe5b6;box-shadow:inset 0 -2px var(--gfx-brass-light)}
+#view[data-gfx-view="recycler"] .ixpage .btn[data-ixconfirm].go:not(:disabled) {background:var(--gfx-action-primary) center / 100% 100% no-repeat;border-color:var(--gfx-brass-light);color:#211d16;font-weight:700}
+#view[data-gfx-view="recycler"] .ixpage .btn:disabled {background:#302c25;border-color:#574e40;color:#bdb09b;opacity:.72}
+#view[data-gfx-view="recycler"] .ixpage .ixnum {color:#f3d9a6;text-shadow:none;font-family:var(--f-body);font-weight:700}
+#view[data-gfx-view="recycler"] .ixpage .ixbadge {background:#25231e;border:1px solid #806a475e;border-radius:3px;font-size:11px}
+#view[data-gfx-view="recycler"] .ixpage .ixprog {height:7px;border-radius:2px;background:#1f1d19;border-color:#806a4777}
+#view[data-gfx-view="recycler"] .ixpage .ixprog i {background:linear-gradient(90deg,#9c7951,#e5c28c)}
+#view[data-gfx-view="recycler"] .ixpage .ixitem {border-bottom:1px solid #806a474d;overflow-wrap:anywhere}
+#view[data-gfx-view="recycler"] .ixpage .ixitem button {white-space:nowrap;min-height:32px}
+#view[data-gfx-view="recycler"] .ixpage .ixkinds {flex:none;scrollbar-width:thin;overscroll-behavior:contain}
+#view[data-gfx-view="recycler"] .ixpage .ixrates {align-content:start;scrollbar-width:thin;overscroll-behavior:contain}
+#view[data-gfx-view="recycler"] .ixpage .ixsummary {display:flex;flex-direction:column;gap:4px}
+#view[data-gfx-view="recycler"] .ixpage .ixsummary .ixactions {margin:2px 0}
+#view[data-gfx-view="recycler"] .ixpage .ixsubmit {flex:none;padding-top:6px;border-top:1px solid #806a4777}
+#view[data-gfx-view="recycler"] .ixpage .ixsubmit button {width:100%;min-height:36px}
+#view[data-gfx-view="recycler"] .ixpage .ixbasket {display:flex;flex-direction:column;overflow:hidden}
+#view[data-gfx-view="recycler"] .ixpage .ixbasket-scroll {flex:1;min-height:0;overflow:auto;scrollbar-width:thin;overscroll-behavior:contain}
+#overlay2 .ixmodal .panel {box-sizing:border-box;width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 24px);background:linear-gradient(155deg,#40392f,#25231e 78%);border:1px solid #ae9267;border-radius:5px;box-shadow:0 16px 48px #0009,inset 0 1px #e6c99733;overflow:auto}
+#overlay2 .ixmodal .panel h3 {font-family:var(--f-body);color:#f3d9a6;margin:0 0 8px;line-height:1.2}
+#overlay2 .ixmodal .panel p {overflow-wrap:anywhere;line-height:1.35}
+#overlay2 .ixmodal .btn {min-height:36px}
+#view[data-gfx-view="recycler"] button:focus-visible,
+#overlay2 .ixmodal button:focus-visible,
+#overlay2 .infosheet:has(#savecode) :is(button,input,textarea):focus-visible {outline:2px solid var(--gfx-brass-light);outline-offset:-2px}
+#view[data-gfx-view="rules"] .gfx07-rules {display:flex;flex-direction:column;min-height:0;gap:8px;color:#eee1cc}
+#view[data-gfx-view="rules"] .gfx07-rules h2 {font:650 clamp(19px,3vw,26px)/1.2 var(--f-body);color:#f3d9a6;margin:0}
+#view[data-gfx-view="rules"] .gfx07-rules > .sub {margin:0;color:#c4beb2;max-width:none;line-height:1.35}
+#view[data-gfx-view="rules"] .gfx07-rules .rules {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;max-width:none;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;align-content:start}
+#view[data-gfx-view="rules"] .rules .tbl {grid-column:1/-1;background:#302c25;border:1px solid #806a477d;border-radius:4px}
+#view[data-gfx-view="rules"] .rules .tbl table {min-width:0;font-size:12px}
+#view[data-gfx-view="rules"] .rules .tbl th {background:#40392f;color:#f3d9a6;letter-spacing:.025em}
+#view[data-gfx-view="rules"] .rules .tbl :is(td,th) {padding:6px 8px;border-color:#806a474d;overflow-wrap:anywhere}
+#view[data-gfx-view="rules"] .rules > p {background:linear-gradient(155deg,#353128,#25231e);border-left:2px solid #806a47;padding:8px;max-width:none;font-size:12px;line-height:1.4;color:#dfcbb0}
+#view[data-gfx-view="rules"] .rules > p b {display:block;color:#f3d9a6;margin-bottom:3px;font-weight:650}
+#overlay2 .ui04-save .ui04-save-actions .btn {background:var(--gfx-action-surface);border-color:var(--gfx-brass-edge);border-radius:4px;color:var(--gfx-action-ink);box-shadow:var(--gfx-action-shadow)}
+#overlay2 .ui04-save .ui04-save-actions [data-saveexp].go:not(:disabled) {background:var(--gfx-action-primary) center / 100% 100% no-repeat;color:#211d16;border-color:var(--gfx-brass-light)}
+#overlay2 .infosheet:has(#savecode) .savebox {background:#1e1c18;border:1px solid #806a47;color:#eee1cc;border-radius:4px;resize:none}
+#overlay2 .infosheet:has(#savecode) .acts {flex-wrap:wrap;gap:6px}
+body:has(#view:is([data-gfx-view="rules"],[data-gfx-view="recycler"])) #notes {display:none!important}
+@media (orientation:landscape) and (max-height:520px) {
+  html:has(body > #view:is([data-gfx-view="rules"],[data-gfx-view="recycler"])) {height:100%;overflow:hidden;overscroll-behavior:none}
+  body:has(> #view:is([data-gfx-view="rules"],[data-gfx-view="recycler"])) {display:flex;flex-direction:column;height:100dvh;max-height:100dvh;overflow:hidden;margin:0;overscroll-behavior:none}
+  body:has(> #view:is([data-gfx-view="rules"],[data-gfx-view="recycler"])) > header.top {position:relative;top:0;flex:none}
+  #view:is([data-gfx-view="rules"],[data-gfx-view="recycler"]) {display:flex;width:100%;flex:1 1 0;min-height:0;overflow:hidden;padding-block:5px 8px}
+  #view[data-gfx-view="recycler"] .ixpage,#view[data-gfx-view="rules"] .gfx07-rules {width:100%;height:100%;max-height:100%;min-height:0;overflow:hidden}
+  #view[data-gfx-view="recycler"] .ixhead,#view[data-gfx-view="recycler"] .ixtabs {flex:none;gap:5px}
+  #view[data-gfx-view="recycler"] .ixtabs .btn {min-height:30px;padding:4px 12px}
+  #view[data-gfx-view="recycler"] .ixhead .btn {min-height:30px}
+  #view[data-gfx-view="recycler"] .ixgrid {gap:6px}
+  #view[data-gfx-view="recycler"] .ixpanel {padding:7px}
+  #view[data-gfx-view="recycler"] .ixactions button {min-height:30px}
+  #view[data-gfx-view="rules"] .gfx07-rules {gap:5px}
+  #view[data-gfx-view="rules"] .gfx07-rules > .sub {font-size:11px}
+  #view[data-gfx-view="rules"] .rules {flex:1}
+  #overlay2 .infosheet:has(#savecode) .savebox {min-height:70px;height:80px}
+  #overlay2 .infosheet:has(#savecode) .acts .btn {min-height:34px}
+}
+
+/* GLOBAL-07 R2 — actual screenshot critique: table row must not collapse,
+   output quantity and submit action must remain visible together. */
+#view[data-gfx-view="rules"] .gfx07-rules .rules {grid-auto-rows:max-content;align-items:start}
+#view[data-gfx-view="rules"] .rules .tbl {min-height:max-content}
+#view[data-gfx-view="recycler"] .ixpage .ixnavigation {display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px;flex:none}
+#view[data-gfx-view="recycler"] .ixnavigation .ixhead {flex:1 1 auto;min-width:0}
+#view[data-gfx-view="recycler"] .ixnavigation .ixhead .sub {display:none}
+#view[data-gfx-view="recycler"] .ixnavigation .ixtabs {flex:none}
+#view[data-gfx-view="recycler"] .ixsubmit {display:grid;grid-template-columns:minmax(0,1fr);gap:4px;padding-top:5px}
+#view[data-gfx-view="recycler"] .ixsubmit .ixnum {font-size:15px;line-height:1.2}
+#view[data-gfx-view="recycler"] .ixsummary .ixbadge {padding:3px 6px}
+#view[data-gfx-view="recycler"] .ixsummary .ixsmall {font-size:11px}
+#view[data-gfx-view="recycler"] .ixsummary h3 {font-size:15px;line-height:1.15}
+#view[data-gfx-view="recycler"] .ixrates {grid-auto-rows:max-content}
+#view[data-gfx-view="recycler"] .ixrate p {margin:5px 0}
+#view[data-gfx-view="recycler"] .ixrate .btn {min-height:32px}
+@media (orientation:landscape) and (max-height:520px) {
+  #view[data-gfx-view="recycler"] .ixnavigation .ixhead h2 {font-size:16px}
+  #view[data-gfx-view="recycler"] .ixnavigation .ixtabs .btn {padding:4px 8px}
+  #view[data-gfx-view="recycler"] .ixpage {gap:4px}
+  #view[data-gfx-view="recycler"] .ixkinds {padding:0 0 3px}
+  #view[data-gfx-view="recycler"] .ixsummary {gap:3px}
+  #view[data-gfx-view="recycler"] .ixsummary .ixactions {gap:4px}
+  #view[data-gfx-view="recycler"] .ixsummary .ixactions button {padding:3px 6px;font-size:11px}
+  #view[data-gfx-view="recycler"] .ixsubmit {grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);align-items:center}
+  #view[data-gfx-view="recycler"] .ixsubmit button {white-space:normal;line-height:1.15;padding-inline:5px}
+}
+
+/* GLOBAL-07 R3: the basket is the principal editable content, not a hidden
+   tail of a long quote. Pin compact quote and actions around its own list. */
+#view[data-gfx-view="recycler"] .ixpage .ixsummary {flex:none;gap:3px}
+#view[data-gfx-view="recycler"] .ixpage .ixbasket {gap:4px}
+#view[data-gfx-view="recycler"] .ixpage .ixbasket-scroll {flex:1 1 0;min-height:0;border-top:1px solid #806a4755;padding-top:4px}
+#view[data-gfx-view="recycler"] .ixbasket-heading {display:block;color:#f3d9a6;font-size:12px;line-height:1.2}
+#view[data-gfx-view="recycler"] .ixbasket-scroll .ixitem {padding:3px 0;gap:4px;grid-template-columns:minmax(0,1fr) auto;font-size:12px}
+#view[data-gfx-view="recycler"] .ixbasket-scroll .ixitem button {min-height:30px}
+#view[data-gfx-view="recycler"] .ixbasket-tools {display:flex;flex:none;gap:4px}
+#view[data-gfx-view="recycler"] .ixbasket-tools .btn {padding:4px 7px;min-height:30px;font-size:11px}
+#view[data-gfx-view="recycler"] .ixsubmit {padding-top:4px}
+@media (orientation:landscape) and (max-height:520px) {
+  #view[data-gfx-view="recycler"] .ixpage .ixsummary .ixsmall {font-size:10px;line-height:1.2}
+  #view[data-gfx-view="recycler"] .ixpage .ixsummary h3 {font-size:14px}
+  #view[data-gfx-view="recycler"] .ixpage .ixbasket {padding:6px;gap:3px}
+  #view[data-gfx-view="recycler"] .ixpage .ixsubmit {grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
+  #view[data-gfx-view="recycler"] .ixsubmit .ixnum {font-size:13px}
+}

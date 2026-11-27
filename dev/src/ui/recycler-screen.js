@@ -56,36 +56,37 @@ function addSelection(item, n) {
 }
 const qtyName = k => MEM_MATS[k]?.n || k;
 function summary() {
-  const q = scrapQuote(S, kind, basket), threshold = SCRAP[kind].threshold;
+  const threshold = SCRAP[kind].threshold;
   const carry = S.scrapCarry?.[kind] || 0;
   const pts = basket.reduce((n, x) => n + scrapPoint(kind, x.id, x.partId) * x.count, 0);
-  const count = Math.floor((carry + pts) / threshold), remain = (carry + pts) % threshold;
-  return `<h3 style="margin:0 0 7px">${qtyName(kind)}</h3>
-    <div class="ixsmall">Порог: ${threshold} очков за 1 артефакт</div>
+  const remain = (carry + pts) % threshold;
+  return `<div class="ixsummary"><h3 style="margin:0">${qtyName(kind)}</h3>
+    <div class="ixsmall">Порог: ${threshold} оч. / шт. · В запасе: ${fmt(S[kind] || 0)}</div>
     <div class="ixprog"><i style="width:${Math.min(100,(carry + pts) / threshold * 100)}%"></i></div>
-    <div class="ixactions"><span class="ixbadge">Перенесено: ${carry}</span><span class="ixbadge">Корзина: +${pts}</span></div>
-    <div class="ixnum">Получите: ${count} шт.</div><div class="ixsmall">Остаток очков после обмена: ${remain}</div>
-    <div class="ixsmall">В запасе: ${fmt(S[kind] || 0)}</div>
-    <div class="ixactions"><button class="btn" data-ixauto="1">Бережно подобрать</button><button class="btn" data-ixclear="1">Очистить</button></div>
-    <div class="ixsmall">Выбрано позиций: ${basket.length}. Фрагменты для незавершённого снаряжения активных отрядов защищены автоматически.</div>
-    <div class="ixactions"><button class="btn ${q.ok?'go':'lack'}" data-ixconfirm="1" ${q.ok?'':'disabled'}>Переработать ${count} шт.</button></div>`;
+    <div class="ixsmall">Перенесено: ${carry} · Корзина: +${pts} · Остаток: ${remain}</div>
+    </div>`;
+}
+function submitBasket() {
+  const q = scrapQuote(S, kind, basket);
+  const count = Math.floor(((S.scrapCarry?.[kind] || 0) + basket.reduce((n, x) => n + scrapPoint(kind, x.id, x.partId) * x.count, 0)) / SCRAP[kind].threshold);
+  return `<div class="ixbasket-tools"><button class="btn" data-ixauto="1">Бережно подобрать</button><button class="btn" data-ixclear="1">Очистить</button></div><div class="ixsubmit"><div class="ixnum" aria-live="polite">Получите: ${count} шт.</div><button class="btn ${q.ok?'go':'lack'}" data-ixconfirm="1" ${q.ok?'':'disabled'}>Переработать ${count} шт.</button></div>`;
 }
 function renderRecycler() {
   const root = $('#view'); if (!root) return;
   root.innerHTML = styled + `<section class="ixpage">
-  <div class="ixhead"><button class="btn" data-ixback="1">‹ Лавки</button><h2>Утилизатор Икса</h2><span class="sub">Мастерская по переработке излишков снаряжения</span></div>
-  <div class="ixtabs"><button class="btn ${tab==='work'?'go':''}" data-ixtab="work">Мастерская</button><button class="btn ${tab==='rates'?'go':''}" data-ixtab="rates">Курсы</button><button class="btn ${tab==='stock'?'go':''}" data-ixtab="stock">Склад</button></div>
-  ${tab==='work'? `<div class="ixkinds">${kinds.map(k=>`<button class="${kind===k?'on':''}" data-ixkind="${k}">${qtyName(k)} · ${fmt(S[k]||0)}</button>`).join('')}</div>
-    <div class="ixgrid"><div class="ixpanel"><b>Снаряжение для переработки</b><div class="ixsmall">Безопасное количество отображается после защиты экипировки</div>
+  <div class="ixnavigation"><div class="ixhead"><button class="btn" data-ixback="1">‹ Лавки</button><h2>Утилизатор Икса</h2><span class="sub">Мастерская по переработке излишков снаряжения</span></div>
+  <div class="ixtabs"><button class="btn ${tab==='work'?'go':''}" data-ixtab="work" aria-pressed="${tab==='work'}">Мастерская</button><button class="btn ${tab==='rates'?'go':''}" data-ixtab="rates" aria-pressed="${tab==='rates'}">Курсы</button><button class="btn ${tab==='stock'?'go':''}" data-ixtab="stock" aria-pressed="${tab==='stock'}">Склад</button></div></div>
+  ${tab==='work'? `<div class="ixkinds">${kinds.map(k=>`<button class="${kind===k?'on':''}" data-ixkind="${k}" aria-pressed="${kind===k}">${qtyName(k)} · ${fmt(S[k]||0)}</button>`).join('')}</div>
+    <div class="ixgrid"><div class="ixpanel"><b>Снаряжение для переработки</b><div class="ixsmall">Фрагменты для незавершённого снаряжения активных отрядов защищены автоматически.</div>
       ${itemPool().map(it=>`<div class="ixitem"><span><b>${it.label}</b><small>На складе ${it.total} · резерв ${it.held} · свободно ${it.safe} · ${it.p} оч./шт.</small></span>
       <button class="btn" data-ixlock="${keyOf(it)}" title="Блокировка">${S.scrapLocks?.[keyOf(it)]?'🔒':'🔓'}</button>
       <button class="btn ${it.safe?'go':''}" data-ixselect="${keyOf(it)}" ${it.safe?'':'disabled'}>Выбрать</button></div>`).join('')||'<p>Подходящих фрагментов пока нет. Добывайте снаряжение в кампании и рейде.</p>'}</div>
-      <div class="ixpanel">${summary()}<b>Корзина</b>${basket.map(x=>`<div class="ixitem"><span>${ITEMS[x.id].n}${x.partId?' · деталь':''}<small>${x.count} × ${scrapPoint(kind,x.id,x.partId)} оч.</small></span><button class="btn" data-ixremove="${keyOf(x)}">Убрать</button></div>`).join('')}</div></div>`
+      <div class="ixpanel ixbasket">${summary()}<div class="ixbasket-scroll"><b class="ixbasket-heading">Корзина · ${basket.length} поз.</b>${basket.map(x=>`<div class="ixitem"><span>${ITEMS[x.id].n}${x.partId?' · деталь':''}<small>${x.count} × ${scrapPoint(kind,x.id,x.partId)} оч.</small></span><button class="btn" data-ixremove="${keyOf(x)}">Убрать</button></div>`).join('')||'<div class="ixsmall">Нет выбранных предметов</div>'}</div>${submitBasket()}</div></div>`
   :tab==='rates'? `<div class="ixrates">${kinds.map(k=>`<div class="ixrate"><b>${qtyName(k)}</b><p>1 шт. = ${SCRAP[k].threshold} очков</p><div class="ixsmall">${Object.entries(SCRAP[k].base).map(([tier,point])=>`Тир ${tier}: ${point} базовых очков`).join(' · ')}</div><p class="ixsmall">Коэффициент типа: 0,8–1,3; готовая деталь: ×1,05. XII можно использовать в двух схемах.</p><button class="btn" data-ixkind="${k}">К переработке</button></div>`).join('')}</div>`
   : `<div class="ixpanel"><h3>Склад наследия</h3>${Object.entries(MEM_MATS).map(([k,v])=>`<div class="ixitem"><b>${v.n}</b><span>${fmt(S[k]||0)}</span><span class="ixsmall">${v.family==='artifact'?'Утилизатор / рейд / лавки':'Кампания / Хроники / Джихад'}</span></div>`).join('')}<h3>Очки, ожидающие переработки</h3>${kinds.map(k=>`<div>${qtyName(k)}: ${S.scrapCarry?.[k]||0}/${SCRAP[k].threshold}</div>`).join('')}</div>`}
   </section>`;
 }
-function modal(html) { $('#overlay2').innerHTML = `<div class="ixmodal"><div class="panel">${html}</div></div>`; }
+function modal(html) { $('#overlay2').innerHTML = `<div class="ixmodal"><div class="panel" role="dialog" aria-modal="true" aria-label="Утилизатор Икса">${html}</div></div>`; }
 function recyclerClick(d) {
   if (d.ixback) { basket = []; set_view('shop'); return true; }
   if (d.ixtab) { tab=d.ixtab; renderRecycler(); return true; }
