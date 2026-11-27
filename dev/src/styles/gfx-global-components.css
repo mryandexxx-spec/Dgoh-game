@@ -612,3 +612,11 @@ body:has(#view:is([data-gfx-view="raid"],[data-gfx-view="legend"],[data-gfx-view
   #view[data-gfx-view="conq"] .cqdiff:not(.disk) p {font-size:11px}
   #view[data-gfx-view="conq"] .cqbar {position:sticky;top:0;z-index:3;background:#25231e;padding:4px;border:1px solid #806a4777;border-radius:4px}
 }
+
+/* GLOBAL-05 document boundary: the default body margin creates an extra
+   8px scroll range even when the flex view itself fits. Lock both root
+   and body for the expedition shell, leaving the inner scrollports intact. */
+@media (orientation:landscape) and (max-height:520px) {
+  html:has(body > #view:is([data-gfx-view="raid"],[data-gfx-view="legend"],[data-gfx-view="baron_journey"],[data-gfx-view="story_events"],[data-gfx-view="conq"])) {height:100%;overflow:hidden;overscroll-behavior:none}
+  body:has(> #view:is([data-gfx-view="raid"],[data-gfx-view="legend"],[data-gfx-view="baron_journey"],[data-gfx-view="story_events"],[data-gfx-view="conq"])) {margin:0;max-height:100dvh;overflow:hidden}
+}
