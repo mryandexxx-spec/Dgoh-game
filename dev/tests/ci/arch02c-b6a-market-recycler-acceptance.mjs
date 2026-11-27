@@ -309,13 +309,223 @@ function prepareRecycler(g) {
   const manifest = JSON.parse(block[1]);
   assert.equal(manifest.files.length,26);
   const dir = path.join(root,'assets/ui/shop');
-  assert.deepEqual(fs.readdirSync(dir).sort(),manifest.files.map(x=>x.name).sort());
+  // #339 approved an additional subdirectory; preserve the exact original
+  // manifest and separately verify the published additions byte-for-byte.
+  assert.deepEqual(fs.readdirSync(dir).sort(),[...manifest.files.map(x=>x.name),'postrelease'].sort());
+  const additions = [
+    {
+      "name": "age_resonance.webp",
+      "gitBlob": "8cd6109ab95a389a4128d4baf1943da8481ec31f",
+      "size": 29570,
+      "sha256Prefix": "f7265c69"
+    },
+    {
+      "name": "disk-avenge.webp",
+      "gitBlob": "5aa7264127c9f2ea791488838bef4d325ea7aa05",
+      "size": 25408,
+      "sha256Prefix": "54a872e9"
+    },
+    {
+      "name": "disk-chain.webp",
+      "gitBlob": "cde578cbb37e09b94ade576af82481dcd7d99928",
+      "size": 27240,
+      "sha256Prefix": "070a309e"
+    },
+    {
+      "name": "disk-counter.webp",
+      "gitBlob": "1b5e5a64d81514ff47d47a96e7aba71334a0876b",
+      "size": 24974,
+      "sha256Prefix": "a2da713a"
+    },
+    {
+      "name": "disk-exec.webp",
+      "gitBlob": "57a088e173ac4abdc977ace7aad7ddf5ac49ba5b",
+      "size": 25366,
+      "sha256Prefix": "5b4573c8"
+    },
+    {
+      "name": "disk-fury.webp",
+      "gitBlob": "980331bd2f3e6ba509b41b7ce981673d01bd0a47",
+      "size": 27158,
+      "sha256Prefix": "9a2b794c"
+    },
+    {
+      "name": "disk-ghola.webp",
+      "gitBlob": "7c90f26b477838d93989eb49b7e38810478d2ea5",
+      "size": 27042,
+      "sha256Prefix": "b8a20d83"
+    },
+    {
+      "name": "disk-leech.webp",
+      "gitBlob": "0e7b4ddb0651dab94f8eeb5d2c44131a111d31fd",
+      "size": 25732,
+      "sha256Prefix": "2747cb1d"
+    },
+    {
+      "name": "disk-mach.webp",
+      "gitBlob": "598889b59e78f5ecb47e7f616f8ca5c1c81cd09f",
+      "size": 24790,
+      "sha256Prefix": "a2435b80"
+    },
+    {
+      "name": "disk-poison.webp",
+      "gitBlob": "ee74b9254438767180bc29beb806f69c89243608",
+      "size": 25314,
+      "sha256Prefix": "e581936c"
+    },
+    {
+      "name": "disk-presc.webp",
+      "gitBlob": "89d915b6c0dd1448d7163f839f8644ca12b39cc5",
+      "size": 27532,
+      "sha256Prefix": "210cdb7b"
+    },
+    {
+      "name": "disk-regen.webp",
+      "gitBlob": "359858a85f72420d910251dccb8b5678df3b8faa",
+      "size": 25402,
+      "sha256Prefix": "a7c21613"
+    },
+    {
+      "name": "disk-spice.webp",
+      "gitBlob": "6759306c248eb8460b6ad38067988f115c57feb4",
+      "size": 25670,
+      "sha256Prefix": "471fc1e4"
+    },
+    {
+      "name": "disk-stam.webp",
+      "gitBlob": "0e22ec01bdccce6f1ab8320a4eff919415197b97",
+      "size": 25196,
+      "sha256Prefix": "127af4b9"
+    },
+    {
+      "name": "disk-tm.webp",
+      "gitBlob": "aa7a1930725949b4438b3059212bec76148cd57e",
+      "size": 25442,
+      "sha256Prefix": "45edccbd"
+    },
+    {
+      "name": "disk-voice.webp",
+      "gitBlob": "48dd8b4828a991e03646a13b8465421d00ea75ad",
+      "size": 27038,
+      "sha256Prefix": "0d88cd82"
+    },
+    {
+      "name": "frag.webp",
+      "gitBlob": "f98a960f782bedc493f9c110e745ec28a697b98b",
+      "size": 6108,
+      "sha256Prefix": "76466a80"
+    },
+    {
+      "name": "holtz_conductor.webp",
+      "gitBlob": "91d40fdfbe2f98c2ee24a993c631cdab04849fd4",
+      "size": 17650,
+      "sha256Prefix": "b122fdef"
+    },
+    {
+      "name": "ix_plate.webp",
+      "gitBlob": "a4d8e2132c31e52818e5a35005543eeb28cb8dba",
+      "size": 20500,
+      "sha256Prefix": "b3e24a9d"
+    },
+    {
+      "name": "jt.webp",
+      "gitBlob": "02231f5005a4a1e5843c229b249acff8bccf56d1",
+      "size": 25900,
+      "sha256Prefix": "7a3628d3"
+    },
+    {
+      "name": "legacy_thread.webp",
+      "gitBlob": "793461a9a7b9709becc3a29d4df723923126f229",
+      "size": 24238,
+      "sha256Prefix": "c9c917c9"
+    },
+    {
+      "name": "med.webp",
+      "gitBlob": "020421fc90ca8761ed9ca23c85c50385c5870471",
+      "size": 21152,
+      "sha256Prefix": "1a782a8f"
+    },
+    {
+      "name": "med3.webp",
+      "gitBlob": "06aa3e45418d72328645724f8a0aa91085900c33",
+      "size": 19922,
+      "sha256Prefix": "568479a4"
+    },
+    {
+      "name": "part-core.webp",
+      "gitBlob": "d54c4749c6d04f8179134f8e4eb98de720647209",
+      "size": 12206,
+      "sha256Prefix": "626e01b8"
+    },
+    {
+      "name": "part-fitting.webp",
+      "gitBlob": "348427fad37037fa6d14ff3e8fc873e69c864c22",
+      "size": 10692,
+      "sha256Prefix": "f887a9c7"
+    },
+    {
+      "name": "part-frame.webp",
+      "gitBlob": "8fb5c65222045aa062bf6771ff2ba7b5dfa1a7e7",
+      "size": 10616,
+      "sha256Prefix": "970c9f45"
+    },
+    {
+      "name": "part-lens.webp",
+      "gitBlob": "f64288300a4f71ce32dd3fe87a7ea4017cecdb59",
+      "size": 11358,
+      "sha256Prefix": "9efe0f8f"
+    },
+    {
+      "name": "part-lining.webp",
+      "gitBlob": "b2f3d77e0e52a3438f214af61521df6937d11aff",
+      "size": 10148,
+      "sha256Prefix": "077f32e1"
+    },
+    {
+      "name": "part-seal.webp",
+      "gitBlob": "707644810f281a3a9acc54a1182b8a3f70957b5e",
+      "size": 9410,
+      "sha256Prefix": "855992d2"
+    },
+    {
+      "name": "rid.webp",
+      "gitBlob": "a36e93166fd9cc6eb62191d8b950b7b62c215eda",
+      "size": 24398,
+      "sha256Prefix": "583c486b"
+    },
+    {
+      "name": "teeth.webp",
+      "gitBlob": "5282149175cd118fea02a8435a143c72703a715d",
+      "size": 14464,
+      "sha256Prefix": "a253aa8f"
+    },
+    {
+      "name": "wol.webp",
+      "gitBlob": "29ecbeffec2d8bbe467c351c2891fae3d473013d",
+      "size": 12968,
+      "sha256Prefix": "4236a065"
+    },
+    {
+      "name": "wring.webp",
+      "gitBlob": "ad80dc12ea0b719f45524d286c80d7543e944b30",
+      "size": 19708,
+      "sha256Prefix": "bf6978dd"
+    }
+  ];
+  const addedDir = path.join(dir,'postrelease');
+  assert.deepEqual(fs.readdirSync(addedDir).sort(),additions.map(x=>x.name).sort());
+  for(const entry of additions){
+    const bytes=fs.readFileSync(path.join(addedDir,entry.name));
+    assert.equal(bytes.length,entry.size,entry.name);
+    assert.equal(createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),entry.gitBlob,entry.name);
+    assert.equal(createHash('sha256').update(bytes).digest('hex').slice(0,8),entry.sha256Prefix,entry.name);
+  }
   for(const entry of manifest.files){
     const bytes=fs.readFileSync(path.join(dir,entry.name));
     assert.equal(bytes.length,entry.size,entry.name);
     assert.equal(createHash('sha256').update(bytes).digest('hex'),entry.sha256,entry.name);
   }
-  pass('B618','all 26 approved art assets match original SHA-256 manifest');
+  pass('B618','original 26 assets and 32 postrelease additions match approved hashes');
 }
 // B619: quoted purchase revalidates exact offer and day; invalid token cannot charge.
 {
