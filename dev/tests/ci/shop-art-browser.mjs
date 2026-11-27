@@ -694,9 +694,17 @@ try{
     };
     await run("campaign20Start();S.campTab='L';S.campCh.L=0;set_view('camp');render()");
     await expeditionShot('campaign-home','.c20-home');
+    const assertCampaignRoot=async()=>{
+      const geometry=await page.$eval('.c31-root',root=>{
+        const r=root.getBoundingClientRect(),s=getComputedStyle(root);
+        return {x:r.x,y:r.y,w:r.width,h:r.height,opacity:s.opacity,position:s.position,viewport:[innerWidth,innerHeight],scroll:root.scrollHeight>root.clientHeight+1};
+      });
+      assert.ok(Math.abs(geometry.x)<=1&&Math.abs(geometry.y)<=1&&Math.abs(geometry.w-geometry.viewport[0])<=1&&Math.abs(geometry.h-geometry.viewport[1])<=1&&geometry.opacity==='1'&&geometry.position==='fixed'&&!geometry.scroll,'campaign full viewport '+JSON.stringify(geometry));
+    };
+    await assertCampaignRoot();
     const beforeCampaign=await run('JSON.stringify(S.cleared)');
     const r31Audit=await page.evaluate(async()=>{
-      const root=document.querySelector('.c20-art'),style=getComputedStyle(root);
+      const root=document.querySelector('.c31-root'),style=getComputedStyle(root);
       const keys=['chapter','console','dossier','frame','pin-boss','pin-locked','pin-next','pin-passed','pin-selected','portal-L','portal-D','portal-C','reward-seat'];
       const decoded=await Promise.all(keys.map(async k=>{
         const url=style.getPropertyValue('--c31-'+k).trim().match(/^url\(["']?(.*?)["']?\)$/)?.[1];
@@ -719,14 +727,16 @@ try{
     await click('[data-c20="dark"]');
     await page.waitForSelector('.campaign20-canvas',{visible:true,timeout:35000});
     assert.equal(await run('S.campTab'),'D');
+    await assertCampaignRoot();
     await click('[data-c20="home"]');
     await click('[data-c20="story"]');
     await page.waitForSelector('.campaign20-canvas',{visible:true,timeout:35000});
     await page.waitForFunction(()=>document.querySelector('#c20world')?.classList.contains('campaign20-3d-ready'),{timeout:35000});
     await page.evaluate(()=>{window.__gfx05Canvas=document.querySelector('.campaign20-canvas')});
     await expeditionShot('light-map','.c20-map');
+    await assertCampaignRoot();
     const campaignLayout=await page.evaluate(()=>{
-      const root=document.querySelector('.c20-art'),world=root.querySelector('.c20-world'),card=root.querySelector('.c20-card');
+      const root=document.querySelector('.c31-root'),world=root.querySelector('.c20-world'),card=root.querySelector('.c20-card');
       const fit=e=>{const r=e.getBoundingClientRect();return r.left>=-1&&r.right<=innerWidth+1&&r.top>=-1&&r.bottom<=innerHeight+1};
       const controls=[...root.querySelectorAll('.c20-head button,.c20-chapbar button,.c20-card button')];
       const pins=[...world.querySelectorAll('.c20-pin')].filter(e=>getComputedStyle(e).visibility==='visible');

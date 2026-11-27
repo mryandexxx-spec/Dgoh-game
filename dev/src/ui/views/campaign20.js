@@ -41,7 +41,7 @@ const campaignHead=home=>`<div class="c20-head"><button class="c20-back" ${home?
 const sideTabs=ck=>`<div class="c20-sides" role="group" aria-label="Направление кампании">${[['L','Светлые','light'],['D','Тёмные','dark'],['C','Хроники','chron']].map(([key,label,cls])=>`<button data-c20side="${key}" aria-pressed="${ck===key}" class="${ck===key?'on '+cls:''}">${label}</button>`).join('')}</div>`;
 function homeHtml(){
   const completed=ck=>campNodes(ck).filter(i=>!!S.cleared[i]).length;
-  return `<div class="c20 c20-art c20-home">${campaignHead(true)}
+  return `<div class="c20 c31-root c20-home">${campaignHead(true)}
     <div class="c31-home-nav" role="heading" aria-level="2">Кампании</div>
     <div class="c20-choices">${[
       ['L','story','Светлая сторона','Путь Дома Атрейдесов','water'],
@@ -136,7 +136,7 @@ function mapHtml(setSel){
   const actions=open?`<button class="btn go ${enough?'':'lack'}" data-node="${chosen}">В бой <small>${amt(en,cost)}</small></button>
     ${stars===3?`<button class="btn ${enough?'':'lack'}" data-sim="${chosen}">Симуляция <small>${amt(en,cost)}</small></button>`:'<span class="c20-locked">Симуляция после 3★</span>'}`:
     '<span class="c20-locked">Сначала пройдите предыдущую миссию</span>';
-  const html=`<div class="c20 c20-art c20-map">
+  const html=`<div class="c20 c31-root c20-map">
     ${campaignHead(false)}
     <div class="c20-chapbar">${side}<div class="c31-chapters"><button data-c20dir="-1" aria-label="Предыдущая глава" ${c===0?'disabled':''}>‹</button><button data-c20="chapters"><span><small>Глава ${ROM7[c]}</small><strong>${esc(chapters[c].t)}</strong></span><b>★ ${nodes.reduce((a,i)=>a+(S.cleared[i]||0),0)}/30 ⌄</b></button><button data-c20dir="1" aria-label="Следующая глава" ${c===6||!nodeOpen(chapNodes(ck,c+1)[0])?'disabled':''}>›</button></div></div>
     ${picker}
