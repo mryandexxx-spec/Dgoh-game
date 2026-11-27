@@ -145,6 +145,93 @@ for(const [token,name] of [
     throw new Error('R5.5 artwork missing or ambiguous: '+name);
   styles=styles.replace(token,()=>name.endsWith('.svg')?'data:image/svg+xml;base64,'+asset.bytes.toString('base64'):asset.pwa);
 }
+// R3.1: immutable campaign art paths; preserve the established module execution order.
+for (const [token,name] of [
+  [
+    "__CAMPAIGN_R31_CHAPTER__",
+    "ui/campaign/chapter.png"
+  ],
+  [
+    "__CAMPAIGN_R31_CONSOLE__",
+    "ui/campaign/console.png"
+  ],
+  [
+    "__CAMPAIGN_R31_DOSSIER__",
+    "ui/campaign/dossier.png"
+  ],
+  [
+    "__CAMPAIGN_R31_FRAME__",
+    "ui/campaign/frame.png"
+  ],
+  [
+    "__CAMPAIGN_R31_PIN_BOSS__",
+    "ui/campaign/pin-boss.png"
+  ],
+  [
+    "__CAMPAIGN_R31_PIN_LOCKED__",
+    "ui/campaign/pin-locked.png"
+  ],
+  [
+    "__CAMPAIGN_R31_PIN_NEXT__",
+    "ui/campaign/pin-next.png"
+  ],
+  [
+    "__CAMPAIGN_R31_PIN_PASSED__",
+    "ui/campaign/pin-passed.png"
+  ],
+  [
+    "__CAMPAIGN_R31_PIN_SELECTED__",
+    "ui/campaign/pin-selected.png"
+  ],
+  [
+    "__CAMPAIGN_R31_PORTAL_L__",
+    "ui/campaign/portal-L.png"
+  ],
+  [
+    "__CAMPAIGN_R31_PORTAL_D__",
+    "ui/campaign/portal-D.png"
+  ],
+  [
+    "__CAMPAIGN_R31_PORTAL_C__",
+    "ui/campaign/portal-C.png"
+  ],
+  [
+    "__CAMPAIGN_R31_REWARD_SEAT__",
+    "ui/campaign/reward-seat.png"
+  ],
+  [
+    "__CAMPAIGN_R31_BASE__",
+    "ui/roster/r5-base.png"
+  ],
+  [
+    "__CAMPAIGN_R31_NICHE__",
+    "ui/roster/r5-niche.png"
+  ],
+  [
+    "__CAMPAIGN_R31_SLAB__",
+    "ui/shop/slab.png"
+  ],
+  [
+    "__CAMPAIGN_R31_PRIMARY__",
+    "ui/shop/button-primary.png"
+  ],
+  [
+    "__CAMPAIGN_R31_COVER_L__",
+    "img/hero-factions/atr.webp"
+  ],
+  [
+    "__CAMPAIGN_R31_COVER_D__",
+    "img/hero-factions/hark.webp"
+  ],
+  [
+    "__CAMPAIGN_R31_COVER_C__",
+    "img/hero-factions/mach.webp"
+  ]
+]) {
+  const asset=ASSETS.find(a=>a.name===name);
+  if(!asset||asset.pwa!==asset.art||styles.split(token).length!==2)throw new Error('R3.1 campaign artwork missing or ambiguous: '+name);
+  styles=styles.replace(token,()=>asset.pwa);
+}
 const { code: code0, meta } = await js(), b3 = await babylonChunk();
 // номер версии: dev/version.json (правится вручную при выкатке) + хеш сборки (он же версия кэша SW); выводится в лобби (ui/views/lobby.js APP_VER)
 const VNUM = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8')).v;

@@ -9,7 +9,6 @@ import { ITEMS, NODE_ITEMS, COMPLETE_NODE_ITEMS, COMPLETE_RATE, TIER_COL } from 
 import { unitPower } from '../../logic/battle/stats.js';
 import { CH } from '../../data/chars.js';
 import { fmt, amt, ic } from '../../core/format.js';
-import { assetUrl } from '../../assets/models.js';
 import { portrait } from '../../render2d/figures.js';
 import { starStr, itemIcon } from '../common.js';
 import { mountCampaignMap, focusCampaignNode, closeCampaignMap } from '../../render3d/scenes/campaign-map.js';
@@ -37,19 +36,12 @@ export function campaign20Action(d) {
 export function campaign20Start() { closeCampaignMap(); page='home';legacy=false;selected=null;detail=false;chapterPicker=false; }
 export function campaign20Legacy() { closeCampaignMap(); legacy=true;detail=false;chapterPicker=false; }
 // R3.1 presentation only: exact approved material assets, immutable asset URLs.
-const campaignSkin = Object.fromEntries([
-  ...['chapter','console','dossier','frame','pin-boss','pin-locked','pin-next','pin-passed','pin-selected','portal-L','portal-D','portal-C','reward-seat'].map(k=>[k,'ui/campaign/'+k+'.png']),
-  ['base','ui/roster/r5-base.png'],['niche','ui/roster/r5-niche.png'],['slab','ui/shop/slab.png'],
-  ['primary','ui/shop/button-primary.png'],['cover-L','img/hero-factions/atr.webp'],
-  ['cover-D','img/hero-factions/hark.webp'],['cover-C','img/hero-factions/mach.webp']
-].map(([key,path])=>[key,assetUrl(path)]));
-const skinStyle=()=>Object.entries(campaignSkin).map(([k,url])=>'--c31-'+k+':url('+url+')').join(';');
 const resourceHeader=()=>`<div class="c31-wallet">${[['water','Вода',enGet('water')],['candle','Огни хроник',enGet('candle')],['sol','Солярии',getRes('sol')],['cry','Камни Су',getRes('cry')]].map(([k,n,v])=>`<button data-info="${k}" aria-label="${n}: ${fmt(v)}">${ic(k)}<span><small>${n}</small><b>${fmt(v)}</b></span></button>`).join('')}</div>`;
 const campaignHead=home=>`<div class="c20-head"><button class="c20-back" ${home?'data-v="lobby"':'data-c20="home"'} aria-label="${home?'В лагерь':'К выбору кампании'}">‹</button><h1>Кампания</h1>${resourceHeader()}</div>`;
 const sideTabs=ck=>`<div class="c20-sides" role="group" aria-label="Направление кампании">${[['L','Светлые','light'],['D','Тёмные','dark'],['C','Хроники','chron']].map(([key,label,cls])=>`<button data-c20side="${key}" aria-pressed="${ck===key}" class="${ck===key?'on '+cls:''}">${label}</button>`).join('')}</div>`;
 function homeHtml(){
   const completed=ck=>campNodes(ck).filter(i=>!!S.cleared[i]).length;
-  return `<div class="c20 c20-art c20-home" style="${skinStyle()}">${campaignHead(true)}
+  return `<div class="c20 c20-art c20-home">${campaignHead(true)}
     <div class="c31-home-nav" role="heading" aria-level="2">Кампании</div>
     <div class="c20-choices">${[
       ['L','story','Светлая сторона','Путь Дома Атрейдесов','water'],
@@ -144,12 +136,12 @@ function mapHtml(setSel){
   const actions=open?`<button class="btn go ${enough?'':'lack'}" data-node="${chosen}">В бой <small>${amt(en,cost)}</small></button>
     ${stars===3?`<button class="btn ${enough?'':'lack'}" data-sim="${chosen}">Симуляция <small>${amt(en,cost)}</small></button>`:'<span class="c20-locked">Симуляция после 3★</span>'}`:
     '<span class="c20-locked">Сначала пройдите предыдущую миссию</span>';
-  const html=`<div class="c20 c20-art c20-map" style="${skinStyle()}">
+  const html=`<div class="c20 c20-art c20-map">
     ${campaignHead(false)}
     <div class="c20-chapbar">${side}<div class="c31-chapters"><button data-c20dir="-1" aria-label="Предыдущая глава" ${c===0?'disabled':''}>‹</button><button data-c20="chapters"><span><small>Глава ${ROM7[c]}</small><strong>${esc(chapters[c].t)}</strong></span><b>★ ${nodes.reduce((a,i)=>a+(S.cleared[i]||0),0)}/30 ⌄</b></button><button data-c20dir="1" aria-label="Следующая глава" ${c===6||!nodeOpen(chapNodes(ck,c+1)[0])?'disabled':''}>›</button></div></div>
     ${picker}
     <div class="c20-world ${map?map.preset.theme:'no-map'}" id="c20world">${markers}${old}${map?'<button class="c20-recenter" data-c20focus="1" aria-label="Центрировать текущую миссию" title="К текущей миссии">◎</button>':''}</div>
-    <div class="c20-card"><div class="c31-mission"><small>Миссия ${ROM7[c]}–${n.m+1} · Ур. ${n.lvl}</small><div class="c31-title"><strong>${esc(n.n)}</strong><button class="btn" data-c20="detail" aria-label="Подробнее о миссии">Подробнее</button></div><small>${starStr(stars,3)} · ${open?(stars?'Пройдена':'Доступна'):'Закрыта'}</small></div><div class="c31-rewards"><small>За победу</small><div>${rewardTiles}</div></div><div class="c20-card-actions">${actions}</div></div>
+    <div class="c20-card"><div class="c31-mission"><small>Миссия ${ROM7[c]}–${n.m+1} · Ур. ${n.lvl}</small><div class="c31-title"><strong>${esc(n.n)}</strong><button class="btn" data-c20="detail" aria-label="Подробнее о миссии">Подробнее</button></div><small>${starStr(stars,3)} · ${open?(stars?'Пройдена':'Доступна'):'Закрыта'}</small></div><div class="c31-rewards"><small>За победу на 3★</small><div>${rewardTiles}</div></div><div class="c20-card-actions">${actions}</div></div>
     ${modalHtml(ck,n,chosen)}
   </div>`;
   return {html,map,chosen};
