@@ -449,3 +449,105 @@ body:has(#overlay2 .ui03-calendar-screen,#view > .ui03-daily,#view .feats) > .to
 #rwwin.rwwin:not(.ge2-result) > .box {width:min(480px,100%);max-width:100%}
 #notes .nt-tx > b {overflow-wrap:anywhere}
 #notes .nt-more {pointer-events:none}
+
+/* GLOBAL-05 — expedition command surfaces. Map canvases, markers, route
+   coordinates, faction colors, rarity and simulation/purchase states stay
+   owned by their original renderers. Only the surrounding UI is adapted. */
+.c20 {background:#26231e;color:#f0e2c7}
+.c20 .c20-head {border-bottom:1px solid #806a4766;padding-bottom:3px}
+.c20 .c20-head > button,.c20 .c20-sides button:not(.on),
+.c20 .c20-chapbar button,.c20 .c20-picker button,.c20 .c20-dialog button,
+.c20 .c20-card .btn:not(.go,.lack),.c20 .c20-recenter {
+  background:var(--gfx-action-surface);border-color:var(--gfx-brass-edge);
+  color:var(--gfx-action-ink);box-shadow:var(--gfx-action-shadow);border-radius:4px
+}
+.c20 .c20-card .btn.go:not(.lack):not(:disabled) {
+  background:var(--gfx-action-primary) center / 100% 100% no-repeat;
+  color:#211d16;border-color:var(--gfx-brass-light);text-shadow:none
+}
+.c20 .c20-card .btn.go:not(.lack) small {color:inherit}
+.c20 .c20-card .btn[data-sim]:not(.lack) {color:#b8d5cf;border-color:#688e87}
+.c20 .c20-card,.c20 .c20-picker,.c20 .c20-dialog {
+  background:linear-gradient(155deg,#40392e,#28251f 75%);
+  border-color:var(--gfx-brass-edge);box-shadow:var(--gfx-action-shadow)
+}
+.c20 .c20-dialog nav button.on,.c20 .c20-picker button.on {
+  color:var(--gfx-action-ink);background:var(--gfx-action-down);
+  border-color:var(--gfx-brass-light);box-shadow:inset 0 -2px var(--gfx-brass-light)
+}
+.c20 .c20-picker button:disabled,.c20 .c20-pages button:disabled {opacity:.55;color:var(--gfx-action-muted)}
+.c20 .c20-dialog header strong {font-family:var(--f-body);font-weight:650;font-size:19px;min-width:0;overflow-wrap:anywhere}
+.c20 .c20-dialog header {gap:8px}
+.c20 .c20-dialog header button {flex:none}
+.c20 .c20-lootrow {background:linear-gradient(#484033,#2b2721);border-color:#806a4777}
+.c20 .c20-lootrow > span:nth-child(2) {white-space:normal;overflow-wrap:anywhere;line-height:1.16}
+.c20 .c20-conditions span {border-color:#806a4777;background:#211e19}
+.c20 .c20-chapbar button:nth-child(2) {font-weight:650;letter-spacing:.025em}
+.c20 .c20-card strong {font-family:var(--f-body);font-weight:650}
+.c20-home {background:radial-gradient(ellipse at 50% 0%,#554934,#26231e 75%)}
+.c20 .c20-cover {
+  isolation:isolate;border:1px solid #ae9267;border-radius:6px;padding:18px;
+  background:radial-gradient(ellipse at 76% 18%,#ab8b57 0%,#665139 42%,#29251f 84%);
+  box-shadow:inset 0 1px #ebd8ad55,inset 0 -2px #100f0eaa,0 6px 12px #0005;
+}
+.c20 .c20-cover-chron {border-color:#71928a;background:radial-gradient(ellipse at 74% 18%,#66867d,#3d5552 38%,#232927 82%)}
+.c20 .c20-cover::before {content:'';position:absolute;inset:8px;border:1px solid currentColor;opacity:.16;pointer-events:none}
+.c20 .c20-cover .c20-art {
+  top:5%;right:10%;font-size:clamp(72px,18vw,135px);opacity:.32;
+  color:#f5d6a2;text-shadow:0 3px 8px #0007
+}
+.c20 .c20-cover-chron .c20-art {color:#c4e3db}
+.c20 .c20-copy {gap:7px;max-width:95%}
+.c20 .c20-copy strong {font-family:var(--f-body);font-size:clamp(26px,4vw,36px);font-weight:650;letter-spacing:.12em}
+.c20 .c20-copy small {color:#ddd3bf;font-size:11px;letter-spacing:0}
+.c20 .c20-cover-chron .c20-copy strong {color:#d2e7df}
+/* Standard expeditions and the two journey dossiers. The view tag is set
+   by the router, never inferred from generic .panel or .tier alone. */
+#view:is([data-gfx-view="raid"],[data-gfx-view="legend"],[data-gfx-view="baron_journey"],[data-gfx-view="story_events"],[data-gfx-view="conq"]) :is(.panel,.tier,.reqh,.cqtrk,.cqitem,.cqh) {
+  background:linear-gradient(155deg,#3b362c,#28251f 78%);
+  border-color:#806a4777;border-radius:4px;box-shadow:var(--gfx-action-shadow);min-width:0
+}
+#view:is([data-gfx-view="raid"],[data-gfx-view="legend"],[data-gfx-view="baron_journey"],[data-gfx-view="story_events"],[data-gfx-view="conq"]) :is(h2,h3,h4) {
+  font-family:var(--f-body);font-weight:650;overflow-wrap:anywhere
+}
+#view:is([data-gfx-view="raid"],[data-gfx-view="legend"],[data-gfx-view="baron_journey"],[data-gfx-view="story_events"],[data-gfx-view="conq"]) .btn:not(.go,.lack,.sim,.buy) {
+  background:var(--gfx-action-surface);border-color:var(--gfx-brass-edge);color:var(--gfx-action-ink);border-radius:4px;box-shadow:var(--gfx-action-shadow)
+}
+#view :is(button[data-raidstart],button[data-raidgo],button[data-jgo],button[data-bh9-start],button[data-story-start],button[data-cqdiff],button[data-cqgo],button[data-cqdisk],button[data-cqnd]).go:not(:disabled) {
+  background:var(--gfx-action-primary) center / 100% 100% no-repeat;
+  color:#211d16;border-color:var(--gfx-brass-light);text-shadow:none;border-radius:4px
+}
+#view :is(button[data-raidstart],button[data-raidgo],button[data-jgo],button[data-bh9-start],button[data-story-start],button[data-cqdiff],button[data-cqgo]):disabled {
+  background:#302c25;border-color:#574e40;color:#bdb09b;opacity:1;cursor:not-allowed
+}
+#view:is([data-gfx-view="legend"],[data-gfx-view="story_events"],[data-gfx-view="conq"]) .ctab {
+  background:var(--gfx-action-surface);border-color:var(--gfx-brass-edge);
+  color:var(--gfx-action-muted);border-radius:4px;font-family:var(--f-body);font-weight:600;font-size:13px
+}
+#view:is([data-gfx-view="legend"],[data-gfx-view="story_events"],[data-gfx-view="conq"]) .ctab.on,
+#view :is(.storyev,.bh9journey) .tier.on {background:var(--gfx-action-down);color:var(--gfx-action-ink);border-color:var(--gfx-brass-light);box-shadow:inset 0 -2px var(--gfx-brass-light)}
+#view:is([data-gfx-view="raid"],[data-gfx-view="legend"],[data-gfx-view="story_events"],[data-gfx-view="baron_journey"]) :is(.tier.done,.reqh.full) {border-color:#789477;background:linear-gradient(155deg,#38443a,#252b24)}
+#view :is(.storyev,.bh9journey) button.tier {
+  width:100%;display:flex;justify-content:space-between;align-items:center;gap:4px;
+  text-align:left;white-space:normal;overflow-wrap:anywhere;min-height:34px;padding:5px;margin-bottom:4px;font-size:11px
+}
+#view :is(.storyev,.bh9journey) .tier > span:last-child {flex:none}
+#view :is(.storyev,.bh9journey) .btn {max-width:100%;white-space:normal;overflow-wrap:anywhere}
+#view[data-gfx-view="conq"] .cqdiff:not(.disk) {background:linear-gradient(155deg,#3f392e,#25231e);border-radius:5px}
+#view[data-gfx-view="conq"] .cqdiff.locked {opacity:1;background:#292722}
+#view[data-gfx-view="conq"] .cqdiff.d-easy {border-color:#789477}
+#view[data-gfx-view="conq"] .cqdiff.d-normal {border-color:#6588a9}
+#view[data-gfx-view="conq"] .cqdiff.d-hard {border-color:#ad685d;box-shadow:none}
+#view[data-gfx-view="conq"] .cqmap {border-color:var(--gfx-brass-edge)}
+#view[data-gfx-view="conq"] .cqbar {gap:4px}
+#view[data-gfx-view="conq"] .cqitem {white-space:normal}
+body:has(#view:is([data-gfx-view="raid"],[data-gfx-view="legend"],[data-gfx-view="baron_journey"],[data-gfx-view="story_events"],[data-gfx-view="conq"])) #notes {display:none!important}
+#view:is([data-gfx-view="raid"],[data-gfx-view="legend"],[data-gfx-view="baron_journey"],[data-gfx-view="story_events"],[data-gfx-view="conq"]) button:focus-visible {outline:2px solid var(--gfx-brass-light);outline-offset:-2px}
+@media (orientation:landscape) and (max-height:520px) {
+  .c20 .c20-cover {padding:12px}
+  .c20 .c20-dialog header strong {font-size:17px}
+  #view:is([data-gfx-view="raid"],[data-gfx-view="legend"],[data-gfx-view="baron_journey"],[data-gfx-view="story_events"],[data-gfx-view="conq"]) .panel {padding:8px;min-width:0}
+  #view[data-gfx-view="conq"] .cqdiffs {grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  #view[data-gfx-view="conq"] .cqdiff {padding:8px}
+  #view[data-gfx-view="conq"] .cqdiff h3 {font-size:17px}
+}
