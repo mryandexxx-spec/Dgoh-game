@@ -78,10 +78,36 @@ try{
     };
     await run("set_view('daily');render()");
     await sharedShot('daily','.ui03-daily',2);
+    // GLOBAL-02: actual control state and retained geometry, before touching any purchase.
+    const componentAudit=await page.evaluate(()=>{
+      const root=document.querySelector('.ui03-daily');
+      const tabs=[...root.querySelectorAll('button.ui03-tab')];
+      const filters=[...root.querySelectorAll('button.ui03-filter')];
+      const selected=tabs.find(e=>e.getAttribute('aria-current')==='page');
+      const active=filters.find(e=>e.getAttribute('aria-pressed')==='true');
+      const style=e=>getComputedStyle(e);
+      return {tabs:tabs.length,filters:filters.length,
+        selected:style(selected).boxShadow,active:style(active).borderTopColor,
+        visible:[...tabs,...filters].every(e=>{const b=e.getBoundingClientRect();return b.width>0&&b.height>=15&&b.left>=-1&&b.right<=innerWidth+1&&b.top>=-1&&b.bottom<=innerHeight+1}),
+        cssToken:style(root).getPropertyValue('--gfx-action-primary').trim()};
+    });
+    assert.equal(componentAudit.tabs,2);
+    assert.equal(componentAudit.filters,4);
+    assert.ok(componentAudit.visible&&componentAudit.selected!=='none'&&componentAudit.active==='rgb(215, 181, 125)',JSON.stringify(componentAudit));
+    assert.match(componentAudit.cssToken,/button-primary\.[0-9a-f]{8}\.png/);
+    await click('.ui03-daily button[data-ui03filter="prog"]');
+    assert.equal(await page.$eval('.ui03-daily button[data-ui03filter="prog"]',e=>e.getAttribute('aria-pressed')),'true');
+    await click('.ui03-daily button[data-ui03filter="all"]');
+    await page.evaluate(()=>document.querySelector('.ui03-daily button[data-ui03filter="all"]').focus());
+    await page.keyboard.press('Tab');
+    assert.ok(await page.evaluate(()=>{const e=document.activeElement;return e instanceof HTMLButtonElement&&e.matches(':focus-visible')&&getComputedStyle(e).outlineStyle==='solid'}),'visible keyboard focus');
+    await page.evaluate(()=>document.activeElement?.blur());
+
     await run('openCalendar()');
     await sharedShot('calendar','.ui03-calendar-screen',5);
     await run('closeInfo(true);closeOverlay();openInfo("ix_plate")');
     await sharedShot('resource-info','#overlay2 .infosheet',1);
+    assert.equal(await page.$eval('#overlay2 .infosheet',e=>getComputedStyle(e).borderTopColor),'rgb(128, 106, 71)');
     await run('closeInfo(true);closeOverlay()');
 
     await run("S.solari=1000000;S.cry=5000;S.buys={d:todayKey(),n:{}};persist();S.shopTab='post';set_view('shop');render()");
