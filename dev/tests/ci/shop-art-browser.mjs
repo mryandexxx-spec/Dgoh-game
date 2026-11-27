@@ -663,6 +663,71 @@ try{
       await expeditionShot('jihad-energy','.cqcbox');
       await scrollTap('.cqcbox .btn[data-close="1"]');
     }
+
+    // GLOBAL-06: use actual squad selector, native entry, ability, battle
+    // settings and settled defeat/victory. The late fixture is isolated.
+    const combatShot=async(label,selector)=>{
+      await page.waitForSelector(selector,{visible:true,timeout:25000});
+      await page.evaluate(async()=>{await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))});
+      const bounds=await page.$eval(selector,e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,w:innerWidth,h:innerHeight}});
+      assert.ok(bounds.x>=-1&&bounds.y>=-1&&bounds.right<=bounds.w+1&&bounds.bottom<=bounds.h+1,'combat viewport '+label+' '+JSON.stringify(bounds));
+      await page.screenshot({path:path.join(shots,width+'-global06-'+label+'.png')});
+    };
+    await run("closeInfo(true);closeOverlay();S.skipDlg=true;set_view('camp');render();openSquadSel('camp',0)");
+    await combatShot('squad-ready','.sqsel');
+    const chosen=await run('sqArr().slice()');
+    assert.ok(chosen.length,'late fixture has selected allies');
+    const squadBounds=await page.evaluate(()=>{
+      const r=s=>document.querySelector(s).getBoundingClientRect();
+      const f=r('.sqfoot'),b=r('.sqbody'),l=r('.sqlist'),s=r('.sqslots');
+      return {fit:b.bottom<=f.top+1&&f.bottom<=innerHeight+1&&l.height>0&&s.height>0,count:document.querySelectorAll('.sqslot').length};
+    });
+    assert.ok(squadBounds.fit&&squadBounds.count===5,JSON.stringify(squadBounds));
+    await click('[data-sqclear]');
+    assert.equal(await page.$eval('[data-sqgo]',e=>e.disabled),true);
+    await combatShot('squad-empty','.sqsel');
+    for(const id of chosen){
+      const sel='[data-sqadd="'+id+'"]';
+      await scrollTap(sel);
+    }
+    assert.deepEqual(await run('sqArr().slice()'),chosen);
+    assert.equal(await page.$eval('[data-sqgo]',e=>e.disabled),false);
+    assert.equal(await run('loadB3().then(Boolean)'),true);
+    await click('[data-sqgo]:not(:disabled)');
+    await page.waitForFunction(()=>BT?.B&&!!document.querySelector('#battle')&&BT.waiting,{timeout:35000});
+    assert.equal(await run('!!BT.arena'),true,'actual 3D combat');
+    await combatShot('battle','#battle');
+    await page.evaluate(()=>{window.__gfx06Canvas=document.querySelector('#bgc')});
+    await click('[data-ab="basic"]:not(.off)');
+    await page.waitForFunction(()=>BT?.waiting||BT?.done,{timeout:35000});
+    assert.equal(await page.evaluate(()=>window.__gfx06Canvas===document.querySelector('#bgc')),true);
+    assert.equal(await run('!!BT.done'),false,'fixture should survive first basic attack');
+    if(await page.$('.pkg9-dtoggle')){
+      await click('.pkg9-dtoggle');
+      await combatShot('drawer','.pkg9-drawer');
+      await click('.pkg9-dhead [data-bdrawer]');
+    }
+    await click('[data-bset]');
+    await combatShot('settings','.bpopbox');
+    await scrollTap('[data-bsfps="30"]');
+    assert.equal(await page.$eval('[data-bsfps="30"]',e=>e.getAttribute('aria-checked')),'true');
+    await scrollTap('[data-bsquit]');
+    await combatShot('defeat','.result.lost .box');
+    assert.equal(await run('loadSave.writer.state().status'),'owned');
+    await scrollTap('.result [data-tocamp]');
+    assert.equal(await page.$('#battle'),null);
+    await run("openSquadSel('camp',0)");
+    await click('[data-sqgo]:not(:disabled)');
+    await page.waitForFunction(()=>BT?.B&&BT.waiting&&!!document.querySelector('#battle'),{timeout:35000});
+    // Native speed and auto controls drive the second battle through real
+    // simulation and the verified result settlement, not a synthetic result.
+    await click('[data-speed]');await click('[data-speed]');
+    await click('[data-auto]');
+    await page.waitForSelector('.result.won .box',{visible:true,timeout:90000});
+    await combatShot('victory','.result.won .box');
+    assert.equal(await run('loadSave.writer.state().status'),'owned');
+    await scrollTap('.result [data-tocamp]');
+    assert.equal(await page.$('#battle'),null);
     assert.deepEqual(errors,[]);
     await page.close();
     console.log('PASS SHOP-ART',path.basename(html),width+'x'+height,JSON.stringify(layout));
