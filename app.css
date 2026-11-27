@@ -4300,3 +4300,100 @@ body:has(#view .shop-art)>.toast{top:max(4px,env(safe-area-inset-top));bottom:au
 .shop-art[data-market=jihad] .sa-card .sa-limit:has(.cqrar){width:100%;min-width:0}
 .shop-art[data-market=jihad] .sa-card .sa-limit .cqrar{display:block;box-sizing:border-box;width:100%;letter-spacing:0;font-size:8px;padding:2px 1px;text-align:center}
 @media(max-width:740px){.shop-art[data-market=jihad] .sa-card .sa-limit .cqrar{font-size:7.5px}}
+
+/* GFX-06 GLOBAL-02 — approved shop material vocabulary, explicit adapters.
+   Do not apply to combat, faction-specific controls, shop, or destructive/
+   simulation/upgrade actions. Only surface treatment; layout stays local. */
+:root {
+  --gfx-action-primary: url("assets/ui/shop/button-primary.461cee98.png");
+  --gfx-brass-edge: #806a47;
+  --gfx-brass-light: #d7b57d;
+  --gfx-action-ink: #f3d9a6;
+  --gfx-action-muted: #c4beb2;
+  --gfx-action-surface: linear-gradient(180deg,#454035,#28241d);
+  --gfx-action-down: linear-gradient(180deg,#28241d,#3e3527);
+  --gfx-action-shadow: inset 0 1px #e6c99722,0 1px 3px #0005;
+  --gfx-action-radius: 4px;
+}
+/* Only daily/calendar, feats, trials and ordinary resource info sheets.
+   Existing approved layouts, hit areas and semantic states are preserved. */
+.ui03-root :is(button.ui03-button,button.ui03-qaction,button.ui03-close,button.ui03-filter),
+#view:has(.feats) .feats button.btn,
+#view:has(.trcards) :is(.trhead,.trtier) button.btn:not(.sim),
+#overlay2 .infosheet button.btn:not(.go,.buy,.lack,.sim,.ghost) {
+  border-radius:var(--gfx-action-radius);
+  border-color:var(--gfx-brass-edge);
+  background:var(--gfx-action-surface);
+  color:var(--gfx-action-ink);
+  box-shadow:var(--gfx-action-shadow);
+  text-shadow:none;
+}
+/* Authored primary texture already shipped in shop; keep the label separate. */
+.ui03-root :is(button.ui03-button.go,button.ui03-qaction.go):not(:disabled),
+#view:has(.feats) .feats button.btn.go:not(:disabled),
+#view:has(.trcards) .trtier button.btn.go:not(:disabled) {
+  background:var(--gfx-action-primary) center / 100% 100% no-repeat;
+  border-color:var(--gfx-brass-light);
+  color:#211d16;
+  box-shadow:var(--gfx-action-shadow);
+}
+.ui03-root :is(button.ui03-button,button.ui03-qaction,button.ui03-close,button.ui03-filter):active:not(:disabled),
+#view:has(.feats) .feats button.btn:active:not(:disabled),
+#view:has(.trcards) :is(.trhead,.trtier) button.btn:not(.sim):active:not(:disabled),
+#overlay2 .infosheet button.btn:not(.go,.buy,.lack,.sim,.ghost):active:not(:disabled) {
+  filter:brightness(.88);
+}
+.ui03-root :is(button.ui03-button,button.ui03-qaction):disabled,
+#view:has(.feats) .feats button.btn:disabled,
+#view:has(.trcards) :is(.trhead,.trtier) button.btn:not(.sim):disabled {
+  background:linear-gradient(180deg,#302c25,#24211c);
+  color:#bdb09b;
+  opacity:1;
+  border-color:#574e40;
+  cursor:not-allowed;
+}
+/* B1-style selection rail: labels are still real buttons and retain state. */
+.ui03-root .ui03-tabs {
+  border-color:var(--gfx-brass-edge);
+  border-radius:var(--gfx-action-radius);
+  background:linear-gradient(180deg,#383126,#211e19);
+  box-shadow:var(--gfx-action-shadow);
+  gap:0;
+}
+.ui03-root button.ui03-tab {
+  position:relative;
+  border-radius:2px;
+  color:var(--gfx-action-muted);
+  background:transparent;
+  box-shadow:none;
+}
+.ui03-root button.ui03-tab[aria-current="page"] {
+  color:var(--gfx-action-ink);
+  background:linear-gradient(180deg,#55473166,#29241c88);
+  box-shadow:inset 0 -2px var(--gfx-brass-light);
+}
+.ui03-root button.ui03-filter[aria-pressed="true"] {
+  color:var(--gfx-action-ink);
+  background:var(--gfx-action-down);
+  border-color:var(--gfx-brass-light);
+  box-shadow:inset 0 -2px var(--gfx-brass-light);
+}
+.ui03-root :is(button.ui03-button,button.ui03-qaction,button.ui03-close,button.ui03-filter,button.ui03-tab):focus-visible,
+#view:has(.feats) .feats button.btn:focus-visible,
+#view:has(.trcards) :is(.trhead,.trtier) button.btn:not(.sim):focus-visible,
+#overlay2 .infosheet button.btn:focus-visible {
+  outline:2px solid #f3d9a6;
+  outline-offset:-3px;
+}
+/* Ordinary resource sheet only. Do not skin the faction dossier or battle
+   result, confirmation and error dialogs with a universal blanket rule. */
+#overlay2 .info-layer > .infosheet {
+  border-color:var(--gfx-brass-edge);
+  background:linear-gradient(155deg,#383126,#211e19 72%);
+  box-shadow:inset 0 1px #e6c99722,0 12px 30px #0008;
+}
+@media(prefers-reduced-motion:reduce) {
+  .ui03-root button,#view:has(.feats) .feats button.btn,
+  #view:has(.trcards) :is(.trhead,.trtier) button.btn,
+  #overlay2 .infosheet button.btn {transition:none;animation:none}
+}
