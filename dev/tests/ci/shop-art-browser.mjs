@@ -463,6 +463,108 @@ try{
     await click('.sa-nav [data-shoptab="post"]');assert.ok(await page.$('.shop-art[data-market="post"]'));
     await click('.sa-ix');assert.equal(await run('view'),'recycler');
     assert.equal(await page.$('.shop-art'),null);
+
+    // GLOBAL-04 — separate browser-local fixture, after all shop/hero tests.
+    // These are real claims with native input and verified persisted markers,
+    // not mock DOM or a direct call to a reward presentation function.
+    await run("closeInfo(true);closeOverlay();set_view('daily');S.daily={d:todayKey(),c:{camp:10,chron:3},got:{},chest:false};persist();render()");
+    const archiveShot=async(label,selector)=>{
+      await page.waitForSelector(selector,{visible:true,timeout:15000});
+      await page.evaluate(async()=>{await document.fonts.ready;await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))});
+      await page.screenshot({path:path.join(shots,width+'-global04-'+label+'.png')});
+    };
+    const dailyGeometry=await page.evaluate(()=>{
+      const r=s=>document.querySelector(s).getBoundingClientRect();
+      const art=r('.ui03-daily-supply .ui03-art'),progress=r('.ui03-daily-supply .ui03-progressline'),action=r('[data-qchest]');
+      const image=document.querySelector('.ui03-choam-picture');
+      const photo=image?.getBoundingClientRect();
+      const rows=[...document.querySelectorAll('.ui03-quest')];
+      const overlap=(a,b)=>a.left<b.right-1&&a.right>b.left+1&&a.top<b.bottom-1&&a.bottom>b.top+1;
+      return {art:art.height,photo:photo?.height,progress:progress.top,artBottom:art.bottom,
+        actionBottom:action.bottom,rootBottom:r('.ui03-daily').bottom,
+        contained:!photo||photo.bottom<=art.bottom+1,
+        rows:rows.length,overlap:rows.some(e=>{const a=e.querySelector('.ui03-qaction').getBoundingClientRect(),b=e.querySelector('.ui03-qcopy').getBoundingClientRect(),c=e.querySelector('.ui03-rewards').getBoundingClientRect();return overlap(a,b)||overlap(a,c)||overlap(b,c)}),
+        notes:getComputedStyle(document.querySelector('#notes')).display};
+    });
+    console.log('GLOBAL-04 daily geometry',width,JSON.stringify(dailyGeometry));
+    await archiveShot('daily-ready','.ui03-daily');
+    assert.ok(dailyGeometry.art>0&&dailyGeometry.contained&&dailyGeometry.artBottom<=dailyGeometry.progress+1&&dailyGeometry.actionBottom<=dailyGeometry.rootBottom+1&&dailyGeometry.rows>0&&!dailyGeometry.overlap&&dailyGeometry.notes==='none',JSON.stringify(dailyGeometry));
+    assert.equal(await page.$eval('[data-qchest]',e=>e.disabled),true);
+    const claimKey=await page.$eval('[data-qclaim]',e=>e.dataset.qclaim);
+    const claimSelector='[data-qclaim="'+claimKey+'"]';
+    await page.$eval(claimSelector,e=>e.scrollIntoView({block:'nearest'}));
+    await click(claimSelector);
+    await archiveShot('quest-receipt','#rwwin');
+    assert.equal(await page.evaluate(k=>JSON.parse(localStorage.getItem('dune-goh-v1')).daily.got[k],claimKey),true);
+    await click('#rwwin [data-rwok]');
+    assert.equal(await page.$(claimSelector),null);
+    await archiveShot('daily-claimed','.ui03-daily');
+    // Chest ready and claimed variants, on the same isolated browser save.
+    await run('S.daily.got=Object.fromEntries(["login","water","camp","chron","shop","raid","ult"].map(k=>[k,true]));persist();renderDaily()');
+    assert.equal(await page.$eval('[data-qchest]',e=>e.disabled),false);
+    await archiveShot('supply-ready','.ui03-daily');
+    await click('[data-qchest]');
+    await archiveShot('supply-receipt','#rwwin');
+    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('dune-goh-v1')).daily.chest),true);
+    await click('#rwwin [data-rwok]');
+    assert.equal(await page.$eval('[data-qchest]',e=>e.disabled),true);
+    await archiveShot('supply-claimed','.ui03-daily');
+    // Calendar day preview must not change its independently gated claim.
+    await run('S.login={m:todayKey.clock.snapshot().month,n:0,last:""};persist();openCalendar()');
+    await archiveShot('calendar-ready','.ui03-calendar-screen');
+    await click('[data-ui03day="2"]');
+    assert.equal(await page.$eval('[data-ui03day="2"]',e=>e.getAttribute('aria-pressed')),'true');
+    assert.equal(await page.$eval('[data-calclaim]',e=>e.disabled),false);
+    await click('[data-calclaim]');
+    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('dune-goh-v1')).login.n),1);
+    assert.equal(await page.$eval('[data-calclaim]',e=>e.disabled),true);
+    await archiveShot('calendar-claimed','.ui03-calendar-screen');
+    assert.equal(await page.$eval('.toast',e=>e.dataset.archiveOrigin),'calendar','calendar receipt ownership');
+    await click('.ui03-calendar-screen .ui03-close');
+    await run('openProfile()');
+    assert.ok(await page.evaluate(()=>[...document.querySelectorAll('.toast')].every(e=>getComputedStyle(e).visibility==='hidden')),'stale calendar receipt visually hidden in profile');
+    await archiveShot('profile','.ui04-profile');
+    await click('.ui04-tabs [data-ui04-tab="custom"]');
+    await archiveShot('profile-cosmetics','.ui04-profile');
+    await click('.ui04-subtabs [data-ui04-kind="title"]');
+    const locked=await page.$('.ui04-item.locked');
+    if(locked){
+      await locked.evaluate(e=>e.scrollIntoView({block:'nearest'}));
+      await click('.ui04-item.locked');
+      await archiveShot('profile-locked','.ui04-profile');
+      assert.equal(await page.$eval('.ui04-hint',e=>e.hidden),false);
+    }
+    await click('.ui04-tabs [data-ui04-tab="save"]');
+    await archiveShot('profile-save','.ui04-profile');
+    await click('.ui04-header button:last-child');
+    // Verified feat claim with a deterministic first-tier win counter.
+    await run("S.stats.wins=25;S.feats.wins=0;persist();set_view('feats');render()");
+    const featSelector='[data-featclaim="wins"]';
+    await page.$eval(featSelector,e=>e.scrollIntoView({block:'center'}));
+    await archiveShot('feat-ready','.feats');
+    await click(featSelector);
+    await archiveShot('feat-receipt','#rwwin');
+    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('dune-goh-v1')).feats.wins),1);
+    await click('#rwwin [data-rwok]');
+    assert.equal(await page.$eval(featSelector,e=>e.disabled),true);
+    await page.$eval(featSelector,e=>e.scrollIntoView({block:'center'}));
+    await archiveShot('feat-claimed','.feats');
+    // The corner inbox is the existing notification queue, not a new
+    // persistence feature. Suppression on archive views must not drop items.
+    await run('NOTES.push({id:"gfx04-test-note",kind:"quest",q:activeDaily()[0]});renderNotes()');
+    assert.equal(await page.$eval('#notes',e=>getComputedStyle(e).display),'none');
+    const noteCount=await run('NOTES.length');
+    await run("set_view('lobby');render();renderNotes()");
+    assert.equal(await run('NOTES.length'),noteCount);
+    await page.evaluate(async()=>{await Promise.all(document.querySelectorAll('#notes .nt').length?[...document.querySelectorAll('#notes .nt')].flatMap(e=>e.getAnimations().map(a=>a.finished.catch(()=>{}))):[])});
+    await archiveShot('inbox','#notes');
+    const inboxLayout=await page.$eval('#notes',e=>{
+      const b=e.getBoundingClientRect(),cards=[...e.querySelectorAll('.nt')];
+      return {cards:cards.length,fit:cards.every(c=>{const r=c.getBoundingClientRect();return r.top>=b.top-1&&r.bottom<=b.bottom+1}),inView:b.top>=0&&b.bottom<=innerHeight+1};
+    });
+    assert.ok(inboxLayout.cards>0&&inboxLayout.cards<=2&&inboxLayout.fit&&inboxLayout.inView,JSON.stringify(inboxLayout));
+    await click('[data-ntx="gfx04-test-note"]');
+    assert.equal(await run('NOTES.some(n=>n.id==="gfx04-test-note")'),false);
     assert.deepEqual(errors,[]);
     await page.close();
     console.log('PASS SHOP-ART',path.basename(html),width+'x'+height,JSON.stringify(layout));

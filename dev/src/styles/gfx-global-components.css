@@ -274,3 +274,178 @@ body:has(#view .ros) > #notes {display:none}
   }
   .hc.gfx02-pilot.has-ultimate:not(.locked) .hcsks .hcski {width:24px;height:24px}
 }
+
+/* GLOBAL-04 — Imperial archive. Reuse the approved shop's material rail,
+   neutral surfaces and authored primary button; keep reward/state semantics.
+   No asset, transaction, calendar, combat or persistence changes. */
+.ui03-root {
+  background:radial-gradient(ellipse at 18% 0%,#806a472b,transparent 58%),linear-gradient(145deg,#26231e,#171512 70%);
+}
+.ui03-root :is(.ui03-head,.ui03-foot) {
+  background:linear-gradient(180deg,#383126,#211e19);
+  border-color:var(--gfx-brass-edge);box-shadow:inset 0 1px #e6c99722;
+}
+.ui03-root .ui03-panel {
+  border-radius:var(--gfx-action-radius);border-color:#66563f;
+  box-shadow:inset 0 1px #e6c99718,0 3px 8px #0005;
+}
+.ui03-root .ui03-panel-list,.ui03-root .ui03-calendar-body {
+  background:linear-gradient(155deg,#302a22,#1c1a17 75%);
+}
+.ui03-root .ui03-title {text-shadow:none;font-weight:750}
+.ui03-root .ui03-eyebrow {color:var(--gfx-action-ink)}
+.ui03-root .ui03-mark {border-radius:var(--gfx-action-radius);border-color:var(--gfx-brass-edge)}
+/* Art gets the space left AFTER all captions, progress, reward chips and
+   the action. The containing box, not image intrinsic ratio, sets height. */
+.ui03-daily .ui03-daily-supply {gap:4px}
+.ui03-daily .ui03-daily-supply > :not(.ui03-art) {flex:none}
+.ui03-daily .ui03-daily-supply > .ui03-art {
+  flex:1 1 0;min-height:0;min-width:0;overflow:hidden;
+  grid-template: minmax(0,1fr) / minmax(0,1fr);
+}
+.ui03-daily .ui03-art::before {filter:none;background:radial-gradient(ellipse,#c3a26b30,transparent 75%)}
+.ui03-daily .ui03-art .ui03-choam-picture {
+  width:100%;height:100%;min-height:0;max-height:100%;aspect-ratio:auto;margin:0;
+}
+.ui03-daily .ui03-art .ui03-choam-svg {width:100%;height:100%;max-height:100%}
+.ui03-daily .ui03-art .ui03-choam-photo {filter:none}
+.ui03-daily .ui03-daily-supply .ui03-rewards > .rwgrid.sm {
+  flex-wrap:wrap;justify-content:center;overflow:visible;
+}
+.ui03-daily .ui03-daily-supply .ui03-rewards {overflow:visible}
+.ui03-root .ui03-quest {
+  grid-template-columns:36px minmax(0,1fr) 82px;
+  grid-template-areas:"badge copy action" "badge rewards action";
+  gap:3px 7px;min-height:58px;
+  background:linear-gradient(150deg,#373026,#24211c);
+  border-radius:var(--gfx-action-radius);border-color:#66563f;
+  box-shadow:inset 0 1px #e6c99718;
+}
+.ui03-root .ui03-quest.done {border-color:var(--gfx-brass-light);background:linear-gradient(150deg,#4a3e2c,#29241d)}
+.ui03-root .ui03-quest.got {opacity:1;background:#24211d;border-color:#554d40}
+.ui03-root .ui03-quest .ui03-qicon {grid-area:badge;border-radius:4px}
+.ui03-root .ui03-quest .ui03-qcopy {grid-area:copy}
+.ui03-root .ui03-quest .ui03-qcopy b {white-space:normal;overflow-wrap:anywhere;line-height:1.15}
+.ui03-root .ui03-quest > .ui03-rewards {grid-area:rewards;max-width:none;overflow:visible;justify-content:flex-start}
+.ui03-root .ui03-quest > .ui03-rewards > .rwgrid.sm {flex-wrap:wrap;overflow:visible}
+.ui03-root .ui03-quest .ui03-qaction {grid-area:action;min-height:40px;display:grid;place-items:center;text-align:center;white-space:normal}
+.ui03-root .ui03-quest.got .ui03-qaction {border-color:#64765b;color:#b9c9ad;background:#252e25}
+.ui03-root .ui03-cday {
+  border-radius:4px;border-color:#66563f;background:linear-gradient(160deg,#393127,#25211b);
+  box-shadow:inset 0 1px #e6c99722;
+}
+.ui03-root .ui03-cday.big {border-color:#a88b58;background:linear-gradient(160deg,#4d402b,#28221b)}
+.ui03-root .ui03-cday.now {border-color:#ffe0a0;box-shadow:inset 0 0 0 1px #d7b57d}
+.ui03-root .ui03-cday.got {opacity:1;background:#242820;border-color:#56664c}
+.ui03-root .ui03-cday.selected {outline:2px solid #9ddbd4;outline-offset:-2px}
+.ui03-root .ui03-calfooter {border-radius:4px;border-color:#66563f}
+.ui03-root .ui03-cal-selected strong {white-space:normal;overflow-wrap:anywhere}
+@media (orientation:landscape) and (max-width:700px) {
+  .ui03-root .ui03-quest {grid-template-columns:30px minmax(0,1fr) 68px;gap:3px 5px}
+  .ui03-daily .ui03-daily-supply {padding:7px;gap:3px}
+}
+/* Profile: dossier typography and material hierarchy, not a reskin of
+   identity/ownership. Preserve teal selected cosmetics and progress. */
+#overlay2 .sheet.ui04-profile {background:linear-gradient(150deg,#332b20,#191713 72%)}
+.ui04-profile :is(.ui04-card,.ui04-main) {
+  border-radius:4px;border-color:var(--gfx-brass-edge);background:#211e19;
+  box-shadow:var(--gfx-action-shadow);
+}
+.ui04-profile .ui04-card {background:linear-gradient(155deg,#393128,#211e19 72%);overflow-y:auto;overscroll-behavior:contain}
+.ui04-profile .ui04-land {opacity:.55}
+.ui04-profile .ui04-card > *:not(.ui04-land) {flex-shrink:0}
+.ui04-profile .ui04-power strong {color:#f3d9a6}
+.ui04-profile :is(.ui04-header button,.ui04-edit,.ui04-subtabs button,.ui04-filter button) {
+  border-radius:4px;border-color:var(--gfx-brass-edge);background:var(--gfx-action-surface);
+  color:var(--gfx-action-ink);box-shadow:var(--gfx-action-shadow);
+}
+.ui04-profile .ui04-edit {background:var(--gfx-action-primary) center / 100% 100% no-repeat;color:#211d16;border-color:var(--gfx-brass-light)}
+.ui04-profile .ui04-tabs {background:#29241c}
+.ui04-profile .ui04-tabs button.active {background:#35433a;border-bottom-color:#a3e3d4}
+.ui04-profile :is(.ui04-subtabs button.active,.ui04-filter button[aria-pressed=true]) {
+  border-color:#a3e3d4;background:#24443a;color:#effbf4;
+}
+.ui04-profile :is(.ui04-xp,.ui04-stat,.ui04-next,.ui04-item) {
+  border-radius:4px;border-color:#66563f;background:linear-gradient(145deg,#383026,#26221d);
+  box-shadow:inset 0 1px #e6c99716;
+}
+.ui04-profile .ui04-item.selected {border-color:#a3e3d4;background:#26443a}
+.ui04-profile .ui04-item.locked {background:#211f1b;border-color:#514b40}
+.ui04-profile .ui04-item.locked .ui04-mark {color:#c4beb2}
+.ui04-profile button:focus-visible {outline:2px solid #a3e3d4;outline-offset:-2px}
+/* Feats: emphasis through text, state rail and rewards rather than glow. */
+#view:has(.feats) .feat {
+  background:linear-gradient(150deg,#383026,#231f1a);
+  border-radius:4px;border-color:#66563f;box-shadow:var(--gfx-action-shadow);
+}
+#view:has(.feats) .feat.ready {
+  border-color:var(--gfx-brass-light);box-shadow:inset 3px 0 var(--gfx-brass-light),var(--gfx-action-shadow);
+}
+#view:has(.feats) .feat.done {background:linear-gradient(150deg,#30352a,#24231d);border-color:#68785a}
+#view:has(.feats) .fth h4 {font-family:'Dune Inter',system-ui,sans-serif;font-weight:700;letter-spacing:0}
+#view:has(.feats) .fhead b {text-shadow:none;font-variant-numeric:tabular-nums}
+#view:has(.feats) .fpip {border-radius:2px}
+#view:has(.feats) .fbar {border-radius:3px}
+#view:has(.feats) .frw .rwgrid {min-width:0;max-width:100%}
+/* Reward surfaces outside battle and GE2 simulation. Art/tier colors stay
+   intact; normal, rare, epic and legendary medallions keep their identities. */
+:is(.ui04-reward,.feats,.nt-rw) .rwt:not(.r-rare,.r-epic,.r-leg,.rk-shard,.rk-frag,.unl) {
+  background:linear-gradient(155deg,#383026,#211e19);border-color:#66563f;border-radius:4px;
+  box-shadow:inset 0 1px #e6c99718;
+}
+#rwwin.rwwin:not(.ge2-result) > .box {
+  border-color:var(--gfx-brass-edge);border-radius:6px;
+  background:linear-gradient(150deg,#3b3024,#211e19 75%);
+  box-shadow:inset 0 1px #e6c99722,0 16px 40px #0009;
+  padding:12px 16px;gap:8px;
+}
+#rwwin.rwwin:not(.ge2-result) h3 {font:750 clamp(20px,3vw,26px)/1.15 'Dune Inter',system-ui,sans-serif;letter-spacing:0;color:#f3d9a6}
+#rwwin.rwwin:not(.ge2-result) .mousewrap {height:70px;margin:0}
+#rwwin.rwwin:not(.ge2-result) .mouse {width:90px;height:75px}
+#rwwin.rwwin:not(.ge2-result) .acts {bottom:-12px;background:#211e19}
+#rwwin.rwwin:not(.ge2-result) button[data-rwok].go {
+  background:var(--gfx-action-primary) center / 100% 100% no-repeat;
+  color:#211d16;border-color:var(--gfx-brass-light);border-radius:4px;box-shadow:var(--gfx-action-shadow);
+}
+/* Do not cover the archive or feat claim controls with their own queued
+   notifications. Suppression is CSS only; items remain in NOTES and return
+   on exit. The corner inbox remains interactive on other eligible screens. */
+body:has(#view > .ui03-daily,#view .feats) > #notes {display:none}
+#notes .nt {border-radius:4px;background:linear-gradient(155deg,#393127,#211e19);box-shadow:var(--gfx-action-shadow)}
+#notes .nt.quest {border-color:#6fbf6a}
+#notes .nt.feat {border-color:var(--gfx-brass-light)}
+#notes .nt-rw .rwgrid {margin:0;gap:3px}
+#notes .nt-rw .rwt.sm {padding:2px 3px;min-width:0;gap:2px}
+#notes .nt-rw .rwa,#notes .nt-rw .rwmed {width:19px;height:19px}
+#notes .nt-rw .rwmed .ico {width:15px;height:15px}
+#notes .nt-rw .rwq {font-size:10px}
+#notes .nt-rw .rwc {display:none}
+#notes .nt-x {width:28px;height:28px;top:0;right:0}
+#notes .nt {padding-right:30px}
+#notes .nt > .btn {border-radius:4px;min-height:34px;background:var(--gfx-action-surface);border-color:var(--gfx-brass-edge);color:var(--gfx-action-ink)}
+#notes .nt > .btn.go {background:var(--gfx-action-primary) center / 100% 100% no-repeat;color:#211d16;border-color:var(--gfx-brass-light)}
+#notes button:focus-visible,#rwwin button:focus-visible {outline:2px solid var(--gfx-brass-light);outline-offset:-2px}
+@media (orientation:landscape) and (max-height:520px) {
+  #notes {bottom:max(10px,env(safe-area-inset-bottom,0px));max-height:calc(100dvh - 86px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;align-content:start}
+}
+@media(prefers-reduced-motion:reduce) {
+  #notes .nt,#rwwin.rwwin:not(.ge2-result) .mouse * {animation:none;transition:none}
+}
+
+/* GLOBAL-04 native hit gate: a transient calendar receipt may still be
+   visible for 2.2s after opening the profile. It is status feedback, not
+   part of the active modal; never let it intercept profile controls.
+   Keep the status visible/announced and the ordinary toast behavior elsewhere. */
+body:has(#overlay2 .ui04-profile) > .toast,
+body:has(#overlay2 .ui04-profile) > .toast * {pointer-events:none}
+
+/* GLOBAL-04 visual gate: stale feedback is never painted over a different
+   archive. Same-screen status remains available for its original duration. */
+body:has(#overlay2 .ui04-profile) > .toast:not([data-archive-origin="profile"]),
+body:has(#overlay2 .ui03-calendar-screen) > .toast:not([data-archive-origin="calendar"]),
+body:has(#view > .ui03-daily):not(:has(#overlay2 .ui03-calendar-screen,#overlay2 .ui04-profile)) > .toast:not([data-archive-origin="daily"]),
+body:has(#view .feats):not(:has(#overlay2 .ui03-calendar-screen,#overlay2 .ui04-profile)) > .toast:not([data-archive-origin="feats"]) {visibility:hidden;pointer-events:none}
+body:has(#overlay2 .ui03-calendar-screen,#view > .ui03-daily,#view .feats) > .toast {pointer-events:none}
+#rwwin.rwwin:not(.ge2-result) > .box {width:min(480px,100%);max-width:100%}
+#notes .nt-tx > b {overflow-wrap:anywhere}
+#notes .nt-more {pointer-events:none}

@@ -44,7 +44,10 @@ function noteHtml(n) {
 function renderNotes() {
   let box = $('#notes'); if (!box) { box = document.createElement('div'); box.id = 'notes'; box.className = 'notes'; box.setAttribute('aria-live', 'polite'); document.body.appendChild(box); }
   const hide = !!(BT && BT.B) || !!$('#lvlup') || !!$('#celeb') || !!$('#rwwin') || !!$('#overlay').innerHTML.trim() || !!$('#overlay2').innerHTML.trim(); box.hidden = hide || !NOTES.length; if (box.hidden) return;
-  const vis = NOTES.slice(-3).reverse(), more = NOTES.length - vis.length;
+  // Two complete cards fit the compact landscape inbox; older entries
+  // remain queued and are exposed as newer cards are dismissed.
+  const limit = matchMedia('(orientation: landscape) and (max-height: 520px)').matches ? 2 : 3;
+  const vis = NOTES.slice(-limit).reverse(), more = NOTES.length - vis.length;
   box.innerHTML = `${NOTES.length > 1 ? `<div class="nt-head"><span>${NOTES.length} уведомл.</span><button class="nt-all" data-ntall="1">Закрыть все</button></div>` : ''}
     ${vis.map(n => `<div class="nt ${n.kind}" data-nt="${n.id}">${noteHtml(n)}<button class="nt-x" data-ntx="${n.id}" aria-label="Закрыть">×</button></div>`).join('')}${more > 0 ? `<div class="nt-more">ещё ${more}</div>` : ''}`;
 }
