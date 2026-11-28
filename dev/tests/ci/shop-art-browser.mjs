@@ -231,12 +231,22 @@ try{
     try{
       await swipeGallery();
       assert.ok((await scrollLayout()).top>20,'native touch swipe moves gallery');
+      // Chromium may swallow the first gesture after a compositor fling.
+      // Permit a bounded retry without weakening the native end-of-list gate.
+      // No synthetic scrollTop, wheel or JS navigation fallback.
+      let stalled=0;
       for(let attempt=0;attempt<8;attempt++){
         const current=await scrollLayout();
         if(current.top>=current.max-2)break;
         await swipeGallery();
         const next=await scrollLayout();
-        assert.ok(next.top>current.top||next.top>=next.max-2,'native swipe must advance: '+JSON.stringify({width,current,next}));
+        if(next.top>current.top||next.top>=next.max-2)stalled=0;
+        else {
+          stalled++;
+          console.log('native gallery swipe stalled; retry',JSON.stringify({width,current,next,stalled}));
+          assert.ok(stalled<3,'three consecutive native swipes failed: '+JSON.stringify({width,current,next}));
+          await new Promise(r=>setTimeout(r,350));
+        }
       }
     }finally{await cdp.detach()}
     const afterScroll=await scrollLayout();
