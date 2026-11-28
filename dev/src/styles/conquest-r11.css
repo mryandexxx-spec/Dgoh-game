@@ -58,3 +58,33 @@
 .cq11commondisk{display:grid;place-items:center;flex:none;width:38px;height:38px;clip-path:polygon(25% 0,75% 0,100% 25%,100% 75%,75% 100%,25% 100%,0 75%,0 25%);background:radial-gradient(circle,#2d2920 35%,#9f8963 38%,#403a2e 46%,#827155 62%,#312d24 67%,#b4a07b 72%);color:#e8d5ae;font:700 22px/1 var(--f-body);filter:drop-shadow(0 3px 4px #0008)}
 .cq11reserve .cq11commondisk{width:36px;height:36px}.cq11pick .cq11commondisk{width:64px;height:64px;font-size:32px}
 @media (orientation:landscape) and (max-height:400px){#overlay .cq-nodebox .cq11nodeacts>.cqrepeatnote{display:none}.cq11slot .cq11effect{max-height:22px}.cq11slot .cq11commondisk{width:30px;height:30px;font-size:18px}}
+
+/* Native 844/667 visual gate: prevent clipping and stale receipt overlap. */
+body:has(#view .cq11root) > .toast{top:8px;bottom:auto;max-width:70vw;pointer-events:none}
+body:has(#overlay .cq-nodebox) > .toast{visibility:hidden;pointer-events:none}
+#view .cq11pick .cqdiffs{grid-template-rows:minmax(0,1fr);align-items:stretch}
+#view .cq11pick .cqdiff.disk{display:grid;grid-template-rows:minmax(24px,1fr) auto auto minmax(0,auto) auto;gap:3px;padding:6px;min-height:0;align-content:stretch;overflow:hidden}
+#view .cq11pick .cqdiff.disk>.cq11diskart,#view .cq11pick .cqdiff.disk>.cq11commondisk,#view .cq11pick .cqdiff.disk>svg{height:100%;max-height:44px;min-height:0;width:44px;object-fit:contain;justify-self:center;align-self:center}
+#view .cq11pick .cqdiff.disk h3{font-size:15px;line-height:1.12}
+#view .cq11pick .cqdiff.disk p{font-size:11px;line-height:1.18;overflow:auto;min-height:0}
+#view .cq11pick .cqdiff.disk .btn{min-height:32px;margin:0;padding:4px;align-self:end}
+#view .cq11pick>.sub{margin:0;font-size:10px;line-height:1.2}
+#view .cq11choose .cqdiff{gap:3px!important;padding:6px;min-height:0}
+#view .cq11choose .cqdiff .cqrequire{margin:0!important;min-height:0;line-height:1.12;font-size:10px!important}
+#view .cq11choose .cqdiff p,#view .cq11choose .cqdiff .mono{font-size:11px;line-height:1.15}
+#view .cq11choose .cqdiff .cq11levelart{height:clamp(28px,10vh,52px)}
+#overlay .cq-nodebox .cq11combatinfo{grid-template-columns:52% minmax(0,1fr);grid-template-rows:auto auto;align-content:start;gap:5px 8px}
+#overlay .cq-nodebox .cq11combatinfo>.cdrow{grid-column:2;padding:4px}
+#overlay .cq-nodebox .cq11combatinfo>.cq11foes{grid-column:1;grid-row:1/span 2;align-self:start;border-right:1px solid #806a4766;border-bottom:0}
+#overlay .cq-nodebox .cq11combatinfo>.cq11conditions{grid-row:1}
+#overlay .cq-nodebox .cq11combatinfo>.cq11nodereward{grid-row:2}
+#overlay .cq-nodebox .cq11combatinfo>.cdrow:not(.cq11foes,.cq11conditions,.cq11nodereward){grid-column:1/-1}
+#overlay .cq-nodebox .cq11foes .cdenemy{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;justify-items:center}
+#overlay .cq-nodebox .cq11foes .cden{min-width:0;width:100%;gap:1px;line-height:1.1;font-size:10px;padding:0}
+#overlay .cq-nodebox .cq11foes .cden .pt{max-width:38px;max-height:38px}
+#overlay .cq-nodebox .cq11foes .cden .mono{font-size:9px;line-height:1.15}
+#overlay .cq-nodebox .cq11nodeacts>.btn{min-height:36px;padding:4px}
+#overlay .cq-nodebox .cq11nodeacts>.btn small{color:#24190e;font-size:10px}
+#overlay .cq-nodebox .cq11modalfoot .btn{min-height:30px}
+#overlay .cq-nodebox .cq11nodereward .cdtags{line-height:1.35;align-items:center;font-size:12px}
+@media (orientation:portrait){#overlay .cq-nodebox .cq11combatinfo{grid-template-columns:1fr;grid-template-rows:auto}#overlay .cq-nodebox .cq11combatinfo>.cdrow{grid-column:1!important;grid-row:auto!important}}

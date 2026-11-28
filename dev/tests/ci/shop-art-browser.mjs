@@ -802,6 +802,8 @@ try{
       await expeditionShot('jihad-start','#view[data-gfx-view="conq"]');
       assert.equal(await run('cq().diff'),'easy');
       if(await page.$('[data-cqdisk]')){
+        const startFits=await page.$$eval('[data-cqdisk]',els=>els.every(e=>{const b=e.getBoundingClientRect(),p=e.closest('.cqdiffs').getBoundingClientRect();return b.top>=p.top-1&&b.bottom<=p.bottom+1&&b.bottom<=innerHeight+1}));
+        assert.ok(startFits,'all starter disk actions fit without scrolling');
         await scrollTap('[data-cqdisk]');
         assert.equal(await run('!!cq().pick'),false);
         // Keep the real disk receipt alive while opening the next dialog.
@@ -824,6 +826,8 @@ try{
       assert.ok(await page.$('#overlay .cq-nodebox'));
       const nodeAction=await page.$eval('#overlay .cq-nodebox [data-cqgo]',e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight});
       assert.ok(nodeAction,'battle action must remain visible without scrolling the dossier');
+      const rewardFits=await page.$eval('#overlay .cq11nodereward',e=>{const b=e.getBoundingClientRect(),p=e.closest('.cdinfo').getBoundingClientRect();return b.top>=p.top-1&&b.bottom<=p.bottom+1});
+      assert.ok(rewardFits,'first battle reward must be visible without scrolling');
       await expeditionShot('jihad-node','#overlay .cq-nodebox');
       await scrollTap('#overlay .cq11modalhead [data-close]');
       await scrollTap('[data-cqscreen="overview"]');
