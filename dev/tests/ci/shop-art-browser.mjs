@@ -826,8 +826,14 @@ try{
       assert.ok(await page.$('#overlay .cq-nodebox'));
       const nodeAction=await page.$eval('#overlay .cq-nodebox [data-cqgo]',e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight});
       assert.ok(nodeAction,'battle action must remain visible without scrolling the dossier');
-      const rewardFits=await page.$eval('#overlay .cq11nodereward',e=>{const b=e.getBoundingClientRect(),p=e.closest('.cdinfo').getBoundingClientRect();return b.top>=p.top-1&&b.bottom<=p.bottom+1});
-      assert.ok(rewardFits,'first battle reward must be visible without scrolling');
+      const rewardGeometry=await page.$eval('#overlay .cq11nodereward',e=>{
+        const rect=x=>{const r=x.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right}};
+        const b=rect(e),p=rect(e.closest('.cqdet')),info=rect(e.parentElement.querySelector('.cdinfo')),act=rect(e.parentElement.querySelector('.cq11nodeacts'));
+        const children=[...e.children].map(rect);
+        const hit=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2);
+        return {b,p,info,act,children,visible:!!hit&&e.contains(hit),outsideScroll:!e.closest('.cdinfo'),fit:b.top>=Math.max(p.top,info.bottom)-1&&b.bottom<=Math.min(p.bottom,act.top,innerHeight)+1&&b.left>=0&&b.right<=innerWidth+1&&children.every(r=>r.top>=b.top-1&&r.bottom<=b.bottom+1&&r.left>=b.left-1&&r.right<=b.right+1)};
+      });
+      assert.ok(rewardGeometry.fit&&rewardGeometry.visible&&rewardGeometry.outsideScroll,'first battle reward must be visible and pinned without scrolling: '+JSON.stringify(rewardGeometry));
       await expeditionShot('jihad-node','#overlay .cq-nodebox');
       await scrollTap('#overlay .cq11modalhead [data-close]');
       await scrollTap('[data-cqscreen="overview"]');

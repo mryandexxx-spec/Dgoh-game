@@ -88,3 +88,15 @@ body:has(#overlay .cq-nodebox) > .toast{visibility:hidden;pointer-events:none}
 #overlay .cq-nodebox .cq11modalfoot .btn{min-height:30px}
 #overlay .cq-nodebox .cq11nodereward .cdtags{line-height:1.35;align-items:center;font-size:12px}
 @media (orientation:portrait){#overlay .cq-nodebox .cq11combatinfo{grid-template-columns:1fr;grid-template-rows:auto}#overlay .cq-nodebox .cq11combatinfo>.cdrow{grid-column:1!important;grid-row:auto!important}}
+
+/* Reward strip is independent of the scrolling enemy/condition area.
+   Reserve its natural height before allocating the remaining viewport. */
+#overlay .cq-nodebox .cq11combatdetail{grid-template-rows:minmax(0,1fr) auto auto}
+#overlay .cq-nodebox .cq11combatdetail>.cq11nodereward{display:flex;flex-wrap:wrap;align-items:center;gap:3px 12px;min-width:0;margin:0;padding:5px 8px;border:1px solid #806a4777;border-radius:4px;background:linear-gradient(110deg,#3b3226,#28261e);font-size:11px}
+#overlay .cq-nodebox .cq11combatdetail>.cq11nodereward>.lbl{flex:none;margin:0;font-size:11px;color:#e5c38a}
+#overlay .cq-nodebox .cq11combatdetail>.cq11nodereward>.cdtags{flex:1 1 260px;min-width:0;gap:3px 8px;font-size:11px;line-height:1.2}
+#overlay .cq-nodebox .cq11combatdetail>.cq11nodereward .ico{width:20px;height:20px}
+#overlay .cq-nodebox .cq11combatinfo{grid-template-rows:auto;align-items:start}
+#overlay .cq-nodebox .cq11combatinfo>.cq11foes{grid-row:1;align-self:start}
+#overlay .cq-nodebox .cq11combatinfo>.cq11conditions{grid-row:1}
+@media (orientation:portrait){#overlay .cq-nodebox .cq11combatinfo>.cq11foes,#overlay .cq-nodebox .cq11combatinfo>.cq11conditions{grid-row:auto}}
