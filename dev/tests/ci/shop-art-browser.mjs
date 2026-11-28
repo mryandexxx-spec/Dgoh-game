@@ -812,12 +812,18 @@ try{
       assert.ok(await page.$('.cq11mapview .cqmap'));
       await scrollTap('[data-cqinspect]');
       assert.ok(await page.$('#overlay .cq-nodebox'));
+      const nodeAction=await page.$eval('#overlay .cq-nodebox [data-cqgo]',e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight});
+      assert.ok(nodeAction,'battle action must remain visible without scrolling the dossier');
       await expeditionShot('jihad-node','#overlay .cq-nodebox');
       await scrollTap('#overlay .cq11modalhead [data-close]');
       await scrollTap('[data-cqscreen="overview"]');
       await scrollTap('[data-cqscreen="rewards"]');
       assert.equal(await page.$$eval('.cq11rewardline > *',e=>e.length),35);
       assert.equal(await page.$$eval('.cq11rewardline .cqchest',e=>e.length),7);
+      const railBounds=await page.$eval('.cq11rail',e=>({w:e.clientWidth,sw:e.scrollWidth,h:e.clientHeight,sh:e.scrollHeight}));
+      assert.ok(railBounds.sw>railBounds.w&&railBounds.sh<=railBounds.h+1,'reward rail scrolls only horizontally '+JSON.stringify(railBounds));
+      const viewBounds=await page.$eval('#view',e=>({h:e.clientHeight,sh:e.scrollHeight}));
+      assert.ok(viewBounds.sh<=viewBounds.h+1,'no outer view overflow '+JSON.stringify(viewBounds));
       await expeditionShot('jihad-rewards','.cq11rewards');
       await scrollTap('[data-cqscreen="overview"]');
       await scrollTap('[data-cqdisks]');

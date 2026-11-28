@@ -40,3 +40,21 @@
 .cq11chestbox h3 .cqchestart{width:48px;height:40px;object-fit:contain;vertical-align:middle}.cq11chestbox .cqrw{grid-template-columns:repeat(3,minmax(0,1fr));padding:0;gap:5px}.cq11chestbox .cqrw li{border:1px solid #806a4766;padding:6px;flex-wrap:wrap;min-width:0}.cq11chestbox .cqrw .ico{width:24px;height:24px}
 @media (orientation:portrait){.cq11entry{grid-template-columns:1fr;grid-template-rows:1.2fr 1fr}.cq11sectors,.cq11command{grid-template-rows:22px repeat(5,minmax(0,1fr))}.cq11command{grid-template-rows:22px minmax(0,1.8fr) repeat(3,minmax(0,1fr))}.cq11bar .cqitem span{display:none}.cq11mapview .cqmap{overflow-x:auto;touch-action:pan-x}.cq11mapview .cqtrack{min-width:650px}.cq11featbox .cqfts,.cq11chestbox .cqrw,.cq11reserve{grid-template-columns:repeat(2,minmax(0,1fr))}.cq11slot small{display:none}.cq11slot b{font-size:9px}.cq11rewardtools small{display:none}.cq11difficulty{grid-template-columns:1fr!important}.cq-nodebox .cdinfo{grid-template-columns:1fr}}
 @media (orientation:landscape) and (max-height:400px){.cq11bar .cqitem{min-height:28px}.cq11sectors{grid-template-rows:20px repeat(5,minmax(0,1fr))}.cq11command{grid-template-rows:20px minmax(0,1.8fr) repeat(3,minmax(0,1fr))}.cq11root{gap:4px}.cq11rewardpanel{padding:3px 6px;gap:2px}.cq11milestones .cqchestart{max-height:18px}.cq11commandrow>img{width:28px;height:28px}.cq11difficulty .cq11levelart{height:58px}.cq11slot small{font-size:9px}.cq11slot .cq11diskart{width:36px;height:36px}.cq11reserve .cqdk .btn{font-size:10px;min-height:30px}}
+
+/* Compact nested layout: combat CTA does not scroll with the dossier. */
+#overlay .cq-nodebox .cqdet{display:grid;grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;overflow:hidden;padding:0;gap:4px}
+#overlay .cq-nodebox .cdinfo{overflow:auto;align-content:start;min-height:0;overscroll-behavior:contain}
+#overlay .cq-nodebox .cq11nodeacts{display:flex;align-items:center;gap:5px;margin:0;padding:4px 0;border-top:1px solid #806a4777}
+#overlay .cq-nodebox .cq11nodeacts>.btn{flex:1}
+#overlay .cq-nodebox .cq11nodeacts>.cqrepeatnote{font-size:10px;max-width:160px}
+#overlay .cq-nodebox .cdrow:first-child:not(:has(.cdenemy)){grid-column:auto}
+.cq11choose{grid-template-rows:auto minmax(0,1fr) auto}
+.cq11choose .cq11difficulty{grid-template-rows:minmax(0,1fr);align-items:stretch}
+.cq11choose .cqdiff{display:flex!important;flex-direction:column;justify-content:space-between;overflow:auto;gap:4px!important}
+.cq11choose .cqdiff .cq11levelart{height:clamp(36px,14vh,76px);flex:none}
+.cq11choose .cqdiff .cqrequire{min-height:0}
+.cq11baseline .cq11progressmarker{position:absolute;top:50%;width:11px;height:11px;background:#ffe8b1;box-shadow:0 0 9px #ffe3a2;transform:translate(-50%,-50%) rotate(45deg);border:1px solid #fff4d8}
+.cq11slot{overflow:hidden}.cq11slot .cq11effect{max-height:30px;overflow:auto;min-height:0}.cq11slot .btn{flex:none}.cq11slot .cq11diskart{max-height:46px}
+.cq11commondisk{display:grid;place-items:center;flex:none;width:38px;height:38px;clip-path:polygon(25% 0,75% 0,100% 25%,100% 75%,75% 100%,25% 100%,0 75%,0 25%);background:radial-gradient(circle,#2d2920 35%,#9f8963 38%,#403a2e 46%,#827155 62%,#312d24 67%,#b4a07b 72%);color:#e8d5ae;font:700 22px/1 var(--f-body);filter:drop-shadow(0 3px 4px #0008)}
+.cq11reserve .cq11commondisk{width:36px;height:36px}.cq11pick .cq11commondisk{width:64px;height:64px;font-size:32px}
+@media (orientation:landscape) and (max-height:400px){#overlay .cq-nodebox .cq11nodeacts>.cqrepeatnote{display:none}.cq11slot .cq11effect{max-height:22px}.cq11slot .cq11commondisk{width:30px;height:30px;font-size:18px}}
