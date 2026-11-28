@@ -808,6 +808,23 @@ try{
     if(await page.$('[data-cqres]')){
       await page.$eval('#view',e=>e.scrollTop=0);
       await expeditionShot('jihad-active','#view[data-gfx-view="conq"]');
+      await scrollTap('[data-cqenter][data-cqsec="0"]');
+      assert.ok(await page.$('.cq11mapview .cqmap'));
+      await scrollTap('[data-cqinspect]');
+      assert.ok(await page.$('#overlay .cq-nodebox'));
+      await expeditionShot('jihad-node','#overlay .cq-nodebox');
+      await scrollTap('#overlay .cq11modalhead [data-close]');
+      await scrollTap('[data-cqscreen="overview"]');
+      await scrollTap('[data-cqscreen="rewards"]');
+      assert.equal(await page.$$eval('.cq11rewardline > *',e=>e.length),35);
+      assert.equal(await page.$$eval('.cq11rewardline .cqchest',e=>e.length),7);
+      await expeditionShot('jihad-rewards','.cq11rewards');
+      await scrollTap('[data-cqscreen="overview"]');
+      await scrollTap('[data-cqdisks]');
+      assert.equal(await page.$$eval('.cq11slots > *',e=>e.length),5);
+      await expeditionShot('jihad-disks','.cq11diskbox');
+      await scrollTap('.cq11diskbox .cq11modalhead [data-close]');
+      await scrollTap('[data-cqenter][data-cqsec="0"]');
       await page.$eval('.cqmap',e=>e.scrollIntoView({block:'center'}));
       await expeditionShot('jihad-map','.cqmap');
       await scrollTap('[data-cqres]');
