@@ -1,0 +1,102 @@
+
+/* GLOBAL-REWORK/CONQUEST R11; strictly scoped, never squad-select. */
+#view[data-gfx-view="conq"]:has(.cq11root){overflow:hidden;padding:5px 9px 7px;min-height:0}
+.cq11root{height:100%;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);gap:5px;color:#eddfc7}
+.cq11root>h2.lshide{display:none}
+.cq11root h3{margin:0;font:400 clamp(16px,2.4vw,23px)/1.1 var(--f-display);color:#e9d4af}
+.cq11root small,.cq11box small{font-size:10px;color:#c7b89e}
+.cq11bar{display:flex;align-items:center;gap:6px;min-width:0;padding:2px 0;border-bottom:1px solid #806a4777}
+.cq11week{margin-right:auto;font-size:11px;color:#d4c2a3}
+.cq11bar .cqitem{min-height:32px;margin:0;gap:5px;padding:3px 8px;white-space:nowrap!important}
+.cq11bar .cqart{width:24px;height:24px;object-fit:contain}
+.cq11entry{display:grid;grid-template-columns:57% minmax(0,1fr);gap:10px;min-height:0}
+.cq11sectors,.cq11command{display:grid;min-height:0;gap:4px;grid-template-rows:24px repeat(5,minmax(0,1fr))}
+.cq11sectors h3{display:flex;justify-content:space-between;align-items:center}
+.cq11sector,.cq11commandrow,.cq11rewardpanel{border:1px solid #806a47;border-radius:4px;background:linear-gradient(120deg,#40392a,#25241e);color:#f0dfc2;min-height:0;min-width:0;text-align:left;padding:4px 8px;box-shadow:inset 0 0 0 2px #211f19}
+.cq11sector{display:grid;grid-template-columns:40px minmax(0,1fr) 22px;gap:6px;align-items:center;background:linear-gradient(90deg,#211f1a 3%,#211f1ac9 35%,#211f1a11),var(--world) center 42%/cover}
+.cq11sector b,.cq11commandrow b,.cq11rewardpanel b{display:block;font:400 clamp(14px,2.3vw,20px)/1.1 var(--f-display)}
+.cq11sector small,.cq11commandrow small,.cq11rewardpanel small{display:block;line-height:1.15}
+.cq11num{color:#d8b67b;font-weight:bold;display:flex;align-items:center;gap:3px}.cq11num svg{width:19px;height:19px;flex:none}.cq11sector.current{border-color:#e2c28a;box-shadow:inset 0 0 0 2px #a88c5277}.cq11sector:disabled{opacity:.64}.cq11sector.passed strong{color:#a7c194}.cq11sector strong,.cq11commandrow strong{justify-self:end;color:#e3c18a}
+.cq11command{grid-template-rows:24px minmax(0,1.8fr) repeat(3,minmax(0,1fr))}
+.cq11commandrow,.cq11row{display:flex;align-items:center;gap:8px;min-width:0}
+.cq11commandrow>span,.cq11row>span{flex:1;min-width:0}
+.cq11commandrow>svg,.cq11commandrow>img{width:32px;height:32px;flex:none;color:#d9b677;object-fit:contain}
+.cq11rewardpanel{display:grid;grid-template-rows:auto 4px minmax(0,1fr) auto;gap:3px}
+.cq11row>.cqart{width:30px;height:30px;object-fit:contain}.cq11row>strong{font-size:19px;white-space:nowrap}.cq11row>strong>small{display:inline}
+.cq11rewardpanel .cqtbar{height:4px;margin:0}.cq11milestones{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;min-height:0}.cq11milestones span{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0;font:10px var(--f-mono);color:#b4a893}.cq11milestones .cqchestart{width:100%;height:100%;max-height:24px;min-height:12px;object-fit:contain;filter:grayscale(.8)}.cq11milestones .ready .cqchestart,.cq11milestones .got .cqchestart{filter:none}
+.cq11subhead{display:flex;align-items:center;gap:8px;min-height:32px}.cq11subhead h3{flex:1}.cq11subhead .btn{min-height:32px;padding:4px 9px}.cq11subhead b{white-space:nowrap;color:#e4c489}
+.cq11mapview,.cq11rewards,.cq11heroes,.cq11pick{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:5px;min-height:0}
+.cq11mapview .cqmap{height:100%;margin:0;min-height:0;overflow:hidden;background:linear-gradient(#1b1b1680,#201b1690),var(--world) center/cover}
+.cq11mapview .cqtrack{width:100%;height:100%;min-height:0}.cq11mapview .cqlines{width:100%;height:100%}.cq11mapview .cqn{width:36px;height:36px;margin:-18px 0 0 -18px;background:radial-gradient(circle at 35% 20%,#817056,#302a21 60%);border-color:#a88b58;color:#e7c68e}.cq11mapview .cqn.t-boss{width:45px;height:45px;margin:-22.5px 0 0 -22.5px;border-color:#c98067;color:#f5ae90}.cq11mapview .cqn.t-disk{color:#a3c9c1}.cq11mapview .cqn.t-elite{color:#d3a0cf}.cq11mapview .cqn.done{border-color:#91ad77;color:#d2e7af;background:#303b28}.cq11mapview .cqn.open{border-color:#f1d395;box-shadow:0 0 9px #e6ba65}.cq11mapview .cqn.locked{opacity:.55}.cq11mapview .cqn.branchlocked{opacity:.28}.cq11mapfoot{display:flex;align-items:center;gap:8px}.cq11mapfoot small{flex:1}.cq11mapfoot .btn{min-height:34px}
+.cq11rewards{grid-template-rows:auto auto minmax(0,1fr) auto}.cq11rsummary,.cq11rewardtools{display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:11px;color:#cdbb98}.cq11rail{overflow-x:auto;overflow-y:hidden;touch-action:pan-x;overscroll-behavior:contain;min-height:0;position:relative;background:radial-gradient(ellipse at 50% 25%,#65503066,#211f19 75%);border:1px solid #806a47;border-radius:4px}
+.cq11railinner{height:100%;min-width:max-content;display:flex;flex-direction:column;justify-content:center;padding:8px 12px;gap:12px}.cq11rewardline{display:flex;gap:7px;align-items:stretch;min-height:0;position:relative}.cq11rewardline .cqst1,.cq11rewardline .cqchest{width:102px;flex:none;min-height:108px;padding:5px;display:grid;align-content:center;justify-items:center;gap:4px;position:relative;background:linear-gradient(#393329,#24231c);border:1px solid #65553b;grid-column:auto}.cq11rewardline .cqchest{width:130px;border-color:#977b4d}.cq11rewardline .cqst1.ready,.cq11rewardline .cqchest.ready{border-color:#ecc982;background:radial-gradient(ellipse,#78603b,#30291e);animation:none}.cq11rewardline .got{opacity:.72;border-color:#77896b}.cq11rpoint{font-weight:bold;font-size:15px;color:#f1d49e}.cq11ritems{display:flex;flex-direction:column;align-items:center;gap:5px}.cq11ritems .ico{width:24px;height:24px}.cq11rewardline .cqchestart{width:66px;height:58px;object-fit:contain;filter:drop-shadow(0 3px 4px #0008)}.cq11baseline{height:4px;background:#584931;position:relative}.cq11baseline i{display:block;height:100%;background:#dfbe7b;box-shadow:0 0 8px #caa35a}.cq11rewardtools .btn{min-height:32px}
+.cq11heroes{grid-template-rows:auto auto minmax(0,1fr)}.cq11heroes .cqheroes{overflow:auto;align-content:start;min-height:0;overscroll-behavior:contain}.cq11heroes .cqh{min-height:80px}.cq11heroes .cq11subhead .cqart{width:28px;height:28px;vertical-align:middle}
+.cq11pick{grid-template-rows:auto auto minmax(0,1fr)}.cq11pick .cqdiffs,.cq11difficulty{min-height:0;overflow:auto;grid-template-columns:repeat(3,minmax(0,1fr))}.cq11choose{grid-template-rows:minmax(0,1fr) auto}.cq11difficulty .cq11levelart{height:70px;text-align:center}.cq11levelart img{height:100%;max-width:100%;object-fit:contain}.cq11pick .cq11diskart{width:64px;height:64px;object-fit:contain}
+#overlay .cq11box{width:min(790px,96vw)!important;max-height:92dvh;min-height:0;text-align:left!important;padding:9px 12px;background:linear-gradient(150deg,#353027,#201f19);border:1px solid #b39a69;border-radius:5px;box-shadow:inset 0 0 0 3px #201e19,0 12px 30px #000b}
+.cq11modalhead,.cq11modalfoot,.cq11diskhead{display:flex;align-items:center;justify-content:space-between;gap:6px}.cq11modalhead{border-bottom:1px solid #806a4777;padding-bottom:4px}.cq11modalhead h3{margin:0!important;font-size:22px!important;text-align:left!important}.cq11modalhead .btn{min-width:36px;min-height:32px}.cq11modalfoot{border-top:1px solid #806a4777;padding-top:5px}.cq11modalfoot .btn{flex:1;min-height:34px}
+#overlay .cq-nodebox{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:5px;max-height:92dvh}.cq-nodebox .cqdet{overflow:auto;min-height:0;margin:0;padding:4px;background:transparent;border:0}.cq-nodebox .cdinfo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:5px;min-width:0}.cq-nodebox .cdrow{min-width:0;margin:0;padding:5px;border-bottom:1px solid #806a4766}.cq-nodebox .cdrow:first-child,.cq-nodebox .cdrow:has(.cdenemy),.cq-nodebox .acts{grid-column:1/-1}.cq-nodebox .cdenemy{display:flex;justify-content:space-around;gap:4px;flex-wrap:wrap}.cq-nodebox .cden{min-width:60px;flex:1}.cq-nodebox .cdtags{display:flex;flex-wrap:wrap;gap:4px;line-height:1.3}.cq-nodebox .cq11nodereward .ico{width:23px;height:23px}.cq-nodebox .acts .btn{min-height:38px;flex:1}.cq-nodebox .cqgoods,.cq-nodebox .cqdiffs,.cq-nodebox .cdinfo>.sub,.cq-nodebox .cdinfo>.btn,.cq-nodebox .cdinfo>.lockd,.cq-nodebox .cdinfo>.qok{grid-column:1/-1}
+#overlay .cq11diskbox{height:min(350px,92dvh);display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:4px}.cq11diskbody{display:grid;grid-template-rows:19px minmax(0,1.4fr) 19px minmax(0,1fr);gap:4px;min-height:0}.cq11diskhead small{text-align:right}.cq11slots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;min-height:0}.cq11slot{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px;padding:4px;border:1px solid var(--rc,#806a47);background:radial-gradient(ellipse at 50% 25%,#79634355,#24231e 78%);min-height:0;min-width:0}.cq11slot .cq11diskart{width:42px;height:42px;object-fit:contain;flex:1;min-height:22px}.cq11slot b{font-size:11px;line-height:1.1}.cq11slot small{font-size:9px;line-height:1.1}.cq11slot .btn{min-height:25px;padding:2px;width:100%;font-size:10px}.cq11slot.empty{border-style:dashed;opacity:.65}.cq11slot.empty span{font-size:22px}.cq11reserve{overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:4px;min-height:0;overscroll-behavior:contain}.cq11reserve .cqdk{grid-template-columns:40px minmax(0,1fr) auto;gap:5px;padding:4px}.cq11reserve .cq11diskart{width:38px;height:38px;object-fit:contain}.cq11reserve .cqdk p{font-size:10px}
+.cq11featbox .cq11feattabs{display:grid;grid-template-columns:repeat(6,1fr);gap:3px}.cq11featbox .cq11feattabs .btn{padding:4px 2px;min-height:32px;font-size:11px}.cq11featbox .cqfts{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.cq11featbox .cqft{padding:5px;border-color:#806a4777}.cq11featbox .cqft.active{border-left:3px solid #c5a36b}.cq11featbox .cqft.ok{border-left:3px solid #9db787}.cq11featbox .cqft p{font-size:11px;line-height:1.2}.cq11featbox .cqftn b{font-size:12px}
+.cq11chestbox h3 .cqchestart{width:48px;height:40px;object-fit:contain;vertical-align:middle}.cq11chestbox .cqrw{grid-template-columns:repeat(3,minmax(0,1fr));padding:0;gap:5px}.cq11chestbox .cqrw li{border:1px solid #806a4766;padding:6px;flex-wrap:wrap;min-width:0}.cq11chestbox .cqrw .ico{width:24px;height:24px}
+@media (orientation:portrait){.cq11entry{grid-template-columns:1fr;grid-template-rows:1.2fr 1fr}.cq11sectors,.cq11command{grid-template-rows:22px repeat(5,minmax(0,1fr))}.cq11command{grid-template-rows:22px minmax(0,1.8fr) repeat(3,minmax(0,1fr))}.cq11bar .cqitem span{display:none}.cq11mapview .cqmap{overflow-x:auto;touch-action:pan-x}.cq11mapview .cqtrack{min-width:650px}.cq11featbox .cqfts,.cq11chestbox .cqrw,.cq11reserve{grid-template-columns:repeat(2,minmax(0,1fr))}.cq11slot small{display:none}.cq11slot b{font-size:9px}.cq11rewardtools small{display:none}.cq11difficulty{grid-template-columns:1fr!important}.cq-nodebox .cdinfo{grid-template-columns:1fr}}
+@media (orientation:landscape) and (max-height:400px){.cq11bar .cqitem{min-height:28px}.cq11sectors{grid-template-rows:20px repeat(5,minmax(0,1fr))}.cq11command{grid-template-rows:20px minmax(0,1.8fr) repeat(3,minmax(0,1fr))}.cq11root{gap:4px}.cq11rewardpanel{padding:3px 6px;gap:2px}.cq11milestones .cqchestart{max-height:18px}.cq11commandrow>img{width:28px;height:28px}.cq11difficulty .cq11levelart{height:58px}.cq11slot small{font-size:9px}.cq11slot .cq11diskart{width:36px;height:36px}.cq11reserve .cqdk .btn{font-size:10px;min-height:30px}}
+
+/* Compact nested layout: combat CTA does not scroll with the dossier. */
+#overlay .cq-nodebox .cqdet{display:grid;grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;overflow:hidden;padding:0;gap:4px}
+#overlay .cq-nodebox .cdinfo{overflow:auto;align-content:start;min-height:0;overscroll-behavior:contain}
+#overlay .cq-nodebox .cq11nodeacts{display:flex;align-items:center;gap:5px;margin:0;padding:4px 0;border-top:1px solid #806a4777}
+#overlay .cq-nodebox .cq11nodeacts>.btn{flex:1}
+#overlay .cq-nodebox .cq11nodeacts>.cqrepeatnote{font-size:10px;max-width:160px}
+#overlay .cq-nodebox .cdrow:first-child:not(:has(.cdenemy)){grid-column:auto}
+.cq11choose{grid-template-rows:auto minmax(0,1fr) auto}
+.cq11choose .cq11difficulty{grid-template-rows:minmax(0,1fr);align-items:stretch}
+.cq11choose .cqdiff{display:flex!important;flex-direction:column;justify-content:space-between;overflow:auto;gap:4px!important}
+.cq11choose .cqdiff .cq11levelart{height:clamp(36px,14vh,76px);flex:none}
+.cq11choose .cqdiff .cqrequire{min-height:0}
+.cq11baseline .cq11progressmarker{position:absolute;top:50%;width:11px;height:11px;background:#ffe8b1;box-shadow:0 0 9px #ffe3a2;transform:translate(-50%,-50%) rotate(45deg);border:1px solid #fff4d8}
+.cq11slot{overflow:hidden}.cq11slot .cq11effect{max-height:30px;overflow:auto;min-height:0}.cq11slot .btn{flex:none}.cq11slot .cq11diskart{max-height:46px}
+.cq11commondisk{display:grid;place-items:center;flex:none;width:38px;height:38px;clip-path:polygon(25% 0,75% 0,100% 25%,100% 75%,75% 100%,25% 100%,0 75%,0 25%);background:radial-gradient(circle,#2d2920 35%,#9f8963 38%,#403a2e 46%,#827155 62%,#312d24 67%,#b4a07b 72%);color:#e8d5ae;font:700 22px/1 var(--f-body);filter:drop-shadow(0 3px 4px #0008)}
+.cq11reserve .cq11commondisk{width:36px;height:36px}.cq11pick .cq11commondisk{width:64px;height:64px;font-size:32px}
+@media (orientation:landscape) and (max-height:400px){#overlay .cq-nodebox .cq11nodeacts>.cqrepeatnote{display:none}.cq11slot .cq11effect{max-height:22px}.cq11slot .cq11commondisk{width:30px;height:30px;font-size:18px}}
+
+/* Native 844/667 visual gate: prevent clipping and stale receipt overlap. */
+body:has(#view .cq11root) > .toast{top:8px;bottom:auto;max-width:70vw;pointer-events:none}
+body:has(#overlay .cq-nodebox) > .toast{visibility:hidden;pointer-events:none}
+#view .cq11pick .cqdiffs{grid-template-rows:minmax(0,1fr);align-items:stretch}
+#view .cq11pick .cqdiff.disk{display:grid;grid-template-rows:minmax(24px,1fr) auto auto minmax(0,auto) auto;gap:3px;padding:6px;min-height:0;align-content:stretch;overflow:hidden}
+#view .cq11pick .cqdiff.disk>.cq11diskart,#view .cq11pick .cqdiff.disk>.cq11commondisk,#view .cq11pick .cqdiff.disk>svg{height:100%;max-height:44px;min-height:0;width:44px;object-fit:contain;justify-self:center;align-self:center}
+#view .cq11pick .cqdiff.disk h3{font-size:15px;line-height:1.12}
+#view .cq11pick .cqdiff.disk p{font-size:11px;line-height:1.18;overflow:auto;min-height:0}
+#view .cq11pick .cqdiff.disk .btn{min-height:32px;margin:0;padding:4px;align-self:end}
+#view .cq11pick>.sub{margin:0;font-size:10px;line-height:1.2}
+#view .cq11choose .cqdiff{gap:3px!important;padding:6px;min-height:0}
+#view .cq11choose .cqdiff .cqrequire{margin:0!important;min-height:0;line-height:1.12;font-size:10px!important}
+#view .cq11choose .cqdiff p,#view .cq11choose .cqdiff .mono{font-size:11px;line-height:1.15}
+#view .cq11choose .cqdiff .cq11levelart{height:clamp(28px,10vh,52px)}
+#overlay .cq-nodebox .cq11combatinfo{grid-template-columns:52% minmax(0,1fr);grid-template-rows:auto auto;align-content:start;gap:5px 8px}
+#overlay .cq-nodebox .cq11combatinfo>.cdrow{grid-column:2;padding:4px}
+#overlay .cq-nodebox .cq11combatinfo>.cq11foes{grid-column:1;grid-row:1/span 2;align-self:start;border-right:1px solid #806a4766;border-bottom:0}
+#overlay .cq-nodebox .cq11combatinfo>.cq11conditions{grid-row:1}
+#overlay .cq-nodebox .cq11combatinfo>.cq11nodereward{grid-row:2}
+#overlay .cq-nodebox .cq11combatinfo>.cdrow:not(.cq11foes,.cq11conditions,.cq11nodereward){grid-column:1/-1}
+#overlay .cq-nodebox .cq11foes .cdenemy{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;justify-items:center}
+#overlay .cq-nodebox .cq11foes .cden{min-width:0;width:100%;gap:1px;line-height:1.1;font-size:10px;padding:0}
+#overlay .cq-nodebox .cq11foes .cden .pt{max-width:38px;max-height:38px}
+#overlay .cq-nodebox .cq11foes .cden .mono{font-size:9px;line-height:1.15}
+#overlay .cq-nodebox .cq11nodeacts>.btn{min-height:36px;padding:4px}
+#overlay .cq-nodebox .cq11nodeacts>.btn small{color:#24190e;font-size:10px}
+#overlay .cq-nodebox .cq11modalfoot .btn{min-height:30px}
+#overlay .cq-nodebox .cq11nodereward .cdtags{line-height:1.35;align-items:center;font-size:12px}
+@media (orientation:portrait){#overlay .cq-nodebox .cq11combatinfo{grid-template-columns:1fr;grid-template-rows:auto}#overlay .cq-nodebox .cq11combatinfo>.cdrow{grid-column:1!important;grid-row:auto!important}}
+
+/* Reward strip is independent of the scrolling enemy/condition area.
+   Reserve its natural height before allocating the remaining viewport. */
+#overlay .cq-nodebox .cq11combatdetail{grid-template-rows:minmax(0,1fr) auto auto}
+#overlay .cq-nodebox .cq11combatdetail>.cq11nodereward{display:flex;flex-wrap:wrap;align-items:center;gap:3px 12px;min-width:0;margin:0;padding:5px 8px;border:1px solid #806a4777;border-radius:4px;background:linear-gradient(110deg,#3b3226,#28261e);font-size:11px}
+#overlay .cq-nodebox .cq11combatdetail>.cq11nodereward>.lbl{flex:none;margin:0;font-size:11px;color:#e5c38a}
+#overlay .cq-nodebox .cq11combatdetail>.cq11nodereward>.cdtags{flex:1 1 260px;min-width:0;gap:3px 8px;font-size:11px;line-height:1.2}
+#overlay .cq-nodebox .cq11combatdetail>.cq11nodereward .ico{width:20px;height:20px}
+#overlay .cq-nodebox .cq11combatinfo{grid-template-rows:auto;align-items:start}
+#overlay .cq-nodebox .cq11combatinfo>.cq11foes{grid-row:1;align-self:start}
+#overlay .cq-nodebox .cq11combatinfo>.cq11conditions{grid-row:1}
+@media (orientation:portrait){#overlay .cq-nodebox .cq11combatinfo>.cq11foes,#overlay .cq-nodebox .cq11combatinfo>.cq11conditions{grid-row:auto}}

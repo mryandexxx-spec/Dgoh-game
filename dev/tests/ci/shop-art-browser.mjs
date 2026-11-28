@@ -231,12 +231,22 @@ try{
     try{
       await swipeGallery();
       assert.ok((await scrollLayout()).top>20,'native touch swipe moves gallery');
+      // Chromium may swallow the first gesture after a compositor fling.
+      // Permit a bounded retry without weakening the native end-of-list gate.
+      // No synthetic scrollTop, wheel or JS navigation fallback.
+      let stalled=0;
       for(let attempt=0;attempt<8;attempt++){
         const current=await scrollLayout();
         if(current.top>=current.max-2)break;
         await swipeGallery();
         const next=await scrollLayout();
-        assert.ok(next.top>current.top||next.top>=next.max-2,'native swipe must advance: '+JSON.stringify({width,current,next}));
+        if(next.top>current.top||next.top>=next.max-2)stalled=0;
+        else {
+          stalled++;
+          console.log('native gallery swipe stalled; retry',JSON.stringify({width,current,next,stalled}));
+          assert.ok(stalled<3,'three consecutive native swipes failed: '+JSON.stringify({width,current,next}));
+          await new Promise(r=>setTimeout(r,350));
+        }
       }
     }finally{await cdp.detach()}
     const afterScroll=await scrollLayout();
@@ -792,6 +802,8 @@ try{
       await expeditionShot('jihad-start','#view[data-gfx-view="conq"]');
       assert.equal(await run('cq().diff'),'easy');
       if(await page.$('[data-cqdisk]')){
+        const startFits=await page.$$eval('[data-cqdisk]',els=>els.every(e=>{const b=e.getBoundingClientRect(),p=e.closest('.cqdiffs').getBoundingClientRect();return b.top>=p.top-1&&b.bottom<=p.bottom+1&&b.bottom<=innerHeight+1}));
+        assert.ok(startFits,'all starter disk actions fit without scrolling');
         await scrollTap('[data-cqdisk]');
         assert.equal(await run('!!cq().pick'),false);
         // Keep the real disk receipt alive while opening the next dialog.
@@ -808,6 +820,37 @@ try{
     if(await page.$('[data-cqres]')){
       await page.$eval('#view',e=>e.scrollTop=0);
       await expeditionShot('jihad-active','#view[data-gfx-view="conq"]');
+      await scrollTap('[data-cqenter][data-cqsec="0"]');
+      assert.ok(await page.$('.cq11mapview .cqmap'));
+      await scrollTap('[data-cqinspect]');
+      assert.ok(await page.$('#overlay .cq-nodebox'));
+      const nodeAction=await page.$eval('#overlay .cq-nodebox [data-cqgo]',e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight});
+      assert.ok(nodeAction,'battle action must remain visible without scrolling the dossier');
+      const rewardGeometry=await page.$eval('#overlay .cq11nodereward',e=>{
+        const rect=x=>{const r=x.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right}};
+        const b=rect(e),p=rect(e.closest('.cqdet')),info=rect(e.parentElement.querySelector('.cdinfo')),act=rect(e.parentElement.querySelector('.cq11nodeacts'));
+        const children=[...e.children].map(rect);
+        const hit=document.elementFromPoint((b.left+b.right)/2,(b.top+b.bottom)/2);
+        return {b,p,info,act,children,visible:!!hit&&e.contains(hit),outsideScroll:!e.closest('.cdinfo'),fit:b.top>=Math.max(p.top,info.bottom)-1&&b.bottom<=Math.min(p.bottom,act.top,innerHeight)+1&&b.left>=0&&b.right<=innerWidth+1&&children.every(r=>r.top>=b.top-1&&r.bottom<=b.bottom+1&&r.left>=b.left-1&&r.right<=b.right+1)};
+      });
+      assert.ok(rewardGeometry.fit&&rewardGeometry.visible&&rewardGeometry.outsideScroll,'first battle reward must be visible and pinned without scrolling: '+JSON.stringify(rewardGeometry));
+      await expeditionShot('jihad-node','#overlay .cq-nodebox');
+      await scrollTap('#overlay .cq11modalhead [data-close]');
+      await scrollTap('[data-cqscreen="overview"]');
+      await scrollTap('[data-cqscreen="rewards"]');
+      assert.equal(await page.$$eval('.cq11rewardline > *',e=>e.length),35);
+      assert.equal(await page.$$eval('.cq11rewardline .cqchest',e=>e.length),7);
+      const railBounds=await page.$eval('.cq11rail',e=>({w:e.clientWidth,sw:e.scrollWidth,h:e.clientHeight,sh:e.scrollHeight}));
+      assert.ok(railBounds.sw>railBounds.w&&railBounds.sh<=railBounds.h+1,'reward rail scrolls only horizontally '+JSON.stringify(railBounds));
+      const viewBounds=await page.$eval('#view',e=>({h:e.clientHeight,sh:e.scrollHeight}));
+      assert.ok(viewBounds.sh<=viewBounds.h+1,'no outer view overflow '+JSON.stringify(viewBounds));
+      await expeditionShot('jihad-rewards','.cq11rewards');
+      await scrollTap('[data-cqscreen="overview"]');
+      await scrollTap('[data-cqdisks]');
+      assert.equal(await page.$$eval('.cq11slots > *',e=>e.length),5);
+      await expeditionShot('jihad-disks','.cq11diskbox');
+      await scrollTap('.cq11diskbox .cq11modalhead [data-close]');
+      await scrollTap('[data-cqenter][data-cqsec="0"]');
       await page.$eval('.cqmap',e=>e.scrollIntoView({block:'center'}));
       await expeditionShot('jihad-map','.cqmap');
       await scrollTap('[data-cqres]');

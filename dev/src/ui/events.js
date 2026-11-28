@@ -75,6 +75,7 @@ function cqVerifiedClaimClick(d) {
       el.outerHTML = `<div class="cqst1 got">${el.innerHTML.replace(/<em>.*?<\/em>/, '<i>✓</i>')}</div>`;
     }
     renderRes();
+    if (view === 'conq' && document.querySelector('#cq11rail')) cqClick({cqscreen:'refresh'});
     return true;
   }
   const i = Number(d.cqopen);
@@ -217,7 +218,8 @@ function cqVerifiedEconomyClick(d) {
       C.sel = null;
       return sec;
     });
-    if (tx.ok) render();
+    if (d.cqenter && (tx.ok || (tx.status === 'cancelled' && tx.value === 'no-change' && loadSave.writer.state().status === 'owned'))) cqClick({cqscreen:'map'});
+    else if (tx.ok) render();
     return true;
   }
   if (d.cqbuy !== undefined) {
